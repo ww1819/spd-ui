@@ -245,7 +245,7 @@
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.amt" :disabled="true" placeholder="自动计算" />
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="240">
