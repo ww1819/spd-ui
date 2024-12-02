@@ -195,11 +195,20 @@
         </el-row>
         <el-row>
           <el-col :span="4">
-             <el-form-item label="扫码" prop="udi" label-width="100px">
-               <el-input v-model="form.udi"
-                         placeholder="请扫描条码号"
+             <el-form-item label="主条码" prop="ztm" label-width="100px">
+               <el-input v-model="form.ztm"
+                         placeholder="请扫描主条码"
                          clearable
-                         @keyup.enter.native="smudi"
+                         @keyup.enter.native="sm"
+               />
+             </el-form-item>
+          </el-col>
+          <el-col :span="4">
+             <el-form-item label="辅条码" prop="ftm" label-width="100px">
+               <el-input v-model="form.ftm"
+                         placeholder="请扫描辅条码"
+                         clearable
+                         @keyup.enter.native="sm2"
                />
              </el-form-item>
           </el-col>
@@ -307,7 +316,7 @@
 
 <script>
 import { listOrder, getOrder, delOrder, addOrder, updateOrder } from "@/api/gz/order";
-import { listMaterial} from "@/api/foundation/material";
+import { listMaterial,jxFtm,jxTm} from "@/api/foundation/material";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
@@ -389,9 +398,15 @@ export default {
   },
   methods: {
     /** 查询高值入库列表 */
-    smudi(){
-      let udiinfo={
-        "udiNo":this.form.udi
+    sm(){
+      const obj=jxTm(this.form.ztm);
+      const tmh=obj.ztm;
+      const ph=obj.ph;
+      const yxq=obj.yxq;
+      const ftm=obj.ftm;
+      const scrq=obj.scrq;
+      const udiinfo={
+          "udiNo":this.form.ztm
       }
       listMaterial(udiinfo).then(response => {
         response.rows.forEach((item, index) => {
