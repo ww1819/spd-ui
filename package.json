@@ -9,8 +9,7 @@
     "build:prod": "vue-cli-service build",
     "build:stage": "vue-cli-service build --mode staging",
     "preview": "node build/index.js --preview",
-    "lint": "eslint --ext .js,.vue src",
-    "start": "NODE_OPTIONS=--openssl-legacy-provider node your-script.js"
+    "lint": "eslint --ext .js,.vue src"
   },
   "husky": {
     "hooks": {
