@@ -1,11 +1,11 @@
 <template>
-  <div class="refund-goods-print" ref="receiptRefundGoodsPrintRef" hidden="hidden">
+  <div class="refund-depot-order-print" ref="receiptRefundDepotOrderPrintRef" hidden="hidden">
 <!--    <div class="title" style="padding-top: 15px">入库单</div>-->
-    <div style="font-size: 22px;text-align: center;">采购退货单</div>
+    <div style="font-size: 22px;text-align: center;">科室退库单</div>
     <div class="summary">
       <div class="col1" style="width:45%">单号: {{ row.billNo }}</div>
       <div class="col1" style="width:30%">仓库: {{ row.warehouseName }}</div>
-      <div class="col1" style="width:25%">供应商: {{ row.supplierName }}</div>
+      <div class="col1" style="width:25%">科室: {{ row.departmentName }}</div>
 
       <div class="col1" style="width:45%">申请时间: {{ row.billDate }}</div>
       <div class="col1" style="width:30%">审核时间: {{ row.auditDate }}</div>
@@ -68,7 +68,7 @@ export default {
   props: ['row'],
   methods: {
     start() {
-      this.$print(this.$refs.receiptRefundGoodsPrintRef, {}, 'A4')
+      this.$print(this.$refs.receiptRefundDepotOrderPrintRef, {}, 'A4')
     },
   }
 }
@@ -98,7 +98,7 @@ export default {
     width: 100% !important;
   }
 
-  .refund-goods-print {
+  .refund-depot-order-print {
     width: 100% !important;
     font-size: 14px;
   }
@@ -110,7 +110,7 @@ export default {
 
 }
 
-.refund-goods-print
+.refund-depot-order-print
   padding 12px
   line-height 1.6
 

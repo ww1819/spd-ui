@@ -116,6 +116,12 @@
       <el-table-column label="备注" align="center" prop="remark" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
+          <el-button
+            size="mini"
+            type="text"
+            @click="handlePrint(scope.row,true)"
+            v-if="scope.row.billStatus == 2"
+          >打印</el-button>
           <el-dropdown v-if="scope.row.billStatus != 2">
             <el-button type="primary">
               更多操作<i class="el-icon-arrow-down el-icon--right"></i>
@@ -315,6 +321,21 @@
         <el-button @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
+    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width ">
+      <template v-if=" modalObj.component === 'print-type' ">
+        <el-radio-group v-model=" modalObj.form.value ">
+          <!--          <el-radio :label=" 1 ">lodop打印</el-radio>-->
+          <el-radio :label=" 2 ">浏览器打印</el-radio>
+        </el-radio-group>
+      </template>
+      <template v-if=" modalObj.form.value === 2 || modalObj.component === 'window-print-preview' ">
+        <refund-depot-order-print :row=" modalObj.form.row " ref="receiptRefundDepotOrderPrintRef"></refund-depot-order-print>
+      </template>
+      <template slot="footer" class="dialog-footer">
+        <el-button @click=" modalObj.cancel ">取消</el-button>
+        <el-button @click=" modalObj.ok " type="primary">确认</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 3、使用组件 -->
     <SelectDepInventory
@@ -335,13 +356,16 @@ import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
-
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
+import refundDepotOrderPrint from "@/views/outWarehouse/refundDepotAudit/refundDepotOrderPrint.vue";
+import RMBConverter from "@/utils/tools";
+import {STOCK_IN_TEMPLATE} from '@/utils/printData';
+import refundGoodsOrderPrint from "@/views/inWarehouse/refundGoodsAudit/refundGoodsOrderPrint.vue";
 
 export default {
   name: "OutWarehouseRefundAudit",
   dicts: ['biz_status','bill_type'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory},
+  components: {refundGoodsOrderPrint, refundDepotOrderPrint,SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory},
   data() {
     return {
       // 遮罩层
@@ -349,6 +373,19 @@ export default {
       DialogComponentShow: false,
       departmentValue: "",
       isShow: true,
+      modalObj: {
+        title: '选择打印方式',
+        width: '520px',
+        component: null,
+        form: {
+          value: null,
+          row: null
+        },
+        ok: () => {
+        },
+        cancel: () => {
+        }
+      },
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -639,6 +676,7 @@ export default {
         this.title = "修改退库";
       });
     },
+
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
@@ -659,6 +697,119 @@ export default {
           }
         }
       });
+    },
+    /** 打印按钮操作 */
+    handlePrint(row, print){
+      this.modalObj = {
+        show: true,
+        title: '选择打印方式',
+        width: '520px',
+        component: 'print-type',
+        form: {
+          value: 1,
+          row
+        },
+        ok: () => {
+          this.modalObj.show = false
+          if (this.modalObj.form.value === 1) {
+            this.doPrintOut(row, false)
+          } else {
+            this.windowPrintOut(row, print)
+          }
+        },
+        cancel: () => {
+          this.modalObj.show = false
+        }
+      }
+    },
+    windowPrintOut(row, print) {
+      this.getRefundGoodsDetail(row).then(res => {
+        if (print) {
+          this.modalObj.form.row = res
+          this.$nextTick(() => {
+            this.$refs['receiptRefundDepotOrderPrintRef'].start()
+          })
+          return
+        }
+        this.$nextTick(() => {
+          this.modalObj = {
+            show: true,
+            title: '浏览器打印预览',
+            width: '800px',
+            component: 'window-print-preview',
+            form: {
+              value: 1,
+              row,
+              print
+            },
+            ok: () => {
+              this.modalObj.show = false
+            },
+            cancel: () => {
+              this.modalObj.show = false
+            }
+          }
+        })
+      })
+    },
+    doPrintOut(row, print) {
+      this.getRefundGoodsDetail(row).then(result => {
+        if (print) {
+          this.$lodop.print(STOCK_OUT_TEMPLATE, [result])
+        } else {
+          this.$lodop.preview(STOCK_OUT_TEMPLATE, [result])
+        }
+      })
+    },
+    //组装打印信息
+    getRefundGoodsDetail(row) {
+      //查询详情
+      return getTkInventory(row.id).then(response => {
+        const details = response.data.stkIoBillEntryList
+        const materiaDetails = response.data.materialList
+        const map = {};
+
+        (materiaDetails || []).forEach(it => {
+          map[it.id] = it
+        })
+
+        let detailList = [], totalAmt = 0, totalQty = 0
+
+        details && details.forEach(item => {
+          totalAmt += item.amt
+          totalQty += item.qty
+
+          const prod = map[item.materialId]
+
+          detailList.push({
+            batchNumber: item.batchNumber,
+            amt: item.amt,
+            qty: item.qty,
+            price: item.unitPrice,
+            materialCode: prod.code,
+            materialName: prod.name,
+            materialSpeci: prod.speci,
+            periodDate: prod.periodDate,
+            factoryName: prod.fdFactory.factoryName,
+            warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
+          })
+
+        })
+
+        let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
+
+        return {
+          billNo: row.billNo,
+          departmentName: row.department.name,
+          warehouseName: row.warehouse.name,
+          billDate: row.billDate,
+          auditDate: row.auditDate,
+          totalAmt: totalAmt,
+          totalQty: totalQty,
+          totalAmtConverter: totalAmtConverter,
+          detailList:detailList
+        }
+      })
     },
     /** 删除按钮操作 */
     handleDelete(row) {
