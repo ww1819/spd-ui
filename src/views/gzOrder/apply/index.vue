@@ -430,11 +430,20 @@ export default {
           obj.beginTime = "";
           obj.andTime = "";
           obj.remark = "";
-          obj.masterBarcode = item.masterBarcode;
+          obj.masterBarcode = item.udiNo;
           obj.secondaryBarcode = "";
           this.gzOrderEntryList.push(obj);
         });
       });
+    }
+    ,sm2(){
+      const obj=jxFtm(this.form.ftm);
+      const length = this.ids.length
+      for (let i = 0; i < length; i++) {
+        this.ids[i].batchNo = obj.batchNo;
+        this.ids[i].secondaryBarcode = obj.ftm;
+        this.ids[i].andTime = obj.yxq;
+      }
     }
     ,getList() {
       this.loading = true;
