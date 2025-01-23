@@ -259,6 +259,16 @@
               </el-date-picker>
             </template>
           </el-table-column>
+          <el-table-column label="主条码" prop="masterBarcode" width="240">
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.masterBarcode" :disabled="true" label-width="200px" placeholder="请输入主条码" />
+            </template>
+          </el-table-column>
+          <el-table-column label="辅条码" prop="secondaryBarcode" width="240">
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.secondaryBarcode" :disabled="true" label-width="200px" placeholder="请输入辅条码" />
+            </template>
+          </el-table-column>
           <el-table-column label="备注" prop="remark" width="200">
             <template slot-scope="scope">
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
@@ -435,6 +445,8 @@ export default {
         obj.beginTime = "";
         obj.andTime = "";
         obj.remark = "";
+        obj.masterBarcode = "";
+        obj.secondaryBarcode = "";
         this.gzOrderEntryList.push(obj);
       });
     },
@@ -467,7 +479,9 @@ export default {
         createTime: null,
         updateBy: null,
         updateTime: null,
-        remark: null
+        remark: null,
+        masterBarcode: null,
+        secondaryBarcode: null
       };
       this.gzOrderEntryList = [];
       this.resetForm("form");
@@ -710,6 +724,8 @@ export default {
       obj.beginTime = "";
       obj.andTime = "";
       obj.remark = "";
+      obj.masterBarcode = "";
+      obj.secondaryBarcode = "";
       this.gzOrderEntryList.push(obj);
     },
     /** 高值退货明细删除按钮操作 */
