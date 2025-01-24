@@ -331,6 +331,7 @@ import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
+import item from "@/layout/components/Sidebar/Item.vue";
 
 export default {
   name: "Order",
@@ -437,12 +438,17 @@ export default {
       });
     }
     ,sm2(){
-      const obj=jxFtm(this.form.ftm);
-      const length = this.ids.length
-      for (let i = 0; i < length; i++) {
-        this.ids[i].batchNo = obj.batchNo;
-        this.ids[i].secondaryBarcode = obj.ftm;
-        this.ids[i].andTime = obj.yxq;
+      const length = this.checkedGzOrderEntry.length
+      if (length < 1){
+        this.$modal.msgError("请先选择明细数据");
+      } else {
+        const obj=jxFtm(this.form.ftm);
+        for (let i = 0; i < length; i++) {
+          const index = this.checkedGzOrderEntry[i];
+          this.gzOrderEntryList[index].batchNo = obj.batchNo;
+          this.gzOrderEntryList[index].secondaryBarcode = obj.ftm;
+          this.gzOrderEntryList[index].andTime = obj.yxq;
+        }
       }
     }
     ,getList() {
