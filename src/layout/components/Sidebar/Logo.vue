@@ -36,11 +36,11 @@ export default {
   data() {
     return {
       title: process.env.VUE_APP_TITLE,
-      // logo: logoImg
-      logo: ''
+      logo: logoImg
+      // logo: ''
     }
   }
-}
+} 
 </script>
 
 <style lang="scss" scoped>

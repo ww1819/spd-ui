@@ -1,96 +1,117 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="库房分类编码" prop="warehouseCategoryCode" label-width="100px">
-            <el-input
-              v-model="queryParams.warehouseCategoryCode"
-              placeholder="请输入库房分类编码"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item label="库房分类名称" prop="warehouseCategoryName" label-width="100px">
-            <el-input
-              v-model="queryParams.warehouseCategoryName"
-              placeholder="请输入库房分类名称"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-    </el-form>
-
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['foundation:warehouseCategory:add']"
-        >新增</el-button>
+    <el-row :gutter="20">
+      <!-- 左侧树形菜单 -->
+      <el-col :span="4">
+        <el-card class="tree-card">
+          <el-tree
+            :data="treeData"
+            :props="treeProps"
+            node-key="warehouseCategoryId"
+            highlight-current
+            @node-click="handleNodeClick"
+            :indent="20"
+            :default-expand-all="true"
+        >
+            <span slot-scope="{ node }" class="custom-tree-node">
+              <i class="el-icon-folder-opened" />
+              <span>{{ node.label }}</span>
+            </span>
+          </el-tree>
+        </el-card>
       </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['foundation:warehouseCategory:export']"
-        >导出</el-button>
+
+      <!-- 右侧表格区域 -->
+      <el-col :span="20">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+          <el-row :gutter="20">
+            <el-col :span="6">
+              <el-form-item label="库房分类编码" prop="warehouseCategoryCode" label-width="100px">
+                <el-input
+                  v-model="queryParams.warehouseCategoryCode"
+                  placeholder="请输入库房分类编码"
+                  clearable
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="库房分类名称" prop="warehouseCategoryName" label-width="100px">
+                <el-input
+                  v-model="queryParams.warehouseCategoryName"
+                  placeholder="请输入库房分类名称"
+                  clearable
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item>
+                <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+                <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+
+        <el-row :gutter="10" class="mb8">
+          <el-col :span="1.5">
+            <el-button
+              type="primary"
+              plain
+              icon="el-icon-plus"
+              size="mini"
+              @click="handleAdd"
+              v-hasPermi="['foundation:warehouseCategory:add']"
+            >新增</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button
+              type="warning"
+              plain
+              icon="el-icon-download"
+              size="mini"
+              @click="handleExport"
+              v-hasPermi="['foundation:warehouseCategory:export']"
+            >导出</el-button>
+          </el-col>
+          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        </el-row>
+
+        <el-table v-loading="loading" :data="warehouseCategoryList" @selection-change="handleSelectionChange">
+          <el-table-column label="库房分类编码" align="center" prop="warehouseCategoryCode" />
+          <el-table-column label="库房分类名称" align="center" prop="warehouseCategoryName" />
+          <el-table-column label="库房分类地址" align="center" prop="warehouseCategoryAddress" />
+          <el-table-column label="库房分类联系方式" align="center" prop="warehouseCategoryContact" />
+          <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+            <template slot-scope="scope">
+              <el-button
+                size="mini"
+                type="text"
+                icon="el-icon-edit"
+                @click="handleUpdate(scope.row)"
+                v-hasPermi="['foundation:warehouseCategory:edit']"
+              >修改</el-button>
+              <el-button
+                size="mini"
+                type="text"
+                icon="el-icon-delete"
+                @click="handleDelete(scope.row)"
+                v-hasPermi="['foundation:warehouseCategory:remove']"
+              >删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <pagination
+          v-show="total>0"
+          :total="total"
+          :page.sync="queryParams.pageNum"
+          :limit.sync="queryParams.pageSize"
+          @pagination="getList"
+        />
       </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
-
-    <el-table v-loading="loading" :data="warehouseCategoryList" @selection-change="handleSelectionChange">
-      <el-table-column label="库房分类编码" align="center" prop="warehouseCategoryCode" />
-      <el-table-column label="库房分类名称" align="center" prop="warehouseCategoryName" />
-      <el-table-column label="库房分类地址" align="center" prop="warehouseCategoryAddress" />
-      <el-table-column label="库房分类联系方式" align="center" prop="warehouseCategoryContact" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['foundation:warehouseCategory:edit']"
-          >修改</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['foundation:warehouseCategory:remove']"
-          >删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
 
     <!-- 添加或修改库房分类对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
@@ -101,11 +122,9 @@
         <el-form-item label="库房分类名称" prop="warehouseCategoryName" >
           <el-input v-model="form.warehouseCategoryName" placeholder="请输入库房分类名称" />
         </el-form-item>
-
         <el-form-item label="库房分类联系方式" prop="warehouseCategoryContact" >
           <el-input v-model="form.warehouseCategoryContact" placeholder="请输入库房分类联系方式" />
         </el-form-item>
-
         <el-form-item label="库房分类地址" prop="warehouseCategoryAddress" >
           <el-input v-model="form.warehouseCategoryAddress" type="textarea" placeholder="请输入库房分类地址" />
         </el-form-item>
@@ -125,6 +144,12 @@ export default {
   name: "WarehouseCategory",
   data() {
     return {
+      // 树形数据
+      treeData: [],
+      treeProps: {
+        label: 'warehouseCategoryName',
+        children: 'children'
+      },
       // 遮罩层
       loading: true,
       // 选中数组
@@ -172,9 +197,21 @@ export default {
       this.loading = true;
       listWarehouseCategory(this.queryParams).then(response => {
         this.warehouseCategoryList = response.rows;
+        this.treeData = [{
+          warehouseCategoryId: 'root',
+          warehouseCategoryName: '全部库房',
+          children: this.warehouseCategoryList
+        }];
         this.total = response.total;
         this.loading = false;
       });
+    },
+    /** 树节点点击事件 */
+    handleNodeClick(data) {
+      if (data.warehouseCategoryId !== 'root') {
+        console.log('选中节点:', data);
+        // 此处可添加筛选逻辑
+      }
     },
     // 取消按钮
     cancel() {
@@ -252,7 +289,7 @@ export default {
     /** 删除按钮操作 */
     handleDelete(row) {
       const warehouseCategoryIds = row.warehouseCategoryId || this.ids;
-      this.$modal.confirm('是否确认删除库房分类编号为"' + warehouseCategoryIds + '"的数据项？').then(function() {
+      this.$modal.confirm('是否确认删除库房分类编号为"' + warehouseCategoryIds + '"的数据项？').then(() => {
         return delWarehouseCategory(warehouseCategoryIds);
       }).then(() => {
         this.getList();
@@ -268,3 +305,22 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.tree-card {
+  margin-right: 15px;
+  height: calc(100vh - 180px);
+  overflow-y: auto;
+}
+.custom-tree-node {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  padding: 3px 0;
+}
+.el-tree {
+  background: transparent;
+  padding: 10px;
+}
+</style>

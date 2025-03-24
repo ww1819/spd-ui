@@ -354,7 +354,14 @@
 </template>
 
 <script>
-import { listOutWarehouse, getOutWarehouse, delOutWarehouse, addOutWarehouse, updateOutWarehouse } from "@/api/warehouse/outWarehouse";
+import { 
+  listOutWarehouse, 
+  getOutWarehouse, 
+  delOutWarehouse, 
+  addOutWarehouse, 
+  updateOutWarehouse,
+  listCTKWarehouse
+} from "@/api/warehouse/outWarehouse";
 import { listInventoryMaterialAll } from "@/api/warehouse/inventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -438,27 +445,24 @@ export default {
           sums[index] = '合计';
           return;
         }
-        const values = data.map(item => Number(item[column.property]));
-        if(index === 3 || index === 4 || index === 5){
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] = sums[index].toFixed(2);
-          }
-
-          if(index === 5){
-            let res = parseFloat(sums[index]);
-            if(!isNaN(res)){
-              let parRes = res.toFixed(2);
-              this.form.totalAmount = parRes;
-            }
-          }
+        // 只处理金额列（索引5对应金额列）
+        if (index === 5) {
+          const values = data.map(item => {
+            const num = Number(item.amt || 0);
+            return isNaN(num) ? 0 : num;
+          });
+          
+          // 使用Number.EPSILON解决浮点精度问题
+          sums[index] = values.reduce((prev, curr) => 
+            (prev + curr + Number.EPSILON) * 100 / 100, 0
+          ).toFixed(2);
+          
+          // 更新总金额（确保类型为number）
+          this.form.totalAmount = parseFloat(sums[index]);
+        } else if ([3,4].includes(index)) { // 处理单价和数量列
+          sums[index] = '-';
+        } else {
+          sums[index] = '';
         }
       });
       return sums;
@@ -647,23 +651,43 @@ export default {
       });
     },
     /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
+    async submitForm() {
+      this.$refs["form"].validate(async (valid) => {
         if (valid) {
-          this.form.stkIoBillEntryList = this.stkIoBillEntryList;
-          if (this.form.id != null) {
-            updateOutWarehouse(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addOutWarehouse(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
+          // 新增耗材校验逻辑
+          for (const [index, entry] of this.stkIoBillEntryList.entries()) {
+            if (entry.materialId) {
+              try {
+                const res = await listCTKWarehouse({
+                  materialId: entry.materialId,
+                  warehouseId: this.form.warehouseId,
+                  billNo:'CK',
+                  billStatus: 1
+                });
+                if (res && res.length > 0) {
+                  this.$modal.msgError(`第${index + 1}行耗材存在未审核出库单，请先审核后再出库`);
+                  return;
+                }
+              } catch (error) {
+                console.error("校验请求失败:", error);
+              }
+            }
           }
+
+          this.form.stkIoBillEntryList = this.stkIoBillEntryList;
+          // if (this.form.id != null) {
+          //   updateOutWarehouse(this.form).then(response => {
+          //     this.$modal.msgSuccess("修改成功");
+          //     this.open = false;
+          //     this.getList();
+          //   });
+          // } else {
+          //   addOutWarehouse(this.form).then(response => {
+          //     this.$modal.msgSuccess("新增成功");
+          //     this.open = false;
+          //     this.getList();
+          //   });
+          // }
         }
       });
     },

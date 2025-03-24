@@ -746,6 +746,7 @@ export default {
       this.isDisabled = false;
       this.title = "添加耗材产品";
       this.form.isGz = '2';
+      this.form.isUse = '2';
     },
     /** 修改按钮操作 */
     handleUpdate(row) {

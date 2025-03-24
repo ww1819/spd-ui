@@ -1,7 +1,7 @@
 {
   "name": "spd",
   "version": "3.8.6",
-  "description": "SPD管理系统",
+  "description": "医疗物资管理系统",
   "author": "SPD",
   "license": "MIT",
   "scripts": {

@@ -284,7 +284,7 @@
 
           <el-table-column label="批号" prop="batchNo" width="240">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="请输入批号" />
+              <el-input v-model="scope.row.batchNumber" :disabled="true" label-width="200px" placeholder="请输入批号" />
             </template>
           </el-table-column>
           <el-table-column label="生产日期" prop="batchNo" width="240">
@@ -293,6 +293,7 @@
                               v-model="scope.row.beginTime"
                               type="date"
                               value-format="yyyy-MM-dd"
+                              :disabled="true"
                               placeholder="请选择生产日期">
               </el-date-picker>
             </template>
@@ -303,6 +304,7 @@
                               v-model="scope.row.andTime"
                               type="date"
                               value-format="yyyy-MM-dd"
+                              :disabled="true"
                               placeholder="请选择有效期">
               </el-date-picker>
             </template>
@@ -340,6 +342,8 @@ import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
+import { listRTHWarehouse } from '@/api/warehouse/warehouse'; // 新增引用
+
 
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 
@@ -655,9 +659,29 @@ export default {
       });
     },
     /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
+    async submitForm() {
+      this.$refs["form"].validate(async (valid) => {
         if (valid) {
+          // 新增退货校验逻辑（与出库逻辑保持一致）
+          for (const [index, entry] of this.stkIoBillEntryList.entries()) {
+            if (entry.materialId) {
+              try {
+                const res = await listRTHWarehouse({
+                  materialId: entry.materialId,
+                  warehouseId: this.form.warehouseId,
+                  billNo: 'TH',
+                  billStatus: 1
+                });
+                if (res && res.length > 0) {
+                  this.$modal.msgError(`第${index + 1}行耗材存在未审核退货单，请先审核后再退货`);
+                  return;
+                }
+              } catch (error) {
+                console.error("校验请求失败:", error);
+              }
+            }
+          }
+
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           if (this.form.id != null) {
             updateThInventory(this.form).then(response => {

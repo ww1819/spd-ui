@@ -4,7 +4,7 @@
     <el-tabs v-model="activeName" type="card">
       <el-tab-pane label="库存明细查询" name="first"></el-tab-pane>
       <el-tab-pane label="库存汇总查询" name="second"></el-tab-pane>
-<!--      <el-tab-pane label="进销存明细表" name="third"></el-tab-pane>-->
+     <el-tab-pane label="进销存明细表" name="third"></el-tab-pane>
 <!--      <el-tab-pane label="历史库存明细" name="fourth"></el-tab-pane>-->
     </el-tabs>
     <FirstInventory v-if="activeName === 'first'"></FirstInventory>
