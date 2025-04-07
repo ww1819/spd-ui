@@ -711,6 +711,16 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          // 新增数量非空校验
+          const hasEmptyQty = this.stkIoBillEntryList.some(item => 
+            !item.qty || String(item.qty).trim() === ''
+          );
+          
+          if (hasEmptyQty) {
+            this.$modal.msgError("入库明细数量不能为空");
+            return;
+          }
+
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           if (this.form.id != null) {
             updateWarehouse(this.form).then(response => {

@@ -61,7 +61,6 @@ export function listCTKWarehouse(query) {
   })
 }
 
-
 // 查询出退库汇总列表
 export function listCTKWarehouseSummary(query) {
   return request({

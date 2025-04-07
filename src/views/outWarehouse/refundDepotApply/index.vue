@@ -265,11 +265,41 @@
 
           <el-table-column label="单价" prop="unitPrice" width="120">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number' :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="请输入单价" />
+              <el-input 
+                v-model="scope.row.unitPrice" 
+                :disabled="true"
+                placeholder="自动带出单价"/>
             </template>
           </el-table-column>
 
+          <el-table-column label="批次号" prop="batchNo" width="240">
+            <template slot-scope="scope">
+              <el-input 
+                v-model="scope.row.batchNo" 
+                :disabled="true"
+                placeholder="自动带出批次号"/>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="生产日期" prop="batchNo" width="240">
+            <template slot-scope="scope">
+              <el-date-picker 
+                v-model="scope.row.beginTime"
+                :disabled="true"
+                type="date"
+                value-format="yyyy-MM-dd"/>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="有效期" prop="batchNo" width="240">
+            <template slot-scope="scope">
+              <el-date-picker 
+                v-model="scope.row.andTime"
+                :disabled="true"
+                type="date"
+                value-format="yyyy-MM-dd"/>
+            </template>
+          </el-table-column>
           <el-table-column label="金额" prop="amt" width="120">
             <template slot-scope="scope">
               <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
@@ -332,7 +362,14 @@
 </template>
 
 <script>
-import { listTkInventory, getTkInventory, delTkInventory, addTkInventory, updateTkInventory } from "@/api/warehouse/tkInventory";
+import { 
+  listTkInventory, 
+  getTkInventory, 
+  delTkInventory, 
+  addTkInventory, 
+  updateTkInventory 
+} from "@/api/warehouse/tkInventory";
+import { listCTKWarehouse } from '@/api/warehouse/outWarehouse'; // 新增引用
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -499,7 +536,7 @@ export default {
       //监听“弹窗组件”返回的数据
       this.selectRow = val;
 
-      this.selectRow.forEach((item, index) => {
+      this.selectRow.forEach((item) => {
         let obj = {};
         obj.materialId = item.materialId;
         obj.qty = item.qty;
@@ -644,23 +681,43 @@ export default {
       });
     },
     /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
+    async submitForm() {
+      this.$refs["form"].validate(async (valid) => {
         if (valid) {
-          this.form.stkIoBillEntryList = this.stkIoBillEntryList;
-          if (this.form.id != null) {
-            updateTkInventory(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addTkInventory(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
+          // 新增退库校验逻辑（与出库逻辑保持一致）
+          for (const [index, entry] of this.stkIoBillEntryList.entries()) {
+            if (entry.materialId) {
+              try {
+                const res = await listCTKWarehouse({
+                  materialId: entry.materialId,
+                  warehouseId: this.form.warehouseId,
+                  billNo: 'TK',
+                  billStatus: 1
+                });
+                if (res && res.length > 0) {
+                  this.$modal.msgError(`第${index + 1}行耗材存在未审核退库单，请先审核后再退库`);
+                  return;
+                }
+              } catch (error) {
+                console.error("校验请求失败:", error);
+              }
+            }
           }
+
+          this.form.stkIoBillEntryList = this.stkIoBillEntryList;
+          // if (this.form.id != null) {
+          //   updateTkInventory(this.form).then(response => {
+          //     this.$modal.msgSuccess("修改成功");
+          //     this.open = false;
+          //     this.getList();
+          //   });
+          // } else {
+          //   addTkInventory(this.form).then(response => {
+          //     this.$modal.msgSuccess("新增成功");
+          //     this.open = false;
+          //     this.getList();
+          //   });
+          // }
         }
       });
     },
