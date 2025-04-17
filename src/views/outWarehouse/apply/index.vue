@@ -675,19 +675,19 @@ export default {
           }
 
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
-          // if (this.form.id != null) {
-          //   updateOutWarehouse(this.form).then(response => {
-          //     this.$modal.msgSuccess("修改成功");
-          //     this.open = false;
-          //     this.getList();
-          //   });
-          // } else {
-          //   addOutWarehouse(this.form).then(response => {
-          //     this.$modal.msgSuccess("新增成功");
-          //     this.open = false;
-          //     this.getList();
-          //   });
-          // }
+          if (this.form.id != null) {
+            updateOutWarehouse(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addOutWarehouse(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
         }
       });
     },
