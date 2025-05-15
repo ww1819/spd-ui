@@ -61,7 +61,7 @@
 
     </el-form>
 
-    <el-table v-loading="loading" :data="warehouseList"
+    <el-table v-loading="loading" :data="warehouseList" height="calc(100vh - 38vh)"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange">
       <el-table-column type="index" label="序号" width="80">
@@ -232,8 +232,9 @@ export default {
     getList() {
       this.loading = true;
       listRTHWarehouse(this.queryParams).then(response => {
-        this.warehouseList = response;
-        this.total = 10;
+        console.log(response);
+        this.warehouseList = response.rows;  // 修改这里，使用response.rows获取数据
+        this.total = response.total;         // 修改这里，使用response.total获取总条数
         this.loading = false;
       });
     },
