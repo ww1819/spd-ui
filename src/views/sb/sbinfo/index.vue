@@ -459,6 +459,7 @@
   </template>
 
   <script>
+  import {getSbLabelInfo,getSbinfo} from "@/api/sb/sbinfo";
   export default {
     data() {
       return {
@@ -603,8 +604,12 @@
       handleSearch() {
         console.log('查询');
       },
-      handlePrint() {
+      handlePrint(data) {
         console.log('打印');
+        console.log('data.code',data.code);
+        // 这里可以添加打印逻辑
+        var lableInfo = getSbLabelInfo(data.code);
+
       },
       handleSave() {
         console.log('保存表单数据:', this.form);
