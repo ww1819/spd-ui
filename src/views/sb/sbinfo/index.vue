@@ -4,7 +4,7 @@
       <div class="sidebar">
         <el-tree :data="treeData" :props="treeProps" default-expand-all @node-click="handleNodeClick"></el-tree>
       </div>
-  
+
       <!-- 右侧内容区域 -->
       <div class="content">
         <!-- 操作按钮 -->
@@ -14,7 +14,7 @@
           <el-button type="danger" icon="el-icon-delete" @click="handleDelete">删除</el-button>
           <el-button icon="el-icon-search" @click="handleSearch">查询</el-button>
         </div>
-  
+
         <!-- 数据表格 -->
         <div class="data-table">
           <div class="table-header">数据列表双击查看详细信息</div>
@@ -26,6 +26,13 @@
             <el-table-column prop="supplier" label="设备供应商"></el-table-column>
             <el-table-column prop="value" label="设备净值"></el-table-column>
             <el-table-column prop="unit" label="设备单位"></el-table-column>
+            <el-table-column label="操作" width="150">
+              <template slot-scope="scope">
+                <el-button size="mini" type="text" @click="handleEdit(scope.row)">编辑</el-button>
+                <el-button size="mini" type="text" @click="handleDelete(scope.row)">删除</el-button>
+                <el-button size="mini" type="text" @click="handlePrint(scope.row)">打印</el-button>
+              </template>
+            </el-table-column>
           </el-table>
           <div class="pagination">
             <el-pagination
@@ -37,10 +44,10 @@
           <div class="total-amount">总金额: 201000</div>
         </div>
       </div>
-  
+
       <!-- 修改后的新增对话框 -->
-      <el-dialog 
-        :visible.sync="addDialogVisible" 
+      <el-dialog
+        :visible.sync="addDialogVisible"
         title="新增设备信息"
         width="70%">
         <el-tabs v-model="activeTab">
@@ -84,7 +91,7 @@
                     </el-select>
                     </el-form-item>
                 </el-col>
-                
+
                 <!-- 第二列 -->
                 <el-col :span="8">
                     <el-form-item label="财务编号：" prop="financialCode">
@@ -115,7 +122,7 @@
                     <el-input v-model="form.serialNumber"></el-input>
                     </el-form-item>
                 </el-col>
-                
+
                 <!-- 第三列 -->
                 <el-col :span="8">
                     <el-form-item label="资产负责人：" prop="assetManager">
@@ -182,7 +189,7 @@
                     <el-input-number v-model="form.invoiceAmount" style="width:100%"></el-input-number>
                     </el-form-item>
                 </el-col>
-                
+
                 <el-col :span="8">
                     <el-form-item label="附资产标志：" prop="attachedAssetFlag">
                     <el-select v-model="form.attachedAssetFlag" style="width:100%">
@@ -218,7 +225,7 @@
                     </el-checkbox-group>
                     </el-form-item>
                 </el-col>
-                
+
                 <el-col :span="8">
                     <el-form-item label="效益分析：" prop="benefitAnalysis">
                     <el-select v-model="form.benefitAnalysis" style="width:100%">
@@ -255,7 +262,7 @@
                     <el-date-picker v-model="form.createTime" type="datetime" style="width:100%"></el-date-picker>
                     </el-form-item>
                 </el-col>
-                
+
                 <el-col :span="8">
                     <el-form-item label="最后修改人：" prop="modifier">
                     <el-input v-model="form.modifier"></el-input>
@@ -264,7 +271,7 @@
                     <el-date-picker v-model="form.modifyTime" type="datetime" style="width:100%"></el-date-picker>
                     </el-form-item>
                 </el-col>
-                
+
                 <el-col :span="8">
                     <el-form-item label="档案使用情况：" prop="archiveUsage">
                     <el-select v-model="form.archiveUsage" style="width:100%">
@@ -291,13 +298,13 @@
                     </el-select>
                     </el-form-item>
                 </el-col>
-                
+
                 <el-col :span="8">
                     <el-form-item label="楼宇：" prop="building">
                     <el-input v-model="form.building"></el-input>
                     </el-form-item>
                 </el-col>
-                
+
                 <el-col :span="8">
                     <el-form-item label="楼层：" prop="floor">
                     <el-input v-model="form.floor"></el-input>
@@ -338,7 +345,7 @@
                     <el-date-picker v-model="form.reviewTime" type="datetime" style="width:100%"></el-date-picker>
                     </el-form-item>
                 </el-col>
-                
+
                 <el-col :span="12">
                     <el-form-item label="保修到期：" prop="warrantyExpireDate">
                     <el-date-picker v-model="form.warrantyExpireDate" type="date" style="width:100%"></el-date-picker>
@@ -379,7 +386,7 @@
                     <el-input v-model="form.supplierPhone"></el-input>
                   </el-form-item>
                 </el-col>
-                
+
                 <el-col :span="12">
                   <el-form-item label="维修公司：" prop="maintenanceCompany">
                     <el-input v-model="form.maintenanceCompany"></el-input>
@@ -392,7 +399,7 @@
                   </el-form-item>
                 </el-col>
               </el-row>
-              
+
               <el-row :gutter="20">
                 <el-col :span="12">
                   <el-form-item label="生产厂商：" prop="manufacturer">
@@ -424,7 +431,7 @@
                     <el-input-number v-model="form.singleBudget" style="width:100%"></el-input-number>
                   </el-form-item>
                 </el-col>
-                
+
                 <el-col :span="12">
                   <el-form-item label="立项依据：" prop="projectBasis">
                     <el-input v-model="form.projectBasis" type="textarea"></el-input>
@@ -450,8 +457,9 @@
       </el-dialog>
 </div>
   </template>
-  
+
   <script>
+  import {getSbLabelInfo,getSbinfo} from "@/api/sb/sbinfo";
   export default {
     data() {
       return {
@@ -506,15 +514,6 @@
       building: '',
       floor: '',
       quantity: 0,
-      contractNumber: '',
-      contractDate: '',
-      contractAmount: '',
-      manufacturerName: '',
-      manufacturerAddress: '',
-      manufacturerContact: '',
-      biddingNumber: '',
-      biddingDate: '',
-      biddingAmount: '',
       contractName: '',
       contractPrice: 0,
       signDate: '',
@@ -532,9 +531,6 @@
       contractNumber: '',
       contractDate: '',
       contractAmount: '',
-      manufacturerName: '',
-      manufacturerAddress: '',
-      manufacturerContact: '',
       biddingNumber: '',
       biddingDate: '',
       biddingAmount: '',
@@ -608,6 +604,13 @@
       handleSearch() {
         console.log('查询');
       },
+      handlePrint(data) {
+        console.log('打印');
+        console.log('data.code',data.code);
+        // 这里可以添加打印逻辑
+        var lableInfo = getSbLabelInfo(data.code);
+
+      },
       handleSave() {
         console.log('保存表单数据:', this.form);
         this.addDialogVisible = false;
@@ -637,53 +640,53 @@
     }
   };
   </script>
-  
+
   <style scoped>
   .equipment-management {
     display: flex;
     height: 91vh;
   }
-  
+
   .sidebar {
     width: 250px;
     background-color: #f5f7fa;
     border-right: 1px solid #e4e7ed;
   }
-  
+
   .content {
     flex: 1;
     padding: 20px;
   }
-  
+
   .operation-buttons {
     margin-bottom: 15px;
   }
-  
+
   .data-table {
     background-color: #fff;
     border-radius: 5px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     padding: 15px;
   }
-  
+
   .table-header {
     font-weight: bold;
     margin-bottom: 10px;
     padding-bottom: 10px;
     border-bottom: 1px solid #e4e7ed;
   }
-  
+
   .pagination {
     margin-top: 15px;
     text-align: right;
   }
-  
+
   .total-amount {
     margin-top: 15px;
     text-align: right;
     font-weight: bold;
   }
-  
+
   /* 新增对话框样式 */
   .full-screen-dialog {
     position: fixed;
@@ -696,7 +699,7 @@
     display: flex;
     flex-direction: column;
   }
-  
+
   .dialog-header {
     display: flex;
     justify-content: space-between;
@@ -704,18 +707,18 @@
     padding: 15px;
     border-bottom: 1px solid #e4e7ed;
   }
-  
+
   .close-btn {
     font-size: 24px;
     cursor: pointer;
   }
-  
+
   .dialog-content {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
   }
-  
+
   .dialog-footer {
     padding: 15px;
     border-top: 1px solid #e4e7ed;
