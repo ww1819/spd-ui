@@ -118,7 +118,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="编号" align="center" prop="id" width="50"/>
       <el-table-column label="耗材编码" align="center" prop="code" width="80"/>
@@ -165,353 +165,357 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改耗材产品对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="1200px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="耗材编码" prop="code" label-width="100px">
-              <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入耗材编码" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="耗材名称" prop="name" label-width="100px">
-              <el-input v-model="form.name" @input="nameChange" placeholder="请输入耗材名称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="名称简码" prop="referredName" label-width="100px">
-              <el-input v-model="form.referredName" :disabled="true" placeholder="请输入名称简码" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="供应商" prop="supplierId">
-              <SelectSupplier v-model="form.supplierId" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+    <!-- 添加或修改耗材产品局部弹窗 -->
+    <div v-if="open" class="local-modal-mask">
+      <div class="local-modal-content">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
+        <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="耗材编码" prop="code" label-width="100px">
+                <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入耗材编码" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="耗材名称" prop="name" label-width="100px">
+                <el-input v-model="form.name" @input="nameChange" placeholder="请输入耗材名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="名称简码" prop="referredName" label-width="100px">
+                <el-input v-model="form.referredName" :disabled="true" placeholder="请输入名称简码" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="供应商" prop="supplierId">
+                <SelectSupplier v-model="form.supplierId" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="规格" prop="speci" label-width="100px">
-              <el-input v-model="form.speci" placeholder="请输入规格" />
-            </el-form-item>
-          </el-col>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="规格" prop="speci" label-width="100px">
+                <el-input v-model="form.speci" placeholder="请输入规格" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="型号" prop="model" label-width="100px">
-              <el-input v-model="form.model" placeholder="请输入型号" />
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label="型号" prop="model" label-width="100px">
+                <el-input v-model="form.model" placeholder="请输入型号" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="价格" prop="prince" label-width="100px">
-              <el-input v-model="form.prince" placeholder="请输入价格" />
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label="价格" prop="prince" label-width="100px">
+                <el-input v-model="form.prince" placeholder="请输入价格" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="通用名称" prop="useName" label-width="100px">
-              <el-input v-model="form.useName" placeholder="请输入通用名称" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+            <el-col :span="6">
+              <el-form-item label="通用名称" prop="useName" label-width="100px">
+                <el-input v-model="form.useName" placeholder="请输入通用名称" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="生产厂家" prop="factoryId" label-width="100px">
-              <SelectFactory v-model="form.factoryId"/>
-            </el-form-item>
-          </el-col>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="生产厂家" prop="factoryId" label-width="100px">
+                <SelectFactory v-model="form.factoryId"/>
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="库房分类" prop="storeroomId" label-width="100px">
-              <SelectWarehouseCategory v-model="form.storeroomId"/>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="财务分类" prop="financeCategoryId" label-width="100px">
-              <SelectFinanceCategory v-model="form.financeCategoryId"/>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="单位" prop="unitId" label-width="100px">
-              <SelectUnit v-model="form.unitId" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+            <el-col :span="6">
+              <el-form-item label="库房分类" prop="storeroomId" label-width="100px">
+                <SelectWarehouseCategory v-model="form.storeroomId"/>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="财务分类" prop="financeCategoryId" label-width="100px">
+                <SelectFinanceCategory v-model="form.financeCategoryId"/>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="单位" prop="unitId" label-width="100px">
+                <SelectUnit v-model="form.unitId" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="注册证名称" prop="registerName" label-width="100px">
-              <el-input v-model="form.registerName" placeholder="请输入注册证名称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="注册证件号" prop="registerNo" label-width="100px">
-              <el-input v-model="form.registerNo" placeholder="请输入注册证件号" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="医保名称" prop="medicalName" label-width="100px">
-              <el-input v-model="form.medicalName" placeholder="请输入医保名称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="医保编码" prop="medicalNo" label-width="100px">
-              <el-input v-model="form.medicalNo" placeholder="请输入医保编码" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="注册证名称" prop="registerName" label-width="100px">
+                <el-input v-model="form.registerName" placeholder="请输入注册证名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="注册证件号" prop="registerNo" label-width="100px">
+                <el-input v-model="form.registerNo" placeholder="请输入注册证件号" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="医保名称" prop="medicalName" label-width="100px">
+                <el-input v-model="form.medicalName" placeholder="请输入医保名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="医保编码" prop="medicalNo" label-width="100px">
+                <el-input v-model="form.medicalNo" placeholder="请输入医保编码" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="有效期" prop="periodDate" label-width="100px">
-              <el-date-picker clearable
-                              v-model="form.periodDate"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              style="width: 150px"
-                              placeholder="请选择有效期">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="有效期" prop="periodDate" label-width="100px">
+                <el-date-picker clearable
+                                v-model="form.periodDate"
+                                type="date"
+                                value-format="yyyy-MM-dd"
+                                style="width: 150px"
+                                placeholder="请选择有效期">
+                </el-date-picker>
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="招标类别" prop="successfulType" label-width="100px">
-              <el-input v-model="form.successfulType" placeholder="请输入招标类别" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="中标号" prop="successfulNo" label-width="100px">
-              <el-input v-model="form.successfulNo" placeholder="请输入中标号" />
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label="招标类别" prop="successfulType" label-width="100px">
+                <el-input v-model="form.successfulType" placeholder="请输入招标类别" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="中标号" prop="successfulNo" label-width="100px">
+                <el-input v-model="form.successfulNo" placeholder="请输入中标号" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="中标价格" prop="successfulPrice" label-width="100px">
-              <el-input v-model="form.successfulPrice" placeholder="请输入中标价格" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+            <el-col :span="6">
+              <el-form-item label="中标价格" prop="successfulPrice" label-width="100px">
+                <el-input v-model="form.successfulPrice" placeholder="请输入中标价格" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="销售价" prop="salePrice" label-width="100px">
-              <el-input v-model="form.salePrice" placeholder="请输入销售价" />
-            </el-form-item>
-          </el-col>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="销售价" prop="salePrice" label-width="100px">
+                <el-input v-model="form.salePrice" placeholder="请输入销售价" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="包装规格" prop="packageSpeci" label-width="100px">
-              <el-input v-model="form.packageSpeci" placeholder="请输入包装规格" />
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label="包装规格" prop="packageSpeci" label-width="100px">
+                <el-input v-model="form.packageSpeci" placeholder="请输入包装规格" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label=" 产地" prop="producer" label-width="100px">
-              <el-input v-model="form.producer" placeholder="请输入 产地" />
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label=" 产地" prop="producer" label-width="100px">
+                <el-input v-model="form.producer" placeholder="请输入 产地" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label=" 耗材级别" label-width="100px">
-              <el-select v-model="form.materialLevel" placeholder="请选择耗材级别">
-                <el-option
-                  v-for="dict in dict.type.material_level_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            <el-col :span="6">
+              <el-form-item label=" 耗材级别" label-width="100px">
+                <el-select v-model="form.materialLevel" placeholder="请选择耗材级别">
+                  <el-option
+                    v-for="dict in dict.type.material_level_status"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label=" 注册证级别" label-width="100px">
-              <el-select v-model="form.registerLevel" placeholder="请选择注册证级别">
-                <el-option
-                  v-for="dict in dict.type.register_level_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label=" 风险级别" label-width="100px">
-              <el-select v-model="form.riskLevel" placeholder="请选择风险级别">
-                <el-option
-                  v-for="dict in dict.type.risk_level_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label=" 注册证级别" label-width="100px">
+                <el-select v-model="form.registerLevel" placeholder="请选择注册证级别">
+                  <el-option
+                    v-for="dict in dict.type.register_level_status"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label=" 风险级别" label-width="100px">
+                <el-select v-model="form.riskLevel" placeholder="请选择风险级别">
+                  <el-option
+                    v-for="dict in dict.type.risk_level_status"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label=" 急救类型" prop="firstaidLevel" label-width="100px">
-              <el-select v-model="form.firstaidLevel" placeholder="请选择急救类型">
-                <el-option
-                  v-for="dict in dict.type.firstaid_level_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label=" 急救类型" prop="firstaidLevel" label-width="100px">
+                <el-select v-model="form.firstaidLevel" placeholder="请选择急救类型">
+                  <el-option
+                    v-for="dict in dict.type.firstaid_level_status"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label=" 医用级别" prop="doctorLevel" label-width="100px">
-              <el-select v-model="form.doctorLevel" placeholder="请选择医用级别">
-                <el-option
-                  v-for="dict in dict.type.doctor_level_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            <el-col :span="6">
+              <el-form-item label=" 医用级别" prop="doctorLevel" label-width="100px">
+                <el-select v-model="form.doctorLevel" placeholder="请选择医用级别">
+                  <el-option
+                    v-for="dict in dict.type.doctor_level_status"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="品牌" prop="brand" label-width="100px">
-              <el-input v-model="form.brand" placeholder="请输入品牌" />
-            </el-form-item>
-          </el-col>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="品牌" prop="brand" label-width="100px">
+                <el-input v-model="form.brand" placeholder="请输入品牌" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="用途" prop="useto" label-width="100px">
-              <el-input v-model="form.useto" placeholder="请输入用途" />
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label="用途" prop="useto" label-width="100px">
+                <el-input v-model="form.useto" placeholder="请输入用途" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="材质" prop="quality" label-width="100px">
-              <el-input v-model="form.quality" placeholder="请输入材质" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="功能" prop="function" label-width="100px">
-              <el-input v-model="form.function" placeholder="请输入功能" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+            <el-col :span="6">
+              <el-form-item label="材质" prop="quality" label-width="100px">
+                <el-input v-model="form.quality" placeholder="请输入材质" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="功能" prop="function" label-width="100px">
+                <el-input v-model="form.function" placeholder="请输入功能" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="储存方式" prop="isWay" label-width="100px">
-              <el-select v-model="form.isWay" placeholder="请选择储存方式">
-                <el-option
-                  v-for="dict in dict.type.way_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="储存方式" prop="isWay" label-width="100px">
+                <el-select v-model="form.isWay" placeholder="请选择储存方式">
+                  <el-option
+                    v-for="dict in dict.type.way_status"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="UDI码" prop="udiNo" label-width="100px">
-              <el-input v-model="form.udiNo" placeholder="请输入UDI码" />
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label="UDI码" prop="udiNo" label-width="100px">
+                <el-input v-model="form.udiNo" placeholder="请输入UDI码" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="许可证编号" prop="permitNo" label-width="100px">
-              <el-input v-model="form.permitNo" placeholder="请输入许可证编号" />
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label="许可证编号" prop="permitNo" label-width="100px">
+                <el-input v-model="form.permitNo" placeholder="请输入许可证编号" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="国家编码" prop="countryNo" label-width="100px">
-              <el-input v-model="form.countryNo" placeholder="请输入国家编码" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+            <el-col :span="6">
+              <el-form-item label="国家编码" prop="countryNo" label-width="100px">
+                <el-input v-model="form.countryNo" placeholder="请输入国家编码" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="国家医保名称" prop="countryName" label-width="100px">
-              <el-input v-model="form.countryName" placeholder="请输入国家医保名称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="商品说明" prop="description" label-width="100px">
-              <el-input v-model="form.description" placeholder="请输入商品说明" />
-            </el-form-item>
-          </el-col>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="国家医保名称" prop="countryName" label-width="100px">
+                <el-input v-model="form.countryName" placeholder="请输入国家医保名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="商品说明" prop="description" label-width="100px">
+                <el-input v-model="form.description" placeholder="请输入商品说明" />
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="使用状态" prop="isUse" label-width="100px">
-              <el-select v-model="form.isUse" placeholder="请选择使用状态">
-                <el-option
-                  v-for="dict in dict.type.is_use_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label="使用状态" prop="isUse" label-width="100px">
+                <el-select v-model="form.isUse" placeholder="请选择使用状态">
+                  <el-option
+                    v-for="dict in dict.type.is_use_status"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="带量采购" prop="isProcure" label-width="100px">
-              <el-select v-model="form.isProcure" placeholder="请选择带量采购">
-                <el-option
-                  v-for="dict in dict.type.is_yes_no"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            <el-col :span="6">
+              <el-form-item label="带量采购" prop="isProcure" label-width="100px">
+                <el-select v-model="form.isProcure" placeholder="请选择带量采购">
+                  <el-option
+                    v-for="dict in dict.type.is_yes_no"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="重点监测" prop="isMonitor" label-width="100px">
-              <el-select v-model="form.isMonitor" placeholder="请选择重点监测">
-                <el-option
-                  v-for="dict in dict.type.is_yes_no"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="重点监测" prop="isMonitor" label-width="100px">
+                <el-select v-model="form.isMonitor" placeholder="请选择重点监测">
+                  <el-option
+                    v-for="dict in dict.type.is_yes_no"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="是否高值" prop="isGz" label-width="100px">
-              <el-select v-model="form.isGz" placeholder="请选择是否高值">
-                <el-option
-                  v-for="dict in dict.type.is_yes_no"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            <el-col :span="6">
+              <el-form-item label="是否高值" prop="isGz" label-width="100px">
+                <el-select v-model="form.isGz" placeholder="请选择是否高值">
+                  <el-option
+                    v-for="dict in dict.type.is_yes_no"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        </el-form>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </div>
-    </el-dialog>
+    </div>
+
     <!-- 耗材导入对话框 -->
     <el-dialog :title="upload.title" :visible.sync="upload.open" width="400px" append-to-body>
       <el-upload
@@ -798,3 +802,25 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.local-modal-mask {
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.local-modal-content {
+  background: #fff;
+  border-radius: 6px;
+  min-width: 600px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+</style>

@@ -79,16 +79,35 @@
 	.el-table__header-wrapper, .el-table__fixed-header-wrapper {
 		th {
 			word-break: break-word;
-			background-color: #f8f8f9;
-			color: #515a6e;
-			height: 40px;
-			font-size: 13px;
+			background-color: #e8f3ff !important;
+			color: #333333 !important;
+			height: 45px;
+			font-size: 14px;
+			font-weight: 700;
+			border-bottom: 2px solid #d7e8ff !important;
 		}
 	}
 	.el-table__body-wrapper {
+		td {
+			padding: 12px 0;
+			color: #606266;
+			font-size: 13px;
+			background-color: #ffffff;
+			border-bottom: 1px solid #e4e7ed;
+		}
+		tr:hover > td {
+			background-color: #f0f9ff;
+		}
 		.el-button [class*="el-icon-"] + span {
 			margin-left: 1px;
 		}
+	}
+	&::before {
+		background-color: #e4e7ed;
+	}
+	.el-table__fixed-right::before,
+	.el-table__fixed::before {
+		background-color: #e4e7ed;
 	}
 }
 
