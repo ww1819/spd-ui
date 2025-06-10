@@ -1,7 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
       <el-row :gutter="20">
         <el-col :span="6">
           <el-form-item label="仓库编码" prop="code">
@@ -13,7 +12,6 @@
             />
           </el-form-item>
         </el-col>
-
         <el-col :span="6">
           <el-form-item label="仓库名称" prop="name">
             <el-input
@@ -24,7 +22,6 @@
             />
           </el-form-item>
         </el-col>
-
         <el-col :span="6">
           <el-form-item>
             <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -80,20 +77,25 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="warehouseList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编号" align="center" prop="id" />
-      <el-table-column label="仓库编码" align="center" prop="code" />
-      <el-table-column label="仓库名称" align="center" prop="name" />
-      <el-table-column label="负责人" align="center" prop="warehousePerson" />
-      <el-table-column label="电话" align="center" prop="warehousePhone" />
-      <el-table-column label="状态" align="center" prop="warehouseStatus" >
+      <el-table-column label="编号" align="center" prop="id" width="50"/>
+      <el-table-column label="仓库编码" align="center" prop="code" width="120"/>
+      <el-table-column label="仓库名称" align="center" prop="name" width="180"/>
+      <el-table-column label="负责人" align="center" prop="warehousePerson" width="100"/>
+      <el-table-column label="电话" align="center" prop="warehousePhone" width="120"/>
+      <el-table-column label="状态" align="center" prop="warehouseStatus" width="80">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.is_use_status" :value="scope.row.warehouseStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="创建日期" align="center" prop="createTime" width="100">
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="备注" align="center" prop="remark" width="180"/>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -122,61 +124,59 @@
     />
 
     <!-- 添加或修改仓库对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="1200px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="仓库编码" prop="code">
-              <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入仓库编码" />
-            </el-form-item>
-          </el-col>
+    <div v-if="open" class="local-modal-mask">
+      <div class="local-modal-content">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
+        <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+          <el-row :gutter="20">
+            <el-col :span="6">
+              <el-form-item label="仓库编码" prop="code">
+                <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入仓库编码" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="仓库名称" prop="name">
+                <el-input v-model="form.name" placeholder="请输入仓库名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="负责人" prop="warehousePerson">
+                <el-input v-model="form.warehousePerson" placeholder="请输入负责人" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="电话" prop="warehousePhone">
+                <el-input v-model="form.warehousePhone" placeholder="请输入电话" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-          <el-col :span="6">
-            <el-form-item label="仓库名称" prop="name">
-              <el-input v-model="form.name" placeholder="请输入仓库名称" />
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="6">
-            <el-form-item label="负责人" prop="warehousePerson">
-              <el-input v-model="form.warehousePerson" placeholder="请输入负责人" />
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="6">
-            <el-form-item label="使用状态" prop="warehouseStatus">
-              <el-select v-model="form.warehouseStatus" placeholder="请选择使用状态">
-                <el-option
-                  v-for="dict in dict.type.is_use_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="电话" prop="warehousePhone">
-              <el-input v-model="form.warehousePhone" placeholder="请输入电话" />
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="6">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+          <el-row :gutter="20">
+            <el-col :span="6">
+              <el-form-item label="状态" prop="warehouseStatus">
+                <el-select v-model="form.warehouseStatus" placeholder="请选择状态" style="width: 100%">
+                  <el-option
+                    v-for="dict in dict.type.is_use_status"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </div>
-    </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -337,3 +337,34 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.local-modal-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.local-modal-content {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 6px;
+  min-width: 600px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.dialog-footer {
+  text-align: right;
+  margin-top: 16px;
+}
+</style>

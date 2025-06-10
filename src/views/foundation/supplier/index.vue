@@ -81,18 +81,14 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="supplierList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="supplierList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编号" align="center" prop="id" width="50"/>
       <el-table-column label="供应商编码" align="center" prop="code" />
       <el-table-column label="供应商名称" align="center" prop="name" />
-      <el-table-column label="银行账号" align="center" prop="bankAccount" />
-      <el-table-column label="状态" align="center" prop="supplierStatus" >
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.is_use_status" :value="scope.row.supplierStatus"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" />
+      <el-table-column label="公司简称" align="center" prop="companyReferred" />
+      <el-table-column label="法人" align="center" prop="legalPerson" />
+      <el-table-column label="联系人" align="center" prop="contacts" />
+      <el-table-column label="联系电话" align="center" prop="contactsPhone" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
@@ -122,156 +118,121 @@
     />
 
     <!-- 添加或修改供应商对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="1200px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="供应商编码" prop="code">
-              <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入供应商编码" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="供应商名称" prop="name">
-              <el-input v-model="form.name" @input="supplierNameChange" placeholder="请输入供应商名称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="名称简码" prop="referredCode">
-              <el-input v-model="form.referredCode" :disabled="true" placeholder="请输入名称简码" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="资质有效期" prop="validTime">
-              <el-date-picker clearable
-                              v-model="form.validTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              style="width: 150px"
-                              placeholder="请选择资质有效期">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-        </el-row>
+    <div v-if="open" class="local-modal-mask">
+      <div class="local-modal-content">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
+        <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="供应商编码" prop="code">
+                <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入供应商编码" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="供应商名称" prop="name">
+                <el-input v-model="form.name" placeholder="请输入供应商名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="公司简称" prop="companyReferred">
+                <el-input v-model="form.companyReferred" placeholder="请输入公司简称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="法人" prop="legalPerson">
+                <el-input v-model="form.legalPerson" placeholder="请输入法人" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="公司简称" prop="companyReferred">
-              <el-input v-model="form.companyReferred" placeholder="请输入公司简称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="法人" prop="legalPerson">
-              <el-input v-model="form.legalPerson" placeholder="请输入法人" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="证件号" prop="certNumber">
-              <el-input v-model="form.certNumber" placeholder="请输入证件号" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="地址" prop="address">
-              <el-input v-model="form.address" placeholder="请输入地址" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="证件号" prop="certNumber">
+                <el-input v-model="form.certNumber" placeholder="请输入证件号" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="地址" prop="address">
+                <el-input v-model="form.address" placeholder="请输入地址" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="注册资金" prop="regMoney">
+                <el-input v-model="form.regMoney" placeholder="请输入注册资金" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="银行账号" prop="bankAccount">
+                <el-input v-model="form.bankAccount" placeholder="请输入银行账号" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="注册资金" prop="regMoney">
-              <el-input v-model="form.regMoney" placeholder="请输入注册资金" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="银行账号" prop="bankAccount">
-              <el-input v-model="form.bankAccount" placeholder="请输入银行账号" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="联系人" prop="contacts">
-              <el-input v-model="form.contacts" placeholder="请输入联系人" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="联系电话" prop="contactsPhone">
-              <el-input v-model="form.contactsPhone" placeholder="请输入联系电话" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="联系人" prop="contacts">
+                <el-input v-model="form.contacts" placeholder="请输入联系人" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="联系电话" prop="contactsPhone">
+                <el-input v-model="form.contactsPhone" placeholder="请输入联系电话" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="网址" prop="website">
+                <el-input v-model="form.website" placeholder="请输入网址" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="邮编" prop="zipCode">
+                <el-input v-model="form.zipCode" placeholder="请输入邮编" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="网址" prop="website">
-              <el-input v-model="form.website" placeholder="请输入网址" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="邮编" prop="zipCode">
-              <el-input v-model="form.zipCode" placeholder="请输入邮编" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="邮箱" prop="email">
-              <el-input v-model="form.email" placeholder="请输入邮箱" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="传真" prop="fax">
-              <el-input v-model="form.fax" placeholder="请输入传真" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="邮箱" prop="email">
+                <el-input v-model="form.email" placeholder="请输入邮箱" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="传真" prop="fax">
+                <el-input v-model="form.fax" placeholder="请输入传真" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="公司负责人" prop="companyPerson">
+                <el-input v-model="form.companyPerson" placeholder="请输入公司负责人" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="税号" prop="taxNumber">
+                <el-input v-model="form.taxNumber" placeholder="请输入税号" />
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="公司负责人" prop="companyPerson">
-              <el-input v-model="form.companyPerson" placeholder="请输入公司负责人" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="税号" prop="taxNumber">
-              <el-input v-model="form.taxNumber" placeholder="请输入税号" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="电话" prop="phone">
-              <el-input v-model="form.phone" placeholder="请输入电话" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="经营范围" prop="supplierRange">
-              <el-input v-model="form.supplierRange" placeholder="请输入经营范围" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row>
-          <el-col :span="6">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="请输入备注" />
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="6">
-            <el-form-item label="使用状态" prop="supplierStatus" label-width="100px">
-              <el-select v-model="form.supplierStatus" placeholder="请选择使用状态">
-                <el-option
-                  v-for="dict in dict.type.is_use_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="电话" prop="phone">
+                <el-input v-model="form.phone" placeholder="请输入电话" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="经营范围" prop="supplierRange">
+                <el-input v-model="form.supplierRange" placeholder="请输入经营范围" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </div>
-    </el-dialog>
+    </div>
   </div>
 </template>
 

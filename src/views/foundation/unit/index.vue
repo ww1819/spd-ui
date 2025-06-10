@@ -1,26 +1,34 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="单位编码" prop="unitCode">
-        <el-input
-          v-model="queryParams.unitCode"
-          placeholder="请输入单位编码"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="单位名称" prop="unitName">
-        <el-input
-          v-model="queryParams.unitName"
-          placeholder="请输入单位名称"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-      </el-form-item>
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
+      <el-row :gutter="20">
+        <el-col :span="6">
+          <el-form-item label="单位编码" prop="unitCode">
+            <el-input
+              v-model="queryParams.unitCode"
+              placeholder="请输入单位编码"
+              clearable
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="单位名称" prop="unitName">
+            <el-input
+              v-model="queryParams.unitName"
+              placeholder="请输入单位名称"
+              clearable
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item>
+            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
@@ -47,10 +55,17 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="unitList" @selection-change="handleSelectionChange">
-      <el-table-column label="单位编码" align="center" prop="unitCode" />
-      <el-table-column label="单位名称" align="center" prop="unitName" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+    <el-table v-loading="loading" :data="unitList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="编号" align="center" prop="unitId" width="50"/>
+      <el-table-column label="单位编码" align="center" prop="unitCode" width="120"/>
+      <el-table-column label="单位名称" align="center" prop="unitName" width="180"/>
+      <el-table-column label="创建日期" align="center" prop="createTime" width="100">
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -79,20 +94,29 @@
     />
 
     <!-- 添加或修改单位明细对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="单位编码" prop="unitCode">
-          <el-input v-model="form.unitCode" placeholder="请输入单位编码" />
-        </el-form-item>
-        <el-form-item label="单位名称" prop="unitName">
-          <el-input v-model="form.unitName" placeholder="请输入单位名称" />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+    <div v-if="open" class="local-modal-mask">
+      <div class="local-modal-content">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
+        <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+          <el-row :gutter="20">
+            <el-col :span="6">
+              <el-form-item label="单位编码" prop="unitCode">
+                <el-input v-model="form.unitCode" placeholder="请输入单位编码" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="单位名称" prop="unitName">
+                <el-input v-model="form.unitName" placeholder="请输入单位名称" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </div>
-    </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -244,3 +268,34 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.local-modal-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.local-modal-content {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 6px;
+  min-width: 600px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.dialog-footer {
+  text-align: right;
+  margin-top: 16px;
+}
+</style>

@@ -161,6 +161,99 @@ export const dynamicRoutes = [
         meta: { title: '修改生成配置', activeMenu: '/tool/gen' }
       }
     ]
+  },
+  {
+    path: '/equipment',
+    component: Layout,
+    redirect: 'noRedirect',
+    name: 'Equipment',
+    meta: { title: '设备管理', icon: 'equipment' },
+    children: [
+      {
+        path: 'equipmentInfo',
+        component: () => import('@/views/equipment/equipmentInfo/index'),
+        name: 'EquipmentInfo',
+        meta: { title: '设备信息', icon: 'list' }
+      },
+      {
+        path: 'equipmentCategory',
+        component: () => import('@/views/equipment/equipmentCategory/index'),
+        name: 'EquipmentCategory',
+        meta: { title: '设备分类', icon: 'tree' }
+      },
+      {
+        path: 'equipmentFile',
+        component: () => import('@/views/equipment/equipmentFile/index'),
+        name: 'EquipmentFile',
+        meta: { title: '设备档案', icon: 'file' }
+      },
+      {
+        path: 'equipmentInspect',
+        component: () => import('@/views/equipment/equipmentInspect/index'),
+        name: 'EquipmentInspect',
+        meta: { title: '设备巡检', icon: 'eye' }
+      },
+      {
+        path: 'equipmentRepair',
+        component: () => import('@/views/equipment/equipmentRepair/index'),
+        name: 'EquipmentRepair',
+        meta: { title: '设备维修', icon: 'tool' }
+      },
+      {
+        path: 'equipmentMaintain',
+        component: () => import('@/views/equipment/equipmentMaintain/index'),
+        name: 'EquipmentMaintain',
+        meta: { title: '设备保养', icon: 'maintain' }
+      },
+      {
+        path: 'equipmentBorrow',
+        component: () => import('@/views/equipment/equipmentBorrow/index'),
+        name: 'EquipmentBorrow',
+        meta: { title: '设备借用', icon: 'borrow' }
+      },
+      {
+        path: 'equipmentReturn',
+        component: () => import('@/views/equipment/equipmentReturn/index'),
+        name: 'EquipmentReturn',
+        meta: { title: '设备归还', icon: 'return' }
+      },
+      {
+        path: 'equipmentReceive',
+        component: () => import('@/views/equipment/equipmentReceive/index'),
+        name: 'EquipmentReceive',
+        meta: { title: '设备领用', icon: 'receive' }
+      },
+      {
+        path: 'equipmentStorage',
+        component: () => import('@/views/equipment/equipmentStorage/index'),
+        name: 'EquipmentStorage',
+        meta: { title: '设备入库', icon: 'storage' }
+      },
+      {
+        path: 'equipmentScrap',
+        component: () => import('@/views/equipment/equipmentScrap/index'),
+        name: 'EquipmentScrap',
+        meta: { title: '设备报废', icon: 'scrap' }
+      },
+      {
+        path: 'equipmentTransfer',
+        component: () => import('@/views/equipment/equipmentTransfer/index'),
+        name: 'EquipmentTransfer',
+        meta: { title: '设备调拨', icon: 'transfer' }
+      },
+      {
+        path: 'equipmentAllocate',
+        component: () => import('@/views/equipment/equipmentAllocate/index'),
+        name: 'EquipmentAllocate',
+        meta: { title: '设备分配', icon: 'allocate' }
+      },
+      {
+        path: 'equipmentCheck',
+        component: () => import('@/views/equipment/equipmentCheck/index'),
+        name: 'EquipmentCheck',
+        meta: { title: '设备盘点', icon: 'check' }
+      }
+    ]
   }
 ]
 

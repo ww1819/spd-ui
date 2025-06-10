@@ -1,0 +1,148 @@
+/* 全局表格样式 */
+.el-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  
+  th {
+    background-color: #F5F7FA !important;
+    color: #606266;
+    font-weight: 500;
+    height: 50px;
+    padding: 8px 0;
+    border-bottom: 1px solid #EBEEF5;
+  }
+  
+  td {
+    padding: 12px 0;
+    color: #606266;
+    border-bottom: 1px solid #EBEEF5;
+  }
+  
+  tr:hover > td {
+    background-color: #F5F7FA !important;
+    transition: all 0.3s;
+  }
+}
+
+/* 局部弹窗样式 */
+.local-modal-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.local-modal-content {
+  background: #fff;
+  border-radius: 6px;
+  min-width: 600px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 表单样式 */
+.el-form {
+  .el-form-item {
+    margin-bottom: 22px;
+    
+    .el-form-item__label {
+      font-weight: 500;
+      color: #606266;
+    }
+  }
+}
+
+/* 按钮样式 */
+.el-button {
+  &--text {
+    padding: 0 4px;
+    
+    &:hover {
+      color: #409EFF;
+    }
+  }
+}
+
+/* 分页样式 */
+.el-pagination {
+  padding: 20px 0;
+  text-align: right;
+  
+  .el-pagination__total,
+  .el-pagination__jump {
+    margin-right: 16px;
+  }
+  
+  .el-pagination__sizes {
+    margin-right: 16px;
+  }
+  
+  .btn-prev,
+  .btn-next {
+    background: #fff;
+    border: 1px solid #DCDFE6;
+    
+    &:hover {
+      color: #409EFF;
+      border-color: #409EFF;
+    }
+    
+    &.is-disabled {
+      background: #F5F7FA;
+      border-color: #E4E7ED;
+    }
+  }
+  
+  .el-pager li {
+    background: #fff;
+    border: 1px solid #DCDFE6;
+    margin: 0 4px;
+    
+    &:hover {
+      color: #409EFF;
+      border-color: #409EFF;
+    }
+    
+    &.active {
+      background: #409EFF;
+      color: #fff;
+      border-color: #409EFF;
+    }
+  }
+}
+
+/* 搜索区域样式 */
+.search-form {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  
+  .el-form-item {
+    margin-bottom: 18px;
+  }
+}
+
+/* 操作按钮区域样式 */
+.operation-area {
+  margin-bottom: 20px;
+  
+  .el-button {
+    margin-right: 10px;
+    
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+} 

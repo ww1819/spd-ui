@@ -81,7 +81,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="departList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="departList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="科室编码" align="center" prop="code" />
       <el-table-column label="科室名称" align="center" prop="name" />
@@ -114,20 +114,29 @@
     />
 
     <!-- 添加或修改科室对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="科室编码" prop="code">
-          <el-input v-model="form.code" placeholder="请输入科室编码" />
-        </el-form-item>
-        <el-form-item label="科室名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入科室名称" />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+    <div v-if="open" class="local-modal-mask">
+      <div class="local-modal-content">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
+        <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+          <el-row>
+            <el-col :span="12">
+              <el-form-item label="科室编码" prop="code">
+                <el-input v-model="form.code" placeholder="请输入科室编码" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="科室名称" prop="name">
+                <el-input v-model="form.name" placeholder="请输入科室名称" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
       </div>
-    </el-dialog>
+    </div>
   </div>
 </template>
 

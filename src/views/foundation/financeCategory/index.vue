@@ -101,13 +101,23 @@
         </el-row>
 
         <!-- 数据表格 -->
-        <el-table v-loading="loading" :data="financeCategoryList" @selection-change="handleSelectionChange">
+        <el-table v-loading="loading" :data="financeCategoryList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="财务分类编码" align="center" prop="financeCategoryCode" />
-          <el-table-column label="财务分类名称" align="center" prop="financeCategoryName" />
-          <el-table-column label="联系方式" align="center" prop="financeCategoryContact" />
-          <el-table-column label="详细地址" align="center" prop="financeCategoryAddress" />
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+          <el-table-column label="编号" align="center" prop="id" width="50"/>
+          <el-table-column label="财务类别编码" align="center" prop="code" width="120"/>
+          <el-table-column label="财务类别名称" align="center" prop="name" width="180"/>
+          <el-table-column label="财务类别简码" align="center" prop="referredCode" width="120"/>
+          <el-table-column label="使用状态" align="center" prop="isUse" width="100">
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.is_use_status" :value="scope.row.isUse"/>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建日期" align="center" prop="createTime" width="100">
+            <template slot-scope="scope">
+              <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
             <template slot-scope="scope">
               <el-button
                 size="mini"
@@ -137,26 +147,46 @@
         />
 
         <!-- 新增/修改弹窗 -->
-        <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
-          <el-form ref="form" :model="form" :rules="rules" label-width="150px">
-            <el-form-item label="财务分类编码" prop="financeCategoryCode">
-              <el-input v-model="form.financeCategoryCode" placeholder="请输入财务分类编码" />
-            </el-form-item>
-            <el-form-item label="财务分类名称" prop="financeCategoryName">
-              <el-input v-model="form.financeCategoryName" placeholder="请输入财务分类名称" />
-            </el-form-item>
-            <el-form-item label="联系方式" prop="financeCategoryContact">
-              <el-input v-model="form.financeCategoryContact" placeholder="请输入联系方式" />
-            </el-form-item>
-            <el-form-item label="详细地址" prop="financeCategoryAddress">
-              <el-input v-model="form.financeCategoryAddress" type="textarea" placeholder="请输入详细地址" />
-            </el-form-item>
-          </el-form>
-          <div slot="footer" class="dialog-footer">
-            <el-button type="primary" @click="submitForm">确 定</el-button>
-            <el-button @click="cancel">取 消</el-button>
+        <div v-if="open" class="local-modal-mask">
+          <div class="local-modal-content">
+            <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
+            <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+              <el-row :gutter="20">
+                <el-col :span="6">
+                  <el-form-item label="财务类别编码" prop="code">
+                    <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入财务类别编码" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="财务类别名称" prop="name">
+                    <el-input v-model="form.name" @input="nameChange" placeholder="请输入财务类别名称" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="财务类别简码" prop="referredCode">
+                    <el-input v-model="form.referredCode" :disabled="true" placeholder="请输入财务类别简码" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="使用状态" prop="isUse">
+                    <el-select v-model="form.isUse" placeholder="请选择使用状态" style="width: 100%">
+                      <el-option
+                        v-for="dict in dict.type.is_use_status"
+                        :key="dict.value"
+                        :label="dict.label"
+                        :value="dict.value"
+                      ></el-option>
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-form>
+            <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+              <el-button type="primary" @click="submitForm">确 定</el-button>
+              <el-button @click="cancel">取 消</el-button>
+            </div>
           </div>
-        </el-dialog>
+        </div>
       </el-col>
     </el-row>
   </div>
@@ -201,7 +231,8 @@ export default {
         financeCategoryName: [
           { required: true, message: "财务分类名称不能为空", trigger: "blur" }
         ]
-      }
+      },
+      isDisabled: false
     };
   },
   created() {
@@ -308,6 +339,9 @@ export default {
       this.download('foundation/financeCategory/export', {
         ...this.queryParams
       }, `financeCategory_${new Date().getTime()}.xlsx`);
+    },
+    nameChange() {
+      this.isDisabled = true;
     }
   }
 };
@@ -328,5 +362,31 @@ export default {
 .custom-tree-node i {
   margin-right: 5px;
   color: #409EFF;
+}
+.local-modal-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.local-modal-content {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 6px;
+  min-width: 600px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.dialog-footer {
+  text-align: right;
+  margin-top: 16px;
 }
 </style>
