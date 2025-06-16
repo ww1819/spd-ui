@@ -3,8 +3,9 @@ var wsocket;//websocket对象
 
 var numberPrintneed = 1;//需要打印数量
 var numberPrinted = 0;//已经打印的数量
-
-export function connection() { //连接打印服务
+var ip = "";//打印机IP地址
+var port = "";//打印机端口号
+export function connection() {//连接打印服务
   var wsserver = "ws://" + document.getElementById("serverIP").value + ":" + document.getElementById("serverPort").value + "/"
   if ('WebSocket' in window) {
     wsocket = new WebSocket(wsserver);
@@ -107,15 +108,15 @@ export function printstart() { //开始打印
 }
 
 //打印标签，即将JSON字符串发给打印服务处理
-export function printlabel() {
-  var jsonstring = document.getElementById("jsontextarea").value;
+export function printlabel(lableInfo) {
+  var jsonstring = lableInfo;
   var newjsonstring = jsonstring.replace('"Operate":"preview"', '"Operate":"print"');
   wsocket.send(newjsonstring);//发送JSON字符串给打印服务
 }
 
 //预览标签，即将JSON字符串发给打印服务处理，将print替换为preview
-export function previewlabel() {
-  var jsonstring = document.getElementById("jsontextarea").value;
+export function previewlabel(lableInfo) {
+  var jsonstring = lableInfo;
   var newjsonstring = jsonstring.replace('"Operate":"print"', '"Operate":"preview"');
   wsocket.send(newjsonstring);//发送JSON字符串给打印服务
 }

@@ -460,6 +460,7 @@
 
   <script>
   import {getSbLabelInfo,getSbinfo} from "@/api/sb/sbinfo";
+  import {printlabel} from "@/api/rfidPrinter/ZMPrintService";
   export default {
     data() {
       return {
@@ -609,7 +610,7 @@
         console.log('data.code',data.code);
         // 这里可以添加打印逻辑
         var lableInfo = getSbLabelInfo(data.code);
-
+        printlabel(lableInfo);
       },
       handleSave() {
         console.log('保存表单数据:', this.form);
