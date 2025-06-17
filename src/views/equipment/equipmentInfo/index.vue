@@ -573,6 +573,7 @@ export default {
         this.$modal.msgError("设备标签信息不存在或未找到");
         return;
       }
+      console("设备标签信息:", sbLabelInfo);
       this.$modal.msgInfo("正在连接打印机，请稍候...");
       connectprinter();
       printlabel(sbLabelInfo);
