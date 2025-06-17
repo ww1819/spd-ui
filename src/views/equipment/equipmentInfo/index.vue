@@ -139,6 +139,13 @@
           <el-button
             size="mini"
             type="text"
+            icon="el-icon-print"
+            @click="handlePrint(scope.row)"
+            v-hasPermi="['equipment:info:print']"
+          >打印</el-button>
+          <el-button
+            size="mini"
+            type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['equipment:info:edit']"
@@ -238,6 +245,8 @@
 
 <script>
 import { listEquipment, getEquipment, delEquipment, addEquipment, updateEquipment } from "@/api/equipment/equipmentInfo";
+import { connection,connectprinter,printstart,printlabel,previewlabel } from "@/api/rfidPrinter/ZMPrintService";
+import { getSbinfo,getSbLabelInfo } from "@/api/sb/sbinfo";
 
 export default {
   name: "EquipmentInfo",
@@ -558,6 +567,15 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row) {
+      var equipmentId = row.equipmentId || this.ids;
+      var sbLabelInfo = getSbLabelInfo(equipmentId);
+      if (!sbLabelInfo) {
+        this.$modal.msgError("设备标签信息不存在或未找到");
+        return;
+      }
+      this.$modal.msgInfo("正在连接打印机，请稍候...");
+      connectprinter();
+      printlabel(sbLabelInfo);
       this.$modal.msgSuccess("打印成功");
     }
   }
@@ -615,4 +633,4 @@ export default {
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
-</style> 
+</style>

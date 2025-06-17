@@ -3,8 +3,8 @@ var wsocket;//websocket对象
 
 var numberPrintneed = 1;//需要打印数量
 var numberPrinted = 0;//已经打印的数量
-var ip = "";//打印机IP地址
-var port = "";//打印机端口号
+var ip = "127.0.0.1";//打印机IP地址
+var port = "1808";//打印机端口号
 export function connection() {//连接打印服务
   var wsserver = "ws://" + document.getElementById("serverIP").value + ":" + document.getElementById("serverPort").value + "/"
   if ('WebSocket' in window) {
