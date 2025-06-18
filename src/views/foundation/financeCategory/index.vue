@@ -9,7 +9,7 @@
             :props="treeProps"
             node-key="financeCategoryId"
             highlight-current
-            style="height: calc(100vh - 150px); overflow-y: auto"
+            style="height: calc(100vh - 180px); overflow-y: auto"
           >
             <span slot-scope="{ node }" class="custom-tree-node">
               <i class="el-icon-folder-opened" />
@@ -101,7 +101,7 @@
         </el-row>
 
         <!-- 数据表格 -->
-        <el-table v-loading="loading" :data="financeCategoryList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+        <el-table v-loading="loading" :data="financeCategoryList" @selection-change="handleSelectionChange" height="calc(100vh - 280px)">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="编号" align="center" prop="id" width="50"/>
           <el-table-column label="财务类别编码" align="center" prop="code" width="120"/>
@@ -349,7 +349,7 @@ export default {
 
 <style scoped>
 .tree-card {
-  height: calc(100vh - 120px);
+  height: calc(100vh - 150px);
 }
 .tree-card ::v-deep .el-card__body {
   padding: 10px;
