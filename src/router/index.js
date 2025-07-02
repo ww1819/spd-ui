@@ -87,6 +87,19 @@ export const constantRoutes = [
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
+  },
+  {
+    path: '/test',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'departmentInventory',
+        component: () => import('@/views/test/departmentInventoryTest'),
+        name: 'DepartmentInventoryTest',
+        meta: { title: '科室库存查询测试' }
+      }
+    ]
   }
 ]
 
