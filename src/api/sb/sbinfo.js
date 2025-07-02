@@ -7,12 +7,12 @@ export function getSbinfo() {
   })
 }
 
-export function getSbLabelInfo(sbCode) { //获取打印机信息
+export function getSbLabelInfo(data) { //获取打印机信息
   return request({
     url: '/sb/sbInfo/getSbLabelInfo',
     method: 'post',
-    param: {
-      "code": sbCode
-    }
+    data: data
   })
 }
+
+

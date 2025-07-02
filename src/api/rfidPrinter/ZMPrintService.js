@@ -120,3 +120,4 @@ export function previewlabel(lableInfo) {
   var newjsonstring = jsonstring.replace('"Operate":"print"', '"Operate":"preview"');
   wsocket.send(newjsonstring);//发送JSON字符串给打印服务
 }
+ 

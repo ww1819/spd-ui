@@ -568,13 +568,14 @@ export default {
     /** 打印按钮操作 */
     handlePrint(row) {
       var equipmentId = row.equipmentId || this.ids;
-      var sbLabelInfo = getSbLabelInfo(equipmentId);
+      this.queryParams.code = equipmentId;
+      var sbLabelInfo = getSbLabelInfo(this.queryParams);
       if (!sbLabelInfo) {
         this.$modal.msgError("设备标签信息不存在或未找到");
         return;
       }
-      console("设备标签信息:", sbLabelInfo);
-      this.$modal.msgInfo("正在连接打印机，请稍候...");
+      this.$modal.msgSuccess("设备标签信息:"+sbLabelInfo);
+      // this.$modal.loading("正在连接打印机，请稍候...");
       connectprinter();
       printlabel(sbLabelInfo);
       this.$modal.msgSuccess("打印成功");
