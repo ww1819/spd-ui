@@ -296,11 +296,78 @@ export default {
     /** 查询设备使用列表 */
     getList() {
       this.loading = true;
-      listEquipmentUse(this.queryParams).then(response => {
-        this.equipmentUseList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentUseList = [
+          {
+            useId: 1,
+            useNo: 'SY001',
+            equipmentName: '数控车床',
+            useUser: '张三',
+            useStatus: '0',
+            useTime: '2024-01-15 08:00:00',
+            useDept: '生产部',
+            usePurpose: '精密零件加工',
+            contactPhone: '13800138001',
+            useLocation: '车间A-01',
+            remark: '设备运行正常，生产效率高'
+          },
+          {
+            useId: 2,
+            useNo: 'SY002',
+            equipmentName: '激光切割机',
+            useUser: '李四',
+            useStatus: '1',
+            useTime: '2024-01-20 09:00:00',
+            useDept: '技术部',
+            usePurpose: '技术研发项目',
+            contactPhone: '13800138002',
+            useLocation: '车间C-03',
+            remark: '激光功率稳定，切割精度高'
+          },
+          {
+            useId: 3,
+            useNo: 'SY003',
+            equipmentName: '立式加工中心',
+            useUser: '王五',
+            useStatus: '2',
+            useTime: '2024-01-25 10:00:00',
+            useDept: '制造部',
+            usePurpose: '复杂零件加工',
+            contactPhone: '13800138003',
+            useLocation: '车间B-02',
+            remark: '五轴联动加工，效率显著提升'
+          },
+          {
+            useId: 4,
+            useNo: 'SY004',
+            equipmentName: '折弯机',
+            useUser: '赵六',
+            useStatus: '0',
+            useTime: '2024-01-30 11:00:00',
+            useDept: '钣金部',
+            usePurpose: '钣金件折弯加工',
+            contactPhone: '13800138004',
+            useLocation: '车间D-04',
+            remark: '折弯精度高，产品质量稳定'
+          },
+          {
+            useId: 5,
+            useNo: 'SY005',
+            equipmentName: '冲床',
+            useUser: '钱七',
+            useStatus: '1',
+            useTime: '2024-02-05 12:00:00',
+            useDept: '冲压部',
+            usePurpose: '冲压件生产',
+            contactPhone: '13800138005',
+            useLocation: '车间E-05',
+            remark: '冲压效率高，安全性能良好'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

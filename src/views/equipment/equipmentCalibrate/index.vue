@@ -296,11 +296,78 @@ export default {
     /** 查询设备校准列表 */
     getList() {
       this.loading = true;
-      listEquipmentCalibrate(this.queryParams).then(response => {
-        this.equipmentCalibrateList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentCalibrateList = [
+          {
+            calibrateId: 1,
+            calibrateCode: 'JZ001',
+            equipmentName: '数控车床',
+            calibrateStatus: '0',
+            calibrateTime: '2024-01-15 09:00:00',
+            calibrator: '张师傅',
+            calibrateResult: '0',
+            cost: 800,
+            calibrateContent: '主轴精度校准、导轨平行度校准',
+            nextCalibrateDate: '2024-07-15',
+            remark: '校准合格，精度符合要求'
+          },
+          {
+            calibrateId: 2,
+            calibrateCode: 'JZ002',
+            equipmentName: '激光切割机',
+            calibrateStatus: '1',
+            calibrateTime: '2024-01-20 14:00:00',
+            calibrator: '李师傅',
+            calibrateResult: '1',
+            cost: 1200,
+            calibrateContent: '激光功率校准、切割精度校准',
+            nextCalibrateDate: '2024-07-20',
+            remark: '校准中，需要调整激光参数'
+          },
+          {
+            calibrateId: 3,
+            calibrateCode: 'JZ003',
+            equipmentName: '立式加工中心',
+            calibrateStatus: '2',
+            calibrateTime: '2024-01-25 10:00:00',
+            calibrator: '王师傅',
+            calibrateResult: '0',
+            cost: 1500,
+            calibrateContent: '三轴精度校准、刀库位置校准',
+            nextCalibrateDate: '2024-07-25',
+            remark: '校准完成，设备精度良好'
+          },
+          {
+            calibrateId: 4,
+            calibrateCode: 'JZ004',
+            equipmentName: '折弯机',
+            calibrateStatus: '0',
+            calibrateTime: '2024-01-30 11:00:00',
+            calibrator: '赵师傅',
+            calibrateResult: '0',
+            cost: 600,
+            calibrateContent: '折弯角度校准、压力校准',
+            nextCalibrateDate: '2024-07-30',
+            remark: '校准合格，折弯精度达标'
+          },
+          {
+            calibrateId: 5,
+            calibrateCode: 'JZ005',
+            equipmentName: '冲床',
+            calibrateStatus: '1',
+            calibrateTime: '2024-02-05 13:00:00',
+            calibrator: '钱师傅',
+            calibrateResult: '1',
+            cost: 500,
+            calibrateContent: '冲压力校准、行程精度校准',
+            nextCalibrateDate: '2024-08-05',
+            remark: '校准中，需要更换传感器'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

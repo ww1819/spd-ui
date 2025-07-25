@@ -271,11 +271,78 @@ export default {
     /** 查询设备检验列表 */
     getList() {
       this.loading = true;
-      listEquipmentInspection(this.queryParams).then(response => {
-        this.equipmentInspectionList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentInspectionList = [
+          {
+            inspectionId: 1,
+            inspectionCode: 'JC001',
+            equipmentName: '数控车床',
+            inspectionType: '0',
+            inspectionStatus: '0',
+            inspectionTime: '2024-01-15 08:00:00',
+            inspector: '张师傅',
+            inspectionResult: '0',
+            inspectionContent: '检查主轴运行、导轨润滑、电气系统',
+            nextInspectionDate: '2024-02-15',
+            remark: '设备运行正常，无异常情况'
+          },
+          {
+            inspectionId: 2,
+            inspectionCode: 'JC002',
+            equipmentName: '激光切割机',
+            inspectionType: '1',
+            inspectionStatus: '1',
+            inspectionTime: '2024-01-20 09:00:00',
+            inspector: '李师傅',
+            inspectionResult: '1',
+            inspectionContent: '检查激光器、光学系统、切割精度',
+            nextInspectionDate: '2024-02-20',
+            remark: '发现激光功率略有下降，需要调整'
+          },
+          {
+            inspectionId: 3,
+            inspectionCode: 'JC003',
+            equipmentName: '立式加工中心',
+            inspectionType: '0',
+            inspectionStatus: '2',
+            inspectionTime: '2024-01-25 10:00:00',
+            inspector: '王师傅',
+            inspectionResult: '0',
+            inspectionContent: '检查三轴运行、刀库、冷却系统',
+            nextInspectionDate: '2024-02-25',
+            remark: '检查完成，设备状态良好'
+          },
+          {
+            inspectionId: 4,
+            inspectionCode: 'JC004',
+            equipmentName: '折弯机',
+            inspectionType: '1',
+            inspectionStatus: '0',
+            inspectionTime: '2024-01-30 11:00:00',
+            inspector: '赵师傅',
+            inspectionResult: '0',
+            inspectionContent: '检查液压系统、模具、安全装置',
+            nextInspectionDate: '2024-03-02',
+            remark: '设备运行正常，液压系统稳定'
+          },
+          {
+            inspectionId: 5,
+            inspectionCode: 'JC005',
+            equipmentName: '冲床',
+            inspectionType: '0',
+            inspectionStatus: '1',
+            inspectionTime: '2024-02-05 12:00:00',
+            inspector: '钱师傅',
+            inspectionResult: '1',
+            inspectionContent: '检查离合器、制动器、安全装置',
+            nextInspectionDate: '2024-03-07',
+            remark: '离合器有轻微磨损，建议更换'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

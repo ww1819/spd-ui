@@ -299,11 +299,78 @@ export default {
     /** 查询设备维修列表 */
     getList() {
       this.loading = true;
-      listEquipmentRepair(this.queryParams).then(response => {
-        this.equipmentRepairList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentRepairList = [
+          {
+            repairId: 1,
+            repairCode: 'WX001',
+            equipmentName: '数控车床',
+            repairType: '0',
+            repairStatus: '0',
+            repairTime: '2024-01-15 10:00:00',
+            repairer: '张师傅',
+            cost: 1500,
+            faultDescription: '主轴异响，需要更换轴承',
+            repairContent: '更换主轴轴承，调整主轴间隙',
+            remark: '设备恢复正常运行'
+          },
+          {
+            repairId: 2,
+            repairCode: 'WX002',
+            equipmentName: '激光切割机',
+            repairType: '1',
+            repairStatus: '1',
+            repairTime: '2024-01-20 14:00:00',
+            repairer: '李师傅',
+            cost: 2000,
+            faultDescription: '激光器功率下降，切割效果差',
+            repairContent: '清洁激光器镜片，调整激光功率',
+            remark: '维修中，预计明天完成'
+          },
+          {
+            repairId: 3,
+            repairCode: 'WX003',
+            equipmentName: '立式加工中心',
+            repairType: '0',
+            repairStatus: '2',
+            repairTime: '2024-01-25 09:00:00',
+            repairer: '王师傅',
+            cost: 3000,
+            faultDescription: '刀库卡刀，无法正常换刀',
+            repairContent: '修复刀库机械手，更换传感器',
+            remark: '维修完成，设备已恢复正常'
+          },
+          {
+            repairId: 4,
+            repairCode: 'WX004',
+            equipmentName: '折弯机',
+            repairType: '1',
+            repairStatus: '0',
+            repairTime: '2024-01-30 16:00:00',
+            repairer: '赵师傅',
+            cost: 800,
+            faultDescription: '液压系统漏油',
+            repairContent: '更换密封圈，补充液压油',
+            remark: '紧急维修，确保生产进度'
+          },
+          {
+            repairId: 5,
+            repairCode: 'WX005',
+            equipmentName: '冲床',
+            repairType: '0',
+            repairStatus: '1',
+            repairTime: '2024-02-05 11:00:00',
+            repairer: '钱师傅',
+            cost: 1200,
+            faultDescription: '离合器打滑，冲压无力',
+            repairContent: '更换离合器片，调整离合器间隙',
+            remark: '维修中，需要更换配件'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

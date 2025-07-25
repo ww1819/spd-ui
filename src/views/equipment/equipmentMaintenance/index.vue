@@ -271,11 +271,78 @@ export default {
     /** 查询设备维护列表 */
     getList() {
       this.loading = true;
-      listEquipmentMaintenance(this.queryParams).then(response => {
-        this.equipmentMaintenanceList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentMaintenanceList = [
+          {
+            maintenanceId: 1,
+            maintenanceCode: 'WH001',
+            equipmentName: '数控车床',
+            maintenanceType: '0',
+            maintenanceStatus: '0',
+            maintenanceTime: '2024-01-15 08:00:00',
+            maintainer: '张师傅',
+            cost: 800,
+            maintenanceContent: '更换润滑油、清洁导轨、检查主轴',
+            nextMaintenanceDate: '2024-04-15',
+            remark: '定期维护，设备运行正常'
+          },
+          {
+            maintenanceId: 2,
+            maintenanceCode: 'WH002',
+            equipmentName: '激光切割机',
+            maintenanceType: '1',
+            maintenanceStatus: '1',
+            maintenanceTime: '2024-01-20 09:00:00',
+            maintainer: '李师傅',
+            cost: 1200,
+            maintenanceContent: '清洁光学镜片、检查激光器、校准光路',
+            nextMaintenanceDate: '2024-04-20',
+            remark: '预防性维护，确保切割精度'
+          },
+          {
+            maintenanceId: 3,
+            maintenanceCode: 'WH003',
+            equipmentName: '立式加工中心',
+            maintenanceType: '0',
+            maintenanceStatus: '2',
+            maintenanceTime: '2024-01-25 10:00:00',
+            maintainer: '王师傅',
+            cost: 1500,
+            maintenanceContent: '更换切削液、清洁工作台、检查刀库',
+            nextMaintenanceDate: '2024-04-25',
+            remark: '全面维护，提高设备效率'
+          },
+          {
+            maintenanceId: 4,
+            maintenanceCode: 'WH004',
+            equipmentName: '折弯机',
+            maintenanceType: '1',
+            maintenanceStatus: '0',
+            maintenanceTime: '2024-01-30 11:00:00',
+            maintainer: '赵师傅',
+            cost: 700,
+            maintenanceContent: '检查液压系统、清洁模具、润滑导轨',
+            nextMaintenanceDate: '2024-05-02',
+            remark: '定期维护，延长设备寿命'
+          },
+          {
+            maintenanceId: 5,
+            maintenanceCode: 'WH005',
+            equipmentName: '冲床',
+            maintenanceType: '0',
+            maintenanceStatus: '1',
+            maintenanceTime: '2024-02-05 12:00:00',
+            maintainer: '钱师傅',
+            cost: 500,
+            maintenanceContent: '检查离合器、清洁模具、润滑传动部件',
+            nextMaintenanceDate: '2024-05-07',
+            remark: '预防性维护，确保安全运行'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

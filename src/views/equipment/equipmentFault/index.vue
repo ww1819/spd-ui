@@ -271,11 +271,78 @@ export default {
     /** 查询设备故障列表 */
     getList() {
       this.loading = true;
-      listEquipmentFault(this.queryParams).then(response => {
-        this.equipmentFaultList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentFaultList = [
+          {
+            faultId: 1,
+            faultCode: 'GZ001',
+            equipmentName: '数控车床',
+            faultType: '0',
+            faultStatus: '0',
+            faultTime: '2024-01-15 10:30:00',
+            reporter: '张三',
+            faultDescription: '主轴异响，运行时发出异常声音',
+            faultLevel: '1',
+            faultLocation: '主轴部位',
+            remark: '需要立即停机检查，避免设备损坏'
+          },
+          {
+            faultId: 2,
+            faultCode: 'GZ002',
+            equipmentName: '激光切割机',
+            faultType: '1',
+            faultStatus: '1',
+            faultTime: '2024-01-20 14:15:00',
+            reporter: '李四',
+            faultDescription: '激光器功率下降，切割效果差',
+            faultLevel: '2',
+            faultLocation: '激光器',
+            remark: '影响生产质量，需要调整激光参数'
+          },
+          {
+            faultId: 3,
+            faultCode: 'GZ003',
+            equipmentName: '立式加工中心',
+            faultType: '0',
+            faultStatus: '2',
+            faultTime: '2024-01-25 09:45:00',
+            reporter: '王五',
+            faultDescription: '刀库卡刀，无法正常换刀',
+            faultLevel: '1',
+            faultLocation: '刀库',
+            remark: '已修复，设备恢复正常运行'
+          },
+          {
+            faultId: 4,
+            faultCode: 'GZ004',
+            equipmentName: '折弯机',
+            faultType: '1',
+            faultStatus: '0',
+            faultTime: '2024-01-30 16:20:00',
+            reporter: '赵六',
+            faultDescription: '液压系统漏油，压力不稳定',
+            faultLevel: '2',
+            faultLocation: '液压系统',
+            remark: '紧急故障，需要立即处理'
+          },
+          {
+            faultId: 5,
+            faultCode: 'GZ005',
+            equipmentName: '冲床',
+            faultType: '0',
+            faultStatus: '1',
+            faultTime: '2024-02-05 11:30:00',
+            reporter: '钱七',
+            faultDescription: '离合器打滑，冲压无力',
+            faultLevel: '1',
+            faultLocation: '离合器',
+            remark: '需要更换离合器片'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

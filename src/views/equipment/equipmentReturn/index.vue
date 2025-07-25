@@ -288,11 +288,73 @@ export default {
     /** 查询设备归还列表 */
     getList() {
       this.loading = true;
-      listEquipmentReturn(this.queryParams).then(response => {
-        this.equipmentReturnList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentReturnList = [
+          {
+            returnId: 1,
+            returnCode: 'GH001',
+            equipmentName: '数控车床',
+            returnStatus: '0',
+            returnTime: '2024-01-20 17:00:00',
+            returnUser: '张三',
+            returnDept: '生产部',
+            borrowTime: '2024-01-15 09:00:00',
+            returnReason: '生产任务完成，设备归还',
+            remark: '设备状态良好，无损坏'
+          },
+          {
+            returnId: 2,
+            returnCode: 'GH002',
+            equipmentName: '激光切割机',
+            returnStatus: '1',
+            returnTime: '2024-01-25 16:00:00',
+            returnUser: '李四',
+            returnDept: '技术部',
+            borrowTime: '2024-01-18 14:00:00',
+            returnReason: '研发项目结束，设备归还',
+            remark: '设备正在检查中'
+          },
+          {
+            returnId: 3,
+            returnCode: 'GH003',
+            equipmentName: '立式加工中心',
+            returnStatus: '2',
+            returnTime: '2024-01-12 18:00:00',
+            returnUser: '王五',
+            returnDept: '质检部',
+            borrowTime: '2024-01-10 08:00:00',
+            returnReason: '质量检测完成，设备归还',
+            remark: '设备已归还，检测结果正常'
+          },
+          {
+            returnId: 4,
+            returnCode: 'GH004',
+            equipmentName: '折弯机',
+            returnStatus: '0',
+            returnTime: '2024-01-25 16:00:00',
+            returnUser: '赵六',
+            returnDept: '制造部',
+            borrowTime: '2024-01-22 10:00:00',
+            returnReason: '批量生产完成，设备归还',
+            remark: '设备运行正常，无异常'
+          },
+          {
+            returnId: 5,
+            returnCode: 'GH005',
+            equipmentName: '冲床',
+            returnStatus: '1',
+            returnTime: '2024-02-10 15:00:00',
+            returnUser: '钱七',
+            returnDept: '维修部',
+            borrowTime: '2024-01-25 13:00:00',
+            returnReason: '设备维护完成，准备归还',
+            remark: '设备维护完成，等待验收'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

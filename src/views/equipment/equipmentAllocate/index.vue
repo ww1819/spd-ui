@@ -305,11 +305,73 @@ export default {
     /** 查询设备分配列表 */
     getList() {
       this.loading = true;
-      listEquipmentAllocate(this.queryParams).then(response => {
-        this.equipmentAllocateList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentAllocateList = [
+          {
+            allocateId: 1,
+            allocateCode: 'FP001',
+            equipmentName: '数控车床',
+            allocateStatus: '0',
+            allocateTime: '2024-01-15 09:00:00',
+            allocateUser: '张三',
+            allocateDept: '生产部',
+            allocateReason: '新项目需要，用于精密零件加工',
+            allocateLocation: '车间A-01',
+            remark: '设备已调试完成，可以正常使用'
+          },
+          {
+            allocateId: 2,
+            allocateCode: 'FP002',
+            equipmentName: '激光切割机',
+            allocateStatus: '1',
+            allocateTime: '2024-01-20 14:00:00',
+            allocateUser: '李四',
+            allocateDept: '技术部',
+            allocateReason: '技术研发项目使用',
+            allocateLocation: '车间C-03',
+            remark: '设备正在调试中'
+          },
+          {
+            allocateId: 3,
+            allocateCode: 'FP003',
+            equipmentName: '立式加工中心',
+            allocateStatus: '2',
+            allocateTime: '2024-01-25 10:00:00',
+            allocateUser: '王五',
+            allocateDept: '制造部',
+            allocateReason: '批量生产订单需要',
+            allocateLocation: '车间B-02',
+            remark: '设备分配完成，已投入使用'
+          },
+          {
+            allocateId: 4,
+            allocateCode: 'FP004',
+            equipmentName: '折弯机',
+            allocateStatus: '0',
+            allocateTime: '2024-01-30 11:00:00',
+            allocateUser: '赵六',
+            allocateDept: '钣金部',
+            allocateReason: '钣金加工项目需要',
+            allocateLocation: '车间D-04',
+            remark: '设备已就位，等待调试'
+          },
+          {
+            allocateId: 5,
+            allocateCode: 'FP005',
+            equipmentName: '冲床',
+            allocateStatus: '1',
+            allocateTime: '2024-02-05 13:00:00',
+            allocateUser: '钱七',
+            allocateDept: '冲压部',
+            allocateReason: '冲压件生产需要',
+            allocateLocation: '车间E-05',
+            remark: '设备正在安装调试'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

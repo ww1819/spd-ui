@@ -299,11 +299,78 @@ export default {
     /** 查询设备检验列表 */
     getList() {
       this.loading = true;
-      listEquipmentInspect(this.queryParams).then(response => {
-        this.equipmentInspectList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentInspectList = [
+          {
+            inspectId: 1,
+            inspectCode: 'JY001',
+            equipmentName: '数控车床',
+            inspectType: '0',
+            inspectStatus: '0',
+            inspectTime: '2024-01-15 09:00:00',
+            inspector: '张师傅',
+            inspectResult: '0',
+            inspectContent: '检查主轴精度、导轨平行度、电气系统',
+            nextInspectDate: '2024-04-15',
+            remark: '检验合格，设备状态良好'
+          },
+          {
+            inspectId: 2,
+            inspectCode: 'JY002',
+            equipmentName: '激光切割机',
+            inspectType: '1',
+            inspectStatus: '1',
+            inspectTime: '2024-01-20 14:00:00',
+            inspector: '李师傅',
+            inspectResult: '1',
+            inspectContent: '检查激光器、光学系统、切割精度',
+            nextInspectDate: '2024-04-20',
+            remark: '检验中，需要调整激光参数'
+          },
+          {
+            inspectId: 3,
+            inspectCode: 'JY003',
+            equipmentName: '立式加工中心',
+            inspectType: '0',
+            inspectStatus: '2',
+            inspectTime: '2024-01-25 10:00:00',
+            inspector: '王师傅',
+            inspectResult: '0',
+            inspectContent: '检查三轴精度、刀库、冷却系统',
+            nextInspectDate: '2024-04-25',
+            remark: '检验完成，设备精度符合要求'
+          },
+          {
+            inspectId: 4,
+            inspectCode: 'JY004',
+            equipmentName: '折弯机',
+            inspectType: '1',
+            inspectStatus: '0',
+            inspectTime: '2024-01-30 11:00:00',
+            inspector: '赵师傅',
+            inspectResult: '0',
+            inspectContent: '检查液压系统、模具、安全装置',
+            nextInspectDate: '2024-05-02',
+            remark: '检验合格，折弯精度达标'
+          },
+          {
+            inspectId: 5,
+            inspectCode: 'JY005',
+            equipmentName: '冲床',
+            inspectType: '0',
+            inspectStatus: '1',
+            inspectTime: '2024-02-05 12:00:00',
+            inspector: '钱师傅',
+            inspectResult: '1',
+            inspectContent: '检查离合器、制动器、安全装置',
+            nextInspectDate: '2024-05-07',
+            remark: '检验中，发现离合器磨损'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

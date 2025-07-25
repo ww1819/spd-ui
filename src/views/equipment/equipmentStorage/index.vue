@@ -298,11 +298,78 @@ export default {
     /** 查询设备入库列表 */
     getList() {
       this.loading = true;
-      listEquipmentStorage(this.queryParams).then(response => {
-        this.storageList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.storageList = [
+          {
+            storageId: 1,
+            storageNo: 'RK001',
+            equipmentName: '数控车床',
+            storageNum: 1,
+            storagePrice: 85000,
+            storageAmount: 85000,
+            storageStatus: '0',
+            storageTime: '2024-01-15 10:00:00',
+            supplier: '大连机床集团',
+            storageLocation: '仓库A区-01',
+            remark: '新设备入库，质量检验合格'
+          },
+          {
+            storageId: 2,
+            storageNo: 'RK002',
+            equipmentName: '激光切割机',
+            storageNum: 1,
+            storagePrice: 120000,
+            storageAmount: 120000,
+            storageStatus: '1',
+            storageTime: '2024-01-20 14:00:00',
+            supplier: '大族激光',
+            storageLocation: '仓库B区-02',
+            remark: '设备入库中，等待验收'
+          },
+          {
+            storageId: 3,
+            storageNo: 'RK003',
+            equipmentName: '立式加工中心',
+            storageNum: 1,
+            storagePrice: 180000,
+            storageAmount: 180000,
+            storageStatus: '2',
+            storageTime: '2024-01-25 09:00:00',
+            supplier: '沈阳机床集团',
+            storageLocation: '仓库C区-03',
+            remark: '设备已入库，验收完成'
+          },
+          {
+            storageId: 4,
+            storageNo: 'RK004',
+            equipmentName: '折弯机',
+            storageNum: 1,
+            storagePrice: 65000,
+            storageAmount: 65000,
+            storageStatus: '0',
+            storageTime: '2024-01-30 11:00:00',
+            supplier: '亚威机床',
+            storageLocation: '仓库D区-04',
+            remark: '设备入库，等待调试'
+          },
+          {
+            storageId: 5,
+            storageNo: 'RK005',
+            equipmentName: '冲床',
+            storageNum: 1,
+            storagePrice: 45000,
+            storageAmount: 45000,
+            storageStatus: '1',
+            storageTime: '2024-02-05 13:00:00',
+            supplier: '扬力集团',
+            storageLocation: '仓库E区-05',
+            remark: '设备入库中，质量检验中'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

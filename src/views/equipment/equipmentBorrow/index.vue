@@ -315,11 +315,78 @@ export default {
     /** 查询设备借用列表 */
     getList() {
       this.loading = true;
-      listEquipmentBorrow(this.queryParams).then(response => {
-        this.equipmentBorrowList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentBorrowList = [
+          {
+            borrowId: 1,
+            borrowCode: 'JY001',
+            equipmentName: '数控车床',
+            borrowType: '0',
+            borrowStatus: '0',
+            borrowTime: '2024-01-15 09:00:00',
+            returnTime: '2024-01-20 17:00:00',
+            borrower: '张三',
+            borrowDepartment: '生产部',
+            contactPhone: '13800138001',
+            remark: '生产急需，用于加工精密零件'
+          },
+          {
+            borrowId: 2,
+            borrowCode: 'JY002',
+            equipmentName: '激光切割机',
+            borrowType: '1',
+            borrowStatus: '1',
+            borrowTime: '2024-01-18 14:00:00',
+            returnTime: null,
+            borrower: '李四',
+            borrowDepartment: '技术部',
+            contactPhone: '13800138002',
+            remark: '技术研发项目使用'
+          },
+          {
+            borrowId: 3,
+            borrowCode: 'JY003',
+            equipmentName: '立式加工中心',
+            borrowType: '0',
+            borrowStatus: '2',
+            borrowTime: '2024-01-10 08:00:00',
+            returnTime: '2024-01-12 18:00:00',
+            borrower: '王五',
+            borrowDepartment: '质检部',
+            contactPhone: '13800138003',
+            remark: '质量检测设备校准'
+          },
+          {
+            borrowId: 4,
+            borrowCode: 'JY004',
+            equipmentName: '折弯机',
+            borrowType: '1',
+            borrowStatus: '0',
+            borrowTime: '2024-01-22 10:00:00',
+            returnTime: '2024-01-25 16:00:00',
+            borrower: '赵六',
+            borrowDepartment: '制造部',
+            contactPhone: '13800138004',
+            remark: '批量生产订单使用'
+          },
+          {
+            borrowId: 5,
+            borrowCode: 'JY005',
+            equipmentName: '冲床',
+            borrowType: '0',
+            borrowStatus: '1',
+            borrowTime: '2024-01-25 13:00:00',
+            returnTime: null,
+            borrower: '钱七',
+            borrowDepartment: '维修部',
+            contactPhone: '13800138005',
+            remark: '设备维护保养'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

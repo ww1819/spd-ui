@@ -298,11 +298,73 @@ export default {
     /** 查询设备保养列表 */
     getList() {
       this.loading = true;
-      listEquipmentMaintain(this.queryParams).then(response => {
-        this.equipmentMaintainList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentMaintainList = [
+          {
+            maintainId: 1,
+            maintainCode: 'BY001',
+            equipmentName: '数控车床',
+            maintainType: '0',
+            maintainStatus: '0',
+            maintainTime: '2024-01-15 08:00:00',
+            maintainer: '张师傅',
+            cost: 500,
+            maintainContent: '更换润滑油、清洁导轨、检查主轴',
+            remark: '定期保养，设备运行正常'
+          },
+          {
+            maintainId: 2,
+            maintainCode: 'BY002',
+            equipmentName: '激光切割机',
+            maintainType: '1',
+            maintainStatus: '1',
+            maintainTime: '2024-01-20 09:00:00',
+            maintainer: '李师傅',
+            cost: 800,
+            maintainContent: '清洁光学镜片、检查激光器、校准光路',
+            remark: '预防性保养，确保切割精度'
+          },
+          {
+            maintainId: 3,
+            maintainCode: 'BY003',
+            equipmentName: '立式加工中心',
+            maintainType: '0',
+            maintainStatus: '2',
+            maintainTime: '2024-01-25 14:00:00',
+            maintainer: '王师傅',
+            cost: 1200,
+            maintainContent: '更换切削液、清洁工作台、检查刀库',
+            remark: '全面保养，提高设备效率'
+          },
+          {
+            maintainId: 4,
+            maintainCode: 'BY004',
+            equipmentName: '折弯机',
+            maintainType: '1',
+            maintainStatus: '0',
+            maintainTime: '2024-01-30 10:00:00',
+            maintainer: '赵师傅',
+            cost: 600,
+            maintainContent: '检查液压系统、清洁模具、润滑导轨',
+            remark: '定期保养，延长设备寿命'
+          },
+          {
+            maintainId: 5,
+            maintainCode: 'BY005',
+            equipmentName: '冲床',
+            maintainType: '0',
+            maintainStatus: '1',
+            maintainTime: '2024-02-05 11:00:00',
+            maintainer: '钱师傅',
+            cost: 400,
+            maintainContent: '检查离合器、清洁模具、润滑传动部件',
+            remark: '预防性保养，确保安全运行'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

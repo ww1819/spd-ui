@@ -305,11 +305,78 @@ export default {
     /** 查询设备接收列表 */
     getList() {
       this.loading = true;
-      listEquipmentReceive(this.queryParams).then(response => {
-        this.equipmentReceiveList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentReceiveList = [
+          {
+            receiveId: 1,
+            receiveCode: 'LY001',
+            equipmentName: '数控车床',
+            receiveNum: 1,
+            receiveStatus: '0',
+            receiveTime: '2024-01-15 09:00:00',
+            receiveUser: '张三',
+            receiveDept: '生产部',
+            contactPhone: '13800138001',
+            receiveReason: '新项目需要，用于精密零件加工',
+            remark: '设备已接收，正在调试'
+          },
+          {
+            receiveId: 2,
+            receiveCode: 'LY002',
+            equipmentName: '激光切割机',
+            receiveNum: 1,
+            receiveStatus: '1',
+            receiveTime: '2024-01-20 14:00:00',
+            receiveUser: '李四',
+            receiveDept: '技术部',
+            contactPhone: '13800138002',
+            receiveReason: '技术研发项目使用',
+            remark: '设备接收中，等待验收'
+          },
+          {
+            receiveId: 3,
+            receiveCode: 'LY003',
+            equipmentName: '立式加工中心',
+            receiveNum: 1,
+            receiveStatus: '2',
+            receiveTime: '2024-01-25 10:00:00',
+            receiveUser: '王五',
+            receiveDept: '制造部',
+            contactPhone: '13800138003',
+            receiveReason: '批量生产订单需要',
+            remark: '设备已接收，验收完成'
+          },
+          {
+            receiveId: 4,
+            receiveCode: 'LY004',
+            equipmentName: '折弯机',
+            receiveNum: 1,
+            receiveStatus: '0',
+            receiveTime: '2024-01-30 11:00:00',
+            receiveUser: '赵六',
+            receiveDept: '钣金部',
+            contactPhone: '13800138004',
+            receiveReason: '钣金加工项目需要',
+            remark: '设备接收申请已提交'
+          },
+          {
+            receiveId: 5,
+            receiveCode: 'LY005',
+            equipmentName: '冲床',
+            receiveNum: 1,
+            receiveStatus: '1',
+            receiveTime: '2024-02-05 13:00:00',
+            receiveUser: '钱七',
+            receiveDept: '冲压部',
+            contactPhone: '13800138005',
+            receiveReason: '冲压件生产需要',
+            remark: '设备接收中，质量检验中'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {

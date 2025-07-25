@@ -241,17 +241,246 @@ export default {
     /** 查询设备分类列表 */
     getList() {
       this.loading = true;
-      listEquipmentCategory(this.queryParams).then(response => {
-        this.categoryList = this.handleTree(response.data, "categoryId");
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        const mockData = [
+          {
+            categoryId: 1,
+            parentId: 0,
+            categoryName: '机床设备',
+            categoryCode: 'JC',
+            orderNum: 1,
+            status: '0',
+            children: [
+              {
+                categoryId: 11,
+                parentId: 1,
+                categoryName: '车床',
+                categoryCode: 'CC',
+                orderNum: 1,
+                status: '0'
+              },
+              {
+                categoryId: 12,
+                parentId: 1,
+                categoryName: '铣床',
+                categoryCode: 'XC',
+                orderNum: 2,
+                status: '0'
+              },
+              {
+                categoryId: 13,
+                parentId: 1,
+                categoryName: '加工中心',
+                categoryCode: 'JGZX',
+                orderNum: 3,
+                status: '0'
+              }
+            ]
+          },
+          {
+            categoryId: 2,
+            parentId: 0,
+            categoryName: '激光设备',
+            categoryCode: 'JG',
+            orderNum: 2,
+            status: '0',
+            children: [
+              {
+                categoryId: 21,
+                parentId: 2,
+                categoryName: '激光切割机',
+                categoryCode: 'JGQG',
+                orderNum: 1,
+                status: '0'
+              },
+              {
+                categoryId: 22,
+                parentId: 2,
+                categoryName: '激光焊接机',
+                categoryCode: 'JGHJ',
+                orderNum: 2,
+                status: '0'
+              }
+            ]
+          },
+          {
+            categoryId: 3,
+            parentId: 0,
+            categoryName: '钣金设备',
+            categoryCode: 'BJ',
+            orderNum: 3,
+            status: '0',
+            children: [
+              {
+                categoryId: 31,
+                parentId: 3,
+                categoryName: '折弯机',
+                categoryCode: 'ZWJ',
+                orderNum: 1,
+                status: '0'
+              },
+              {
+                categoryId: 32,
+                parentId: 3,
+                categoryName: '剪板机',
+                categoryCode: 'JBJ',
+                orderNum: 2,
+                status: '0'
+              }
+            ]
+          },
+          {
+            categoryId: 4,
+            parentId: 0,
+            categoryName: '冲压设备',
+            categoryCode: 'CY',
+            orderNum: 4,
+            status: '0',
+            children: [
+              {
+                categoryId: 41,
+                parentId: 4,
+                categoryName: '冲床',
+                categoryCode: 'CC',
+                orderNum: 1,
+                status: '0'
+              },
+              {
+                categoryId: 42,
+                parentId: 4,
+                categoryName: '压力机',
+                categoryCode: 'YLJ',
+                orderNum: 2,
+                status: '0'
+              }
+            ]
+          }
+        ];
+        this.categoryList = this.handleTree(mockData, "categoryId");
+        this.total = mockData.length;
         this.loading = false;
-      });
+      }, 500);
     },
     /** 查询设备分类下拉树列表 */
     getTreeselect() {
-      treeselect().then(response => {
-        this.categoryOptions = response.data;
-      });
+      // 模拟数据
+      setTimeout(() => {
+        this.categoryOptions = [
+          {
+            categoryId: 1,
+            parentId: 0,
+            categoryName: '机床设备',
+            categoryCode: 'JC',
+            orderNum: 1,
+            status: '0',
+            children: [
+              {
+                categoryId: 11,
+                parentId: 1,
+                categoryName: '车床',
+                categoryCode: 'CC',
+                orderNum: 1,
+                status: '0'
+              },
+              {
+                categoryId: 12,
+                parentId: 1,
+                categoryName: '铣床',
+                categoryCode: 'XC',
+                orderNum: 2,
+                status: '0'
+              },
+              {
+                categoryId: 13,
+                parentId: 1,
+                categoryName: '加工中心',
+                categoryCode: 'JGZX',
+                orderNum: 3,
+                status: '0'
+              }
+            ]
+          },
+          {
+            categoryId: 2,
+            parentId: 0,
+            categoryName: '激光设备',
+            categoryCode: 'JG',
+            orderNum: 2,
+            status: '0',
+            children: [
+              {
+                categoryId: 21,
+                parentId: 2,
+                categoryName: '激光切割机',
+                categoryCode: 'JGQG',
+                orderNum: 1,
+                status: '0'
+              },
+              {
+                categoryId: 22,
+                parentId: 2,
+                categoryName: '激光焊接机',
+                categoryCode: 'JGHJ',
+                orderNum: 2,
+                status: '0'
+              }
+            ]
+          },
+          {
+            categoryId: 3,
+            parentId: 0,
+            categoryName: '钣金设备',
+            categoryCode: 'BJ',
+            orderNum: 3,
+            status: '0',
+            children: [
+              {
+                categoryId: 31,
+                parentId: 3,
+                categoryName: '折弯机',
+                categoryCode: 'ZWJ',
+                orderNum: 1,
+                status: '0'
+              },
+              {
+                categoryId: 32,
+                parentId: 3,
+                categoryName: '剪板机',
+                categoryCode: 'JBJ',
+                orderNum: 2,
+                status: '0'
+              }
+            ]
+          },
+          {
+            categoryId: 4,
+            parentId: 0,
+            categoryName: '冲压设备',
+            categoryCode: 'CY',
+            orderNum: 4,
+            status: '0',
+            children: [
+              {
+                categoryId: 41,
+                parentId: 4,
+                categoryName: '冲床',
+                categoryCode: 'CC',
+                orderNum: 1,
+                status: '0'
+              },
+              {
+                categoryId: 42,
+                parentId: 4,
+                categoryName: '压力机',
+                categoryCode: 'YLJ',
+                orderNum: 2,
+                status: '0'
+              }
+            ]
+          }
+        ];
+      }, 500);
     },
     // 取消按钮
     cancel() {

@@ -263,46 +263,99 @@ export default {
           scrapId: 1,
           scrapNo: "SP20240001",
           equipmentId: 1,
-          equipmentName: "笔记本电脑",
+          equipmentName: "数控车床",
           scrapType: "0",
           scrapStatus: "0",
           scrapNum: 1,
           scrapDate: "2024-01-20",
           scrapUser: "张三",
-          scrapDept: "研发部",
-          scrapDesc: "设备老化，无法正常使用",
-          scrapRemark: "已使用5年",
+          scrapDept: "生产部",
+          scrapDesc: "设备老化严重，维修成本过高",
+          scrapRemark: "已使用8年，主要部件磨损严重",
           createTime: "2024-01-20 10:00:00"
         },
         {
           scrapId: 2,
           scrapNo: "SP20240002",
           equipmentId: 2,
-          equipmentName: "投影仪",
+          equipmentName: "激光切割机",
           scrapType: "1",
           scrapStatus: "1",
           scrapNum: 1,
           scrapDate: "2024-01-21",
           scrapUser: "李四",
-          scrapDept: "市场部",
-          scrapDesc: "设备损坏，维修成本过高",
-          scrapRemark: "已使用3年",
+          scrapDept: "技术部",
+          scrapDesc: "激光器损坏，更换成本过高",
+          scrapRemark: "已使用6年，激光器功率严重衰减",
           createTime: "2024-01-21 14:30:00"
+        },
+        {
+          scrapId: 3,
+          scrapNo: "SP20240003",
+          equipmentId: 3,
+          equipmentName: "立式加工中心",
+          scrapType: "0",
+          scrapStatus: "2",
+          scrapNum: 1,
+          scrapDate: "2024-01-25",
+          scrapUser: "王五",
+          scrapDept: "制造部",
+          scrapDesc: "设备故障频发，影响生产进度",
+          scrapRemark: "已使用10年，控制系统老化",
+          createTime: "2024-01-25 09:15:00"
+        },
+        {
+          scrapId: 4,
+          scrapNo: "SP20240004",
+          equipmentId: 4,
+          equipmentName: "折弯机",
+          scrapType: "1",
+          scrapStatus: "0",
+          scrapNum: 1,
+          scrapDate: "2024-01-30",
+          scrapUser: "赵六",
+          scrapDept: "钣金部",
+          scrapDesc: "液压系统故障，维修价值不大",
+          scrapRemark: "已使用7年，液压缸漏油严重",
+          createTime: "2024-01-30 16:45:00"
+        },
+        {
+          scrapId: 5,
+          scrapNo: "SP20240005",
+          equipmentId: 5,
+          equipmentName: "冲床",
+          scrapType: "0",
+          scrapStatus: "1",
+          scrapNum: 1,
+          scrapDate: "2024-02-05",
+          scrapUser: "钱七",
+          scrapDept: "冲压部",
+          scrapDesc: "安全装置失效，存在安全隐患",
+          scrapRemark: "已使用9年，离合器磨损严重",
+          createTime: "2024-02-05 11:20:00"
         }
       ],
       // 设备选项
       equipmentOptions: [
         {
           equipmentId: 1,
-          equipmentName: "笔记本电脑"
+          equipmentName: "数控车床"
         },
         {
           equipmentId: 2,
-          equipmentName: "投影仪"
+          equipmentName: "激光切割机"
         },
         {
           equipmentId: 3,
-          equipmentName: "打印机"
+          equipmentName: "立式加工中心"
+        },
+        {
+          equipmentId: 4,
+          equipmentName: "折弯机"
+        },
+        {
+          equipmentId: 5,
+          equipmentName: "冲床"
         }
       ],
       // 弹出层标题

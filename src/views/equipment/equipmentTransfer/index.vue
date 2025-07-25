@@ -304,11 +304,73 @@ export default {
     /** 查询设备调拨列表 */
     getList() {
       this.loading = true;
-      listEquipmentTransfer(this.queryParams).then(response => {
-        this.equipmentTransferList = response.rows;
-        this.total = response.total;
+      // 模拟数据
+      setTimeout(() => {
+        this.equipmentTransferList = [
+          {
+            transferId: 1,
+            transferCode: 'DB001',
+            equipmentName: '数控车床',
+            transferStatus: '0',
+            transferTime: '2024-01-15 10:00:00',
+            fromDept: '生产部',
+            toDept: '质检部',
+            transferUser: '张三',
+            transferReason: '质检部需要设备进行产品检测',
+            remark: '设备转移已完成，质检部已接收'
+          },
+          {
+            transferId: 2,
+            transferCode: 'DB002',
+            equipmentName: '激光切割机',
+            transferStatus: '1',
+            transferTime: '2024-01-20 14:00:00',
+            fromDept: '技术部',
+            toDept: '生产部',
+            transferUser: '李四',
+            transferReason: '生产部急需设备完成订单',
+            remark: '设备转移中，预计明天完成'
+          },
+          {
+            transferId: 3,
+            transferCode: 'DB003',
+            equipmentName: '立式加工中心',
+            transferStatus: '2',
+            transferTime: '2024-01-25 09:00:00',
+            fromDept: '制造部',
+            toDept: '研发部',
+            transferUser: '王五',
+            transferReason: '研发部新项目需要高精度设备',
+            remark: '设备转移完成，已投入使用'
+          },
+          {
+            transferId: 4,
+            transferCode: 'DB004',
+            equipmentName: '折弯机',
+            transferStatus: '0',
+            transferTime: '2024-01-30 11:00:00',
+            fromDept: '钣金部',
+            toDept: '生产部',
+            transferUser: '赵六',
+            transferReason: '生产部钣金加工任务增加',
+            remark: '设备转移申请已提交，等待审批'
+          },
+          {
+            transferId: 5,
+            transferCode: 'DB005',
+            equipmentName: '冲床',
+            transferStatus: '1',
+            transferTime: '2024-02-05 13:00:00',
+            fromDept: '冲压部',
+            toDept: '制造部',
+            transferUser: '钱七',
+            transferReason: '制造部需要冲压设备完成紧急订单',
+            remark: '设备正在转移过程中'
+          }
+        ];
+        this.total = 5;
         this.loading = false;
-      });
+      }, 500);
     },
     // 取消按钮
     cancel() {
