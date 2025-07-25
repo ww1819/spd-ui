@@ -210,7 +210,163 @@
 </template>
 
 <script>
-// ... existing code ...
+import { listEquipmentMaintenance, getEquipmentMaintenance, delEquipmentMaintenance, addEquipmentMaintenance, updateEquipmentMaintenance, exportEquipmentMaintenance } from "@/api/equipment/equipmentMaintenance";
+
+export default {
+  name: "EquipmentMaintenance",
+  dicts: ['maintenance_status', 'maintenance_type'],
+  data() {
+    return {
+      // 遮罩层
+      loading: true,
+      // 选中数组
+      ids: [],
+      // 非单个禁用
+      single: true,
+      // 非多个禁用
+      multiple: true,
+      // 显示搜索条件
+      showSearch: true,
+      // 总条数
+      total: 0,
+      // 设备维护表格数据
+      equipmentMaintenanceList: [],
+      // 弹出层标题
+      title: "",
+      // 是否显示弹出层
+      open: false,
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        maintenanceCode: null,
+        equipmentName: null,
+        maintenanceStatus: null,
+        beginDate: null,
+        endDate: null
+      },
+      // 表单参数
+      form: {},
+      // 表单校验
+      rules: {
+        maintenanceCode: [
+          { required: true, message: "维护编号不能为空", trigger: "blur" }
+        ],
+        equipmentName: [
+          { required: true, message: "设备名称不能为空", trigger: "blur" }
+        ],
+        maintenanceType: [
+          { required: true, message: "维护类型不能为空", trigger: "change" }
+        ],
+        maintenanceStatus: [
+          { required: true, message: "维护状态不能为空", trigger: "change" }
+        ]
+      }
+    };
+  },
+  created() {
+    this.getList();
+  },
+  methods: {
+    /** 查询设备维护列表 */
+    getList() {
+      this.loading = true;
+      listEquipmentMaintenance(this.queryParams).then(response => {
+        this.equipmentMaintenanceList = response.rows;
+        this.total = response.total;
+        this.loading = false;
+      });
+    },
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        maintenanceId: null,
+        maintenanceCode: null,
+        equipmentName: null,
+        maintenanceType: null,
+        maintenanceStatus: "0",
+        maintenanceTime: null,
+        maintainer: null,
+        cost: 0,
+        remark: null
+      };
+      this.resetForm("form");
+    },
+    /** 搜索按钮操作 */
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    /** 重置按钮操作 */
+    resetQuery() {
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    // 多选框选中数据
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.maintenanceId)
+      this.single = selection.length!==1
+      this.multiple = !selection.length
+    },
+    /** 新增按钮操作 */
+    handleAdd() {
+      this.reset();
+      this.open = true;
+      this.title = "添加设备维护";
+    },
+    /** 修改按钮操作 */
+    handleUpdate(row) {
+      this.reset();
+      const maintenanceId = row.maintenanceId || this.ids
+      getEquipmentMaintenance(maintenanceId).then(response => {
+        this.form = response.data;
+        this.open = true;
+        this.title = "修改设备维护";
+      });
+    },
+    /** 提交按钮 */
+    submitForm() {
+      this.$refs["form"].validate(valid => {
+        if (valid) {
+          if (this.form.maintenanceId != null) {
+            updateEquipmentMaintenance(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addEquipmentMaintenance(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
+        }
+      });
+    },
+    /** 删除按钮操作 */
+    handleDelete(row) {
+      const maintenanceIds = row.maintenanceId || this.ids;
+      this.$modal.confirm('是否确认删除设备维护编号为"' + maintenanceIds + '"的数据项？').then(function() {
+        return delEquipmentMaintenance(maintenanceIds);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('equipment/maintenance/export', {
+        ...this.queryParams
+      }, `equipment_maintenance_${new Date().getTime()}.xlsx`)
+    }
+  }
+};
 </script>
 
 <style scoped>

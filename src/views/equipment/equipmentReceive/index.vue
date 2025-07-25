@@ -114,7 +114,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="receiveList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+    <el-table v-loading="loading" :data="equipmentReceiveList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="编号" align="center" prop="receiveId" width="50"/>
       <el-table-column label="领用单号" align="center" prop="receiveNo" width="120"/>
@@ -160,114 +160,248 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改设备领用对话框 -->
-    <div v-if="open" class="local-modal-mask">
-      <div class="local-modal-content">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-        <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="领用单号" prop="receiveNo">
-                <el-input v-model="form.receiveNo" placeholder="请输入领用单号" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="设备名称" prop="equipmentName">
-                <el-input v-model="form.equipmentName" placeholder="请输入设备名称" />
-              </el-form-item>
-            </el-col>
-          </el-row>
+    <!-- 添加或修改设备接收对话框 -->
+    <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body>
+      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="接收编号" prop="receiveCode">
+              <el-input v-model="form.receiveCode" placeholder="请输入接收编号" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="设备名称" prop="equipmentName">
+              <el-input v-model="form.equipmentName" placeholder="请输入设备名称" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="领用数量" prop="receiveNum">
-                <el-input-number v-model="form.receiveNum" :min="1" controls-position="right" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="领用状态" prop="receiveStatus">
-                <el-select v-model="form.receiveStatus" placeholder="请选择领用状态">
-                  <el-option
-                    v-for="dict in dict.type.receive_status"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  ></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="领用数量" prop="receiveNum">
+              <el-input-number v-model="form.receiveNum" :min="1" controls-position="right" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="领用状态" prop="receiveStatus">
+              <el-select v-model="form.receiveStatus" placeholder="请选择领用状态">
+                <el-option
+                  v-for="dict in dict.type.receive_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                ></el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="领用时间" prop="receiveTime">
-                <el-date-picker
-                  v-model="form.receiveTime"
-                  type="datetime"
-                  placeholder="选择领用时间"
-                  value-format="yyyy-MM-dd HH:mm:ss"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="领用人" prop="receiveUser">
-                <el-input v-model="form.receiveUser" placeholder="请输入领用人" />
-              </el-form-item>
-            </el-col>
-          </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="领用时间" prop="receiveTime">
+              <el-date-picker
+                v-model="form.receiveTime"
+                type="datetime"
+                placeholder="选择领用时间"
+                value-format="yyyy-MM-dd HH:mm:ss"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="领用人" prop="receiveUser">
+              <el-input v-model="form.receiveUser" placeholder="请输入领用人" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="领用部门" prop="receiveDept">
-                <el-input v-model="form.receiveDept" placeholder="请输入领用部门" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="联系电话" prop="contactPhone">
-                <el-input v-model="form.contactPhone" placeholder="请输入联系电话" />
-              </el-form-item>
-            </el-col>
-          </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="领用部门" prop="receiveDept">
+              <el-input v-model="form.receiveDept" placeholder="请输入领用部门" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="联系电话" prop="contactPhone">
+              <el-input v-model="form.contactPhone" placeholder="请输入联系电话" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-          <el-row :gutter="20">
-            <el-col :span="24">
-              <el-form-item label="备注" prop="remark">
-                <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
-        </div>
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
       </div>
-    </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-// ... existing code ...
+import { listEquipmentReceive, getEquipmentReceive, delEquipmentReceive, addEquipmentReceive, updateEquipmentReceive, exportEquipmentReceive } from "@/api/equipment/equipmentReceive";
+
+export default {
+  name: "EquipmentReceive",
+  dicts: ['receive_status'],
+  data() {
+    return {
+      // 遮罩层
+      loading: true,
+      // 选中数组
+      ids: [],
+      // 非单个禁用
+      single: true,
+      // 非多个禁用
+      multiple: true,
+      // 显示搜索条件
+      showSearch: true,
+      // 总条数
+      total: 0,
+      // 设备接收表格数据
+      equipmentReceiveList: [],
+      // 弹出层标题
+      title: "",
+      // 是否显示弹出层
+      open: false,
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        receiveCode: null,
+        equipmentName: null,
+        receiveStatus: null,
+        beginDate: null,
+        endDate: null
+      },
+      // 表单参数
+      form: {},
+      // 表单校验
+      rules: {
+        receiveCode: [
+          { required: true, message: "接收编号不能为空", trigger: "blur" }
+        ],
+        equipmentName: [
+          { required: true, message: "设备名称不能为空", trigger: "blur" }
+        ],
+        receiveNum: [
+          { required: true, message: "领用数量不能为空", trigger: "blur" }
+        ],
+        receiveStatus: [
+          { required: true, message: "领用状态不能为空", trigger: "change" }
+        ]
+      }
+    };
+  },
+  created() {
+    this.getList();
+  },
+  methods: {
+    /** 查询设备接收列表 */
+    getList() {
+      this.loading = true;
+      listEquipmentReceive(this.queryParams).then(response => {
+        this.equipmentReceiveList = response.rows;
+        this.total = response.total;
+        this.loading = false;
+      });
+    },
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        receiveId: null,
+        receiveCode: null,
+        equipmentName: null,
+        receiveNum: 1,
+        receiveStatus: "0",
+        receiveTime: null,
+        receiveUser: null,
+        receiveDept: null,
+        contactPhone: null,
+        remark: null
+      };
+      this.resetForm("form");
+    },
+    /** 搜索按钮操作 */
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    /** 重置按钮操作 */
+    resetQuery() {
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    // 多选框选中数据
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.receiveId)
+      this.single = selection.length!==1
+      this.multiple = !selection.length
+    },
+    /** 新增按钮操作 */
+    handleAdd() {
+      this.reset();
+      this.open = true;
+      this.title = "添加设备接收";
+    },
+    /** 修改按钮操作 */
+    handleUpdate(row) {
+      this.reset();
+      const receiveId = row.receiveId || this.ids
+      getEquipmentReceive(receiveId).then(response => {
+        this.form = response.data;
+        this.open = true;
+        this.title = "修改设备接收";
+      });
+    },
+    /** 提交按钮 */
+    submitForm() {
+      this.$refs["form"].validate(valid => {
+        if (valid) {
+          if (this.form.receiveId != null) {
+            updateEquipmentReceive(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addEquipmentReceive(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
+        }
+      });
+    },
+    /** 删除按钮操作 */
+    handleDelete(row) {
+      const receiveIds = row.receiveId || this.ids;
+      this.$modal.confirm('是否确认删除设备接收编号为"' + receiveIds + '"的数据项？').then(function() {
+        return delEquipmentReceive(receiveIds);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('equipment/receive/export', {
+        ...this.queryParams
+      }, `equipment_receive_${new Date().getTime()}.xlsx`)
+    }
+  }
+};
 </script>
 
-<style scoped>
-.local-modal-mask {
-  position: absolute;
-  left: 0; top: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.3);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.local-modal-content {
-  background: #fff;
-  border-radius: 6px;
-  min-width: 600px;
-  max-width: 90vw;
-  max-height: 90vh;
-  overflow: auto;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-</style> 
+ 

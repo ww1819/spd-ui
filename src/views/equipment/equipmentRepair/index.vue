@@ -114,7 +114,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="repairList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+    <el-table v-loading="loading" :data="equipmentRepairList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="编号" align="center" prop="repairId" width="50"/>
       <el-table-column label="维修单号" align="center" prop="repairNo" width="120"/>
@@ -238,7 +238,163 @@
 </template>
 
 <script>
-// ... existing code ...
+import { listEquipmentRepair, getEquipmentRepair, delEquipmentRepair, addEquipmentRepair, updateEquipmentRepair, exportEquipmentRepair } from "@/api/equipment/equipmentRepair";
+
+export default {
+  name: "EquipmentRepair",
+  dicts: ['repair_status', 'repair_type'],
+  data() {
+    return {
+      // 遮罩层
+      loading: true,
+      // 选中数组
+      ids: [],
+      // 非单个禁用
+      single: true,
+      // 非多个禁用
+      multiple: true,
+      // 显示搜索条件
+      showSearch: true,
+      // 总条数
+      total: 0,
+      // 设备维修表格数据
+      equipmentRepairList: [],
+      // 弹出层标题
+      title: "",
+      // 是否显示弹出层
+      open: false,
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        repairCode: null,
+        equipmentName: null,
+        repairStatus: null,
+        beginDate: null,
+        endDate: null
+      },
+      // 表单参数
+      form: {},
+      // 表单校验
+      rules: {
+        repairCode: [
+          { required: true, message: "维修编号不能为空", trigger: "blur" }
+        ],
+        equipmentName: [
+          { required: true, message: "设备名称不能为空", trigger: "blur" }
+        ],
+        repairType: [
+          { required: true, message: "维修类型不能为空", trigger: "change" }
+        ],
+        repairStatus: [
+          { required: true, message: "维修状态不能为空", trigger: "change" }
+        ]
+      }
+    };
+  },
+  created() {
+    this.getList();
+  },
+  methods: {
+    /** 查询设备维修列表 */
+    getList() {
+      this.loading = true;
+      listEquipmentRepair(this.queryParams).then(response => {
+        this.equipmentRepairList = response.rows;
+        this.total = response.total;
+        this.loading = false;
+      });
+    },
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        repairId: null,
+        repairCode: null,
+        equipmentName: null,
+        repairType: null,
+        repairStatus: "0",
+        repairTime: null,
+        repairer: null,
+        cost: 0,
+        remark: null
+      };
+      this.resetForm("form");
+    },
+    /** 搜索按钮操作 */
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    /** 重置按钮操作 */
+    resetQuery() {
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    // 多选框选中数据
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.repairId)
+      this.single = selection.length!==1
+      this.multiple = !selection.length
+    },
+    /** 新增按钮操作 */
+    handleAdd() {
+      this.reset();
+      this.open = true;
+      this.title = "添加设备维修";
+    },
+    /** 修改按钮操作 */
+    handleUpdate(row) {
+      this.reset();
+      const repairId = row.repairId || this.ids
+      getEquipmentRepair(repairId).then(response => {
+        this.form = response.data;
+        this.open = true;
+        this.title = "修改设备维修";
+      });
+    },
+    /** 提交按钮 */
+    submitForm() {
+      this.$refs["form"].validate(valid => {
+        if (valid) {
+          if (this.form.repairId != null) {
+            updateEquipmentRepair(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addEquipmentRepair(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
+        }
+      });
+    },
+    /** 删除按钮操作 */
+    handleDelete(row) {
+      const repairIds = row.repairId || this.ids;
+      this.$modal.confirm('是否确认删除设备维修编号为"' + repairIds + '"的数据项？').then(function() {
+        return delEquipmentRepair(repairIds);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('equipment/repair/export', {
+        ...this.queryParams
+      }, `equipment_repair_${new Date().getTime()}.xlsx`)
+    }
+  }
+};
 </script>
 
 <style scoped>

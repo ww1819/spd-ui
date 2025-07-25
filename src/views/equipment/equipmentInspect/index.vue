@@ -114,7 +114,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="inspectList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+    <el-table v-loading="loading" :data="equipmentInspectList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="编号" align="center" prop="inspectId" width="50"/>
       <el-table-column label="检查单号" align="center" prop="inspectNo" width="120"/>
@@ -238,7 +238,163 @@
 </template>
 
 <script>
-// ... existing code ...
+import { listEquipmentInspect, getEquipmentInspect, delEquipmentInspect, addEquipmentInspect, updateEquipmentInspect, exportEquipmentInspect } from "@/api/equipment/equipmentInspect";
+
+export default {
+  name: "EquipmentInspect",
+  dicts: ['inspect_status', 'inspect_type'],
+  data() {
+    return {
+      // 遮罩层
+      loading: true,
+      // 选中数组
+      ids: [],
+      // 非单个禁用
+      single: true,
+      // 非多个禁用
+      multiple: true,
+      // 显示搜索条件
+      showSearch: true,
+      // 总条数
+      total: 0,
+      // 设备检验表格数据
+      equipmentInspectList: [],
+      // 弹出层标题
+      title: "",
+      // 是否显示弹出层
+      open: false,
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        inspectCode: null,
+        equipmentName: null,
+        inspectStatus: null,
+        beginDate: null,
+        endDate: null
+      },
+      // 表单参数
+      form: {},
+      // 表单校验
+      rules: {
+        inspectCode: [
+          { required: true, message: "检验编号不能为空", trigger: "blur" }
+        ],
+        equipmentName: [
+          { required: true, message: "设备名称不能为空", trigger: "blur" }
+        ],
+        inspectType: [
+          { required: true, message: "检验类型不能为空", trigger: "change" }
+        ],
+        inspectStatus: [
+          { required: true, message: "检验状态不能为空", trigger: "change" }
+        ]
+      }
+    };
+  },
+  created() {
+    this.getList();
+  },
+  methods: {
+    /** 查询设备检验列表 */
+    getList() {
+      this.loading = true;
+      listEquipmentInspect(this.queryParams).then(response => {
+        this.equipmentInspectList = response.rows;
+        this.total = response.total;
+        this.loading = false;
+      });
+    },
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        inspectId: null,
+        inspectCode: null,
+        equipmentName: null,
+        inspectType: null,
+        inspectStatus: "0",
+        inspectTime: null,
+        inspector: null,
+        inspectResult: null,
+        remark: null
+      };
+      this.resetForm("form");
+    },
+    /** 搜索按钮操作 */
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    /** 重置按钮操作 */
+    resetQuery() {
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    // 多选框选中数据
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.inspectId)
+      this.single = selection.length!==1
+      this.multiple = !selection.length
+    },
+    /** 新增按钮操作 */
+    handleAdd() {
+      this.reset();
+      this.open = true;
+      this.title = "添加设备检验";
+    },
+    /** 修改按钮操作 */
+    handleUpdate(row) {
+      this.reset();
+      const inspectId = row.inspectId || this.ids
+      getEquipmentInspect(inspectId).then(response => {
+        this.form = response.data;
+        this.open = true;
+        this.title = "修改设备检验";
+      });
+    },
+    /** 提交按钮 */
+    submitForm() {
+      this.$refs["form"].validate(valid => {
+        if (valid) {
+          if (this.form.inspectId != null) {
+            updateEquipmentInspect(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addEquipmentInspect(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
+        }
+      });
+    },
+    /** 删除按钮操作 */
+    handleDelete(row) {
+      const inspectIds = row.inspectId || this.ids;
+      this.$modal.confirm('是否确认删除设备检验编号为"' + inspectIds + '"的数据项？').then(function() {
+        return delEquipmentInspect(inspectIds);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('equipment/inspect/export', {
+        ...this.queryParams
+      }, `equipment_inspect_${new Date().getTime()}.xlsx`)
+    }
+  }
+};
 </script>
 
 <style scoped>

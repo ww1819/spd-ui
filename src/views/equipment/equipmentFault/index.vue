@@ -210,7 +210,163 @@
 </template>
 
 <script>
-// ... existing code ...
+import { listEquipmentFault, getEquipmentFault, delEquipmentFault, addEquipmentFault, updateEquipmentFault, exportEquipmentFault } from "@/api/equipment/equipmentFault";
+
+export default {
+  name: "EquipmentFault",
+  dicts: ['fault_status', 'fault_type'],
+  data() {
+    return {
+      // 遮罩层
+      loading: true,
+      // 选中数组
+      ids: [],
+      // 非单个禁用
+      single: true,
+      // 非多个禁用
+      multiple: true,
+      // 显示搜索条件
+      showSearch: true,
+      // 总条数
+      total: 0,
+      // 设备故障表格数据
+      equipmentFaultList: [],
+      // 弹出层标题
+      title: "",
+      // 是否显示弹出层
+      open: false,
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        faultCode: null,
+        equipmentName: null,
+        faultStatus: null,
+        beginDate: null,
+        endDate: null
+      },
+      // 表单参数
+      form: {},
+      // 表单校验
+      rules: {
+        faultCode: [
+          { required: true, message: "故障编号不能为空", trigger: "blur" }
+        ],
+        equipmentName: [
+          { required: true, message: "设备名称不能为空", trigger: "blur" }
+        ],
+        faultType: [
+          { required: true, message: "故障类型不能为空", trigger: "change" }
+        ],
+        faultStatus: [
+          { required: true, message: "故障状态不能为空", trigger: "change" }
+        ]
+      }
+    };
+  },
+  created() {
+    this.getList();
+  },
+  methods: {
+    /** 查询设备故障列表 */
+    getList() {
+      this.loading = true;
+      listEquipmentFault(this.queryParams).then(response => {
+        this.equipmentFaultList = response.rows;
+        this.total = response.total;
+        this.loading = false;
+      });
+    },
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        faultId: null,
+        faultCode: null,
+        equipmentName: null,
+        faultType: null,
+        faultStatus: "0",
+        faultTime: null,
+        reporter: null,
+        faultDescription: null,
+        remark: null
+      };
+      this.resetForm("form");
+    },
+    /** 搜索按钮操作 */
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    /** 重置按钮操作 */
+    resetQuery() {
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    // 多选框选中数据
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.faultId)
+      this.single = selection.length!==1
+      this.multiple = !selection.length
+    },
+    /** 新增按钮操作 */
+    handleAdd() {
+      this.reset();
+      this.open = true;
+      this.title = "添加设备故障";
+    },
+    /** 修改按钮操作 */
+    handleUpdate(row) {
+      this.reset();
+      const faultId = row.faultId || this.ids
+      getEquipmentFault(faultId).then(response => {
+        this.form = response.data;
+        this.open = true;
+        this.title = "修改设备故障";
+      });
+    },
+    /** 提交按钮 */
+    submitForm() {
+      this.$refs["form"].validate(valid => {
+        if (valid) {
+          if (this.form.faultId != null) {
+            updateEquipmentFault(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addEquipmentFault(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
+        }
+      });
+    },
+    /** 删除按钮操作 */
+    handleDelete(row) {
+      const faultIds = row.faultId || this.ids;
+      this.$modal.confirm('是否确认删除设备故障编号为"' + faultIds + '"的数据项？').then(function() {
+        return delEquipmentFault(faultIds);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('equipment/fault/export', {
+        ...this.queryParams
+      }, `equipment_fault_${new Date().getTime()}.xlsx`)
+    }
+  }
+};
 </script>
 
 <style scoped>

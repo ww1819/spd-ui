@@ -114,7 +114,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="useList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+    <el-table v-loading="loading" :data="equipmentUseList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="编号" align="center" prop="useId" width="50"/>
       <el-table-column label="使用单号" align="center" prop="useNo" width="120"/>
@@ -152,109 +152,247 @@
     </el-table>
 
     <!-- 添加或修改设备使用对话框 -->
-    <div v-if="open" class="local-modal-mask">
-      <div class="local-modal-content">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-        <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="使用单号" prop="useNo">
-                <el-input v-model="form.useNo" placeholder="请输入使用单号" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="设备名称" prop="equipmentName">
-                <el-input v-model="form.equipmentName" placeholder="请输入设备名称" />
-              </el-form-item>
-            </el-col>
-          </el-row>
+    <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body>
+      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="使用单号" prop="useNo">
+              <el-input v-model="form.useNo" placeholder="请输入使用单号" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="设备名称" prop="equipmentName">
+              <el-input v-model="form.equipmentName" placeholder="请输入设备名称" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="使用人" prop="useUser">
-                <el-input v-model="form.useUser" placeholder="请输入使用人" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="使用状态" prop="useStatus">
-                <el-select v-model="form.useStatus" placeholder="请选择使用状态">
-                  <el-option
-                    v-for="dict in dict.type.use_status"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  ></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="使用人" prop="useUser">
+              <el-input v-model="form.useUser" placeholder="请输入使用人" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="使用状态" prop="useStatus">
+              <el-select v-model="form.useStatus" placeholder="请选择使用状态">
+                <el-option
+                  v-for="dict in dict.type.use_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                ></el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="使用时间" prop="useTime">
-                <el-date-picker
-                  v-model="form.useTime"
-                  type="datetime"
-                  placeholder="选择使用时间"
-                  value-format="yyyy-MM-dd HH:mm:ss"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="使用部门" prop="useDept">
-                <el-input v-model="form.useDept" placeholder="请输入使用部门" />
-              </el-form-item>
-            </el-col>
-          </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="使用时间" prop="useTime">
+              <el-date-picker
+                v-model="form.useTime"
+                type="datetime"
+                placeholder="选择使用时间"
+                value-format="yyyy-MM-dd HH:mm:ss"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="使用部门" prop="useDept">
+              <el-input v-model="form.useDept" placeholder="请输入使用部门" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="使用用途" prop="usePurpose">
-                <el-input v-model="form.usePurpose" placeholder="请输入使用用途" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="联系电话" prop="contactPhone">
-                <el-input v-model="form.contactPhone" placeholder="请输入联系电话" />
-              </el-form-item>
-            </el-col>
-          </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="使用用途" prop="usePurpose">
+              <el-input v-model="form.usePurpose" placeholder="请输入使用用途" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="联系电话" prop="contactPhone">
+              <el-input v-model="form.contactPhone" placeholder="请输入联系电话" />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-          <el-row :gutter="20">
-            <el-col :span="24">
-              <el-form-item label="备注" prop="remark">
-                <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
-        </div>
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
       </div>
-    </div>
+    </el-dialog>
   </div>
 </template>
 
-<style scoped>
-.local-modal-mask {
-  position: absolute;
-  left: 0; top: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.3);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.local-modal-content {
-  background: #fff;
-  border-radius: 6px;
-  min-width: 600px;
-  max-width: 90vw;
-  max-height: 90vh;
-  overflow: auto;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-</style> 
+<script>
+import { listEquipmentUse, getEquipmentUse, delEquipmentUse, addEquipmentUse, updateEquipmentUse, exportEquipmentUse } from "@/api/equipment/equipmentUse";
+
+export default {
+  name: "EquipmentUse",
+  dicts: ['use_status'],
+  data() {
+    return {
+      // 遮罩层
+      loading: true,
+      // 选中数组
+      ids: [],
+      // 非单个禁用
+      single: true,
+      // 非多个禁用
+      multiple: true,
+      // 显示搜索条件
+      showSearch: true,
+      // 总条数
+      total: 0,
+      // 设备使用表格数据
+      equipmentUseList: [],
+      // 弹出层标题
+      title: "",
+      // 是否显示弹出层
+      open: false,
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        useNo: null,
+        equipmentName: null,
+        useStatus: null,
+        beginDate: null,
+        endDate: null
+      },
+      // 表单参数
+      form: {},
+      // 表单校验
+      rules: {
+        useNo: [
+          { required: true, message: "使用单号不能为空", trigger: "blur" }
+        ],
+        equipmentName: [
+          { required: true, message: "设备名称不能为空", trigger: "blur" }
+        ],
+        useUser: [
+          { required: true, message: "使用人不能为空", trigger: "blur" }
+        ],
+        useStatus: [
+          { required: true, message: "使用状态不能为空", trigger: "change" }
+        ]
+      }
+    };
+  },
+  created() {
+    this.getList();
+  },
+  methods: {
+    /** 查询设备使用列表 */
+    getList() {
+      this.loading = true;
+      listEquipmentUse(this.queryParams).then(response => {
+        this.equipmentUseList = response.rows;
+        this.total = response.total;
+        this.loading = false;
+      });
+    },
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        useId: null,
+        useNo: null,
+        equipmentName: null,
+        useUser: null,
+        useStatus: "0",
+        useTime: null,
+        useDept: null,
+        usePurpose: null,
+        contactPhone: null,
+        remark: null
+      };
+      this.resetForm("form");
+    },
+    /** 搜索按钮操作 */
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    /** 重置按钮操作 */
+    resetQuery() {
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    // 多选框选中数据
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.useId)
+      this.single = selection.length!==1
+      this.multiple = !selection.length
+    },
+    /** 新增按钮操作 */
+    handleAdd() {
+      this.reset();
+      this.open = true;
+      this.title = "添加设备使用";
+    },
+    /** 修改按钮操作 */
+    handleUpdate(row) {
+      this.reset();
+      const useId = row.useId || this.ids
+      getEquipmentUse(useId).then(response => {
+        this.form = response.data;
+        this.open = true;
+        this.title = "修改设备使用";
+      });
+    },
+    /** 提交按钮 */
+    submitForm() {
+      this.$refs["form"].validate(valid => {
+        if (valid) {
+          if (this.form.useId != null) {
+            updateEquipmentUse(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addEquipmentUse(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
+        }
+      });
+    },
+    /** 删除按钮操作 */
+    handleDelete(row) {
+      const useIds = row.useId || this.ids;
+      this.$modal.confirm('是否确认删除设备使用编号为"' + useIds + '"的数据项？').then(function() {
+        return delEquipmentUse(useIds);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('equipment/use/export', {
+        ...this.queryParams
+      }, `equipment_use_${new Date().getTime()}.xlsx`)
+    }
+  }
+};
+</script>
+
+ 

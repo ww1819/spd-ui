@@ -239,7 +239,163 @@
 </template>
 
 <script>
-// ... existing code ...
+import { listEquipmentCheck, getEquipmentCheck, delEquipmentCheck, addEquipmentCheck, updateEquipmentCheck, exportEquipmentCheck } from "@/api/equipment/equipmentCheck";
+
+export default {
+  name: "EquipmentCheck",
+  dicts: ['check_status', 'check_type'],
+  data() {
+    return {
+      // 遮罩层
+      loading: true,
+      // 选中数组
+      ids: [],
+      // 非单个禁用
+      single: true,
+      // 非多个禁用
+      multiple: true,
+      // 显示搜索条件
+      showSearch: true,
+      // 总条数
+      total: 0,
+      // 设备检查表格数据
+      equipmentCheckList: [],
+      // 弹出层标题
+      title: "",
+      // 是否显示弹出层
+      open: false,
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        checkCode: null,
+        equipmentName: null,
+        checkStatus: null,
+        beginDate: null,
+        endDate: null
+      },
+      // 表单参数
+      form: {},
+      // 表单校验
+      rules: {
+        checkCode: [
+          { required: true, message: "检查编号不能为空", trigger: "blur" }
+        ],
+        equipmentName: [
+          { required: true, message: "设备名称不能为空", trigger: "blur" }
+        ],
+        checkType: [
+          { required: true, message: "检查类型不能为空", trigger: "change" }
+        ],
+        checkStatus: [
+          { required: true, message: "检查状态不能为空", trigger: "change" }
+        ]
+      }
+    };
+  },
+  created() {
+    this.getList();
+  },
+  methods: {
+    /** 查询设备检查列表 */
+    getList() {
+      this.loading = true;
+      listEquipmentCheck(this.queryParams).then(response => {
+        this.equipmentCheckList = response.rows;
+        this.total = response.total;
+        this.loading = false;
+      });
+    },
+    // 取消按钮
+    cancel() {
+      this.open = false;
+      this.reset();
+    },
+    // 表单重置
+    reset() {
+      this.form = {
+        checkId: null,
+        checkCode: null,
+        equipmentName: null,
+        checkType: null,
+        checkStatus: "0",
+        checkTime: null,
+        checker: null,
+        checkResult: null,
+        remark: null
+      };
+      this.resetForm("form");
+    },
+    /** 搜索按钮操作 */
+    handleQuery() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    /** 重置按钮操作 */
+    resetQuery() {
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    // 多选框选中数据
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.checkId)
+      this.single = selection.length!==1
+      this.multiple = !selection.length
+    },
+    /** 新增按钮操作 */
+    handleAdd() {
+      this.reset();
+      this.open = true;
+      this.title = "添加设备检查";
+    },
+    /** 修改按钮操作 */
+    handleUpdate(row) {
+      this.reset();
+      const checkId = row.checkId || this.ids
+      getEquipmentCheck(checkId).then(response => {
+        this.form = response.data;
+        this.open = true;
+        this.title = "修改设备检查";
+      });
+    },
+    /** 提交按钮 */
+    submitForm() {
+      this.$refs["form"].validate(valid => {
+        if (valid) {
+          if (this.form.checkId != null) {
+            updateEquipmentCheck(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addEquipmentCheck(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
+        }
+      });
+    },
+    /** 删除按钮操作 */
+    handleDelete(row) {
+      const checkIds = row.checkId || this.ids;
+      this.$modal.confirm('是否确认删除设备检查编号为"' + checkIds + '"的数据项？').then(function() {
+        return delEquipmentCheck(checkIds);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('equipment/check/export', {
+        ...this.queryParams
+      }, `equipment_check_${new Date().getTime()}.xlsx`)
+    }
+  }
+};
 </script>
 
 <style scoped>
