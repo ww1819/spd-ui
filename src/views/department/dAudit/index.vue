@@ -31,6 +31,11 @@
             <SelectWarehouse v-model="queryParams.warehouseId"/>
           </el-form-item>
         </el-col>
+        <el-col :span="6">
+          <el-form-item label="科室" prop="departmentId" label-width="100px">
+            <SelectDepartment v-model="queryParams.departmentId" />
+          </el-form-item>
+        </el-col>
 
         <el-col :span="6" label-width="100px">
           <el-form-item>
@@ -57,6 +62,7 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" />
+      <el-table-column label="科室" align="center" prop="department.name" />
       <el-table-column label="操作人" align="center" prop="user.userName" />
       <el-table-column label="申请状态" align="center" prop="applyBillStatus" >
         <template slot-scope="scope">
@@ -224,6 +230,7 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="warehouseValue"
+      :departmentValue="departmentValue"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectInventory>
@@ -235,18 +242,20 @@
 import { listApply, getApply, delApply, addApply, updateApply,auditApply } from "@/api/department/apply";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectUser from '@/components/SelectModel/SelectUser';
+import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import {auditWarehouse, getWarehouse} from "@/api/warehouse/warehouse";
 
 export default {
   name: "dAudit",
   dicts: ['biz_status'],
-  components: {SelectWarehouse,SelectUser},
+  components: {SelectWarehouse,SelectUser,SelectDepartment},
   data() {
     return {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
       warehouseValue: "",
+      departmentValue: "",
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -276,6 +285,7 @@ export default {
         pageSize: 10,
         applyBillDate: null,
         warehouseId: null,
+        departmentId: null,
         userId: null,
         applyBillStatus: null,
       },
@@ -310,6 +320,7 @@ export default {
       //打开“弹窗组件”
       this.DialogComponentShow = true
       this.warehouseValue = this.form.warehouseId;
+      this.departmentValue = this.form.departmentId;
     },
     closeDialog() {
       //关闭“弹窗组件”

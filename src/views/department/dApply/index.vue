@@ -31,6 +31,12 @@
           </el-form-item>
         </el-col>
 
+        <el-col :span="6">
+          <el-form-item label="科室" prop="departmentId" label-width="100px">
+            <SelectDepartment v-model="queryParams.departmentId" />
+          </el-form-item>
+        </el-col>
+
         <el-col :span="6" label-width="100px">
           <el-form-item>
             <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -80,6 +86,7 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" />
+      <el-table-column label="科室" align="center" prop="departemnt.name" />
       <el-table-column label="操作人" align="center" prop="user.userName" />
       <el-table-column label="申请状态" align="center" prop="applyBillStatus" >
         <template slot-scope="scope">
@@ -139,7 +146,11 @@
               <SelectWarehouse v-model="form.warehouseId"/>
             </el-form-item>
           </el-col>
-
+          <el-col :span="6">
+            <el-form-item label="科室" prop="departmentId" label-width="100px">
+              <SelectDepartment v-model="queryParams.departmentId" />
+            </el-form-item>
+          </el-col>
           <el-col :span="4">
             <el-form-item label="申请日期" prop="applyBillDate" label-width="100px">
               <el-date-picker clearable
@@ -243,6 +254,7 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="warehouseValue"
+      :departmentValue="departmentValue"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectInventory>
@@ -253,18 +265,20 @@
 <script>
 import { listApply, getApply, delApply, addApply, updateApply } from "@/api/department/apply";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
+import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 
 export default {
   name: "dApply",
   dicts: ['biz_status'],
-  components: {SelectWarehouse,SelectUser},
+  components: {SelectWarehouse,SelectUser,SelectDepartment},
   data() {
     return {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
       warehouseValue: "",
+      departmentValue:"",
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -294,6 +308,7 @@ export default {
         pageSize: 10,
         applyBillDate: null,
         warehouseId: null,
+        departmentId: null,
         userId: null,
         applyBillStatus: null,
       },
