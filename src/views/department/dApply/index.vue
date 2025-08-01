@@ -86,7 +86,7 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" />
-      <el-table-column label="科室" align="center" prop="departemnt.name" />
+      <el-table-column label="科室" align="center" prop="department.name" />
       <el-table-column label="操作人" align="center" prop="user.userName" />
       <el-table-column label="申请状态" align="center" prop="applyBillStatus" >
         <template slot-scope="scope">
@@ -148,7 +148,7 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="科室" prop="departmentId" label-width="100px">
-              <SelectDepartment v-model="queryParams.departmentId" />
+              <SelectDepartment v-model="form.departmentId" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -376,6 +376,7 @@ export default {
         id: null,
         applyBillDate: null,
         warehouseId: null,
+        departmentId: null,
         userId: null,
         applyBillStatus: null,
         createBy: null,
