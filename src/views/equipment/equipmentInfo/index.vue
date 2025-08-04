@@ -594,6 +594,21 @@
         <el-button type="primary" @click="submitForm">保存</el-button>
       </div>
     </el-dialog>
+
+    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width ">
+      <template v-if=" modalObj.component === 'print-type' ">
+        <el-radio-group v-model=" modalObj.form.value ">
+          <el-radio :label=" 2 ">浏览器打印</el-radio>
+        </el-radio-group>
+      </template>
+      <template v-if=" modalObj.form.value === 2 || modalObj.component === 'window-print-preview' ">
+        <gz-shipment-print :row=" modalObj.form.row " ref="receiptOrderPrintRef"></gz-shipment-print>
+      </template>
+      <template slot="footer" class="dialog-footer">
+        <el-button @click=" modalObj.cancel ">取消</el-button>
+        <el-button @click=" modalObj.ok " type="primary">确认</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -601,9 +616,12 @@
 import { listEquipment, getEquipment, delEquipment, addEquipment, updateEquipment } from "@/api/equipment/equipmentInfo";
 import { connection,connectprinter,printstart,printlabel,previewlabel } from "@/api/rfidPrinter/ZMPrintService";
 import { getSbinfo,getSbLabelInfo } from "@/api/sb/sbinfo";
+import gzShipmentPrint from "@/views/gzShipment/audit/gzShipmentPrint.vue";
+import {STOCK_OUT_TEMPLATE} from "@/utils/printData";
 
 export default {
   name: "EquipmentInfo",
+  components: {gzShipmentPrint},
   dicts: ['sys_normal_disable'],
   data() {
     return {
@@ -623,6 +641,21 @@ export default {
       equipmentList: [],
       // 弹出层标题
       title: "",
+
+      // 打印方式选择弹出层对象
+      modalObj: {
+        title: '选择打印方式',
+        width: '520px',
+        component: null,
+        form: {
+          value: null,
+          row: null
+        },
+        ok: () => {
+        },
+        cancel: () => {
+        }
+      },
       // 是否显示弹出层
       open: false,
       // 查询参数
@@ -1252,20 +1285,84 @@ export default {
       this.$modal.msgSuccess("导出成功");
     },
     /** 打印按钮操作 */
-    handlePrint(row) {
-      var equipmentId = row.equipmentId || this.ids;
-      this.queryParams.code = equipmentId;
-      var sbLabelInfo = getSbLabelInfo(this.queryParams);
-      if (!sbLabelInfo) {
-        this.$modal.msgError("设备标签信息不存在或未找到");
-        return;
+    handlePrint(row, print){
+      this.modalObj = {
+        show: true,
+        title: '选择打印方式',
+        width: '520px',
+        component: 'print-type',
+        form: {
+          value: 1,
+          row
+        },
+        ok: () => {
+          this.modalObj.show = false
+          if (this.modalObj.form.value === 1) {
+            this.doPrintOut(row, false)
+          } else {
+            this.windowPrintOut(row, print)
+          }
+        },
+        cancel: () => {
+          this.modalObj.show = false
+        }
       }
-      this.$modal.msgSuccess("设备标签信息:"+sbLabelInfo);
-      // this.$modal.loading("正在连接打印机，请稍候...");
-      connectprinter();
-      printlabel(sbLabelInfo);
-      this.$modal.msgSuccess("打印成功");
+    },
+    windowPrintOut(row, print) {
+      this.getShipmentDetail(row).then(res => {
+        if (print) {
+          this.modalObj.form.row = res
+          this.$nextTick(() => {
+            this.$refs['receiptOrderPrintRef'].start()
+          })
+          return
+        }
+        this.$nextTick(() => {
+          this.modalObj = {
+            show: true,
+            title: '浏览器打印预览',
+            width: '800px',
+            component: 'window-print-preview',
+            form: {
+              value: 1,
+              row,
+              print
+            },
+            ok: () => {
+              this.modalObj.show = false
+            },
+            cancel: () => {
+              this.modalObj.show = false
+            }
+          }
+        })
+      })
+    },
+    doPrintOut(row, print) {
+      this.getShipmentDetail(row).then(result => {
+        if (print) {
+          this.$lodop.print(STOCK_OUT_TEMPLATE, [result])
+        } else {
+          this.$lodop.preview(STOCK_OUT_TEMPLATE, [result])
+        }
+      })
     }
+
+    /** 打印按钮操作 */
+    // handlePrint(row) {
+    //   var equipmentId = row.equipmentId || this.ids;
+    //   this.queryParams.code = equipmentId;
+    //   var sbLabelInfo = getSbLabelInfo(this.queryParams);
+    //   if (!sbLabelInfo) {
+    //     this.$modal.msgError("设备标签信息不存在或未找到");
+    //     return;
+    //   }
+    //   this.$modal.msgSuccess("设备标签信息:"+sbLabelInfo);
+    //   // this.$modal.loading("正在连接打印机，请稍候...");
+    //   connectprinter();
+    //   printlabel(sbLabelInfo);
+    //   this.$modal.msgSuccess("打印成功");
+    // }
   }
 };
 </script>
