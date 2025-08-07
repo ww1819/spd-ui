@@ -149,7 +149,7 @@
             size="mini"
             type="text"
             icon="el-icon-print"
-            @click="handlePrint(scope.row)"
+            @click="handlePrint(scope.row,true)"
             v-hasPermi="['equipment:info:print']"
           >打印</el-button>
           <el-button
@@ -617,11 +617,12 @@ import { listEquipment, getEquipment, delEquipment, addEquipment, updateEquipmen
 import { connection,connectprinter,printstart,printlabel,previewlabel } from "@/api/rfidPrinter/ZMPrintService";
 import { getSbinfo,getSbLabelInfo } from "@/api/sb/sbinfo";
 import gzShipmentPrint from "@/views/gzShipment/audit/gzShipmentPrint.vue";
-import {STOCK_OUT_TEMPLATE} from "@/utils/printData";
+import {STOCK_OUT_TEMPLATE} from '@/utils/printData';
+import equipmentBarcodePrint from "@/views/equipment/equipmentInfo/equipmentBarcodePrint.vue";
 
 export default {
   name: "EquipmentInfo",
-  components: {gzShipmentPrint},
+  components: {gzShipmentPrint,equipmentBarcodePrint},
   dicts: ['sys_normal_disable'],
   data() {
     return {
@@ -1309,7 +1310,7 @@ export default {
       }
     },
     windowPrintOut(row, print) {
-      this.getShipmentDetail(row).then(res => {
+      this.row.then(res => {
         if (print) {
           this.modalObj.form.row = res
           this.$nextTick(() => {
@@ -1339,7 +1340,7 @@ export default {
       })
     },
     doPrintOut(row, print) {
-      this.getShipmentDetail(row).then(result => {
+      this.row.then(result => {
         if (print) {
           this.$lodop.print(STOCK_OUT_TEMPLATE, [result])
         } else {

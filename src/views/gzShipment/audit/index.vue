@@ -618,7 +618,7 @@ export default {
       })
     },
     doPrintOut(row, print) {
-      this.getShipmentDetail(row).then(result => {
+      this.row.then(result => {
         if (print) {
           this.$lodop.print(STOCK_OUT_TEMPLATE, [result])
         } else {
@@ -629,52 +629,53 @@ export default {
     //组装打印信息
     getShipmentDetail(row) {
       //查询详情
-      return getShipment(row.id).then(response => {
-        const details = response.data.gzShipmentEntryList
-        const materiaDetails = response.data.materialList
-        const map = {};
-
-        (materiaDetails || []).forEach(it => {
-          map[it.id] = it
-        })
-
-        let detailList = [], totalAmt = 0, totalQty = 0
-
-        details && details.forEach(item => {
-          totalAmt += item.amt
-          totalQty += item.qty
-
-          const prod = map[item.materialId]
-
-          detailList.push({
-            batchNumber: item.batchNumber,
-            amt: item.amt,
-            qty: item.qty,
-            price: item.price,
-            materialCode: prod.code,
-            materialName: prod.name,
-            materialSpeci: prod.speci,
-            periodDate: prod.periodDate,
-            factoryName: prod.fdFactory.factoryName,
-            warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
-          })
-
-        })
-
-        let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
-
-        return {
-          shipmentNo: row.shipmentNo,
-          departmentName: row.department.name,
-          warehouseName: row.warehouse.name,
-          shipmentDate: row.shipmentDate,
-          auditDate: row.auditDate,
-          totalAmt: totalAmt,
-          totalQty: totalQty,
-          totalAmtConverter: totalAmtConverter,
-          detailList:detailList
-        }
-      })
+      return row;
+      // getShipment(row.id).then(response => {
+      //   const details = response.data.gzShipmentEntryList
+      //   const materiaDetails = response.data.materialList
+      //   const map = {};
+      //
+      //   (materiaDetails || []).forEach(it => {
+      //     map[it.id] = it
+      //   })
+      //
+      //   let detailList = [], totalAmt = 0, totalQty = 0
+      //
+      //   details && details.forEach(item => {
+      //     totalAmt += item.amt
+      //     totalQty += item.qty
+      //
+      //     const prod = map[item.materialId]
+      //
+      //     detailList.push({
+      //       batchNumber: item.batchNumber,
+      //       amt: item.amt,
+      //       qty: item.qty,
+      //       price: item.price,
+      //       materialCode: prod.code,
+      //       materialName: prod.name,
+      //       materialSpeci: prod.speci,
+      //       periodDate: prod.periodDate,
+      //       factoryName: prod.fdFactory.factoryName,
+      //       warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
+      //     })
+      //
+      //   })
+      //
+      //   let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
+      //
+      //   return {
+      //     shipmentNo: row.shipmentNo,
+      //     departmentName: row.department.name,
+      //     warehouseName: row.warehouse.name,
+      //     shipmentDate: row.shipmentDate,
+      //     auditDate: row.auditDate,
+      //     totalAmt: totalAmt,
+      //     totalQty: totalQty,
+      //     totalAmtConverter: totalAmtConverter,
+      //     detailList:detailList
+      //   }
+      // })
     },
     /** 删除按钮操作 */
     handleDelete(row) {
