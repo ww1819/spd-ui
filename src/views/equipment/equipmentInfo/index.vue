@@ -1310,33 +1310,31 @@ export default {
       }
     },
     windowPrintOut(row, print) {
-      this.row.then(res => {
-        if (print) {
-          this.modalObj.form.row = res
-          this.$nextTick(() => {
-            this.$refs['receiptOrderPrintRef'].start()
-          })
-          return
-        }
+      if (print) {
+        this.modalObj.form.row = res
         this.$nextTick(() => {
-          this.modalObj = {
-            show: true,
-            title: '浏览器打印预览',
-            width: '800px',
-            component: 'window-print-preview',
-            form: {
-              value: 1,
-              row,
-              print
-            },
-            ok: () => {
-              this.modalObj.show = false
-            },
-            cancel: () => {
-              this.modalObj.show = false
-            }
-          }
+          this.$refs['receiptOrderPrintRef'].start()
         })
+        return
+      }
+      this.$nextTick(() => {
+        this.modalObj = {
+          show: true,
+          title: '浏览器打印预览',
+          width: '800px',
+          component: 'window-print-preview',
+          form: {
+            value: 1,
+            row,
+            print
+          },
+          ok: () => {
+            this.modalObj.show = false
+          },
+          cancel: () => {
+            this.modalObj.show = false
+          }
+        }
       })
     },
     doPrintOut(row, print) {
