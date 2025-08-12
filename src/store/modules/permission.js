@@ -54,7 +54,12 @@ const permission = {
 
 // 遍历后台传来的路由字符串，转换为组件对象
 function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false) {
-  return asyncRouterMap.filter(route => {
+  return asyncRouterMap.filter((route, index) => {
+    // 为每个路由添加唯一的ID，避免key重复
+    if (!route.uniqueId) {
+      route.uniqueId = `route_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`
+    }
+    
     if (type && route.children) {
       route.children = filterChildren(route.children)
     }
@@ -83,9 +88,18 @@ function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false) {
 function filterChildren(childrenMap, lastRouter = false) {
   var children = []
   childrenMap.forEach((el, index) => {
+    // 为每个子路由添加唯一ID
+    if (!el.uniqueId) {
+      el.uniqueId = `child_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`
+    }
+    
     if (el.children && el.children.length) {
       if (el.component === 'ParentView' && !lastRouter) {
-        el.children.forEach(c => {
+        el.children.forEach((c, cIndex) => {
+          // 为嵌套的子路由添加唯一ID
+          if (!c.uniqueId) {
+            c.uniqueId = `nested_${Date.now()}_${cIndex}_${Math.random().toString(36).substr(2, 9)}`
+          }
           c.path = el.path + '/' + c.path
           if (c.children && c.children.length) {
             children = children.concat(filterChildren(c.children, c))

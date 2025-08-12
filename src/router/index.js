@@ -265,6 +265,12 @@ export const dynamicRoutes = [
         component: () => import('@/views/equipment/equipmentCheck/index'),
         name: 'EquipmentCheck',
         meta: { title: '设备盘点', icon: 'check' }
+      },
+      {
+        path: 'purchaseApplication',
+        component: () => import('@/views/equipment/purchaseApplication/index'),
+        name: 'EquipmentPurchaseApplication',
+        meta: { title: '设备采购申请', icon: 'list' }
       }
     ]
   }

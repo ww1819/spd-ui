@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px" class="search-form">
       <el-row :gutter="20">
         <el-col :span="6">
           <el-form-item label="资产名称" prop="assetName">
@@ -120,9 +120,9 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="equipmentList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+    <el-table v-loading="loading" :data="equipmentList" @selection-change="handleSelectionChange" height="calc(100vh - 40vh)">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编号" align="center" prop="equipmentId" width="60"/>
+      <el-table-column label="编号" align="center" prop="id" width="60"/>
       <el-table-column label="资产编号" align="center" prop="assetCode" width="120"/>
       <el-table-column label="资产名称" align="center" prop="assetName" width="180"/>
       <el-table-column label="规格" align="center" prop="specification" width="120"/>
@@ -177,12 +177,10 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改设备信息对话框 -->
-    <el-dialog
-      :visible.sync="open"
-      :title="title"
-      width="80%"
-      append-to-body>
+    <!-- 添加或修改设备信息局部弹窗 -->
+    <div v-if="open" class="local-modal-mask">
+      <div class="local-modal-content">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
       <el-tabs v-model="activeTab">
         <!-- 基本信息 -->
         <el-tab-pane label="基本信息" name="basic">
@@ -348,8 +346,8 @@
                     <el-option label="否" value="0"></el-option>
                   </el-select>
                 </el-form-item>
-                <el-form-item label="附属资料：" prop="attachedMaterials">
-                  <el-checkbox-group v-model="form.attachedMaterials">
+                                    <el-form-item label="附属资料：" prop="attachedMaterialsList">
+                    <el-checkbox-group v-model="form.attachedMaterialsList">
                     <el-checkbox label="说明书"></el-checkbox>
                     <el-checkbox label="保修卡"></el-checkbox>
                     <el-checkbox label="合格证"></el-checkbox>
@@ -589,16 +587,17 @@
           </el-form>
         </el-tab-pane>
       </el-tabs>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="open = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">保存</el-button>
+        <div class="dialog-footer">
+          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+        </div>
       </div>
-    </el-dialog>
+    </div>
   </div>
 </template>
 
 <script>
-import { listEquipment, getEquipment, delEquipment, addEquipment, updateEquipment } from "@/api/equipment/equipmentInfo";
+import { listEquipment, getEquipment, delEquipment, addEquipment, updateEquipment, getEquipmentStatistics } from "@/api/equipment/equipmentInfo";
 import { connection,connectprinter,printstart,printlabel,previewlabel } from "@/api/rfidPrinter/ZMPrintService";
 import { getSbinfo,getSbLabelInfo } from "@/api/sb/sbinfo";
 
@@ -674,7 +673,7 @@ export default {
         emergencyAsset: '',
         specialAsset: '',
         measurementAsset: '',
-        attachedMaterials: [],
+        attachedMaterialsList: [],
         benefitAnalysis: '',
         remark: '',
         power: '',
@@ -742,358 +741,12 @@ export default {
     /** 查询设备信息列表 */
     getList() {
       this.loading = true;
-      // 模拟数据，实际项目中应该调用后端接口
-      setTimeout(() => {
-        this.equipmentList = [
-          {
-            equipmentId: 1,
-            assetCode: 'ZC001',
-            assetName: '数控车床',
-            specification: 'CK6136×1000',
-            model: 'CK6136',
-            brand: '大连机床',
-            supplier: '大连机床集团',
-            useDepartment: '生产部',
-            storageLocation: '车间A-01',
-            assetStatus: '1',
-            createTime: '2023-01-15 10:00:00',
-            assetManager: '张三',
-            maintenanceManager: '李四',
-            manageDepartment: '设备部',
-            assetType: '机床设备',
-            factoryNumber: 'DN2023001',
-            productionDate: '2022-12-01',
-            registrationNumber: 'REG2023001',
-            expectedOperationDate: '2023-02-01',
-            fundSource: '设备采购资金',
-            invoiceNumber: 'INV2023001',
-            invoiceAmount: 85000,
-            attachedAssetFlag: '0',
-            emergencyAsset: '0',
-            specialAsset: '0',
-            measurementAsset: '0',
-            attachedMaterials: ['说明书', '保修卡', '合格证'],
-            benefitAnalysis: '1',
-            remark: '高精度数控车床，用于精密零件加工',
-            power: '15KW',
-            theoryOperationTime: 8,
-            publicEquipment: '0',
-            creator: '系统管理员',
-            modifier: '系统管理员',
-            modifyTime: '2023-01-15 10:00:00',
-            archiveUsage: '1',
-            contractConsistent: '1',
-            specialNetworkAsset: '0',
-            building: '主厂房',
-            floor: '1层',
-            quantity: 1,
-            contractName: '数控车床采购合同',
-            contractPrice: 85000,
-            signDate: '2022-12-15',
-            purchaseDate: '2023-01-15',
-            acceptanceDate: '2023-01-20',
-            reviewTime: '2023-01-10 09:00:00',
-            warrantyExpireDate: '2025-01-15',
-            bidDate: '2022-11-20',
-            supplyNoticeDate: '2022-12-20',
-            firstAcceptanceDate: '2023-01-18',
-            deliveryDeadline: '2023-01-10',
-            secondAcceptanceDate: '2023-01-25',
-            warrantyOutDate: '2025-01-15',
-            supplierContact: '王经理',
-            supplierPhone: '0411-12345678',
-            maintenanceCompany: '大连机床维修中心',
-            maintenanceContact: '赵工程师',
-            maintenancePhone: '0411-87654321',
-            manufacturer: '大连机床集团',
-            purchaseMethod: '1',
-            biddingForm: '1',
-            singleBudget: 90000,
-            projectBasis: '生产需要',
-            biddingNumber: 'BD2022001',
-            biddingDate: '2022-11-15',
-            biddingAmount: 85000
-          },
-          {
-            equipmentId: 2,
-            assetCode: 'ZC002',
-            assetName: '立式加工中心',
-            specification: 'VMC850',
-            model: 'VMC850',
-            brand: '沈阳机床',
-            supplier: '沈阳机床集团',
-            useDepartment: '技术部',
-            storageLocation: '车间B-02',
-            assetStatus: '1',
-            createTime: '2023-03-20 14:00:00',
-            assetManager: '李四',
-            maintenanceManager: '王五',
-            manageDepartment: '设备部',
-            assetType: '机床设备',
-            factoryNumber: 'SY2023002',
-            productionDate: '2023-02-01',
-            registrationNumber: 'REG2023002',
-            expectedOperationDate: '2023-04-01',
-            fundSource: '技术研发资金',
-            invoiceNumber: 'INV2023002',
-            invoiceAmount: 180000,
-            attachedAssetFlag: '0',
-            emergencyAsset: '0',
-            specialAsset: '0',
-            measurementAsset: '0',
-            attachedMaterials: ['说明书', '保修卡', '合格证', '检验报告书'],
-            benefitAnalysis: '1',
-            remark: '五轴联动加工中心，适用于复杂零件加工',
-            power: '25KW',
-            theoryOperationTime: 10,
-            publicEquipment: '0',
-            creator: '系统管理员',
-            modifier: '系统管理员',
-            modifyTime: '2023-03-20 14:00:00',
-            archiveUsage: '1',
-            contractConsistent: '1',
-            specialNetworkAsset: '0',
-            building: '主厂房',
-            floor: '1层',
-            quantity: 1,
-            contractName: '立式加工中心采购合同',
-            contractPrice: 180000,
-            signDate: '2023-02-15',
-            purchaseDate: '2023-03-20',
-            acceptanceDate: '2023-03-25',
-            reviewTime: '2023-03-15 10:00:00',
-            warrantyExpireDate: '2025-03-20',
-            bidDate: '2023-01-20',
-            supplyNoticeDate: '2023-02-20',
-            firstAcceptanceDate: '2023-03-22',
-            deliveryDeadline: '2023-03-15',
-            secondAcceptanceDate: '2023-03-28',
-            warrantyOutDate: '2025-03-20',
-            supplierContact: '刘经理',
-            supplierPhone: '024-12345678',
-            maintenanceCompany: '沈阳机床维修中心',
-            maintenanceContact: '孙工程师',
-            maintenancePhone: '024-87654321',
-            manufacturer: '沈阳机床集团',
-            purchaseMethod: '1',
-            biddingForm: '1',
-            singleBudget: 200000,
-            projectBasis: '技术研发需要',
-            biddingNumber: 'BD2023002',
-            biddingDate: '2023-01-15',
-            biddingAmount: 180000
-          },
-          {
-            equipmentId: 3,
-            assetCode: 'ZC003',
-            assetName: '激光切割机',
-            specification: 'LC3015',
-            model: 'LC3015',
-            brand: '大族激光',
-            supplier: '大族激光',
-            useDepartment: '制造部',
-            storageLocation: '车间C-03',
-            assetStatus: '0',
-            createTime: '2023-06-10 16:00:00',
-            assetManager: '王五',
-            maintenanceManager: '赵六',
-            manageDepartment: '设备部',
-            assetType: '激光设备',
-            factoryNumber: 'DZ2023003',
-            productionDate: '2023-05-01',
-            registrationNumber: 'REG2023003',
-            expectedOperationDate: '2023-07-01',
-            fundSource: '制造设备资金',
-            invoiceNumber: 'INV2023003',
-            invoiceAmount: 120000,
-            attachedAssetFlag: '0',
-            emergencyAsset: '0',
-            specialAsset: '0',
-            measurementAsset: '0',
-            attachedMaterials: ['说明书', '保修卡', '合格证'],
-            benefitAnalysis: '1',
-            remark: '光纤激光切割机，切割精度高，速度快',
-            power: '3KW',
-            theoryOperationTime: 12,
-            publicEquipment: '0',
-            creator: '系统管理员',
-            modifier: '系统管理员',
-            modifyTime: '2023-06-10 16:00:00',
-            archiveUsage: '1',
-            contractConsistent: '1',
-            specialNetworkAsset: '0',
-            building: '主厂房',
-            floor: '1层',
-            quantity: 1,
-            contractName: '激光切割机采购合同',
-            contractPrice: 120000,
-            signDate: '2023-05-15',
-            purchaseDate: '2023-06-10',
-            acceptanceDate: '2023-06-15',
-            reviewTime: '2023-06-05 14:00:00',
-            warrantyExpireDate: '2025-06-10',
-            bidDate: '2023-04-20',
-            supplyNoticeDate: '2023-05-20',
-            firstAcceptanceDate: '2023-06-12',
-            deliveryDeadline: '2023-06-05',
-            secondAcceptanceDate: '2023-06-18',
-            warrantyOutDate: '2025-06-10',
-            supplierContact: '陈经理',
-            supplierPhone: '0755-12345678',
-            maintenanceCompany: '大族激光维修中心',
-            maintenanceContact: '钱工程师',
-            maintenancePhone: '0755-87654321',
-            manufacturer: '大族激光',
-            purchaseMethod: '1',
-            biddingForm: '1',
-            singleBudget: 130000,
-            projectBasis: '制造需要',
-            biddingNumber: 'BD2023003',
-            biddingDate: '2023-04-15',
-            biddingAmount: 120000
-          },
-          {
-            equipmentId: 4,
-            assetCode: 'ZC004',
-            assetName: '折弯机',
-            specification: 'WC67K-100/3200',
-            model: 'WC67K-100/3200',
-            brand: '亚威机床',
-            supplier: '亚威机床',
-            useDepartment: '钣金部',
-            storageLocation: '车间D-04',
-            assetStatus: '1',
-            createTime: '2023-08-15 11:00:00',
-            assetManager: '赵六',
-            maintenanceManager: '钱七',
-            manageDepartment: '设备部',
-            assetType: '钣金设备',
-            factoryNumber: 'YW2023004',
-            productionDate: '2023-07-01',
-            registrationNumber: 'REG2023004',
-            expectedOperationDate: '2023-09-01',
-            fundSource: '钣金设备资金',
-            invoiceNumber: 'INV2023004',
-            invoiceAmount: 65000,
-            attachedAssetFlag: '0',
-            emergencyAsset: '0',
-            specialAsset: '0',
-            measurementAsset: '0',
-            attachedMaterials: ['说明书', '保修卡', '合格证'],
-            benefitAnalysis: '1',
-            remark: '数控折弯机，适用于各种金属板材折弯',
-            power: '8KW',
-            theoryOperationTime: 8,
-            publicEquipment: '0',
-            creator: '系统管理员',
-            modifier: '系统管理员',
-            modifyTime: '2023-08-15 11:00:00',
-            archiveUsage: '1',
-            contractConsistent: '1',
-            specialNetworkAsset: '0',
-            building: '主厂房',
-            floor: '1层',
-            quantity: 1,
-            contractName: '折弯机采购合同',
-            contractPrice: 65000,
-            signDate: '2023-07-15',
-            purchaseDate: '2023-08-15',
-            acceptanceDate: '2023-08-20',
-            reviewTime: '2023-08-10 09:00:00',
-            warrantyExpireDate: '2025-08-15',
-            bidDate: '2023-06-20',
-            supplyNoticeDate: '2023-07-20',
-            firstAcceptanceDate: '2023-08-17',
-            deliveryDeadline: '2023-08-10',
-            secondAcceptanceDate: '2023-08-22',
-            warrantyOutDate: '2025-08-15',
-            supplierContact: '周经理',
-            supplierPhone: '0514-12345678',
-            maintenanceCompany: '亚威机床维修中心',
-            maintenanceContact: '吴工程师',
-            maintenancePhone: '0514-87654321',
-            manufacturer: '亚威机床',
-            purchaseMethod: '1',
-            biddingForm: '1',
-            singleBudget: 70000,
-            projectBasis: '钣金加工需要',
-            biddingNumber: 'BD2023004',
-            biddingDate: '2023-06-15',
-            biddingAmount: 65000
-          },
-          {
-            equipmentId: 5,
-            assetCode: 'ZC005',
-            assetName: '冲床',
-            specification: 'J23-25',
-            model: 'J23-25',
-            brand: '扬力集团',
-            supplier: '扬力集团',
-            useDepartment: '冲压部',
-            storageLocation: '车间E-05',
-            assetStatus: '1',
-            createTime: '2023-10-20 15:00:00',
-            assetManager: '钱七',
-            maintenanceManager: '孙八',
-            manageDepartment: '设备部',
-            assetType: '冲压设备',
-            factoryNumber: 'YL2023005',
-            productionDate: '2023-09-01',
-            registrationNumber: 'REG2023005',
-            expectedOperationDate: '2023-11-01',
-            fundSource: '冲压设备资金',
-            invoiceNumber: 'INV2023005',
-            invoiceAmount: 45000,
-            attachedAssetFlag: '0',
-            emergencyAsset: '0',
-            specialAsset: '0',
-            measurementAsset: '0',
-            attachedMaterials: ['说明书', '保修卡', '合格证'],
-            benefitAnalysis: '1',
-            remark: '开式可倾压力机，适用于冲孔、落料等工序',
-            power: '5KW',
-            theoryOperationTime: 8,
-            publicEquipment: '0',
-            creator: '系统管理员',
-            modifier: '系统管理员',
-            modifyTime: '2023-10-20 15:00:00',
-            archiveUsage: '1',
-            contractConsistent: '1',
-            specialNetworkAsset: '0',
-            building: '主厂房',
-            floor: '1层',
-            quantity: 1,
-            contractName: '冲床采购合同',
-            contractPrice: 45000,
-            signDate: '2023-09-15',
-            purchaseDate: '2023-10-20',
-            acceptanceDate: '2023-10-25',
-            reviewTime: '2023-10-15 11:00:00',
-            warrantyExpireDate: '2025-10-20',
-            bidDate: '2023-08-20',
-            supplyNoticeDate: '2023-09-20',
-            firstAcceptanceDate: '2023-10-22',
-            deliveryDeadline: '2023-10-15',
-            secondAcceptanceDate: '2023-10-28',
-            warrantyOutDate: '2025-10-20',
-            supplierContact: '郑经理',
-            supplierPhone: '0514-12345679',
-            maintenanceCompany: '扬力集团维修中心',
-            maintenanceContact: '冯工程师',
-            maintenancePhone: '0514-87654322',
-            manufacturer: '扬力集团',
-            purchaseMethod: '1',
-            biddingForm: '1',
-            singleBudget: 50000,
-            projectBasis: '冲压加工需要',
-            biddingNumber: 'BD2023005',
-            biddingDate: '2023-08-15',
-            biddingAmount: 45000
-          }
-        ];
-        this.total = 5;
+      listEquipment(this.queryParams).then(response => {
+        console.log('获取到的列表数据:', response.rows);
+        this.equipmentList = response.rows;
+        this.total = response.total;
         this.loading = false;
-      }, 500);
+      });
     },
     // 取消按钮
     cancel() {
@@ -1137,7 +790,7 @@ export default {
         emergencyAsset: '',
         specialAsset: '',
         measurementAsset: '',
-        attachedMaterials: [],
+        attachedMaterialsList: [],
         benefitAnalysis: '',
         remark: '',
         power: '',
@@ -1195,7 +848,7 @@ export default {
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.equipmentId)
+      this.ids = selection.map(item => item.id)
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
@@ -1207,44 +860,58 @@ export default {
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
-      this.reset();
-      const equipmentId = row.equipmentId || this.ids
-      // 模拟获取数据，实际项目中应该调用后端接口
-      setTimeout(() => {
-        this.form = {
-          ...this.form,
-          equipmentId: equipmentId,
-          assetName: '测试设备' + equipmentId,
-          assetStatus: '1',
-          financialCategory: '1',
-          useDepartment: '1'
-        };
+      console.log('点击修改的行数据:', row);
+      const id = row.id || this.ids[0];
+      console.log('要查询的ID:', id);
+      getEquipment(id).then(response => {
+        console.log('获取到的设备数据:', response.data);
+        this.form = { ...this.form, ...response.data };
+        // 处理附属资料列表
+        if (this.form.attachedMaterials) {
+          try {
+            this.form.attachedMaterialsList = JSON.parse(this.form.attachedMaterials);
+          } catch (e) {
+            this.form.attachedMaterialsList = [];
+          }
+        } else {
+          this.form.attachedMaterialsList = [];
+        }
+        console.log('设置到表单的数据:', this.form);
         this.open = true;
         this.title = "修改设备信息";
-      }, 500);
+      }).catch(error => {
+        console.error('获取设备数据失败:', error);
+        this.$modal.msgError("获取设备数据失败");
+      });
     },
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          // 模拟提交，实际项目中应该调用后端接口
-          setTimeout(() => {
-            this.$modal.msgSuccess(this.form.equipmentId ? "修改成功" : "新增成功");
-            this.open = false;
-            this.getList();
-          }, 500);
+          if (this.form.id != null) {
+            updateEquipment(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addEquipment(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
         }
       });
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      const equipmentIds = row.equipmentId || this.ids;
-      this.$modal.confirm('是否确认删除设备信息编号为"' + equipmentIds + '"的数据项？').then(() => {
-        // 模拟删除，实际项目中应该调用后端接口
-        setTimeout(() => {
-          this.getList();
-          this.$modal.msgSuccess("删除成功");
-        }, 500);
+      const ids = row.id || this.ids;
+      this.$modal.confirm('是否确认删除设备信息编号为"' + ids + '"的数据项？').then(() => {
+        return delEquipment(ids);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
     /** 导出按钮操作 */
@@ -1253,8 +920,8 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row) {
-      var equipmentId = row.equipmentId || this.ids;
-      this.queryParams.code = equipmentId;
+      var id = row.id || this.ids[0];
+      this.queryParams.code = id;
       var sbLabelInfo = getSbLabelInfo(this.queryParams);
       if (!sbLabelInfo) {
         this.$modal.msgError("设备标签信息不存在或未找到");
@@ -1320,5 +987,54 @@ export default {
   overflow: auto;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.el-table th {
+  background-color: #F5F7FA !important;
+  color: #606266;
+  font-weight: 500;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+/* 按钮样式 */
+.el-button--text {
+  padding: 0 4px;
+}
+
+.el-button--text:hover {
+  color: #409EFF;
+}
+
+/* 搜索区域样式 */
+.search-form {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.search-form .el-form-item {
+  margin-bottom: 15px;
 }
 </style>
