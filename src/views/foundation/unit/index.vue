@@ -57,6 +57,7 @@
 
     <el-table v-loading="loading" :data="unitList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="序号" align="center" prop="index" width="50"/>
       <el-table-column label="编号" align="center" prop="unitId" width="50"/>
       <el-table-column label="单位编码" align="center" prop="unitCode" width="120"/>
       <el-table-column label="单位名称" align="center" prop="unitName" width="180"/>

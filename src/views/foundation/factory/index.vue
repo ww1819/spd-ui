@@ -1,3 +1,4 @@
+<!--生产厂家信息维护-->
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
@@ -79,6 +80,7 @@
 
     <el-table v-loading="loading" :data="factoryList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="序号" align="center" prop="index" width="50"/>
       <el-table-column label="编号" align="center" prop="factoryId" width="50"/>
       <el-table-column label="厂家编码" align="center" prop="factoryCode" width="120"/>
       <el-table-column label="厂家名称" align="center" prop="factoryName" width="180"/>
