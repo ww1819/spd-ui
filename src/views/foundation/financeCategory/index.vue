@@ -101,7 +101,7 @@
         </el-row>
 
         <!-- 数据表格 -->
-        <el-table v-loading="loading" :data="financeCategoryList" @selection-change="handleSelectionChange" height="calc(100vh - 280px)">
+        <el-table v-loading="loading" :data="financeCategoryList" :row-class-name="financeCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 280px)">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50"/>
           <el-table-column label="编号" align="center" prop="id" width="50"/>
@@ -319,6 +319,9 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       });
+    },
+    financeCategoryIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     // 其他辅助方法
     cancel() {
