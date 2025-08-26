@@ -104,7 +104,7 @@
         <el-table v-loading="loading" :data="financeCategoryList" :row-class-name="financeCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 280px)">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50"/>
-          <el-table-column label="编号" align="center" prop="id" width="50"/>
+          <el-table-column label="编号" align="center" prop="financeCategoryId" width="50"/>
           <el-table-column label="财务类别编码" align="center" prop="financeCategoryCode" width="120"/>
           <el-table-column label="财务类别名称" align="center" prop="financeCategoryName" width="180"/>
           <el-table-column label="财务类别简码" align="center" prop="referredCode" width="120"/>
