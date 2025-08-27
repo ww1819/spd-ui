@@ -27,33 +27,33 @@
 
     <el-table v-loading="loading" :data="inventoryList"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange">
-      <el-table-column type="index" label="序号" width="80">
+              @selection-change="handleSelectionChange" height="58vh" border>
+      <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="80"/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160"/>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="80"/>
-      <el-table-column label="型号" align="center" prop="materialModel" width="80"/>
-      <el-table-column label="数量" align="center" prop="materialQty" width="80"/>
-      <el-table-column label="单位" align="center" prop="unitName" width="80"/>
-      <el-table-column label="单价" align="center" prop="unitPrice" width="120">
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="center" prop="materialAmt" width="120">
+      <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouseName" width="120"/>
-      <el-table-column label="厂家" align="center" prop="factoryName" width="120"/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160"/>
+      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
 
     </el-table>
 

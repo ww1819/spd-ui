@@ -87,37 +87,39 @@
 
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange">
+              @selection-change="handleSelectionChange"
+              height="54vh"
+              border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
-      <el-table-column label="计划单号" align="center" prop="billNo" width="180">
+      <el-table-column label="计划单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="180"/>
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180">
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
+      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" />
-      <el-table-column label="金额" align="center" prop="totalAmount" >
+      <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
+      <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus">
+      <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
 
-      <el-table-column label="操作人" align="center" prop="createBy" />
-      <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作人" align="center" prop="createBy" show-overflow-tooltip resizable />
+      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -146,9 +148,15 @@
     />
 
     <!-- 添加或修改计划对话框 -->
-<!--    <el-dialog :title="title" :visible.sync="open" width="1300px" append-to-body>-->
-    <el-dialog :title="title" :visible.sync="open" width="1600px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+    <transition name="modal-fade">
+      <div v-if="open" class="local-modal-mask">
+        <transition name="modal-zoom">
+          <div v-if="open" class="local-modal-content">
+            <div class="modal-header">
+              <div class="modal-title">{{ title }}</div>
+              <el-button icon="el-icon-close" size="mini" circle @click="cancel" class="close-btn"></el-button>
+            </div>
+            <el-form ref="form" :model="form" :rules="rules" label-width="80px">
 
         <el-row>
           <el-col :span="4">
@@ -234,25 +242,27 @@
                   show-summary :summary-method="getSummaries"
                   @selection-change="handleStkIoBillEntrySelectionChange"
                   ref="stkIoBillEntry"
+                  height="calc(42vh)"
+                  border
         >
           <el-table-column type="selection" width="60" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50"/>
-          <el-table-column label="耗材" prop="materialId" width="120">
+          <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
             </template>
           </el-table-column>
-          <el-table-column label="规格" prop="speci" width="120">
+          <el-table-column label="规格" prop="speci" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.speci" :disabled="true" placeholder="无" />
             </template>
           </el-table-column>
-          <el-table-column label="型号" prop="model" width="120">
+          <el-table-column label="型号" prop="model" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.model" :disabled="true" placeholder="无" />
             </template>
           </el-table-column>
-          <el-table-column label="数量" prop="qty" width="120">
+          <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
 <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
 <!--                        @input="qtyChange(scope.row)"-->
@@ -268,30 +278,33 @@
               />
             </template>
           </el-table-column>
-          <el-table-column label="价格" prop="price" width="120">
+          <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.price" type='number'
                         :disabled="true"
                         @input="priceChange(scope.row)" placeholder="请输入价格" />
             </template>
           </el-table-column>
-          <el-table-column label="金额" prop="amt" width="120">
+          <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200">
+          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
             </template>
           </el-table-column>
         </el-table>
       </el-form>
-      <div slot="footer" v-show="action" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+            <div v-show="action" class="modal-footer">
+              <el-button @click="cancel">取 消</el-button>
+              <el-button type="primary" @click="submitForm">确 定</el-button>
+            </div>
+          </div>
+        </transition>
       </div>
-    </el-dialog>
+    </transition>
 
     <!-- 3、使用组件 -->
     <SelectMMaterialFilter
@@ -698,3 +711,91 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 内部弹窗样式 */
+.local-modal-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.local-modal-content {
+  width: 100%;
+  height: 100%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  min-height: 48px;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+  margin: 0;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+}
+
+.local-modal-content .el-form {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e8e8e8;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.modal-footer .el-button {
+  margin-left: 8px;
+}
+
+/* 弹窗动画 */
+.modal-fade-enter-active, .modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter, .modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-zoom-enter-active, .modal-zoom-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-zoom-enter, .modal-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.7) translateY(-50px);
+}
+
+/* 确保页面容器有相对定位，以便内部弹窗正确定位 */
+.app-container {
+  position: relative;
+}
+</style>

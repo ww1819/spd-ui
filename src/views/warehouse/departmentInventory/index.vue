@@ -50,32 +50,33 @@
         border
         stripe
         size="small"
+        height="54vh"
       >
-        <el-table-column label="科室编码" align="center" prop="KS_CODE" />
-        <el-table-column label="科室名称" align="center" prop="KS_NAME" />
-        <el-table-column label="产品编码" align="center" prop="HC_CODE" />
-        <el-table-column label="产品名称" align="center" prop="HC_NAME" />
-        <el-table-column label="规格" align="center" prop="GG" />
-        <el-table-column label="型号" align="center" prop="XH" />
-        <el-table-column label="单位" align="center" prop="DW" />
-        <el-table-column label="期初数量" align="center" prop="QC_SL" />
-        <el-table-column label="期初金额" align="center" prop="QC_JE" />
-        <el-table-column label="出库数量" align="center" prop="CK_SL" />
-        <el-table-column label="出库金额" align="center" prop="CK_JE" />
-        <el-table-column label="退库数量" align="center" prop="TK_SL" />
-        <el-table-column label="退库金额" align="center" prop="TK_JE" />
-        <el-table-column label="调拨转入数量" align="center" prop="DR_SL" />
-        <el-table-column label="调拨转入金额" align="center" prop="DR_JE" />
-        <el-table-column label="调拨转出数量" align="center" prop="DC_SL" />
-        <el-table-column label="调拨转出金额" align="center" prop="DC_JE" />
-        <el-table-column label="科室消耗数量" align="center" prop="KSXH_SL" />
-        <el-table-column label="科室消耗金额" align="center" prop="KSXH_JE" />
-        <el-table-column label="计费数量" align="center" prop="ZZJ_SL" />
-        <el-table-column label="计费金额" align="center" prop="ZZJ_JE" />
-        <el-table-column label="退费数量" align="center" prop="ZZT_SL" />
-        <el-table-column label="退费金额" align="center" prop="ZZT_JE" />
-        <el-table-column label="结存数量" align="center" prop="JC_SL" />
-        <el-table-column label="结存金额" align="center" prop="JC_JE" />
+        <el-table-column label="科室编码" align="center" prop="KS_CODE" show-overflow-tooltip resizable />
+        <el-table-column label="科室名称" align="center" prop="KS_NAME" show-overflow-tooltip resizable />
+        <el-table-column label="产品编码" align="center" prop="HC_CODE" show-overflow-tooltip resizable />
+        <el-table-column label="产品名称" align="center" prop="HC_NAME" show-overflow-tooltip resizable />
+        <el-table-column label="规格" align="center" prop="GG" show-overflow-tooltip resizable />
+        <el-table-column label="型号" align="center" prop="XH" show-overflow-tooltip resizable />
+        <el-table-column label="单位" align="center" prop="DW" show-overflow-tooltip resizable />
+        <el-table-column label="期初数量" align="center" prop="QC_SL" show-overflow-tooltip resizable />
+        <el-table-column label="期初金额" align="center" prop="QC_JE" show-overflow-tooltip resizable />
+        <el-table-column label="出库数量" align="center" prop="CK_SL" show-overflow-tooltip resizable />
+        <el-table-column label="出库金额" align="center" prop="CK_JE" show-overflow-tooltip resizable />
+        <el-table-column label="退库数量" align="center" prop="TK_SL" show-overflow-tooltip resizable />
+        <el-table-column label="退库金额" align="center" prop="TK_JE" show-overflow-tooltip resizable />
+        <el-table-column label="调拨转入数量" align="center" prop="DR_SL" show-overflow-tooltip resizable />
+        <el-table-column label="调拨转入金额" align="center" prop="DR_JE" show-overflow-tooltip resizable />
+        <el-table-column label="调拨转出数量" align="center" prop="DC_SL" show-overflow-tooltip resizable />
+        <el-table-column label="调拨转出金额" align="center" prop="DC_JE" show-overflow-tooltip resizable />
+        <el-table-column label="科室消耗数量" align="center" prop="KSXH_SL" show-overflow-tooltip resizable />
+        <el-table-column label="科室消耗金额" align="center" prop="KSXH_JE" show-overflow-tooltip resizable />
+        <el-table-column label="计费数量" align="center" prop="ZZJ_SL" show-overflow-tooltip resizable />
+        <el-table-column label="计费金额" align="center" prop="ZZJ_JE" show-overflow-tooltip resizable />
+        <el-table-column label="退费数量" align="center" prop="ZZT_SL" show-overflow-tooltip resizable />
+        <el-table-column label="退费金额" align="center" prop="ZZT_JE" show-overflow-tooltip resizable />
+        <el-table-column label="结存数量" align="center" prop="JC_SL" show-overflow-tooltip resizable />
+        <el-table-column label="结存金额" align="center" prop="JC_JE" show-overflow-tooltip resizable />
       </el-table>
     </el-card>
   </div>

@@ -39,28 +39,28 @@
       </el-row>
     </el-form>
 
-    <el-table v-loading="loading" :data="applyList" @selection-change="handleSelectionChange">
-      <el-table-column label="申领单号" align="center" prop="applyBillNo" >
+    <el-table v-loading="loading" :data="applyList" @selection-change="handleSelectionChange" height="54vh" border>
+      <el-table-column label="申领单号" align="center" prop="applyBillNo" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.applyBillNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="申请日期" align="center" prop="applyBillDate" width="180">
+      <el-table-column label="申请日期" align="center" prop="applyBillDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.applyBillDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" />
-      <el-table-column label="操作人" align="center" prop="user.userName" />
-      <el-table-column label="申请状态" align="center" prop="applyBillStatus" >
+      <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
+      <el-table-column label="操作人" align="center" prop="user.userName" show-overflow-tooltip resizable />
+      <el-table-column label="申请状态" align="center" prop="applyBillStatus" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.applyBillStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-dropdown v-if="scope.row.applyBillStatus != 2">
             <el-button type="primary">
@@ -93,8 +93,15 @@
     />
 
     <!-- 添加或修改高值科室申领对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="1600px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+    <transition name="modal-fade">
+      <div v-if="open" class="local-modal-mask">
+        <transition name="modal-zoom">
+          <div v-if="open" class="local-modal-content">
+            <div class="modal-header">
+              <div class="modal-title">{{ title }}</div>
+              <el-button icon="el-icon-close" size="mini" circle @click="cancel" class="close-btn"></el-button>
+            </div>
+            <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-row>
           <el-col :span="4">
             <el-form-item label="申领状态" prop="billStatus" label-width="100px">
@@ -153,15 +160,15 @@
 
         <el-table :data="gzDepApplyEntryList" :row-class-name="rowGzDepApplyEntryIndex"
                   @selection-change="handleGzDepApplyEntrySelectionChange"
-                  ref="gzDepApplyEntry">
-          <el-table-column type="selection" width="50" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50"/>
-          <el-table-column label="耗材" prop="materialId" width="150">
+                  ref="gzDepApplyEntry" height="calc(42vh)" border>
+          <el-table-column type="selection" width="50" align="center" resizable />
+          <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材" prop="materialId" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <SelectMaterial v-model="scope.row.materialId" :value2="true"/>
             </template>
           </el-table-column>
-          <el-table-column label="数量" prop="qty" width="150">
+          <el-table-column label="数量" prop="qty" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
                         onkeyup="value=value.replace(/\D/g,'')"
@@ -172,41 +179,44 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="单价" prop="unitPrice" width="150">
+          <el-table-column label="单价" prop="unitPrice" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.unitPrice" type='number' @input="priceChange(scope.row)" placeholder="请输入单价" />
             </template>
           </el-table-column>
-          <el-table-column label="金额" prop="amt" width="150">
+          <el-table-column label="金额" prop="amt" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
             </template>
           </el-table-column>
 
-          <el-table-column label="批次号" prop="batchNo" width="450">
+          <el-table-column label="批次号" prop="batchNo" width="450" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.batchNo" :disabled="true" label-width="200px" placeholder="请输入批次号" />
             </template>
           </el-table-column>
 
 
-          <el-table-column label="批号" prop="batchNumer" width="150">
+          <el-table-column label="批号" prop="batchNumer" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.batchNumer" placeholder="请输入批号" />
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" width="150">
+          <el-table-column label="备注" prop="remark" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
             </template>
           </el-table-column>
         </el-table>
-      </el-form>
-      <div slot="footer" v-show="action" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+            </el-form>
+            <div class="modal-footer" v-show="action">
+              <el-button @click="cancel">取 消</el-button>
+              <el-button type="primary" @click="submitForm">确 定</el-button>
+            </div>
+          </div>
+        </transition>
       </div>
-    </el-dialog>
+    </transition>
 
     <!-- 3、使用组件 -->
     <SelectGzDepotInventory
@@ -503,3 +513,131 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 内部弹窗样式 - 占满整个遮罩层 */
+.local-modal-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.local-modal-content {
+  background: #fff;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  flex-shrink: 0;
+  min-height: 48px;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.modal-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.modal-footer .el-button {
+  margin-left: 10px;
+}
+
+.local-modal-content .el-form {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* 弹窗动画效果 */
+.modal-fade-enter-active, .modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter, .modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-zoom-enter-active, .modal-zoom-leave-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transform-origin: center center;
+}
+
+.modal-zoom-enter {
+  opacity: 0;
+  transform: scale(0.3) translateY(-50px);
+}
+
+.modal-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.el-table th {
+  background-color: #F5F7FA !important;
+  color: #606266 !important;
+  font-weight: 600 !important;
+  border-right: 1px solid #EBEEF5 !important;
+  border-bottom: 1px solid #EBEEF5 !important;
+}
+
+.el-table td {
+  border-right: 1px solid #EBEEF5 !important;
+  border-bottom: 1px solid #EBEEF5 !important;
+}
+
+.el-table .cell {
+  padding: 0 8px;
+  line-height: 1.5;
+}
+
+/* 表单样式优化 */
+.el-form-item {
+  margin-bottom: 18px;
+}
+
+.el-form-item__label {
+  color: #606266;
+  font-weight: 500;
+}
+</style>

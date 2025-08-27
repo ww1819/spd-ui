@@ -106,31 +106,31 @@
 
     </el-form>
 
-    <el-table v-loading="loading" :data="inventoryList" @selection-change="handleSelectionChange">
-      <el-table-column label="耗材ID" align="center" prop="material.code" width="120"/>
-      <el-table-column label="耗材" align="center" prop="material.name" />
-      <el-table-column label="科室" align="center" prop="department.name" width="120"/>
-      <el-table-column label="数量" align="center" prop="qty" width="120"/>
-      <el-table-column label="单价" align="center" prop="unitPrice" width="120">
+    <el-table v-loading="loading" :data="inventoryList" @selection-change="handleSelectionChange" height="54vh" border>
+      <el-table-column label="耗材ID" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材" align="center" prop="material.name" show-overflow-tooltip resizable />
+      <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="center" prop="amt" width="120">
+      <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="批次号" align="center" prop="batchNo" width="200"/>
-      <el-table-column label="批号" align="center" prop="materialNo" width="200"/>
-      <el-table-column label="耗材日期" align="center" prop="materialDate" width="200">
+      <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable/>
+      <el-table-column label="批号" align="center" prop="materialNo" width="200" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材日期" align="center" prop="materialDate" width="200" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="入库日期" align="center" prop="warehouseDate" width="180">
+      <el-table-column label="入库日期" align="center" prop="warehouseDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
         </template>

@@ -87,41 +87,41 @@
 
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange">
-      <el-table-column label="退库单号" align="center" prop="billNo" width="180">
+              @selection-change="handleSelectionChange" height="58vh" border>
+      <el-table-column label="退库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="退库日期" align="center" prop="billDate" width="180">
+      <el-table-column label="退库日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" />
-      <el-table-column label="科室" align="center" prop="department.name" />
-      <el-table-column label="金额" align="center" prop="totalAmount" >
+      <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
+      <el-table-column label="科室" align="center" prop="department.name" show-overflow-tooltip resizable />
+      <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus">
+      <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
 
-      <el-table-column label="操作人" align="center" prop="createBy" />
-      <el-table-column label="退库类型" align="center" prop="billType" >
+      <el-table-column label="操作人" align="center" prop="createBy" show-overflow-tooltip resizable />
+      <el-table-column label="退库类型" align="center" prop="billType" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <dict-tag :options="dict.type.bill_type" :value="scope.row.billType"/>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" resizable>
         <template slot-scope="scope">
           <el-button
             size="mini"
@@ -150,8 +150,14 @@
     />
 
     <!-- 添加或修改退库对话框 -->
-    <!--    <el-dialog :title="title" :visible.sync="open" width="1300px" append-to-body>-->
-    <el-dialog :title="title" :visible.sync="open" width="1600px" append-to-body>
+    <transition name="modal-fade">
+      <div v-if="open" class="local-modal-mask">
+        <transition name="modal-zoom">
+          <div v-if="open" class="local-modal-content">
+        <div class="modal-header">
+          <div class="modal-title">{{ title }}</div>
+          <el-button icon="el-icon-close" size="mini" circle @click="cancel" class="close-btn"></el-button>
+        </div>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
 
         <el-row>
@@ -243,16 +249,16 @@
                   show-summary :summary-method="getSummaries"
                   @selection-change="handleStkIoBillEntrySelectionChange"
                   ref="stkIoBillEntry"
-        >
-          <el-table-column type="selection" width="60" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50"/>
-          <el-table-column label="耗材" prop="materialId" width="120">
+                  height="calc(42vh)" border>
+          <el-table-column type="selection" width="60" align="center" resizable />
+          <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow" />
             </template>
           </el-table-column>
 
-          <el-table-column label="数量" prop="qty" width="120">
+          <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
                         onkeyup="value=value.replace(/\D/g,'')"
@@ -263,7 +269,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="单价" prop="unitPrice" width="120">
+          <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input 
                 v-model="scope.row.unitPrice" 
@@ -272,7 +278,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="批次号" prop="batchNo" width="240">
+          <el-table-column label="批次号" prop="batchNo" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input 
                 v-model="scope.row.batchNo" 
@@ -281,7 +287,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="生产日期" prop="batchNo" width="240">
+          <el-table-column label="生产日期" prop="beginTime" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-date-picker 
                 v-model="scope.row.beginTime"
@@ -291,7 +297,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="有效期" prop="batchNo" width="240">
+          <el-table-column label="有效期" prop="andTime" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-date-picker 
                 v-model="scope.row.andTime"
@@ -300,7 +306,7 @@
                 value-format="yyyy-MM-dd"/>
             </template>
           </el-table-column>
-          <el-table-column label="金额" prop="amt" width="120">
+          <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
             </template>
@@ -336,18 +342,21 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" width="400">
+          <el-table-column label="备注" prop="remark" width="400" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
             </template>
           </el-table-column>
         </el-table>
-      </el-form>
-      <div slot="footer" v-show="action" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        </el-form>
+        <div v-show="action" class="modal-footer">
+          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+        </div>
+          </div>
+        </transition>
       </div>
-    </el-dialog>
+    </transition>
 
     <!-- 3、使用组件 -->
     <SelectDepInventory
@@ -776,3 +785,135 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 内部弹窗样式 - 占满整个遮罩层 */
+.local-modal-mask {
+  position: absolute;
+  left: 0; 
+  top: 0; 
+  right: 0; 
+  bottom: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.local-modal-content {
+  background: #fff;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  min-height: 48px;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  text-align: right;
+  border-top: 1px solid #EBEEF5;
+  background: #F5F7FA;
+}
+
+.modal-footer .el-button {
+  margin-left: 12px;
+}
+
+.local-modal-content .el-form {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  background: #fff;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+/* 弹窗内表格样式 */
+.local-modal-content .el-table {
+  max-height: calc(42vh);
+  min-height: 300px;
+}
+
+/* 弹窗动画效果 */
+.modal-fade-enter-active, .modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter, .modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-zoom-enter-active, .modal-zoom-leave-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transform-origin: center center;
+}
+
+.modal-zoom-enter {
+  opacity: 0;
+  transform: scale(0.3) translateY(-50px);
+}
+
+.modal-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.el-table th {
+  background-color: #F5F7FA;
+  color: #606266;
+  font-weight: 600;
+}
+
+.el-table .cell {
+  padding: 0 8px;
+  line-height: 1.5;
+}
+
+/* 表单样式优化 */
+.el-form {
+  background: #fff;
+}
+
+.el-form-item {
+  margin-bottom: 18px;
+}
+
+.el-form-item__label {
+  color: #606266;
+  font-weight: 500;
+}
+</style>

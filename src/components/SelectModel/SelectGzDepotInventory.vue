@@ -1,7 +1,14 @@
 <template>
-  <div class="app-container">
-    <el-dialog title="高值备货库存明细" :visible.sync="show" append-to-body width="1600px" :before-close="handleClose">
-      <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+  <transition name="modal-fade">
+    <div v-if="show" class="local-modal-mask">
+      <transition name="modal-zoom">
+        <div v-if="show" class="local-modal-content">
+          <div class="modal-header">
+            <div class="modal-title">高值备货库存明细</div>
+            <el-button icon="el-icon-close" size="mini" circle @click="handleClose" class="close-btn"></el-button>
+          </div>
+          <div class="modal-body">
+            <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
         <el-row :gutter="20">
 
           <el-col :span="6">
@@ -45,44 +52,46 @@
         </el-row>
       </el-form>
 
-      <el-table ref="singleTable" :data="depotInventoryList" @selection-change="handleSelectionChange">
+      <el-table ref="singleTable" :data="depotInventoryList" @selection-change="handleSelectionChange" height="calc(42vh)" border>
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="耗材" align="center" prop="material.name" width="120"/>
-        <el-table-column label="仓库" align="center" prop="warehouse.name" width="120"/>
-        <el-table-column label="供应商" align="center" prop="supplier.name" width="160"/>
-        <el-table-column label="库存数量" align="center" prop="qty" width="80"/>
-        <el-table-column label="单价" align="center" prop="unitPrice" width="120"/>
-        <el-table-column label="金额" align="center" prop="amt" width="120"/>
-        <el-table-column label="入库批次号" align="center" prop="batchNo" width="200"/>
-        <el-table-column label="耗材批次号" align="center" prop="materialNo" width="200"/>
-        <el-table-column label="耗材日期" align="center" prop="materialDate" width="140">
+        <el-table-column label="耗材" align="center" prop="material.name" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable/>
+        <el-table-column label="库存数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable/>
+        <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="入库批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable/>
+        <el-table-column label="耗材批次号" align="center" prop="materialNo" width="200" show-overflow-tooltip resizable/>
+        <el-table-column label="耗材日期" align="center" prop="materialDate" width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="入库日期" align="center" prop="warehouseDate" width="140">
+        <el-table-column label="入库日期" align="center" prop="warehouseDate" width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
           </template>
         </el-table-column>
 
-      </el-table>
+            </el-table>
 
-      <span slot="footer" class="dialog-footer">
-          <el-button @click="handleClose">取 消</el-button>
-          <el-button type="primary" @click="checkBtn">确 定</el-button>
-      </span>
-
-      <pagination
-        v-show="total>0"
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="getList"
-      />
-    </el-dialog>
-
-  </div>
+            <pagination
+              v-show="total>0"
+              :total="total"
+              :page.sync="queryParams.pageNum"
+              :limit.sync="queryParams.pageSize"
+              @pagination="getList"
+            />
+          </div>
+          
+          <div class="modal-footer">
+            <el-button @click="handleClose">取 消</el-button>
+            <el-button type="primary" @click="checkBtn">确 定</el-button>
+          </div>
+        </div>
+      </transition>
+    </div>
+  </transition>
 </template>
 
 <script>
@@ -183,3 +192,138 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 内部弹窗样式 - 占满整个遮罩层 */
+.local-modal-mask {
+  position: fixed;
+  left: 0; 
+  top: 0; 
+  right: 0; 
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.local-modal-content {
+  background: #fff;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  flex-shrink: 0;
+  min-height: 48px;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  text-align: right;
+  border-top: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  flex-shrink: 0;
+}
+
+.modal-footer .el-button {
+  margin-left: 12px;
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  height: calc(100vh - 310px);
+}
+
+.el-table th {
+  background-color: #F5F7FA !important;
+  color: #606266;
+  font-weight: 500;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+/* 搜索表单样式 */
+.el-form {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.el-form .el-form-item {
+  margin-bottom: 15px;
+}
+
+/* 弹窗动画效果 */
+.modal-fade-enter-active, .modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter, .modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-zoom-enter-active, .modal-zoom-leave-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transform-origin: center center;
+}
+
+.modal-zoom-enter {
+  opacity: 0;
+  transform: scale(0.3) translateY(-50px);
+}
+
+.modal-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+</style>

@@ -1,7 +1,12 @@
 <template>
-  <div class="app-container">
-    <el-dialog title="耗材明细" :visible.sync="show" append-to-body width="1600px" :before-close="handleClose">
-      <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+  <div v-if="show" class="local-modal-mask">
+    <div class="local-modal-content">
+      <div class="modal-header">
+        <div class="modal-title">耗材明细</div>
+        <el-button icon="el-icon-close" size="mini" circle @click="handleClose" class="close-btn"></el-button>
+      </div>
+      <div class="modal-body">
+        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
         <el-row :gutter="20">
 
           <el-col :span="6">
@@ -24,34 +29,33 @@
         </el-row>
       </el-form>
 
-      <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="耗材编码" align="center" prop="code" width="80"/>
-        <el-table-column label="耗材名称" align="center" prop="name" width="160"/>
-        <el-table-column label="供应商" align="center" prop="supplier.name" width="160"/>
-        <el-table-column label="规格" align="center" prop="speci" width="100"/>
-        <el-table-column label="型号" align="center" prop="model" width="100"/>
-        <el-table-column label="价格" align="center" prop="price" width="100"/>
-        <el-table-column label="有效期" align="center" prop="periodDate" width="100"/>
-        <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="160"/>
-        <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="160"/>
+        <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(42vh)" border>
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="耗材编码" align="center" prop="code" width="80" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材名称" align="center" prop="name" width="160" show-overflow-tooltip resizable/>
+          <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="价格" align="center" prop="price" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="有效期" align="center" prop="periodDate" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="160" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="160"/>
+        </el-table>
 
-      </el-table>
-
-      <span slot="footer" class="dialog-footer">
-          <el-button @click="handleClose">取 消</el-button>
-          <el-button type="primary" @click="checkMaterialBtn">确 定</el-button>
-      </span>
-
-      <pagination
-        v-show="total>0"
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="getList"
-      />
-    </el-dialog>
-
+        <pagination
+          v-show="total>0"
+          :total="total"
+          :page.sync="queryParams.pageNum"
+          :limit.sync="queryParams.pageSize"
+          @pagination="getList"
+        />
+      </div>
+      
+      <div class="modal-footer">
+        <el-button @click="handleClose">取 消</el-button>
+        <el-button type="primary" @click="checkMaterialBtn">确 定</el-button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -157,3 +161,114 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 内部弹窗样式 - 占满整个遮罩层 */
+.local-modal-mask {
+  position: fixed;
+  left: 0; 
+  top: 0; 
+  right: 0; 
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.local-modal-content {
+  background: #fff;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  flex-shrink: 0;
+  min-height: 48px;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  background: #fff;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  text-align: right;
+  border-top: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  flex-shrink: 0;
+}
+
+.modal-footer .el-button {
+  margin-left: 12px;
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.el-table th {
+  background-color: #F5F7FA !important;
+  color: #606266;
+  font-weight: 500;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+/* 搜索表单样式 */
+.el-form {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.el-form .el-form-item {
+  margin-bottom: 15px;
+}
+</style>

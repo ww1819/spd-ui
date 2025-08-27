@@ -69,20 +69,20 @@
       </div>
   
       <!-- 表格 -->
-      <el-table :data="tableData" border style="width: 100%" height="calc(100vh - 330px)">
-        <el-table-column type="selection" width="55"></el-table-column>
-        <el-table-column prop="orderNumber" label="单号" align="center"></el-table-column>
-        <el-table-column prop="warehouse" label="仓库" align="center"></el-table-column>
-        <el-table-column prop="supplier" label="供应商" align="center"></el-table-column>
-        <el-table-column prop="creator" label="制单人" align="center"></el-table-column>
-        <el-table-column prop="createDate" label="制单日期" align="center"></el-table-column>
-        <el-table-column prop="invoiceNumber" label="发票号码" align="center"></el-table-column>
-        <el-table-column prop="invoiceDate" label="发票日期" align="center"></el-table-column>
-        <el-table-column prop="invoiceAmount" label="发票金额" align="center"></el-table-column>
-        <el-table-column prop="totalAmount" label="总金额" align="center"></el-table-column>
-        <el-table-column prop="reviewer" label="审核人" align="center"></el-table-column>
-        <el-table-column prop="reviewDate" label="审核日期" align="center"></el-table-column>
-        <el-table-column label="操作" align="center">
+      <el-table :data="tableData" border style="width: 100%" height="58vh">
+        <el-table-column type="selection" width="55" resizable></el-table-column>
+        <el-table-column prop="orderNumber" label="单号" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column prop="warehouse" label="仓库" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column prop="supplier" label="供应商" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column prop="creator" label="制单人" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column prop="createDate" label="制单日期" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column prop="invoiceNumber" label="发票号码" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column prop="invoiceDate" label="发票日期" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column prop="invoiceAmount" label="发票金额" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column prop="totalAmount" label="总金额" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column prop="reviewer" label="审核人" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column prop="reviewDate" label="审核日期" align="center" show-overflow-tooltip resizable></el-table-column>
+        <el-table-column label="操作" align="center" resizable>
           <template #default>
             <el-button type="primary" size="small">查看</el-button>
           </template>
@@ -169,6 +169,15 @@
     border-radius: 8px;
     box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
     margin-bottom: 20px;
+    border: 1px solid #EBEEF5 !important;
+  }
+
+  .el-table .el-table__border-left-patch {
+    border-top: 1px solid #EBEEF5;
+  }
+
+  .el-table .el-table__border-right-patch {
+    border-top: 1px solid #EBEEF5;
   }
 
   .el-table th {
@@ -177,13 +186,20 @@
     font-weight: 500;
     height: 50px;
     padding: 8px 0;
-    border-bottom: 1px solid #EBEEF5;
+    border-bottom: 1px solid #EBEEF5 !important;
+    border-right: 1px solid #EBEEF5 !important;
   }
 
   .el-table td {
     padding: 12px 0;
     color: #606266;
-    border-bottom: 1px solid #EBEEF5;
+    border-bottom: 1px solid #EBEEF5 !important;
+    border-right: 1px solid #EBEEF5 !important;
+  }
+
+  .el-table th:first-child,
+  .el-table td:first-child {
+    border-left: 1px solid #EBEEF5 !important;
   }
 
   .el-table tr:hover > td {
