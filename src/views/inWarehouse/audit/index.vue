@@ -79,7 +79,7 @@
 
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange">
+              @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column label="入库单号" align="center" prop="billNo" >
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">

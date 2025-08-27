@@ -87,7 +87,7 @@
 
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange">
+              @selection-change="handleSelectionChange" height="calc(100vh - 380px)">
 <!--      <el-table-column type="selection" width="55" align="center" />-->
       <el-table-column label="入库单号" align="center" prop="billNo" width="180">
         <template slot-scope="scope">
@@ -789,3 +789,54 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 表格样式优化 */
+.el-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.el-table th {
+  background-color: #F5F7FA !important;
+  color: #606266;
+  font-weight: 500;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+/* 按钮样式 */
+.el-button--text {
+  padding: 0 4px;
+}
+
+.el-button--text:hover {
+  color: #409EFF;
+}
+
+/* 搜索区域样式 */
+.el-form {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.el-form .el-form-item {
+  margin-bottom: 15px;
+}
+</style>

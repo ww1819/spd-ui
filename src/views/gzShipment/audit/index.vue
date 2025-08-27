@@ -47,7 +47,7 @@
       </el-row>
     </el-form>
 
-    <el-table v-loading="loading" :data="shipmentList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="shipmentList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column label="出库单号" align="center" prop="shipmentNo" width="180">
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -331,7 +331,7 @@ export default {
         component: null,
         form: {
           value: null,
-          row: null
+          row
         },
         ok: () => {
         },

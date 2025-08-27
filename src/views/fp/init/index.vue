@@ -69,7 +69,7 @@
       </div>
   
       <!-- 表格 -->
-      <el-table :data="tableData" border style="width: 100%">
+      <el-table :data="tableData" border style="width: 100%" height="calc(100vh - 330px)">
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column prop="orderNumber" label="单号" align="center"></el-table-column>
         <el-table-column prop="warehouse" label="仓库" align="center"></el-table-column>
@@ -162,5 +162,54 @@
   .function-buttons {
     margin-bottom: 20px;
     text-align: left;
+  }
+
+  /* 表格样式优化 */
+  .el-table {
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+  }
+
+  .el-table th {
+    background-color: #F5F7FA !important;
+    color: #606266;
+    font-weight: 500;
+    height: 50px;
+    padding: 8px 0;
+    border-bottom: 1px solid #EBEEF5;
+  }
+
+  .el-table td {
+    padding: 12px 0;
+    color: #606266;
+    border-bottom: 1px solid #EBEEF5;
+  }
+
+  .el-table tr:hover > td {
+    background-color: #F5F7FA !important;
+    transition: all 0.3s;
+  }
+
+  /* 按钮样式 */
+  .el-button--text {
+    padding: 0 4px;
+  }
+
+  .el-button--text:hover {
+    color: #409EFF;
+  }
+
+  /* 搜索区域样式 */
+  .search-form {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+  }
+
+  .search-form .el-form-item {
+    margin-bottom: 15px;
   }
   </style>
