@@ -101,11 +101,12 @@
         </el-row>
 
         <!-- 数据表格 -->
-        <el-table v-loading="loading" :data="financeCategoryList" @selection-change="handleSelectionChange" height="calc(100vh - 280px)">
+        <el-table v-loading="loading" :data="financeCategoryList" :row-class-name="financeCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 280px)">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="编号" align="center" prop="id" width="50"/>
-          <el-table-column label="财务类别编码" align="center" prop="code" width="120"/>
-          <el-table-column label="财务类别名称" align="center" prop="name" width="180"/>
+          <el-table-column label="序号" align="center" prop="index" width="50"/>
+          <el-table-column label="编号" align="center" prop="financeCategoryId" width="50"/>
+          <el-table-column label="财务类别编码" align="center" prop="financeCategoryCode" width="120"/>
+          <el-table-column label="财务类别名称" align="center" prop="financeCategoryName" width="180"/>
           <el-table-column label="财务类别简码" align="center" prop="referredCode" width="120"/>
           <el-table-column label="使用状态" align="center" prop="isUse" width="100">
             <template slot-scope="scope">
@@ -197,6 +198,7 @@ import { listFinanceCategory, getFinanceCategory, delFinanceCategory, addFinance
 
 export default {
   name: "FinanceCategory",
+  dicts: ['is_use_status'],
   data() {
     return {
       // 树形数据配置
@@ -318,6 +320,9 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       });
+    },
+    financeCategoryIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     // 其他辅助方法
     cancel() {

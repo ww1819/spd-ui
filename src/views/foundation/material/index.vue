@@ -118,8 +118,9 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+    <el-table v-loading="loading" :data="materialList" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="序号" align="center" prop="index" width="50"/>
       <el-table-column label="编号" align="center" prop="id" width="50"/>
       <el-table-column label="耗材编码" align="center" prop="code" width="100"/>
       <el-table-column label="耗材名称" align="center" prop="name" width="180"/>
@@ -775,6 +776,9 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
+    },
+    materialIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 导出按钮操作 */
     handleExport() {
