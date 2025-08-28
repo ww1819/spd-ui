@@ -59,7 +59,7 @@
         </el-col>
         <el-col :span="4">
           <el-form-item label="单据状态" prop="billStatus" label-width="100px">
-            <el-select v-model="queryParams.billStatus" placeholder="请选择单据状态"
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
                        :disabled="false"
                        clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
