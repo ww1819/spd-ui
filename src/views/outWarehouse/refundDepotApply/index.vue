@@ -57,6 +57,19 @@
             </el-date-picker>
           </div>
         </el-col>
+        <el-col :span="6">
+          <el-form-item label="单据状态" prop="billStatus" label-width="100px">
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
+                       :disabled="false"
+                       clearable>
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
 
     </el-form>
@@ -129,6 +142,7 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['outWarehouse:refundDepotApply:edit']"
+            v-if="scope.row.billStatus != 2"
           >修改</el-button>
           <el-button
             size="mini"
@@ -136,7 +150,15 @@
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['outWarehouse:refundDepotApply:remove']"
+            v-if="scope.row.billStatus != 2"
           >删除</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+            v-hasPermi="['outWarehouse:refundDepotApply:view']"
+          >查看</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -271,8 +293,8 @@
 
           <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input 
-                v-model="scope.row.unitPrice" 
+              <el-input
+                v-model="scope.row.unitPrice"
                 :disabled="true"
                 placeholder="自动带出单价"/>
             </template>
@@ -280,8 +302,8 @@
 
           <el-table-column label="批次号" prop="batchNo" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input 
-                v-model="scope.row.batchNo" 
+              <el-input
+                v-model="scope.row.batchNo"
                 :disabled="true"
                 placeholder="自动带出批次号"/>
             </template>
@@ -289,7 +311,7 @@
 
           <el-table-column label="生产日期" prop="beginTime" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-date-picker 
+              <el-date-picker
                 v-model="scope.row.beginTime"
                 :disabled="true"
                 type="date"
@@ -299,7 +321,7 @@
 
           <el-table-column label="有效期" prop="andTime" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-date-picker 
+              <el-date-picker
                 v-model="scope.row.andTime"
                 :disabled="true"
                 type="date"
@@ -371,12 +393,12 @@
 </template>
 
 <script>
-import { 
-  listTkInventory, 
-  getTkInventory, 
-  delTkInventory, 
-  addTkInventory, 
-  updateTkInventory 
+import {
+  listTkInventory,
+  getTkInventory,
+  delTkInventory,
+  addTkInventory,
+  updateTkInventory
 } from "@/api/warehouse/tkInventory";
 import { listCTKWarehouse } from '@/api/warehouse/outWarehouse'; // 新增引用
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -519,7 +541,6 @@ export default {
     /** 查询退库列表 */
     getList() {
       this.loading = true;
-      this.queryParams.billStatus = "1";
       this.queryParams.billType = "401";
       listTkInventory(this.queryParams).then(response => {
         this.warehouseList = response.rows;
@@ -790,9 +811,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.3);
   z-index: 1000;
