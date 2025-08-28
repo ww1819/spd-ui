@@ -56,6 +56,19 @@
             </el-date-picker>
           </div>
         </el-col>
+        <el-col :span="6">
+          <el-form-item label="单据状态" prop="billStatus" label-width="100px">
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
+                       :disabled="false"
+                       clearable>
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
 
     </el-form>
@@ -151,6 +164,7 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['outWarehouse:apply:edit']"
+            v-if="scope.row.billStatus != 2"
           >修改</el-button>
           <el-button
             size="mini"
@@ -158,7 +172,15 @@
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['outWarehouse:apply:remove']"
+            v-if="scope.row.billStatus != 2"
           >删除</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+            v-hasPermi="['outWarehouse:apply:view']"
+          >查看</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -363,11 +385,11 @@
 </template>
 
 <script>
-import { 
-  listOutWarehouse, 
-  getOutWarehouse, 
-  delOutWarehouse, 
-  addOutWarehouse, 
+import {
+  listOutWarehouse,
+  getOutWarehouse,
+  delOutWarehouse,
+  addOutWarehouse,
   updateOutWarehouse,
   listCTKWarehouse
 } from "@/api/warehouse/outWarehouse";
@@ -460,12 +482,12 @@ export default {
             const num = Number(item.amt || 0);
             return isNaN(num) ? 0 : num;
           });
-          
+
           // 使用Number.EPSILON解决浮点精度问题
-          sums[index] = values.reduce((prev, curr) => 
+          sums[index] = values.reduce((prev, curr) =>
             (prev + curr + Number.EPSILON) * 100 / 100, 0
           ).toFixed(2);
-          
+
           // 更新总金额（确保类型为number）
           this.form.totalAmount = parseFloat(sums[index]);
         } else if ([3,4].includes(index)) { // 处理单价和数量列
@@ -504,7 +526,6 @@ export default {
     /** 查询出库列表 */
     getList() {
       this.loading = true;
-      this.queryParams.billStatus = "1";
       this.queryParams.billType = "201";
       listOutWarehouse(this.queryParams).then(response => {
         this.warehouseList = response.rows;
@@ -761,9 +782,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.3);
   z-index: 1000;

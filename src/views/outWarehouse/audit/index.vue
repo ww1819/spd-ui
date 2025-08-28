@@ -60,7 +60,7 @@
 
         <el-col :span="6">
           <el-form-item label="状态" prop="billStatus" label-width="100px">
-            <el-select v-model="queryParams.billStatus" placeholder="请选择单据状态"
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
                        clearable >
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -173,7 +173,7 @@
         <el-row>
           <el-col :span="4">
             <el-form-item label="单据状态" prop="billStatus" label-width="100px">
-              <el-select v-model="form.billStatus" placeholder="请选择单据状态"
+              <el-select v-model="form.billStatus" placeholder="全部"
                          :disabled="true"
                          clearable style="width: 150px">
                 <el-option v-for="dict in dict.type.biz_status"
@@ -884,9 +884,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.3);
   z-index: 1000;
