@@ -57,6 +57,19 @@
             </el-date-picker>
           </div>
         </el-col>
+        <el-col :span="4">
+          <el-form-item label="单据状态" prop="billStatus" label-width="100px">
+            <el-select v-model="queryParams.billStatus" placeholder="请选择单据状态"
+                       :disabled="false"
+                       clearable style="width: 150px">
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
 
     </el-form>
@@ -125,6 +138,7 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['inWarehouse:apply:edit']"
+            v-if="scope.row.billStatus != 2"
           >修改</el-button>
           <el-button
             size="mini"
@@ -132,7 +146,15 @@
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['inWarehouse:apply:remove']"
+            v-if="scope.row.billStatus != 2"
           >删除</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+            v-hasPermi="['inWarehouse:apply:view']"
+          >查看</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -544,7 +566,7 @@ export default {
     /** 查询入库列表 */
     getList() {
       this.loading = true;
-      this.queryParams.billStatus = "1";
+      // this.queryParams.billStatus = "1";
       this.queryParams.billType = "101";
       listWarehouse(this.queryParams).then(response => {
         this.warehouseList = response.rows;
@@ -686,7 +708,7 @@ export default {
         this.stkIoBillEntryList = response.data.stkIoBillEntryList;
         this.open = true;
         this.action = false;
-        this.form.billStatus = '1';
+        this.form.billStatus = '2';
         this.form.billType = '101';
         this.title = "查看入库";
       });
@@ -723,10 +745,10 @@ export default {
       this.$refs["form"].validate(valid => {
         if (valid) {
           // 新增数量非空校验
-          const hasEmptyQty = this.stkIoBillEntryList.some(item => 
+          const hasEmptyQty = this.stkIoBillEntryList.some(item =>
             !item.qty || String(item.qty).trim() === ''
           );
-          
+
           if (hasEmptyQty) {
             this.$modal.msgError("入库明细数量不能为空");
             return;
@@ -805,9 +827,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.3);
   z-index: 1000;
