@@ -57,6 +57,18 @@
             </el-date-picker>
           </div>
         </el-col>
+        <el-col :span="6">
+          <el-form-item label="单据类型" prop="billStatus" label-width="100px">
+            <el-select v-model="queryParams.billType" placeholder="全部"
+                       clearable >
+              <el-option v-for="dict in dict.type.in_warehouse_bill_type"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
 
     </el-form>
@@ -134,7 +146,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 
 export default {
   name: "firstQuery",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','bill_type','in_warehouse_bill_type'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser},
   data() {
     return {
