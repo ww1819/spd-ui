@@ -566,7 +566,6 @@ export default {
     /** 查询入库列表 */
     getList() {
       this.loading = true;
-      // this.queryParams.billStatus = "1";
       this.queryParams.billType = "101";
       listWarehouse(this.queryParams).then(response => {
         this.warehouseList = response.rows;
