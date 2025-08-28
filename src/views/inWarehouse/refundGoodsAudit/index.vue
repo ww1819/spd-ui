@@ -60,7 +60,7 @@
 
         <el-col :span="6">
           <el-form-item label="状态" prop="billStatus" label-width="100px">
-            <el-select v-model="queryParams.billStatus" placeholder="请选择单据状态"
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
                        clearable >
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -118,6 +118,13 @@
             @click="handlePrint(scope.row,true)"
             v-if="scope.row.billStatus == 2"
           >打印</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+            v-hasPermi="['inWarehouse:refundGoodsApply:view']"
+          >查看</el-button>
           <el-dropdown v-if="scope.row.billStatus != 2">
             <el-button type="primary">
               更多操作<i class="el-icon-arrow-down el-icon--right"></i>
@@ -892,9 +899,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.3);
   z-index: 1000;

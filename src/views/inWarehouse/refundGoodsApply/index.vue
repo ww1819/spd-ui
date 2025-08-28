@@ -143,7 +143,7 @@
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
-            v-hasPermi="['inWarehouse:apply:edit']"
+            v-hasPermi="['inWarehouse:refundGoodsApply:edit']"
             v-if="scope.row.billStatus != 2"
           >修改</el-button>
           <el-button
@@ -151,7 +151,7 @@
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
-            v-hasPermi="['inWarehouse:apply:remove']"
+            v-hasPermi="['inWarehouse:refundGoodsApply:remove']"
             v-if="scope.row.billStatus != 2"
           >删除</el-button>
           <el-button
@@ -159,7 +159,7 @@
             type="text"
             icon="el-icon-view"
             @click="handleView(scope.row)"
-            v-hasPermi="['inWarehouse:apply:view']"
+            v-hasPermi="['inWarehouse:refundGoodsApply:view']"
           >查看</el-button>
         </template>
       </el-table-column>
