@@ -38,6 +38,26 @@
           </el-form-item>
         </el-col>
       </el-row>
+      <el-row>
+        <el-col :span="6">
+          <el-form-item label="科室" prop="departmentId" label-width="100px">
+            <SelectDepartment v-model="queryParams.departmentId" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="单据状态" prop="applyBillStatus" label-width="100px">
+            <el-select v-model="queryParams.applyBillStatus" placeholder="全部"
+                       :disabled="false"
+                       clearable>
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
 
     </el-form>
 
@@ -80,6 +100,7 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
+      <el-table-column label="科室" align="center" prop="department.name" show-overflow-tooltip resizable />
       <el-table-column label="操作人" align="center" prop="user.userName" show-overflow-tooltip resizable />
       <el-table-column label="申请状态" align="center" prop="applyBillStatus" show-overflow-tooltip resizable >
         <template slot-scope="scope">
@@ -95,6 +116,7 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['department:dApply:edit']"
+            v-if="scope.row.applyBillStatus != 2"
           >修改</el-button>
           <el-button
             size="mini"
@@ -102,7 +124,15 @@
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['department:dApply:remove']"
+            v-if="scope.row.applyBillStatus != 2"
           >删除</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+            v-hasPermi="['department:dApply:view']"
+          >查看</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -147,6 +177,11 @@
             </el-form-item>
           </el-col>
 
+          <el-col :span="4">
+            <el-form-item label="科室" prop="departmentId" label-width="100px">
+              <SelectDepartment v-model="form.departmentId"/>
+            </el-form-item>
+          </el-col>
           <el-col :span="4">
             <el-form-item label="申请日期" prop="applyBillDate" label-width="100px">
               <el-date-picker clearable
@@ -324,7 +359,6 @@ export default {
     /** 查询科室申领列表 */
     getList() {
       this.loading = true;
-      this.queryParams.applyBillStatus = "1";
       listApply(this.queryParams).then(response => {
         this.applyList = response.rows;
         this.total = response.total;
