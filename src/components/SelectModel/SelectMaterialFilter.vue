@@ -40,6 +40,12 @@
           <el-table-column label="有效期" align="center" prop="periodDate" width="100" show-overflow-tooltip resizable/>
           <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="160" show-overflow-tooltip resizable/>
           <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="160"/>
+          <el-table-column label="财务分类" align="center" prop="fdFinanceCategory.financeCategoryName" width="160"/>
+          <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="160"/>
+          <el-table-column label="注册证号" align="center" prop="registerNo" width="160"/>
+          <el-table-column label="包装规格" align="center" prop="packageSpeci" width="160"/>
+          <el-table-column label="材质" align="center" prop="quality" width="160"/>
+          <el-table-column label="储存方式" align="center" prop="isWay" width="160"/>
         </el-table>
 
         <pagination
@@ -50,7 +56,7 @@
           @pagination="getList"
         />
       </div>
-      
+
       <div class="modal-footer">
         <el-button @click="handleClose">取 消</el-button>
         <el-button type="primary" @click="checkMaterialBtn">确 定</el-button>
@@ -166,9 +172,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: fixed;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.4);
   z-index: 2000;
