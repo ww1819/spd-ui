@@ -695,7 +695,9 @@ export default {
       this.form.billType = '401';
       //操作人
       var userName = this.$store.state.user.name;
-      this.form.createBy = userName;
+      var userId = this.$store.state.user.userId;
+      this.form.createBy = userId;
+      this.form.createrName = userName;
       this.form.billDate = this.getBillDate();
       this.title = "添加退库";
       this.action = true;

@@ -219,8 +219,8 @@
 
           <el-col :span="4">
             <el-form-item label="制单人" prop="createrName" label-width="100px">
-<!--              <SelectUser v-model="form.userId"/>-->
-              <el-input v-model="form.createrName" :disabled="true" />
+              <SelectUser v-model="form.createrName"/>
+<!--              <el-input v-model="form.createrName" :disabled="true" />-->
             </el-form-item>
           </el-col>
 
@@ -726,6 +726,7 @@ export default {
       var userName = this.$store.state.user.name;
       var userId = this.$store.state.user.userId;
       this.form.createBy = userId;
+      this.form.createrName = userName;
       this.form.billDate = this.getBillDate();
       this.title = "添加入库";
       this.action = true;
