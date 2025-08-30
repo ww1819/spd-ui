@@ -324,6 +324,23 @@
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
             </template>
           </el-table-column>
+
+<!--          <el-table-column label="单位" align="center" prop="row.material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>-->
+<!--          <el-table-column label="名称" align="center" prop="row.material.name" width="180" show-overflow-tooltip resizable/>-->
+<!--          <el-table-column label="规格" align="center" prop="row.material.speci" width="180" show-overflow-tooltip resizable/>-->
+<!--          <el-table-column label="型号" align="center" prop="row.material.name" width="180" show-overflow-tooltip resizable/>-->
+<!--          <el-table-column label="注册证号" align="center" prop="row.material.registerNo" width="180" show-overflow-tooltip resizable/>-->
+<!--          <el-table-column label="包装规格" align="center" prop="row.material.packageSpeci" width="180" show-overflow-tooltip resizable/>-->
+<!--          <el-table-column label="生产厂家" align="center" prop="row.material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>-->
+<!--          <el-table-column label="库房分类" align="center" prop="row.material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>-->
+<!--          <el-table-column label="财务分类" align="center" prop="row.material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>-->
+<!--          <el-table-column label="储存方式" align="center" prop="row.material.isWay" width="180" show-overflow-tooltip resizable/>-->
+
+          <el-table-column label="单位" prop="row.material.name" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.material.fdUnit.unitName" :disabled="true" placeholder="请输入批次号" />
+            </template>
+          </el-table-column>
           <el-table-column label="名称" prop="row.material.name" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.material.name" :disabled="true" placeholder="请输入批次号" />
