@@ -100,8 +100,10 @@
 
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
+              :row-class-name="warehouseListIndex"
               @selection-change="handleSelectionChange" height="58vh" border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -808,7 +810,10 @@ export default {
     },
     /** 入库明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
+    warehouseListIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 入库明细添加按钮操作 */
     handleAddStkIoBillEntry() {

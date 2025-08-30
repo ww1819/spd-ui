@@ -99,8 +99,10 @@
     </el-row>
 
     <el-table v-loading="loading" :data="warehouseList"
+              :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="58vh" border>
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="退库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -280,59 +282,18 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="单位" prop="row.material.name" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.material.fdUnit.unitName" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="名称" prop="row.material.name" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.name" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="规格" prop="row.material.speci" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.speci" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="型号" prop="row.material.model" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.model" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="注册证号" prop="row.material.registerNo" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.registerNo" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="包装规格" prop="row.material.packageSpeci" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.packageSpeci" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="生产厂家" prop="row.material.fdFactory.factoryName" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.fdFactory.factoryName" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="库房分类" prop="row.material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.fdWarehouseCategory.warehouseCategoryName" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="财务分类" prop="row.material.name" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.fdFinanceCategory.financeCategoryName" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="材质" prop="row.material.quality" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.quality" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="储存方式" prop="row.material.isWay" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.isWay" :disabled="true" placeholder="请输入批次号" />
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
@@ -465,7 +426,7 @@ import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
 
 export default {
   name: "OutWarehouseRefund",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','bill_type','way_status'],
   components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory},
   data() {
     return {
@@ -825,7 +786,10 @@ export default {
     },
     /** 退库明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
+    warehouseListIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 退库明细添加按钮操作 */
     handleAddStkIoBillEntry() {
