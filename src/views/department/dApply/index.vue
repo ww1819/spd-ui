@@ -232,9 +232,10 @@
               <SelectMaterial v-model="scope.row.materialId" :value2="true"/>
             </template>
           </el-table-column>
-          <el-table-column label="单位" prop="row.material.name" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="单位" prop="material.name" width="120" show-overflow-tooltip resizable></el-table-column>
+          <el-table-column label="单位" prop="material.name" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.material.fdUnit.unitName" :disabled="true" placeholder="请输入批次号" />
+              <el-input v-model="scope.row.material.fdUnit.unitName" :disabled="true"/>
             </template>
           </el-table-column>
           <el-table-column label="名称" prop="row.material.name" width="120" show-overflow-tooltip resizable>

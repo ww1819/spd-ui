@@ -325,72 +325,22 @@
             </template>
           </el-table-column>
 
-<!--          <el-table-column label="单位" align="center" prop="row.material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>-->
-<!--          <el-table-column label="名称" align="center" prop="row.material.name" width="180" show-overflow-tooltip resizable/>-->
-<!--          <el-table-column label="规格" align="center" prop="row.material.speci" width="180" show-overflow-tooltip resizable/>-->
-<!--          <el-table-column label="型号" align="center" prop="row.material.name" width="180" show-overflow-tooltip resizable/>-->
-<!--          <el-table-column label="注册证号" align="center" prop="row.material.registerNo" width="180" show-overflow-tooltip resizable/>-->
-<!--          <el-table-column label="包装规格" align="center" prop="row.material.packageSpeci" width="180" show-overflow-tooltip resizable/>-->
-<!--          <el-table-column label="生产厂家" align="center" prop="row.material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>-->
-<!--          <el-table-column label="库房分类" align="center" prop="row.material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>-->
-<!--          <el-table-column label="财务分类" align="center" prop="row.material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>-->
-<!--          <el-table-column label="储存方式" align="center" prop="row.material.isWay" width="180" show-overflow-tooltip resizable/>-->
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+            </template>
+          </el-table-column>
 
-          <el-table-column label="单位" prop="row.material.fdUnit.unitName" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.fdUnit.unitName" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="名称" prop="row.material.name" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.name" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="规格" prop="row.material.speci" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.speci" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="型号" prop="row.material.model" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.model" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="注册证号" prop="row.material.registerNo" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.registerNo" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="包装规格" prop="row.material.packageSpeci" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.packageSpeci" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="生产厂家" prop="row.material.fdFactory.factoryName" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.fdFactory.factoryName" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="库房分类" prop="row.material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.fdWarehouseCategory.warehouseCategoryName" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="财务分类" prop="row.material.fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.fdFinanceCategory.financeCategoryName" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="材质" prop="row.material.quality" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.quality" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="储存方式" prop="row.material.isWay" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.material.isWay" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
+
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
 <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
@@ -492,7 +442,7 @@ import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter'
 
 export default {
   name: "InWarehouse",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','bill_type','way_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMaterialFilter},
   data() {
     return {
