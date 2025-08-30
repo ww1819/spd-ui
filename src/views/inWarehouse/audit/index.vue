@@ -664,6 +664,7 @@ export default {
         obj.beginTime = "";
         obj.andTime = "";
         obj.remark = "";
+        obj.material = item;
 
         this.stkIoBillEntryList.push(obj);
       });

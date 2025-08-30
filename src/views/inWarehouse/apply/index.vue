@@ -336,7 +336,7 @@
 <!--          <el-table-column label="财务分类" align="center" prop="row.material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>-->
 <!--          <el-table-column label="储存方式" align="center" prop="row.material.isWay" width="180" show-overflow-tooltip resizable/>-->
 
-          <el-table-column label="单位" prop="row.material.name" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="单位" prop="row.material.fdUnit.unitName" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.material.fdUnit.unitName" :disabled="true" placeholder="请输入批次号" />
             </template>
@@ -376,7 +376,7 @@
               <el-input v-model="scope.row.material.fdWarehouseCategory.warehouseCategoryName" :disabled="true" placeholder="请输入批次号" />
             </template>
           </el-table-column>
-          <el-table-column label="财务分类" prop="row.material.name" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="财务分类" prop="row.material.fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.material.fdFinanceCategory.financeCategoryName" :disabled="true" placeholder="请输入批次号" />
             </template>
@@ -660,6 +660,7 @@ export default {
       this.selectRow.forEach((item, index) => {
 
         let obj = {};
+
         obj.materialId = item.id;
         obj.qty = "";
         obj.price = item.prince;
@@ -669,6 +670,8 @@ export default {
         obj.beginTime = "";
         obj.andTime = "";
         obj.remark = "";
+        obj.material = item;
+
         this.stkIoBillEntryList.push(obj);
       });
     },
