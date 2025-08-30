@@ -599,7 +599,11 @@ export default {
         updateBy: null,
         updateTime: null,
         totalAmount: null,
-        remark: null
+        remark: null,
+        auditBy: null,
+        createrName:null,
+        auditPersonName:null,
+        auditDate:null
       };
       this.stkIoBillEntryList = [];
       this.resetForm("form");

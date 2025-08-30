@@ -657,6 +657,10 @@ export default {
         invoiceAmount: null,
         invoiceTime: null,
         proPerson: null,
+        auditBy: null,
+        createrName:null,
+        auditPersonName:null,
+        auditDate:null
       };
       this.stkIoBillEntryList = [];
       this.resetForm("form");

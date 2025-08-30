@@ -128,7 +128,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作人" align="center" prop="createBy" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" prop="creater.userName" show-overflow-tooltip resizable />
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" resizable>
         <template slot-scope="scope">
@@ -218,9 +218,9 @@
           </el-col>
 
           <el-col :span="4">
-            <el-form-item label="操作人" prop="createBy" label-width="100px">
+            <el-form-item label="制单人" prop="createrName" label-width="100px">
 <!--              <SelectUser v-model="form.userId"/>-->
-              <el-input v-model="form.createBy" :disabled="true" />
+              <el-input v-model="form.createrName" :disabled="true" />
             </el-form-item>
           </el-col>
 
@@ -656,7 +656,11 @@ export default {
         invoiceAmount: null,
         invoiceTime: null,
         proPerson: null,
-        remark: null
+        remark: null,
+        auditBy: null,
+        createrName:null,
+        auditPersonName:null,
+        auditDate:null
       };
       this.stkIoBillEntryList = [];
       this.resetForm("form");
@@ -720,7 +724,8 @@ export default {
       this.form.billType = '101';
       //操作人
       var userName = this.$store.state.user.name;
-      this.form.createBy = userName;
+      var userId = this.$store.state.user.userId;
+      this.form.createBy = userId;
       this.form.billDate = this.getBillDate();
       this.title = "添加入库";
       this.action = true;
