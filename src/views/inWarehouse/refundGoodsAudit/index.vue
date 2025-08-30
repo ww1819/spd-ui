@@ -686,9 +686,10 @@ export default {
     handleAudit(row) {
       this.reset();
       const id = row.id || this.ids
+      const auditBy = this.$store.state.user.userId;
 
       this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(function() {
-        return auditThInventory({id:id});
+        return auditThInventory({id:id,auditBy:auditBy});
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("审核退货成功！");

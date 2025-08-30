@@ -666,9 +666,10 @@ export default {
     handleAudit(row) {
       this.reset();
       const id = row.id || this.ids
+      const auditBy = this.$store.state.user.userId;
 
       this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(function() {
-        return auditTkInventory({id:id});
+        return auditTkInventory({id:id,auditBy:auditBy});
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("审核退库成功！");
