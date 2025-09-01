@@ -325,7 +325,7 @@
           <el-table-column label="有效期" prop="batchNo" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-date-picker clearable
-                              v-model="scope.row.andTime"
+                              v-model="scope.row.endTime"
                               type="date"
                               value-format="yyyy-MM-dd"
                               placeholder="请选择退库日期">
