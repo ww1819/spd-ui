@@ -513,6 +513,13 @@ export default {
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.basApplyEntryList = this.basApplyEntryList;
+          var totalAmt = 0;
+          this.basApplyEntryList.forEach(item => {
+            if(item.amt){
+              totalAmt += parseFloat(item.amt);
+            }
+          });
+          this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
             updateApply(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");

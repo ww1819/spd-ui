@@ -729,6 +729,13 @@ export default {
           }
 
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
+          var totalAmt = 0;
+          this.stkIoBillEntryList.forEach(item => {
+            if(item.amt){
+              totalAmt += parseFloat(item.amt);
+            }
+          });
+          this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
             updateOutWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");

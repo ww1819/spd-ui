@@ -739,6 +739,13 @@ export default {
             }
           }
 
+          var totalAmt = 0;
+          this.stkIoBillEntryList.forEach(item => {
+            if(item.amt){
+              totalAmt += parseFloat(item.amt);
+            }
+          });
+          this.form.totalAmount = totalAmt.toFixed(2);
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           if (this.form.id != null) {
             updateThInventory(this.form).then(response => {
