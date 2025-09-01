@@ -116,6 +116,7 @@ import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 export default {
   name: "SelectInventory",
   components: {SelectMaterial,SelectDepartment},
+  dicts:['way_status'],
   props: ['DialogComponentShow','departmentValue'], //接受父组件传递过来的数据
   data() {
     return {
