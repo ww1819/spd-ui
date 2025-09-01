@@ -103,7 +103,7 @@ export default {
         supplierId: undefined,
         speci: undefined,
         model: undefined,
-        prince: undefined,
+        price: undefined,
         isGz: undefined,
       },
       // 表单参数

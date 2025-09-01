@@ -12,14 +12,14 @@
               />
             </el-form-item>
           </el-col>
-  
+
           <el-col :span="6">
             <el-form-item label="供应商" prop="supplierId">
               <SelectSupplier v-model="queryParams.supplierId"/>
             </el-form-item>
           </el-col>
         </el-row>
-  
+
         <el-row :gutter="20">
           <el-col :span="6">
             <div style="display: inline">
@@ -43,7 +43,7 @@
               </el-date-picker>
             </div>
           </el-col>
-  
+
           <el-col :span="6">
             <el-form-item label="是否高值" prop="isGz">
               <el-select v-model="queryParams.isGz" placeholder="请选择">
@@ -56,7 +56,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-  
+
           <el-col :span="6">
             <el-form-item>
               <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -117,7 +117,7 @@
         </el-col>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
-  
+
       <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="编号" align="center" prop="id" width="50"/>
@@ -126,7 +126,7 @@
         <el-table-column label="供应商" align="center" prop="supplier.name" width="180"/>
         <el-table-column label="规格" align="center" prop="speci" />
         <el-table-column label="型号" align="center" prop="model" />
-        <el-table-column label="价格" align="center" prop="prince" />
+        <el-table-column label="价格" align="center" prop="price" />
         <el-table-column label="单位" align="center" prop="fdUnit.unitName" />
         <el-table-column label="是否高值" align="center" prop="isGz">
           <template slot-scope="scope">
@@ -164,7 +164,7 @@
         :limit.sync="queryParams.pageSize"
         @pagination="getList"
       />
-  
+
       <!-- 添加或修改耗材产品对话框 -->
       <el-dialog :title="title" :visible.sync="open" width="1200px" append-to-body>
         <el-form ref="form" :model="form" :rules="rules" label-width="80px">
@@ -190,40 +190,40 @@
               </el-form-item>
             </el-col>
           </el-row>
-  
+
           <el-row>
             <el-col :span="6">
               <el-form-item label="规格" prop="speci" label-width="100px">
                 <el-input v-model="form.speci" placeholder="请输入规格" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="型号" prop="model" label-width="100px">
                 <el-input v-model="form.model" placeholder="请输入型号" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
-              <el-form-item label="价格" prop="prince" label-width="100px">
-                <el-input v-model="form.prince" placeholder="请输入价格" />
+              <el-form-item label="价格" prop="price" label-width="100px">
+                <el-input v-model="form.price" placeholder="请输入价格" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="通用名称" prop="useName" label-width="100px">
                 <el-input v-model="form.useName" placeholder="请输入通用名称" />
               </el-form-item>
             </el-col>
           </el-row>
-  
+
           <el-row>
             <el-col :span="6">
               <el-form-item label="生产厂家" prop="factoryId" label-width="100px">
                 <SelectFactory v-model="form.factoryId"/>
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="库房分类" prop="storeroomId" label-width="100px">
                 <SelectWarehouseCategory v-model="form.storeroomId"/>
@@ -240,7 +240,7 @@
               </el-form-item>
             </el-col>
           </el-row>
-  
+
           <el-row>
             <el-col :span="6">
               <el-form-item label="注册证名称" prop="registerName" label-width="100px">
@@ -263,7 +263,7 @@
               </el-form-item>
             </el-col>
           </el-row>
-  
+
           <el-row>
             <el-col :span="6">
               <el-form-item label="有效期" prop="periodDate" label-width="100px">
@@ -276,7 +276,7 @@
                 </el-date-picker>
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="招标类别" prop="successfulType" label-width="100px">
                 <el-input v-model="form.successfulType" placeholder="请输入招标类别" />
@@ -287,33 +287,33 @@
                 <el-input v-model="form.successfulNo" placeholder="请输入中标号" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="中标价格" prop="successfulPrice" label-width="100px">
                 <el-input v-model="form.successfulPrice" placeholder="请输入中标价格" />
               </el-form-item>
             </el-col>
           </el-row>
-  
+
           <el-row>
             <el-col :span="6">
               <el-form-item label="销售价" prop="salePrice" label-width="100px">
                 <el-input v-model="form.salePrice" placeholder="请输入销售价" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="包装规格" prop="packageSpeci" label-width="100px">
                 <el-input v-model="form.packageSpeci" placeholder="请输入包装规格" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label=" 产地" prop="producer" label-width="100px">
                 <el-input v-model="form.producer" placeholder="请输入 产地" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label=" 耗材级别" label-width="100px">
                 <el-select v-model="form.materialLevel" placeholder="请选择耗材级别">
@@ -327,7 +327,7 @@
               </el-form-item>
             </el-col>
           </el-row>
-  
+
           <el-row>
             <el-col :span="6">
               <el-form-item label=" 注册证级别" label-width="100px">
@@ -353,7 +353,7 @@
                 </el-select>
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label=" 急救类型" prop="firstaidLevel" label-width="100px">
                 <el-select v-model="form.firstaidLevel" placeholder="请选择急救类型">
@@ -366,7 +366,7 @@
                 </el-select>
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label=" 医用级别" prop="doctorLevel" label-width="100px">
                 <el-select v-model="form.doctorLevel" placeholder="请选择医用级别">
@@ -380,20 +380,20 @@
               </el-form-item>
             </el-col>
           </el-row>
-  
+
           <el-row>
             <el-col :span="6">
               <el-form-item label="品牌" prop="brand" label-width="100px">
                 <el-input v-model="form.brand" placeholder="请输入品牌" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="用途" prop="useto" label-width="100px">
                 <el-input v-model="form.useto" placeholder="请输入用途" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="材质" prop="quality" label-width="100px">
                 <el-input v-model="form.quality" placeholder="请输入材质" />
@@ -405,7 +405,7 @@
               </el-form-item>
             </el-col>
           </el-row>
-  
+
           <el-row>
             <el-col :span="6">
               <el-form-item label="储存方式" prop="isWay" label-width="100px">
@@ -419,26 +419,26 @@
                 </el-select>
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="UDI码" prop="udiNo" label-width="100px">
                 <el-input v-model="form.udiNo" placeholder="请输入UDI码" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="许可证编号" prop="permitNo" label-width="100px">
                 <el-input v-model="form.permitNo" placeholder="请输入许可证编号" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="国家编码" prop="countryNo" label-width="100px">
                 <el-input v-model="form.countryNo" placeholder="请输入国家编码" />
               </el-form-item>
             </el-col>
           </el-row>
-  
+
           <el-row>
             <el-col :span="6">
               <el-form-item label="国家医保名称" prop="countryName" label-width="100px">
@@ -450,7 +450,7 @@
                 <el-input v-model="form.description" placeholder="请输入商品说明" />
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="使用状态" prop="isUse" label-width="100px">
                 <el-select v-model="form.isUse" placeholder="请选择使用状态">
@@ -463,7 +463,7 @@
                 </el-select>
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="带量采购" prop="isProcure" label-width="100px">
                 <el-select v-model="form.isProcure" placeholder="请选择带量采购">
@@ -477,7 +477,7 @@
               </el-form-item>
             </el-col>
           </el-row>
-  
+
           <el-row>
             <el-col :span="6">
               <el-form-item label="重点监测" prop="isMonitor" label-width="100px">
@@ -491,7 +491,7 @@
                 </el-select>
               </el-form-item>
             </el-col>
-  
+
             <el-col :span="6">
               <el-form-item label="是否高值" prop="isGz" label-width="100px">
                 <el-select v-model="form.isGz" placeholder="请选择是否高值">
@@ -505,7 +505,7 @@
               </el-form-item>
             </el-col>
           </el-row>
-  
+
         </el-form>
         <div slot="footer" class="dialog-footer">
           <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -543,7 +543,7 @@
       </el-dialog>
     </div>
   </template>
-  
+
   <script>
   import { listMaterial, getMaterial, delMaterial, addMaterial, updateMaterial } from "@/api/foundation/material";
   import SelectSupplier from '@/components/SelectModel/SelectSupplier';
@@ -553,7 +553,7 @@
   import SelectUnit from "@/components/SelectModel/SelectUnit";
   import { pinyin } from 'pinyin-pro'
   import { getToken } from "@/utils/auth";
-  
+
   export default {
     name: "Material",
     dicts: ['is_use_status', 'is_yes_no','way_status','material_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
@@ -588,7 +588,7 @@
           supplierId: undefined,
           speci: undefined,
           model: undefined,
-          prince: undefined,
+          price: undefined,
           isGz: undefined,
           beginDate: undefined,
           endDate: undefined,
@@ -612,7 +612,7 @@
           model: [
             { required: true, message: "型号不能为空", trigger: "blur" }
           ],
-          prince: [
+          price: [
             { required: true, message: "价格不能为空", trigger: "blur" }
           ],
           referredName: [
@@ -675,7 +675,7 @@
           supplierId: null,
           speci: null,
           model: null,
-          prince: null,
+          price: null,
           createBy: null,
           createTime: null,
           updateBy: null,
@@ -692,7 +692,7 @@
           toneType: 'none',
           type: 'array',
         }).join('').toUpperCase();
-  
+
         this.form.referredName = pinYinCode;
       },
       /** 搜索按钮操作 */
@@ -798,4 +798,3 @@
     }
   };
   </script>
-  

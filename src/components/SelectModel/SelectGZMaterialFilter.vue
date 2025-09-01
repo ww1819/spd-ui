@@ -31,7 +31,7 @@
         <el-table-column label="供应商" align="center" prop="supplier.name" width="160"/>
         <el-table-column label="规格" align="center" prop="speci" width="100"/>
         <el-table-column label="型号" align="center" prop="model" width="100"/>
-        <el-table-column label="价格" align="center" prop="prince" width="100"/>
+        <el-table-column label="价格" align="center" prop="price" width="100"/>
         <el-table-column label="有效期" align="center" prop="periodDate" width="100"/>
         <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="160"/>
         <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="160"/>
@@ -99,7 +99,7 @@ export default {
         supplierId: undefined,
         speci: undefined,
         model: undefined,
-        prince: undefined,
+        price: undefined,
         isGz: undefined,
       },
       // 表单参数

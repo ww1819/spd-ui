@@ -127,7 +127,7 @@
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180"/>
       <el-table-column label="规格" align="center" prop="speci" width="120"/>
       <el-table-column label="型号" align="center" prop="model" width="120"/>
-      <el-table-column label="价格" align="center" prop="prince" width="100"/>
+      <el-table-column label="价格" align="center" prop="price" width="100"/>
       <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80"/>
       <el-table-column label="是否高值" align="center" prop="isGz" width="80">
         <template slot-scope="scope">
@@ -206,8 +206,8 @@
               </el-form-item>
             </el-col>
             <el-col :span="6">
-              <el-form-item label="价格" prop="prince">
-                <el-input v-model="form.prince" placeholder="请输入价格" />
+              <el-form-item label="价格" prop="price">
+                <el-input v-model="form.price" placeholder="请输入价格" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
@@ -576,7 +576,7 @@ export default {
         supplierId: undefined,
         speci: undefined,
         model: undefined,
-        prince: undefined,
+        price: undefined,
         isGz: undefined,
         beginDate: undefined,
         endDate: undefined,
@@ -600,7 +600,7 @@ export default {
         model: [
           { required: true, message: "型号不能为空", trigger: "blur" }
         ],
-        prince: [
+        price: [
           { required: true, message: "价格不能为空", trigger: "blur" }
         ],
         referredName: [
@@ -663,7 +663,7 @@ export default {
         supplierId: null,
         speci: null,
         model: null,
-        prince: null,
+        price: null,
         createBy: null,
         createTime: null,
         updateBy: null,

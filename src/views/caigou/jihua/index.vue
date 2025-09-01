@@ -495,7 +495,7 @@ export default {
         let obj = {};
         obj.materialId = item.id;
         obj.qty = "";
-        obj.price = item.prince;
+        obj.price = item.price;
         obj.amt = "";
         obj.speci = item.speci;
         obj.model = item.model;
