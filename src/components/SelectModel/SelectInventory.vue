@@ -56,7 +56,7 @@
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
           <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材" align="center" prop="material.name" width="120" show-overflow-tooltip resizable/>
+<!--          <el-table-column label="耗材" align="center" prop="material.name" width="120" show-overflow-tooltip resizable/>-->
           <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
