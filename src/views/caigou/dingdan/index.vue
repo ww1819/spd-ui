@@ -337,7 +337,7 @@ export default {
           return time.getTime() > Date.now();
         },
       },
-      pickerAndTimeOptions: {
+      pickerEndTimeOptions: {
         disabledDate(time) {
           return time.getTime() < Date.now();
         },
