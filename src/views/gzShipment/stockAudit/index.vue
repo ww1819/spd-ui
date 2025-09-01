@@ -229,12 +229,12 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="批号" prop="batchNo" width="240">
+          <el-table-column label="批号" prop="batchNumber" width="240">
             <template slot-scope="scope">
               <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="请输入批号" />
             </template>
           </el-table-column>
-          <el-table-column label="生产日期" prop="batchNo" width="240">
+          <el-table-column label="生产日期" prop="beginTime" width="240">
             <template slot-scope="scope">
               <el-date-picker clearable
                               v-model="scope.row.beginTime"
@@ -244,10 +244,10 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" prop="batchNo" width="240">
+          <el-table-column label="有效期" prop="endTime" width="240">
             <template slot-scope="scope">
               <el-date-picker clearable
-                              v-model="scope.row.andTime"
+                              v-model="scope.row.endTime"
                               type="date"
                               value-format="yyyy-MM-dd"
                               placeholder="请选择退库日期">
