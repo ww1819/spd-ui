@@ -739,19 +739,19 @@ export default {
             }
           });
           this.form.totalAmount = totalAmt.toFixed(2);
-          // if (this.form.id != null) {
-          //   updateTkInventory(this.form).then(response => {
-          //     this.$modal.msgSuccess("修改成功");
-          //     this.open = false;
-          //     this.getList();
-          //   });
-          // } else {
-          //   addTkInventory(this.form).then(response => {
-          //     this.$modal.msgSuccess("新增成功");
-          //     this.open = false;
-          //     this.getList();
-          //   });
-          // }
+          if (this.form.id != null) {
+            updateTkInventory(this.form).then(response => {
+              this.$modal.msgSuccess("修改成功");
+              this.open = false;
+              this.getList();
+            });
+          } else {
+            addTkInventory(this.form).then(response => {
+              this.$modal.msgSuccess("新增成功");
+              this.open = false;
+              this.getList();
+            });
+          }
         }
       });
     },
