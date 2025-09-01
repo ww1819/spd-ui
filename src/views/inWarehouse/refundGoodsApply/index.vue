@@ -572,7 +572,7 @@ export default {
         obj.batchNo = item.batchNo;
         obj.batchNumber = item.materialNo;
         obj.beginTime = item.beginTime;
-        obj.andTime = item.endTime;
+        obj.endTime = item.endTime;
         obj.remark = item.remark;
         obj.material = item.material;
 

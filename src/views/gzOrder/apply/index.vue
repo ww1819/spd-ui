@@ -447,7 +447,7 @@ export default {
           const index = this.checkedGzOrderEntry[i];
           this.gzOrderEntryList[index].batchNo = obj.batchNo;
           this.gzOrderEntryList[index].secondaryBarcode = obj.ftm;
-          this.gzOrderEntryList[index].andTime = obj.yxq;
+          this.gzOrderEntryList[index].endTime = obj.yxq;
         }
       }
     }
@@ -486,7 +486,7 @@ export default {
         obj.batchNo = "";
         obj.batchNumber = "";
         obj.beginTime = "";
-        obj.andTime = "";
+        obj.endTime = "";
         obj.remark = "";
         obj.masterBarcode = "";
         obj.secondaryBarcode = "";
@@ -651,7 +651,7 @@ export default {
       obj.batchNo = "";
       obj.batchNumber = "";
       obj.beginTime = "";
-      obj.andTime = "";
+      obj.endTime = "";
       obj.remark = "";
       obj.masterBarcode = "";
       obj.secondaryBarcode = "";

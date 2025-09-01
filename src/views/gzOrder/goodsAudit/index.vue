@@ -245,10 +245,10 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" prop="andTime" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="有效期" prop="endTime" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-date-picker clearable
-                              v-model="scope.row.andTime"
+                              v-model="scope.row.endTime"
                               type="date"
                               value-format="yyyy-MM-dd"
                               placeholder="请选择有效期">
@@ -598,9 +598,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.3);
   z-index: 1000;

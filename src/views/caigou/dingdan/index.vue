@@ -487,7 +487,7 @@ export default {
         obj.speci = item.speci;
         obj.model = item.model;
         obj.beginTime = "";
-        obj.andTime = "";
+        obj.endTime = "";
         obj.remark = "";
         this.stkIoBillEntryList.push(obj);
       });
