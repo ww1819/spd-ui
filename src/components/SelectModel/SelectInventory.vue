@@ -72,6 +72,10 @@
           <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+            </template>
+          </el-table-column>
           <el-table-column label="生产日期" align="center" prop="beginTime" width="140" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
