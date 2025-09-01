@@ -262,6 +262,16 @@
               <el-input v-model="scope.row.batchNumer" placeholder="请输入批号" />
             </template>
           </el-table-column>
+          <el-table-column label="有效期" align="center" prop="endTime" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="生产日期" align="center" prop="beginTime" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
+            </template>
+          </el-table-column>
 
           <el-table-column label="批次号" prop="batchNo" width="450" show-overflow-tooltip resizable>
             <template slot-scope="scope">
