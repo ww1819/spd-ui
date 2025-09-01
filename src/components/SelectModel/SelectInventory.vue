@@ -115,6 +115,7 @@ import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 
 export default {
   name: "SelectInventory",
+  dicts:['way_status'],
   components: {SelectMaterial,SelectWarehouse,SelectSupplier},
   props: ['DialogComponentShow','warehouseValue','supplierValue'], //接受父组件传递过来的数据
   data() {
