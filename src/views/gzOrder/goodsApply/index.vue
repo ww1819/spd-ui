@@ -557,7 +557,7 @@ export default {
       obj.batchNo = "";
       obj.batchNumber = "";
       obj.beginTime = "";
-      obj.andTime = "";
+      obj.endTime = "";
       obj.remark = "";
       this.gzRefundGoodsEntryList.push(obj);
     },

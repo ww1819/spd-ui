@@ -390,7 +390,7 @@ export default {
         obj.batchNo = item.batchNo;
         obj.batchNumber = item.batchNumber;
         obj.beginTime = "";
-        obj.andTime = "";
+        obj.endTime = "";
         obj.remark = "";
 
         this.gzRefundGoodsEntryList.push(obj);
@@ -564,7 +564,7 @@ export default {
       obj.batchNo = "";
       obj.batchNumber = "";
       obj.beginTime = "";
-      obj.andTime = "";
+      obj.endTime = "";
       obj.remark = "";
       this.gzRefundGoodsEntryList.push(obj);
     },
