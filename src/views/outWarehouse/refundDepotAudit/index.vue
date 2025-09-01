@@ -265,20 +265,10 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
-            </template>
-          </el-table-column>
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
@@ -292,9 +282,10 @@
 
           <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number'
-                        :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="请输入单价" />
+              <el-input
+                v-model="scope.row.unitPrice"
+                :disabled="true"
+                placeholder="自动带出单价"/>
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
@@ -302,34 +293,48 @@
               <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
             </template>
           </el-table-column>
-          <el-table-column label="批次号" prop="batchNo" width="240" show-overflow-tooltip resizable>
+
+          <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input
+                v-model="scope.row.batchNumber"
+                :disabled="true"
+                placeholder="自动带出批号"/>
+            </template>
+          </el-table-column>
+          <el-table-column label="有效期" prop="endTime" width="240" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-date-picker
+                v-model="scope.row.endTime"
+                :disabled="true"
+                type="date"
+                value-format="yyyy-MM-dd"/>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="生产日期" prop="beginTime" width="240" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-date-picker
+                v-model="scope.row.beginTime"
+                :disabled="true"
+                type="date"
+                value-format="yyyy-MM-dd"/>
+            </template>
+          </el-table-column>
+          <el-table-column label="批次号" prop="batchNo" width="240">
             <template slot-scope="scope">
               <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
             </template>
           </el-table-column>
-          <el-table-column label="批号" prop="batchNo" width="240" show-overflow-tooltip resizable>
+
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="请输入批号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="生产日期" prop="batchNo" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.beginTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              placeholder="请选择退库日期">
-              </el-date-picker>
-            </template>
-          </el-table-column>
-          <el-table-column label="有效期" prop="batchNo" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.endTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              placeholder="请选择退库日期">
-              </el-date-picker>
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="400" show-overflow-tooltip resizable>
