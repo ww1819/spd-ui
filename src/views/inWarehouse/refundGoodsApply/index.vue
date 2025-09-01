@@ -574,7 +574,7 @@ export default {
         obj.beginTime = item.beginTime;
         obj.andTime = item.endTime;
         obj.remark = item.remark;
-        obj.material = item;
+        obj.material = item.material;
 
         this.stkIoBillEntryList.push(obj);
       });
@@ -782,7 +782,6 @@ export default {
       obj.amt = "";
       obj.batchNo = "";
       obj.remark = "";
-
       this.stkIoBillEntryList.push(obj);
     },
     /** 退货明细删除按钮操作 */

@@ -570,7 +570,7 @@ export default {
         obj.beginTime = item.beginTime;
         obj.andTime = item.endTime;
         obj.remark = item.remark;
-        obj.material = item;
+        obj.material = item.material;
         this.stkIoBillEntryList.push(obj);
       });
     },
