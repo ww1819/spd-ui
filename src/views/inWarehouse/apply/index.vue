@@ -57,6 +57,19 @@
             </el-date-picker>
           </div>
         </el-col>
+        <el-col :span="4">
+          <el-form-item label="单据状态" prop="billStatus" label-width="100px">
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
+                       :disabled="false"
+                       clearable style="width: 150px">
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
 
     </el-form>
@@ -87,8 +100,10 @@
 
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
+              :row-class-name="warehouseListIndex"
               @selection-change="handleSelectionChange" height="58vh" border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -115,7 +130,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作人" align="center" prop="createBy" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" prop="creater.userName" show-overflow-tooltip resizable />
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" resizable>
         <template slot-scope="scope">
@@ -125,6 +140,7 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['inWarehouse:apply:edit']"
+            v-if="scope.row.billStatus != 2"
           >修改</el-button>
           <el-button
             size="mini"
@@ -132,7 +148,15 @@
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['inWarehouse:apply:remove']"
+            v-if="scope.row.billStatus != 2"
           >删除</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+            v-hasPermi="['inWarehouse:apply:view']"
+          >查看</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -196,9 +220,9 @@
           </el-col>
 
           <el-col :span="4">
-            <el-form-item label="操作人" prop="createBy" label-width="100px">
-<!--              <SelectUser v-model="form.userId"/>-->
-              <el-input v-model="form.createBy" :disabled="true" />
+            <el-form-item label="制单人" prop="createrName" label-width="100px">
+              <SelectUser v-model="form.createrName"/>
+<!--              <el-input v-model="form.createrName" :disabled="true" />-->
             </el-form-item>
           </el-col>
 
@@ -302,11 +326,16 @@
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
             </template>
           </el-table-column>
+
+          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-<!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
-<!--                        @input="qtyChange(scope.row)"-->
-<!--                        placeholder="请输入数量" />-->
+              <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
+              <!--                        @input="qtyChange(scope.row)"-->
+              <!--                        placeholder="请输入数量" />-->
               <el-input
                 clearable
                 v-model="scope.row.qty"
@@ -330,15 +359,20 @@
               <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
             </template>
           </el-table-column>
-          <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
-            </template>
-          </el-table-column>
-
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.batchNumber"  placeholder="请输入批号" />
+            </template>
+          </el-table-column>
+          <el-table-column label="有效期" prop="endTime" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-date-picker clearable
+                              v-model="scope.row.endTime"
+                              type="date"
+                              value-format="yyyy-MM-dd"
+                              :picker-options="pickerEndTimeOptions"
+                              placeholder="请选择入库日期">
+              </el-date-picker>
             </template>
           </el-table-column>
           <el-table-column label="生产日期" prop="beginTime" width="180" show-overflow-tooltip resizable>
@@ -352,15 +386,19 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" prop="andTime" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.andTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              :picker-options="pickerAndTimeOptions"
-                              placeholder="请选择入库日期">
-              </el-date-picker>
+              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
+            </template>
+          </el-table-column>
+          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
@@ -403,7 +441,7 @@ import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter'
 
 export default {
   name: "InWarehouse",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','bill_type','way_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMaterialFilter},
   data() {
     return {
@@ -423,7 +461,7 @@ export default {
           return time.getTime() > Date.now();
         },
       },
-      pickerAndTimeOptions: {
+      pickerEndTimeOptions: {
         disabledDate(time) {
           return time.getTime() < Date.now();
         },
@@ -544,7 +582,6 @@ export default {
     /** 查询入库列表 */
     getList() {
       this.loading = true;
-      this.queryParams.billStatus = "1";
       this.queryParams.billType = "101";
       listWarehouse(this.queryParams).then(response => {
         this.warehouseList = response.rows;
@@ -572,15 +609,18 @@ export default {
       this.selectRow.forEach((item, index) => {
 
         let obj = {};
+
         obj.materialId = item.id;
         obj.qty = "";
-        obj.price = item.prince;
+        obj.price = item.price;
         obj.amt = "";
         obj.batchNo = "";
         obj.batchNumber = "";
         obj.beginTime = "";
-        obj.andTime = "";
+        obj.endTime = "";
         obj.remark = "";
+        obj.material = item;
+
         this.stkIoBillEntryList.push(obj);
       });
     },
@@ -635,7 +675,11 @@ export default {
         invoiceAmount: null,
         invoiceTime: null,
         proPerson: null,
-        remark: null
+        remark: null,
+        auditBy: null,
+        createrName:null,
+        auditPersonName:null,
+        auditDate:null
       };
       this.stkIoBillEntryList = [];
       this.resetForm("form");
@@ -686,7 +730,7 @@ export default {
         this.stkIoBillEntryList = response.data.stkIoBillEntryList;
         this.open = true;
         this.action = false;
-        this.form.billStatus = '1';
+        this.form.billStatus = '2';
         this.form.billType = '101';
         this.title = "查看入库";
       });
@@ -699,7 +743,9 @@ export default {
       this.form.billType = '101';
       //操作人
       var userName = this.$store.state.user.name;
-      this.form.createBy = userName;
+      var userId = this.$store.state.user.userId;
+      this.form.createBy = userId;
+      this.form.createrName = userName;
       this.form.billDate = this.getBillDate();
       this.title = "添加入库";
       this.action = true;
@@ -723,16 +769,23 @@ export default {
       this.$refs["form"].validate(valid => {
         if (valid) {
           // 新增数量非空校验
-          const hasEmptyQty = this.stkIoBillEntryList.some(item => 
+          const hasEmptyQty = this.stkIoBillEntryList.some(item =>
             !item.qty || String(item.qty).trim() === ''
           );
-          
+
           if (hasEmptyQty) {
             this.$modal.msgError("入库明细数量不能为空");
             return;
           }
 
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
+          var totalAmt = 0;
+          this.stkIoBillEntryList.forEach(item => {
+            if(item.amt){
+              totalAmt += parseFloat(item.amt);
+            }
+          });
+          this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
             updateWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -761,7 +814,10 @@ export default {
     },
     /** 入库明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
+    warehouseListIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 入库明细添加按钮操作 */
     handleAddStkIoBillEntry() {
@@ -805,9 +861,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.3);
   z-index: 1000;

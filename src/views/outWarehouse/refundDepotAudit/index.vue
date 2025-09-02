@@ -59,7 +59,7 @@
 
         <el-col :span="6">
           <el-form-item label="状态" prop="billStatus" label-width="100px">
-            <el-select v-model="queryParams.billStatus" placeholder="请选择单据状态"
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
                        clearable >
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -79,8 +79,10 @@
     </el-row>
 
     <el-table v-loading="loading" :data="warehouseList"
+              :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="58vh" border>
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="退库单号" align="center" prop="billNo" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -262,6 +264,11 @@
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
             </template>
           </el-table-column>
+
+          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
@@ -275,9 +282,10 @@
 
           <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number'
-                        :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="请输入单价" />
+              <el-input
+                v-model="scope.row.unitPrice"
+                :disabled="true"
+                placeholder="自动带出单价"/>
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
@@ -285,34 +293,48 @@
               <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
             </template>
           </el-table-column>
-          <el-table-column label="批次号" prop="batchNo" width="240" show-overflow-tooltip resizable>
+
+          <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input
+                v-model="scope.row.batchNumber"
+                :disabled="true"
+                placeholder="自动带出批号"/>
+            </template>
+          </el-table-column>
+          <el-table-column label="有效期" prop="endTime" width="240" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-date-picker
+                v-model="scope.row.endTime"
+                :disabled="true"
+                type="date"
+                value-format="yyyy-MM-dd"/>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="生产日期" prop="beginTime" width="240" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-date-picker
+                v-model="scope.row.beginTime"
+                :disabled="true"
+                type="date"
+                value-format="yyyy-MM-dd"/>
+            </template>
+          </el-table-column>
+          <el-table-column label="批次号" prop="batchNo" width="240">
             <template slot-scope="scope">
               <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
             </template>
           </el-table-column>
-          <el-table-column label="批号" prop="batchNo" width="240" show-overflow-tooltip resizable>
+
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="请输入批号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="生产日期" prop="batchNo" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.beginTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              placeholder="请选择退库日期">
-              </el-date-picker>
-            </template>
-          </el-table-column>
-          <el-table-column label="有效期" prop="batchNo" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.andTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              placeholder="请选择退库日期">
-              </el-date-picker>
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="400" show-overflow-tooltip resizable>
@@ -373,7 +395,7 @@ import refundGoodsOrderPrint from "@/views/inWarehouse/refundGoodsAudit/refundGo
 
 export default {
   name: "OutWarehouseRefundAudit",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','bill_type','way_status'],
   components: {refundGoodsOrderPrint, refundDepotOrderPrint,SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory},
   data() {
     return {
@@ -551,8 +573,9 @@ export default {
         obj.batchNo = item.batchNo;
         obj.batchNumber = item.materialNo;
         obj.beginTime = item.beginTime;
-        obj.andTime = item.endTime;
+        obj.endTime = item.endTime;
         obj.remark = item.remark;
+        obj.material = item.material;
         this.stkIoBillEntryList.push(obj);
       });
     },
@@ -602,7 +625,11 @@ export default {
         updateBy: null,
         updateTime: null,
         totalAmount: null,
-        remark: null
+        remark: null,
+        auditBy: null,
+        createrName:null,
+        auditPersonName:null,
+        auditDate:null
       };
       this.stkIoBillEntryList = [];
       this.resetForm("form");
@@ -662,9 +689,10 @@ export default {
     handleAudit(row) {
       this.reset();
       const id = row.id || this.ids
+      const auditBy = this.$store.state.user.userId;
 
       this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(function() {
-        return auditTkInventory({id:id});
+        return auditTkInventory({id:id,auditBy:auditBy});
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("审核退库成功！");
@@ -691,6 +719,13 @@ export default {
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
+          var totalAmt = 0;
+          this.stkIoBillEntryList.forEach(item => {
+            if(item.amt){
+              totalAmt += parseFloat(item.amt);
+            }
+          });
+          this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
             updateTkInventory(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -832,7 +867,10 @@ export default {
     },
     /** 退库明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
+    warehouseListIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 退库明细添加按钮操作 */
     handleAddStkIoBillEntry() {
@@ -845,7 +883,7 @@ export default {
       obj.batchNo = "";
       obj.batchNumber = "";
       obj.beginTime = "";
-      obj.andTime = "";
+      obj.endTime = "";
       obj.remark = "";
 
       this.stkIoBillEntryList.push(obj);

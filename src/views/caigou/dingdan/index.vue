@@ -337,7 +337,7 @@ export default {
           return time.getTime() > Date.now();
         },
       },
-      pickerAndTimeOptions: {
+      pickerEndTimeOptions: {
         disabledDate(time) {
           return time.getTime() < Date.now();
         },
@@ -482,12 +482,12 @@ export default {
         let obj = {};
         obj.materialId = item.id;
         obj.qty = "";
-        obj.price = item.prince;
+        obj.price = item.price;
         obj.amt = "";
         obj.speci = item.speci;
         obj.model = item.model;
         obj.beginTime = "";
-        obj.andTime = "";
+        obj.endTime = "";
         obj.remark = "";
         this.stkIoBillEntryList.push(obj);
       });
@@ -543,7 +543,11 @@ export default {
         invoiceAmount: null,
         invoiceTime: null,
         proPerson: null,
-        remark: null
+        remark: null,
+        auditBy: null,
+        createrName:null,
+        auditPersonName:null,
+        auditDate:null
       };
       this.stkIoBillEntryList = [];
       this.resetForm("form");
@@ -607,6 +611,9 @@ export default {
       this.form.billType = '101';
       //操作人
       var userName = this.$store.state.user.name;
+      var userId = this.$store.state.user.userId;
+      this.form.createBy = userId;
+      this.form.createrName = userName;
       this.form.createBy = userName;
       this.form.billDate = this.getBillDate();
       this.title = "添加订单";

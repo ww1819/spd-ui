@@ -57,6 +57,19 @@
             </el-date-picker>
           </div>
         </el-col>
+        <el-col :span="6">
+          <el-form-item label="单据状态" prop="billStatus" label-width="100px">
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
+                       :disabled="false"
+                       clearable>
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
 
     </el-form>
@@ -87,9 +100,11 @@
     </el-row>
 
     <el-table v-loading="loading" :data="warehouseList"
+              :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="58vh" border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="退货单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -131,6 +146,7 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['inWarehouse:refundGoodsApply:edit']"
+            v-if="scope.row.billStatus != 2"
           >修改</el-button>
           <el-button
             size="mini"
@@ -138,7 +154,15 @@
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['inWarehouse:refundGoodsApply:remove']"
+            v-if="scope.row.billStatus != 2"
           >删除</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+            v-hasPermi="['inWarehouse:refundGoodsApply:view']"
+          >查看</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -263,6 +287,22 @@
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
             </template>
           </el-table-column>
+
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+            </template>
+          </el-table-column>
+
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
@@ -306,10 +346,10 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" prop="andTime" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="有效期" prop="endTime" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-date-picker clearable
-                              v-model="scope.row.andTime"
+                              v-model="scope.row.endTime"
                               type="date"
                               value-format="yyyy-MM-dd"
                               :disabled="true"
@@ -360,7 +400,7 @@ import SelectInventory from '@/components/SelectModel/SelectInventory';
 
 export default {
   name: "InWarehouseGoodsApply",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','bill_type','way_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory},
   data() {
     return {
@@ -492,7 +532,6 @@ export default {
     /** 查询退货列表 */
     getList() {
       this.loading = true;
-      this.queryParams.billStatus = "1";
       this.queryParams.billType = "301";
       listThInventory(this.queryParams).then(response => {
         this.warehouseList = response.rows;
@@ -533,8 +572,9 @@ export default {
         obj.batchNo = item.batchNo;
         obj.batchNumber = item.materialNo;
         obj.beginTime = item.beginTime;
-        obj.andTime = item.endTime;
+        obj.endTime = item.endTime;
         obj.remark = item.remark;
+        obj.material = item.material;
 
         this.stkIoBillEntryList.push(obj);
       });
@@ -586,7 +626,11 @@ export default {
         updateBy: null,
         updateTime: null,
         totalAmount: null,
-        remark: null
+        remark: null,
+        auditBy: null,
+        createrName:null,
+        auditPersonName:null,
+        auditDate:null
       };
       this.stkIoBillEntryList = [];
       this.resetForm("form");
@@ -650,7 +694,9 @@ export default {
       this.form.billType = '301';
       //操作人
       var userName = this.$store.state.user.name;
-      this.form.createBy = userName;
+      var userId = this.$store.state.user.userId;
+      this.form.createBy = userId;
+      this.form.createrName = userName;
       this.form.billDate = this.getBillDate();
       this.title = "添加退货申请";
       this.action = true;
@@ -693,6 +739,13 @@ export default {
             }
           }
 
+          var totalAmt = 0;
+          this.stkIoBillEntryList.forEach(item => {
+            if(item.amt){
+              totalAmt += parseFloat(item.amt);
+            }
+          });
+          this.form.totalAmount = totalAmt.toFixed(2);
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           if (this.form.id != null) {
             updateThInventory(this.form).then(response => {
@@ -724,6 +777,9 @@ export default {
     rowStkIoBillEntryIndex({ row, rowIndex }) {
       row.index = rowIndex + 1;
     },
+    warehouseListIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
     /** 退货明细添加按钮操作 */
     handleAddStkIoBillEntry() {
       let obj = {};
@@ -733,7 +789,6 @@ export default {
       obj.amt = "";
       obj.batchNo = "";
       obj.remark = "";
-
       this.stkIoBillEntryList.push(obj);
     },
     /** 退货明细删除按钮操作 */
@@ -766,9 +821,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.3);
   z-index: 1000;

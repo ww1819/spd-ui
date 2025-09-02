@@ -299,10 +299,10 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" prop="andTime" width="240" show-overflow-tooltip resizable>
+          <el-table-column label="有效期" prop="endTime" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-date-picker clearable
-                              v-model="scope.row.andTime"
+                              v-model="scope.row.endTime"
                               type="date"
                               value-format="yyyy-MM-dd"
                               placeholder="请选择出库日期">
@@ -461,7 +461,7 @@ export default {
         obj.batchNo = item.batchNo;
         obj.batchNumber = item.materialNo;
         obj.beginTime = item.beginTime;
-        obj.andTime = item.endTime;
+        obj.endTime = item.endTime;
         obj.remark = item.remark;
 
         this.stkIoStocktakingEntryList.push(obj);
@@ -658,7 +658,7 @@ export default {
       obj.batchNo = "";
       obj.batchNumber = "";
       obj.beginTime = "";
-      obj.andTime = "";
+      obj.endTime = "";
       obj.remark = "";
       this.stkIoStocktakingEntryList.push(obj);
     },

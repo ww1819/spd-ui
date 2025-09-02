@@ -42,25 +42,42 @@
         </el-row>
       </el-form>
 
-      <el-table :data="inventoryList" @selection-change="handleSelectionChange" height="calc(42vh)" border>
+      <el-table :data="inventoryList" :row-class-name="inventoryIndex" @selection-change="handleSelectionChange" height="calc(42vh)" border>
         <el-table-column type="selection" width="55" align="center" resizable />
 <!--        <el-table-column label="耗材ID" align="center" prop="material.id" width="120"/>-->
-        <el-table-column label="耗材" align="center" prop="material.name" show-overflow-tooltip resizable />
+<!--        <el-table-column label="耗材" align="center" prop="material.name" show-overflow-tooltip resizable />-->
+        <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
         <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+        <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+        <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+        <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
+        <el-table-column label="库存数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable/>
+        <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="批号" align="center" prop="materialNo" width="200" show-overflow-tooltip resizable/>
+        <el-table-column label="有效期" align="center" prop="endTime" width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
-            <span v-else>--</span>
+            <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="生产日期" align="center" prop="beginTime" width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
-            <span v-else>--</span>
+            <span>{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
           </template>
         </el-table-column>
         <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable/>
+        <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+        <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable/>
+        <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+        <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+        <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+        <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+        <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+          </template>
+        </el-table-column>
         <el-table-column label="耗材批次号" align="center" prop="materialNo" width="200" show-overflow-tooltip resizable/>
         <el-table-column label="耗材日期" align="center" prop="materialDate" width="200" show-overflow-tooltip resizable>
           <template slot-scope="scope">
@@ -100,6 +117,7 @@ import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 export default {
   name: "SelectInventory",
   components: {SelectMaterial,SelectDepartment},
+  dicts:['way_status'],
   props: ['DialogComponentShow','departmentValue'], //接受父组件传递过来的数据
   data() {
     return {
@@ -184,6 +202,9 @@ export default {
       this.$emit('selectData', this.selectRow)   //发送数据到父组件
       this.handleClose()
     },
+    inventoryIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    }
   }
 };
 </script>
@@ -192,9 +213,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: fixed;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.4);
   z-index: 2000;

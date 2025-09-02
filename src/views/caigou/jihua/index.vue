@@ -350,7 +350,7 @@ export default {
           return time.getTime() > Date.now();
         },
       },
-      pickerAndTimeOptions: {
+      pickerEndTimeOptions: {
         disabledDate(time) {
           return time.getTime() < Date.now();
         },
@@ -495,12 +495,12 @@ export default {
         let obj = {};
         obj.materialId = item.id;
         obj.qty = "";
-        obj.price = item.prince;
+        obj.price = item.price;
         obj.amt = "";
         obj.speci = item.speci;
         obj.model = item.model;
         obj.beginTime = "";
-        obj.andTime = "";
+        obj.endTime = "";
         obj.remark = "";
         this.stkIoBillEntryList.push(obj);
       });

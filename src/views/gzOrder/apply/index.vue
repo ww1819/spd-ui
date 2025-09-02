@@ -278,13 +278,13 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" prop="andTime" width="240">
+          <el-table-column label="有效期" prop="endTime" width="240">
             <template slot-scope="scope">
               <el-date-picker clearable
-                              v-model="scope.row.andTime"
+                              v-model="scope.row.endTime"
                               type="date"
                               value-format="yyyy-MM-dd"
-                              :picker-options="pickerAndTimeOptions"
+                              :picker-options="pickerEndTimeOptions"
                               placeholder="请选择出库日期">
               </el-date-picker>
             </template>
@@ -355,7 +355,7 @@ export default {
           return time.getTime() > Date.now();
         },
       },
-      pickerAndTimeOptions: {
+      pickerEndTimeOptions: {
         disabledDate(time) {
           return time.getTime() < Date.now();
         },
@@ -424,12 +424,12 @@ export default {
           let obj = {};
           obj.materialId = item.id;
           obj.qty = "";
-          obj.price = item.prince;
+          obj.price = item.price;
           obj.amt = "";
           obj.batchNo = "";
           obj.batchNumber = "";
           obj.beginTime = "";
-          obj.andTime = "";
+          obj.endTime = "";
           obj.remark = "";
           obj.masterBarcode = item.udiNo;
           obj.secondaryBarcode = "";
@@ -447,7 +447,7 @@ export default {
           const index = this.checkedGzOrderEntry[i];
           this.gzOrderEntryList[index].batchNo = obj.batchNo;
           this.gzOrderEntryList[index].secondaryBarcode = obj.ftm;
-          this.gzOrderEntryList[index].andTime = obj.yxq;
+          this.gzOrderEntryList[index].endTime = obj.yxq;
         }
       }
     }
@@ -486,7 +486,7 @@ export default {
         obj.batchNo = "";
         obj.batchNumber = "";
         obj.beginTime = "";
-        obj.andTime = "";
+        obj.endTime = "";
         obj.remark = "";
         obj.masterBarcode = "";
         obj.secondaryBarcode = "";
@@ -651,7 +651,7 @@ export default {
       obj.batchNo = "";
       obj.batchNumber = "";
       obj.beginTime = "";
-      obj.andTime = "";
+      obj.endTime = "";
       obj.remark = "";
       obj.masterBarcode = "";
       obj.secondaryBarcode = "";

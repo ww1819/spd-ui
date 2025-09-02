@@ -56,6 +56,19 @@
             </el-date-picker>
           </div>
         </el-col>
+        <el-col :span="6">
+          <el-form-item label="单据状态" prop="billStatus" label-width="100px">
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
+                       :disabled="false"
+                       clearable>
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
 
     </el-form>
@@ -107,9 +120,11 @@
     </el-row>
 
     <el-table v-loading="loading" :data="warehouseList"
+              :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="56vh" border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="出库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -151,6 +166,7 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['outWarehouse:apply:edit']"
+            v-if="scope.row.billStatus != 2"
           >修改</el-button>
           <el-button
             size="mini"
@@ -158,7 +174,15 @@
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['outWarehouse:apply:remove']"
+            v-if="scope.row.billStatus != 2"
           >删除</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+            v-hasPermi="['outWarehouse:apply:view']"
+          >查看</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -278,6 +302,20 @@
             </template>
           </el-table-column>
 
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+            </template>
+          </el-table-column>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
@@ -323,10 +361,10 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" prop="andTime" width="240" show-overflow-tooltip resizable>
+          <el-table-column label="有效期" prop="endTime" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-date-picker clearable
-                              v-model="scope.row.andTime"
+                              v-model="scope.row.endTime"
                               type="date"
                               :disabled="true"
                               value-format="yyyy-MM-dd"
@@ -363,11 +401,11 @@
 </template>
 
 <script>
-import { 
-  listOutWarehouse, 
-  getOutWarehouse, 
-  delOutWarehouse, 
-  addOutWarehouse, 
+import {
+  listOutWarehouse,
+  getOutWarehouse,
+  delOutWarehouse,
+  addOutWarehouse,
   updateOutWarehouse,
   listCTKWarehouse
 } from "@/api/warehouse/outWarehouse";
@@ -381,7 +419,7 @@ import SelectInventory from '@/components/SelectModel/SelectInventory';
 
 export default {
   name: "OutWarehouseApply",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','bill_type','way_status'],
   components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory},
   data() {
     return {
@@ -460,12 +498,12 @@ export default {
             const num = Number(item.amt || 0);
             return isNaN(num) ? 0 : num;
           });
-          
+
           // 使用Number.EPSILON解决浮点精度问题
-          sums[index] = values.reduce((prev, curr) => 
+          sums[index] = values.reduce((prev, curr) =>
             (prev + curr + Number.EPSILON) * 100 / 100, 0
           ).toFixed(2);
-          
+
           // 更新总金额（确保类型为number）
           this.form.totalAmount = parseFloat(sums[index]);
         } else if ([3,4].includes(index)) { // 处理单价和数量列
@@ -504,7 +542,6 @@ export default {
     /** 查询出库列表 */
     getList() {
       this.loading = true;
-      this.queryParams.billStatus = "1";
       this.queryParams.billType = "201";
       listOutWarehouse(this.queryParams).then(response => {
         this.warehouseList = response.rows;
@@ -541,8 +578,10 @@ export default {
         obj.batchNo = item.batchNo;
         obj.batchNumber = item.materialNo;
         obj.beginTime = item.beginTime;
-        obj.andTime = item.endTime;
+        obj.endTime = item.endTime;
         obj.remark = item.remark;
+        obj.material = item;
+        obj.material = item.material;
 
         this.stkIoBillEntryList.push(obj);
       });
@@ -578,7 +617,11 @@ export default {
         updateBy: null,
         updateTime: null,
         totalAmount: null,
-        remark: null
+        remark: null,
+        auditBy: null,
+        createrName:null,
+        auditPersonName:null,
+        auditDate:null
       };
       this.stkIoBillEntryList = [];
       this.resetForm("form");
@@ -640,7 +683,9 @@ export default {
       this.form.billType = '201';
       //操作人
       var userName = this.$store.state.user.name;
-      this.form.createBy = userName;
+      var userId = this.$store.state.user.userId;
+      this.form.createBy = userId;
+      this.form.createrName = userName;
       this.form.billDate = this.getBillDate();
       this.title = "添加出库";
       this.action = true;
@@ -684,6 +729,13 @@ export default {
           }
 
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
+          var totalAmt = 0;
+          this.stkIoBillEntryList.forEach(item => {
+            if(item.amt){
+              totalAmt += parseFloat(item.amt);
+            }
+          });
+          this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
             updateOutWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -712,7 +764,10 @@ export default {
     },
     /** 出库明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
+    warehouseListIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 出库明细添加按钮操作 */
     handleAddStkIoBillEntry() {
@@ -725,7 +780,7 @@ export default {
       obj.batchNo = "";
       obj.batchNumber = "";
       obj.beginTime = "";
-      obj.andTime = "";
+      obj.endTime = "";
       obj.remark = "";
 
       this.stkIoBillEntryList.push(obj);
@@ -761,9 +816,9 @@ export default {
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
-  left: 0; 
-  top: 0; 
-  right: 0; 
+  left: 0;
+  top: 0;
+  right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.3);
   z-index: 1000;

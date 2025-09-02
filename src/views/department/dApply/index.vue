@@ -38,6 +38,26 @@
           </el-form-item>
         </el-col>
       </el-row>
+      <el-row>
+        <el-col :span="6">
+          <el-form-item label="科室" prop="departmentId" label-width="100px">
+            <SelectDepartment v-model="queryParams.departmentId" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="单据状态" prop="applyBillStatus" label-width="100px">
+            <el-select v-model="queryParams.applyBillStatus" placeholder="全部"
+                       :disabled="false"
+                       clearable>
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
 
     </el-form>
 
@@ -65,8 +85,9 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="applyList" @selection-change="handleSelectionChange" height="54vh" border>
+    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="54vh" border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="申领单号" align="center" prop="applyBillNo" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -80,6 +101,7 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
+      <el-table-column label="科室" align="center" prop="department.name" show-overflow-tooltip resizable />
       <el-table-column label="操作人" align="center" prop="user.userName" show-overflow-tooltip resizable />
       <el-table-column label="申请状态" align="center" prop="applyBillStatus" show-overflow-tooltip resizable >
         <template slot-scope="scope">
@@ -95,6 +117,7 @@
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['department:dApply:edit']"
+            v-if="scope.row.applyBillStatus != 2"
           >修改</el-button>
           <el-button
             size="mini"
@@ -102,7 +125,15 @@
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['department:dApply:remove']"
+            v-if="scope.row.applyBillStatus != 2"
           >删除</el-button>
+          <el-button
+            size="mini"
+            type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+            v-hasPermi="['department:dApply:view']"
+          >查看</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -147,6 +178,11 @@
             </el-form-item>
           </el-col>
 
+          <el-col :span="4">
+            <el-form-item label="科室" prop="departmentId" label-width="100px">
+              <SelectDepartment v-model="form.departmentId"/>
+            </el-form-item>
+          </el-col>
           <el-col :span="4">
             <el-form-item label="申请日期" prop="applyBillDate" label-width="100px">
               <el-date-picker clearable
@@ -197,6 +233,10 @@
               <SelectMaterial v-model="scope.row.materialId" :value2="true"/>
             </template>
           </el-table-column>
+          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="数量" prop="qty" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
@@ -207,16 +247,29 @@
               />
             </template>
           </el-table-column>
-
           <el-table-column label="单价" prop="unitPrice" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.unitPrice" type='number' @input="priceChange(scope.row)" placeholder="请输入单价" />
             </template>
           </el-table-column>
-
           <el-table-column label="金额" prop="amt" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+            </template>
+          </el-table-column>
+          <el-table-column label="批号" prop="batchNumer" width="150" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.batchNumer" placeholder="请输入批号" />
+            </template>
+          </el-table-column>
+          <el-table-column label="有效期" align="center" prop="endTime" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="生产日期" align="center" prop="beginTime" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
 
@@ -225,13 +278,18 @@
               <el-input v-model="scope.row.batchNo" :disabled="true" label-width="200px" placeholder="请输入批次号" />
             </template>
           </el-table-column>
-
-
-          <el-table-column label="批号" prop="batchNumer" width="150" show-overflow-tooltip resizable>
+          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumer" placeholder="请输入批号" />
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
+
+
           <el-table-column label="备注" prop="remark" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
@@ -267,7 +325,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 
 export default {
   name: "dApply",
-  dicts: ['biz_status'],
+  dicts: ['biz_status','way_status'],
   components: {SelectWarehouse,SelectUser},
   data() {
     return {
@@ -324,7 +382,6 @@ export default {
     /** 查询科室申领列表 */
     getList() {
       this.loading = true;
-      this.queryParams.applyBillStatus = "1";
       listApply(this.queryParams).then(response => {
         this.applyList = response.rows;
         this.total = response.total;
@@ -464,6 +521,13 @@ export default {
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.basApplyEntryList = this.basApplyEntryList;
+          var totalAmt = 0;
+          this.basApplyEntryList.forEach(item => {
+            if(item.amt){
+              totalAmt += parseFloat(item.amt);
+            }
+          });
+          this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
             updateApply(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -492,7 +556,10 @@ export default {
     },
 	/** 科室申领明细序号 */
     rowBasApplyEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
+    row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
+    rowApplyIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 科室申领明细添加按钮操作 */
     handleAddBasApplyEntry() {

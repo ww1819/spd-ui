@@ -57,6 +57,18 @@
             </el-date-picker>
           </div>
         </el-col>
+        <el-col :span="6">
+          <el-form-item label="单据类型" prop="billStatus" label-width="100px">
+            <el-select v-model="queryParams.billType" placeholder="全部"
+                       clearable >
+              <el-option v-for="dict in dict.type.out_warehouse_bill_type"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
 
     </el-form>
@@ -132,7 +144,7 @@ import SelectInventory from '@/components/SelectModel/SelectInventory';
 
 export default {
   name: "firstOutQuery",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','bill_type','out_warehouse_bill_type'],
   components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser},
   data() {
     return {
