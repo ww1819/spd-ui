@@ -176,6 +176,66 @@ export const dynamicRoutes = [
     ]
   },
   {
+    path: '/caigou',
+    component: Layout,
+    redirect: 'noRedirect',
+    name: 'Caigou',
+    meta: { title: '采购管理', icon: 'shopping' },
+    children: [
+      {
+        path: 'jihua',
+        component: () => import('@/views/caigou/jihua/index'),
+        name: 'CaigouJihua',
+        meta: { title: '采购计划', icon: 'list' }
+      },
+      {
+        path: 'dingdan',
+        component: () => import('@/views/caigou/dingdan/index'),
+        name: 'CaigouDingdan',
+        meta: { title: '采购订单', icon: 'list' }
+      },
+      {
+        path: 'shenhe',
+        component: () => import('@/views/caigou/shenhe/index'),
+        name: 'CaigouShenhe',
+        meta: { title: '订单审核', icon: 'audit' }
+      }
+    ]
+  },
+  {
+    path: '/gz',
+    component: Layout,
+    redirect: 'noRedirect',
+    name: 'Gz',
+    meta: { title: '高值管理', icon: 'shopping' },
+    children: [
+      {
+        path: 'apply',
+        component: () => import('@/views/gzOrder/apply/index'),
+        name: 'GzOrderApply',
+        meta: { title: '入库申请', icon: 'list' }
+      },
+      {
+        path: 'audit',
+        component: () => import('@/views/gzOrder/audit/index'),
+        name: 'GzOrderAudit',
+        meta: { title: '入库审核', icon: 'audit' }
+      },
+      {
+        path: 'goodsApply',
+        component: () => import('@/views/gzOrder/goodsApply/index'),
+        name: 'GzOrderGoodsApply',
+        meta: { title: '退货申请', icon: 'list' }
+      },
+      {
+        path: 'goodsAudit',
+        component: () => import('@/views/gzOrder/goodsAudit/index'),
+        name: 'GzOrderGoodsAudit',
+        meta: { title: '退货审核', icon: 'audit' }
+      }
+    ]
+  },
+  {
     path: '/equipment',
     component: Layout,
     redirect: 'noRedirect',

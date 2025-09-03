@@ -87,7 +87,9 @@
 
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange">
+              @selection-change="handleSelectionChange"
+              height="54vh"
+              border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
       <el-table-column label="订单单号" align="center" prop="billNo" width="180">
         <template slot-scope="scope">
@@ -114,6 +116,12 @@
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
 
       <el-table-column label="操作人" align="center" prop="createBy" />
       <el-table-column label="备注" align="center" prop="remark" />
@@ -122,8 +130,15 @@
           <el-button
             size="mini"
             type="text"
+            icon="el-icon-view"
+            @click="handleView(scope.row)"
+          >查看</el-button>
+          <el-button
+            size="mini"
+            type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
+            v-if="scope.row.billStatus == '1'"
             v-hasPermi="['inWarehouse:apply:edit']"
           >修改</el-button>
           <el-button
@@ -131,6 +146,7 @@
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
+            v-if="scope.row.billStatus == '1'"
             v-hasPermi="['inWarehouse:apply:remove']"
           >删除</el-button>
         </template>
@@ -146,9 +162,15 @@
     />
 
     <!-- 添加或修改订单对话框 -->
-<!--    <el-dialog :title="title" :visible.sync="open" width="1300px" append-to-body>-->
-    <el-dialog :title="title" :visible.sync="open" width="1600px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+    <transition name="modal-fade">
+      <div v-if="open" class="local-modal-mask">
+        <transition name="modal-zoom">
+          <div v-if="open" class="local-modal-content">
+            <div class="modal-header">
+              <div class="modal-title">{{ title }}</div>
+              <el-button icon="el-icon-close" size="mini" circle @click="cancel" class="close-btn"></el-button>
+            </div>
+            <el-form ref="form" :model="form" :rules="rules" label-width="80px">
 
         <el-row>
           <el-col :span="4">
@@ -234,6 +256,8 @@
                   show-summary :summary-method="getSummaries"
                   @selection-change="handleStkIoBillEntrySelectionChange"
                   ref="stkIoBillEntry"
+                  height="calc(42vh)"
+                  border
         >
           <el-table-column type="selection" width="60" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50"/>
@@ -287,11 +311,14 @@
           </el-table-column>
         </el-table>
       </el-form>
-      <div slot="footer" v-show="action" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+            <div v-show="action" class="modal-footer">
+              <el-button @click="cancel">取 消</el-button>
+              <el-button type="primary" @click="submitForm">确 定</el-button>
+            </div>
+          </div>
+        </transition>
       </div>
-    </el-dialog>
+    </transition>
 
     <!-- 3、使用组件 -->
     <SelectMMaterialFilter
@@ -705,3 +732,98 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 内部弹窗样式 */
+.local-modal-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.local-modal-content {
+  width: 100%;
+  height: 100%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  min-height: 48px;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+  margin: 0;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+}
+
+.local-modal-content .el-form {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 12px 24px;
+  text-align: right;
+  border-top: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.modal-footer .el-button {
+  margin-left: 12px;
+}
+
+/* 弹窗动画 */
+.modal-fade-enter-active, .modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter, .modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-zoom-enter-active, .modal-zoom-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-zoom-enter, .modal-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.7) translateY(-50px);
+}
+
+/* 确保页面容器有相对定位，以便内部弹窗正确定位 */
+.app-container {
+  position: relative;
+}
+</style>

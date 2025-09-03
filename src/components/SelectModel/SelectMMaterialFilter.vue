@@ -1,12 +1,11 @@
 <template>
-  <div class="app-container">
-    <transition name="modal-fade">
-      <div v-if="show" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="show" class="local-modal-content">
+  <transition name="modal-fade">
+    <div v-if="show" class="local-modal-mask">
+      <transition name="modal-zoom">
+        <div v-if="show" class="local-modal-content">
             <div class="modal-header">
-              <h3>耗材明细</h3>
-              <button type="button" class="modal-close" @click="handleClose">×</button>
+              <div class="modal-title">耗材明细</div>
+              <el-button icon="el-icon-close" size="mini" circle @click="handleClose" class="close-btn"></el-button>
             </div>
             <div class="modal-body">
       <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
@@ -26,7 +25,7 @@
         </el-row>
       </el-form>
 
-      <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(42vh)" border>
+      <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(40vh)" border>
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="耗材编码" align="center" prop="code" width="80" show-overflow-tooltip resizable/>
         <el-table-column label="耗材名称" align="center" prop="name" width="160" show-overflow-tooltip resizable/>
@@ -55,8 +54,6 @@
         </transition>
       </div>
     </transition>
-
-  </div>
 </template>
 
 <script>
@@ -163,82 +160,119 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 */
+/* 内部弹窗样式 - 占满父容器 */
 .local-modal-mask {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 2000;
+  z-index: 1000;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 .local-modal-content {
-  width: 90%;
-  height: 80%;
-  max-width: 1600px;
+  width: 100%;
+  height: 100%;
   background: white;
-  border-radius: 8px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
-  padding: 16px 24px 8px 24px;
-  min-height: 40px;
-  border-bottom: 1px solid #e8e8e8;
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  min-height: 48px;
   flex-shrink: 0;
 }
 
-.modal-header h3 {
-  margin: 0;
+.modal-title {
   font-size: 16px;
   font-weight: 500;
-  line-height: 1.4;
+  color: #303133;
+  margin: 0;
 }
 
-.modal-close {
-  background: none;
+.close-btn {
   border: none;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 0;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-close:hover {
-  background-color: #f5f5f5;
-  border-radius: 4px;
+  background: transparent;
 }
 
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 20px 24px;
+  background: #fff;
 }
 
 .modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid #e8e8e8;
+  padding: 12px 24px;
   text-align: right;
+  border-top: 1px solid #EBEEF5;
+  background: #F5F7FA;
   flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .modal-footer .el-button {
-  margin-left: 8px;
+  margin-left: 12px;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.el-table th {
+  background-color: #F5F7FA !important;
+  color: #606266;
+  font-weight: 500;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+/* 搜索表单样式 */
+.el-form {
+  background: #fff;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 15px;
+}
+
+.el-form .el-form-item {
+  margin-bottom: 10px;
 }
 
 /* 弹窗动画 */
@@ -251,11 +285,17 @@ export default {
 }
 
 .modal-zoom-enter-active, .modal-zoom-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transform-origin: center center;
 }
 
-.modal-zoom-enter, .modal-zoom-leave-to {
+.modal-zoom-enter {
   opacity: 0;
-  transform: scale(0.7) translateY(-50px);
+  transform: scale(0.3) translateY(-50px);
+}
+
+.modal-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
 }
 </style>

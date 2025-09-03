@@ -42,3 +42,21 @@ export function delInventory(id) {
     method: 'delete'
   })
 }
+
+// 查询库存汇总列表
+export function listInventorySummary(query) {
+  return request({
+    url: '/department/inventory/summary',
+    method: 'get',
+    params: query
+  })
+}
+
+// 查询科室进销存明细列表
+export function listDepartmentInOutDetail(query) {
+  return request({
+    url: '/department/inventory/inout',
+    method: 'get',
+    params: query
+  })
+}
