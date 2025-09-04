@@ -87,9 +87,11 @@
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
+              :row-class-name="warehouseListIndex"
               height="54vh"
               border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="计划单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -618,7 +620,10 @@ export default {
       this.form.billStatus = '1';
       this.form.billType = '101';
       //操作人
+      //操作人
       var userName = this.$store.state.user.name;
+      var userId = this.$store.state.user.userId;
+      this.form.createBy = userId;
       this.form.createBy = userName;
       this.form.billDate = this.getBillDate();
       this.title = "添加计划";
@@ -643,6 +648,14 @@ export default {
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
+          var totalAmt = 0;
+          this.stkIoBillEntryList.forEach(item => {
+            if(item.amt){
+              totalAmt += parseFloat(item.amt);
+            }
+          });
+          this.form.totalAmount = totalAmt.toFixed(2);
+
           if (this.form.id != null) {
             updateWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -671,7 +684,7 @@ export default {
     },
     /** 计划明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 计划明细添加按钮操作 */
     handleAddStkIoBillEntry() {
@@ -706,7 +719,10 @@ export default {
       this.download('warehouse/warehouse/export', {
         ...this.queryParams
       }, `warehouse_${new Date().getTime()}.xlsx`)
-    }
+    },
+    warehouseListIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
   }
 };
 </script>
