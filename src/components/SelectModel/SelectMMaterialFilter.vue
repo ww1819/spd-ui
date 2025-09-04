@@ -36,6 +36,17 @@
         <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="160" show-overflow-tooltip resizable/>
         <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="160" show-overflow-tooltip resizable/>
 
+
+        <el-table-column label="财务分类" align="center" prop="fdFinanceCategory.financeCategoryName" width="160"/>
+        <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="160"/>
+        <el-table-column label="注册证号" align="center" prop="registerNo" width="160"/>
+        <el-table-column label="包装规格" align="center" prop="packageSpeci" width="160"/>
+        <el-table-column label="材质" align="center" prop="quality" width="160"/>
+        <el-table-column label="储存方式" align="center" prop="isWay" width="160">
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.way_status" :value="scope.row.isWay"/>
+          </template>
+        </el-table-column>
       </el-table>
 
               <pagination
@@ -64,6 +75,7 @@ import { listMaterial} from "@/api/foundation/material";
 export default {
   name: "SelectMaterialFilter",
   components: {SelectMaterial},
+  dicts:['way_status'],
   props: ['DialogComponentShow','supplierValue'], //接受父组件传递过来的数据
   data() {
     return {
