@@ -29,10 +29,10 @@
           <el-form-item>
             <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
             <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-            <el-button 
-              type="success" 
-              icon="el-icon-check" 
-              size="mini" 
+            <el-button
+              type="success"
+              icon="el-icon-check"
+              size="mini"
               @click="handleBatchAudit"
               :disabled="multiple"
             >审核</el-button>
@@ -75,9 +75,11 @@
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
+              :row-class-name="warehouseListIndex"
               height="54vh"
               border>
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="订单单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -485,18 +487,18 @@ export default {
         this.$modal.msgError("请先选择要审核的订单！");
         return;
       }
-      
+
       // 检查选中的订单是否都是待审核状态
       const selectedOrders = this.warehouseList.filter(item => this.ids.includes(item.id));
       const nonPendingOrders = selectedOrders.filter(item => item.billStatus !== '1' && item.billStatus !== 1);
-      
+
       // 调试信息
       console.log('选中的订单:', selectedOrders);
       console.log('非待审核状态的订单:', nonPendingOrders);
       selectedOrders.forEach(order => {
         console.log(`订单 ${order.billNo} 状态: ${order.billStatus} (类型: ${typeof order.billStatus})`);
       });
-      
+
       if (nonPendingOrders.length > 0) {
         const statusInfo = nonPendingOrders.map(order => `${order.billNo}(状态:${order.billStatus})`).join(', ');
         this.$modal.msgError(`只能审核待审核状态的订单！以下订单状态不正确：${statusInfo}`);
@@ -509,7 +511,7 @@ export default {
       this.$modal.confirm('确定要审核选中的 ' + this.ids.length + ' 个订单吗？\n订单编号：' + orderNos).then(() => {
         // 批量审核
         const auditPromises = this.ids.map(id => auditWarehouse({id: id, auditBy: auditBy}));
-        
+
         Promise.all(auditPromises).then(() => {
           this.getList();
           this.$modal.msgSuccess("批量审核成功！共审核 " + this.ids.length + " 个订单");
@@ -520,7 +522,10 @@ export default {
     },
     /** 订单明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
+    warehouseListIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 复选框选中数据 */
     handleStkIoBillEntrySelectionChange(selection) {

@@ -733,7 +733,7 @@ export default {
     },
     warehouseListIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
-    },
+    }
   }
 };
 </script>
