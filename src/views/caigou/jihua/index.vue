@@ -253,16 +253,10 @@
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
             </template>
           </el-table-column>
-          <el-table-column label="规格" prop="speci" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.speci" :disabled="true" placeholder="无" />
-            </template>
-          </el-table-column>
-          <el-table-column label="型号" prop="model" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.model" :disabled="true" placeholder="无" />
-            </template>
-          </el-table-column>
+          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
 <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
