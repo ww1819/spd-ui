@@ -165,6 +165,10 @@ export default {
       total: 0,
       // 库存明细表格数据
       inventoryList: [],
+      totalInfo: {
+        totalAmt: 0,
+        totalQty: 0
+      },
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -244,6 +248,7 @@ export default {
       listInventory(this.queryParams).then(response => {
         this.inventoryList = response.rows;
         this.total = response.total;
+        this.totalInfo = response.totalInfo;
         this.loading = false;
       });
     },
