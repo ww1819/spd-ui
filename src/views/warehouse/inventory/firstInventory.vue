@@ -78,14 +78,11 @@
     </el-form>
 
     <el-table v-loading="loading" :data="inventoryList"
+              :row-class-name="inventoryListIndex"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="54vh" border>
 <!--      <el-table-column label="编号" align="center" prop="id" width="50"/>-->
-      <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          {{ scope.$index + 1 }}
-        </template>
-      </el-table-column>
+      <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
       <el-table-column label="耗材编码" align="center" prop="material.code" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="耗材" align="center" prop="material.name" width="160" show-overflow-tooltip resizable/>
       <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable/>
@@ -250,6 +247,15 @@ export default {
         this.loading = false;
       });
     },
+    inventoryListIndex({ row, rowIndex }) {
+      // 确保 pageNum 和 pageSize 是正整数
+      const pageNum = Math.max(1, parseInt(this.queryParams.pageNum, 10));
+      const pageSize = Math.max(1, parseInt(this.queryParams.pageSize, 10));
+
+      // 计算行索引
+      row.index = (pageNum - 1) * pageSize + rowIndex + 1;
+    },
+
     // 取消按钮
     cancel() {
       this.open = false;
