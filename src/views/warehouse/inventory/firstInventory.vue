@@ -209,7 +209,7 @@ export default {
           return;
         }
         const values = data.map(item => Number(item[column.property]));
-        if(index === 4 || index === 5 || index === 6){
+        if(index === 5 || index === 7){
           if (!values.every(value => isNaN(value))) {
             sums[index] = values.reduce((prev, curr) => {
               const value = Number(curr);
