@@ -206,27 +206,6 @@ export default {
   methods: {
     getTotalSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
-      columns.forEach((column, index) => {
-        if (index === 0) {
-          sums[index] = '合计';
-          return;
-        }
-        const values = data.map(item => Number(item[column.property]));
-        if(index === 5 || index === 7){
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] = sums[index].toFixed(2);
-          }
-        }
-      });
       // 在现有合计数据后追加新的一行用于展示总计金额和数量
       const totalRow = [];
       totalRow[0] = '总计';
@@ -240,7 +219,20 @@ export default {
         }
       }
 
-      return [sums, totalRow];
+      // 在现有合计数据后追加新的一行用于展示总计金额和数量
+      const subTotalRow = [];
+      subTotalRow[0] = '总计';
+      for (let i = 1; i < columns.length; i++) {
+        if (i === 7) { // 假设金额所在列为第7列（从0开始计数）
+          subTotalRow[i] = this.totalInfo.subTotalAmt.toFixed(2); // 显示总计金额
+        } else if (i === 5) { // 假设数量所在列为第6列（从0开始计数）
+          subTotalRow[i] = this.totalInfo.subTotalQty.toFixed(2); // 显示总计数量
+        } else {
+          subTotalRow[i] = ''; // 其他列为空
+        }
+      }
+
+      return [subTotalRow, totalRow];
     },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
