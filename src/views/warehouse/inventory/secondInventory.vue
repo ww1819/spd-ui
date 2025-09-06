@@ -139,28 +139,20 @@ export default {
       const { columns, data } = param;
 
       // 在现有合计数据后追加新的一行用于展示总计金额和数量
+      const subTotalRow = [];
       const totalRow = [];
+      subTotalRow[0] = '合计';
       totalRow[0] = '总计';
       for (let i = 1; i < columns.length; i++) {
         if (i === 8) { // 假设金额所在列为第7列（从0开始计数）
+          subTotalRow[i] = this.totalInfo.subTotalAmt.toFixed(2); // 显示总计金额
           totalRow[i] = this.totalInfo.totalAmt.toFixed(2); // 显示总计金额
         } else if (i === 5) { // 假设数量所在列为第6列（从0开始计数）
+          subTotalRow[i] = this.totalInfo.subTotalQty.toFixed(2); // 显示总计数量
           totalRow[i] = this.totalInfo.totalQty.toFixed(2); // 显示总计数量
         } else {
-          totalRow[i] = ''; // 其他列为空
-        }
-      }
-
-      // 在现有合计数据后追加新的一行用于展示总计金额和数量
-      const subTotalRow = [];
-      subTotalRow[0] = '合计';
-      for (let i = 1; i < columns.length; i++) {
-        if (i === 8) { // 假设金额所在列为第7列（从0开始计数）
-          subTotalRow[i] = this.totalInfo.subTotalAmt.toFixed(2); // 显示总计金额
-        } else if (i === 5) { // 假设数量所在列为第6列（从0开始计数）
-          subTotalRow[i] = this.totalInfo.subTotalQty.toFixed(2); // 显示总计数量
-        } else {
           subTotalRow[i] = ''; // 其他列为空
+          totalRow[i] = ''; // 其他列为空
         }
       }
       return [subTotalRow, totalRow];
