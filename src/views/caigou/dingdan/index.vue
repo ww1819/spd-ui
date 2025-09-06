@@ -641,7 +641,6 @@ export default {
       var userId = this.$store.state.user.userId;
       this.form.createBy = userId;
       this.form.createrName = userName;
-      this.form.createBy = userName;
       this.form.billDate = this.getBillDate();
       this.title = "添加订单";
       this.action = true;
