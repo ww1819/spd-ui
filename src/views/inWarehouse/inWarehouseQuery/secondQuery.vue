@@ -110,7 +110,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 
 export default {
   name: "secondQuery",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','bill_type','way_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse},
   data() {
     return {

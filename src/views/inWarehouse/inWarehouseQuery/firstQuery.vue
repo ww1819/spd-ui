@@ -155,7 +155,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 
 export default {
   name: "firstQuery",
-  dicts: ['biz_status','bill_type','in_warehouse_bill_type'],
+  dicts: ['biz_status','bill_type','in_warehouse_bill_type','way_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser},
   data() {
     return {
