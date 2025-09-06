@@ -72,17 +72,23 @@
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="申请日期" align="center" prop="applyBillDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单日期" align="center" prop="createTime" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.applyBillDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
       <el-table-column label="科室" align="center" prop="department.name" show-overflow-tooltip resizable />
-      <el-table-column label="操作人" align="center" prop="user.userName" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" prop="createrNmae" show-overflow-tooltip resizable />
       <el-table-column label="申请状态" align="center" prop="applyBillStatus" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.applyBillStatus"/>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核人" align="center" prop="auditPersonName" show-overflow-tooltip resizable />
+      <el-table-column label="审核时间" align="center" prop="auditDate" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
@@ -473,8 +479,10 @@ export default {
       this.reset();
       const id = row.id || this.ids
 
+      const auditBy = this.$store.state.user.userId;
+
       this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(function () {
-        return auditApply({id: id});
+        return auditApply({id: id,auditBy:auditBy});
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("审核入库成功！");
