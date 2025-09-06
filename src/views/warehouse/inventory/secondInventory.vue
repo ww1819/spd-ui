@@ -96,6 +96,10 @@ export default {
       total: 0,
       // 库存明细表格数据
       inventoryList: [],
+      totalInfo:{
+        totalQty: 0,
+        totalAmt:0
+      },
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -154,7 +158,20 @@ export default {
           }
         }
       });
-      return sums;
+
+      // 在现有合计数据后追加新的一行用于展示总计金额和数量
+      const totalRow = [];
+      totalRow[0] = '总计';
+      for (let i = 1; i < columns.length; i++) {
+        if (i === 8) { // 假设金额所在列为第7列（从0开始计数）
+          totalRow[i] = this.totalInfo.totalAmt.toFixed(2); // 显示总计金额
+        } else if (i === 5) { // 假设数量所在列为第6列（从0开始计数）
+          totalRow[i] = this.totalInfo.totalQty.toFixed(2); // 显示总计数量
+        } else {
+          totalRow[i] = ''; // 其他列为空
+        }
+      }
+      return [sums, totalRow];
     },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
@@ -173,8 +190,9 @@ export default {
     getList() {
       this.loading = true;
       listInventorySummary(this.queryParams).then(response => {
-        this.inventoryList = response;
-        this.total = 10;
+        this.inventoryList = response.rows;
+        this.total = response.total;
+        this.totalInfo = response.totalInfo;
         this.loading = false;
       });
     },
