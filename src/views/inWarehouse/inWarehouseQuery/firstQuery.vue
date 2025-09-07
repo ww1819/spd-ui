@@ -96,7 +96,7 @@
 
       <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
@@ -123,6 +123,15 @@
         </template>
       </el-table-column>
 
+      <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+      <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+      <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+      <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+      <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+        </template>
+      </el-table-column>
     </el-table>
 
     <pagination
@@ -146,7 +155,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 
 export default {
   name: "firstQuery",
-  dicts: ['biz_status','bill_type','in_warehouse_bill_type'],
+  dicts: ['biz_status','bill_type','in_warehouse_bill_type','way_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser},
   data() {
     return {

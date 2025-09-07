@@ -87,12 +87,13 @@
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
+              :row-class-name="warehouseListIndex"
               height="54vh"
               border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
       <el-table-column label="计划单号" align="center" prop="planNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <el-button type="text" @click="handleView(scope.row)">
+          <el-button type="text" @clic k="handleView(scope.row)">
             <span>{{ scope.row.planNo }}</span>
           </el-button>
         </template>
@@ -253,16 +254,10 @@
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
             </template>
           </el-table-column>
-          <el-table-column label="规格" prop="speci" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.speci" :disabled="true" placeholder="无" />
-            </template>
-          </el-table-column>
-          <el-table-column label="型号" prop="model" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.model" :disabled="true" placeholder="无" />
-            </template>
-          </el-table-column>
+          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
 <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
@@ -287,6 +282,16 @@
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+            </template>
+          </el-table-column>
+          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
@@ -329,7 +334,7 @@ import SelectMMaterialFilter from '@/components/SelectModel/SelectMMaterialFilte
 
 export default {
   name: "InWarehouse",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','bill_type','way_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMMaterialFilter},
   data() {
     return {
@@ -503,6 +508,7 @@ export default {
         obj.beginTime = "";
         obj.endTime = "";
         obj.remark = "";
+        obj.material = item;
         this.stkIoBillEntryList.push(obj);
       });
     },
@@ -626,6 +632,7 @@ export default {
       this.open = true;
       this.form.planStatus = '1';
       //操作人
+      //操作人
       var userName = this.$store.state.user.name;
       this.form.createBy = userName;
       this.form.planDate = this.getBillDate();
@@ -678,7 +685,7 @@ export default {
     },
     /** 计划明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 计划明细添加按钮操作 */
     handleAddStkIoBillEntry() {

@@ -96,6 +96,10 @@ export default {
       total: 0,
       // 库存明细表格数据
       inventoryList: [],
+      totalInfo:{
+        totalQty: 0,
+        totalAmt:0
+      },
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -133,28 +137,25 @@ export default {
   methods: {
     getTotalSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
-      columns.forEach((column, index) => {
-        if (index === 0) {
-          sums[index] = '合计';
-          return;
+
+      // 在现有合计数据后追加新的一行用于展示总计金额和数量
+      const subTotalRow = [];
+      const totalRow = [];
+      subTotalRow[0] = '合计';
+      totalRow[0] = '总计';
+      for (let i = 1; i < columns.length; i++) {
+        if (i === 8) { // 假设金额所在列为第7列（从0开始计数）
+          subTotalRow[i] = this.totalInfo.subTotalAmt.toFixed(2); // 显示总计金额
+          totalRow[i] = this.totalInfo.totalAmt.toFixed(2); // 显示总计金额
+        } else if (i === 5) { // 假设数量所在列为第6列（从0开始计数）
+          subTotalRow[i] = this.totalInfo.subTotalQty.toFixed(2); // 显示总计数量
+          totalRow[i] = this.totalInfo.totalQty.toFixed(2); // 显示总计数量
+        } else {
+          subTotalRow[i] = ''; // 其他列为空
+          totalRow[i] = ''; // 其他列为空
         }
-        const values = data.map(item => Number(item[column.property]));
-        if(index === 5 || index === 7 || index === 8){
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] = sums[index].toFixed(2);
-          }
-        }
-      });
-      return sums;
+      }
+      return [subTotalRow, totalRow];
     },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
@@ -173,8 +174,9 @@ export default {
     getList() {
       this.loading = true;
       listInventorySummary(this.queryParams).then(response => {
-        this.inventoryList = response;
-        this.total = 10;
+        this.inventoryList = response.rows;
+        this.total = response.total;
+        this.totalInfo = response.totalInfo;
         this.loading = false;
       });
     },

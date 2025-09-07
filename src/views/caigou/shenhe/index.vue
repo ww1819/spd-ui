@@ -29,10 +29,10 @@
           <el-form-item>
             <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
             <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-            <el-button 
-              type="success" 
-              icon="el-icon-check" 
-              size="mini" 
+            <el-button
+              type="success"
+              icon="el-icon-check"
+              size="mini"
               @click="handleBatchAudit"
               :disabled="multiple"
             >审核</el-button>
@@ -485,7 +485,7 @@ export default {
         this.$modal.msgError("请先选择要审核的订单！");
         return;
       }
-      
+
       // 检查选中的订单是否都是待审核状态
       const selectedOrders = this.orderList.filter(item => this.ids.includes(item.id));
       const nonPendingOrders = selectedOrders.filter(item => item.orderStatus !== '0' && item.orderStatus !== 0);
@@ -496,7 +496,7 @@ export default {
       selectedOrders.forEach(order => {
         console.log(`订单 ${order.orderNo} 状态: ${order.orderStatus} (类型: ${typeof order.orderStatus})`);
       });
-      
+
       if (nonPendingOrders.length > 0) {
         const statusInfo = nonPendingOrders.map(order => `${order.orderNo}(状态:${order.orderStatus})`).join(', ');
         this.$modal.msgError(`只能审核待审核状态的订单！以下订单状态不正确：${statusInfo}`);
