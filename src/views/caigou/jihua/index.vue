@@ -4,8 +4,8 @@
 
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-form-item label="计划单号" prop="billNo" label-width="100px">
-            <el-input v-model="queryParams.billNo"
+          <el-form-item label="计划单号" prop="planNo" label-width="100px">
+            <el-input v-model="queryParams.planNo"
                       placeholder="请输入计划单号"
                       clearable
                       @keyup.enter.native="handleQuery"
@@ -90,17 +90,17 @@
               height="54vh"
               border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
-      <el-table-column label="计划单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="计划单号" align="center" prop="planNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
-            <span>{{ scope.row.billNo }}</span>
+            <span>{{ scope.row.planNo }}</span>
           </el-button>
         </template>
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单日期" align="center" prop="planDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.planDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
@@ -110,9 +110,9 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="planStatus" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
+          <dict-tag :options="dict.type.biz_status" :value="scope.row.planStatus"/>
         </template>
       </el-table-column>
 
@@ -159,8 +159,8 @@
 
         <el-row>
           <el-col :span="4">
-            <el-form-item label="单据状态" prop="billStatus" label-width="100px">
-              <el-select v-model="form.billStatus" placeholder="请选择单据状态"
+            <el-form-item label="单据状态" prop="planStatus" label-width="100px">
+              <el-select v-model="form.planStatus" placeholder="请选择单据状态"
                          :disabled="true"
                          clearable style="width: 150px">
                 <el-option v-for="dict in dict.type.biz_status"
@@ -178,9 +178,9 @@
           </el-col>
 
           <el-col :span="4">
-            <el-form-item label="制单日期" prop="billDate" label-width="100px">
+            <el-form-item label="制单日期" prop="planDate" label-width="100px">
               <el-date-picker clearable
-                              v-model="form.billDate"
+                              v-model="form.planDate"
                               type="date"
                               :disabled="true"
                               value-format="yyyy-MM-dd"
@@ -243,6 +243,8 @@
                   ref="stkIoBillEntry"
                   height="calc(42vh)"
                   border
+                  :lazy="true"
+                  :row-key="getRowKey"
         >
           <el-table-column type="selection" width="60" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
@@ -270,10 +272,8 @@
                 clearable
                 v-model="scope.row.qty"
                 placeholder="请输入数量"
-                onkeyup="value=value.replace(/\D/g,'')"
-                onafterpaste="value=value.replace(/\D/g,'')"
-                @blur="form.result=$event.target.value"
-                @input="qtyChange(scope.row)"
+                @input="debounceQtyChange(scope.row)"
+                @blur="qtyChange(scope.row)"
               />
             </template>
           </el-table-column>
@@ -318,7 +318,7 @@
 </template>
 
 <script>
-import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse } from "@/api/warehouse/warehouse";
+import { listPurchasePlan, getPurchasePlan, delPurchasePlan, addPurchasePlan, updatePurchasePlan, auditPurchasePlan } from "@/api/caigou/purchasePlan";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -338,6 +338,8 @@ export default {
       DialogComponentShow: false,
       supplierValue: "",
       isShow: true,
+      // 防抖定时器
+      qtyChangeTimer: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -375,14 +377,13 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        billNo: null,
-        supplerId: null,
-        billDate: null,
+        planNo: null,
+        supplierId: null,
+        planDate: null,
         warehouseId: null,
         departmentId: null,
-        billStatus: null,
-        userId: null,
-        billType: null,
+        planStatus: null,
+        proPerson: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
@@ -390,23 +391,26 @@ export default {
       form: {},
       // 表单校验
       rules: {
-        supplerId: [
+        supplierId: [
           { required: true, message: "供应商不能为空", trigger: "blur" }
         ],
-        billDate: [
+        planDate: [
           { required: true, message: "制单日期不能为空", trigger: "blur" }
         ],
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
-        ],
-        billType: [
-          { required: true, message: "计划类型不能为空", trigger: "change" }
         ],
       }
     };
   },
   created() {
     this.getList();
+  },
+  beforeDestroy() {
+    // 清理定时器
+    if (this.qtyChangeTimer) {
+      clearTimeout(this.qtyChangeTimer);
+    }
   },
   methods: {
     getSummaries(param) {
@@ -417,27 +421,26 @@ export default {
           sums[index] = '合计';
           return;
         }
-        const values = data.map(item => Number(item[column.property]));
+        
+        // 只对数量、价格、金额列进行汇总
         if(index === 3 || index === 4 || index === 5){
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] = sums[index].toFixed(2);
+          const values = data.map(item => {
+            const value = item[column.property];
+            return isNaN(Number(value)) ? 0 : Number(value);
+          });
+          
+          if (values.length > 0) {
+            sums[index] = values.reduce((prev, curr) => prev + curr, 0).toFixed(2);
+          } else {
+            sums[index] = '0.00';
           }
 
+          // 更新总金额
           if(index === 5){
-            let res = parseFloat(sums[index]);
-            if(!isNaN(res)){
-              let parRes = res.toFixed(2);
-              this.form.totalAmount = parRes;
-            }
+            this.form.totalAmount = sums[index];
           }
+        } else {
+          sums[index] = '';
         }
       });
       return sums;
@@ -470,9 +473,8 @@ export default {
     /** 查询计划列表 */
     getList() {
       this.loading = true;
-      this.queryParams.billStatus = "1";
-      this.queryParams.billType = "101";
-      listWarehouse(this.queryParams).then(response => {
+      this.queryParams.planStatus = "1";
+      listPurchasePlan(this.queryParams).then(response => {
         this.warehouseList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -536,25 +538,22 @@ export default {
     reset() {
       this.form = {
         id: null,
-        billNo: null,
-        supplerId: null,
-        billDate: null,
+        planNo: null,
+        supplierId: null,
+        planDate: null,
         warehouseId: null,
         departmentId: null,
-        billStatus: null,
-        userId: null,
-        billType: null,
+        planStatus: null,
+        proPerson: null,
         delFlag: null,
         createBy: null,
         createTime: null,
         updateBy: null,
         updateTime: null,
-        delPerson: null,
         telephone: null,
         totalAmount: null,
-        invoiceAmount: null,
-        invoiceTime: null,
-        proPerson: null,
+        auditBy: null,
+        auditDate: null,
         remark: null
       };
       this.stkIoBillEntryList = [];
@@ -562,23 +561,34 @@ export default {
     },
     //数量改变事件
     qtyChange(row){
+      // 只允许输入数字
+      if (row.qty && !/^\d+(\.\d+)?$/.test(row.qty)) {
+        row.qty = row.qty.replace(/[^\d.]/g, '');
+      }
+      
       let totalAmt = 0;
       if(row.qty && row.price){
-        totalAmt = row.qty * row.price;
+        totalAmt = parseFloat(row.qty) * parseFloat(row.price);
       }else{
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
+      
+      // 重新计算总金额
+      this.calculateTotalAmount();
     },
     //价格改变事件
     priceChange(row){
       let totalAmt = 0;
       if(row.qty && row.price){
-        totalAmt = row.qty * row.price;
+        totalAmt = parseFloat(row.qty) * parseFloat(row.price);
       }else{
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
+      
+      // 重新计算总金额
+      this.calculateTotalAmount();
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -601,13 +611,12 @@ export default {
     /** 查看按钮操作 */
     handleView(row){
       const id = row.id
-      getInWarehouse(id).then(response => {
+      getPurchasePlan(id).then(response => {
         this.form = response.data;
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+        this.stkIoBillEntryList = response.data.purchasePlanEntryList;
         this.open = true;
         this.action = false;
-        this.form.billStatus = '1';
-        this.form.billType = '101';
+        this.form.planStatus = '1';
         this.title = "查看计划";
       });
     },
@@ -615,12 +624,11 @@ export default {
     handleAdd() {
       this.reset();
       this.open = true;
-      this.form.billStatus = '1';
-      this.form.billType = '101';
+      this.form.planStatus = '1';
       //操作人
       var userName = this.$store.state.user.name;
       this.form.createBy = userName;
-      this.form.billDate = this.getBillDate();
+      this.form.planDate = this.getBillDate();
       this.title = "添加计划";
       this.action = true;
     },
@@ -628,11 +636,10 @@ export default {
     handleUpdate(row) {
       this.reset();
       const id = row.id || this.ids
-      getInWarehouse(id).then(response => {
+      getPurchasePlan(id).then(response => {
         this.form = response.data;
-        this.form.billStatus = '1';
-        this.form.billType = '101';
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+        this.form.planStatus = '1';
+        this.stkIoBillEntryList = response.data.purchasePlanEntryList;
         this.open = true;
         this.title = "修改计划";
         this.action = true;
@@ -642,15 +649,15 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          this.form.stkIoBillEntryList = this.stkIoBillEntryList;
+          this.form.purchasePlanEntryList = this.stkIoBillEntryList;
           if (this.form.id != null) {
-            updateWarehouse(this.form).then(response => {
+            updatePurchasePlan(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
             });
           } else {
-            addWarehouse(this.form).then(response => {
+            addPurchasePlan(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
@@ -663,7 +670,7 @@ export default {
     handleDelete(row) {
       const ids = row.id || this.ids;
       this.$modal.confirm('是否确认删除计划编号为"' + ids + '"的数据项？').then(function() {
-        return delWarehouse(ids);
+        return delPurchasePlan(ids);
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("删除成功");
@@ -703,9 +710,32 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('warehouse/warehouse/export', {
+      this.download('caigou/jihua/export', {
         ...this.queryParams
-      }, `warehouse_${new Date().getTime()}.xlsx`)
+      }, `purchase_plan_${new Date().getTime()}.xlsx`)
+    },
+    /** 防抖数量变化 */
+    debounceQtyChange(row) {
+      if (this.qtyChangeTimer) {
+        clearTimeout(this.qtyChangeTimer);
+      }
+      this.qtyChangeTimer = setTimeout(() => {
+        this.qtyChange(row);
+      }, 300);
+    },
+    /** 获取行键 */
+    getRowKey(row, index) {
+      return row.id || index;
+    },
+    /** 计算总金额 */
+    calculateTotalAmount() {
+      let total = 0;
+      this.stkIoBillEntryList.forEach(item => {
+        if (item.amt) {
+          total += parseFloat(item.amt);
+        }
+      });
+      this.form.totalAmount = total.toFixed(2);
     }
   }
 };

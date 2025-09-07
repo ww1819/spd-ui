@@ -4,8 +4,8 @@
 
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-form-item label="订单单号" prop="billNo" label-width="100px">
-            <el-input v-model="queryParams.billNo"
+          <el-form-item label="订单单号" prop="orderNo" label-width="100px">
+            <el-input v-model="queryParams.orderNo"
                       placeholder="请输入订单单号"
                       clearable
                       @keyup.enter.native="handleQuery"
@@ -69,7 +69,7 @@
           icon="el-icon-plus"
           size="mini"
           @click="handleAdd"
-          v-hasPermi="['inWarehouse:apply:add']"
+          v-hasPermi="['caigou:dingdan:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -79,29 +79,29 @@
           icon="el-icon-download"
           size="mini"
           @click="handleExport"
-          v-hasPermi="['inWarehouse:apply:export']"
+          v-hasPermi="['caigou:dingdan:export']"
         >导出</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList"
+    <el-table v-loading="loading" :data="orderList"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
               height="54vh"
               border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
-      <el-table-column label="订单单号" align="center" prop="billNo" width="180">
+      <el-table-column label="订单单号" align="center" prop="orderNo" width="180">
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
-            <span>{{ scope.row.billNo }}</span>
+            <span>{{ scope.row.orderNo }}</span>
           </el-button>
         </template>
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180"/>
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180">
+      <el-table-column label="订单日期" align="center" prop="orderDate" width="180">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" />
@@ -111,9 +111,9 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus">
+      <el-table-column label="订单状态" align="center" prop="orderStatus">
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
+          <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
         </template>
       </el-table-column>
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
@@ -138,16 +138,16 @@
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
-            v-if="scope.row.billStatus == '1'"
-            v-hasPermi="['inWarehouse:apply:edit']"
+            v-if="scope.row.orderStatus == '0'"
+            v-hasPermi="['caigou:dingdan:edit']"
           >修改</el-button>
           <el-button
             size="mini"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
-            v-if="scope.row.billStatus == '1'"
-            v-hasPermi="['inWarehouse:apply:remove']"
+            v-if="scope.row.orderStatus == '0'"
+            v-hasPermi="['caigou:dingdan:remove']"
           >删除</el-button>
         </template>
       </el-table-column>
@@ -174,8 +174,8 @@
 
         <el-row>
           <el-col :span="4">
-            <el-form-item label="单据状态" prop="billStatus" label-width="100px">
-              <el-select v-model="form.billStatus" placeholder="请选择单据状态"
+            <el-form-item label="订单状态" prop="orderStatus" label-width="100px">
+              <el-select v-model="form.orderStatus" placeholder="请选择订单状态"
                          :disabled="true"
                          clearable style="width: 150px">
                 <el-option v-for="dict in dict.type.biz_status"
@@ -193,14 +193,14 @@
           </el-col>
 
           <el-col :span="4">
-            <el-form-item label="制单日期" prop="billDate" label-width="100px">
+            <el-form-item label="订单日期" prop="orderDate" label-width="100px">
               <el-date-picker clearable
-                              v-model="form.billDate"
+                              v-model="form.orderDate"
                               type="date"
                               :disabled="true"
                               value-format="yyyy-MM-dd"
                               style="width: 150px"
-                              placeholder="请选择制单日期">
+                              placeholder="请选择订单日期">
               </el-date-picker>
             </el-form-item>
           </el-col>
@@ -213,8 +213,8 @@
           </el-col>
 
           <el-col :span="4">
-            <el-form-item label="联系电话" prop="telephone" label-width="100px">
-              <el-input v-model="form.telephone" placeholder="请输入联系电话" />
+            <el-form-item label="联系电话" prop="contactPhone" label-width="100px">
+              <el-input v-model="form.contactPhone" placeholder="请输入联系电话" />
             </el-form-item>
           </el-col>
 
@@ -223,8 +223,8 @@
         <el-row>
 
           <el-col :span="4">
-            <el-form-item label="采购员" prop="proPerson" label-width="100px">
-              <SelectUser v-model="form.proPerson"/>
+            <el-form-item label="供应商" prop="supplierId" label-width="100px">
+              <SelectSupplier v-model="form.supplierId"/>
             </el-form-item>
           </el-col>
 
@@ -247,15 +247,15 @@
               <el-button type="primary" icon="el-icon-plus" size="mini" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteStkIoBillEntry">删除</el-button>
+              <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeletePurchaseOrderEntry">删除</el-button>
             </el-col>
           </div>
 
         </el-row>
-        <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
+        <el-table :data="purchaseOrderEntryList" :row-class-name="rowPurchaseOrderEntryIndex"
                   show-summary :summary-method="getSummaries"
-                  @selection-change="handleStkIoBillEntrySelectionChange"
-                  ref="stkIoBillEntry"
+                  @selection-change="handlePurchaseOrderEntrySelectionChange"
+                  ref="purchaseOrderEntry"
                   height="calc(42vh)"
                   border
         >
@@ -266,24 +266,24 @@
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
             </template>
           </el-table-column>
-          <el-table-column label="规格" prop="speci" width="120">
+          <el-table-column label="规格" prop="materialSpec" width="120">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.speci" :disabled="true" placeholder="无" />
+              <el-input v-model="scope.row.materialSpec" :disabled="true" placeholder="无" />
             </template>
           </el-table-column>
-          <el-table-column label="型号" prop="model" width="120">
+          <el-table-column label="型号" prop="materialName" width="120">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.model" :disabled="true" placeholder="无" />
+              <el-input v-model="scope.row.materialName" :disabled="true" placeholder="无" />
             </template>
           </el-table-column>
-          <el-table-column label="数量" prop="qty" width="120">
+          <el-table-column label="数量" prop="orderQty" width="120">
             <template slot-scope="scope">
-<!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
+<!--              <el-input v-model="scope.row.orderQty" type='number' :min="1"-->
 <!--                        @input="qtyChange(scope.row)"-->
 <!--                        placeholder="请输入数量" />-->
               <el-input
                 clearable
-                v-model="scope.row.qty"
+                v-model="scope.row.orderQty"
                 placeholder="请输入数量"
                 onkeyup="value=value.replace(/\D/g,'')"
                 onafterpaste="value=value.replace(/\D/g,'')"
@@ -292,16 +292,16 @@
               />
             </template>
           </el-table-column>
-          <el-table-column label="价格" prop="price" width="120">
+          <el-table-column label="价格" prop="unitPrice" width="120">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.price" type='number'
+              <el-input v-model="scope.row.unitPrice" type='number'
                         :disabled="true"
                         @input="priceChange(scope.row)" placeholder="请输入价格" />
             </template>
           </el-table-column>
-          <el-table-column label="金额" prop="amt" width="120">
+          <el-table-column label="金额" prop="totalAmount" width="120">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.totalAmount" :disabled="true" placeholder="请输入金额" />
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200">
@@ -333,7 +333,7 @@
 </template>
 
 <script>
-import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse } from "@/api/warehouse/warehouse";
+import { listDingdan, getDingdan, delDingdan, addDingdan, updateDingdan } from "@/api/caigou/dingdan";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -343,7 +343,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMMaterialFilter from '@/components/SelectModel/SelectMMaterialFilter';
 
 export default {
-  name: "InWarehouse",
+  name: "PurchaseOrder",
   dicts: ['biz_status','bill_type'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMMaterialFilter},
   data() {
@@ -356,7 +356,7 @@ export default {
       // 选中数组
       ids: [],
       // 子表选中数据
-      checkedStkIoBillEntry: [],
+      checkedPurchaseOrderEntry: [],
       // 非单个禁用
       single: true,
       pickerBeginTimeOptions: {
@@ -376,10 +376,10 @@ export default {
       // 总条数
       total: 0,
       // 订单表格数据
-      warehouseList: [],
+      orderList: [],
       stkMaterialList: [],
       // 订单明细表格数据
-      stkIoBillEntryList: [],
+      purchaseOrderEntryList: [],
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -390,14 +390,13 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        billNo: null,
-        supplerId: null,
-        billDate: null,
+        orderNo: null,
+        supplierId: null,
+        orderDate: null,
         warehouseId: null,
         departmentId: null,
-        billStatus: null,
-        userId: null,
-        billType: null,
+        orderStatus: null,
+        orderType: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
@@ -405,16 +404,16 @@ export default {
       form: {},
       // 表单校验
       rules: {
-        supplerId: [
+        supplierId: [
           { required: true, message: "供应商不能为空", trigger: "blur" }
         ],
-        billDate: [
-          { required: true, message: "制单日期不能为空", trigger: "blur" }
+        orderDate: [
+          { required: true, message: "订单日期不能为空", trigger: "blur" }
         ],
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
         ],
-        billType: [
+        orderType: [
           { required: true, message: "订单类型不能为空", trigger: "change" }
         ],
       }
@@ -485,10 +484,10 @@ export default {
     /** 查询订单列表 */
     getList() {
       this.loading = true;
-      this.queryParams.billStatus = "1";
-      this.queryParams.billType = "101";
-      listWarehouse(this.queryParams).then(response => {
-        this.warehouseList = response.rows;
+      this.queryParams.orderStatus = "0";
+      this.queryParams.orderType = "1";
+      listDingdan(this.queryParams).then(response => {
+        this.orderList = response.rows;
         this.total = response.total;
         this.loading = false;
       });
@@ -504,19 +503,21 @@ export default {
     selectData(val) {
       //监听“弹窗组件”返回的数据
       this.selectRow = val;
-      this.selectRow.forEach((item, index) => {
+        this.selectRow.forEach((item, index) => {
 
         let obj = {};
         obj.materialId = item.id;
-        obj.qty = "";
-        obj.price = item.price;
-        obj.amt = "";
-        obj.speci = item.speci;
-        obj.model = item.model;
-        obj.beginTime = "";
-        obj.endTime = "";
+        obj.orderQty = "";
+        obj.unitPrice = item.price;
+        obj.totalAmount = "";
+        obj.materialSpec = item.speci;
+        obj.materialName = item.name;
+        obj.materialCode = item.code;
+        obj.materialUnit = item.unit;
+        obj.expectedDeliveryDate = "";
+        obj.qualityStatus = "0";
         obj.remark = "";
-        this.stkIoBillEntryList.push(obj);
+        this.purchaseOrderEntryList.push(obj);
       });
     },
     getStatDate(){
@@ -551,53 +552,55 @@ export default {
     reset() {
       this.form = {
         id: null,
-        billNo: null,
-        supplerId: null,
-        billDate: null,
+        orderNo: null,
+        supplierId: null,
+        orderDate: null,
         warehouseId: null,
         departmentId: null,
-        billStatus: null,
-        userId: null,
-        billType: null,
+        orderStatus: null,
+        orderType: null,
+        urgencyLevel: null,
+        totalAmount: null,
+        paidAmount: null,
+        unpaidAmount: null,
+        expectedDeliveryDate: null,
+        actualDeliveryDate: null,
+        paymentTerms: null,
+        deliveryAddress: null,
+        contactPerson: null,
+        contactPhone: null,
+        auditBy: null,
+        auditDate: null,
+        auditOpinion: null,
         delFlag: null,
         createBy: null,
         createTime: null,
         updateBy: null,
         updateTime: null,
-        delPerson: null,
-        telephone: null,
-        totalAmount: null,
-        invoiceAmount: null,
-        invoiceTime: null,
-        proPerson: null,
-        remark: null,
-        auditBy: null,
-        createrName:null,
-        auditPersonName:null,
-        auditDate:null
+        remark: null
       };
-      this.stkIoBillEntryList = [];
+      this.purchaseOrderEntryList = [];
       this.resetForm("form");
     },
     //数量改变事件
     qtyChange(row){
       let totalAmt = 0;
-      if(row.qty && row.price){
-        totalAmt = row.qty * row.price;
+      if(row.orderQty && row.unitPrice){
+        totalAmt = row.orderQty * row.unitPrice;
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.totalAmount = totalAmt.toFixed(2);
     },
     //价格改变事件
     priceChange(row){
       let totalAmt = 0;
-      if(row.qty && row.price){
-        totalAmt = row.qty * row.price;
+      if(row.orderQty && row.unitPrice){
+        totalAmt = row.orderQty * row.unitPrice;
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.totalAmount = totalAmt.toFixed(2);
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -620,13 +623,13 @@ export default {
     /** 查看按钮操作 */
     handleView(row){
       const id = row.id
-      getInWarehouse(id).then(response => {
+      getDingdan(id).then(response => {
         this.form = response.data;
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+        this.purchaseOrderEntryList = response.data.purchaseOrderEntryList;
         this.open = true;
         this.action = false;
-        this.form.billStatus = '1';
-        this.form.billType = '101';
+        this.form.orderStatus = '0';
+        this.form.orderType = '1';
         this.title = "查看订单";
       });
     },
@@ -634,15 +637,14 @@ export default {
     handleAdd() {
       this.reset();
       this.open = true;
-      this.form.billStatus = '1';
-      this.form.billType = '101';
+      this.form.orderStatus = '0';
+      this.form.orderType = '1';
+      this.form.urgencyLevel = '2';
       //操作人
       var userName = this.$store.state.user.name;
       var userId = this.$store.state.user.userId;
-      this.form.createBy = userId;
-      this.form.createrName = userName;
       this.form.createBy = userName;
-      this.form.billDate = this.getBillDate();
+      this.form.orderDate = this.getBillDate();
       this.title = "添加订单";
       this.action = true;
     },
@@ -650,11 +652,11 @@ export default {
     handleUpdate(row) {
       this.reset();
       const id = row.id || this.ids
-      getInWarehouse(id).then(response => {
+      getDingdan(id).then(response => {
         this.form = response.data;
-        this.form.billStatus = '1';
-        this.form.billType = '101';
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+        this.form.orderStatus = '0';
+        this.form.orderType = '1';
+        this.purchaseOrderEntryList = response.data.purchaseOrderEntryList;
         this.open = true;
         this.title = "修改订单";
         this.action = true;
@@ -664,15 +666,15 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          this.form.stkIoBillEntryList = this.stkIoBillEntryList;
+          this.form.purchaseOrderEntryList = this.purchaseOrderEntryList;
           if (this.form.id != null) {
-            updateWarehouse(this.form).then(response => {
+            updateDingdan(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
             });
           } else {
-            addWarehouse(this.form).then(response => {
+            addDingdan(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
@@ -685,49 +687,54 @@ export default {
     handleDelete(row) {
       const ids = row.id || this.ids;
       this.$modal.confirm('是否确认删除订单编号为"' + ids + '"的数据项？').then(function() {
-        return delWarehouse(ids);
+        return delDingdan(ids);
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
     /** 订单明细序号 */
-    rowStkIoBillEntryIndex({ row, rowIndex }) {
+    rowPurchaseOrderEntryIndex({ row, rowIndex }) {
       row.index = rowIndex + 1;
     },
     /** 订单明细添加按钮操作 */
-    handleAddStkIoBillEntry() {
+    handleAddPurchaseOrderEntry() {
       let obj = {};
       obj.materialId = "";
-      obj.qty = "";
-      obj.price = "";
-      obj.amt = "";
-      obj.batchNo = "";
+      obj.orderQty = "";
+      obj.unitPrice = "";
+      obj.totalAmount = "";
+      obj.materialCode = "";
+      obj.materialName = "";
+      obj.materialSpec = "";
+      obj.materialUnit = "";
+      obj.expectedDeliveryDate = "";
+      obj.qualityStatus = "0";
       obj.remark = "";
 
-      this.stkIoBillEntryList.push(obj);
+      this.purchaseOrderEntryList.push(obj);
     },
     /** 订单明细删除按钮操作 */
-    handleDeleteStkIoBillEntry() {
-      if (this.checkedStkIoBillEntry.length == 0) {
+    handleDeletePurchaseOrderEntry() {
+      if (this.checkedPurchaseOrderEntry.length == 0) {
         this.$modal.msgError("请先选择要删除的订单明细数据");
       } else {
-        const stkIoBillEntryList = this.stkIoBillEntryList;
-        const checkedStkIoBillEntry = this.checkedStkIoBillEntry;
-        this.stkIoBillEntryList = stkIoBillEntryList.filter(function(item) {
-          return checkedStkIoBillEntry.indexOf(item.index) == -1
+        const purchaseOrderEntryList = this.purchaseOrderEntryList;
+        const checkedPurchaseOrderEntry = this.checkedPurchaseOrderEntry;
+        this.purchaseOrderEntryList = purchaseOrderEntryList.filter(function(item) {
+          return checkedPurchaseOrderEntry.indexOf(item.index) == -1
         });
       }
     },
     /** 复选框选中数据 */
-    handleStkIoBillEntrySelectionChange(selection) {
-      this.checkedStkIoBillEntry = selection.map(item => item.index)
+    handlePurchaseOrderEntrySelectionChange(selection) {
+      this.checkedPurchaseOrderEntry = selection.map(item => item.index)
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('warehouse/warehouse/export', {
+      this.download('caigou/dingdan/export', {
         ...this.queryParams
-      }, `warehouse_${new Date().getTime()}.xlsx`)
+      }, `purchase_order_${new Date().getTime()}.xlsx`)
     }
   }
 };

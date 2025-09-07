@@ -4,8 +4,8 @@
 
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-form-item label="订单单号" prop="billNo" label-width="100px">
-            <el-input v-model="queryParams.billNo"
+          <el-form-item label="订单单号" prop="orderNo" label-width="100px">
+            <el-input v-model="queryParams.orderNo"
                       placeholder="请输入订单单号"
                       clearable
                       @keyup.enter.native="handleQuery"
@@ -72,23 +72,23 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList"
+    <el-table v-loading="loading" :data="orderList"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
               height="54vh"
               border>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="订单单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="订单单号" align="center" prop="orderNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
-            <span>{{ scope.row.billNo }}</span>
+            <span>{{ scope.row.orderNo }}</span>
           </el-button>
         </template>
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单日期" align="center" prop="orderDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
@@ -98,11 +98,11 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="orderStatus" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
+          <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
           <br>
-          <span style="color: #999; font-size: 12px;">({{ scope.row.billStatus }})</span>
+          <span style="color: #999; font-size: 12px;">({{ scope.row.orderStatus }})</span>
         </template>
       </el-table-column>
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
@@ -147,8 +147,8 @@
 
         <el-row>
           <el-col :span="4">
-            <el-form-item label="单据状态" prop="billStatus" label-width="100px">
-              <el-select v-model="form.billStatus" placeholder="请选择单据状态"
+            <el-form-item label="单据状态" prop="orderStatus" label-width="100px">
+              <el-select v-model="form.orderStatus" placeholder="请选择单据状态"
                          :disabled="true"
                          clearable style="width: 150px">
                 <el-option v-for="dict in dict.type.biz_status"
@@ -166,9 +166,9 @@
           </el-col>
 
           <el-col :span="4">
-            <el-form-item label="制单日期" prop="billDate" label-width="100px">
+            <el-form-item label="制单日期" prop="orderDate" label-width="100px">
               <el-date-picker clearable
-                              v-model="form.billDate"
+                              v-model="form.orderDate"
                               type="date"
                               :disabled="true"
                               value-format="yyyy-MM-dd"
@@ -185,8 +185,8 @@
           </el-col>
 
           <el-col :span="4">
-            <el-form-item label="联系电话" prop="telephone" label-width="100px">
-              <el-input v-model="form.telephone" :disabled="true" placeholder="请输入联系电话" />
+            <el-form-item label="联系电话" prop="contactPhone" label-width="100px">
+              <el-input v-model="form.contactPhone" :disabled="true" placeholder="请输入联系电话" />
             </el-form-item>
           </el-col>
 
@@ -195,8 +195,8 @@
         <el-row>
 
           <el-col :span="4">
-            <el-form-item label="采购员" prop="proPerson" label-width="100px">
-              <SelectUser v-model="form.proPerson" :disabled="true"/>
+            <el-form-item label="采购员" prop="contactPerson" label-width="100px">
+              <SelectUser v-model="form.contactPerson" :disabled="true"/>
             </el-form-item>
           </el-col>
 
@@ -212,10 +212,10 @@
             <span>订单明细信息</span>
           </el-col>
         </el-row>
-        <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
+        <el-table :data="purchaseOrderEntryList" :row-class-name="rowPurchaseOrderEntryIndex"
                   show-summary :summary-method="getSummaries"
-                  @selection-change="handleStkIoBillEntrySelectionChange"
-                  ref="stkIoBillEntry"
+                  @selection-change="handlePurchaseOrderEntrySelectionChange"
+                  ref="purchaseOrderEntry"
                   height="calc(42vh)"
                   border
         >
@@ -225,29 +225,29 @@
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow" :disabled="true"/>
             </template>
           </el-table-column>
-          <el-table-column label="规格" prop="speci" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="规格" prop="materialSpec" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.speci" :disabled="true" placeholder="无" />
+              <el-input v-model="scope.row.materialSpec" :disabled="true" placeholder="无" />
             </template>
           </el-table-column>
-          <el-table-column label="型号" prop="model" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="型号" prop="materialUnit" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.model" :disabled="true" placeholder="无" />
+              <el-input v-model="scope.row.materialUnit" :disabled="true" placeholder="无" />
             </template>
           </el-table-column>
-          <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="数量" prop="orderQty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.qty" :disabled="true" placeholder="请输入数量" />
+              <el-input v-model="scope.row.orderQty" :disabled="true" placeholder="请输入数量" />
             </template>
           </el-table-column>
-          <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.price" :disabled="true" placeholder="请输入价格" />
+              <el-input v-model="scope.row.unitPrice" :disabled="true" placeholder="请输入价格" />
             </template>
           </el-table-column>
-          <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="金额" prop="totalAmount" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.totalAmount" :disabled="true" placeholder="请输入金额" />
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
@@ -269,14 +269,14 @@
 </template>
 
 <script>
-import { listWarehouse, getInWarehouse, auditWarehouse } from "@/api/warehouse/warehouse";
+import { listDingdan, getDingdan, auditDingdan } from "@/api/caigou/dingdan";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectUser from '@/components/SelectModel/SelectUser';
 
 export default {
-  name: "OrderAudit",
+  name: "PurchaseOrderAudit",
   dicts: ['biz_status','bill_type'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectUser},
   data() {
@@ -287,7 +287,7 @@ export default {
       // 选中数组
       ids: [],
       // 子表选中数据
-      checkedStkIoBillEntry: [],
+      checkedPurchaseOrderEntry: [],
       // 非单个禁用
       single: true,
       // 非多个禁用
@@ -297,9 +297,9 @@ export default {
       // 总条数
       total: 0,
       // 订单表格数据
-      warehouseList: [],
+      orderList: [],
       // 订单明细表格数据
-      stkIoBillEntryList: [],
+      purchaseOrderEntryList: [],
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -308,14 +308,14 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        billNo: null,
-        supplerId: null,
-        billDate: null,
+        orderNo: null,
+        supplierId: null,
+        orderDate: null,
         warehouseId: null,
         departmentId: null,
-        billStatus: "1", // 只显示待审核的订单
+        orderStatus: "0", // 只显示待审核的订单
         userId: null,
-        billType: "101", // 采购订单类型
+        orderType: "1", // 采购订单类型
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
@@ -382,8 +382,8 @@ export default {
     /** 查询订单列表 */
     getList() {
       this.loading = true;
-      listWarehouse(this.queryParams).then(response => {
-        this.warehouseList = response.rows;
+      listDingdan(this.queryParams).then(response => {
+        this.orderList = response.rows;
         this.total = response.total;
         this.loading = false;
 
@@ -413,28 +413,28 @@ export default {
     reset() {
       this.form = {
         id: null,
-        billNo: null,
-        supplerId: null,
-        billDate: null,
+        orderNo: null,
+        supplierId: null,
+        orderDate: null,
         warehouseId: null,
         departmentId: null,
-        billStatus: null,
+        orderStatus: null,
         userId: null,
-        billType: null,
+        orderType: null,
         delFlag: null,
         createBy: null,
         createTime: null,
         updateBy: null,
         updateTime: null,
         delPerson: null,
-        telephone: null,
+        contactPhone: null,
         totalAmount: null,
         invoiceAmount: null,
         invoiceTime: null,
-        proPerson: null,
+        contactPerson: null,
         remark: null
       };
-      this.stkIoBillEntryList = [];
+      this.purchaseOrderEntryList = [];
       this.resetForm("form");
     },
     /** 搜索按钮操作 */
@@ -458,12 +458,12 @@ export default {
     /** 查看按钮操作 */
     handleView(row){
       const id = row.id
-      getInWarehouse(id).then(response => {
+      getDingdan(id).then(response => {
         this.form = response.data;
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+        this.purchaseOrderEntryList = response.data.purchaseOrderEntryList;
         this.open = true;
-        this.form.billStatus = row.billStatus;
-        this.form.billType = '101';
+        this.form.orderStatus = row.orderStatus;
+        this.form.orderType = '1';
         this.title = "查看订单";
       });
     },
@@ -472,8 +472,8 @@ export default {
       const id = row.id || this.ids
       const auditBy = this.$store.state.user.userId;
 
-      this.$modal.confirm('确定要审核订单编号为"' + row.billNo + '"的数据项？').then(function() {
-        return auditWarehouse({id:id, auditBy:auditBy});
+      this.$modal.confirm('确定要审核订单编号为"' + row.orderNo + '"的数据项？').then(function() {
+        return auditDingdan({id:id, auditBy:auditBy, auditOpinion:''});
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("审核成功！");
@@ -487,28 +487,28 @@ export default {
       }
       
       // 检查选中的订单是否都是待审核状态
-      const selectedOrders = this.warehouseList.filter(item => this.ids.includes(item.id));
-      const nonPendingOrders = selectedOrders.filter(item => item.billStatus !== '1' && item.billStatus !== 1);
+      const selectedOrders = this.orderList.filter(item => this.ids.includes(item.id));
+      const nonPendingOrders = selectedOrders.filter(item => item.orderStatus !== '0' && item.orderStatus !== 0);
       
       // 调试信息
       console.log('选中的订单:', selectedOrders);
       console.log('非待审核状态的订单:', nonPendingOrders);
       selectedOrders.forEach(order => {
-        console.log(`订单 ${order.billNo} 状态: ${order.billStatus} (类型: ${typeof order.billStatus})`);
+        console.log(`订单 ${order.orderNo} 状态: ${order.orderStatus} (类型: ${typeof order.orderStatus})`);
       });
       
       if (nonPendingOrders.length > 0) {
-        const statusInfo = nonPendingOrders.map(order => `${order.billNo}(状态:${order.billStatus})`).join(', ');
+        const statusInfo = nonPendingOrders.map(order => `${order.orderNo}(状态:${order.orderStatus})`).join(', ');
         this.$modal.msgError(`只能审核待审核状态的订单！以下订单状态不正确：${statusInfo}`);
         return;
       }
 
       const auditBy = this.$store.state.user.userId;
-      const orderNos = selectedOrders.map(item => item.billNo).join('、');
+      const orderNos = selectedOrders.map(item => item.orderNo).join('、');
 
       this.$modal.confirm('确定要审核选中的 ' + this.ids.length + ' 个订单吗？\n订单编号：' + orderNos).then(() => {
         // 批量审核
-        const auditPromises = this.ids.map(id => auditWarehouse({id: id, auditBy: auditBy}));
+        const auditPromises = this.ids.map(id => auditDingdan({id: id, auditBy: auditBy, auditOpinion: ''}));
         
         Promise.all(auditPromises).then(() => {
           this.getList();
@@ -519,12 +519,12 @@ export default {
       }).catch(() => {});
     },
     /** 订单明细序号 */
-    rowStkIoBillEntryIndex({ row, rowIndex }) {
+    rowPurchaseOrderEntryIndex({ row, rowIndex }) {
       row.index = rowIndex + 1;
     },
     /** 复选框选中数据 */
-    handleStkIoBillEntrySelectionChange(selection) {
-      this.checkedStkIoBillEntry = selection.map(item => item.index)
+    handlePurchaseOrderEntrySelectionChange(selection) {
+      this.checkedPurchaseOrderEntry = selection.map(item => item.index)
     }
   }
 };
