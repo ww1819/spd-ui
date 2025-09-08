@@ -25,6 +25,18 @@
           </el-form-item>
         </el-col>
 
+        <el-col :span="6">
+          <el-form-item label="单据状态" prop="orderStatus" label-width="100px">
+            <el-select v-model="queryParams.orderStatus" placeholder="请选择单据状态" clearable style="width: 150px">
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+
         <el-col :span="6" label-width="100px">
           <el-form-item>
             <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -484,8 +496,10 @@ export default {
     /** 查询订单列表 */
     getList() {
       this.loading = true;
-      this.queryParams.orderStatus = "0";
-      this.queryParams.orderType = "1";
+      // 设置默认的订单类型为采购订单
+      if (!this.queryParams.orderType) {
+        this.queryParams.orderType = "1";
+      }
       listDingdan(this.queryParams).then(response => {
         this.orderList = response.rows;
         this.total = response.total;
