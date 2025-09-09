@@ -19,6 +19,17 @@
               /></el-col>
             <el-col :span="6"
             ><div class="title_time">{{ dateYear + dateWeek + dateDay }}</div>
+              <div class="title_controls">
+                <el-button 
+                  type="primary" 
+                  size="small" 
+                  icon="el-icon-full-screen" 
+                  @click="toggleFullscreen"
+                  class="fullscreen-btn"
+                >
+                  {{ isFullscreen ? '退出全屏' : '全屏显示' }}
+                </el-button>
+              </div>
               <dv-decoration-8
                 :reverse="true"
                 class="title_left"
@@ -130,6 +141,8 @@ export default {
       timing: null,
       //loading图
       loading: true,
+      //全屏状态
+      isFullscreen: false,
       //时分秒
       dateDay: null,
       //年月日
@@ -329,12 +342,74 @@ export default {
     this.line_center_diagram();
     //虚线柱状图
     this.dotter_bar();
+    //监听全屏状态变化
+    this.addFullscreenListener();
   },
   beforeDestroy() {
     //离开时删除计时器
     clearInterval(this.timing);
+    //移除全屏状态监听
+    this.removeFullscreenListener();
   },
   methods: {
+    //全屏切换方法
+    toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        // 进入全屏
+        if (this.$refs.appRef.requestFullscreen) {
+          this.$refs.appRef.requestFullscreen();
+        } else if (this.$refs.appRef.webkitRequestFullscreen) {
+          this.$refs.appRef.webkitRequestFullscreen();
+        } else if (this.$refs.appRef.mozRequestFullScreen) {
+          this.$refs.appRef.mozRequestFullScreen();
+        } else if (this.$refs.appRef.msRequestFullscreen) {
+          this.$refs.appRef.msRequestFullscreen();
+        }
+        this.isFullscreen = true;
+      } else {
+        // 退出全屏
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+        this.isFullscreen = false;
+      }
+    },
+    //添加全屏状态监听
+    addFullscreenListener() {
+      const fullscreenChangeEvents = [
+        'fullscreenchange',
+        'webkitfullscreenchange',
+        'mozfullscreenchange',
+        'MSFullscreenChange'
+      ];
+      
+      fullscreenChangeEvents.forEach(event => {
+        document.addEventListener(event, this.handleFullscreenChange);
+      });
+    },
+    //移除全屏状态监听
+    removeFullscreenListener() {
+      const fullscreenChangeEvents = [
+        'fullscreenchange',
+        'webkitfullscreenchange',
+        'mozfullscreenchange',
+        'MSFullscreenChange'
+      ];
+      
+      fullscreenChangeEvents.forEach(event => {
+        document.removeEventListener(event, this.handleFullscreenChange);
+      });
+    },
+    //处理全屏状态变化
+    handleFullscreenChange() {
+      this.isFullscreen = !!document.fullscreenElement;
+    },
     //右上角当前日期时间显示：每一秒更新一次最新时间
     timeFn() {
       this.timing = setInterval(() => {
@@ -1172,6 +1247,31 @@ a {
   //时间日期
   .title_time {
     text-align: center;
+  }
+  //全屏按钮控制区域
+  .title_controls {
+    text-align: center;
+    margin-top: 10px;
+  }
+  //全屏按钮样式
+  .fullscreen-btn {
+    background: linear-gradient(45deg, #008CFF, #00ADDD);
+    border: none;
+    color: #fff;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 140, 255, 0.3);
+  }
+  .fullscreen-btn:hover {
+    background: linear-gradient(45deg, #00ADDD, #008CFF);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 140, 255, 0.4);
+  }
+  .fullscreen-btn:active {
+    transform: translateY(0);
   }
   //中国地图
   #china-map {
