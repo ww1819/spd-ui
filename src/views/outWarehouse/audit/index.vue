@@ -299,9 +299,9 @@
               />
             </template>
           </el-table-column>
-          <el-table-column label="单价" prop="price" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.price" type='number'
+              <el-input v-model="scope.row.unitPrice" type='number'
                         :disabled="true"
                         @input="priceChange(scope.row)" placeholder="请输入单价" />
             </template>
@@ -571,7 +571,7 @@ export default {
       this.selectRow.forEach((item, index) => {
         let obj = {};
         obj.materialId = item.materialId;
-        obj.price = item.unitPrice;
+        obj.unitPrice = item.unitPrice;
         obj.qty = item.qty;
         obj.amt = item.amt;
         obj.batchNo = item.batchNo;
@@ -642,8 +642,8 @@ export default {
     //数量改变事件
     qtyChange(row){
       let totalAmt = 0;
-      if(row.qty && row.price){
-        totalAmt = row.qty * row.price;
+      if(row.qty && row.unitPrice){
+        totalAmt = row.qty * row.unitPrice;
       }else{
         totalAmt = 0;
       }
@@ -652,8 +652,8 @@ export default {
     //价格改变事件
     priceChange(row){
       let totalAmt = 0;
-      if(row.qty && row.price){
-        totalAmt = row.qty * row.price;
+      if(row.qty && row.unitPrice){
+        totalAmt = row.qty * row.unitPrice;
       }else{
         totalAmt = 0;
       }
@@ -833,7 +833,7 @@ export default {
             batchNumber: item.batchNumber,
             amt: item.amt,
             qty: item.qty,
-            price: item.unitPrice,
+            unitPrice: item.unitPrice,
             materialCode: prod.code,
             materialName: prod.name,
             materialSpeci: prod.speci,

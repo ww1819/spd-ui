@@ -66,9 +66,9 @@
       <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="价格" align="center" prop="price" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="价格" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.price">{{ scope.row.price | formatCurrency}}</span>
+          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>

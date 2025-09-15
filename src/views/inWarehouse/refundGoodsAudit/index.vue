@@ -301,9 +301,9 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.price" type='number'
+              <el-input v-model="scope.row.unitPrice" type='number'
                         :disabled="true"
                         @input="priceChange(scope.row)" placeholder="请输入价格" />
             </template>
@@ -586,7 +586,7 @@ export default {
         let obj = {};
         obj.materialId = item.materialId;
         obj.qty = item.qty;
-        obj.price = item.unitPrice;
+        obj.unitPrice = item.unitPrice;
         obj.amt = item.amt;
         obj.batchNo = item.batchNo;
         obj.batchNumber = item.materialNo;
@@ -656,8 +656,8 @@ export default {
     //数量改变事件
     qtyChange(row){
       let totalAmt = 0;
-      if(row.qty && row.price){
-        totalAmt = row.qty * row.price;
+      if(row.qty && row.unitPrice){
+        totalAmt = row.qty * row.unitPrice;
       }else{
         totalAmt = 0;
       }
@@ -666,8 +666,8 @@ export default {
     //价格改变事件
     priceChange(row){
       let totalAmt = 0;
-      if(row.qty && row.price){
-        totalAmt = row.qty * row.price;
+      if(row.qty && row.unitPrice){
+        totalAmt = row.qty * row.unitPrice;
       }else{
         totalAmt = 0;
       }
@@ -848,7 +848,7 @@ export default {
             batchNumber: item.batchNumber,
             amt: item.amt,
             qty: item.qty,
-            price: item.price,
+            unitPrice: item.unitPrice,
             materialCode: prod.code,
             materialName: prod.name,
             materialSpeci: prod.speci,
@@ -897,7 +897,7 @@ export default {
       obj.materialId = "";
       // obj.unitPrice = "";
       obj.qty = "";
-      obj.price = "";
+      obj.unitPrice = "";
       obj.amt = "";
       obj.batchNo = "";
       obj.batchNumber = "";
