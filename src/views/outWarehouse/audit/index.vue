@@ -349,6 +349,7 @@
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
             </template>
           </el-table-column>
+          <el-table-column label="供应商" align="center" prop="supplierId" width="180"  show-overflow-tooltip resizable/>
         </el-table>
         </el-form>
         <div v-show="action" class="modal-footer">
@@ -580,6 +581,7 @@ export default {
         obj.endTime = item.endTime;
         obj.remark = item.remark;
         obj.material = item.material;
+        obj.supplierId = item.supplierId;
 
         this.stkIoBillEntryList.push(obj);
       });
@@ -840,6 +842,9 @@ export default {
             periodDate: prod.periodDate,
             factoryName: prod.fdFactory.factoryName,
             warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
+            supplierId:prod.supplierId,
+            beginTime:prod.beginTime,
+            endTime:prod.endTime
           })
 
         })
@@ -889,6 +894,7 @@ export default {
       obj.beginTime = "";
       obj.endTime = "";
       obj.remark = "";
+      obj.supplierId = "";
 
       this.stkIoBillEntryList.push(obj);
     },

@@ -382,6 +382,8 @@
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
             </template>
           </el-table-column>
+
+          <el-table-column label="供应商" align="center" prop="supplierId" width="180"  show-overflow-tooltip resizable/>
         </el-table>
         </el-form>
         <div v-show="action" class="modal-footer">
@@ -584,8 +586,9 @@ export default {
         obj.batchNumber = item.materialNo;
         obj.beginTime = item.beginTime;
         obj.endTime = item.endTime;
+        obj.supplierId = item.supplierId;
         obj.remark = item.remark;
-        obj.material = item;
+
         obj.material = item.material;
 
         this.stkIoBillEntryList.push(obj);
@@ -787,6 +790,7 @@ export default {
       obj.beginTime = "";
       obj.endTime = "";
       obj.remark = "";
+      obj.supplierId = "";
 
       this.stkIoBillEntryList.push(obj);
     },
