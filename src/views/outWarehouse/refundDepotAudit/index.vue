@@ -234,6 +234,11 @@
               <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
             </el-form-item>
           </el-col>
+          <el-col :span="4">
+            <el-form-item label="单据号" prop="billNo" :disabled="true" label-width="100px">
+              <el-input v-model="form.billNo" />
+            </el-form-item>
+          </el-col>
         </el-row>
 
         <!--        <el-divider content-position="left">退库明细信息</el-divider>-->

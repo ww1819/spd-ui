@@ -194,7 +194,7 @@
         </el-row>
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <span>出库明细信息</span>
+            <span>高值出库明细信息</span>
           </el-col>
 
           <div v-show="action">
