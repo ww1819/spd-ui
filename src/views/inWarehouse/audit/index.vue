@@ -282,6 +282,9 @@
             <el-form-item label="总金额" prop="totalAmount" label-width="100px">
               <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
             </el-form-item>
+            <el-form-item label="单据号" prop="billNo" label-width="100px">
+              <el-input v-model="form.billNo" />
+            </el-form-item>
           </el-col>
         </el-row>
 
