@@ -256,8 +256,8 @@
             </el-form-item>
           </el-col>
           <el-col :span="4">
-            <el-form-item label="单据号" prop="billNo" :disabled="true" label-width="100px">
-              <el-input v-model="form.billNo" />
+            <el-form-item label="单据号" prop="billNo" label-width="100px">
+              <el-input v-model="form.billNo" :disabled="true" />
             </el-form-item>
           </el-col>
         </el-row>
