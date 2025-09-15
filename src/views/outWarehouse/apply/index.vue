@@ -332,9 +332,9 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="单价" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number' :disabled="true"
+              <el-input v-model="scope.row.price" type='number' :disabled="true"
                         @input="priceChange(scope.row)" placeholder="请输入单价" />
             </template>
           </el-table-column>
@@ -578,6 +578,7 @@ export default {
         let obj = {};
         obj.materialId = item.materialId;
         obj.unitPrice = item.unitPrice;
+        obj.price = item.unitPrice;
         obj.qty = item.qty;
         obj.amt = item.amt;
         obj.batchNo = item.batchNo;
@@ -634,8 +635,8 @@ export default {
     //数量改变事件
     qtyChange(row){
       let totalAmt = 0;
-      if(row.qty && row.unitPrice){
-        totalAmt = row.qty * row.unitPrice;
+      if(row.qty && row.price){
+        totalAmt = row.qty * row.price;
       }else{
         totalAmt = 0;
       }
@@ -644,8 +645,8 @@ export default {
     //价格改变事件
     priceChange(row){
       let totalAmt = 0;
-      if(row.qty && row.unitPrice){
-        totalAmt = row.qty * row.unitPrice;
+      if(row.qty && row.price){
+        totalAmt = row.qty * row.price;
       }else{
         totalAmt = 0;
       }
