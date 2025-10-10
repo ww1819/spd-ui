@@ -84,26 +84,21 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList"
+    <el-table v-loading="loading" :data="warehouseList" :row-key="planRowKey"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
-              :row-class-name="warehouseListIndex"
               height="54vh"
               border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
       <el-table-column label="计划单号" align="center" prop="planNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <el-button type="text" @clic k="handleView(scope.row)">
+          <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.planNo }}</span>
           </el-button>
         </template>
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="制单日期" align="center" prop="planDate" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.planDate, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
+      <el-table-column label="制单日期" align="center" prop="planDateText" width="180" show-overflow-tooltip resizable/>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
         <template slot-scope="scope">
@@ -409,7 +404,15 @@ export default {
     };
   },
   created() {
-    this.getList();
+    console.time('[Plan] created->getList');
+    this.getList(true);
+    console.timeEnd('[Plan] created->getList');
+  },
+  mounted() {
+    // 预绑定防抖搜索，避免频繁请求
+    this.debouncedQuery = this.$_.debounce(() => {
+      this.handleQuery();
+    }, 300);
   },
   beforeDestroy() {
     // 清理定时器
@@ -418,6 +421,10 @@ export default {
     }
   },
   methods: {
+    // 为主表提供稳定的 row-key，减少 DOM 复用导致的抖动
+    planRowKey(row) {
+      return row.id || row.planNo;
+    },
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
@@ -476,14 +483,38 @@ export default {
       return sums;
     },
     /** 查询计划列表 */
-    getList() {
+    getList(allowWhenDialog) {
+      console.time('[Plan] getList total');
+      if (this.DialogComponentShow && !allowWhenDialog) {
+        console.log('[Plan] getList skipped because dialog is open');
+        console.timeEnd('[Plan] getList total');
+        return;
+      }
       this.loading = true;
       this.queryParams.planStatus = "1";
+      const t0 = performance.now();
       listPurchasePlan(this.queryParams).then(response => {
-        this.warehouseList = response.rows;
+        const t1 = performance.now();
+        // 预计算展示字段，减少模板计算
+        const rows = response.rows || [];
+        this.warehouseList = rows.map(item => ({
+          ...item,
+          planDateText: item.planDate ? this.parseTime(item.planDate, '{y}-{m}-{d}') : ''
+        }));
         this.total = response.total;
         this.loading = false;
+        const t2 = performance.now();
+        console.log('[Plan] list size=', rows.length, 'network(ms)=', (t1 - t0).toFixed(1), 'assign(ms)=', (t2 - t1).toFixed(1));
+        console.timeEnd('[Plan] getList total');
       });
+    },
+    // 查询按钮（支持外部调用防抖）
+    handleQueryDebounced() {
+      if (this.debouncedQuery) {
+        this.debouncedQuery();
+      } else {
+        this.handleQuery();
+      }
     },
     checkMaterialBtn() {
       //打开“弹窗组件”
@@ -491,26 +522,60 @@ export default {
     },
     closeDialog() {
       //关闭“弹窗组件”
+      console.time('[Plan] closeDialog total');
+      const t0 = performance.now();
       this.DialogComponentShow = false
+      const t1 = performance.now();
+      console.log('[Plan] closeDialog set DialogComponentShow=false ms=', (t1 - t0).toFixed(1));
+      console.timeEnd('[Plan] closeDialog total');
     },
-    selectData(val) {
-      //监听“弹窗组件”返回的数据
-      this.selectRow = val;
-      this.selectRow.forEach((item, index) => {
+    selectData(lightRows) {
+      console.time('[Plan] selectData total');
+      const t0 = performance.now();
+      const toAppend = []
+      const list = lightRows || [];
+      list.forEach((item) => {
+        toAppend.push({
+          materialId: item.id,
+          qty: "",
+          price: item.price,
+          amt: "",
+          speci: item.speci,
+          model: item.model,
+          beginTime: "",
+          endTime: "",
+          remark: "",
+          material: Object.freeze(item),
+        })
+      })
+      const t1 = performance.now();
+      console.log('[Plan] select rows=', list.length, 'build objects(ms)=', (t1 - t0).toFixed(1));
+      if (!toAppend.length) {
+        console.timeEnd('[Plan] selectData total');
+        return;
+      }
 
-        let obj = {};
-        obj.materialId = item.id;
-        obj.qty = "";
-        obj.price = item.price;
-        obj.amt = "";
-        obj.speci = item.speci;
-        obj.model = item.model;
-        obj.beginTime = "";
-        obj.endTime = "";
-        obj.remark = "";
-        obj.material = item;
-        this.stkIoBillEntryList.push(obj);
-      });
+      // 小批量（<=30）直接同步合并，避免 rAF 等待造成 1s+ 延迟
+      if (toAppend.length <= 30) {
+        const t2 = performance.now();
+        this.stkIoBillEntryList = this.stkIoBillEntryList.concat(toAppend)
+        const t3 = performance.now();
+        console.log('[Plan] concat small size=', toAppend.length, 'concat(ms)=', (t3 - t2).toFixed(1));
+        console.timeEnd('[Plan] selectData total');
+        return;
+      }
+
+      // 大批量使用 rAF 合并，避免主线程长阻塞
+      this.$nextTick(() => {
+        const t2 = performance.now();
+        requestAnimationFrame(() => {
+          const t3 = performance.now();
+          this.stkIoBillEntryList = this.stkIoBillEntryList.concat(toAppend)
+          const t4 = performance.now();
+          console.log('[Plan] concat large size=', toAppend.length, 'raf wait(ms)=', (t3 - t2).toFixed(1), 'concat(ms)=', (t4 - t3).toFixed(1));
+          console.timeEnd('[Plan] selectData total');
+        })
+      })
     },
     getStatDate(){
       let myDate = new Date();
@@ -537,8 +602,14 @@ export default {
     },
     // 取消按钮
     cancel() {
+      console.time('[Plan] cancel total');
+      const t0 = performance.now();
       this.open = false;
+      const t1 = performance.now();
       this.reset();
+      const t2 = performance.now();
+      console.log('[Plan] cancel set open=false ms=', (t1 - t0).toFixed(1), 'reset(ms)=', (t2 - t1).toFixed(1));
+      console.timeEnd('[Plan] cancel total');
     },
     // 表单重置
     reset() {
@@ -599,7 +670,7 @@ export default {
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
-      this.getList();
+      this.getList(true);
     },
     /** 重置按钮操作 */
     resetQuery() {

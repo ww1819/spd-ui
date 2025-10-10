@@ -121,9 +121,15 @@ export default {
   },
   mounted() {
     //显示弹窗
+    console.time('[SelectMMaterialFilter] mounted -> init');
+    const t0 = performance.now();
     this.show = this.DialogComponentShow
+    console.log('[SelectMMaterialFilter] mounted show=', this.show);
     this.queryParams.supplierId = this.supplierValue
+    const t1 = performance.now();
+    console.log('[SelectMMaterialFilter] mounted set supplierId ms=', (t1 - t0).toFixed(1));
     this.getList();
+    console.timeEnd('[SelectMMaterialFilter] mounted -> init');
   },
   created() {
     // this.getList();
@@ -131,41 +137,73 @@ export default {
   methods: {
     /** 查询耗材信息列表 */
     getList() {
+      console.time('[SelectMMaterialFilter] getList total');
       this.loading = true;
       this.queryParams.isGz = '2';
+      const t0 = performance.now();
       listMaterial(this.queryParams).then(response => {
+        const t1 = performance.now();
         this.materialList = response.rows;
         this.total = response.total;
         this.loading = false;
+        const t2 = performance.now();
+        console.log('[SelectMMaterialFilter] materialList size:', this.materialList ? this.materialList.length : 0);
+        console.log('[SelectMMaterialFilter] getList network(ms)=', (t1 - t0).toFixed(1), 'assign(ms)=', (t2 - t1).toFixed(1));
+        console.timeEnd('[SelectMMaterialFilter] getList total');
       });
     },
     /** 搜索按钮操作 */
     handleQuery() {
+      console.time('[SelectMMaterialFilter] handleQuery total');
+      const t0 = performance.now();
       this.queryParams.pageNum = 1;
+      const t1 = performance.now();
+      console.log('[SelectMMaterialFilter] handleQuery set pageNum ms=', (t1 - t0).toFixed(1));
       this.getList();
+      console.timeEnd('[SelectMMaterialFilter] handleQuery total');
     },
     /** 重置按钮操作 */
     resetQuery() {
+      console.time('[SelectMMaterialFilter] resetQuery total');
+      const t0 = performance.now();
       this.resetForm("queryForm");
+      const t1 = performance.now();
+      console.log('[SelectMMaterialFilter] resetQuery resetForm(ms)=', (t1 - t0).toFixed(1));
       this.handleQuery();
+      console.timeEnd('[SelectMMaterialFilter] resetQuery total');
     },
     handleSelectionChange(val) {
       //获取选择的行数据
       this.selectRow = val
+      console.log('[SelectMMaterialFilter] selection change, selected:', this.selectRow ? this.selectRow.length : 0);
     },
     handleClose() {
       //关闭弹窗
+      console.time('[SelectMMaterialFilter] handleClose total');
+      const t0 = performance.now();
+      console.log('[SelectMMaterialFilter] handleClose click');
       this.show = false
       this.$emit('closeDialog')
+      const t1 = performance.now();
+      console.log('[SelectMMaterialFilter] handleClose emit closeDialog ms=', (t1 - t0).toFixed(1));
+      console.timeEnd('[SelectMMaterialFilter] handleClose total');
     },
     checkMaterialBtn() {
       //确定按钮
+      console.time('[SelectMMaterialFilter] checkMaterialBtn total');
+      console.log('[SelectMMaterialFilter] checkMaterialBtn click');
       if(!this.selectRow) {
         this.$message({ message: '请先选择数据', type: 'warning' })
+        console.timeEnd('[SelectMMaterialFilter] checkMaterialBtn total');
         return
       }
+      const count = this.selectRow.length;
+      const t0 = performance.now();
       this.$emit('selectData', this.selectRow)   //发送数据到父组件
+      const t1 = performance.now();
+      console.log('[SelectMMaterialFilter] emit selectData count=', count, 'ms=', (t1 - t0).toFixed(1));
       this.handleClose()
+      console.timeEnd('[SelectMMaterialFilter] checkMaterialBtn total');
     },
   }
 };

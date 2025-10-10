@@ -290,16 +290,11 @@
           </el-table-column>
           <el-table-column label="数量" prop="orderQty" width="120">
             <template slot-scope="scope">
-<!--              <el-input v-model="scope.row.orderQty" type='number' :min="1"-->
-<!--                        @input="qtyChange(scope.row)"-->
-<!--                        placeholder="请输入数量" />-->
               <el-input
-                clearable
-                v-model="scope.row.orderQty"
+                v-model.number="scope.row.orderQty"
+                type="number"
+                :min="1"
                 placeholder="请输入数量"
-                onkeyup="value=value.replace(/\D/g,'')"
-                onafterpaste="value=value.replace(/\D/g,'')"
-                @blur="form.result=$event.target.value"
                 @input="qtyChange(scope.row)"
               />
             </template>
@@ -515,15 +510,15 @@ export default {
       this.DialogComponentShow = false
     },
     selectData(val) {
-      //监听“弹窗组件”返回的数据
+      //监听"弹窗组件"返回的数据
       this.selectRow = val;
         this.selectRow.forEach((item, index) => {
 
         let obj = {};
         obj.materialId = item.id;
-        obj.orderQty = "";
+        obj.orderQty = 1; // 设置默认数量为1，避免空值
         obj.unitPrice = item.price;
-        obj.totalAmount = "";
+        obj.totalAmount = item.price ? (1 * item.price).toFixed(2) : "0.00";
         obj.materialSpec = item.speci;
         obj.materialName = item.name;
         obj.materialCode = item.code;
@@ -599,8 +594,12 @@ export default {
     //数量改变事件
     qtyChange(row){
       let totalAmt = 0;
-      if(row.orderQty && row.unitPrice){
-        totalAmt = row.orderQty * row.unitPrice;
+      // 确保 orderQty 是数字类型
+      const qty = parseFloat(row.orderQty) || 0;
+      const price = parseFloat(row.unitPrice) || 0;
+      
+      if(qty > 0 && price > 0){
+        totalAmt = qty * price;
       }else{
         totalAmt = 0;
       }
@@ -609,8 +608,12 @@ export default {
     //价格改变事件
     priceChange(row){
       let totalAmt = 0;
-      if(row.orderQty && row.unitPrice){
-        totalAmt = row.orderQty * row.unitPrice;
+      // 确保 orderQty 和 unitPrice 都是数字类型
+      const qty = parseFloat(row.orderQty) || 0;
+      const price = parseFloat(row.unitPrice) || 0;
+      
+      if(qty > 0 && price > 0){
+        totalAmt = qty * price;
       }else{
         totalAmt = 0;
       }
@@ -678,6 +681,25 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
+      // 验证订单明细数据
+      if (this.purchaseOrderEntryList.length === 0) {
+        this.$modal.msgError("请至少添加一条订单明细");
+        return;
+      }
+      
+      // 验证每个明细的数量字段
+      for (let i = 0; i < this.purchaseOrderEntryList.length; i++) {
+        const entry = this.purchaseOrderEntryList[i];
+        if (!entry.materialId) {
+          this.$modal.msgError(`第${i + 1}行请选择耗材`);
+          return;
+        }
+        if (!entry.orderQty || entry.orderQty <= 0) {
+          this.$modal.msgError(`第${i + 1}行请输入有效的数量`);
+          return;
+        }
+      }
+      
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.purchaseOrderEntryList = this.purchaseOrderEntryList;
@@ -715,7 +737,7 @@ export default {
     handleAddPurchaseOrderEntry() {
       let obj = {};
       obj.materialId = "";
-      obj.orderQty = "";
+      obj.orderQty = 1; // 设置默认数量为1，避免空值
       obj.unitPrice = "";
       obj.totalAmount = "";
       obj.materialCode = "";
