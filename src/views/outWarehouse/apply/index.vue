@@ -293,12 +293,6 @@
               <el-button type="outline" icon="el-icon-ref" size="mini" @click="refDeptApply">引用科室申请单</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="outline" icon="el-icon-ref" size="mini" @click="refDeptApply">引用科室申购单</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="outline" icon="el-icon-ref" size="mini" @click="refDeptApply">引用入库单</el-button>
-            </el-col>
-            <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
           </div>
@@ -595,8 +589,8 @@ export default {
 
       //打开“弹窗组件”
       this.DialogDApplyComponentShow = true
-      this.warehouseValue = this.form.warehouseId;
-      this.departmentValue = this.form.departmentId;
+      // this.warehouseValue = this.form.warehouseId;
+      // this.departmentValue = this.form.departmentId;
     },
     closeDialog() {
       //关闭“弹窗组件”
