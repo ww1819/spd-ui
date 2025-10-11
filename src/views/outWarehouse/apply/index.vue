@@ -604,7 +604,7 @@ export default {
     },
     closeDApplyDialog() {
       //关闭“弹窗组件”
-      this.DialogDapplyComponentShow = false
+      this.DialogDApplyComponentShow = false
     },
     selectData(val) {
       //监听“弹窗组件”返回的数据
