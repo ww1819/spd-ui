@@ -409,6 +409,7 @@
 
     <SelectDApply
     v-if="DialogDApplyComponentShow"
+    ：DialogDApplyComponentShow="DialogDApplyComponentShow"
     :departmentValue="departmentValue"
     :warehouseValue="warehouseValue"
     @closeDialog="closeDApplyDialog"
@@ -589,8 +590,8 @@ export default {
 
       //打开“弹窗组件”
       this.DialogDApplyComponentShow = true
-      // this.warehouseValue = this.form.warehouseId;
-      // this.departmentValue = this.form.departmentId;
+      this.warehouseValue = this.form.warehouseId;
+      this.departmentValue = this.form.departmentId;
     },
     closeDialog() {
       //关闭“弹窗组件”
