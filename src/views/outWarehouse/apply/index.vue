@@ -414,11 +414,11 @@
     ></SelectInventory>
 
     <SelectDApply
-    v-if="DialogComponentShow"
+    v-if="DialogDApplyComponentShow"
     :departmentValue="departmentValue"
     :warehouseValue="warehouseValue"
-    @closeDialog="closeDialog"
-    @selectData="selectData"
+    @closeDialog="closeDApplyDialog"
+    @selectData="selectDApplyData"
     >
 
     </SelectDApply>
@@ -452,6 +452,7 @@ export default {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
+      DialogDApplyComponentShow: false,
       warehouseValue: "",
       departmentValue: "",
       isShow: true,
@@ -593,7 +594,7 @@ export default {
       }
 
       //打开“弹窗组件”
-      this.DialogComponentShow = true
+      this.DialogDApplyComponentShow = true
       this.warehouseValue = this.form.warehouseId;
       this.departmentValue = this.form.departmentId;
     },
@@ -601,7 +602,36 @@ export default {
       //关闭“弹窗组件”
       this.DialogComponentShow = false
     },
+    closeDApplyDialog() {
+      //关闭“弹窗组件”
+      this.DialogDapplyComponentShow = false
+    },
     selectData(val) {
+      //监听“弹窗组件”返回的数据
+      this.selectRow = val;
+
+      this.selectRow.forEach((item, index) => {
+        // this.stkIoBillEntryList.splice(this.stkIoBillEntryList.length, 0, JSON.parse(JSON.stringify(item)));
+
+        let obj = {};
+        obj.materialId = item.materialId;
+        obj.unitPrice = item.unitPrice;
+        obj.qty = item.qty;
+        obj.amt = item.amt;
+        obj.batchNo = item.batchNo;
+        obj.batchNumber = item.materialNo;
+        obj.beginTime = item.beginTime;
+        obj.endTime = item.endTime;
+        obj.supplierId = item.supplierId;
+        obj.remark = item.remark;
+
+        obj.material = item.material;
+
+        this.stkIoBillEntryList.push(obj);
+      });
+    },
+
+    selectDApplyData(val) {
       //监听“弹窗组件”返回的数据
       this.selectRow = val;
 
