@@ -160,7 +160,6 @@ export default {
   mounted() {
     //显示弹窗
     this.show = this.DialogComponentShow
-    // this.queryParams.applyBillNo = this.a
     this.queryParams.warehouseId = this.warehouseValue
     this.queryParams.departmentId = this.departmentValue
     this.queryParams.materialId = this.materialValue
@@ -170,7 +169,7 @@ export default {
     // this.getList();
   },
   methods: {
-    /** 查询库存信息列表 */
+    /** 查询科室申请单 */
     getList() {
       this.loading = true;
       listApply(this.queryParams).then(response => {
