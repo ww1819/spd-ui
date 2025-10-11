@@ -119,7 +119,7 @@ export default {
   name: "SelectDApply",
   dicts:['way_status'],
   components: {SelectMaterial,SelectWarehouse,SelectDepartment},
-  props: ['DialogDApplyComponentShow','warehouseValue','departmentValue','materialValue'], //接受父组件传递过来的数据
+  props: ['DialogComponentShow','warehouseValue','departmentValue','materialValue'], //接受父组件传递过来的数据
   data() {
     return {
       // 遮罩层
@@ -159,7 +159,7 @@ export default {
   },
   mounted() {
     //显示弹窗
-    this.show = this.DialogDApplyComponentShow
+    this.show = this.DialogComponentShow
     // this.queryParams.applyBillNo = this.a
     this.queryParams.warehouseId = this.warehouseValue
     this.queryParams.departmentId = this.departmentValue
