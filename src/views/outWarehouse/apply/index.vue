@@ -290,6 +290,15 @@
               <el-button type="primary" icon="el-icon-plus" size="mini" @click="nameBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
+              <el-button type="outline" icon="el-icon-ref" size="mini" @click="refDeptApply">引用科室申请单</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="outline" icon="el-icon-ref" size="mini" @click="refDeptApply">引用科室申购单</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="outline" icon="el-icon-ref" size="mini" @click="refDeptApply">引用入库单</el-button>
+            </el-col>
+            <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
           </div>
@@ -404,6 +413,15 @@
       @selectData="selectData"
     ></SelectInventory>
 
+    <SelectDApply
+    v-if="DialogComponentShow"
+    :departmentValue="departmentValue"
+    :warehouseValue="warehouseValue"
+    @closeDialog="closeDialog"
+    @selectData="selectData"
+    >
+
+    </SelectDApply>
   </div>
 </template>
 
@@ -423,17 +441,19 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 
 import SelectInventory from '@/components/SelectModel/SelectInventory';
+import SelectDApply from "@/components/SelectModel/SelectDApply";
 
 export default {
   name: "OutWarehouseApply",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory},
+  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectDApply},
   data() {
     return {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
       warehouseValue: "",
+      departmentValue: "",
       isShow: true,
       // 选中数组
       ids: [],
@@ -565,6 +585,17 @@ export default {
       //打开“弹窗组件”
       this.DialogComponentShow = true
       this.warehouseValue = this.form.warehouseId;
+    },
+    refDeptApply() {
+      if(!this.form.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
+
+      //打开“弹窗组件”
+      this.DialogComponentShow = true
+      this.warehouseValue = this.form.warehouseId;
+      this.departmentValue = this.form.departmentId;
     },
     closeDialog() {
       //关闭“弹窗组件”
