@@ -409,7 +409,7 @@
 
     <SelectDApply
     v-if="DialogDApplyComponentShow"
-    ：DialogComponentShow="DialogDApplyComponentShow"
+    :DialogComponentShow="DialogDApplyComponentShow"
     :departmentValue="departmentValue"
     :warehouseValue="warehouseValue"
     @closeDialog="closeDApplyDialog"
