@@ -71,7 +71,7 @@ export function listCTKWarehouseSummary(query) {
 }
 
 
-export function getDApplyDetail(query) {
+export function getOutWarehouseDetailByDApply(query) {
   return request({
     url: '/warehouse/rthWarehouse/getDApplyDetail',
     method: 'get',
