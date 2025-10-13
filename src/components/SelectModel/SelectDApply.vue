@@ -83,24 +83,9 @@
             </template>
           </el-table-column>
           <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
+          <el-table-column label="id" align="center" prop="id" show-overflow-tooltip resizable />
           <el-table-column label="操作" align="center" class-name="small-padding fixed-width" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-button
-                size="mini"
-                type="text"
-                icon="el-icon-edit"
-                @click="handleUpdate(scope.row)"
-                v-hasPermi="['department:dApply:edit']"
-                v-if="scope.row.applyBillStatus != 2"
-              >修改</el-button>
-              <el-button
-                size="mini"
-                type="text"
-                icon="el-icon-delete"
-                @click="handleDelete(scope.row)"
-                v-hasPermi="['department:dApply:remove']"
-                v-if="scope.row.applyBillStatus != 2"
-              >删除</el-button>
               <el-button
                 size="mini"
                 type="text"
