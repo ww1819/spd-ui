@@ -427,7 +427,8 @@ import {
   delOutWarehouse,
   addOutWarehouse,
   updateOutWarehouse,
-  listCTKWarehouse
+  listCTKWarehouse,
+  getDApplyDetail
 } from "@/api/warehouse/outWarehouse";
 import { listInventoryMaterialAll } from "@/api/warehouse/inventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -627,28 +628,17 @@ export default {
     },
 
     selectDApplyData(val) {
-      //监听“弹窗组件”返回的数据
-      this.selectRow = val;
+      // 假设 val 是科室申请单对象或数组，取 id
+      const dApplyId = Array.isArray(val) ? val[0].id : val.id;
+      if (!dApplyId) return;
 
-      this.selectRow.forEach((item, index) => {
-        // this.stkIoBillEntryList.splice(this.stkIoBillEntryList.length, 0, JSON.parse(JSON.stringify(item)));
-
-        let obj = {};
-        obj.materialId = item.materialId;
-        obj.unitPrice = item.unitPrice;
-        obj.qty = item.qty;
-        obj.amt = item.amt;
-        obj.batchNo = item.batchNo;
-        obj.batchNumber = item.materialNo;
-        obj.beginTime = item.beginTime;
-        obj.endTime = item.endTime;
-        obj.supplierId = item.supplierId;
-        obj.remark = item.remark;
-
-        obj.material = item.material;
-
-        this.stkIoBillEntryList.push(obj);
-      });
+      try {
+        const res = getDApplyDetail(dApplyId);
+        // 假设后端返回的明细数据在 res.data.entries
+        this.stkIoBillEntryList = res.data.entries || [];
+      } catch (e) {
+        this.$message.error("加载科室申请单明细失败");
+      }
     },
     //当天日期
     getBillDate(){

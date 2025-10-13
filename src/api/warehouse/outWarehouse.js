@@ -69,3 +69,12 @@ export function listCTKWarehouseSummary(query) {
     params: query
   })
 }
+
+
+export function getDApplyDetail(query) {
+  return request({
+    url: '/warehouse/rthWarehouse/getDApplyDetail',
+    method: 'get',
+    params: query
+  })
+}
