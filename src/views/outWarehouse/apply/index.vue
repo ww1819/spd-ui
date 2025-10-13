@@ -428,7 +428,7 @@ import {
   addOutWarehouse,
   updateOutWarehouse,
   listCTKWarehouse,
-  getOutWarehouseDetailByDApply
+  createEntriesByDApply
 } from "@/api/warehouse/outWarehouse";
 import { listInventoryMaterialAll } from "@/api/warehouse/inventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -633,7 +633,7 @@ export default {
       if (!dApplyId) return;
 
       try {
-        const res = getOutWarehouseDetailByDApply(dApplyId);
+        const res = createEntriesByDApply(dApplyId);
         // 假设后端返回的明细数据在 res.data.entries
         this.stkIoBillEntryList = res.data.entries || [];
       } catch (e) {
