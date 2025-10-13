@@ -636,13 +636,15 @@ export default {
       var param = {
         dApplyId: dApplyIdStr
       };
-      try {
-        const res = createEntriesByDApply(param);
-        // 假设后端返回的明细数据在 res.data.entries
-        this.stkIoBillEntryList = res.data.stkIoBillEntryList || [];
-      } catch (e) {
+      createEntriesByDApply(param).then(response => {
+        if (response && response.data) {
+          this.form = response.data;
+          this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+          this.DialogDApplyComponentShow = false;
+        }
+      }).catch(() => {
         this.$message.error("加载科室申请单明细失败");
-      }
+      });
     },
     //当天日期
     getBillDate(){
