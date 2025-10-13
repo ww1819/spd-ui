@@ -640,6 +640,8 @@ export default {
         if (response && response.data) {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+          this.form.billStatus = '1';
+          this.form.billType = '201';
           this.DialogDApplyComponentShow = false;
         }
       }).catch(() => {
