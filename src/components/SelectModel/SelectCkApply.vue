@@ -185,6 +185,7 @@ export default {
     this.queryParams.supplierId = this.supplierValue
     this.queryParams.departmentId = this.departmentValue
     this.queryParams.materialId = this.materialValue
+    this.
     this.getList();
   },
   created() {
@@ -193,6 +194,7 @@ export default {
   methods: {
     /** 查询科室申请单 */
     getList() {
+      this.queryParams.billType = "201";
       this.loading = true;
       listOutWarehouse(this.queryParams).then(response => {
         this.warehouseList = response.rows;
