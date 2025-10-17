@@ -885,12 +885,12 @@ export default {
     },
     selectDingdanData(val) {
       // 假设 val 是科室申请单对象或数组，取 id
-      const dApplyId = Array.isArray(val) ? val[0].id : val.id;
-      if (!dApplyId) return;
+      const dingdanId = Array.isArray(val) ? val[0].id : val.id;
+      if (!dingdanId) return;
 
-      const dApplyIdStr = String(dApplyId);
+      const dingdanIdStr = String(dingdanId);
       var param = {
-        dApplyId: dApplyIdStr
+        dingdanId: dingdanIdStr
       };
       createEntriesByDingdan(param).then(response => {
         if (response && response.data) {
