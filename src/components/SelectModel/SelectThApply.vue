@@ -193,6 +193,7 @@ export default {
   methods: {
     /** 查询科室申请单 */
     getList() {
+      this.queryParams.billType = "301";
       this.loading = true;
       listThInventory(this.queryParams).then(response => {
         this.warehouseList = response.rows;
