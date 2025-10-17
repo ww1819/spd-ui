@@ -59,13 +59,13 @@
         </el-row>
       </el-form>
 
-        <el-table ref="singleTable" :data="orderList" :row-class-name="orderListIndex" @selection-change="handleSelectionChange" height="calc(42vh)" border>
+        <el-table ref="singleTable" :data="warehouseList" :row-class-name="warehouseListIndex" @selection-change="handleSelectionChange" height="calc(42vh)" border>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-          <el-table-column label="订单单号" align="center" prop="orderNo" width="180">
+          <el-table-column label="出库单号" align="center" prop="billNo" width="180">
             <template slot-scope="scope">
               <el-button type="text" @click="handleView(scope.row)">
-                <span>{{ scope.row.orderNo }}</span>
+                <span>{{ scope.row.billNo }}</span>
               </el-button>
             </template>
           </el-table-column>
@@ -134,7 +134,7 @@ import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import { listOutWarehouse,getOutWarehouse } from "@/api/warehouse/outWarehouse";
 
 export default {
-  name: "SelectDApply",
+  name: "SelectCkApply",
   dicts:['way_status'],
   components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectSupplier},
   props: ['DialogComponentShow','warehouseValue','departmentValue','materialValue','supplierValue'], //接受父组件传递过来的数据
@@ -228,7 +228,7 @@ export default {
       this.$emit('selectData', this.selectRow)   //发送数据到父组件
       this.handleClose()
     },
-    orderListIndex({ row, rowIndex }) {
+    warehouseListIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 查看按钮操作 */
