@@ -72,5 +72,12 @@ export function listRTHSummary(query) {
   })
 }
 
-
+// 引用订单生成单据明细
+export function createEntriesByDingdan(query) {
+  return request({
+    url: '/warehouse/rthWarehouse/createEntriesByDingdan',
+    method: 'get',
+    params: query
+  })
+}
 

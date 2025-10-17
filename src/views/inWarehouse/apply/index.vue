@@ -313,6 +313,9 @@
               <el-button type="primary" icon="el-icon-plus" size="mini" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
+              <el-button type="outline" icon="el-icon-ref" size="mini" @click="refDingdan">引用采购订单</el-button>
+            </el-col>
+            <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
           </div>
@@ -431,11 +434,19 @@
       @selectData="selectData"
     ></SelectMaterialFilter>
 
+    <SelectDingdan
+      v-if="DialogDingdanComponentShow"
+      :DialogComponentShow="DialogDingdanComponentShow"
+      :supplierValue="supplierValue"
+      @closeDialog="closeDingdanDialog"
+      @selectData="selectDingdanData"
+    ></SelectDingdan>
+
   </div>
 </template>
 
 <script>
-import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse } from "@/api/warehouse/warehouse";
+import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse,createEntriesByDingdan } from "@/api/warehouse/warehouse";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -443,16 +454,18 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 
 import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
+import SelectDingdan from '@/components/SelectModel/SelectDingdan';
 
 export default {
   name: "InWarehouse",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMaterialFilter},
+  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMaterialFilter,SelectDingdan},
   data() {
     return {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
+      DialogDingdanComponentShow: false,
       supplierValue: "",
       isShow: true,
       // 选中数组
@@ -857,6 +870,43 @@ export default {
       this.download('warehouse/warehouse/export', {
         ...this.queryParams
       }, `warehouse_${new Date().getTime()}.xlsx`)
+    },
+    refDingdan() {
+      if(!this.form.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
+
+      //打开“弹窗组件”
+      this.DialogDingdanComponentShow = true
+      this.warehouseValue = this.form.warehouseId;
+      this.departmentValue = this.form.departmentId;
+      this.supplierValue = this.form.supplierId;
+    },
+    selectDingdanData(val) {
+      // 假设 val 是科室申请单对象或数组，取 id
+      const dApplyId = Array.isArray(val) ? val[0].id : val.id;
+      if (!dApplyId) return;
+
+      const dApplyIdStr = String(dApplyId);
+      var param = {
+        dApplyId: dApplyIdStr
+      };
+      createEntriesByDingdan(param).then(response => {
+        if (response && response.data) {
+          this.form = response.data;
+          this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+          this.form.billStatus = '1';
+          this.form.billType = '101';
+          this.DialogDingdanComponentShow = false;
+        }
+      }).catch(() => {
+        this.$message.error("加载科室申请单明细失败");
+      });
+    },
+    closeDingdanDialog() {
+      //关闭订单选择界面
+      this.DialogDingdanComponentShow = false
     }
   }
 };
