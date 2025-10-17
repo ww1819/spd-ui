@@ -269,6 +269,9 @@
               <el-button type="primary" icon="el-icon-plus" size="mini" @click="nameBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
+              <el-button type="outline" icon="el-icon-ref" size="mini" @click="refCkApply">引用出库单</el-button>
+            </el-col>
+            <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
           </div>
@@ -384,6 +387,17 @@
       @selectData="selectData"
     ></SelectDepInventory>
 
+    <SelectCkApply
+      v-if="DialogCkApplyComponentShow"
+      :DialogComponentShow="DialogCkApplyComponentShow"
+      :departmentValue="departmentValue"
+      :warehouseValue="warehouseValue"
+      @closeDialog="closeCkApplyDialog"
+      @selectData="selectCkApplyData"
+    >
+
+    </SelectCkApply>
+
   </div>
 </template>
 
@@ -395,24 +409,28 @@ import {
   addTkInventory,
   updateTkInventory
 } from "@/api/warehouse/tkInventory";
-import { listCTKWarehouse } from '@/api/warehouse/outWarehouse'; // 新增引用
+import {createEntriesByDApply, listCTKWarehouse} from '@/api/warehouse/outWarehouse'; // 新增引用
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
+import SelectCkApply from "@/components/SelectModel/SelectCkApply";
 
 export default {
   name: "OutWarehouseRefund",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory},
+  components: {
+    SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory,SelectCkApply},
   data() {
     return {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
+      DialogCkApplyComponentShow: false,
       departmentValue: "",
+      warehouseValue: "",
       isShow: true,
       // 选中数组
       ids: [],
@@ -556,6 +574,10 @@ export default {
     closeDialog() {
       //关闭“弹窗组件”
       this.DialogComponentShow = false
+    },
+    closeCkApplyDialog() {
+      //关闭“弹窗组件”
+      this.DialogCkApplyComponentShow = false
     },
     selectData(val) {
       //监听“弹窗组件”返回的数据
@@ -814,6 +836,38 @@ export default {
       this.download('warehouse/warehouse/export', {
         ...this.queryParams
       }, `warehouse_${new Date().getTime()}.xlsx`)
+    },
+    selectCkApplyData(val) {
+      // 假设 val 是科室申请单对象或数组，取 id
+      const dApplyId = Array.isArray(val) ? val[0].id : val.id;
+      if (!dApplyId) return;
+
+      const dApplyIdStr = String(dApplyId);
+      var param = {
+        dApplyId: dApplyIdStr
+      };
+      createEntriesByDApply(param).then(response => {
+        if (response && response.data) {
+          this.form = response.data;
+          this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+          this.form.billStatus = '1';
+          this.form.billType = '201';
+          this.DialogCkApplyComponentShow = false;
+        }
+      }).catch(() => {
+        this.$message.error("加载科室申请单明细失败");
+      });
+    },
+    refCkApply() {
+      if(!this.form.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
+
+      //打开“弹窗组件”
+      this.DialogCkApplyComponentShow = true
+      this.warehouseValue = this.form.warehouseId;
+      this.departmentValue = this.form.departmentId;
     }
   }
 };
