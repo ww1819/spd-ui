@@ -12,9 +12,9 @@
         <el-row :gutter="20">
 
           <el-col :span="6">
-            <el-form-item label="采购订单号" prop="orderNo" label-width="100px">
+            <el-form-item label="采购订单号" prop="billNo" label-width="100px">
               <el-input
-                v-model="queryParams.orderNo"
+                v-model="queryParams.billNo"
                 placeholder="请输入采购订单号"
                 clearable
                 @keyup.enter.native="handleQuery"

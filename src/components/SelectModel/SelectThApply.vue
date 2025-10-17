@@ -4,7 +4,7 @@
       <transition name="modal-zoom">
         <div v-if="show" class="local-modal-content">
       <div class="modal-header">
-        <div class="modal-title">采购入库单</div>
+        <div class="modal-title">采购退货单</div>
         <el-button icon="el-icon-close" size="mini" circle @click="handleClose" class="close-btn"></el-button>
       </div>
       <div class="modal-body">
@@ -12,10 +12,10 @@
         <el-row :gutter="20">
 
           <el-col :span="6">
-            <el-form-item label="采购入库号" prop="billNo" label-width="100px">
+            <el-form-item label="采购退货单号" prop="billNo" label-width="100px">
               <el-input
                 v-model="queryParams.billNo"
-                placeholder="请输入采购入库号"
+                placeholder="请输入采购退货单号"
                 clearable
                 @keyup.enter.native="handleQuery"
               />
@@ -131,7 +131,7 @@ import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
-import { listWarehouse, getInWarehouse } from "@/api/warehouse/warehouse";
+import { listThInventory, getThInventory } from "@/api/warehouse/thInventory";
 
 export default {
   name: "SelectDApply",
@@ -194,7 +194,7 @@ export default {
     /** 查询科室申请单 */
     getList() {
       this.loading = true;
-      listWarehouse(this.queryParams).then(response => {
+      listThInventory(this.queryParams).then(response => {
         this.warehouseList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -234,14 +234,14 @@ export default {
     /** 查看按钮操作 */
     handleView(row){
       const id = row.id
-      getInWarehouse(id).then(response => {
+      getThInventory(id).then(response => {
         this.form = response.data;
         this.stkIoBillEntryList = response.data.stkIoBillEntryList;
         this.open = true;
         this.action = false;
         this.form.orderStatus = '0';
         this.form.orderType = '1';
-        this.title = "查看入库单";
+        this.title = "查看采购退货单";
       });
     },
   }
