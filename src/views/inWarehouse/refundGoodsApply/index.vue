@@ -274,6 +274,9 @@
               <el-button type="primary" icon="el-icon-plus" size="mini" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
+              <el-button type="outline" icon="el-icon-ref" size="mini" @click="refRkApply">引用入库单</el-button>
+            </el-col>
+            <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
           </div>
@@ -388,6 +391,15 @@
       @selectData="selectData"
     ></SelectInventory>
 
+    <SelectRkApply
+      v-if="DialogRkApplyComponentShow"
+      :DialogComponentShow="DialogRkApplyComponentShow"
+      :warehouseValue="warehouseValue"
+      @closeDialog="closeRkApplyDialog"
+      @selectData="selectRkApplyData"
+    >
+
+    </SelectRkApply>
   </div>
 </template>
 
@@ -402,16 +414,19 @@ import { listRTHWarehouse } from '@/api/warehouse/warehouse'; // 新增引用
 
 
 import SelectInventory from '@/components/SelectModel/SelectInventory';
+import SelectRkApply from "@/components/SelectModel/SelectRkApply";
+import {createEntriesByDApply} from "@/api/warehouse/outWarehouse";
 
 export default {
   name: "InWarehouseGoodsApply",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory},
+  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectRkApply},
   data() {
     return {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
+      DialogRkApplyComponentShow: false,
       warehouseValue: "",
       supplierValue: "",
       isShow: true,
@@ -817,6 +832,42 @@ export default {
       this.download('warehouse/warehouse/export', {
         ...this.queryParams
       }, `warehouse_${new Date().getTime()}.xlsx`)
+    },
+    closeRkApplyDialog() {
+      //关闭“弹窗组件”
+      this.DialogRkApplyComponentShow = false
+    },
+    refRkApply() {
+      if(!this.form.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
+
+      //打开“弹窗组件”
+      this.DialogRkApplyComponentShow = true
+      this.warehouseValue = this.form.warehouseId;
+      this.departmentValue = this.form.departmentId;
+    },
+    selectRkApplyData(val) {
+      // 假设 val 是科室申请单对象或数组，取 id
+      const dApplyId = Array.isArray(val) ? val[0].id : val.id;
+      if (!dApplyId) return;
+
+      const dApplyIdStr = String(dApplyId);
+      var param = {
+        dApplyId: dApplyIdStr
+      };
+      createEntriesByDApply(param).then(response => {
+        if (response && response.data) {
+          this.form = response.data;
+          this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+          this.form.billStatus = '1';
+          this.form.billType = '101';
+          this.DialogRkApplyComponentShow = false;
+        }
+      }).catch(() => {
+        this.$message.error("加载科室申请单明细失败");
+      });
     }
   }
 };
