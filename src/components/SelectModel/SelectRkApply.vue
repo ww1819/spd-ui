@@ -62,10 +62,10 @@
         <el-table ref="singleTable" :data="warehouseList" :row-class-name="warehouseListIndex" @selection-change="handleSelectionChange" height="calc(42vh)" border>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-          <el-table-column label="订单单号" align="center" prop="orderNo" width="180">
+          <el-table-column label="入库单单号" align="center" prop="billNo" width="180">
             <template slot-scope="scope">
               <el-button type="text" @click="handleView(scope.row)">
-                <span>{{ scope.row.orderNo }}</span>
+                <span>{{ scope.row.billNo }}</span>
               </el-button>
             </template>
           </el-table-column>
