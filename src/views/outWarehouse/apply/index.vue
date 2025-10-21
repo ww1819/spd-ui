@@ -441,7 +441,7 @@ import {
   addOutWarehouse,
   updateOutWarehouse,
   listCTKWarehouse,
-  createEntriesByDApply
+  createEntriesByDApply, createEntriesByRkApply
 } from "@/api/warehouse/outWarehouse";
 import { listInventoryMaterialAll } from "@/api/warehouse/inventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -680,14 +680,14 @@ export default {
     },
     selectRkApplyData(val) {
       // 假设 val 是科室申请单对象或数组，取 id
-      const dApplyId = Array.isArray(val) ? val[0].id : val.id;
-      if (!dApplyId) return;
+      const rkApplyId = Array.isArray(val) ? val[0].id : val.id;
+      if (!rkApplyId) return;
 
-      const dApplyIdStr = String(dApplyId);
+      const rkApplyIdStr = String(rkApplyId);
       var param = {
-        dApplyId: dApplyIdStr
+        rkApplyId: rkApplyIdStr
       };
-      createEntriesByDApply(param).then(response => {
+      createEntriesByRkApply(param).then(response => {
         if (response && response.data) {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;

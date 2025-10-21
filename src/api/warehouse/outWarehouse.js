@@ -71,9 +71,9 @@ export function listCTKWarehouseSummary(query) {
 }
 
 
-export function createEntriesByDApply(query) {
+export function createEntriesByRkApply(query) {
   return request({
-    url: '/warehouse/outWarehouse/createEntriesByDApply',
+    url: '/warehouse/outWarehouse/createEntriesByRkApply',
     method: 'get',
     params: query
   })
