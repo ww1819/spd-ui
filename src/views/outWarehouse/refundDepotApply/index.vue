@@ -839,14 +839,14 @@ export default {
     },
     selectCkApplyData(val) {
       // 假设 val 是科室申请单对象或数组，取 id
-      const dApplyId = Array.isArray(val) ? val[0].id : val.id;
-      if (!dApplyId) return;
+      const ckApplyId = Array.isArray(val) ? val[0].id : val.id;
+      if (!ckApplyId) return;
 
-      const dApplyIdStr = String(dApplyId);
+      const ckApplyIdStr = String(ckApplyId);
       var param = {
-        dApplyId: dApplyIdStr
+        ckApplyId: ckApplyIdStr
       };
-      createEntriesByDApply(param).then(response => {
+      createTkEntriesByCkApply(param).then(response => {
         if (response && response.data) {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;

@@ -57,15 +57,15 @@ export function auditThInventory(data) {
 export function createThEntriesByRkApply(data) {
   return request({
     url: '/warehouse/thInventory/createThEntriesByRkApply',
-    method: 'put',
-    data: data
+    method: 'get',
+    params: query
   })
 }
 
 export function createThEntriesByTkApply(data) {
   return request({
     url: '/warehouse/thInventory/createThEntriesByTkApply',
-    method: 'put',
-    data: data
+    method: 'get',
+    params: query
   })
 }

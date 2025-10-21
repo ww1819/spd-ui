@@ -51,3 +51,12 @@ export function auditTkInventory(data) {
     data: data
   })
 }
+
+
+export function createTkEntriesByCkApply(id) {
+  return request({
+    url: '/warehouse/tkInventory/createTkEntriesByCkApply',
+    method: 'get',
+    params: query
+  })
+}
