@@ -441,7 +441,7 @@ import {
   addOutWarehouse,
   updateOutWarehouse,
   listCTKWarehouse,
-  createEntriesByDApply, createEntriesByRkApply
+  createCkEntriesByDApply, createCkEntriesByRkApply
 } from "@/api/warehouse/outWarehouse";
 import { listInventoryMaterialAll } from "@/api/warehouse/inventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -666,7 +666,7 @@ export default {
       var param = {
         dApplyId: dApplyIdStr
       };
-      createEntriesByDApply(param).then(response => {
+      createCkEntriesByDApply(param).then(response => {
         if (response && response.data) {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;
@@ -687,7 +687,7 @@ export default {
       var param = {
         rkApplyId: rkApplyIdStr
       };
-      createEntriesByRkApply(param).then(response => {
+      createCkEntriesByRkApply(param).then(response => {
         if (response && response.data) {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;
