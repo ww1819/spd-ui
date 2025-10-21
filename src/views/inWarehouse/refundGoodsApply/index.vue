@@ -416,7 +416,14 @@
 </template>
 
 <script>
-import { listThInventory, getThInventory, delThInventory, addThInventory, updateThInventory } from "@/api/warehouse/thInventory";
+import {
+  listThInventory,
+  getThInventory,
+  delThInventory,
+  addThInventory,
+  updateThInventory,
+  createThEntriesByRkApply
+} from "@/api/warehouse/thInventory";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -864,14 +871,14 @@ export default {
     },
     selectRkApplyData(val) {
       // 假设 val 是科室申请单对象或数组，取 id
-      const dApplyId = Array.isArray(val) ? val[0].id : val.id;
-      if (!dApplyId) return;
+      const rkApplyId = Array.isArray(val) ? val[0].id : val.id;
+      if (!rkApplyId) return;
 
-      const dApplyIdStr = String(dApplyId);
+      const rkApplyIdStr = String(rkApplyId);
       var param = {
-        dApplyId: dApplyIdStr
+        rkApplyId: rkApplyIdStr
       };
-      createEntriesByDApply(param).then(response => {
+      createThEntriesByRkApply(param).then(response => {
         if (response && response.data) {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;
@@ -900,14 +907,14 @@ export default {
     },
     selectTkApplyData(val) {
       // 假设 val 是科室申请单对象或数组，取 id
-      const dApplyId = Array.isArray(val) ? val[0].id : val.id;
-      if (!dApplyId) return;
+      const tkApplyId = Array.isArray(val) ? val[0].id : val.id;
+      if (!tkApplyId) return;
 
-      const dApplyIdStr = String(dApplyId);
+      const tkApplyIdStr = String(tkApplyId);
       var param = {
-        dApplyId: dApplyIdStr
+        tkApplyId: tkApplyIdStr
       };
-      createEntriesByDApply(param).then(response => {
+      createThEntriesByTkApply(param).then(response => {
         if (response && response.data) {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;

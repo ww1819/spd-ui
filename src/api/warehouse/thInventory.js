@@ -51,3 +51,21 @@ export function auditThInventory(data) {
     data: data
   })
 }
+
+
+
+export function createThEntriesByRkApply(data) {
+  return request({
+    url: '/warehouse/thInventory/createThEntriesByRkApply',
+    method: 'put',
+    data: data
+  })
+}
+
+export function createThEntriesByTkApply(data) {
+  return request({
+    url: '/warehouse/thInventory/createThEntriesByTkApply',
+    method: 'put',
+    data: data
+  })
+}
