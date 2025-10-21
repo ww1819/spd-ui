@@ -73,9 +73,9 @@ export function listRTHSummary(query) {
 }
 
 // 引用订单生成单据明细
-export function createEntriesByDingdan(query) {
+export function createRkEntriesByDingdan(query) {
   return request({
-    url: '/warehouse/rthWarehouse/createEntriesByDingdan',
+    url: '/warehouse/warehouse/createRkEntriesByDingdan',
     method: 'get',
     params: query
   })

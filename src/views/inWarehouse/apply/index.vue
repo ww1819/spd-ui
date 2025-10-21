@@ -446,7 +446,7 @@
 </template>
 
 <script>
-import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse,createEntriesByDingdan } from "@/api/warehouse/warehouse";
+import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse,createRkEntriesByDingdan } from "@/api/warehouse/warehouse";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -892,7 +892,7 @@ export default {
       var param = {
         dingdanId: dingdanIdStr
       };
-      createEntriesByDingdan(param).then(response => {
+      createRkEntriesByDingdan(param).then(response => {
         if (response && response.data) {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;
