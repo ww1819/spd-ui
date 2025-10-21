@@ -73,7 +73,7 @@ export function listCTKWarehouseSummary(query) {
 
 export function createCkEntriesByRkApply(query) {
   return request({
-    url: '/warehouse/outWarehouse/createEntriesByRkApply',
+    url: '/warehouse/outWarehouse/createCkEntriesByRkApply',
     method: 'get',
     params: query
   })
