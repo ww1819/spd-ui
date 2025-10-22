@@ -194,6 +194,7 @@ export default {
     /** 查询科室申请单 */
     getList() {
       this.queryParams.billType = "101";
+      this.queryParams.billStatus = "2"; // 只查询已审核的入库单
       this.loading = true;
       listWarehouse(this.queryParams).then(response => {
         this.warehouseList = response.rows;

@@ -195,6 +195,7 @@ export default {
     /** 查询科室申请单 */
     getList() {
       this.queryParams.billType = "401";
+      this.queryParams.billStatus = "2"; // 只查询已审核的科室退库单
       this.loading = true;
       listTkInventory(this.queryParams).then(response => {
         this.warehouseList = response.rows;

@@ -132,6 +132,7 @@
           </el-button>
         </template>
       </el-table-column>
+      <el-table-column label="引用单号" align="center" prop="refBillNo" width="180" show-overflow-tooltip resizable/>
       <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
@@ -275,6 +276,11 @@
           <el-col :span="4">
             <el-form-item label="单据号" prop="billNo" label-width="100px">
               <el-input v-model="form.billNo" :disabled="true" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
+            <el-form-item label="引用单号" prop="refBillNo" label-width="100px">
+              <el-input v-model="form.refBillNo" :disabled="true" placeholder="引用单号" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -507,9 +513,6 @@ export default {
       form: {},
       // 表单校验
       rules: {
-        billDate: [
-          { required: true, message: "制单日期不能为空", trigger: "blur" }
-        ],
         warehouseId: [
           { required: true, message: "仓库ID不能为空", trigger: "blur" }
         ],
@@ -717,6 +720,7 @@ export default {
       this.form = {
         id: null,
         billNo: null,
+        refBillNo: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,
@@ -799,7 +803,6 @@ export default {
       var userId = this.$store.state.user.userId;
       this.form.createBy = userId;
       this.form.createrName = userName;
-      this.form.billDate = this.getBillDate();
       this.title = "添加出库";
       this.action = true;
     },

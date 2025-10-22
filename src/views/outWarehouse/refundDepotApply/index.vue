@@ -110,6 +110,7 @@
           </el-button>
         </template>
       </el-table-column>
+      <el-table-column label="引用单号" align="center" prop="refBillNo" width="180" show-overflow-tooltip resizable/>
       <el-table-column label="退库日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
@@ -255,6 +256,11 @@
           <el-col :span="4">
             <el-form-item label="单据号" prop="billNo" label-width="100px">
               <el-input v-model="form.billNo" :disabled="true" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
+            <el-form-item label="引用单号" prop="refBillNo" label-width="100px">
+              <el-input v-model="form.refBillNo" :disabled="true" placeholder="引用单号" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -407,7 +413,8 @@ import {
   getTkInventory,
   delTkInventory,
   addTkInventory,
-  updateTkInventory
+  updateTkInventory,
+  createTkEntriesByCkApply
 } from "@/api/warehouse/tkInventory";
 import {createEntriesByDApply, listCTKWarehouse} from '@/api/warehouse/outWarehouse'; // 新增引用
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -474,9 +481,6 @@ export default {
       form: {},
       // 表单校验
       rules: {
-        billDate: [
-          { required: true, message: "退库日期不能为空", trigger: "blur" }
-        ],
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
         ],
@@ -632,6 +636,7 @@ export default {
       this.form = {
         id: null,
         billNo: null,
+        refBillNo: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,
@@ -716,7 +721,6 @@ export default {
       var userId = this.$store.state.user.userId;
       this.form.createBy = userId;
       this.form.createrName = userName;
-      this.form.billDate = this.getBillDate();
       this.title = "添加退库";
       this.action = true;
     },
@@ -838,24 +842,31 @@ export default {
       }, `warehouse_${new Date().getTime()}.xlsx`)
     },
     selectCkApplyData(val) {
-      // 假设 val 是科室申请单对象或数组，取 id
+      console.log('selectCkApplyData called with:', val);
+      // 假设 val 是出库单对象或数组，取 id
       const ckApplyId = Array.isArray(val) ? val[0].id : val.id;
+      console.log('ckApplyId:', ckApplyId);
       if (!ckApplyId) return;
 
       const ckApplyIdStr = String(ckApplyId);
       var param = {
         ckApplyId: ckApplyIdStr
       };
+      console.log('calling createTkEntriesByCkApply with param:', param);
       createTkEntriesByCkApply(param).then(response => {
+        console.log('createTkEntriesByCkApply response:', response);
         if (response && response.data) {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;
           this.form.billStatus = '1';
-          this.form.billType = '201';
+          this.form.billType = '401';
           this.DialogCkApplyComponentShow = false;
+          console.log('form updated:', this.form);
+          console.log('stkIoBillEntryList updated:', this.stkIoBillEntryList);
         }
-      }).catch(() => {
-        this.$message.error("加载科室申请单明细失败");
+      }).catch((error) => {
+        console.error('createTkEntriesByCkApply error:', error);
+        this.$message.error("加载出库单明细失败");
       });
     },
     refCkApply() {

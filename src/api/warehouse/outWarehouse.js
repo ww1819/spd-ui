@@ -71,18 +71,18 @@ export function listCTKWarehouseSummary(query) {
 }
 
 
-export function createCkEntriesByRkApply(query) {
+export function createCkEntriesByRkApply(data) {
   return request({
     url: '/warehouse/outWarehouse/createCkEntriesByRkApply',
     method: 'get',
-    params: query
+    params: data
   })
 }
 
-export function createCkEntriesByDApply(query) {
+export function createCkEntriesByDApply(data) {
   return request({
     url: '/warehouse/outWarehouse/createCkEntriesByDApply',
     method: 'get',
-    params: query
+    params: data
   })
 }

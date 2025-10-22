@@ -112,6 +112,7 @@
           </el-button>
         </template>
       </el-table-column>
+      <el-table-column label="引用单号" align="center" prop="refBillNo" width="180" show-overflow-tooltip resizable/>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
       <el-table-column label="退货日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -258,6 +259,11 @@
           <el-col :span="4">
             <el-form-item label="单据号" prop="billNo" label-width="100px">
               <el-input v-model="form.billNo" :disabled="true" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
+            <el-form-item label="引用单号" prop="refBillNo" label-width="100px">
+              <el-input v-model="form.refBillNo" :disabled="true" placeholder="引用单号" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -422,7 +428,8 @@ import {
   delThInventory,
   addThInventory,
   updateThInventory,
-  createThEntriesByRkApply
+  createThEntriesByRkApply,
+  createThEntriesByTkApply
 } from "@/api/warehouse/thInventory";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -495,9 +502,6 @@ export default {
       rules: {
         supplerId: [
           { required: true, message: "供应商ID不能为空", trigger: "blur" }
-        ],
-        billDate: [
-          { required: true, message: "退货日期不能为空", trigger: "blur" }
         ],
         warehouseId: [
           { required: true, message: "仓库ID不能为空", trigger: "blur" }
@@ -654,6 +658,7 @@ export default {
       this.form = {
         id: null,
         billNo: null,
+        refBillNo: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,
@@ -738,7 +743,7 @@ export default {
       var userId = this.$store.state.user.userId;
       this.form.createBy = userId;
       this.form.createrName = userName;
-      this.form.billDate = this.getBillDate();
+      // 退货日期由后端自动设置为保存时间，无需前端设置
       this.title = "添加退货申请";
       this.action = true;
     },
@@ -883,11 +888,11 @@ export default {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;
           this.form.billStatus = '1';
-          this.form.billType = '101';
+          this.form.billType = '301';
           this.DialogRkApplyComponentShow = false;
         }
       }).catch(() => {
-        this.$message.error("加载科室申请单明细失败");
+        this.$message.error("加载入库单明细失败");
       });
     },
     closeTkApplyDialog() {
@@ -919,11 +924,11 @@ export default {
           this.form = response.data;
           this.stkIoBillEntryList = response.data.stkIoBillEntryList;
           this.form.billStatus = '1';
-          this.form.billType = '101';
+          this.form.billType = '301';
           this.DialogTkApplyComponentShow = false;
         }
       }).catch(() => {
-        this.$message.error("加载科室申请单明细失败");
+        this.$message.error("加载科室退库单明细失败");
       });
     }
   }

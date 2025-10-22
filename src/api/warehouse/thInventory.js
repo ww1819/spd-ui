@@ -58,7 +58,7 @@ export function createThEntriesByRkApply(data) {
   return request({
     url: '/warehouse/thInventory/createThEntriesByRkApply',
     method: 'get',
-    params: query
+    params: data
   })
 }
 
@@ -66,6 +66,6 @@ export function createThEntriesByTkApply(data) {
   return request({
     url: '/warehouse/thInventory/createThEntriesByTkApply',
     method: 'get',
-    params: query
+    params: data
   })
 }
