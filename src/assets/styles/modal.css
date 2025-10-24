@@ -1,0 +1,37 @@
+/* 通用弹窗样式规则 - 只在父容器内显示 */
+
+/* 所有弹窗遮罩层都应该使用这个样式 */
+.local-modal-mask,
+.view-modal-mask,
+.select-modal-mask {
+  position: absolute !important;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 所有弹窗内容都应该使用这个样式 */
+.local-modal-content,
+.view-modal-content,
+.select-modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90%;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* 确保所有页面容器都有相对定位 */
+.app-container {
+  position: relative;
+}

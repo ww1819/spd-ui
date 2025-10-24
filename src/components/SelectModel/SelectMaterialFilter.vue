@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="local-modal-mask">
+  <div v-show="show" class="local-modal-mask">
     <div class="local-modal-content">
       <div class="modal-header">
         <div class="modal-title">耗材明细</div>
@@ -126,6 +126,16 @@ export default {
     this.show = this.DialogComponentShow
     this.queryParams.supplierId = this.supplierValue
     this.getList();
+  },
+  watch: {
+    DialogComponentShow(newVal) {
+      this.show = newVal;
+      if (newVal) {
+        // 弹窗打开时更新供应商并重新加载数据
+        this.queryParams.supplierId = this.supplierValue;
+        this.getList();
+      }
+    }
   },
   created() {
     // this.getList();

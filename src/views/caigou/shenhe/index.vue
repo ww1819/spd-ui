@@ -113,8 +113,6 @@
       <el-table-column label="单据状态" align="center" prop="orderStatus" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
-          <br>
-          <span style="color: #999; font-size: 12px;">({{ scope.row.orderStatus }})</span>
         </template>
       </el-table-column>
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>

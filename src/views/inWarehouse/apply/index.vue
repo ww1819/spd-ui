@@ -433,7 +433,7 @@
 
     <!-- 3、使用组件 -->
     <SelectMaterialFilter
-      v-if="DialogComponentShow"
+      v-show="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :supplierValue="supplierValue"
       @closeDialog="closeDialog"
@@ -441,9 +441,12 @@
     ></SelectMaterialFilter>
 
     <SelectDingdan
-      v-if="DialogDingdanComponentShow"
+      v-show="DialogDingdanComponentShow"
       :DialogComponentShow="DialogDingdanComponentShow"
+      :warehouseValue="warehouseValue"
+      :departmentValue="departmentValue"
       :supplierValue="supplierValue"
+      :materialValue="materialValue"
       @closeDialog="closeDingdanDialog"
       @selectData="selectDingdanData"
     ></SelectDingdan>
@@ -473,6 +476,9 @@ export default {
       DialogComponentShow: false,
       DialogDingdanComponentShow: false,
       supplierValue: "",
+      warehouseValue: "",
+      departmentValue: "",
+      materialValue: "",
       isShow: true,
       // 选中数组
       ids: [],
@@ -881,11 +887,12 @@ export default {
         return
       }
 
-      //打开“弹窗组件”
+      //打开"弹窗组件"
       this.DialogDingdanComponentShow = true
       this.warehouseValue = this.form.warehouseId;
       this.departmentValue = this.form.departmentId;
-      this.supplierValue = this.form.supplierId;
+      this.supplierValue = this.form.supplerId;
+      this.materialValue = null; // 耗材筛选初始为空
     },
     selectDingdanData(val) {
       // 假设 val 是科室申请单对象或数组，取 id
