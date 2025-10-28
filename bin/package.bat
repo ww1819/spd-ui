@@ -7,6 +7,6 @@ echo.
 cd %~dp0
 
 cd ..
-npm install --registry=https://registry.npmmirror.com
+npm install --registry=https://registry.npmmirror.com --save-dev cross-env
 
 pause
