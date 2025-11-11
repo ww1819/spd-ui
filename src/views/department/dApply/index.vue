@@ -302,7 +302,12 @@
             </template>
           </el-table-column>
         </el-table>
-            </el-form>
+        <!-- 合计显示 -->
+        <div style="margin-top: 10px; margin-left: 10px; text-align: left;">
+          <span style="font-weight: bold;">合计数量：{{ totalQty }}</span>
+          <span style="font-weight: bold; margin-left: 20px;">合计金额：￥{{ totalAmount.toFixed(2) }}</span>
+        </div>
+        </el-form>
             <div class="modal-footer" v-show="action">
               <el-button @click="cancel">取 消</el-button>
               <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -356,6 +361,10 @@ export default {
       selectRow: [],
       // 科室申领明细表格数据
       basApplyEntryList: [],
+      // 合计数量
+      totalQty: 0,
+      // 合计金额
+      totalAmount: 0,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -414,6 +423,7 @@ export default {
       this.selectRow.forEach((item, index) => {
         this.basApplyEntryList.splice(this.basApplyEntryList.length, 0, JSON.parse(JSON.stringify(item)));
       });
+      this.calculateTotals();
     },
     //当天日期
     getBillDate(){
@@ -443,8 +453,27 @@ export default {
         remark: null
       };
       this.basApplyEntryList = [];
+      this.calculateTotals();
       this.resetForm("form");
     },
+    //计算合计数量和金额
+    calculateTotals() {
+      let totalQty = 0;
+      let totalAmount = 0;
+      
+      this.basApplyEntryList.forEach(item => {
+        if (item.qty && !isNaN(item.qty)) {
+          totalQty += parseFloat(item.qty);
+        }
+        if (item.amt && !isNaN(item.amt)) {
+          totalAmount += parseFloat(item.amt);
+        }
+      });
+      
+      this.totalQty = totalQty;
+      this.totalAmount = totalAmount;
+    },
+    
     //数量改变事件
     qtyChange(row){
       let totalAmt = 0;
@@ -454,6 +483,7 @@ export default {
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
+      this.calculateTotals();
     },
     //价格改变事件
     priceChange(row){
@@ -489,6 +519,7 @@ export default {
         this.form = response.data;
         this.basApplyEntryList = response.data.basApplyEntryList;
         this.open = true;
+        this.calculateTotals();
         this.action = false;
 
         if(response.data.applyBillStatus == 1){
@@ -520,6 +551,7 @@ export default {
         this.form = response.data;
         this.basApplyEntryList = response.data.basApplyEntryList;
         this.open = true;
+        this.calculateTotals();
         this.action = true;
         this.form.applyBillStatus = '1';
         this.title = "修改科室申领";
@@ -581,6 +613,7 @@ export default {
       obj.batchNumer = "";
       obj.remark = "";
       this.basApplyEntryList.push(obj);
+      this.calculateTotals();
     },
     /** 科室申领明细删除按钮操作 */
     handleDeleteBasApplyEntry() {
@@ -592,6 +625,7 @@ export default {
         this.basApplyEntryList = basApplyEntryList.filter(function(item) {
           return checkedBasApplyEntry.indexOf(item.index) == -1
         });
+        this.calculateTotals();
       }
     },
     /** 复选框选中数据 */
