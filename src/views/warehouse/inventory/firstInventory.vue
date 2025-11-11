@@ -77,23 +77,24 @@
 
     </el-form>
 
+
     <el-table v-loading="loading" :data="inventoryList"
               :row-class-name="inventoryListIndex"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="54vh" border>
+              @selection-change="handleSelectionChange" border>
 <!--      <el-table-column label="编号" align="center" prop="id" width="50"/>-->
       <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
       <el-table-column label="耗材编码" align="center" prop="material.code" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="耗材" align="center" prop="material.name" width="160" show-overflow-tooltip resizable/>
       <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="库存数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="库存数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
@@ -206,26 +207,33 @@ export default {
   methods: {
     getTotalSummaries(param) {
       const { columns, data } = param;
-      // 在现有合计数据后追加新的一行用于展示总计金额和数量
-      const totalRow = [];
-      // 在现有合计数据后追加新的一行用于展示总计金额和数量
-      const subTotalRow = [];
-      totalRow[0] = '总计';
-      subTotalRow[0] = '和计';
-      for (let i = 1; i < columns.length; i++) {
-        if (i === 7) { // 假设金额所在列为第7列（从0开始计数）
-          subTotalRow[i] = this.totalInfo.subTotalAmt.toFixed(2); // 显示总计金额
-          totalRow[i] = this.totalInfo.totalAmt.toFixed(2); // 显示总计金额
-        } else if (i === 5) { // 假设数量所在列为第6列（从0开始计数）
-          subTotalRow[i] = this.totalInfo.subTotalQty.toFixed(2); // 显示总计数量
-          totalRow[i] = this.totalInfo.totalQty.toFixed(2); // 显示总计数量
-        } else {
-          subTotalRow[i] = ''; // 其他列为空
-          totalRow[i] = ''; // 其他列为空
-        }
+      // 创建与列数相同的数组
+      const sums = Array(columns.length).fill('');
+      
+      // 第一列显示"合计"
+      sums[0] = '合计';
+      
+      // 计算合计数量和金额
+      let totalQty = 0;
+      let totalAmt = 0;
+      
+      // 计算总和
+      for (let i = 0; i < data.length; i++) {
+        const item = data[i];
+        totalQty += Number(item.qty || 0);
+        totalAmt += Number(item.amt || 0);
       }
-
-      return [subTotalRow, totalRow];
+      
+      // 遍历所有列，为指定列设置合计值
+      columns.forEach((column, index) => {
+        if (column.property === 'qty') {
+          sums[index] = totalQty.toFixed(2);
+        } else if (column.property === 'amt') {
+          sums[index] = '￥' + totalAmt.toFixed(2);
+        }
+      });
+      
+      return sums;
     },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
@@ -246,7 +254,7 @@ export default {
       listInventory(this.queryParams).then(response => {
         this.inventoryList = response.rows;
         this.total = response.total;
-        this.totalInfo = response.totalInfo;
+        this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0, subTotalAmt: 0, subTotalQty: 0 };
         this.loading = false;
       });
     },

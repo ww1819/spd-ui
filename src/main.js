@@ -90,7 +90,8 @@ import geoJson from '@/utils/china.json'
 import * as echarts from 'echarts'
 
 import vuePlugsPrint from '@/utils/vuePlugsPrint'
-import KrPrintDesigner from "kr-print-designer";
+// 暂时禁用 KrPrintDesigner，因为它依赖 CLodop 打印控件
+// import KrPrintDesigner from "kr-print-designer";
 
 
 Vue.use(dataV)
@@ -143,7 +144,8 @@ Vue.component('SelectGzDepInventory', SelectGzDepInventory)
 //高值物料筛选
 Vue.component('SelectGZMaterialFilter', SelectGZMaterialFilter)
 
-Vue.use(KrPrintDesigner);
+// 暂时禁用 KrPrintDesigner
+// Vue.use(KrPrintDesigner);
 Vue.use(directive)
 Vue.use(vuePlugsPrint);
 Vue.use(plugins)
