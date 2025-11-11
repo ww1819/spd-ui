@@ -333,6 +333,13 @@
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
+          <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.unitPrice" type='number' :disabled="true"
+                        @input="priceChange(scope.row)" placeholder="请输入单价" />
+            </template>
+          </el-table-column>
+
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
@@ -341,13 +348,6 @@
                         @blur="form.result=$event.target.value"
                         @input="qtyChange(scope.row)"
               />
-            </template>
-          </el-table-column>
-
-          <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number' :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="请输入单价" />
             </template>
           </el-table-column>
 

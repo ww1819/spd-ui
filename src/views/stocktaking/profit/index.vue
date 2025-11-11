@@ -211,7 +211,7 @@
           </div>
         </el-row>
 
-        <el-table :data="stkIoStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" height="calc(42vh)" border>
+        <el-table :data="stkIoStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" height="calc(42vh)" border show-summary :summary-method="getSummaries">
           <el-table-column type="selection" width="50" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
           <el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>
@@ -540,6 +540,39 @@ export default {
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
+    },
+    // 计算合计数量和金额
+    getSummaries(param) {
+      const { columns, data } = param;
+      const sums = [];
+      columns.forEach((column, index) => {
+        if (index === 2) {
+          sums[index] = '合计';
+          return;
+        }
+        const values = data.map(item => Number(item[column.property]));
+        // 计算盘点数量、库存数量、盈亏数量、金额、盘点金额、盈亏金额的合计
+        if(['stockQty', 'qty', 'profitQty', 'amt', 'stockAmount', 'profitAmount'].includes(column.property)){
+          if (!values.every(value => isNaN(value))) {
+            sums[index] = values.reduce((prev, curr) => {
+              const value = Number(curr);
+              if (!isNaN(value)) {
+                return prev + curr;
+              } else {
+                return prev;
+              }
+            }, 0);
+            // 金额类字段保留两位小数
+            if(['amt', 'stockAmount', 'profitAmount'].includes(column.property)){
+              sums[index] = sums[index].toFixed(2);
+            }
+            sums[index] += '';
+          } else {
+            sums[index] = '';
+          }
+        }
+      });
+      return sums;
     },
     /** 搜索按钮操作 */
     handleQuery() {

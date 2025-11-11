@@ -44,6 +44,7 @@
 
       <!-- 数据表格 -->
       <el-table
+        ref="table"
         v-loading="loading"
         :data="departmentInventoryList"
         style="width: 100%"
@@ -51,6 +52,8 @@
         stripe
         size="small"
         height="54vh"
+        show-summary
+        :summary-method="getSummaries"
       >
         <el-table-column label="科室编码" align="center" prop="KS_CODE" show-overflow-tooltip resizable />
         <el-table-column label="科室名称" align="center" prop="KS_NAME" show-overflow-tooltip resizable />
@@ -103,7 +106,7 @@ export default {
       }
     };
   },
-  created() {
+  mounted() {
     this.getList();
   },
   methods: {
@@ -114,6 +117,13 @@ export default {
         console.log(response);
         this.departmentInventoryList = response.data;
         this.loading = false;
+        // 使用$nextTick确保DOM更新完成后刷新表格合计
+        this.$nextTick(() => {
+          // 强制表格重新布局，确保合计正确显示
+          if (this.$refs.table) {
+            this.$refs.table.doLayout();
+          }
+        });
       });
     },
     /** 搜索按钮操作 */
@@ -124,7 +134,41 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.handleQuery();
+    },
+    /** 计算合计数量和金额 */
+    getSummaries(param) {
+      const { columns, data } = param;
+      const sums = [];
+      const numericColumns = ['QC_SL', 'QC_JE', 'CK_SL', 'CK_JE', 'TK_SL', 'TK_JE', 'DR_SL', 'DR_JE', 'DC_SL', 'DC_JE', 'KSXH_SL', 'KSXH_JE', 'ZZJ_SL', 'ZZJ_JE', 'ZZT_SL', 'ZZT_JE', 'JC_SL', 'JC_JE'];
+      
+      columns.forEach((column, index) => {
+        if (index === 0) {
+          sums[index] = '合计';
+          return;
+        }
+        const prop = column.property;
+        if (numericColumns.includes(prop)) {
+          const values = data.map(item => Number(item[prop]));
+          if (!values.every(value => isNaN(value))) {
+            sums[index] = values.reduce((prev, curr) => {
+              const value = Number(curr);
+              if (!isNaN(value)) {
+                return prev + curr;
+              } else {
+                return prev;
+              }
+            }, 0);
+            // 金额类字段保留两位小数
+            if (prop.endsWith('JE')) {
+              sums[index] = sums[index].toFixed(2);
+            }
+          } else {
+            sums[index] = '';
+          }
+        }
+      });
+      return sums;
     }
   }
 };
-</script> 
+</script>

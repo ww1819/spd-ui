@@ -106,17 +106,17 @@
 
     </el-form>
 
-    <el-table v-loading="loading" :data="inventoryList" height="54vh" border>
+    <el-table ref="table" v-loading="loading" :data="inventoryList" show-summary :summary-method="getSummaries" height="54vh" border>
       <el-table-column label="耗材ID" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="耗材" align="center" prop="material.name" show-overflow-tooltip resizable />
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
@@ -181,7 +181,7 @@ export default {
       }
     };
   },
-  created() {
+  mounted() {
     this.getList();
   },
   methods: {
@@ -192,6 +192,13 @@ export default {
         this.inventoryList = response.rows;
         this.total = response.total;
         this.loading = false;
+        // 使用$nextTick确保DOM更新完成后刷新表格合计
+        this.$nextTick(() => {
+          // 强制表格重新布局，确保合计正确显示
+          if (this.$refs.table) {
+            this.$refs.table.doLayout();
+          }
+        });
       });
     },
     /** 搜索按钮操作 */
@@ -203,6 +210,48 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.handleQuery();
+    },
+    /** 合计行计算 */
+    getSummaries(param) {
+      const { columns, data } = param;
+      const sums = [];
+      columns.forEach((column, index) => {
+        if (index === 0) {
+          sums[index] = '合计';
+          return;
+        }
+        // 处理嵌套属性的情况
+        const propertyPath = column.property.split('.');
+        const values = data.map(item => {
+          let value = item;
+          for (const prop of propertyPath) {
+            if (value && typeof value === 'object') {
+              value = value[prop];
+            } else {
+              return NaN;
+            }
+          }
+          return Number(value);
+        });
+        if (column.property === 'qty' || column.property === 'amt') {
+          if (!values.every(value => isNaN(value))) {
+            sums[index] = values.reduce((prev, curr) => {
+              const value = Number(curr);
+              if (!isNaN(value)) {
+                return prev + curr;
+              } else {
+                return prev;
+              }
+            }, 0);
+            if (column.property === 'amt') {
+              sums[index] = sums[index].toFixed(2);
+            }
+          }
+        } else {
+          sums[index] = '';
+        }
+      });
+      return sums;
     }
   }
 };
