@@ -26,7 +26,7 @@
     </el-form>
 
     <el-table v-loading="loading" :data="inventoryList"
-              show-summary
+              show-summary :summary-method="getSummaries"
               @selection-change="handleSelectionChange" border ref="table">
       <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -135,8 +135,9 @@ export default {
     });
   },
   methods: {
-    // 暂时注释掉自定义的summary-method，先测试默认合计功能
-    /*getSummaries(param) {
+    // 表格合计方法 - 参考项目中成功的实现
+    getSummaries(param) {
+      console.log('getSummaries called with:', param);
       const { columns, data } = param;
       const sums = [];
       
@@ -146,30 +147,32 @@ export default {
           return;
         }
         
-        const values = data.map(item => {
-          const value = item[column.property];
-          return isNaN(Number(value)) ? 0 : Number(value);
-        });
+        const values = data.map(item => Number(item[column.property]));
         
-        if (column.property === 'materialQty') {
-          if (values.length > 0) {
-            sums[index] = values.reduce((prev, curr) => prev + curr, 0).toFixed(2);
-          } else {
-            sums[index] = '0.00';
-          }
-        } else if (column.property === 'materialAmt') {
-          if (values.length > 0) {
-            sums[index] = '￥' + values.reduce((prev, curr) => prev + curr, 0).toFixed(2);
-          } else {
-            sums[index] = '￥0.00';
+        if (column.property === 'materialQty' || column.property === 'materialAmt') {
+          if (!values.every(value => isNaN(value))) {
+            sums[index] = values.reduce((prev, curr) => {
+              const value = Number(curr);
+              if (!isNaN(value)) {
+                return prev + curr;
+              } else {
+                return prev;
+              }
+            }, 0);
+            
+            // 格式化金额列
+            if (column.property === 'materialAmt') {
+              sums[index] = sums[index].toFixed(2);
+            }
           }
         } else {
           sums[index] = '';
         }
       });
       
+      console.log('Returning sums:', sums);
       return sums;
-    },*/
+    },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
       if(res.length>0) {
