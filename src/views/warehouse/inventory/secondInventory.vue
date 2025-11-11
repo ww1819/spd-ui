@@ -26,8 +26,8 @@
     </el-form>
 
     <el-table v-loading="loading" :data="inventoryList"
-              show-summary :summary-method="getSummaries"
-              @selection-change="handleSelectionChange" border ref="table">
+              show-summary
+              @selection-change="handleSelectionChange" border>
       <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
@@ -56,20 +56,24 @@
       <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
 
     </el-table>
+    
+    <!-- 手动添加合计信息 -->
+    <div v-if="inventoryList.length > 0" style="margin-top: 10px; padding: 10px; background-color: #f5f7fa; border: 1px solid #ebeef5; border-radius: 4px; text-align: right;">
+      <span style="margin-right: 20px; font-weight: bold;">
+        合计数量：{{ calculateTotalQty }}
+      </span>
+      <span style="margin-right: 20px; font-weight: bold;">
+        合计金额：{{ calculateTotalAmt }}
+      </span>
+    </div>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <!-- 汇总查询不需要分页 -->
 
   </div>
 </template>
 
 <script>
-import { listInventorySummary, listSecondInventory } from "@/api/warehouse/inventory";
+import { listInventorySummary, listInventory } from "@/api/warehouse/inventory";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import WarehouseAutocomplete from "@/components/SelectModel/WarehouseAutocomplete";
@@ -100,24 +104,17 @@ export default {
         totalQty: 0,
         totalAmt:0
       },
+
       // 弹出层标题
       title: "",
       // 是否显示弹出层
       open: false,
       // 查询参数
       queryParams: {
-        pageNum: 1,
-        pageSize: 10,
-        qty: null,
         materialId: null,
         warehouseId: null,
         warehouseName: null,
-        materialName: null,
-        unitPrice: null,
-        batchNo: null,
-        materialNo: null,
-        materialDate: null,
-        warehouseDate: null
+        materialName: null
       },
       // 表单参数
       form: {},
@@ -134,45 +131,30 @@ export default {
       this.restaurants = res.rows;
     });
   },
+  computed: {
+    // 计算合计数量
+    calculateTotalQty() {
+      // 添加调试日志以监控数据处理
+      const totalQty = this.inventoryList.reduce((sum, item) => {
+        const qty = Number(item.materialQty) || 0;
+        return sum + qty;
+      }, 0);
+      console.log('计算合计数量:', totalQty);
+      return totalQty.toFixed(2);
+    },
+    // 计算合计金额
+    calculateTotalAmt() {
+      const totalAmt = this.inventoryList.reduce((sum, item) => {
+        const amt = Number(item.materialAmt) || 0;
+        return sum + amt;
+      }, 0);
+      console.log('计算合计金额:', totalAmt);
+      return '￥' + totalAmt.toFixed(2);
+    }
+  },
   methods: {
     // 表格合计方法 - 参考项目中成功的实现
-    getSummaries(param) {
-      console.log('getSummaries called with:', param);
-      const { columns, data } = param;
-      const sums = [];
-      
-      columns.forEach((column, index) => {
-        if (index === 0) {
-          sums[index] = '合计';
-          return;
-        }
-        
-        const values = data.map(item => Number(item[column.property]));
-        
-        if (column.property === 'materialQty' || column.property === 'materialAmt') {
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            
-            // 格式化金额列
-            if (column.property === 'materialAmt') {
-              sums[index] = sums[index].toFixed(2);
-            }
-          }
-        } else {
-          sums[index] = '';
-        }
-      });
-      
-      console.log('Returning sums:', sums);
-      return sums;
-    },
+
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
       if(res.length>0) {
@@ -189,20 +171,17 @@ export default {
     /** 查询库存明细列表 */
     getList() {
       this.loading = true;
-      listSecondInventory(this.queryParams).then(response => {
-        console.log('Data loaded:', response);
-        this.inventoryList = response.rows;
-        this.total = response.total;
-        this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0, subTotalAmt: 0, subTotalQty: 0 };
+      listInventorySummary(this.queryParams).then(response => {
+        // 汇总数据直接赋值，不使用分页结构
+        this.inventoryList = Array.isArray(response) ? response : (response.rows || []);
+        this.total = this.inventoryList.length;
         this.loading = false;
-        
-        // 强制表格重新布局，确保合计行正确显示
-        this.$nextTick(() => {
-          if (this.$refs.table) {
-            console.log('Calling doLayout on table');
-            this.$refs.table.doLayout();
-          }
-        });
+        console.log('汇总数据加载完成，共', this.total, '条记录');
+      }).catch(error => {
+        console.error('汇总数据加载失败:', error);
+        this.inventoryList = [];
+        this.total = 0;
+        this.loading = false;
       });
     },
     // 取消按钮
@@ -227,7 +206,6 @@ export default {
     },
     /** 搜索按钮操作 */
     handleQuery() {
-      this.queryParams.pageNum = 1;
       this.getList();
     },
     /** 重置按钮操作 */
