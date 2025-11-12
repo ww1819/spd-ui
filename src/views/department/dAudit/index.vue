@@ -203,7 +203,7 @@
           </div>
 
         </el-row>
-        <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" @selection-change="handleBasApplyEntrySelectionChange" ref="basApplyEntry" height="calc(42vh)" border>
+        <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" @selection-change="handleBasApplyEntrySelectionChange" ref="basApplyEntry" height="calc(42vh)" border :summary-method="getSummaries" show-summary>
           <el-table-column type="selection" width="50" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
           <el-table-column label="耗材" prop="materialId" width="150" show-overflow-tooltip resizable>
@@ -215,6 +215,11 @@
           <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="单价" prop="unitPrice" width="150" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.unitPrice" type='number' @input="priceChange(scope.row)" placeholder="请输入单价" />
+            </template>
+          </el-table-column>
           <el-table-column label="数量" prop="qty" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
@@ -223,11 +228,6 @@
                         @blur="form.result=$event.target.value"
                         @input="qtyChange(scope.row)"
               />
-            </template>
-          </el-table-column>
-          <el-table-column label="单价" prop="unitPrice" width="150" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number' @input="priceChange(scope.row)" placeholder="请输入单价" />
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="150" show-overflow-tooltip resizable>
@@ -329,6 +329,10 @@ export default {
       selectRow: [],
       // 科室申领明细表格数据
       basApplyEntryList: [],
+      // 合计数量
+      totalQty: 0,
+      // 合计金额
+      totalAmount: 0,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -385,8 +389,11 @@ export default {
       this.selectRow = val;
 
       this.selectRow.forEach((item, index) => {
-        this.basApplyEntryList.splice(this.basApplyEntryList.length, 0, JSON.parse(JSON.stringify(item)));
-      });
+          this.basApplyEntryList.splice(this.basApplyEntryList.length, 0, JSON.parse(JSON.stringify(item)));
+        });
+        this.$nextTick(() => {
+          this.calculateTotals();
+        });
     },
     //当天日期
     getBillDate(){
@@ -427,6 +434,7 @@ export default {
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
+      this.calculateTotals();
     },
     //价格改变事件
     priceChange(row){
@@ -437,6 +445,55 @@ export default {
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
+      this.calculateTotals();
+    },
+    //计算合计数量和金额
+    calculateTotals() {
+      let totalQty = 0;
+      let totalAmount = 0;
+      
+      this.basApplyEntryList.forEach(item => {
+        if (item.qty && !isNaN(item.qty)) {
+          totalQty += parseFloat(item.qty);
+        }
+        if (item.amt && !isNaN(item.amt)) {
+          totalAmount += parseFloat(item.amt);
+        }
+      });
+      
+      this.totalQty = totalQty;
+      this.totalAmount = totalAmount;
+    },
+    // 表格合计方法
+    getSummaries(param) {
+      const { columns, data } = param;
+      const sums = [];
+      columns.forEach((column, index) => {
+        if (index === 1) {
+          sums[index] = '合计';
+          return;
+        }
+        if (column.property === 'qty') {
+          let totalQty = 0;
+          data.forEach(item => {
+            if (item.qty && !isNaN(item.qty)) {
+              totalQty += parseFloat(item.qty);
+            }
+          });
+          sums[index] = totalQty;
+        } else if (column.property === 'amt') {
+          let totalAmount = 0;
+          data.forEach(item => {
+            if (item.amt && !isNaN(item.amt)) {
+              totalAmount += parseFloat(item.amt);
+            }
+          });
+          sums[index] = '￥' + totalAmount.toFixed(2);
+        } else {
+          sums[index] = '';
+        }
+      });
+      return sums;
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -463,6 +520,9 @@ export default {
         this.basApplyEntryList = response.data.basApplyEntryList;
         this.open = true;
         this.action = false;
+        this.$nextTick(() => {
+          this.calculateTotals();
+        });
 
         if(response.data.applyBillStatus == 1){
           this.form.applyBillStatus = '1';
@@ -506,6 +566,9 @@ export default {
         this.basApplyEntryList = response.data.basApplyEntryList;
         this.open = true;
         this.action = true;
+        this.$nextTick(() => {
+          this.calculateTotals();
+        });
         this.form.applyBillStatus = '1';
         this.title = "修改科室申领";
       });

@@ -39,16 +39,16 @@
       <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="库存数量" align="center" prop="totalQty" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.totalQty">{{ scope.row.totalQty }}</span>
-          <span v-else>0</span>
-        </template>
-      </el-table-column>
       <el-table-column label="平均单价" align="center" prop="avgUnitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.avgUnitPrice">{{ scope.row.avgUnitPrice | formatCurrency}}</span>
           <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="库存数量" align="center" prop="totalQty" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.totalQty">{{ scope.row.totalQty }}</span>
+          <span v-else>0</span>
         </template>
       </el-table-column>
       <el-table-column label="库存金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>

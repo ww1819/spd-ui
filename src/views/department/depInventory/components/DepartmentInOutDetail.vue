@@ -106,17 +106,17 @@
       <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
       <el-table-column label="数量" align="center" prop="qty" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span :style="{ color: scope.row.billType === '101' ? '#67C23A' : '#F56C6C' }">
             {{ scope.row.billType === '101' ? '+' : '-' }}{{ scope.row.qty }}
           </span>
-        </template>
-      </el-table-column>
-      <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
-          <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column label="金额" align="center" prop="amount" width="120" show-overflow-tooltip resizable>

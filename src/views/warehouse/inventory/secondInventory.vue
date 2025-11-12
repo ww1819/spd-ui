@@ -26,8 +26,8 @@
     </el-form>
 
     <el-table v-loading="loading" :data="inventoryList"
-              show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="58vh" border>
+              show-summary
+              @selection-change="handleSelectionChange" border>
       <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
@@ -37,7 +37,6 @@
       <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
       <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -45,6 +44,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
@@ -56,20 +56,24 @@
       <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
 
     </el-table>
+    
+    <!-- 手动添加合计信息 -->
+    <div v-if="inventoryList.length > 0" style="margin-top: 10px; padding: 10px; background-color: #f5f7fa; border: 1px solid #ebeef5; border-radius: 4px; text-align: right;">
+      <span style="margin-right: 20px; font-weight: bold;">
+        合计数量：{{ calculateTotalQty }}
+      </span>
+      <span style="margin-right: 20px; font-weight: bold;">
+        合计金额：{{ calculateTotalAmt }}
+      </span>
+    </div>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <!-- 汇总查询不需要分页 -->
 
   </div>
 </template>
 
 <script>
-import { listInventorySummary } from "@/api/warehouse/inventory";
+import { listInventorySummary, listInventory } from "@/api/warehouse/inventory";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import WarehouseAutocomplete from "@/components/SelectModel/WarehouseAutocomplete";
@@ -100,24 +104,17 @@ export default {
         totalQty: 0,
         totalAmt:0
       },
+
       // 弹出层标题
       title: "",
       // 是否显示弹出层
       open: false,
       // 查询参数
       queryParams: {
-        pageNum: 1,
-        pageSize: 10,
-        qty: null,
         materialId: null,
         warehouseId: null,
         warehouseName: null,
-        materialName: null,
-        unitPrice: null,
-        batchNo: null,
-        materialNo: null,
-        materialDate: null,
-        warehouseDate: null
+        materialName: null
       },
       // 表单参数
       form: {},
@@ -134,29 +131,30 @@ export default {
       this.restaurants = res.rows;
     });
   },
-  methods: {
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-
-      // 在现有合计数据后追加新的一行用于展示总计金额和数量
-      const subTotalRow = [];
-      const totalRow = [];
-      subTotalRow[0] = '合计';
-      totalRow[0] = '总计';
-      for (let i = 1; i < columns.length; i++) {
-        if (i === 8) { // 假设金额所在列为第7列（从0开始计数）
-          subTotalRow[i] = this.totalInfo.subTotalAmt.toFixed(2); // 显示总计金额
-          totalRow[i] = this.totalInfo.totalAmt.toFixed(2); // 显示总计金额
-        } else if (i === 5) { // 假设数量所在列为第6列（从0开始计数）
-          subTotalRow[i] = this.totalInfo.subTotalQty.toFixed(2); // 显示总计数量
-          totalRow[i] = this.totalInfo.totalQty.toFixed(2); // 显示总计数量
-        } else {
-          subTotalRow[i] = ''; // 其他列为空
-          totalRow[i] = ''; // 其他列为空
-        }
-      }
-      return [subTotalRow, totalRow];
+  computed: {
+    // 计算合计数量
+    calculateTotalQty() {
+      // 添加调试日志以监控数据处理
+      const totalQty = this.inventoryList.reduce((sum, item) => {
+        const qty = Number(item.materialQty) || 0;
+        return sum + qty;
+      }, 0);
+      console.log('计算合计数量:', totalQty);
+      return totalQty.toFixed(2);
     },
+    // 计算合计金额
+    calculateTotalAmt() {
+      const totalAmt = this.inventoryList.reduce((sum, item) => {
+        const amt = Number(item.materialAmt) || 0;
+        return sum + amt;
+      }, 0);
+      console.log('计算合计金额:', totalAmt);
+      return '￥' + totalAmt.toFixed(2);
+    }
+  },
+  methods: {
+    // 表格合计方法 - 参考项目中成功的实现
+
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
       if(res.length>0) {
@@ -174,9 +172,15 @@ export default {
     getList() {
       this.loading = true;
       listInventorySummary(this.queryParams).then(response => {
-        this.inventoryList = response.rows;
-        this.total = response.total;
-        this.totalInfo = response.totalInfo;
+        // 汇总数据直接赋值，不使用分页结构
+        this.inventoryList = Array.isArray(response) ? response : (response.rows || []);
+        this.total = this.inventoryList.length;
+        this.loading = false;
+        console.log('汇总数据加载完成，共', this.total, '条记录');
+      }).catch(error => {
+        console.error('汇总数据加载失败:', error);
+        this.inventoryList = [];
+        this.total = 0;
         this.loading = false;
       });
     },
@@ -202,7 +206,6 @@ export default {
     },
     /** 搜索按钮操作 */
     handleQuery() {
-      this.queryParams.pageNum = 1;
       this.getList();
     },
     /** 重置按钮操作 */

@@ -90,7 +90,6 @@
       </el-table-column>
       <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单价" align="center" prop="price" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -98,6 +97,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
@@ -150,6 +150,11 @@ export default {
       total: 0,
       // 库存明细表格数据
       inventoryList: [],
+      // 合计信息
+      totalInfo: {
+        totalAmt: 0,
+        totalQty: 0
+      },
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -184,30 +189,24 @@ export default {
   methods: {
     getTotalSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
-      columns.forEach((column, index) => {
-        if (index === 0) {
-          sums[index] = '合计';
-          return;
+      // 在现有合计数据后追加新的一行用于展示总计金额和数量
+      const subTotalRow = [];
+      const totalRow = [];
+      subTotalRow[0] = '合计';
+      totalRow[0] = '总计';
+      for (let i = 1; i < columns.length; i++) {
+        if (i === 11) { // 金额列
+          subTotalRow[i] = (this.totalInfo && this.totalInfo.subTotalAmt) ? this.totalInfo.subTotalAmt.toFixed(2) : '0.00';
+          totalRow[i] = (this.totalInfo && this.totalInfo.totalAmt) ? this.totalInfo.totalAmt.toFixed(2) : '0.00';
+        } else if (i === 10) { // 数量列
+          subTotalRow[i] = (this.totalInfo && this.totalInfo.subTotalQty) ? this.totalInfo.subTotalQty.toFixed(2) : '0.00';
+          totalRow[i] = (this.totalInfo && this.totalInfo.totalQty) ? this.totalInfo.totalQty.toFixed(2) : '0.00';
+        } else {
+          subTotalRow[i] = ''; // 其他列为空
+          totalRow[i] = ''; // 其他列为空
         }
-        const values = data.map(item => Number(item[column.property]));
-        if(index === 9 || index === 11 || index === 12){
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] += '';
-          } else {
-            sums[index] = '';
-          }
-        }
-      });
-      return sums;
+      }
+      return [subTotalRow, totalRow];
     },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
@@ -228,6 +227,7 @@ export default {
       listPurInventory(this.queryParams).then(response => {
         this.inventoryList = response.rows;
         this.total = response.total;
+        this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0, subTotalAmt: 0, subTotalQty: 0 };
         this.loading = false;
       });
     },
