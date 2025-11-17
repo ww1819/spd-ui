@@ -639,7 +639,7 @@ export default {
 
         obj.materialId = item.id;
         obj.qty = "";
-        obj.unitPrice = item.unitPrice;
+        obj.unitPrice = item.price;
         obj.amt = "";
         obj.batchNo = "";
         obj.batchNumber = "";
