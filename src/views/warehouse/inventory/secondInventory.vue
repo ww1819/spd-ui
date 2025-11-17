@@ -56,7 +56,7 @@
       <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
 
     </el-table>
-    
+
     <!-- 手动添加合计信息 -->
     <div v-if="inventoryList.length > 0" style="margin-top: 10px; padding: 10px; background-color: #f5f7fa; border: 1px solid #ebeef5; border-radius: 4px; text-align: right;">
       <span style="margin-right: 20px; font-weight: bold;">
@@ -68,6 +68,13 @@
     </div>
 
     <!-- 汇总查询不需要分页 -->
+    <pagination
+      v-show="total>0"
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="getList"
+    />
 
   </div>
 </template>
@@ -111,6 +118,8 @@ export default {
       open: false,
       // 查询参数
       queryParams: {
+        pageNum: 1,
+        pageSize: 10,
         materialId: null,
         warehouseId: null,
         warehouseName: null,
@@ -174,7 +183,7 @@ export default {
       listInventorySummary(this.queryParams).then(response => {
         // 汇总数据直接赋值，不使用分页结构
         this.inventoryList = Array.isArray(response) ? response : (response.rows || []);
-        this.total = this.inventoryList.length;
+        this.total = response.total;
         this.loading = false;
         console.log('汇总数据加载完成，共', this.total, '条记录');
       }).catch(error => {
@@ -206,6 +215,7 @@ export default {
     },
     /** 搜索按钮操作 */
     handleQuery() {
+      this.queryParams.pageNum = 1;
       this.getList();
     },
     /** 重置按钮操作 */
