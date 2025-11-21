@@ -40,7 +40,7 @@
         </el-form-item>
 
         <el-form-item label="是否高值" prop="isGz">
-          <el-select v-model="queryParams.isGz" placeholder="请选择" style="width: 240px">
+          <el-select v-model="queryParams.isGz" placeholder="请选择" style="width: 68px">
             <el-option
               v-for="dict in dict.type.is_yes_no"
               :key="dict.value"
