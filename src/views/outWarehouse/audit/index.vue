@@ -269,11 +269,11 @@
                   height="calc(42vh)" border>
           <el-table-column type="selection" width="60" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
-            </template>
-          </el-table-column>
+<!--          <el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>-->
+<!--            <template slot-scope="scope">-->
+<!--              <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>-->
+<!--            </template>-->
+<!--          </el-table-column>-->
 
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
