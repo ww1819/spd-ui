@@ -79,6 +79,7 @@
       <!-- 最基础的Element UI表格配置，仅启用汇总功能 -->
       <el-table v-loading="loading" :data="displayData"
                 show-summary
+                :summary-method="getSummaries"
                 style="width: 100%">
       <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -107,7 +108,11 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          {{ scope.row.materialQty }}
+        </template>
+      </el-table-column>
       <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
@@ -241,6 +246,43 @@ export default {
     this.getList();
   },
   methods: {
+    /** 自定义汇总方法 */
+    getSummaries(param) {
+      const { columns, data } = param;
+      const sums = [];
+      columns.forEach((column, index) => {
+        // 第一列显示汇总文本
+        if (index === 0) {
+          sums[index] = '合计';
+          return;
+        }
+        
+        // 只对数量和金额列进行汇总
+        if (column.property === 'materialQty' || column.property === 'materialAmt') {
+          const values = data.map(item => Number(item[column.property]) || 0);
+          if (!values.every(value => isNaN(value))) {
+            const sum = values.reduce((prev, curr) => {
+              const value = Number(curr);
+              if (!isNaN(value)) {
+                return prev + curr;
+              } else {
+                return prev;
+              }
+            }, 0);
+            sums[index] = column.property === 'materialAmt' ? 
+              this.$options.filters.formatCurrency(sum) : 
+              sum;
+          } else {
+            sums[index] = '--';
+          }
+        } else {
+          // 其他列不显示汇总
+          sums[index] = '';
+        }
+      });
+      return sums;
+    },
+    
     /** 查询入/退货列表 */
     getList() {
       this.loading = true;
