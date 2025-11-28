@@ -7,8 +7,12 @@
     <!-- 查询条件区域 -->
     <div class="search-section">
       <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="科室">
-          <el-input v-model="searchForm.departmentName" placeholder="请输入科室名称" clearable />
+        <el-form-item label="科室" prop="materialId" label-width="100px">
+          <SelectDepartment v-model="searchForm.departmentId" />
+        </el-form-item>
+
+        <el-form-item label="耗材" prop="materialId" label-width="100px">
+          <SelectMaterial v-model="searchForm.materialId" />
         </el-form-item>
         <el-form-item label="耗材名称">
           <el-input v-model="searchForm.materialName" placeholder="请输入耗材名称" clearable />
@@ -18,6 +22,12 @@
         </el-form-item>
         <el-form-item label="型号">
           <el-input v-model="searchForm.model" placeholder="请输入型号" clearable />
+        </el-form-item>
+        <el-form-item label="HIS收费编码">
+          <el-input v-model="searchForm.hisChargeCode" placeholder="请输入HIS收费编码" clearable />
+        </el-form-item>
+        <el-form-item label="患者住院号/门诊号">
+          <el-input v-model="searchForm.patientId" placeholder="请输入患者住院号/门诊号" clearable />
         </el-form-item>
         <el-form-item label="日期范围">
           <el-date-picker
@@ -63,7 +73,11 @@
             {{ formatCurrency(scope.row.amount) }}
           </template>
         </el-table-column>
+        <el-table-column prop="category" label="耗材分类" min-width="120" />
+        <el-table-column prop="financialCategory" label="财务分类" min-width="120" />
         <el-table-column prop="registrationNumber" label="注册证号" min-width="180" />
+        <el-table-column prop="medicalInsuranceCode" label="医保编码" min-width="120" />
+        <el-table-column prop="hisChargeItemCode" label="HIS收费项目编码" min-width="150" />
         <el-table-column prop="consumptionDate" label="消耗日期" min-width="120" sortable />
         <el-table-column prop="batchNumber" label="批次号" min-width="150" />
         <el-table-column prop="supplier" label="供应商" min-width="150" />
@@ -86,16 +100,23 @@
 </template>
 
 <script>
+import SelectDepartment from '@/components/SelectModel/SelectDepartment';
+import SelectMaterial from '@/components/SelectModel/SelectMaterial';
+import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 export default {
   name: 'DetailReport',
+  components: {SelectMaterial,SelectDepartment,SelectSupplier},
   data() {
     return {
       // 查询表单
       searchForm: {
-        departmentName: '',
+        departmentId: '',
+        materialId: '',
         materialName: '',
         specification: '',
         model: '',
+        hisChargeCode: '',
+        patientId: '',
         dateRange: []
       },
       // 表格数据
@@ -128,16 +149,18 @@ export default {
     
     // 重置查询条件
     resetSearch() {
-      this.searchForm = {
-        departmentName: '',
-        materialName: '',
-        specification: '',
-        model: '',
-        dateRange: []
-      }
-      this.currentPage = 1
-      this.getDepartmentConsumptionData()
-    },
+        this.searchForm = {
+          departmentName: '',
+          materialName: '',
+          specification: '',
+          model: '',
+          hisChargeCode: '',
+          patientId: '',
+          dateRange: []
+        }
+        this.currentPage = 1
+        this.getDepartmentConsumptionData()
+      },
     
     // 处理排序变化
     handleSortChange({ prop, order }) {
@@ -190,11 +213,11 @@ export default {
       const mockData = []
       const departments = ['内科', '外科', '妇产科', '儿科', '眼科', '口腔科', '耳鼻喉科', '皮肤科']
       const materials = [
-        { name: '一次性使用无菌注射器', spec: '2ml', model: 'SYR-2', regNum: '国械注准20153150001' },
-        { name: '医用外科口罩', spec: '成人型', model: 'MKZ-1', regNum: '国械注准20183140002' },
-        { name: '一次性使用手术衣', spec: 'XL', model: 'SY-1', regNum: '国械注准20193140003' },
-        { name: '医用橡胶手套', spec: '无粉', model: 'G-1', regNum: '国械注准20173140004' },
-        { name: '一次性使用输液器', spec: '0.55mm', model: 'SYQ-1', regNum: '国械注准20163150005' }
+        { name: '一次性使用无菌注射器', spec: '2ml', model: 'SYR-2', regNum: '国械注准20153150001', category: '注射穿刺器械', financialCategory: '低值耗材', medicalInsuranceCode: '20100001', hisChargeItemCode: 'H001' },
+        { name: '医用外科口罩', spec: '成人型', model: 'MKZ-1', regNum: '国械注准20183140002', category: '医用卫生材料及敷料', financialCategory: '低值耗材', medicalInsuranceCode: '20200001', hisChargeItemCode: 'H002' },
+        { name: '一次性使用手术衣', spec: 'XL', model: 'SY-1', regNum: '国械注准20193140003', category: '医用卫生材料及敷料', financialCategory: '低值耗材', medicalInsuranceCode: '20300001', hisChargeItemCode: 'H003' },
+        { name: '医用橡胶手套', spec: '无粉', model: 'G-1', regNum: '国械注准20173140004', category: '医用卫生材料及敷料', financialCategory: '低值耗材', medicalInsuranceCode: '20400001', hisChargeItemCode: 'H004' },
+        { name: '一次性使用输液器', spec: '0.55mm', model: 'SYQ-1', regNum: '国械注准20163150005', category: '注射穿刺器械', financialCategory: '低值耗材', medicalInsuranceCode: '20500001', hisChargeItemCode: 'H005' }
       ]
       const suppliers = ['医疗器械有限公司A', '医疗科技股份有限公司B', '医疗器械集团C']
       
@@ -222,7 +245,11 @@ export default {
           registrationNumber: material.regNum,
           consumptionDate: formattedDate,
           batchNumber: batchNumber,
-          supplier: suppliers[Math.floor(Math.random() * suppliers.length)]
+          supplier: suppliers[Math.floor(Math.random() * suppliers.length)],
+          category: material.category,
+          financialCategory: material.financialCategory,
+          medicalInsuranceCode: material.medicalInsuranceCode,
+          hisChargeItemCode: material.hisChargeItemCode
         })
       }
       

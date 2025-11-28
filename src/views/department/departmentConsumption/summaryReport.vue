@@ -7,14 +7,27 @@
     <!-- 查询条件区域 -->
     <div class="search-section">
       <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="科室">
-          <el-input v-model="searchForm.departmentName" placeholder="请输入科室名称" clearable />
+        <el-form-item label="科室" prop="departmentId" label-width="100px">
+          <SelectDepartment v-model="searchForm.departmentId" />
+        </el-form-item>
+        
+        <el-form-item label="耗材" prop="materialId" label-width="100px">
+          <SelectMaterial v-model="searchForm.materialId" />
         </el-form-item>
         <el-form-item label="耗材名称">
           <el-input v-model="searchForm.materialName" placeholder="请输入耗材名称" clearable />
         </el-form-item>
         <el-form-item label="规格">
           <el-input v-model="searchForm.specification" placeholder="请输入规格" clearable />
+        </el-form-item>
+        <el-form-item label="型号">
+          <el-input v-model="searchForm.model" placeholder="请输入型号" clearable />
+        </el-form-item>
+        <el-form-item label="HIS收费编码">
+          <el-input v-model="searchForm.hisChargeCode" placeholder="请输入HIS收费编码" clearable />
+        </el-form-item>
+        <el-form-item label="患者住院号/门诊号">
+          <el-input v-model="searchForm.patientId" placeholder="请输入患者住院号/门诊号" clearable />
         </el-form-item>
         <el-form-item label="日期范围">
           <el-date-picker
@@ -86,15 +99,23 @@
 </template>
 
 <script>
+import SelectDepartment from '@/components/SelectModel/SelectDepartment';
+import SelectMaterial from '@/components/SelectModel/SelectMaterial';
+
 export default {
   name: 'SummaryReport',
+  components: { SelectDepartment, SelectMaterial },
   data() {
     return {
       // 查询表单
       searchForm: {
-        departmentName: '',
+        departmentId: '',
+        materialId: '',
         materialName: '',
         specification: '',
+        model: '',
+        hisChargeCode: '',
+        patientId: '',
         dateRange: []
       },
       // 表格数据
@@ -133,15 +154,19 @@ export default {
     
     // 重置查询条件
     resetSearch() {
-      this.searchForm = {
-        departmentName: '',
-        materialName: '',
-        specification: '',
-        dateRange: []
-      }
-      this.currentPage = 1
-      this.getDepartmentConsumptionSummary()
-    },
+        this.searchForm = {
+          departmentId: '',
+          materialId: '',
+          materialName: '',
+          specification: '',
+          model: '',
+          hisChargeCode: '',
+          patientId: '',
+          dateRange: []
+        }
+        this.currentPage = 1
+        this.getDepartmentConsumptionSummary()
+      },
     
     // 处理排序变化
     handleSortChange({ prop, order }) {
