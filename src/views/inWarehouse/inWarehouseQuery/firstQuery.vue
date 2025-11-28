@@ -74,22 +74,11 @@
     </el-form>
 
     <!-- 保留原来的表单组件 -->
-    
-    <!-- 完全按照Element UI官方文档的最简化表格示例 -->
-    <div style="margin-top: 20px;">
-      <h3>测试汇总功能表格</h3>
-      <el-table :data="testData" show-summary style="width: 100%">
-        <el-table-column prop="name" label="名称"></el-table-column>
-        <el-table-column prop="quantity" label="数量" type="number"></el-table-column>
-        <el-table-column prop="price" label="价格" type="number"></el-table-column>
-        <el-table-column prop="amount" label="金额" type="number"></el-table-column>
-      </el-table>
-    </div>
-    
+
     <div class="table-container">
       <!-- 最基础的Element UI表格配置，仅启用汇总功能 -->
-      <el-table v-loading="loading" :data="displayData" 
-                show-summary 
+      <el-table v-loading="loading" :data="displayData"
+                show-summary
                 style="width: 100%">
       <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -259,7 +248,7 @@ export default {
         console.log('API响应数据:', response);
         this.warehouseList = response.rows;
         this.total = response.total;
-        
+
         // 为测试汇总功能，确保displayData有模拟数据
         if (!this.warehouseList || this.warehouseList.length === 0) {
           console.log('使用模拟数据进行汇总测试');
@@ -277,7 +266,7 @@ export default {
             materialAmt: Number(item.materialAmt) || 0
           }));
         }
-        
+
         console.log('显示数据:', this.displayData);
         this.loading = false;
       }).catch(error => {
@@ -358,7 +347,7 @@ export default {
   }
 };
 </script>
-    
+
     <!-- 添加CSS样式确保汇总行可见 -->
     <style scoped>
     .table-container {
@@ -367,12 +356,12 @@ export default {
       width: 100%;
       position: relative;
     }
-    
+
     /* 最小化的样式，避免影响Element UI的默认汇总功能 */
     .table-container {
       margin-top: 20px;
     }
-    
+
     /* 确保表格容器有足够空间显示汇总行 */
     .app-container {
       padding: 20px;
