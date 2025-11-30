@@ -1,41 +1,25 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryForm" size="small" v-show="showSearch" label-width="100px">
+      <div class="search-form-content">
+        <el-form-item label="仓库" prop="warehouseId">
+          <SelectWarehouse v-model="queryParams.warehouseId"/>
+        </el-form-item>
+        <el-form-item label="计划单号" prop="planNo">
+          <el-input v-model="queryParams.planNo"
+                    placeholder="请输入计划单号"
+                    clearable
+                    @keyup.enter.native="handleQuery"
+          />
+        </el-form-item>
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="计划单号" prop="planNo" label-width="100px">
-            <el-input v-model="queryParams.planNo"
-                      placeholder="请输入计划单号"
-                      clearable
-                      @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
+<!--        <el-form-item label="供应商" prop="supplierId">
+          <SelectSupplier v-model="queryParams.supplierId"/>
+        </el-form-item>-->
 
-        <el-col :span="6">
-          <el-form-item label="供应商" prop="supplierId" label-width="100px">
-            <SelectSupplier v-model="queryParams.supplierId"/>
-          </el-form-item>
-        </el-col>
 
-        <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-            <SelectWarehouse v-model="queryParams.warehouseId"/>
-          </el-form-item>
-        </el-col>
 
-        <el-col :span="6" label-width="100px">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-
-      </el-row>
-
-      <el-row>
-        <el-col :span="6">
+        <el-form-item label="日期范围">
           <div style="display: inline">
             <span>起</span>
             <el-date-picker clearable
@@ -56,8 +40,13 @@
             >
             </el-date-picker>
           </div>
-        </el-col>
-      </el-row>
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+          <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        </el-form-item>
+      </div>
     </el-form>
 
     <el-row :gutter="10" class="mb8" style="padding-top: 10px">
@@ -97,7 +86,7 @@
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
+<!--      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>-->
       <el-table-column label="制单日期" align="center" prop="planDateText" width="180" show-overflow-tooltip resizable/>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
@@ -348,7 +337,7 @@ export default {
       single: true,
       pickerBeginTimeOptions: {
         disabledDate(time) {
-          return time.getTime() > Date.now();
+            return time.getTime() > Date.now();
         },
       },
       pickerEndTimeOptions: {
@@ -433,14 +422,14 @@ export default {
           sums[index] = '合计';
           return;
         }
-        
+
         // 只对数量、价格、金额列进行汇总
         if(index === 3 || index === 4 || index === 5){
           const values = data.map(item => {
             const value = item[column.property];
             return isNaN(Number(value)) ? 0 : Number(value);
           });
-          
+
           if (values.length > 0) {
             sums[index] = values.reduce((prev, curr) => prev + curr, 0).toFixed(2);
           } else {
@@ -642,7 +631,7 @@ export default {
       if (row.qty && !/^\d+(\.\d+)?$/.test(row.qty)) {
         row.qty = row.qty.replace(/[^\d.]/g, '');
       }
-      
+
       let totalAmt = 0;
       if(row.qty && row.price){
         totalAmt = parseFloat(row.qty) * parseFloat(row.price);
@@ -650,7 +639,7 @@ export default {
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
-      
+
       // 重新计算总金额
       this.calculateTotalAmount();
     },
@@ -663,7 +652,7 @@ export default {
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
-      
+
       // 重新计算总金额
       this.calculateTotalAmount();
     },
@@ -905,4 +894,21 @@ export default {
 .app-container {
   position: relative;
 }
+
+  /* 流式布局样式 */
+  .search-form-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  .search-form-content .el-form-item {
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+  .search-form-content .el-form-item__content {
+    width: 200px;
+  }
+  .search-form-content .el-form-item:last-child .el-form-item__content {
+    width: auto;
+  }
 </style>

@@ -1,35 +1,30 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="耗材名称" prop="name">
-            <el-input
-              v-model="queryParams.name"
-              placeholder="请输入耗材名称"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
+    <el-form :model="queryParams" ref="queryForm" size="small" v-show="showSearch" label-width="68px">
+      <div class="search-form-content">
+        <el-form-item label="耗材名称" prop="name">
+          <el-input
+            v-model="queryParams.name"
+            placeholder="请输入耗材名称"
+            clearable
+            @keyup.enter.native="handleQuery"
+            style="width: 240px"
+          />
+        </el-form-item>
 
-        <el-col :span="6">
-          <el-form-item label="供应商" prop="supplierId">
-            <SelectSupplier v-model="queryParams.supplierId"/>
-          </el-form-item>
-        </el-col>
-      </el-row>
+        <el-form-item label="供应商" prop="supplierId">
+          <SelectSupplier v-model="queryParams.supplierId" style="width: 240px"/>
+        </el-form-item>
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <div style="display: inline">
+        <el-form-item>
+          <div style="display: flex; align-items: center;">
             <span>起</span>
             <el-date-picker clearable
                             v-model="queryParams.beginDate"
                             type="date"
                             value-format="yyyy-MM-dd"
                             placeholder="请选择起始日期"
-                            style="width: 140px"
+                            style="width: 140px; margin: 0 5px"
             >
             </el-date-picker>
             <span>止</span>
@@ -38,39 +33,35 @@
                             type="date"
                             value-format="yyyy-MM-dd"
                             placeholder="请选择截止日期"
-                            style="width: 140px"
+                            style="width: 140px; margin: 0 5px"
             >
             </el-date-picker>
           </div>
-        </el-col>
+        </el-form-item>
 
-        <el-col :span="6">
-          <el-form-item label="是否高值" prop="isGz">
-            <el-select v-model="queryParams.isGz" placeholder="请选择">
-              <el-option
-                v-for="dict in dict.type.is_yes_no"
-                :key="dict.value"
-                :label="dict.label"
-                :value="dict.value"
-              ></el-option>
-            </el-select>
-          </el-form-item>
-        </el-col>
+        <el-form-item label="是否高值" prop="isGz">
+          <el-select v-model="queryParams.isGz" placeholder="请选择" style="width: 68px">
+            <el-option
+              v-for="dict in dict.type.is_yes_no"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            ></el-option>
+          </el-select>
+        </el-form-item>
 
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button
-              type="info"
-              icon="el-icon-upload2"
-              size="mini"
-              @click="handleImport"
-              v-hasPermi="['foundation:material:import']"
-            >导入</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
+        <el-form-item>
+          <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+          <el-button
+            type="info"
+            icon="el-icon-upload2"
+            size="mini"
+            @click="handleImport"
+            v-hasPermi="['foundation:material:import']"
+          >导入</el-button>
+          <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        </el-form-item>
+      </div>
     </el-form>
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
@@ -810,4 +801,18 @@ export default {
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
+.search-form-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 15px;
+}
+.search-form-content .el-form-item {
+  margin-right: 0;
+  margin-bottom: 15px;
+}
+.search-form-content .el-form-item--small {
+  margin-bottom: 15px;
+}
 </style>
+
