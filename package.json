@@ -5,7 +5,7 @@
   "author": "SPD",
   "license": "MIT",
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" vue-cli-service serve",
+    "dev": "set NODE_OPTIONS=--max-old-space-size=4096 && vue-cli-service serve",
     "build:prod": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096 --openssl-legacy-provider\" vue-cli-service build",
     "build:stage": "vue-cli-service build --mode staging",
     "preview": "node build/index.js --preview",
