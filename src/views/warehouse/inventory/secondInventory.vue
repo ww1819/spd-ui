@@ -27,7 +27,9 @@
 
     <el-table v-loading="loading" :data="inventoryList"
               show-summary
-              @selection-change="handleSelectionChange" border>
+              @selection-change="handleSelectionChange" 
+              height="51vh"
+              border>
       <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}

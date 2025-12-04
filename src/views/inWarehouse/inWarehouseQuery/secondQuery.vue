@@ -1,58 +1,73 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="耗材" prop="materialId" label-width="100px">
-            <SelectMaterial v-model="queryParams.materialId" />
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectMaterial v-model="queryParams.materialId" />
+            </div>
           </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-            <SelectWarehouse v-model="queryParams.warehouseId"/>
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6" label-width="100px">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectWarehouse v-model="queryParams.warehouseId"/>
+            </div>
           </el-form-item>
         </el-col>
       </el-row>
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <div style="display: inline">
-            <span>起</span>
-            <el-date-picker clearable
-                            v-model="queryParams.beginDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="请选择起始日期"
-                            style="width: 150px"
-            >
-            </el-date-picker>
-            <span>止</span>
-            <el-date-picker clearable
-                            v-model="queryParams.endDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="请选择截止日期"
-                            style="width: 150px"
-            >
-            </el-date-picker>
-          </div>
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="12">
+          <el-form-item label="业务日期" style="display: flex; align-items: center;">
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="起始日期"
+              clearable
+              style="width: 180px; margin-right: 8px;"
+            />
+            <span style="margin: 0 4px;">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="截止日期"
+              clearable
+              style="width: 180px; margin-left: 8px;"
+            />
+          </el-form-item>
         </el-col>
       </el-row>
 
     </el-form>
 
+    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          icon="el-icon-search"
+          size="mini"
+          @click="handleQuery"
+        >搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          icon="el-icon-refresh"
+          size="mini"
+          @click="resetQuery"
+        >重置</el-button>
+      </el-col>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
+
     <el-table v-loading="loading" :data="warehouseList"
-              show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="58vh" border>
+              show-summary
+              :summary-method="getTotalSummaries"
+              @selection-change="handleSelectionChange"
+              height="51vh"
+              border>
       <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
@@ -286,3 +301,41 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 查询条件样式 */
+.query-row-left {
+  margin-bottom: 10px;
+}
+
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 10px;
+}
+
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+.query-row-second {
+  margin-bottom: 10px;
+}
+
+.query-status-col {
+  display: flex;
+  align-items: center;
+}
+
+.query-item-status-aligned {
+  margin-left: 0;
+}
+
+.query-item-status-aligned .el-form-item__label {
+  width: 80px !important;
+}
+</style>

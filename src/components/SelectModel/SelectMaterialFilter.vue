@@ -29,7 +29,7 @@
         </el-row>
       </el-form>
 
-        <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(42vh)" border>
+        <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(50vh)" border>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="耗材编码" align="center" prop="code" width="80" show-overflow-tooltip resizable/>
           <el-table-column label="耗材名称" align="center" prop="name" width="160" show-overflow-tooltip resizable/>

@@ -42,7 +42,7 @@
         </el-row>
       </el-form>
 
-      <el-table :data="inventoryList" :row-class-name="inventoryIndex" @selection-change="handleSelectionChange" height="calc(42vh)" border>
+      <el-table :data="inventoryList" :row-class-name="inventoryIndex" @selection-change="handleSelectionChange" height="calc(50vh)" border>
         <el-table-column type="selection" width="55" align="center" resizable />
 <!--        <el-table-column label="耗材ID" align="center" prop="material.id" width="120"/>-->
 <!--        <el-table-column label="耗材" align="center" prop="material.name" show-overflow-tooltip resizable />-->
