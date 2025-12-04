@@ -68,7 +68,7 @@
     </el-form>
 
     <el-table v-loading="loading" :data="inventoryList"
-              show-summary :summary-method="getTotalSummaries" height="58vh" border>
+              show-summary :summary-method="getTotalSummaries" height="56vh" border>
       <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}

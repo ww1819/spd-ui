@@ -81,7 +81,9 @@
     <el-table v-loading="loading" :data="inventoryList"
               :row-class-name="inventoryListIndex"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" border>
+              @selection-change="handleSelectionChange" 
+              height="51vh"
+              border>
 <!--      <el-table-column label="编号" align="center" prop="id" width="50"/>-->
       <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
       <el-table-column label="耗材编码" align="center" prop="material.code" width="80" show-overflow-tooltip resizable/>

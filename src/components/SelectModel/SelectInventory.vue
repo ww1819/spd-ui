@@ -52,10 +52,9 @@
         </el-row>
       </el-form>
 
-        <el-table ref="singleTable" :data="inventoryList" :row-class-name="inventoryIndex" @selection-change="handleSelectionChange" height="calc(42vh)" border>
+        <el-table ref="singleTable" :data="inventoryList" :row-class-name="inventoryIndex" @selection-change="handleSelectionChange" height="calc(45vh)" border>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-          <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable/>
 <!--          <el-table-column label="耗材" align="center" prop="material.name" width="120" show-overflow-tooltip resizable/>-->
           <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
@@ -82,6 +81,7 @@
           <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable/>
           <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
@@ -230,6 +230,7 @@ export default {
   background: #fff;
   width: 100%;
   height: 100%;
+  min-height: 95vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
