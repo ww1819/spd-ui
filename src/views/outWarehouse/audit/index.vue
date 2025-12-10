@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -19,7 +19,7 @@
           </el-form-item>
           <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId"/>
+              <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
             </div>
           </el-form-item>
         </el-col>
@@ -68,14 +68,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="mini"
+          size="small"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="mini"
+          size="small"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -95,6 +95,7 @@
         </template>
       </el-table-column>
       <el-table-column label="科室" align="center" prop="department.name" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
       <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
@@ -119,16 +120,11 @@
           <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="出库类型" align="center" prop="billType" show-overflow-tooltip resizable >
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.bill_type" :value="scope.row.billType"/>
-        </template>
-      </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" resizable>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right" resizable>
         <template slot-scope="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             @click="handlePrint(scope.row,true)"
             v-if="scope.row.billStatus == 2"
@@ -172,14 +168,14 @@
           <div v-if="open" class="local-modal-content">
         <div class="modal-header">
           <div class="modal-title">{{ title }}</div>
-          <el-button icon="el-icon-close" size="mini" circle @click="cancel" class="close-btn"></el-button>
+          <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
         </div>
         <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :disabled="true"/>
+              <SelectWarehouse v-model="form.warehouseId" :disabled="true" excludeWarehouseType="高值"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -233,10 +229,10 @@
 
           <div v-show="action">
             <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-plus" size="mini" @click="nameBtn">添加</el-button>
+              <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteStkIoBillEntry">删除</el-button>
+              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
           </div>
 
@@ -1145,6 +1141,57 @@ export default {
 .el-table .cell {
   padding: 0 8px;
   line-height: 1.5;
+}
+
+/* 表格水平滚动条样式 */
+.el-table__body-wrapper {
+  overflow-x: auto !important;
+  overflow-y: auto;
+}
+
+/* 水平滚动条样式 */
+.el-table__body-wrapper::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 10px;
+}
+
+.el-table__body-wrapper::-webkit-scrollbar:vertical {
+  width: 10px;
+}
+
+.el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+
+.el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 5px;
+}
+
+.el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 确保表格底部水平滚动条可见 */
+.el-table .el-table__body-wrapper {
+  overflow-x: auto !important;
+}
+
+/* 表格头部和底部都显示滚动条占位，确保对齐 */
+.el-table__header-wrapper,
+.el-table__footer-wrapper {
+  overflow-x: hidden;
+}
+
+/* 确保固定列不影响滚动条 */
+.el-table__fixed-right,
+.el-table__fixed {
+  height: 100%;
 }
 
 /* 表单样式优化 */

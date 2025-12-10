@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="out-order-print" ref="receiptOrderPrintRef" hidden="hidden">
 <!--    <div class="title" style="padding-top: 15px">入库单</div>-->
     <div style="font-size: 22px;text-align: center;">出库单</div>

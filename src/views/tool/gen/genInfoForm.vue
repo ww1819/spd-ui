@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-form ref="genInfoForm" :model="info" :rules="rules" label-width="150px">
     <el-row>
       <el-col :span="12">

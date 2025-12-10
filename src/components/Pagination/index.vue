@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div :class="{'hidden':hidden}" class="pagination-container">
     <el-pagination
       :background="background"

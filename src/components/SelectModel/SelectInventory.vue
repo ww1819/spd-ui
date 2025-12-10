@@ -1,11 +1,11 @@
-<template>
+﻿<template>
   <transition name="modal-fade">
     <div v-if="show" class="local-modal-mask">
       <transition name="modal-zoom">
         <div v-if="show" class="local-modal-content">
       <div class="modal-header">
         <div class="modal-title">库存明细</div>
-        <el-button icon="el-icon-close" size="mini" circle @click="handleClose" class="close-btn"></el-button>
+        <el-button icon="el-icon-close" size="small" circle @click="handleClose" class="close-btn"></el-button>
       </div>
       <div class="modal-body">
         <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
@@ -45,8 +45,8 @@
         <el-row :gutter="24">
           <el-col :span="6">
             <el-form-item>
-              <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-              <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+              <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-col>
         </el-row>

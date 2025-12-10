@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="refund-goods-print" ref="receiptRefundGoodsPrintRef" hidden="hidden">
 <!--    <div class="title" style="padding-top: 15px">入库单</div>-->
     <div style="font-size: 22px;text-align: center;">采购退货单</div>

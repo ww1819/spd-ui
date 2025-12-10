@@ -1,7 +1,12 @@
-<template>
-  <div class="app-container">
-    <el-dialog title="耗材明细" :visible.sync="show" append-to-body width="1600px" :before-close="handleClose">
-      <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+﻿<template>
+  <div v-show="show" class="local-modal-mask">
+    <div class="local-modal-content">
+      <div class="modal-header">
+        <div class="modal-title">耗材明细</div>
+        <el-button icon="el-icon-close" size="small" circle @click="handleClose" class="close-btn"></el-button>
+      </div>
+      <div class="modal-body">
+        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
         <el-row :gutter="20">
 
           <el-col :span="6">
@@ -17,41 +22,56 @@
           </el-col>
           <el-col :span="6">
             <el-form-item>
-              <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-              <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+              <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-col>
         </el-row>
       </el-form>
 
-      <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column label="耗材编码" align="center" prop="code" width="80"/>
-        <el-table-column label="耗材名称" align="center" prop="name" width="160"/>
-        <el-table-column label="供应商" align="center" prop="supplier.name" width="160"/>
-        <el-table-column label="规格" align="center" prop="speci" width="100"/>
-        <el-table-column label="型号" align="center" prop="model" width="100"/>
-        <el-table-column label="价格" align="center" prop="price" width="100"/>
-        <el-table-column label="有效期" align="center" prop="periodDate" width="100"/>
-        <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="160"/>
-        <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="160"/>
+        <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(50vh)" border>
+          <el-table-column type="selection" width="55" align="center" />
+          <el-table-column label="序号" align="center" width="70" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+            </template>
+          </el-table-column>
+          <el-table-column label="耗材编码" align="center" prop="code" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材名称" align="center" prop="name" width="140" show-overflow-tooltip resizable/>
+          <el-table-column label="供应商" align="center" prop="supplier.name" width="140" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="价格" align="center" prop="price" width="90" show-overflow-tooltip resizable/>
+          <el-table-column label="UDI码" align="center" prop="udiNo" width="150" show-overflow-tooltip resizable/>
+          <el-table-column label="注册证有效期" align="center" prop="periodDate" width="120" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable/>
+          <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
+          <el-table-column label="注册证号" align="center" prop="registerNo" width="140" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="packageSpeci" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="材质" align="center" prop="quality" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="储存方式" align="center" prop="isWay" width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.way_status" :value="scope.row.isWay"/>
+            </template>
+          </el-table-column>
+        </el-table>
 
-      </el-table>
+        <pagination
+          v-show="total>0"
+          :total="total"
+          :page.sync="queryParams.pageNum"
+          :limit.sync="queryParams.pageSize"
+          @pagination="getList"
+        />
+      </div>
 
-      <span slot="footer" class="dialog-footer">
-          <el-button @click="handleClose">取 消</el-button>
-          <el-button type="primary" @click="checkMaterialBtn">确 定</el-button>
-      </span>
-
-      <pagination
-        v-show="total>0"
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="getList"
-      />
-    </el-dialog>
-
+      <div class="modal-footer">
+        <el-button @click="handleClose">取 消</el-button>
+        <el-button type="primary" @click="checkMaterialBtn">确 定</el-button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -61,8 +81,9 @@ import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import { listMaterial} from "@/api/foundation/material";
 
 export default {
-  name: "SelectMaterialFilter",
+  name: "SelectGZMaterialFilter",
   components: {SelectMaterial},
+  dicts: ['way_status'],
   props: ['DialogComponentShow','supplierValue'], //接受父组件传递过来的数据
   data() {
     return {
@@ -101,6 +122,7 @@ export default {
         model: undefined,
         price: undefined,
         isGz: undefined,
+        isFollow: undefined,
       },
       // 表单参数
       form: {},
@@ -112,6 +134,16 @@ export default {
     this.queryParams.supplierId = this.supplierValue
     this.getList();
   },
+  watch: {
+    DialogComponentShow(newVal) {
+      this.show = newVal;
+      if (newVal) {
+        // 弹窗打开时更新供应商并重新加载数据
+        this.queryParams.supplierId = this.supplierValue;
+        this.getList();
+      }
+    }
+  },
   created() {
     // this.getList();
   },
@@ -119,7 +151,8 @@ export default {
     /** 查询耗材信息列表 */
     getList() {
       this.loading = true;
-      this.queryParams.isGz = '1';
+      this.queryParams.isGz = '1'; // 只查询高值耗材
+      this.queryParams.isFollow = '1'; // 只查询"是跟台"的耗材
       listMaterial(this.queryParams).then(response => {
         this.materialList = response.rows;
         this.total = response.total;
@@ -158,3 +191,121 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 内部弹窗样式 - 占满整个遮罩层 */
+.local-modal-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.local-modal-content {
+  background: #fff;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  flex-shrink: 0;
+  min-height: 48px;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 20px 24px;
+  background: #fff;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  text-align: right;
+  border-top: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  flex-shrink: 0;
+}
+
+.modal-footer .el-button {
+  margin-left: 12px;
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  min-width: 100%;
+  width: max-content;
+}
+
+.el-table .el-table__body-wrapper {
+  overflow-x: auto;
+}
+
+.el-table th {
+  background-color: #F5F7FA !important;
+  color: #606266;
+  font-weight: 500;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+/* 搜索表单样式 */
+.el-form {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.el-form .el-form-item {
+  margin-bottom: 15px;
+}
+</style>

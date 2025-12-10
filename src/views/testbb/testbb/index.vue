@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="testbb-container">
     <el-tabs v-model="activeTab">
       <el-tab-pane label="转材使用记录" name="tab1">

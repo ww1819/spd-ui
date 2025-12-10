@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="icons-container">
     <aside>
       <a href="#" target="_blank">Add and use

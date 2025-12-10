@@ -10,10 +10,11 @@ export function listOrder(query) {
 }
 
 // 查询高值入库详细
-export function getOrder(id) {
+export function getOrder(id, orderType) {
   return request({
     url: '/gz/order/' + id,
-    method: 'get'
+    method: 'get',
+    params: { orderType: orderType }
   })
 }
 
@@ -35,11 +36,12 @@ export function updateOrder(data) {
   })
 }
 
-// 删除高值入库
-export function delOrder(id) {
+// 删除高值入库（兼容入库和出库）
+export function delOrder(id, orderType) {
   return request({
     url: '/gz/order/' + id,
-    method: 'delete'
+    method: 'delete',
+    params: { orderType: orderType }
   })
 }
 
@@ -48,6 +50,15 @@ export function auditOrder(data) {
   return request({
     url: '/gz/order/auditOrder',
     method: 'put',
+    data: data
+  })
+}
+
+// 根据院内码查询是否有未出库的出库单
+export function checkInHospitalCode(data) {
+  return request({
+    url: '/gz/order/checkInHospitalCode',
+    method: 'post',
     data: data
   })
 }

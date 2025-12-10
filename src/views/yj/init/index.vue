@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="inventory-management">
     <!-- 搜索框 -->
     <el-form :inline="true" :model="searchForm" class="search-form">

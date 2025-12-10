@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-row :gutter="20">
       <!--部门数据-->
@@ -75,8 +75,8 @@
             ></el-date-picker>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-form>
 
@@ -86,7 +86,7 @@
               type="primary"
               plain
               icon="el-icon-plus"
-              size="mini"
+              size="small"
               @click="handleAdd"
               v-hasPermi="['system:user:add']"
             >新增</el-button>
@@ -96,7 +96,7 @@
               type="success"
               plain
               icon="el-icon-edit"
-              size="mini"
+              size="small"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['system:user:edit']"
@@ -107,7 +107,7 @@
               type="danger"
               plain
               icon="el-icon-delete"
-              size="mini"
+              size="small"
               :disabled="multiple"
               @click="handleDelete"
               v-hasPermi="['system:user:remove']"
@@ -118,7 +118,7 @@
               type="info"
               plain
               icon="el-icon-upload2"
-              size="mini"
+              size="small"
               @click="handleImport"
               v-hasPermi="['system:user:import']"
             >导入</el-button>
@@ -128,7 +128,7 @@
               type="warning"
               plain
               icon="el-icon-download"
-              size="mini"
+              size="small"
               @click="handleExport"
               v-hasPermi="['system:user:export']"
             >导出</el-button>
@@ -166,21 +166,21 @@
           >
             <template slot-scope="scope" v-if="scope.row.userId !== 1">
               <el-button
-                size="mini"
+                size="small"
                 type="text"
                 icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
                 v-hasPermi="['system:user:edit']"
               >修改</el-button>
               <el-button
-                size="mini"
+                size="small"
                 type="text"
                 icon="el-icon-delete"
                 @click="handleDelete(scope.row)"
                 v-hasPermi="['system:user:remove']"
               >删除</el-button>
-              <el-dropdown size="mini" @command="(command) => handleCommand(command, scope.row)" v-hasPermi="['system:user:resetPwd', 'system:user:edit']">
-                <el-button size="mini" type="text" icon="el-icon-d-arrow-right">更多</el-button>
+              <el-dropdown size="small" @command="(command) => handleCommand(command, scope.row)" v-hasPermi="['system:user:resetPwd', 'system:user:edit']">
+                <el-button size="small" type="text" icon="el-icon-d-arrow-right">更多</el-button>
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="handleResetPwd" icon="el-icon-key"
                     v-hasPermi="['system:user:resetPwd']">重置密码</el-dropdown-item>

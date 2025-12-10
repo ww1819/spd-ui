@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -64,7 +64,7 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="mini"
+          size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:material:add']"
         >新增</el-button>
@@ -74,7 +74,7 @@
           type="success"
           plain
           icon="el-icon-edit"
-          size="mini"
+          size="small"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:material:edit']"
@@ -85,7 +85,7 @@
           type="danger"
           plain
           icon="el-icon-delete"
-          size="mini"
+          size="small"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:material:remove']"
@@ -96,7 +96,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="mini"
+          size="small"
           @click="handleExport"
           v-hasPermi="['foundation:material:export']"
         >导出</el-button>
@@ -105,7 +105,7 @@
         <el-button
           type="info"
           icon="el-icon-upload2"
-          size="mini"
+          size="small"
           @click="handleImport"
           v-hasPermi="['foundation:material:import']"
         >导入</el-button>
@@ -114,14 +114,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="mini"
+          size="small"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="mini"
+          size="small"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -130,7 +130,11 @@
 
     <el-table v-loading="loading" :data="materialList" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="58vh" border>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
+      <el-table-column type="index" label="序号" align="center" width="80" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+        </template>
+      </el-table-column>
       <el-table-column label="耗材编码" align="center" prop="code" width="100" show-overflow-tooltip resizable/>
       <el-table-column label="耗材名称" align="center" prop="name" width="180" show-overflow-tooltip resizable/>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
@@ -138,9 +142,9 @@
       <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="价格" align="center" prop="price" width="100" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="生产厂家" align="center" prop="factory.name" width="150" show-overflow-tooltip resizable/>
+      <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="150" show-overflow-tooltip resizable/>
       <el-table-column label="品牌" align="center" prop="brand" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="库房分类" align="center" prop="storeroom.name" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="储存方式" align="center" prop="isWay" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.way_status" :value="scope.row.isWay"/>
@@ -156,6 +160,11 @@
           <dict-tag :options="dict.type.is_yes_no" :value="scope.row.isGz"/>
         </template>
       </el-table-column>
+      <el-table-column label="是否跟台" align="center" prop="isFollow" width="80" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.is_yes_no" :value="scope.row.isFollow"/>
+        </template>
+      </el-table-column>
       <el-table-column label="创建日期" align="center" prop="createTime" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
@@ -164,14 +173,14 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right">
         <template slot-scope="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:material:edit']"
           >修改</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
@@ -191,8 +200,31 @@
     <!-- 添加或修改耗材产品局部弹窗 -->
     <div v-if="open" class="local-modal-mask">
       <div class="local-modal-content material-modal-content">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-        <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="font-size:18px;font-weight:bold;">{{ title }}</div>
+            <!-- 切换按钮 -->
+            <el-button 
+              :type="activeTab === 'form' ? 'primary' : ''" 
+              size="small" 
+              @click="activeTab = 'form'"
+              style="margin-left: 10px;"
+            >
+              添加产品
+            </el-button>
+            <el-button 
+              :type="activeTab === 'image' ? 'primary' : ''" 
+              size="small" 
+              @click="activeTab = 'image'"
+            >
+              产品图片
+            </el-button>
+          </div>
+        </div>
+        
+        <!-- 表单视图 -->
+        <div v-show="activeTab === 'form'">
+          <el-form ref="form" :model="form" :rules="rules" label-width="100px">
           <el-row :gutter="20">
             <el-col :span="6">
               <el-form-item label="耗材编码" prop="code">
@@ -287,13 +319,13 @@
 
           <el-row :gutter="20">
             <el-col :span="6">
-              <el-form-item label="有效期" prop="periodDate">
+              <el-form-item label="注册证有效期" prop="periodDate">
                 <el-date-picker clearable
                                 v-model="form.periodDate"
                                 type="date"
                                 value-format="yyyy-MM-dd"
                                 style="width: 100%"
-                                placeholder="请选择有效期">
+                                placeholder="请选择注册证有效期">
                 </el-date-picker>
               </el-form-item>
             </el-col>
@@ -510,14 +542,71 @@
                 </el-select>
               </el-form-item>
             </el-col>
+            <el-col :span="6">
+              <el-form-item label="是否跟台" prop="isFollow">
+                <el-select v-model="form.isFollow" placeholder="请选择是否跟台" style="width: 100%">
+                  <el-option
+                    v-for="dict in dict.type.is_yes_no"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
           </el-row>
-        </el-form>
+          </el-form>
+        </div>
+        
+        <!-- 图片视图 -->
+        <div v-show="activeTab === 'image'" class="image-tab-content">
+          <div style="text-align: center; padding: 40px 20px;">
+            <div class="material-image-container" style="display: inline-block;">
+              <el-upload
+                ref="imageUpload"
+                :action="imageUploadUrl"
+                :headers="imageUploadHeaders"
+                :show-file-list="false"
+                :on-success="handleImageSuccess"
+                :before-upload="beforeImageUpload"
+                :auto-upload="true"
+                accept="image/*"
+              >
+                <div v-if="form.imageUrl" class="material-image-preview-large" slot="trigger">
+                  <img :src="form.imageUrl" alt="耗材图片" />
+                  <div class="image-overlay">
+                    <i class="el-icon-zoom-in" @click.stop="previewImage"></i>
+                    <i class="el-icon-delete" @click.stop="removeImage"></i>
+                  </div>
+                </div>
+                <div v-else class="material-image-placeholder-large" slot="trigger">
+                  <i class="el-icon-plus"></i>
+                  <div style="font-size: 14px; color: #999; margin-top: 10px;">点击上传图片</div>
+                  <div style="font-size: 12px; color: #ccc; margin-top: 5px;">支持 JPG、PNG 格式，大小不超过 2MB</div>
+                </div>
+              </el-upload>
+            </div>
+          </div>
+        </div>
+        
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
           <el-button type="primary" @click="submitForm">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
+
+    <!-- 图片预览对话框 -->
+    <el-dialog
+      title="图片预览"
+      :visible.sync="imagePreviewVisible"
+      width="800px"
+      append-to-body
+    >
+      <div style="text-align: center;">
+        <img :src="imagePreviewUrl" style="max-width: 100%; max-height: 600px;" alt="预览图片" />
+      </div>
+    </el-dialog>
 
     <!-- 耗材导入对话框 -->
     <div v-if="upload.open" class="local-modal-mask">
@@ -655,7 +744,14 @@ export default {
         headers: { Authorization: "Bearer " + getToken() },
         // 上传的地址
         url: process.env.VUE_APP_BASE_API + "/foundation/material/importData"
-      }
+      },
+      // 图片上传配置
+      imageUploadUrl: process.env.VUE_APP_BASE_API + "/common/upload",
+      imageUploadHeaders: { Authorization: "Bearer " + getToken() },
+      imagePreviewVisible: false,
+      imagePreviewUrl: '',
+      // 当前激活的标签页：'form' 表单视图，'image' 图片视图
+      activeTab: 'form'
     };
   },
   created() {
@@ -691,8 +787,10 @@ export default {
         updateBy: null,
         updateTime: null,
         isGz: null,
+        isFollow: null,
         beginDate: null,
-        endDate: null
+        endDate: null,
+        imageUrl: null
       };
       this.resetForm("form");
     },
@@ -757,6 +855,7 @@ export default {
       this.title = "添加耗材产品";
       this.form.isGz = '2';
       this.form.isUse = '2';
+      this.activeTab = 'form'; // 默认显示表单视图
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -807,6 +906,42 @@ export default {
       this.download('foundation/material/export', {
         ...this.queryParams
       }, `material_${new Date().getTime()}.xlsx`)
+    },
+    /** 图片上传前验证 */
+    beforeImageUpload(file) {
+      const isImage = file.type.indexOf('image/') === 0;
+      const isLt2M = file.size / 1024 / 1024 < 2;
+
+      if (!isImage) {
+        this.$modal.msgError('上传文件只能是图片格式!');
+        return false;
+      }
+      if (!isLt2M) {
+        this.$modal.msgError('上传图片大小不能超过 2MB!');
+        return false;
+      }
+      return true;
+    },
+    /** 图片上传成功 */
+    handleImageSuccess(response, file) {
+      if (response.code === 200) {
+        this.form.imageUrl = response.url || response.data || response.fileName;
+        this.$modal.msgSuccess('图片上传成功');
+      } else {
+        this.$modal.msgError(response.msg || '图片上传失败');
+      }
+    },
+    /** 预览图片 */
+    previewImage() {
+      this.imagePreviewUrl = this.form.imageUrl;
+      this.imagePreviewVisible = true;
+    },
+    /** 删除图片 */
+    removeImage() {
+      this.$modal.confirm('确定要删除这张图片吗？').then(() => {
+        this.form.imageUrl = null;
+        this.$modal.msgSuccess('图片已删除');
+      }).catch(() => {});
     }
   }
 };
@@ -899,6 +1034,164 @@ export default {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+
+/* 图片容器样式 */
+.material-image-container {
+  cursor: pointer;
+  position: relative;
+}
+
+.material-image-preview {
+  width: 120px;
+  height: 120px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  background-color: #f5f7fa;
+}
+
+.material-image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.material-image-preview .image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.material-image-preview:hover .image-overlay {
+  opacity: 1;
+}
+
+.material-image-preview .image-overlay i {
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.material-image-preview .image-overlay i:hover {
+  color: #409eff;
+}
+
+.material-image-placeholder {
+  width: 120px;
+  height: 120px;
+  border: 2px dashed #dcdfe6;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.material-image-placeholder:hover {
+  border-color: #409eff;
+}
+
+.material-image-placeholder i {
+  font-size: 28px;
+  color: #8c939d;
+}
+
+/* 图片视图内容区域 */
+.image-tab-content {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 大尺寸图片预览 */
+.material-image-preview-large {
+  width: 300px;
+  height: 300px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  background-color: #f5f7fa;
+  cursor: pointer;
+}
+
+.material-image-preview-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.material-image-preview-large .image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.material-image-preview-large:hover .image-overlay {
+  opacity: 1;
+}
+
+.material-image-preview-large .image-overlay i {
+  color: #fff;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+}
+
+.material-image-preview-large .image-overlay i:hover {
+  color: #409eff;
+  background-color: rgba(64, 158, 255, 0.5);
+}
+
+/* 大尺寸占位符 */
+.material-image-placeholder-large {
+  width: 300px;
+  height: 300px;
+  border: 2px dashed #dcdfe6;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.material-image-placeholder-large:hover {
+  border-color: #409eff;
+}
+
+.material-image-placeholder-large i {
+  font-size: 48px;
+  color: #8c939d;
 }
 </style>
 

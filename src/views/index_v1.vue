@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="dashboard-editor-container">
 
     <panel-group @handleSetLineChartData="handleSetLineChartData" />

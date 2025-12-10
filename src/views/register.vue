@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="register">
     <el-form ref="registerForm" :model="registerForm" :rules="registerRules" class="register-form">
       <h3 class="title">SPD后台管理系统</h3>

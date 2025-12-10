@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <!-- 查看订单详情弹窗 -->
     <transition name="modal-fade">
@@ -7,7 +7,7 @@
           <div v-if="open" class="view-modal-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="mini" circle @click="close" class="close-btn"></el-button>
+              <el-button icon="el-icon-close" size="small" circle @click="close" class="close-btn"></el-button>
             </div>
             <div class="modal-body">
               <el-form ref="form" :model="form" label-width="100px">

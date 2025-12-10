@@ -1,5 +1,10 @@
-<template>
+﻿<template>
   <div class="app-container">
+    <el-tabs v-model="activeName" type="card">
+      <el-tab-pane label="库存明细查询" name="detail"></el-tab-pane>
+      <el-tab-pane label="库存汇总查询" name="summary"></el-tab-pane>
+    </el-tabs>
+
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
       <el-row :gutter="20">
         <el-col :span="6">
@@ -15,37 +20,8 @@
         </el-col>
 
         <el-col :span="6">
-          <el-form-item label="数量" prop="qty" label-width="100px">
-            <el-input
-              v-model="queryParams.qty"
-              placeholder="请输入数量"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item label="单价" prop="unitPrice" label-width="100px">
-            <el-input
-              v-model="queryParams.unitPrice"
-              placeholder="请输入单价"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="金额" prop="amt" label-width="100px">
-            <el-input
-              v-model="queryParams.amt"
-              placeholder="请输入金额"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
+          <el-form-item label="供应商" prop="supplierId" label-width="100px">
+            <SelectSupplier v-model="queryParams.supplierId" />
           </el-form-item>
         </el-col>
 
@@ -72,12 +48,12 @@
         </el-col>
 
         <el-col :span="6">
-          <el-form-item label="耗材日期" prop="materialDate" label-width="100px">
+          <el-form-item label="生产日期" prop="materialDate" label-width="100px">
             <el-date-picker clearable
                             v-model="queryParams.materialDate"
                             type="date"
                             value-format="yyyy-MM-dd"
-                            placeholder="请选择耗材日期">
+                            placeholder="请选择生产日期">
             </el-date-picker>
           </el-form-item>
         </el-col>
@@ -97,66 +73,44 @@
 
         <el-col :span="6">
           <el-form-item >
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
     </el-form>
 
-    <el-table v-loading="loading" :data="gzDepInventoryList" @selection-change="handleSelectionChange">
-      <el-table-column label="耗材ID" align="center" prop="material.code" width="120"/>
-      <el-table-column label="耗材" align="center" prop="material.name" />
-      <el-table-column label="科室" align="center" prop="department.name" width="120"/>
-      <el-table-column label="数量" align="center" prop="qty" width="120"/>
-      <el-table-column label="单价" align="center" prop="unitPrice" width="120">
-        <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="金额" align="center" prop="amt" width="120">
-        <template slot-scope="scope">
-          <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="批次号" align="center" prop="batchNo" width="200"/>
-      <el-table-column label="批号" align="center" prop="materialNo" width="200"/>
-      <el-table-column label="耗材日期" align="center" prop="materialDate" width="200">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="入库日期" align="center" prop="warehouseDate" width="180">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
+    <GzDepInventoryDetail 
+      v-if="activeName === 'detail'" 
+      :query-params="queryParams"
+      @selection-change="handleSelectionChange"
+    />
+    <GzDepInventorySummary 
+      v-if="activeName === 'summary'" 
+      :query-params="queryParams"
     />
   </div>
 </template>
 
 <script>
-import { listGzDepInventory, getGzDepInventory} from "@/api/gzDepartment/gzDepInventory";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
+import SelectSupplier from "@/components/SelectModel/SelectSupplier";
+import GzDepInventoryDetail from "./components/GzDepInventoryDetail.vue";
+import GzDepInventorySummary from "./components/GzDepInventorySummary.vue";
 
 export default {
   name: "GzDepInventory",
-  components: {SelectMaterial,SelectDepartment},
+  components: {
+    SelectMaterial,
+    SelectDepartment,
+    SelectSupplier,
+    GzDepInventoryDetail,
+    GzDepInventorySummary
+  },
   data() {
     return {
-      // 遮罩层
-      loading: true,
+      activeName: 'detail',
       // 选中数组
       ids: [],
       // 非单个禁用
@@ -165,78 +119,29 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      // 总条数
-      total: 0,
-      // 高值科室库存表格数据
-      gzDepInventoryList: [],
-      // 弹出层标题
-      title: "",
-      // 是否显示弹出层
-      open: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         materialId: null,
         departmentId: null,
-        qty: null,
-        unitPrice: null,
-        amt: null,
+        supplierId: null,
         batchNo: null,
         materialNo: null,
         materialDate: null,
         warehouseDate: null
-      },
-      // 表单参数
-      form: {},
-      // 表单校验
-      rules: {
       }
     };
   },
-  created() {
-    this.getList();
-  },
   methods: {
-    /** 查询高值科室库存列表 */
-    getList() {
-      this.loading = true;
-      listGzDepInventory(this.queryParams).then(response => {
-        this.gzDepInventoryList = response.rows;
-        this.total = response.total;
-        this.loading = false;
-      });
-    },
-    // 取消按钮
-    cancel() {
-      this.open = false;
-      this.reset();
-    },
-    // 表单重置
-    reset() {
-      this.form = {
-        id: null,
-        materialId: null,
-        departmentId: null,
-        qty: null,
-        unitPrice: null,
-        amt: null,
-        batchNo: null,
-        materialNo: null,
-        materialDate: null,
-        warehouseDate: null
-      };
-      this.resetForm("form");
-    },
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
-      this.getList();
     },
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      this.handleQuery();
+      this.queryParams.pageNum = 1;
     },
     // 多选框选中数据
     handleSelectionChange(selection) {

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="equipment-management">
       <!-- 左侧树形菜单 -->
       <div class="sidebar">
@@ -28,9 +28,9 @@
             <el-table-column prop="unit" label="设备单位"></el-table-column>
             <el-table-column label="操作" width="150">
               <template slot-scope="scope">
-                <el-button size="mini" type="text" @click="handleEdit(scope.row)">编辑</el-button>
-                <el-button size="mini" type="text" @click="handleDelete(scope.row)">删除</el-button>
-                <el-button size="mini" type="text" @click="handlePrint(scope.row)">打印</el-button>
+                <el-button size="small" type="text" @click="handleEdit(scope.row)">编辑</el-button>
+                <el-button size="small" type="text" @click="handleDelete(scope.row)">删除</el-button>
+                <el-button size="small" type="text" @click="handlePrint(scope.row)">打印</el-button>
               </template>
             </el-table-column>
           </el-table>

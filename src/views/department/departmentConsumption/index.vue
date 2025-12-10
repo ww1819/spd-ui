@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-tabs v-model="activeName" type="card">
       <el-tab-pane label="科室消耗明细报表" name="detail"></el-tab-pane>

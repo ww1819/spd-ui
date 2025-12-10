@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-table
     :data="data"
     border
@@ -10,7 +10,7 @@
           type="danger"
           icon="el-icon-delete"
           circle
-          size="mini"
+          size="small"
           @click="$emit('remove', $index)"
         />
       </template>

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container home">
     <el-row :gutter="20">
       <el-col :xs="24" :sm="24" :md="12" :lg="8" >

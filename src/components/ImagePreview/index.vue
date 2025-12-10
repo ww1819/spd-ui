@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-image
     :src="`${realSrc}`"
     fit="cover"

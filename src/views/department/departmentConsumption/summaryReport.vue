@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="department-consumption-container">
     <div class="title-section">
       <h3>科室消耗追溯汇总报表</h3>

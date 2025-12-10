@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div ref="rightPanel" class="rightPanel-container">
     <div class="rightPanel-background" />
     <div class="rightPanel">

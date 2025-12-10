@@ -10,7 +10,7 @@ const CompressionPlugin = require('compression-webpack-plugin')
 const name = process.env.VUE_APP_TITLE || '医疗物资管理系统' // 网页标题
 
 // const port = process.env.port || process.env.npm_config_port || 8100 // 端口
-const port = process.env.VUE_APP_PORT || 80 // 端口
+const port = process.env.VUE_APP_PORT || process.env.port || process.env.npm_config_port || 8100 // 端口
 
 // vue.config.js 配置说明
 //官方vue.config.js 参考文档 https://cli.vuejs.org/zh/config/#css-loaderoptions
@@ -38,9 +38,17 @@ module.exports = {
       [process.env.VUE_APP_BASE_API]: {
         target: `http://localhost:8080`,
         changeOrigin: true,
+        ws: true, // 启用websocket
+        secure: false, // 如果是https接口，需要配置这个参数
         pathRewrite: {
           ['^' + process.env.VUE_APP_BASE_API]: ''
-        }
+        },
+        // 代理错误处理
+        onError: (err, req, res) => {
+          console.error('代理错误:', err.message);
+        },
+        // 代理超时设置
+        timeout: 10000
       }
     },
     disableHostCheck: true

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <i-frame :src="url" />
 </template>
 <script>

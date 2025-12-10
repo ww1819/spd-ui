@@ -1,11 +1,11 @@
-<template>
+﻿<template>
   <el-select v-model="user" filterable
              clearable
              placeholder="请选择操作人">
     <el-option
       v-for="item in userOptions"
       :key="item.userId"
-      :label="item.userName"
+      :label="item.nickName || item.userName"
       :value="item.userId"
     ></el-option>
   </el-select>

@@ -1,9 +1,9 @@
-<template>
+﻿<template>
 <el-tag
   :type="computedType"
   :class="computedClass"
   effect="dark"
-  size="mini"
+  size="small"
   v-if="showTooltip"
 >
   <i :class="iconClass" class="status-icon"></i>
@@ -24,7 +24,7 @@
   :type="computedType"
   :class="computedClass"
   effect="dark"
-  size="mini">
+  size="small">
   <i :class="iconClass" class="status-icon"></i>
   {{ text }}
 </el-tag>

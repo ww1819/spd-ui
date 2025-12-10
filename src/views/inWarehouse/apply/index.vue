@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -14,12 +14,12 @@
           </el-form-item>
           <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
             <div class="query-select-wrapper">
-              <SelectSupplier v-model="queryParams.supplierId"/>
+            <SelectSupplier v-model="queryParams.supplierId"/>
             </div>
           </el-form-item>
           <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId"/>
+            <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
             </div>
           </el-form-item>
         </el-col>
@@ -29,18 +29,18 @@
         <el-col :span="12">
           <el-form-item label="制单日期" style="display: flex; align-items: center;">
             <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+                            v-model="queryParams.beginDate"
+                            type="date"
+                            value-format="yyyy-MM-dd"
               placeholder="起始日期"
               clearable
               style="width: 180px; margin-right: 8px;"
             />
             <span style="margin: 0 4px;">至</span>
             <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+                            v-model="queryParams.endDate"
+                            type="date"
+                            value-format="yyyy-MM-dd"
               placeholder="截止日期"
               clearable
               style="width: 180px; margin-left: 8px;"
@@ -69,7 +69,7 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="mini"
+          size="small"
           @click="handleAdd"
           v-hasPermi="['inWarehouse:apply:add']"
         >新增</el-button>
@@ -79,7 +79,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="mini"
+          size="small"
           @click="handleExport"
           v-hasPermi="['inWarehouse:apply:export']"
         >导出</el-button>
@@ -88,14 +88,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="mini"
+          size="small"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="mini"
+          size="small"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -116,11 +116,6 @@
         </template>
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
         <template slot-scope="scope">
@@ -135,12 +130,17 @@
       </el-table-column>
 
       <el-table-column label="制单人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
+      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="引用单号" align="center" prop="refBillNo" width="180" show-overflow-tooltip resizable/>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" resizable>
         <template slot-scope="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
@@ -148,7 +148,7 @@
             v-if="scope.row.billStatus != 2"
           >修改</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
@@ -156,7 +156,7 @@
             v-if="scope.row.billStatus != 2"
           >删除</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-view"
             @click="handleView(scope.row)"
@@ -181,19 +181,24 @@
           <div v-if="open" class="local-modal-content">
         <div class="modal-header">
           <div class="modal-title">{{ title }}</div>
-          <el-button icon="el-icon-close" size="mini" circle @click="cancel" class="close-btn"></el-button>
+          <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
         </div>
         <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
         <el-row :gutter="8">
           <el-col :span="4">
+            <el-form-item label="单据号" prop="billNo">
+              <el-input v-model="form.billNo" :disabled="true" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
             <el-form-item label="供应商" prop="supplerId">
-              <SelectSupplier v-model="form.supplerId"/>
+              <SelectSupplier v-model="form.supplerId" :value2="stkIoBillEntryList.length > 0"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId"/>
+              <SelectWarehouse v-model="form.warehouseId" :value2="stkIoBillEntryList.length > 0" excludeWarehouseType="高值"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -206,14 +211,14 @@
               <SelectUser v-model="form.createrName"/>
             </el-form-item>
           </el-col>
+        </el-row>
+
+        <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="采购员" prop="proPerson">
               <SelectUser v-model="form.proPerson"/>
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
               <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
@@ -234,6 +239,9 @@
               <el-input v-model="form.invoiceAmount" placeholder="请输入发票金额" />
             </el-form-item>
           </el-col>
+        </el-row>
+
+        <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="发票时间" prop="invoiceTime">
               <el-date-picker clearable
@@ -243,14 +251,6 @@
                               style="width: 100%"
                               placeholder="请输入发票时间">
               </el-date-picker>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="8">
-          <el-col :span="4">
-            <el-form-item label="单据号" prop="billNo">
-              <el-input v-model="form.billNo" :disabled="true" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -268,14 +268,14 @@
 
           <div v-show="action">
             <el-col :span="1.5">
-  <!--            <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAddStkIoBillEntry">添加</el-button>-->
-              <el-button type="primary" icon="el-icon-plus" size="mini" @click="checkMaterialBtn">添加</el-button>
+  <!--            <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddStkIoBillEntry">添加</el-button>-->
+              <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="outline" icon="el-icon-ref" size="mini" @click="refDingdan">引用采购订单</el-button>
+              <el-button type="outline" icon="el-icon-ref" size="small" @click="refDingdan">引用采购订单</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteStkIoBillEntry">删除</el-button>
+              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
           </div>
 
@@ -289,7 +289,7 @@
                    height="48vh"
         >
           <el-table-column type="selection" width="60" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
+          <el-table-column label="序号" align="left" prop="index" width="50" show-overflow-tooltip resizable/>
           <!-- 耗材列隐藏 -->
           <!--<el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -297,11 +297,11 @@
             </template>
           </el-table-column>-->
 
-          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="名称" align="left" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="left" prop="material.speci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="left" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="单位" align="left" prop="material.fdUnit.unitName" width="90" show-overflow-tooltip resizable/>
+          <el-table-column label="数量" prop="qty" width="60" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
               <!--                        @input="qtyChange(scope.row)"-->
@@ -319,9 +319,11 @@
           </el-table-column>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number'
+              <el-input v-model="scope.row.unitPrice" 
+                        type='number'
                         :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="请输入价格" />
+                        @input="priceChange(scope.row)"
+                        placeholder="请输入价格" />
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
@@ -574,12 +576,16 @@ export default {
       });
     },
     checkMaterialBtn() {
+      if(!this.form.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
       if(!this.form.supplerId) {
         this.$message({ message: '请先选择供应商', type: 'warning' })
         return
       }
 
-      //打开“弹窗组件”
+      //打开"弹窗组件"
       this.DialogComponentShow = true
       this.supplierValue = this.form.supplerId;
     },
@@ -596,7 +602,8 @@ export default {
 
         obj.materialId = item.id;
         obj.qty = "";
-        obj.unitPrice = item.price || item.unitPrice;
+        // 设置价格：优先使用item.price
+        obj.unitPrice = item.price || item.unitPrice || 0;
         obj.amt = "";
         obj.batchNo = "";
         obj.batchNumber = "";
@@ -1125,7 +1132,7 @@ export default {
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor.el-input {
+.local-modal-content .modal-form-compact image.png.el-date-editor.el-input {
   height: 28px !important;
 }
 

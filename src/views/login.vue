@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="login">
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form">
       <h3 class="title"></h3><!-- SPD后台管理系统 -->

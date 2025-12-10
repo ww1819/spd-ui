@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -19,7 +19,7 @@
           </el-form-item>
           <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId"/>
+              <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
             </div>
           </el-form-item>
         </el-col>
@@ -68,14 +68,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="mini"
+          size="small"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="mini"
+          size="small"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -119,13 +119,13 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" resizable>
         <template slot-scope="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             @click="handlePrint(scope.row,true)"
             v-if="scope.row.billStatus == 2"
           >打印</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-view"
             @click="handleView(scope.row)"
@@ -170,7 +170,7 @@
           <div v-if="open" class="local-modal-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="mini" circle @click="cancel" class="close-btn"></el-button>
+              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
@@ -182,7 +182,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :disabled="true"/>
+              <SelectWarehouse v-model="form.warehouseId" :disabled="true" excludeWarehouseType="高值"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -259,10 +259,10 @@
 
           <div v-show="action">
             <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-plus" size="mini" @click="checkMaterialBtn">添加</el-button>
+              <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteStkIoBillEntry">删除</el-button>
+              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
           </div>
 

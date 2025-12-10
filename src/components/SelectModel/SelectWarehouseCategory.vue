@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-select v-model="warehouseCategory" filterable
              clearable
              placeholder="请选择库房分类"

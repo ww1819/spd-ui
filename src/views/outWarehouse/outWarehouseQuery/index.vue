@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-tabs v-model="activeName" type="card">
       <el-tab-pane label="出/退库明细表" name="first"></el-tab-pane>

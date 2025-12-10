@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
 
@@ -36,51 +36,61 @@
             </el-select>
           </el-form-item>
         </el-col>
-
-        <el-col :span="6" label-width="100px">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-            <el-button
-              type="success"
-              icon="el-icon-check"
-              size="mini"
-              @click="handleBatchAudit"
-              :disabled="multiple"
-            >审核</el-button>
-          </el-form-item>
-        </el-col>
-
       </el-row>
 
-      <el-row>
+      <el-row :gutter="20">
         <el-col :span="6">
-          <div style="display: inline">
-            <span>起</span>
-            <el-date-picker clearable
-                            v-model="queryParams.beginDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="请选择起始日期"
-                            style="width: 150px"
-            >
-            </el-date-picker>
-            <span>止</span>
-            <el-date-picker clearable
-                            v-model="queryParams.endDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="请选择截止日期"
-                            style="width: 150px"
-            >
-            </el-date-picker>
-          </div>
+          <el-form-item label="制单日期" prop="beginDate" label-width="100px">
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="起始日期"
+              clearable
+              style="width: 150px; margin-right: 8px;"
+            />
+            <span style="margin: 0 4px;">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="截止日期"
+              clearable
+              style="width: 150px; margin-left: 8px;"
+            />
+          </el-form-item>
         </el-col>
       </el-row>
 
     </el-form>
 
     <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-download"
+          size="small"
+          @click="handleExport"
+          v-hasPermi="['caigou:publish:export']"
+        >导出</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="success"
+          plain
+          icon="el-icon-check"
+          size="small"
+          @click="handleBatchAudit"
+          :disabled="multiple"
+        >审核</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -90,6 +100,11 @@
               height="54vh"
               border>
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="订单单号" align="center" prop="orderNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -98,7 +113,7 @@
         </template>
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="制单日期" align="center" prop="orderDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="订单日期" align="center" prop="orderDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
         </template>
@@ -110,7 +125,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="orderStatus" show-overflow-tooltip resizable>
+      <el-table-column label="订单状态" align="center" prop="orderStatus" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
         </template>
@@ -121,17 +136,30 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作人" align="center" prop="createBy" show-overflow-tooltip resizable />
+      <el-table-column label="审核人" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.auditBy">{{ getAuditorName(scope.row) }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="计划单号" align="center" prop="planNo" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.planNo">{{ scope.row.planNo }}</span>
+          <span v-else-if="scope.row.remark && scope.row.remark.includes('从采购计划')">
+            {{ extractPlanNoFromRemark(scope.row.remark) }}
+          </span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" show-overflow-tooltip resizable>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150" fixed="right" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-view"
             @click="handleView(scope.row)"
           >查看</el-button>
-
         </template>
       </el-table-column>
     </el-table>
@@ -151,7 +179,7 @@
           <div v-if="open" class="local-modal-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="mini" circle @click="cancel" class="close-btn"></el-button>
+              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="80px">
 
@@ -280,6 +308,7 @@
 
 <script>
 import { listDingdan, getDingdan, auditDingdan } from "@/api/caigou/dingdan";
+import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier.vue';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial.vue';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse.vue';
@@ -310,6 +339,8 @@ export default {
       orderList: [],
       // 订单明细表格数据
       purchaseOrderEntryList: [],
+      // 用户列表
+      userOptions: [],
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -337,6 +368,7 @@ export default {
   },
   created() {
     this.getList();
+    this.getUserList();
   },
   methods: {
     getSummaries(param) {
@@ -535,6 +567,60 @@ export default {
     /** 复选框选中数据 */
     handlePurchaseOrderEntrySelectionChange(selection) {
       this.checkedPurchaseOrderEntry = selection.map(item => item.index)
+    },
+    /** 获取用户列表 */
+    getUserList() {
+      listUserAll().then(response => {
+        this.userOptions = response || [];
+      });
+    },
+    /** 获取审核人姓名 */
+    getAuditorName(row) {
+      if (row.auditBy) {
+        // 先尝试通过userId查找用户（支持数字和字符串类型）
+        const userById = this.userOptions.find(u => {
+          return u.userId == row.auditBy || 
+                 u.userId === row.auditBy || 
+                 String(u.userId) === String(row.auditBy) ||
+                 u.userId === Number(row.auditBy);
+        });
+        if (userById) {
+          return userById.nickName || userById.userName;
+        }
+        // 再尝试通过userName查找用户
+        const userByName = this.userOptions.find(u => u.userName === row.auditBy);
+        if (userByName) {
+          return userByName.nickName || userByName.userName;
+        }
+        // 再尝试通过nickName查找用户
+        const userByNickName = this.userOptions.find(u => u.nickName === row.auditBy);
+        if (userByNickName) {
+          return userByNickName.nickName || userByNickName.userName;
+        }
+        // 如果auditBy不是纯数字，可能是姓名，直接返回
+        if (!/^\d+$/.test(String(row.auditBy))) {
+          return row.auditBy;
+        }
+        // 如果auditBy是纯数字但找不到用户，返回"--"而不是空字符串
+        return '--';
+      }
+      return '--';
+    },
+    // 从备注中提取计划单号
+    extractPlanNoFromRemark(remark) {
+      if (!remark) return '';
+      // 备注格式：从采购计划JH2025120700002生成
+      const match = remark.match(/从采购计划([A-Z0-9]+)/);
+      if (match && match[1]) {
+        return match[1];
+      }
+      return '';
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('caigou/dingdan/export', {
+        ...this.queryParams
+      }, `订单_${new Date().getTime()}.xlsx`)
     }
   }
 };

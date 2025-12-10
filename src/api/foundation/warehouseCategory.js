@@ -18,6 +18,14 @@ export function listWarehouseCategoryAll(query) {
   })
 }
 
+// 查询库房分类树形列表
+export function treeselect() {
+  return request({
+    url: '/foundation/warehouseCategory/treeselect',
+    method: 'get'
+  })
+}
+
 // 查询库房分类详细
 export function getWarehouseCategory(warehouseCategoryId) {
   return request({

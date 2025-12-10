@@ -1,4 +1,4 @@
-<script>
+﻿<script>
 import draggable from 'vuedraggable'
 import render from '@/utils/generator/render'
 

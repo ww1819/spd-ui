@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-card>
     <el-tabs v-model="activeName">
       <el-tab-pane label="基本信息" name="basic">

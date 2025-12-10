@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-row :gutter="10">
       <el-col :span="8">
@@ -48,7 +48,7 @@
             >
               <template slot-scope="scope">
                 <el-button
-                  size="mini"
+                  size="small"
                   type="text"
                   icon="el-icon-delete"
                   @click="handleClearCacheName(scope.row)"
@@ -98,7 +98,7 @@
             >
               <template slot-scope="scope">
                 <el-button
-                  size="mini"
+                  size="small"
                   type="text"
                   icon="el-icon-delete"
                   @click="handleClearCacheKey(scope.row)"

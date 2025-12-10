@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
 
@@ -34,8 +34,8 @@
 
         <el-col :span="6" label-width="100px">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -131,7 +131,7 @@
           <div v-if="open" class="local-modal-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="mini" circle @click="cancel" class="close-btn"></el-button>
+              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-row>
@@ -194,11 +194,11 @@
 
           <div v-show="action">
             <el-col :span="1.5">
-<!--              <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAddBasApplyEntry">添加</el-button>-->
-              <el-button type="primary" icon="el-icon-plus" size="mini" @click="nameBtn">添加</el-button>
+<!--              <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddBasApplyEntry">添加</el-button>-->
+              <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeleteBasApplyEntry">删除</el-button>
+              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteBasApplyEntry">删除</el-button>
             </el-col>
           </div>
 

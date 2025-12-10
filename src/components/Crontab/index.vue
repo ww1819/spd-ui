@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <el-tabs type="border-card">
       <el-tab-pane label="秒" v-if="shouldHide('second')">

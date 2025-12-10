@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
       <el-row :gutter="20">
@@ -24,8 +24,8 @@
         </el-col>
         <el-col :span="6">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -37,7 +37,7 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="mini"
+          size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:unit:add']"
         >新增</el-button>
@@ -47,7 +47,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="mini"
+          size="small"
           @click="handleExport"
           v-hasPermi="['foundation:unit:export']"
         >导出</el-button>
@@ -58,7 +58,6 @@
     <el-table v-loading="loading" :data="unitList" :row-class-name="unitIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="50"/>
-      <el-table-column label="编号" align="center" prop="unitId" width="50"/>
       <el-table-column label="单位编码" align="center" prop="unitCode" width="120"/>
       <el-table-column label="单位名称" align="center" prop="unitName" width="180"/>
       <el-table-column label="创建日期" align="center" prop="createTime" width="100">
@@ -66,17 +65,23 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="状态" align="center" prop="delFlag" width="100">
+        <template slot-scope="scope">
+          <span v-if="scope.row.delFlag === 0 || scope.row.delFlag === null">启用</span>
+          <span v-else style="color: #f56c6c;">停用</span>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
         <template slot-scope="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:unit:edit']"
           >修改</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
@@ -98,16 +103,27 @@
     <div v-if="open" class="local-modal-mask">
       <div class="local-modal-content">
         <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-        <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+        <el-form ref="form" :model="form" :rules="rules" label-width="120px">
           <el-row :gutter="20">
-            <el-col :span="6">
-              <el-form-item label="单位编码" prop="unitCode">
-                <el-input v-model="form.unitCode" placeholder="请输入单位编码" />
+            <el-col :span="12">
+              <el-form-item label="单位编码">
+                <el-input v-model="form.unitCode" placeholder="留空则自动生成D开头的编码" style="width: 100%" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="12">
               <el-form-item label="单位名称" prop="unitName">
-                <el-input v-model="form.unitName" placeholder="请输入单位名称" />
+                <el-input v-model="form.unitName" placeholder="请输入单位名称" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="是否">
+                <el-switch
+                  v-model="form.delFlag"
+                  :active-value="0"
+                  :inactive-value="1"
+                ></el-switch>
               </el-form-item>
             </el-col>
           </el-row>
@@ -157,9 +173,6 @@ export default {
       form: {},
       // 表单校验
       rules: {
-        unitCode: [
-          { required: true, message: "单位编码不能为空", trigger: "blur" }
-        ],
         unitName: [
           { required: true, message: "单位名称不能为空", trigger: "blur" }
         ],
@@ -190,7 +203,7 @@ export default {
         unitId: null,
         unitCode: null,
         unitName: null,
-        delFlag: null,
+        delFlag: 0, // 默认启用
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -234,6 +247,10 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          // 如果单位编码为空字符串，设置为null以便后端自动生成
+          if (this.form.unitCode === "") {
+            this.form.unitCode = null;
+          }
           if (this.form.unitId != null) {
             updateUnit(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -291,7 +308,8 @@ export default {
   background-color: #fff;
   padding: 24px;
   border-radius: 6px;
-  min-width: 600px;
+  min-width: 900px;
+  width: 900px;
   max-width: 90vw;
   max-height: 90vh;
   overflow: auto;

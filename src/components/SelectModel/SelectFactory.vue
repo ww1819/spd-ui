@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-select v-model="factory" filterable
              clearable
              placeholder="请选择生产厂家"

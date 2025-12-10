@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="inspection-platform">
       <!-- 顶部搜索栏 -->
       <div class="search-bar">
@@ -53,13 +53,13 @@
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
               <template slot-scope="scope">
                 <el-button
-                  size="mini"
+                  size="small"
                   type="text"
                   icon="el-icon-edit"
                   @click="handleEdit(scope.row)"
                 >修改</el-button>
                 <el-button
-                  size="mini"
+                  size="small"
                   type="text"
                   icon="el-icon-delete"
                   @click="handleDelete(scope.row)"
@@ -84,13 +84,13 @@
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
               <template slot-scope="scope">
                 <el-button
-                  size="mini"
+                  size="small"
                   type="text"
                   icon="el-icon-edit"
                   @click="handleEditEquipment(scope.row)"
                 >修改</el-button>
                 <el-button
-                  size="mini"
+                  size="small"
                   type="text"
                   icon="el-icon-delete"
                   @click="handleDeleteEquipment(scope.row)"

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="material-use-record">
     <div class="search-bar">
       <el-form :inline="true" :model="searchForm" class="demo-form-inline">

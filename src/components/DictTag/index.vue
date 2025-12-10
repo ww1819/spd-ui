@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <template v-for="(item, index) in options">
       <template v-if="values.includes(item.value)">

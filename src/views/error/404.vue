@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="wscn-http404-container">
     <div class="wscn-http404">
       <div class="pic-404">

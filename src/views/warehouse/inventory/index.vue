@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
 
     <el-tabs v-model="activeName" type="card">

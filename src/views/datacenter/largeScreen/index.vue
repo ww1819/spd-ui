@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div id="index" ref="appRef">
     <div class="bg">
       <dv-loading v-show="loading">Loading...</dv-loading>

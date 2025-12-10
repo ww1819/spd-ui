@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="warehouse-transfer-apply">
     <!-- 错误提示 -->
     <el-alert
@@ -134,7 +134,7 @@
           <div class="detail-table-container">
             <el-button
               type="primary"
-              size="mini"
+              size="small"
               @click="addDetail"
               v-if="dialogType !== 'view'"
               :loading="dialogLoading"
@@ -229,7 +229,7 @@
                   <el-button
                     type="danger"
                     icon="el-icon-delete"
-                    size="mini"
+                    size="small"
                     @click="deleteDetail(scope.$index)"
                     :disabled="dialogLoading"
                   ></el-button>

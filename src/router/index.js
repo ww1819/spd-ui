@@ -189,6 +189,12 @@ export const dynamicRoutes = [
         meta: { title: '采购计划', icon: 'list' }
       },
       {
+        path: 'jihuaAudit',
+        component: () => import('@/views/caigou/jihua/audit/index'),
+        name: 'CaigouJihuaAudit',
+        meta: { title: '采购计划审核', icon: 'audit' }
+      },
+      {
         path: 'dingdan',
         component: () => import('@/views/caigou/dingdan/index'),
         name: 'CaigouDingdan',
@@ -199,6 +205,12 @@ export const dynamicRoutes = [
         component: () => import('@/views/caigou/shenhe/index'),
         name: 'CaigouShenhe',
         meta: { title: '订单审核', icon: 'audit' }
+      },
+      {
+        path: 'publish',
+        component: () => import('@/views/caigou/publish/index'),
+        name: 'CaigouPublish',
+        meta: { title: '订单发布', icon: 'list' }
       }
     ]
   },
@@ -232,6 +244,18 @@ export const dynamicRoutes = [
         component: () => import('@/views/gzOrder/goodsAudit/index'),
         name: 'GzOrderGoodsAudit',
         meta: { title: '退货审核', icon: 'audit' }
+      },
+      {
+        path: 'refund',
+        component: () => import('@/views/gzOrder/refund/index'),
+        name: 'GzOrderRefund',
+        meta: { title: '备货退货', icon: 'international' }
+      },
+      {
+        path: 'follow',
+        component: () => import('@/views/gzOrder/follow/index'),
+        name: 'GzOrderFollow',
+        meta: { title: '跟台管理', icon: 'list' }
       }
     ]
   },

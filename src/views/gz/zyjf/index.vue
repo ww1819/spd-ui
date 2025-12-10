@@ -1,5 +1,5 @@
-<template>
-  <div class="app-container medical-charge">
+﻿<template>
+  <div class="app-container medical-charge fixed-page">
     <!-- 患者信息区 -->
     <el-card class="patient-info-card">
       <div class="patient-header">
@@ -40,13 +40,13 @@
               <el-input v-model="patientInfo.ward" disabled />
             </el-form-item>
           </el-col>
+          <el-col :span="4">
+            <el-form-item label="申请科室：">
+              <SelectDepartment v-model="patientInfo.sqks" />
+            </el-form-item>
+          </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="4">
-          <el-form-item label="申请科室：">
-            <SelectDepartment v-model="patientInfo.sqks" />
-          </el-form-item>
-        </el-col>
           <el-col :span="4">
             <el-form-item label="住院日期：">
               <el-input v-model="patientInfo.zyrq" disabled />
@@ -67,35 +67,33 @@
               <el-input v-model="patientInfo.bch" disabled />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
           <el-col :span="4">
-          <el-form-item label="执行科室：" prop="zxks">
-            <SelectDepartment v-model="patientInfo.zxks" />
-          </el-form-item>
-        </el-col>
+            <el-form-item label="执行科室：" prop="zxks">
+              <SelectDepartment v-model="patientInfo.zxks" />
+            </el-form-item>
+          </el-col>
           <el-col :span="4">
             <el-form-item label="主刀医生：">
               <el-input v-model="patientInfo.zdys" disabled />
             </el-form-item>
           </el-col>
+        </el-row>
+        <el-row :gutter="20">
           <el-col :span="4">
             <el-form-item label="手术日期：">
               <el-input v-model="patientInfo.ssrq" disabled />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="4">
             <el-form-item label="手术名称：">
-              <el-input v-model="patientInfo.lxdz" disabled />
+              <el-input v-model="patientInfo.ssmc" disabled />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
           <el-col :span="4">
-          <el-form-item label="入院诊断：">
-            <el-input v-model="patientInfo.ryzd" disabled />
-          </el-form-item>
-        </el-col>
+            <el-form-item label="入院诊断：">
+              <el-input v-model="patientInfo.ryzd" disabled />
+            </el-form-item>
+          </el-col>
           <el-col :span="4">
             <el-form-item label="手术ID：">
               <el-input v-model="patientInfo.ssid" disabled />
@@ -106,7 +104,7 @@
               <el-input v-model="patientInfo.ssbm" disabled />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="4">
             <el-form-item label="单号：">
               <el-input v-model="patientInfo.dh" disabled />
             </el-form-item>
@@ -148,6 +146,7 @@
         :data="scannedMaterials" 
         border
         highlight-current-row
+        style="width: 100%"
       >
         <el-table-column label="操作" width="80">
           <template slot-scope="{ $index }">
@@ -155,7 +154,7 @@
               type="danger"
               icon="el-icon-delete"
               circle
-              size="mini"
+              size="small"
               @click="removeMaterial($index)"
             />
           </template>
@@ -235,7 +234,7 @@ export default {
       return this.scannedMaterials.length
     },
     totalAmount() {
-      return this.scannedMaterials.reduce((sum, item) => sum + item.price, 0)
+      return this.scannedMaterials.reduce((sum, item) => sum + (item.price || 0), 0)
     },
     canSubmit() {
       return (
@@ -384,14 +383,29 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.fixed-page {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
 .medical-charge {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  
   .patient-info-card {
-    margin-bottom: 20px;
+    flex-shrink: 0;
+    margin-bottom: 15px;
     
     .patient-header {
       display: flex;
-      // align-items: center;
-      // justify-content: center;
       margin-bottom: 15px;
       
       .title {
@@ -402,7 +416,8 @@ export default {
   }
 
   .scan-area {
-    margin-bottom: 20px;
+    flex-shrink: 0;
+    margin-bottom: 15px;
     
     .scan-header {
       display: flex;
@@ -413,11 +428,18 @@ export default {
   }
 
   .material-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    
     .list-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 15px;
+      flex-shrink: 0;
       
       .total-info {
         display: flex;
@@ -432,11 +454,32 @@ export default {
         }
       }
     }
+    
+    ::v-deep .el-card__body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    
+    ::v-deep .el-table {
+      flex: 1;
+      overflow: auto;
+    }
+    
+    ::v-deep .el-table__body-wrapper {
+      max-height: calc(100vh - 550px);
+      overflow-y: auto;
+    }
   }
 
   .action-buttons {
-    margin-top: 20px;
+    flex-shrink: 0;
+    margin-top: 15px;
     text-align: center;
+    padding: 10px 0;
   }
 }
 </style>

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="inspection-platform">
       <!-- 顶部搜索栏 -->
       <div class="search-bar">

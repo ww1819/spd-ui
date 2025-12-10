@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-row :gutter="20">
       <!-- 左侧固定高度树形结构 -->
@@ -9,6 +9,7 @@
             :props="treeProps"
             node-key="financeCategoryId"
             highlight-current
+            :default-expand-all="true"
             style="height: calc(100vh - 180px); overflow-y: auto"
           >
             <span slot-scope="{ node }" class="custom-tree-node">
@@ -46,8 +47,8 @@
             </el-col>
             <el-col :span="6">
               <el-form-item>
-                <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-                <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+                <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
               </el-form-item>
             </el-col>
           </el-row>
@@ -60,7 +61,7 @@
               type="primary"
               plain
               icon="el-icon-plus"
-              size="mini"
+              size="small"
               @click="handleAdd"
               v-hasPermi="['foundation:financeCategory:add']"
             >新增</el-button>
@@ -70,7 +71,7 @@
               type="success"
               plain
               icon="el-icon-edit"
-              size="mini"
+              size="small"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:financeCategory:edit']"
@@ -81,7 +82,7 @@
               type="danger"
               plain
               icon="el-icon-delete"
-              size="mini"
+              size="small"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:financeCategory:remove']"
@@ -92,7 +93,7 @@
               type="warning"
               plain
               icon="el-icon-download"
-              size="mini"
+              size="small"
               @click="handleExport"
               v-hasPermi="['foundation:financeCategory:export']"
             >导出</el-button>
@@ -104,7 +105,6 @@
         <el-table v-loading="loading" :data="financeCategoryList" :row-class-name="financeCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 280px)">
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50"/>
-          <el-table-column label="编号" align="center" prop="financeCategoryId" width="50"/>
           <el-table-column label="财务类别编码" align="center" prop="financeCategoryCode" width="120"/>
           <el-table-column label="财务类别名称" align="center" prop="financeCategoryName" width="180"/>
           <el-table-column label="财务类别简码" align="center" prop="referredCode" width="120"/>
@@ -121,14 +121,14 @@
           <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
             <template slot-scope="scope">
               <el-button
-                size="mini"
+                size="small"
                 type="text"
                 icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
                 v-hasPermi="['foundation:financeCategory:edit']"
               >修改</el-button>
               <el-button
-                size="mini"
+                size="small"
                 type="text"
                 icon="el-icon-delete"
                 @click="handleDelete(scope.row)"

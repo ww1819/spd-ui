@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-dialog title="库存明细" :visible.sync="show" append-to-body width="1600px" :before-close="handleClose">
       <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
@@ -32,8 +32,8 @@
         <el-row :gutter="24">
           <el-col :span="6">
             <el-form-item>
-              <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-              <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+              <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-col>
         </el-row>

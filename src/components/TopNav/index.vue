@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-menu
     :default-active="activeMenu"
     mode="horizontal"

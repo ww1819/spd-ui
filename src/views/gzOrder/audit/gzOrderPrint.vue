@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="gz-order-print" ref="receiptOrderPrintRef" hidden="hidden">
     <div style="font-size: 22px;text-align: center;">高值入库单</div>
     <div class="summary">

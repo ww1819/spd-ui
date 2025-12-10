@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
 
@@ -39,8 +39,8 @@
 
         <el-col :span="6" label-width="100px">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
 
@@ -79,7 +79,7 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="mini"
+          size="small"
           @click="handleAdd"
           v-hasPermi="['caigou:dingdan:add']"
         >新增</el-button>
@@ -89,7 +89,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="mini"
+          size="small"
           @click="handleExport"
           v-hasPermi="['caigou:dingdan:export']"
         >导出</el-button>
@@ -135,30 +135,43 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作人" align="center" prop="createBy" />
+      <el-table-column label="审核人" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.auditBy">{{ getAuditorName(scope.row) }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="计划单号" align="center" prop="planNo" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.planNo">{{ scope.row.planNo }}</span>
+          <span v-else-if="scope.row.remark && scope.row.remark.includes('从采购计划')">
+            {{ extractPlanNoFromRemark(scope.row.remark) }}
+          </span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right">
         <template slot-scope="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-view"
             @click="handleView(scope.row)"
           >查看</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
-            v-if="scope.row.orderStatus == '0'"
             v-hasPermi="['caigou:dingdan:edit']"
           >修改</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
-            v-if="scope.row.orderStatus == '0'"
+            v-if="scope.row.orderStatus == '0' || scope.row.orderStatus == 0"
             v-hasPermi="['caigou:dingdan:remove']"
           >删除</el-button>
         </template>
@@ -180,7 +193,7 @@
           <div v-if="open" class="local-modal-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="mini" circle @click="cancel" class="close-btn"></el-button>
+              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="80px">
 
@@ -255,11 +268,11 @@
 
           <div v-show="action">
             <el-col :span="1.5">
-  <!--            <el-button type="primary" icon="el-icon-plus" size="mini" @click="handleAddStkIoBillEntry">添加</el-button>-->
-              <el-button type="primary" icon="el-icon-plus" size="mini" @click="checkMaterialBtn">添加</el-button>
+  <!--            <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddStkIoBillEntry">添加</el-button>-->
+              <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="mini" @click="handleDeletePurchaseOrderEntry">删除</el-button>
+              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeletePurchaseOrderEntry">删除</el-button>
             </el-col>
           </div>
 
@@ -341,6 +354,7 @@
 
 <script>
 import { listDingdan, getDingdan, delDingdan, addDingdan, updateDingdan } from "@/api/caigou/dingdan";
+import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -387,6 +401,8 @@ export default {
       stkMaterialList: [],
       // 订单明细表格数据
       purchaseOrderEntryList: [],
+      // 用户列表
+      userOptions: [],
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -428,6 +444,7 @@ export default {
   },
   created() {
     this.getList();
+    this.getUserList();
   },
   methods: {
     getSummaries(param) {
@@ -556,6 +573,54 @@ export default {
     cancel() {
       this.open = false;
       this.reset();
+    },
+    // 从备注中提取计划单号
+    extractPlanNoFromRemark(remark) {
+      if (!remark) return '';
+      // 备注格式：从采购计划JH2025120700002生成
+      const match = remark.match(/从采购计划([A-Z0-9]+)/);
+      if (match && match[1]) {
+        return match[1];
+      }
+      return '';
+    },
+    /** 获取用户列表 */
+    getUserList() {
+      listUserAll().then(response => {
+        this.userOptions = response || [];
+      });
+    },
+    /** 获取审核人姓名 */
+    getAuditorName(row) {
+      if (row.auditBy) {
+        // 先尝试通过userId查找用户（支持数字和字符串类型）
+        const userById = this.userOptions.find(u => {
+          return u.userId == row.auditBy || 
+                 u.userId === row.auditBy || 
+                 String(u.userId) === String(row.auditBy) ||
+                 u.userId === Number(row.auditBy);
+        });
+        if (userById) {
+          return userById.nickName || userById.userName;
+        }
+        // 再尝试通过userName查找用户
+        const userByName = this.userOptions.find(u => u.userName === row.auditBy);
+        if (userByName) {
+          return userByName.nickName || userByName.userName;
+        }
+        // 再尝试通过nickName查找用户
+        const userByNickName = this.userOptions.find(u => u.nickName === row.auditBy);
+        if (userByNickName) {
+          return userByNickName.nickName || userByNickName.userName;
+        }
+        // 如果auditBy不是纯数字，可能是姓名，直接返回
+        if (!/^\d+$/.test(String(row.auditBy))) {
+          return row.auditBy;
+        }
+        // 如果auditBy是纯数字但找不到用户，返回"--"而不是空字符串
+        return '--';
+      }
+      return '--';
     },
     // 表单重置
     reset() {

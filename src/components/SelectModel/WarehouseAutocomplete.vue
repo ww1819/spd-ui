@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-autocomplete
     v-model="warehouseName"
     :fetch-suggestions="querySearchAsync"

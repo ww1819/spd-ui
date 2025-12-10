@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="inventory-management">
     <!-- 左侧树形菜单 -->
     <div class="sidebar">

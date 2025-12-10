@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="container">
     <div class="left-board">
       <div class="logo-wrapper">

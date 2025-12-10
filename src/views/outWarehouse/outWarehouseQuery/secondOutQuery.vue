@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
 
@@ -11,14 +11,14 @@
 
         <el-col :span="6">
           <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-            <SelectWarehouse v-model="queryParams.warehouseId"/>
+            <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
           </el-form-item>
         </el-col>
 
         <el-col :span="6" label-width="100px">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>

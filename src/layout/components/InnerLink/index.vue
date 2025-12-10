@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div :style="'height:' + height" v-loading="loading" element-loading-text="正在加载页面，请稍候！">
     <iframe
       :id="iframeId"

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="consumable-management">
       <!-- 顶部工具栏 -->
       <div class="toolbar">

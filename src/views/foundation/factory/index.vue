@@ -1,4 +1,4 @@
-<!--生产厂家信息维护-->
+﻿<!--生产厂家信息维护-->
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
@@ -25,8 +25,8 @@
         </el-col>
         <el-col :span="6">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -38,7 +38,7 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="mini"
+          size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:factory:add']"
         >新增</el-button>
@@ -48,7 +48,7 @@
           type="success"
           plain
           icon="el-icon-edit"
-          size="mini"
+          size="small"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:factory:edit']"
@@ -59,7 +59,7 @@
           type="danger"
           plain
           icon="el-icon-delete"
-          size="mini"
+          size="small"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:factory:remove']"
@@ -70,7 +70,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="mini"
+          size="small"
           @click="handleExport"
           v-hasPermi="['foundation:factory:export']"
         >导出</el-button>
@@ -80,33 +80,32 @@
 
     <el-table v-loading="loading" :data="factoryList" :row-class-name="factoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" align="center" prop="index" width="50"/>
-      <el-table-column label="编号" align="center" prop="factoryId" width="50"/>
-      <el-table-column label="厂家编码" align="center" prop="factoryCode" width="120"/>
-      <el-table-column label="厂家名称" align="center" prop="factoryName" width="180"/>
-      <el-table-column label="厂家地址" align="center" prop="factoryAddress" width="200"/>
-      <el-table-column label="厂家联系方式" align="center" prop="factoryContact" width="120"/>
-      <el-table-column label="状态" align="center" prop="factoryStatus" width="80">
+      <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip/>
+      <el-table-column label="厂家编码" align="center" prop="factoryCode" width="150" show-overflow-tooltip/>
+      <el-table-column label="厂家名称" align="center" prop="factoryName" width="250" show-overflow-tooltip/>
+      <el-table-column label="厂家地址" align="center" prop="factoryAddress" width="300" show-overflow-tooltip/>
+      <el-table-column label="厂家联系方式" align="center" prop="factoryContact" width="150" show-overflow-tooltip/>
+      <el-table-column label="状态" align="center" prop="factoryStatus" width="100" show-overflow-tooltip>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.is_use_status" :value="scope.row.factoryStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="创建日期" align="center" prop="createTime" width="100">
+      <el-table-column label="创建日期" align="center" prop="createTime" width="120" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150" fixed="right">
         <template slot-scope="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:factory:edit']"
           >修改</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
@@ -394,5 +393,12 @@ export default {
 .dialog-footer {
   text-align: right;
   margin-top: 16px;
+}
+
+/* 表格单元格不换行 */
+.el-table .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

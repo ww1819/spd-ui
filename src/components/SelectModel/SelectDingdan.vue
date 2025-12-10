@@ -1,11 +1,11 @@
-<template>
+﻿<template>
   <div>
     <!-- 引用采购订单弹窗 -->
     <div v-show="show" class="purchase-modal-mask">
       <div v-show="show" class="purchase-modal-content">
         <div class="modal-header">
           <div class="modal-title">采购订单</div>
-          <el-button icon="el-icon-close" size="mini" circle @click="show = false" class="close-btn"></el-button>
+          <el-button icon="el-icon-close" size="small" circle @click="show = false" class="close-btn"></el-button>
         </div>
         <div class="modal-body">
           <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
@@ -44,8 +44,8 @@
             <el-row :gutter="24">
               <el-col :span="6">
                 <el-form-item>
-                  <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-                  <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+                  <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+                  <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -89,7 +89,7 @@
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <el-button
-                  size="mini"
+                  size="small"
                   type="text"
                   icon="el-icon-view"
                   @click="handleView(scope.row)"

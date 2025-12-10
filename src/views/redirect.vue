@@ -1,4 +1,4 @@
-<script>
+﻿<script>
 export default {
   created() {
     const { params, query } = this.$route

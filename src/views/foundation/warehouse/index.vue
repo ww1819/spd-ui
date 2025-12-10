@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
       <el-row :gutter="20">
@@ -24,8 +24,8 @@
         </el-col>
         <el-col :span="6">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -37,7 +37,7 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="mini"
+          size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:warehouse:add']"
         >新增</el-button>
@@ -47,7 +47,7 @@
           type="success"
           plain
           icon="el-icon-edit"
-          size="mini"
+          size="small"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:warehouse:edit']"
@@ -58,7 +58,7 @@
           type="danger"
           plain
           icon="el-icon-delete"
-          size="mini"
+          size="small"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:warehouse:remove']"
@@ -69,7 +69,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="mini"
+          size="small"
           @click="handleExport"
           v-hasPermi="['foundation:warehouse:export']"
         >导出</el-button>
@@ -80,7 +80,6 @@
     <el-table v-loading="loading" :data="warehouseList" :row-class-name="warehouseIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="50"/>
-      <el-table-column label="编号" align="center" prop="id" width="50"/>
       <el-table-column label="仓库编码" align="center" prop="code" width="120"/>
       <el-table-column label="仓库名称" align="center" prop="name" width="180"/>
       <el-table-column label="负责人" align="center" prop="warehousePerson" width="100"/>
@@ -90,6 +89,7 @@
           <dict-tag :options="dict.type.is_use_status" :value="scope.row.warehouseStatus"/>
         </template>
       </el-table-column>
+      <el-table-column label="仓库类型" align="center" prop="warehouseType" width="100"/>
       <el-table-column label="创建日期" align="center" prop="createTime" width="100">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
@@ -99,14 +99,14 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
         <template slot-scope="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:warehouse:edit']"
           >修改</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
@@ -162,6 +162,15 @@
                     :label="dict.label"
                     :value="dict.value"
                   ></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="仓库类型" prop="warehouseType">
+                <el-select v-model="form.warehouseType" placeholder="请选择仓库类型" style="width: 100%">
+                  <el-option label="高值" value="高值"></el-option>
+                  <el-option label="低值" value="低值"></el-option>
+                  <el-option label="试剂" value="试剂"></el-option>
                 </el-select>
               </el-form-item>
             </el-col>
@@ -259,6 +268,7 @@ export default {
         warehousePerson: null,
         warehousePhone: null,
         warehouseStatus: null,
+        warehouseType: '低值',
         remark: null,
 
       };
@@ -286,6 +296,7 @@ export default {
       this.open = true;
       this.isDisabled = false;
       this.form.warehouseStatus = '2';
+      this.form.warehouseType = '低值';
       this.title = "添加仓库";
     },
     /** 修改按钮操作 */
