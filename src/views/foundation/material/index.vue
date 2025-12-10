@@ -13,7 +13,25 @@
               style="width: 180px"
             />
           </el-form-item>
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item label="耗材名称" prop="name" class="query-item-inline">
+            <el-input
+              v-model="queryParams.name"
+              placeholder="请输入耗材名称"
+              clearable
+              @keyup.enter.native="handleQuery"
+              style="width: 180px"
+            />
+          </el-form-item>
+
+          <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectSupplier v-model="queryParams.supplierId"/>
+            </div>
+          </el-form-item>
           <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectSupplier v-model="queryParams.supplierId"/>
@@ -57,7 +75,45 @@
         </el-col>
       </el-row>
 
+          <el-form-item label="是否高值" prop="isGz" class="query-item-inline">
+            <el-select v-model="queryParams.isGz" placeholder="请选择" style="width: 150px">
+              <el-option
+                v-for="dict in dict.type.is_yes_no"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              ></el-option>
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="12">
+          <el-form-item label="创建日期" style="display: flex; align-items: center;">
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="起始日期"
+              clearable
+              style="width: 180px; margin-right: 8px;"
+            />
+            <span style="margin: 0 4px;">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="截止日期"
+              clearable
+              style="width: 180px; margin-left: 8px;"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
+
     </el-form>
+    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
     <el-row :gutter="10" class="mb8" style="padding-top: 10px">
       <el-col :span="1.5">
         <el-button
@@ -129,6 +185,7 @@
     </el-row>
 
     <el-table v-loading="loading" :data="materialList" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="58vh" border>
+    <el-table v-loading="loading" :data="materialList" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="58vh" border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column type="index" label="序号" align="center" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -170,6 +227,7 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right">
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right">
         <template slot-scope="scope">
           <el-button
@@ -962,11 +1020,31 @@ export default {
   border-radius: 6px;
   min-width: 600px;
   max-width: 95vw;
+  max-width: 95vw;
   max-height: 90vh;
   overflow: auto;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
+
+.local-modal-content.material-modal-content {
+  width: 1400px !important;
+  min-width: 1400px !important;
+}
+.app-container > .el-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container > .el-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container > .el-form .el-form-item {
+  margin-bottom: 0;
+}
+
+/* 第一行查询条件左对齐紧凑布局 */
+.app-container > .el-form .query-row-left .el-col {
 
 .local-modal-content.material-modal-content {
   width: 1400px !important;
@@ -999,7 +1077,35 @@ export default {
 }
 
 .app-container > .el-form .query-row-left .query-item-inline:last-child {
+}
+
+.app-container > .el-form .query-row-left .query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline:last-child {
   margin-right: 0;
+}
+
+/* 统一控制查询条件输入框宽度 */
+.app-container > .el-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline .el-select {
+  width: 150px;
 }
 
 /* 统一控制查询条件输入框宽度 */

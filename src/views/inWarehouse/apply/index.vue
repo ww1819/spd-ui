@@ -1,13 +1,18 @@
 ﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item label="入库单号" prop="billNo" class="query-item-inline">
       <el-row class="query-row-left">
         <el-col :span="24">
           <el-form-item label="入库单号" prop="billNo" class="query-item-inline">
             <el-input v-model="queryParams.billNo"
                       placeholder="请输入入库单号"
                       clearable
+                      style="width: 180px"
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
@@ -47,6 +52,8 @@
             />
           </el-form-item>
         </el-col>
+        <el-col :span="12" class="query-status-col">
+          <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
         <el-col :span="12" class="query-status-col">
           <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.billStatus" placeholder="全部"
@@ -184,7 +191,9 @@
           <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
         </div>
         <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
+        <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
+        <el-row :gutter="8">
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="单据号" prop="billNo">
@@ -204,15 +213,19 @@
           <el-col :span="4">
             <el-form-item label="发票号" prop="invoiceNumber">
               <el-input v-model="form.invoiceNumber" placeholder="请输入发票号" />
+            <el-form-item label="发票号" prop="invoiceNumber">
+              <el-input v-model="form.invoiceNumber" placeholder="请输入发票号" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
+            <el-form-item label="制单人" prop="createrName">
             <el-form-item label="制单人" prop="createrName">
               <SelectUser v-model="form.createrName"/>
             </el-form-item>
           </el-col>
         </el-row>
 
+        <el-row :gutter="8">
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="采购员" prop="proPerson">
@@ -244,10 +257,12 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="发票时间" prop="invoiceTime">
+            <el-form-item label="发票时间" prop="invoiceTime">
               <el-date-picker clearable
                               v-model="form.invoiceTime"
                               type="date"
                               value-format="yyyy-MM-dd"
+                              style="width: 100%"
                               style="width: 100%"
                               placeholder="请输入发票时间">
               </el-date-picker>
@@ -281,11 +296,13 @@
 
         </el-row>
         <div class="table-wrapper">
+        <div class="table-wrapper">
         <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
                   show-summary :summary-method="getSummaries"
                   @selection-change="handleStkIoBillEntrySelectionChange"
                   ref="stkIoBillEntry"
                   border
+                   height="48vh"
                    height="48vh"
         >
           <el-table-column type="selection" width="60" align="center" />
@@ -379,6 +396,7 @@
             </template>
           </el-table-column>
         </el-table>
+        </div>
         </div>
         </el-form>
         <div v-show="action" class="modal-footer">
@@ -595,6 +613,7 @@ export default {
     },
     selectData(val) {
       //监听"弹窗组件"返回的数据
+      //监听"弹窗组件"返回的数据
       this.selectRow = val;
       this.selectRow.forEach((item, index) => {
 
@@ -704,6 +723,8 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.beginDate = this.getStatDate();
+      this.queryParams.endDate = this.getEndDate();
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
       this.handleQuery();
@@ -907,6 +928,7 @@ export default {
   width: 100%;
   height: 100%;
   min-height: 95vh;
+  min-height: 95vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -944,6 +966,7 @@ export default {
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
   margin-top: 10px;
+  margin-top: 10px;
 }
 
 .modal-footer .el-button {
@@ -953,10 +976,13 @@ export default {
 .local-modal-content .el-form {
   flex: 1;
   overflow: visible;
+  overflow: visible;
   padding: 24px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
   display: flex;
   flex-direction: column;
 }
@@ -1001,8 +1027,18 @@ export default {
 .app-container > .el-form {
   background: #fff;
   padding: 16px 20px;
+  padding: 16px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+}
+
+.app-container > .el-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container > .el-form .el-row:last-child {
+  margin-bottom: 0;
   margin-bottom: 16px;
 }
 
@@ -1165,7 +1201,113 @@ export default {
   margin-top: 10px;
 }
 
+/* 弹窗内表格样式 - 高度调到确定按钮上面一点 */
+.local-modal-content .table-wrapper {
+  flex: 1;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
 .local-modal-content .el-table {
+  height: 48vh;
+  max-height: 48vh;
+}
+
+.local-modal-content .el-table__body-wrapper {
+  max-height: calc(48vh - 48px);
+  overflow-y: auto;
+}
+
+/* 加粗滚动条 - 覆盖所有表格滚动条 */
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar,
+.local-modal-content .el-table::-webkit-scrollbar,
+.local-modal-content .table-wrapper::-webkit-scrollbar {
+  width: 10px !important;
+}
+
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-track,
+.local-modal-content .el-table::-webkit-scrollbar-track,
+.local-modal-content .table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 5px !important;
+}
+
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.local-modal-content .el-table::-webkit-scrollbar-thumb,
+.local-modal-content .table-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 5px !important;
+}
+
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.local-modal-content .el-table::-webkit-scrollbar-thumb:hover,
+.local-modal-content .table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8 !important;
+}
+
+/* 针对Element UI表格滚动条的通用样式 */
+.local-modal-content .el-table .el-scrollbar__bar {
+  opacity: 1 !important;
+}
+
+.local-modal-content .el-table .el-scrollbar__thumb {
+  background-color: #c1c1c1 !important;
+  border-radius: 5px !important;
+  min-height: 10px !important;
+}
+
+.local-modal-content .el-table .el-scrollbar__thumb:hover {
+  background-color: #a8a8a8 !important;
+}
+
+/* 全局滚动条样式 - 确保表格滚动条更粗 */
+.local-modal-content *::-webkit-scrollbar,
+.local-modal-mask *::-webkit-scrollbar,
+.app-container *::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.local-modal-content *::-webkit-scrollbar-track,
+.local-modal-mask *::-webkit-scrollbar-track,
+.app-container *::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 5px !important;
+}
+
+.local-modal-content *::-webkit-scrollbar-thumb,
+.local-modal-mask *::-webkit-scrollbar-thumb,
+.app-container *::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 5px !important;
+}
+
+.local-modal-content *::-webkit-scrollbar-thumb:hover,
+.local-modal-mask *::-webkit-scrollbar-thumb:hover,
+.app-container *::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8 !important;
+}
+
+/* 针对弹窗内所有表格的滚动条 */
+.local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar,
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar,
+.local-modal-content .el-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 10px !important;
+}
+
+.local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-thumb,
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.local-modal-content .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 5px !important;
+  min-width: 12px !important;
+}
+
+.local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-track,
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-track,
+.local-modal-content .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 5px !important;
   height: 48vh;
   max-height: 48vh;
 }
@@ -1294,6 +1436,49 @@ export default {
 /* 确保页面容器有相对定位，以便内部弹窗正确定位 */
 .app-container {
   position: relative;
+}
+
+/* 覆盖弹窗组件的高度 - 调高添加弹窗中的弹窗高度 */
+::v-deep .local-modal-content {
+  min-height: 95vh !important;
+}
+
+::v-deep .purchase-modal-content {
+  min-height: 95vh !important;
+}
+
+/* 弹窗内所有表格的滚动条加粗 - 统一使用和主弹窗相同的宽度 */
+::v-deep .local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar,
+::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar,
+::v-deep .purchase-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar,
+::v-deep .purchase-modal-content .el-table__body-wrapper::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+::v-deep .local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-thumb,
+::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb,
+::v-deep .purchase-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-thumb,
+::v-deep .purchase-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 5px !important;
+  min-width: 10px !important;
+  min-height: 10px !important;
+}
+
+::v-deep .local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-track,
+::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-track,
+::v-deep .purchase-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-track,
+::v-deep .purchase-modal-content .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 5px !important;
+}
+
+::v-deep .local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-thumb:hover,
+::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+::v-deep .purchase-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-thumb:hover,
+::v-deep .purchase-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8 !important;
 }
 
 /* 覆盖弹窗组件的高度 - 调高添加弹窗中的弹窗高度 */
