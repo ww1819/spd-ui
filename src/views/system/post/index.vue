@@ -81,10 +81,10 @@
 
     <el-table v-loading="loading" :data="postList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="岗位编号" align="center" prop="postId" />
-      <el-table-column label="岗位编码" align="center" prop="postCode" />
-      <el-table-column label="岗位名称" align="center" prop="postName" />
-      <el-table-column label="岗位排序" align="center" prop="postSort" />
+      <el-table-column type="index" label="序号" align="center" width="80" :index="indexMethod" />
+      <el-table-column label="编码" align="center" prop="postCode" />
+      <el-table-column label="工作组名称" align="center" prop="postName" />
+      <el-table-column label="工作组排序" align="center" prop="postSort" />
       <el-table-column label="状态" align="center" prop="status">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
@@ -247,6 +247,10 @@ export default {
       this.handleQuery();
     },
     // 多选框选中数据
+    // 序号计算方法
+    indexMethod(index) {
+      return (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1;
+    },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.postId)
       this.single = selection.length!=1

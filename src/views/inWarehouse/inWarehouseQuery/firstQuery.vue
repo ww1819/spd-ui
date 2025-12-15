@@ -1,11 +1,7 @@
 ﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item label="业务单号" prop="billNo" class="query-item-inline">
       <el-row class="query-row-left">
         <el-col :span="24">
           <el-form-item label="业务单号" prop="billNo" class="query-item-inline">
@@ -13,14 +9,9 @@
                       placeholder="请输入业务单号"
                       clearable
                       style="width: 180px"
-                      style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="耗材" prop="materialId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectMaterial v-model="queryParams.materialId" />
-            </div>
           <el-form-item label="耗材" prop="materialId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectMaterial v-model="queryParams.materialId" />
@@ -55,34 +46,10 @@
               style="width: 180px; margin-left: 8px;"
             />
           </el-form-item>
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item label="业务日期" style="display: flex; align-items: center;">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
-              clearable
-              style="width: 180px; margin-right: 8px;"
-            />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
-          </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
           <el-form-item label="单据类型" prop="billType" class="query-item-status-aligned">
-        <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据类型" prop="billType" class="query-item-status-aligned">
             <el-select v-model="queryParams.billType" placeholder="全部"
-                       clearable style="width: 150px">
                        clearable style="width: 150px">
               <el-option v-for="dict in dict.type.in_warehouse_bill_type"
                          :key="dict.value"
@@ -122,8 +89,6 @@
       <el-table v-loading="loading" :data="displayData"
                 show-summary
                 :summary-method="getSummaries"
-                height="51vh"
-                border
                 height="51vh"
                 border
                 style="width: 100%">
@@ -448,58 +413,6 @@ export default {
     /* 确保表格容器有足够空间显示汇总行 */
     .app-container {
       padding: 20px;
-    }
-
-    /* 查询条件样式 */
-    .query-row-left {
-      margin-bottom: 10px;
-    }
-
-    .query-item-inline {
-      display: inline-block;
-      margin-right: 16px;
-      margin-bottom: 10px;
-    }
-
-    .query-item-inline .el-form-item__label {
-      width: 80px !important;
-    }
-
-    .query-select-wrapper {
-      width: 180px;
-    }
-
-    .query-row-second {
-      margin-bottom: 10px;
-      position: relative;
-    }
-
-    .query-row-second .el-form-item {
-      white-space: nowrap;
-    }
-
-    .query-row-second .el-form-item .el-form-item__content {
-      display: flex;
-      align-items: center;
-      flex-wrap: nowrap;
-    }
-
-    .query-status-col {
-      position: absolute;
-      left: 552px;
-      width: auto;
-      padding-left: 0;
-      padding-right: 0;
-      display: flex;
-      align-items: center;
-    }
-
-    .query-item-status-aligned {
-      margin-left: 0;
-    }
-
-    .query-item-status-aligned .el-form-item__label {
-      width: 80px !important;
     }
 
     /* 查询条件样式 */

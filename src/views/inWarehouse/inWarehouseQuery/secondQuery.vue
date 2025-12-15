@@ -1,14 +1,7 @@
 ﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item label="耗材" prop="materialId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectMaterial v-model="queryParams.materialId" />
-            </div>
       <el-row class="query-row-left">
         <el-col :span="24">
           <el-form-item label="耗材" prop="materialId" class="query-item-inline">
@@ -24,27 +17,6 @@
         </el-col>
       </el-row>
 
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item label="业务日期" style="display: flex; align-items: center;">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
-              clearable
-              style="width: 180px; margin-right: 8px;"
-            />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
-          </el-form-item>
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
           <el-form-item label="业务日期" style="display: flex; align-items: center;">
@@ -91,11 +63,6 @@
     </el-row>
 
     <el-table v-loading="loading" :data="warehouseList"
-              show-summary
-              :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange"
-              height="51vh"
-              border>
               show-summary
               :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
@@ -334,44 +301,6 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-/* 查询条件样式 */
-.query-row-left {
-  margin-bottom: 10px;
-}
-
-.query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 10px;
-}
-
-.query-item-inline .el-form-item__label {
-  width: 80px !important;
-}
-
-.query-select-wrapper {
-  width: 180px;
-}
-
-.query-row-second {
-  margin-bottom: 10px;
-}
-
-.query-status-col {
-  display: flex;
-  align-items: center;
-}
-
-.query-item-status-aligned {
-  margin-left: 0;
-}
-
-.query-item-status-aligned .el-form-item__label {
-  width: 80px !important;
-}
-</style>
 
 <style scoped>
 /* 查询条件样式 */

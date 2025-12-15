@@ -52,6 +52,17 @@ export function delMaterial(id) {
   })
 }
 
+// 推送档案
+export function pushMaterialArchive(supplierId) {
+  return request({
+    url: '/foundation/material/pushArchive',
+    method: 'post',
+    data: {
+      supplierId: supplierId
+    }
+  })
+}
+
 export function sleft(str,x){
 		if(str){
 			return str.slice(0,x);

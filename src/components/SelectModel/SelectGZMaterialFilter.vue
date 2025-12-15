@@ -29,34 +29,34 @@
         </el-row>
       </el-form>
 
-        <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(50vh)" border>
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" align="center" width="70" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
-            </template>
-          </el-table-column>
-          <el-table-column label="耗材编码" align="center" prop="code" width="100" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材名称" align="center" prop="name" width="140" show-overflow-tooltip resizable/>
-          <el-table-column label="供应商" align="center" prop="supplier.name" width="140" show-overflow-tooltip resizable/>
-          <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable/>
-          <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable/>
-          <el-table-column label="价格" align="center" prop="price" width="90" show-overflow-tooltip resizable/>
-          <el-table-column label="UDI码" align="center" prop="udiNo" width="150" show-overflow-tooltip resizable/>
-          <el-table-column label="注册证有效期" align="center" prop="periodDate" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
-          <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="财务分类" align="center" prop="fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
-          <el-table-column label="注册证号" align="center" prop="registerNo" width="140" show-overflow-tooltip resizable/>
-          <el-table-column label="包装规格" align="center" prop="packageSpeci" width="100" show-overflow-tooltip resizable/>
-          <el-table-column label="材质" align="center" prop="quality" width="100" show-overflow-tooltip resizable/>
-          <el-table-column label="储存方式" align="center" prop="isWay" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <dict-tag :options="dict.type.way_status" :value="scope.row.isWay"/>
-            </template>
-          </el-table-column>
-        </el-table>
+         <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(50vh)" border>
+           <el-table-column type="selection" width="55" align="center" />
+           <el-table-column label="序号" align="center" width="70" show-overflow-tooltip resizable>
+             <template slot-scope="scope">
+               {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+             </template>
+           </el-table-column>
+           <el-table-column label="耗材编码" align="center" prop="code" width="100" show-overflow-tooltip resizable/>
+           <el-table-column label="耗材名称" align="center" prop="name" width="140" show-overflow-tooltip resizable/>
+           <el-table-column label="供应商" align="center" prop="supplier.name" width="140" show-overflow-tooltip resizable/>
+           <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable/>
+           <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable/>
+           <el-table-column label="价格" align="center" prop="price" width="90" show-overflow-tooltip resizable/>
+           <el-table-column label="UDI码" align="center" prop="udiNo" width="150" show-overflow-tooltip resizable/>
+           <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
+           <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
+           <el-table-column label="财务分类" align="center" prop="fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable/>
+           <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
+           <el-table-column label="注册证号" align="center" prop="registerNo" width="140" show-overflow-tooltip resizable/>
+           <el-table-column label="注册证有效期" align="center" prop="periodDate" width="120" show-overflow-tooltip resizable/>
+           <el-table-column label="包装规格" align="center" prop="packageSpeci" width="100" show-overflow-tooltip resizable/>
+           <el-table-column label="材质" align="center" prop="quality" width="100" show-overflow-tooltip resizable/>
+           <el-table-column label="储存方式" align="center" prop="isWay" width="100" show-overflow-tooltip resizable>
+             <template slot-scope="scope">
+               <dict-tag :options="dict.type.way_status" :value="scope.row.isWay"/>
+             </template>
+           </el-table-column>
+         </el-table>
 
         <pagination
           v-show="total>0"
@@ -246,7 +246,6 @@ export default {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  overflow-x: auto;
   padding: 20px 24px;
   background: #fff;
 }
@@ -263,18 +262,18 @@ export default {
   margin-left: 12px;
 }
 
-/* 表格样式优化 */
-.el-table {
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
-  min-width: 100%;
-  width: max-content;
-}
-
-.el-table .el-table__body-wrapper {
-  overflow-x: auto;
-}
+ /* 表格样式优化 */
+ .el-table {
+   border-radius: 8px;
+   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+   margin-bottom: 20px;
+   min-width: 100%;
+   width: max-content;
+ }
+ 
+ .el-table .el-table__body-wrapper {
+   overflow-x: auto;
+ }
 
 .el-table th {
   background-color: #F5F7FA !important;

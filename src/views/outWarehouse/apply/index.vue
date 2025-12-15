@@ -1,11 +1,7 @@
 ﻿<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item label="出库单号" prop="billNo" class="query-item-inline">
       <el-row class="query-row-left">
         <el-col :span="24">
           <el-form-item label="出库单号" prop="billNo" class="query-item-inline">
@@ -13,14 +9,9 @@
                       placeholder="请输入出库单号"
                       clearable
                       style="width: 180px"
-                      style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="科室" prop="departmentId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectDepartment v-model="queryParams.departmentId" />
-            </div>
           <el-form-item label="科室" prop="departmentId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectDepartment v-model="queryParams.departmentId" />
@@ -55,34 +46,10 @@
               style="width: 180px; margin-left: 8px;"
             />
           </el-form-item>
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item label="制单日期" style="display: flex; align-items: center;">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
-              clearable
-              style="width: 180px; margin-right: 8px;"
-            />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
-          </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
           <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
-        <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.billStatus" placeholder="全部"
-                       clearable style="width: 150px">
                        clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -138,7 +105,6 @@
     <el-table v-loading="loading" :data="warehouseList"
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="58vh" border>
               @selection-change="handleSelectionChange" height="58vh" border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
@@ -222,9 +188,7 @@
           <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
         </div>
         <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
-        <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
-        <el-row :gutter="8">
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="单据号" prop="billNo">
@@ -251,7 +215,6 @@
               <el-select v-model="form.billType" placeholder="请选择出库类型"
                          :disabled="true"
                          clearable style="width: 100%">
-                         clearable style="width: 100%">
                 <el-option v-for="dict in dict.type.bill_type"
                            :key="dict.value"
                            :label="dict.label"
@@ -262,7 +225,6 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="8">
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
@@ -299,13 +261,9 @@
 
         </el-row>
         <div class="table-wrapper">
-        <div class="table-wrapper">
         <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
                   show-summary :summary-method="getSummaries"
                   @selection-change="handleStkIoBillEntrySelectionChange"
-                  border
-                  height="48vh"
-        >
                   border
                   height="48vh"
         >
@@ -320,8 +278,6 @@
           <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -345,19 +301,15 @@
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
-          <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
-          <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" :disabled="true" placeholder="请输入批号" />
               <el-input v-model="scope.row.batchNumber" :disabled="true" placeholder="请输入批号" />
             </template>
           </el-table-column>
-          <el-table-column label="生产日期" prop="beginTime" width="180" show-overflow-tooltip resizable>
           <el-table-column label="生产日期" prop="beginTime" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-date-picker clearable
@@ -370,7 +322,6 @@
             </template>
           </el-table-column>
           <el-table-column label="有效期" prop="endTime" width="180" show-overflow-tooltip resizable>
-          <el-table-column label="有效期" prop="endTime" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-date-picker clearable
                               v-model="scope.row.endTime"
@@ -381,7 +332,11 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
+          <el-table-column label="供应商" align="center" prop="material.supplier.name" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
@@ -397,18 +352,7 @@
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
-          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
-            </template>
-          </el-table-column>
         </el-table>
-        </div>
         </div>
         </el-form>
         <div v-show="action" class="modal-footer">
@@ -990,12 +934,6 @@ export default {
 
 .close-btn:hover {
   background: rgba(0, 0, 0, 0.1);
-}
-
-.modal-body {
-  flex: 1;
-  overflow: auto;
-  padding: 20px;
 }
 
 .modal-body {

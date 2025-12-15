@@ -175,6 +175,15 @@
               </el-form-item>
             </el-col>
             <el-col :span="6">
+              <el-form-item label="结算类型" prop="settlementType">
+                <el-select v-model="form.settlementType" placeholder="请选择结算类型" style="width: 100%">
+                  <el-option label="入库结算" value="1"></el-option>
+                  <el-option label="出库结算" value="2"></el-option>
+                  <el-option label="消耗结算" value="3"></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
               <el-form-item label="备注" prop="remark">
                 <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
               </el-form-item>
@@ -269,6 +278,7 @@ export default {
         warehousePhone: null,
         warehouseStatus: null,
         warehouseType: '低值',
+        settlementType: null,
         remark: null,
 
       };
