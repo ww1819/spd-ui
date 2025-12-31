@@ -1,101 +1,119 @@
 ﻿<template>
-  <div class="department-consumption-container">
-    <div class="title-section">
-      <h3>科室消耗追溯明细报表</h3>
+  <div class="app-container">
+    <div class="query-container">
+      <div class="form-fields-container">
+        <el-form :model="searchForm" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+          <el-row class="query-row-left">
+            <el-col :span="24">
+              <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+                <div class="query-select-wrapper">
+                  <SelectDepartment v-model="searchForm.departmentId" />
+                </div>
+              </el-form-item>
+              <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+                <div class="query-select-wrapper">
+                  <SelectMaterial v-model="searchForm.materialId" />
+                </div>
+              </el-form-item>
+              <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
+                <el-input v-model="searchForm.materialName" placeholder="请输入耗材名称" clearable style="width: 180px" />
+              </el-form-item>
+              <el-form-item label="规格" prop="specification" class="query-item-inline">
+                <el-input v-model="searchForm.specification" placeholder="请输入规格" clearable style="width: 180px" />
+              </el-form-item>
+              <el-form-item label="型号" prop="model" class="query-item-inline">
+                <el-input v-model="searchForm.model" placeholder="请输入型号" clearable style="width: 180px" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row class="query-row-left">
+            <el-col :span="24">
+              <el-form-item label="HIS收费编码" prop="hisChargeCode" class="query-item-inline">
+                <el-input v-model="searchForm.hisChargeCode" placeholder="请输入HIS收费编码" clearable style="width: 180px" />
+              </el-form-item>
+              <el-form-item label="患者住院号/门诊号" prop="patientId" class="query-item-inline">
+                <el-input v-model="searchForm.patientId" placeholder="请输入患者住院号/门诊号" clearable style="width: 180px" />
+              </el-form-item>
+              <el-form-item label="日期范围" prop="dateRange" class="query-item-inline">
+                <el-date-picker
+                  v-model="searchForm.dateRange"
+                  type="daterange"
+                  range-separator="至"
+                  start-placeholder="开始日期"
+                  end-placeholder="结束日期"
+                  value-format="yyyy-MM-dd"
+                  clearable
+                  style="width: 240px"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+      </div>
     </div>
-    
-    <!-- 查询条件区域 -->
-    <div class="search-section">
-      <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="科室" prop="materialId" label-width="100px">
-          <SelectDepartment v-model="searchForm.departmentId" />
-        </el-form-item>
 
-        <el-form-item label="耗材" prop="materialId" label-width="100px">
-          <SelectMaterial v-model="searchForm.materialId" />
-        </el-form-item>
-        <el-form-item label="耗材名称">
-          <el-input v-model="searchForm.materialName" placeholder="请输入耗材名称" clearable />
-        </el-form-item>
-        <el-form-item label="规格">
-          <el-input v-model="searchForm.specification" placeholder="请输入规格" clearable />
-        </el-form-item>
-        <el-form-item label="型号">
-          <el-input v-model="searchForm.model" placeholder="请输入型号" clearable />
-        </el-form-item>
-        <el-form-item label="HIS收费编码">
-          <el-input v-model="searchForm.hisChargeCode" placeholder="请输入HIS收费编码" clearable />
-        </el-form-item>
-        <el-form-item label="患者住院号/门诊号">
-          <el-input v-model="searchForm.patientId" placeholder="请输入患者住院号/门诊号" clearable />
-        </el-form-item>
-        <el-form-item label="日期范围">
-          <el-date-picker
-            v-model="searchForm.dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="yyyy-MM-dd"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="resetSearch">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-    
-    <!-- 数据表格区域 -->
-    <div class="table-section">
+    <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: 0px; margin-bottom: 16px;">
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          icon="el-icon-search"
+          size="small"
+          @click="handleSearch"
+        >搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          icon="el-icon-refresh"
+          size="small"
+          @click="resetSearch"
+        >重置</el-button>
+      </el-col>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="handleSearch"></right-toolbar>
+    </el-row>
+
+    <div class="table-container">
       <el-table
         :data="tableData"
-        style="width: 100%"
-        stripe
+        v-loading="loading"
+        :row-class-name="tableDataIndex"
+        height="54vh"
         border
-        @sort-change="handleSortChange"
         show-summary
         :summary-method="getSummaries"
       >
-        <el-table-column type="index" label="序号" width="80" />
-        <el-table-column prop="departmentName" label="科室" min-width="120" sortable />
-        <el-table-column prop="materialName" label="名称" min-width="150" sortable />
-        <el-table-column prop="specification" label="规格" min-width="120" />
-        <el-table-column prop="model" label="型号" min-width="120" />
-        <el-table-column prop="unitPrice" label="单价" min-width="100" sortable>
+        <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
+        <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="名称" align="center" prop="materialName" width="150" show-overflow-tooltip resizable />
+        <el-table-column label="规格" align="center" prop="specification" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            {{ formatCurrency(scope.row.unitPrice) }}
+            <span v-if="scope.row.unitPrice">{{ formatCurrency(scope.row.unitPrice) }}</span>
+            <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column prop="quantity" label="数量" min-width="100" sortable />
-        <el-table-column prop="amount" label="金额" min-width="100" sortable>
+        <el-table-column label="数量" align="center" prop="quantity" width="100" show-overflow-tooltip resizable />
+        <el-table-column label="金额" align="center" prop="amount" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            {{ formatCurrency(scope.row.amount) }}
+            <span v-if="scope.row.amount">{{ formatCurrency(scope.row.amount) }}</span>
+            <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column prop="category" label="耗材分类" min-width="120" />
-        <el-table-column prop="financialCategory" label="财务分类" min-width="120" />
-        <el-table-column prop="registrationNumber" label="注册证号" min-width="180" />
-        <el-table-column prop="medicalInsuranceCode" label="医保编码" min-width="120" />
-        <el-table-column prop="hisChargeItemCode" label="HIS收费项目编码" min-width="150" />
-        <el-table-column prop="consumptionDate" label="消耗日期" min-width="120" sortable />
-        <el-table-column prop="batchNumber" label="批次号" min-width="150" />
-        <el-table-column prop="supplier" label="供应商" min-width="150" />
+        <el-table-column label="耗材分类" align="center" prop="category" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="财务分类" align="center" prop="financialCategory" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="注册证号" align="center" prop="registrationNumber" width="180" show-overflow-tooltip resizable />
+        <el-table-column label="医保编码" align="center" prop="medicalInsuranceCode" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="HIS收费项目编码" align="center" prop="hisChargeItemCode" width="150" show-overflow-tooltip resizable />
       </el-table>
-      
-      <!-- 分页组件 -->
-      <div class="pagination-section">
-        <el-pagination
-          v-model="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="total"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
     </div>
+
+    <pagination
+      v-show="total>0"
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="handleSearch"
+    />
   </div>
 </template>
 
@@ -108,6 +126,10 @@ export default {
   components: {SelectMaterial,SelectDepartment,SelectSupplier},
   data() {
     return {
+      // 遮罩层
+      loading: false,
+      // 显示搜索条件
+      showSearch: true,
       // 查询表单
       searchForm: {
         departmentId: '',
@@ -119,11 +141,14 @@ export default {
         patientId: '',
         dateRange: []
       },
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10
+      },
       // 表格数据
       tableData: [],
-      // 分页信息
-      currentPage: 1,
-      pageSize: 20,
+      // 总条数
       total: 0,
       // 排序信息
       sortProp: '',
@@ -143,24 +168,16 @@ export default {
     
     // 查询数据
     handleSearch() {
-      this.currentPage = 1
+      this.queryParams.pageNum = 1
       this.getDepartmentConsumptionData()
     },
     
     // 重置查询条件
     resetSearch() {
-        this.searchForm = {
-          departmentName: '',
-          materialName: '',
-          specification: '',
-          model: '',
-          hisChargeCode: '',
-          patientId: '',
-          dateRange: []
-        }
-        this.currentPage = 1
-        this.getDepartmentConsumptionData()
-      },
+      this.resetForm("queryForm")
+      this.queryParams.pageNum = 1
+      this.handleSearch()
+    },
     
     // 处理排序变化
     handleSortChange({ prop, order }) {
@@ -169,25 +186,21 @@ export default {
       this.getDepartmentConsumptionData()
     },
     
-    // 处理页面大小变化
-    handleSizeChange(size) {
-      this.pageSize = size
-      this.getDepartmentConsumptionData()
-    },
-    
-    // 处理当前页码变化
-    handleCurrentChange(current) {
-      this.currentPage = current
-      this.getDepartmentConsumptionData()
+    // 序号生成
+    tableDataIndex({ row, rowIndex }) {
+      const pageNum = Math.max(1, parseInt(this.queryParams.pageNum, 10));
+      const pageSize = Math.max(1, parseInt(this.queryParams.pageSize, 10));
+      row.index = (pageNum - 1) * pageSize + rowIndex + 1;
     },
     
     // 获取科室消耗数据
     getDepartmentConsumptionData() {
+      this.loading = true
       // 构建查询参数
       const params = {
         ...this.searchForm,
-        page: this.currentPage,
-        pageSize: this.pageSize
+        pageNum: this.queryParams.pageNum,
+        pageSize: this.queryParams.pageSize
       }
       
       // 添加排序参数
@@ -201,10 +214,14 @@ export default {
       //   .then(res => {
       //     this.tableData = res.data.list
       //     this.total = res.data.total
+      //     this.loading = false
       //   })
       
       // 模拟数据
-      this.mockDepartmentConsumptionData()
+      setTimeout(() => {
+        this.mockDepartmentConsumptionData()
+        this.loading = false
+      }, 300)
     },
     
     // 模拟科室消耗数据
@@ -222,7 +239,7 @@ export default {
       const suppliers = ['医疗器械有限公司A', '医疗科技股份有限公司B', '医疗器械集团C']
       
       // 生成当前页数据
-      for (let i = 0; i < this.pageSize; i++) {
+      for (let i = 0; i < this.queryParams.pageSize; i++) {
         const material = materials[Math.floor(Math.random() * materials.length)]
         const unitPrice = Math.random() * 100 + 10
         const quantity = Math.floor(Math.random() * 100) + 1
@@ -261,30 +278,31 @@ export default {
     // 表格汇总方法
     getSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
+      const sums = Array(columns.length).fill('');
+      
+      // 第一列显示"合计"
+      sums[0] = '合计';
+      
+      // 计算合计数量和金额
+      let totalQty = 0;
+      let totalAmt = 0;
+      
+      // 计算总和
+      for (let i = 0; i < data.length; i++) {
+        const item = data[i];
+        totalQty += Number(item.quantity || 0);
+        totalAmt += Number(item.amount || 0);
+      }
+      
+      // 遍历所有列，为指定列设置合计值
       columns.forEach((column, index) => {
-        if (index === 0) {
-          sums[index] = '合计';
-          return;
-        }
-        const values = data.map(item => Number(item[column.property]));
-        // 只对数量和金额进行汇总
-        if (column.property === 'quantity' || column.property === 'amount') {
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              return isNaN(value) ? prev : prev + value;
-            }, 0);
-            if (column.property === 'amount') {
-              sums[index] = sums[index].toFixed(2);
-            }
-          } else {
-            sums[index] = '--';
-          }
-        } else {
-          sums[index] = '';
+        if (column.property === 'quantity') {
+          sums[index] = totalQty.toFixed(2);
+        } else if (column.property === 'amount') {
+          sums[index] = '￥' + totalAmt.toFixed(2);
         }
       });
+      
       return sums;
     }
   }
@@ -292,65 +310,54 @@ export default {
 </script>
 
 <style scoped>
-.department-consumption-container {
-  padding: 20px;
-  background-color: #ffffff;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+/* 查询条件样式 */
+.query-row-left {
+  margin-bottom: 10px;
 }
 
-.title-section {
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e4e7ed;
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 10px;
 }
 
-.title-section h3 {
-  margin: 0;
-  color: #303133;
-  font-size: 18px;
-  font-weight: 500;
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
 }
 
-.search-section {
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.query-select-wrapper {
+  width: 180px;
 }
 
-.search-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
+/* 查询容器样式 */
+.query-container {
+  margin-top: -20px;
+  margin-bottom: 16px;
 }
 
-.table-section {
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+/* 查询条件容器框样式 */
+.form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #EBEEF5;
 }
 
-.pagination-section {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
+.table-container {
+  margin-top: 0px;
+  overflow: visible;
+  width: 100%;
+  position: relative;
 }
 
-/* 响应式布局 */
-@media (max-width: 768px) {
-  .department-consumption-container {
-    padding: 10px;
-  }
-  
-  .search-form {
-    flex-direction: column;
-  }
-  
-  .search-form .el-form-item {
-    width: 100%;
-  }
+/* 加粗表格底部滚动条，提升可操作性 */
+.table-container ::-webkit-scrollbar {
+  height: 12px;
+}
+
+.table-container ::-webkit-scrollbar-thumb {
+  height: 12px;
+  border-radius: 6px;
 }
 </style>

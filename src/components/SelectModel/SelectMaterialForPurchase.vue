@@ -5,77 +5,107 @@
         <div v-if="show" class="local-modal-content">
           <div class="modal-header">
             <div class="modal-title">选择耗材产品</div>
-            <el-button icon="el-icon-close" size="small" circle @click="handleClose" class="close-btn"></el-button>
+            <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
           </div>
           <div class="modal-body">
-            <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
-              <el-row :gutter="20">
-                <el-col :span="6">
-                  <el-form-item label="耗材编码" prop="code" label-width="100px">
-                    <el-input
-                      v-model="queryParams.code"
-                      placeholder="请输入耗材编码"
-                      clearable
-                      @keyup.enter.native="handleQuery"
-                    />
-                  </el-form-item>
-                </el-col>
+            <div class="form-fields-container">
+              <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+                <el-row :gutter="20">
+                  <el-col :span="6">
+                    <el-form-item label="耗材编码" prop="code" label-width="100px">
+                      <el-input
+                        v-model="queryParams.code"
+                        placeholder="请输入耗材编码"
+                        clearable
+                        @keyup.enter.native="handleQuery"
+                      />
+                    </el-form-item>
+                  </el-col>
 
-                <el-col :span="6">
-                  <el-form-item label="耗材名称" prop="name" label-width="100px">
-                    <el-input
-                      v-model="queryParams.name"
-                      placeholder="请输入耗材名称"
-                      clearable
-                      @keyup.enter.native="handleQuery"
-                    />
-                  </el-form-item>
-                </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="供应商" prop="supplierId" label-width="100px">
+                      <SelectSupplier v-model="queryParams.supplierId"/>
+                    </el-form-item>
+                  </el-col>
 
-                <el-col :span="6">
-                  <el-form-item label="供应商" prop="supplierId" label-width="100px">
-                    <SelectSupplier v-model="queryParams.supplierId"/>
-                  </el-form-item>
-                </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="品牌" prop="brand" label-width="100px">
+                      <el-input
+                        v-model="queryParams.brand"
+                        placeholder="请输入品牌"
+                        clearable
+                        @keyup.enter.native="handleQuery"
+                      />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                  <el-col :span="6">
+                    <el-form-item label="耗材名称" prop="name" label-width="100px">
+                      <el-input
+                        v-model="queryParams.name"
+                        placeholder="请输入耗材名称"
+                        clearable
+                        @keyup.enter.native="handleQuery"
+                      />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </el-form>
+            </div>
 
-                <el-col :span="6">
-                  <el-form-item label="品牌" prop="brand" label-width="100px">
-                    <el-input
-                      v-model="queryParams.brand"
-                      placeholder="请输入品牌"
-                      clearable
-                      @keyup.enter.native="handleQuery"
-                    />
-                  </el-form-item>
-                </el-col>
-              </el-row>
+            <!-- 搜索、重置、取消、确认按钮放在查询条件容器和表格之间 -->
+            <div style="text-align: left; margin: 10px 0;">
+              <el-button type="primary" icon="el-icon-search" size="medium" @click="handleQuery">搜索</el-button>
+              <el-button icon="el-icon-refresh" size="medium" @click="resetQuery" style="margin-left: 10px;">重置</el-button>
+              <el-button size="medium" @click="handleClose" style="margin-left: 10px;">取 消</el-button>
+              <el-button type="primary" size="medium" @click="checkBtn" style="margin-left: 10px;">确 定</el-button>
+            </div>
 
-              <el-row :gutter="24">
-                <el-col :span="6">
-                  <el-form-item>
-                    <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-                    <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-            </el-form>
-
-            <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(42vh)" border>
+            <el-table ref="singleTable" :data="materialList" :row-class-name="rowMaterialIndex" @selection-change="handleSelectionChange" height="calc(48vh)" border>
               <el-table-column type="selection" width="55" align="center" />
+              <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+                </template>
+              </el-table-column>
               <el-table-column label="耗材编码" align="center" prop="code" width="120" show-overflow-tooltip resizable/>
               <el-table-column label="耗材名称" align="center" prop="name" width="150" show-overflow-tooltip resizable/>
               <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable/>
               <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable/>
-              <el-table-column label="单位" align="center" prop="unit.name" width="80" show-overflow-tooltip resizable/>
-              <el-table-column label="参考单价" align="center" prop="prince" width="100" show-overflow-tooltip resizable>
+              <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
                 <template slot-scope="scope">
-                  <span>¥{{ scope.row.prince }}</span>
+                  <span>{{ (scope.row.fdUnit && scope.row.fdUnit.unitName) || (scope.row.unit && scope.row.unit.unitName) || (scope.row.unit && scope.row.unit.name) || '--' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="单价" align="center" width="100" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span v-if="scope.row.price || scope.row.prince">¥{{ parseFloat(scope.row.price || scope.row.prince).toFixed(2) }}</span>
+                  <span v-else>--</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable/>
+              <el-table-column label="生产厂家" align="center" width="160" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ (scope.row.fdFactory && scope.row.fdFactory.factoryName) || scope.row.producer || '--' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="注册证号" align="center" width="150" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ scope.row.registerNo || scope.row.register_no || '--' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="计费" align="center" width="100" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ scope.row.isBilling == '1' || scope.row.isBilling == 1 ? '是' : '否' }}</span>
                 </template>
               </el-table-column>
               <el-table-column label="品牌" align="center" prop="brand" width="120" show-overflow-tooltip resizable/>
-              <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable/>
-              <el-table-column label="生产厂家" align="center" prop="producer" width="160" show-overflow-tooltip resizable/>
-              <el-table-column label="注册证号" align="center" prop="register_no" width="150" show-overflow-tooltip resizable/>
+              <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ scope.row.remark || '--' }}</span>
+                </template>
+              </el-table-column>
             </el-table>
 
             <pagination
@@ -85,11 +115,6 @@
               :limit.sync="queryParams.pageSize"
               @pagination="getList"
             />
-          </div>
-          
-          <div class="modal-footer">
-            <el-button @click="handleClose">取 消</el-button>
-            <el-button type="primary" @click="checkBtn">确 定</el-button>
           </div>
         </div>
       </transition>
@@ -104,7 +129,10 @@ import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 export default {
   name: "SelectMaterialForPurchase",
   components: {SelectSupplier},
-  props: ['DialogComponentShow'], //接受父组件传递过来的数据
+  props: {
+    DialogComponentShow: Boolean, //接受父组件传递过来的数据
+    warehouseValue: [Number, String] // 仓库ID，用于过滤定数监测数据
+  },
   data() {
     return {
       // 遮罩层
@@ -138,23 +166,104 @@ export default {
       },
       // 表单参数
       form: {},
+      // 定数监测的产品ID列表（用于过滤）
+      fixedNumberMaterialIds: [],
+      // 所有过滤后的材料列表（用于分页）
+      allFilteredMaterials: [],
     };
+  },
+  watch: {
+    DialogComponentShow(newVal) {
+      this.show = newVal;
+      if (newVal) {
+        // 弹窗打开时，如果有仓库ID，加载定数监测数据
+        if (this.warehouseValue) {
+          this.loadFixedNumberMaterials(this.warehouseValue);
+        }
+        this.getList();
+      }
+    },
+    warehouseValue(newVal) {
+      // 当仓库值变化时，重新加载定数监测数据
+      if (newVal) {
+        this.loadFixedNumberMaterials(newVal);
+        this.getList();
+      } else {
+        this.fixedNumberMaterialIds = [];
+        this.getList();
+      }
+    }
   },
   mounted() {
     //显示弹窗
-    this.show = this.DialogComponentShow
+    this.show = this.DialogComponentShow;
+    // 如果有仓库ID，加载定数监测数据
+    if (this.warehouseValue) {
+      this.loadFixedNumberMaterials(this.warehouseValue);
+    }
     this.getList();
   },
   created() {
     // this.getList();
   },
   methods: {
+    /** 加载定数监测的产品列表 */
+    loadFixedNumberMaterials(warehouseId) {
+      if (!warehouseId) {
+        this.fixedNumberMaterialIds = [];
+        return;
+      }
+      
+      try {
+        // 从localStorage读取定数监测数据（仓库定数监测类型为'1'）
+        const storageKey = `fixedNumber_1_${warehouseId}`;
+        const savedData = localStorage.getItem(storageKey);
+        
+        if (savedData) {
+          const fixedNumberList = JSON.parse(savedData);
+          // 提取所有做了定数监测的产品ID
+          this.fixedNumberMaterialIds = fixedNumberList
+            .filter(item => item.material && item.material.id)
+            .map(item => item.material.id)
+            .filter(id => id);
+        } else {
+          this.fixedNumberMaterialIds = [];
+        }
+      } catch (error) {
+        console.error('加载定数监测数据失败:', error);
+        this.fixedNumberMaterialIds = [];
+      }
+    },
     /** 查询耗材信息列表 */
     getList() {
       this.loading = true;
-      listMaterial(this.queryParams).then(response => {
-        this.materialList = response.rows;
-        this.total = response.total;
+      // 如果使用定数监测过滤，需要获取所有数据
+      const queryParams = { ...this.queryParams };
+      if (this.fixedNumberMaterialIds.length > 0) {
+        // 获取所有数据，不分页
+        queryParams.pageNum = 1;
+        queryParams.pageSize = 9999;
+      }
+      
+      listMaterial(queryParams).then(response => {
+        let materialList = response.rows || [];
+        
+        // 如果有定数监测产品ID列表，只显示这些产品
+        if (this.fixedNumberMaterialIds.length > 0) {
+          materialList = materialList.filter(item => {
+            return item.id && this.fixedNumberMaterialIds.includes(item.id);
+          });
+        }
+        
+        // 保存所有过滤后的数据
+        this.allFilteredMaterials = materialList;
+        this.total = materialList.length;
+        
+        // 客户端分页
+        const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize;
+        const end = start + this.queryParams.pageSize;
+        this.materialList = materialList.slice(start, end);
+        
         this.loading = false;
       });
     },
@@ -186,6 +295,15 @@ export default {
       this.$emit('selectData', this.selectRow)   //发送数据到父组件
       this.handleClose()
     },
+    /** 耗材序号 */
+    rowMaterialIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
+    /** 删除行 */
+    handleDeleteRow(index) {
+      this.materialList.splice(index, 1);
+      this.total = this.materialList.length;
+    },
   }
 };
 </script>
@@ -212,6 +330,7 @@ export default {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 95vh !important;
 }
 
 .modal-header {
@@ -233,12 +352,14 @@ export default {
 }
 
 .close-btn {
-  border: none;
-  background: transparent;
+  border: 1px solid #DCDFE6;
+  background: #fff;
+  padding: 7px 15px;
 }
 
 .close-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: #F5F7FA;
+  border-color: #C0C4CC;
 }
 
 .modal-body {
@@ -287,13 +408,21 @@ export default {
   transition: all 0.3s;
 }
 
-/* 搜索表单样式 */
-.el-form {
+/* 搜索条件容器样式 */
+.form-fields-container {
   background: #fff;
-  padding: 20px;
+  padding: 16px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
+}
+
+/* 搜索表单样式 */
+.el-form {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 0;
 }
 
 .el-form .el-form-item {
@@ -322,5 +451,54 @@ export default {
 .modal-zoom-leave-to {
   opacity: 0;
   transform: scale(0.8);
+}
+
+/* 确保操作列固定 */
+::v-deep .el-table__fixed-right {
+  right: 0 !important;
+  z-index: 12 !important;
+  position: absolute !important;
+}
+
+::v-deep .el-table__fixed-header-wrapper {
+  z-index: 11;
+}
+
+::v-deep .el-table__fixed-right-patch {
+  right: 0 !important;
+  z-index: 12 !important;
+}
+
+/* 确保固定列头部和主体都有正确的z-index */
+::v-deep .el-table__fixed-right .el-table__header-wrapper {
+  z-index: 12 !important;
+}
+
+::v-deep .el-table__fixed-right .el-table__body-wrapper {
+  z-index: 12 !important;
+}
+
+/* 确保固定列在滚动时保持固定 */
+::v-deep .el-table__fixed {
+  position: absolute !important;
+}
+
+/* 底部滚动条样式 */
+::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 12px;
+}
+
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 6px;
+}
+
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 6px;
+}
+
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 </style>

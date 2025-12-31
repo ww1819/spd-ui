@@ -1,56 +1,59 @@
 ﻿<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <div class="form-fields-container">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="盘点单号" prop="billNo" label-width="100px">
-            <el-input v-model="queryParams.billNo"
-                      placeholder="请输入盘点单号"
-                      clearable
-                      @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
+        <el-row class="query-row-left">
+          <el-col :span="24">
+            <el-form-item label="业务单号" prop="billNo" class="query-item-inline">
+              <el-input v-model="queryParams.billNo"
+                        placeholder="请输入业务单号"
+                        clearable
+                        style="width: 180px"
+                        @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        <el-col :span="6">
-          <el-form-item label="盘点日期" prop="warehouseDate" label-width="100px">
-            <el-date-picker clearable
-                            v-model="queryParams.warehouseDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="请选择盘点日期">
-            </el-date-picker>
-          </el-form-item>
-        </el-col>
+        <el-row class="query-row-left">
+          <el-col :span="24">
+            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        <el-col :span="6">
-          <el-form-item label="耗材" prop="materialId" label-width="100px">
-            <SelectMaterial v-model="queryParams.materialId" />
-          </el-form-item>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="12">
+            <el-form-item label="制单日期" style="display: flex; align-items: center;">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                style="width: 180px; margin-right: 8px;"
+              />
+              <span style="margin: 0 4px;">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                style="width: 180px; margin-left: 8px;"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        </el-col>
+      </el-form>
+    </div>
 
-        <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-            <SelectWarehouse v-model="queryParams.warehouseId"/>
-          </el-form-item>
-
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="20">
-        <el-col :span="6" label-width="100px">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-    </el-form>
-
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -63,28 +66,6 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="small"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['outWarehouse:apply:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="small"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['outWarehouse:apply:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
           type="warning"
           plain
           icon="el-icon-download"
@@ -93,54 +74,95 @@
           v-hasPermi="['outWarehouse:apply:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          icon="el-icon-search"
+          size="small"
+          @click="handleQuery"
+        >搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          icon="el-icon-refresh"
+          size="small"
+          @click="resetQuery"
+        >重置</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList" @selection-change="handleSelectionChange" height="54vh" border>
-      <el-table-column type="selection" width="55" align="center" resizable />
-      <el-table-column label="盘点单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
+    <el-table v-loading="loading" :data="warehouseList" :row-class-name="warehouseListIndex" @selection-change="handleSelectionChange" height="58vh" border>
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
+      <el-table-column label="业务单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="盘点日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
-      <el-table-column label="科室" align="center" prop="department.name" show-overflow-tooltip resizable />
       <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
-
-      <el-table-column label="操作人" align="center" prop="createBy" show-overflow-tooltip resizable />
-      <el-table-column label="盘点类型" align="center" prop="billType" show-overflow-tooltip resizable >
+      <el-table-column label="操作人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="盘点类型" align="center" prop="billType" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.bill_type" :value="scope.row.billType"/>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" show-overflow-tooltip resizable>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
         <template slot-scope="scope">
-          <el-button
-            size="small"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['outWarehouse:apply:edit']"
-          >修改</el-button>
-          <el-button
-            size="small"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['outWarehouse:apply:remove']"
-          >删除</el-button>
+          <span style="white-space: nowrap; display: inline-block;">
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-download"
+              @click="handleExportRow(scope.row)"
+              style="padding: 0 5px; margin: 0;"
+            >导出</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-printer"
+              @click="handlePrint(scope.row,true)"
+              v-if="scope.row.billStatus == 2"
+              style="padding: 0 5px; margin: 0;"
+            >打印</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-edit"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['outWarehouse:apply:edit']"
+              v-if="scope.row.billStatus != 2"
+              style="padding: 0 5px; margin: 0;"
+            >修改</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-delete"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['outWarehouse:apply:remove']"
+              v-if="scope.row.billStatus != 2"
+              style="padding: 0 5px; margin: 0;"
+            >删除</el-button>
+          </span>
         </template>
       </el-table-column>
     </el-table>
@@ -337,13 +359,13 @@ import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
-
+import RightToolbar from "@/components/RightToolbar";
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 
 export default {
   name: "Warehouse",
   dicts: ['biz_status','bill_type'],
-  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory},
+  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,RightToolbar},
   data() {
     return {
       // 遮罩层
@@ -386,6 +408,8 @@ export default {
         billStatus: null,
         userId: null,
         billType: null,
+        beginDate: null,
+        endDate: null,
       },
       // 表单参数
       form: {},
@@ -410,6 +434,17 @@ export default {
     this.getList();
   },
   methods: {
+    /** 盘点列表序号 */
+    warehouseListIndex({ row, rowIndex }) {
+      const pageNum = Math.max(1, parseInt(this.queryParams.pageNum, 10));
+      const pageSize = Math.max(1, parseInt(this.queryParams.pageSize, 10));
+      row.index = (pageNum - 1) * pageSize + rowIndex + 1;
+    },
+    /** 打印操作 */
+    handlePrint(row, isPrint) {
+      // 打印功能实现
+      this.$message.info('打印功能待实现');
+    },
     /** 查询盘点列表 */
     getList() {
       this.loading = true;
@@ -626,6 +661,12 @@ export default {
       this.download('warehouse/warehouse/export', {
         ...this.queryParams
       }, `warehouse_${new Date().getTime()}.xlsx`)
+    },
+    /** 单行导出操作 */
+    handleExportRow(row) {
+      this.download('warehouse/warehouse/export', {
+        billNo: row.billNo
+      }, `warehouse_${row.billNo}_${new Date().getTime()}.xlsx`)
     }
   }
 };
@@ -756,5 +797,127 @@ export default {
 .el-form-item__label {
   color: #606266;
   font-weight: 500;
+}
+
+/* 查询条件容器框样式 */
+.form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
+}
+
+/* 搜索区域样式 */
+.app-container > .el-form {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+}
+
+.form-fields-container > .el-form {
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.app-container > .el-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container > .el-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container > .el-form .el-form-item {
+  margin-bottom: 0;
+}
+
+/* 第一行查询条件左对齐紧凑布局 */
+.app-container > .el-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+/* 统一控制查询条件输入框宽度 */
+.app-container > .el-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline .el-select {
+  width: 150px;
+}
+
+/* 第二行单据状态对齐到仓库位置 */
+.app-container > .el-form .query-row-second {
+  position: relative;
+}
+
+/* 确保制单日期的两个日期选择器在同一行 */
+.app-container > .el-form .query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.app-container > .el-form .query-row-second .query-status-col {
+  position: absolute;
+  left: 552px;
+  width: auto;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* 主表格水平滚动条增粗 */
+::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar,
+::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  width: 16px !important; /* 垂直滚动条宽度 */
+  height: 8px !important;  /* 水平滚动条高度 */
+}
+
+::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-track,
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+
+::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 8px;
+}
+
+::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 </style>

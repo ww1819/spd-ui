@@ -1,45 +1,68 @@
 ﻿<template>
   <div class="app-container">
-    <el-dialog title="库存明细" :visible.sync="show" append-to-body width="1600px" :before-close="handleClose">
-      <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
-        <el-row :gutter="20">
+    <el-dialog :visible.sync="show" append-to-body width="1600px" :before-close="handleClose" :show-close="false">
+      <div slot="title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>库存明细</span>
+        <el-button size="small" @click="handleClose" style="border: none; padding: 0;">关闭</el-button>
+      </div>
+      <!-- 查询条件容器框 -->
+      <div class="query-fields-container">
+        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+          <el-row :gutter="20">
 
-          <el-col :span="6">
-            <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-              <SelectWarehouse v-model="queryParams.warehouseId" :value2="isShow"/>
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label="仓库" prop="warehouseId" label-width="100px">
+                <SelectWarehouse v-model="queryParams.warehouseId" :value2="isShow"/>
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="耗材" prop="materialId" label-width="100px">
-              <SelectMaterial v-model="queryParams.materialId" />
-            </el-form-item>
-          </el-col>
+            <el-col :span="6">
+              <el-form-item label="供应商" prop="supplierId" label-width="100px">
+                <SelectSupplier v-model="queryParams.supplierId" :value2="isShow"/>
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="入库批次号" prop="batchNo" label-width="100px">
-              <el-input
-                v-model="queryParams.batchNo"
-                placeholder="请输入入库批次号"
-                clearable
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-          </el-col>
+          </el-row>
 
-        </el-row>
+          <el-row :gutter="20">
 
-        <el-row :gutter="24">
-          <el-col :span="6">
-            <el-form-item>
-              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-              <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+            <el-col :span="6">
+              <el-form-item label="耗材" prop="materialId" label-width="100px">
+                <SelectMaterial v-model="queryParams.materialId" />
+              </el-form-item>
+            </el-col>
 
-<!--      <el-table ref="singleTable" :data="inventoryList" @selection-change="handleSelectionChange">-->
+            <el-col :span="6">
+              <el-form-item label="入库批次号" prop="batchNo" label-width="100px">
+                <el-input
+                  v-model="queryParams.batchNo"
+                  placeholder="请输入入库批次号"
+                  clearable
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
+            </el-col>
+
+          </el-row>
+
+          <!-- 搜索和重置按钮放在查询条件框内 -->
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item>
+                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+                <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+      </div>
+
+      <!-- 取消和确认按钮放在查询条件框和明细表格之间 -->
+      <div class="action-buttons-wrapper">
+        <el-button size="small" @click="handleClose">取 消</el-button>
+        <el-button type="primary" size="small" @click="checkBtn" style="margin-left: 10px;">确 定</el-button>
+      </div>
+
       <el-table ref="singleTable" :data="inventoryList" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="耗材" align="center" prop="material.name" width="120"/>
@@ -62,11 +85,6 @@
         </el-table-column>
 
       </el-table>
-
-      <span slot="footer" class="dialog-footer">
-          <el-button @click="handleClose">取 消</el-button>
-          <el-button type="primary" @click="checkBtn">确 定</el-button>
-      </span>
 
       <pagination
         v-show="total>0"
@@ -119,6 +137,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         warehouseId: null,
+        supplierId: null,
         materialId: null,
         batchNo: null,
       },
@@ -176,3 +195,24 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 查询条件容器样式 */
+.query-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
+}
+
+/* 操作按钮容器样式 */
+.action-buttons-wrapper {
+  text-align: left;
+  margin: 16px 0;
+  padding: 0 4px;
+  display: block;
+  width: 100%;
+}
+</style>

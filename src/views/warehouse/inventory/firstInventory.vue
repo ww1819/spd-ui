@@ -1,83 +1,108 @@
 ﻿<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="库存数量" prop="qty" label-width="100px">
-            <el-input
-              v-model="queryParams.qty"
-              placeholder="请输入库存数量"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label="耗材" prop="materialId" label-width="100px">
-            <MaterialAutocomplete v-model="queryParams.materialName"/>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-            <WarehouseAutocomplete v-model="queryParams.warehouseName"/>
-          </el-form-item>
-        </el-col>
+    <div class="form-fields-container">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+        <el-row class="query-row-left">
+          <el-col :span="24">
+            <el-form-item label="库存数量" prop="qty" class="query-item-inline">
+              <el-input
+                v-model="queryParams.qty"
+                placeholder="请输入库存数量"
+                clearable
+                style="width: 180px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <MaterialAutocomplete v-model="queryParams.materialName"/>
+              </div>
+            </el-form-item>
+            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <WarehouseAutocomplete v-model="queryParams.warehouseName"/>
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        <el-col :span="6">
-          <el-form-item label="入库日期" prop="warehouseDate" label-width="100px">
-            <el-date-picker clearable
-                            v-model="queryParams.warehouseDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="请选择入库日期">
-            </el-date-picker>
-          </el-form-item>
-        </el-col>
-      </el-row>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="6">
+            <el-form-item label="批次号" prop="batchNo" label-width="100px">
+              <el-input
+                v-model="queryParams.batchNo"
+                placeholder="请输入批次号"
+                clearable
+                style="width: 180px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="批号" prop="materialNo" label-width="100px">
+              <el-input
+                v-model="queryParams.materialNo"
+                placeholder="请输入批号"
+                clearable
+                style="width: 180px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="耗材日期" prop="materialDate" label-width="100px">
+              <el-date-picker clearable
+                              v-model="queryParams.materialDate"
+                              type="date"
+                              value-format="yyyy-MM-dd"
+                              placeholder="请选择耗材日期"
+                              style="width: 180px">
+              </el-date-picker>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="入库日期" prop="warehouseDate" label-width="100px">
+              <el-date-picker clearable
+                              v-model="queryParams.warehouseDate"
+                              type="date"
+                              value-format="yyyy-MM-dd"
+                              placeholder="请选择入库日期"
+                              style="width: 180px">
+              </el-date-picker>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="批次号" prop="batchNo" label-width="100px">
-            <el-input
-              v-model="queryParams.batchNo"
-              placeholder="请输入批次号"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label="批号" prop="materialNo" label-width="100px">
-            <el-input
-              v-model="queryParams.materialNo"
-              placeholder="请输入批号"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-        <el-form-item label="耗材日期" prop="materialDate" label-width="100px">
-          <el-date-picker clearable
-                          v-model="queryParams.materialDate"
-                          type="date"
-                          value-format="yyyy-MM-dd"
-                          placeholder="请选择耗材日期">
-          </el-date-picker>
-        </el-form-item>
-      </el-row>
+    <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -10px">
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          icon="el-icon-download"
+          size="small"
+          @click="handleExport"
+        >导出</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          icon="el-icon-search"
+          size="small"
+          @click="handleQuery"
+        >搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          icon="el-icon-refresh"
+          size="small"
+          @click="resetQuery"
+        >重置</el-button>
+      </el-col>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-    </el-form>
-
-
+    <div class="table-container">
     <el-table v-loading="loading" :data="inventoryList"
               :row-class-name="inventoryListIndex"
               show-summary :summary-method="getTotalSummaries"
@@ -128,6 +153,7 @@
       </el-table-column>
 
     </el-table>
+    </div>
 
     <pagination
       v-show="total>0"
@@ -146,11 +172,12 @@ import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import WarehouseAutocomplete from "@/components/SelectModel/WarehouseAutocomplete";
 import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
+import RightToolbar from "@/components/RightToolbar";
 import { listWarehouse } from "@/api/foundation/warehouse";
 
 export default {
   name: "firstInventory",
-  components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete},
+  components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete,RightToolbar},
   data() {
     return {
       // 遮罩层
@@ -317,3 +344,57 @@ export default {
 
 };
 </script>
+
+<style scoped>
+/* 查询条件样式 */
+.query-row-left {
+  margin-bottom: 10px;
+}
+
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 10px;
+}
+
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+.query-row-second {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* 查询条件容器框样式 */
+.form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  margin-top: -20px;
+  border: 1px solid #EBEEF5;
+}
+
+.table-container {
+  margin-top: 0px;
+  overflow: visible;
+  width: 100%;
+  position: relative;
+}
+</style>

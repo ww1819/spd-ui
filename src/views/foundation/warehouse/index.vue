@@ -130,22 +130,25 @@
         <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
         <el-form ref="form" :model="form" :rules="rules" label-width="100px">
           <el-row :gutter="20">
-            <el-col :span="6">
+            <el-col :span="12">
               <el-form-item label="仓库编码" prop="code">
                 <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入仓库编码" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="12">
               <el-form-item label="仓库名称" prop="name">
                 <el-input v-model="form.name" placeholder="请输入仓库名称" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+          </el-row>
+
+          <el-row :gutter="20">
+            <el-col :span="12">
               <el-form-item label="负责人" prop="warehousePerson">
                 <el-input v-model="form.warehousePerson" placeholder="请输入负责人" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="12">
               <el-form-item label="电话" prop="warehousePhone">
                 <el-input v-model="form.warehousePhone" placeholder="请输入电话" />
               </el-form-item>
@@ -153,7 +156,7 @@
           </el-row>
 
           <el-row :gutter="20">
-            <el-col :span="6">
+            <el-col :span="12">
               <el-form-item label="状态" prop="warehouseStatus">
                 <el-select v-model="form.warehouseStatus" placeholder="请选择状态" style="width: 100%">
                   <el-option
@@ -165,16 +168,20 @@
                 </el-select>
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="12">
               <el-form-item label="仓库类型" prop="warehouseType">
                 <el-select v-model="form.warehouseType" placeholder="请选择仓库类型" style="width: 100%">
                   <el-option label="高值" value="高值"></el-option>
                   <el-option label="低值" value="低值"></el-option>
                   <el-option label="试剂" value="试剂"></el-option>
+                  <el-option label="设备" value="设备"></el-option>
                 </el-select>
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+          </el-row>
+
+          <el-row :gutter="20">
+            <el-col :span="12">
               <el-form-item label="结算类型" prop="settlementType">
                 <el-select v-model="form.settlementType" placeholder="请选择结算类型" style="width: 100%">
                   <el-option label="入库结算" value="1"></el-option>
@@ -183,7 +190,7 @@
                 </el-select>
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="12">
               <el-form-item label="备注" prop="remark">
                 <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
               </el-form-item>
@@ -238,7 +245,30 @@ export default {
       // 表单校验
       rules: {
         code: [
-          { required: true, message: "仓库编码不能为空", trigger: "blur" }
+          { required: true, message: "仓库编码不能为空", trigger: "blur" },
+          { validator: (rule, value, callback) => {
+            if (!value) {
+              callback();
+              return;
+            }
+            
+            // 检查编码是否已存在（排除当前编辑的记录）
+            listWarehouse({ code: value, pageNum: 1, pageSize: 1 }).then(response => {
+              if (response.rows && response.rows.length > 0) {
+                const existingWarehouse = response.rows[0];
+                // 如果是新增模式，或者存在其他记录的编码，则报错
+                if (!this.form.id || existingWarehouse.id !== this.form.id) {
+                  callback(new Error('该仓库编码已存在，请使用其他编码'));
+                } else {
+                  callback();
+                }
+              } else {
+                callback();
+              }
+            }).catch(() => {
+              callback();
+            });
+          }, trigger: "blur" }
         ],
         name: [
           { required: true, message: "仓库名称不能为空", trigger: "blur" }

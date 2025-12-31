@@ -19,7 +19,7 @@
                         border>
                 <el-table-column label="工作组" align="center" prop="postName" show-overflow-tooltip>
                   <template slot="header">
-                    <span style="cursor: pointer;" @click="handleWorkgroupHeaderClick">工作组</span>
+                    <span style="cursor: pointer; font-weight: 700;" @click="handleWorkgroupHeaderClick">工作组</span>
                   </template>
                   <template slot-scope="scope">
                     <span>{{ scope.row.postName }}</span>
@@ -101,12 +101,12 @@
         </el-form>
 
         <div class="table-wrapper">
-          <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange" height="30vh" border>
+          <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange" height="24vh" border>
           <el-table-column type="selection" width="50" align="center" />
           <el-table-column type="index" label="序号" align="center" width="80" v-if="columns[0].visible" :index="indexMethod" />
           <el-table-column label="用户账户" align="center" key="userName" prop="userName" v-if="columns[1].visible" :show-overflow-tooltip="true" />
           <el-table-column label="用户姓名" align="center" key="nickName" prop="nickName" v-if="columns[2].visible" :show-overflow-tooltip="true" />
-          <el-table-column label="工作组" align="center" key="deptName" prop="dept.deptName" v-if="columns[3].visible" :show-overflow-tooltip="true" />
+          <el-table-column label="工作组" align="center" key="deptName" prop="postName" v-if="columns[3].visible" :show-overflow-tooltip="true" />
           <el-table-column label="手机号码" align="center" key="phonenumber" prop="phonenumber" v-if="columns[4].visible" width="120" />
           <el-table-column label="状态" align="center" key="status" v-if="columns[5].visible">
             <template slot-scope="scope">
@@ -138,6 +138,7 @@
                   icon="el-icon-edit"
                   @click="handleUpdate(scope.row)"
                   v-hasPermi="['system:user:edit']"
+                  v-if="false"
                 >修改</el-button>
                 <el-button
                   size="small"
@@ -145,16 +146,15 @@
                   icon="el-icon-delete"
                   @click="handleDelete(scope.row)"
                   v-hasPermi="['system:user:remove']"
+                  v-if="false"
                 >删除</el-button>
-                <el-dropdown size="small" @command="(command) => handleCommand(command, scope.row)" v-hasPermi="['system:user:resetPwd', 'system:user:edit']">
-                  <el-button size="small" type="text" icon="el-icon-d-arrow-right">更多</el-button>
-                  <el-dropdown-menu slot="dropdown">
-                    <el-dropdown-item command="handleResetPwd" icon="el-icon-key"
-                      v-hasPermi="['system:user:resetPwd']">重置密码</el-dropdown-item>
-                    <el-dropdown-item command="handleAuthRole" icon="el-icon-circle-check"
-                      v-hasPermi="['system:user:edit']">分配角色</el-dropdown-item>
-                  </el-dropdown-menu>
-                </el-dropdown>
+                <el-button
+                  size="small"
+                  type="text"
+                  icon="el-icon-s-check"
+                  @click="handleAuth(scope.row)"
+                  v-hasPermi="['system:user:edit']"
+                >授权</el-button>
               </span>
             </template>
           </el-table-column>
@@ -182,45 +182,37 @@
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="80px" size="small" class="modal-form-compact">
               <el-row>
-                <el-col :span="12">
-                  <el-form-item label="用户姓名" prop="nickName">
-                    <el-input v-model="form.nickName" placeholder="请输入用户姓名" maxlength="30" />
+                <el-col :span="4">
+                  <el-form-item label="机构单位">
+                    <el-input v-model="organizationUnit" placeholder="机构单位" disabled style="width: 100%;" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="12" v-show="false">
-                  <el-form-item label="工作组" prop="deptId">
-                    <treeselect v-model="form.deptId" :options="workgroupOptions" :show-count="true" placeholder="请选择工作组" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row>
-                <el-col :span="12">
-                  <el-form-item label="手机号码" prop="phonenumber">
-                    <el-input v-model="form.phonenumber" placeholder="请输入手机号码" maxlength="11" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="邮箱" prop="email">
-                    <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row>
-                <el-col :span="12">
-                  <el-form-item v-if="form.userId == undefined" label="用户账户" prop="userName">
-                    <el-input v-model="form.userName" placeholder="请输入用户账户" maxlength="30" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item v-if="form.userId == undefined" label="用户密码" prop="password">
-                    <el-input v-model="form.password" placeholder="请输入用户密码" type="password" maxlength="20" show-password/>
+                <el-col :span="4">
+                  <el-form-item label="角色">
+                    <el-select 
+                      v-model="form.roleIds" 
+                      multiple 
+                      placeholder="请选择角色" 
+                      style="width: 100%;" 
+                      :disabled="form.userId == undefined"
+                      :allow-create="false"
+                      @change="handleRoleChange"
+                    >
+                      <el-option
+                        v-for="item in roleOptions"
+                        :key="item.roleId"
+                        :label="item.roleName"
+                        :value="item.roleId"
+                        :disabled="item.status == 1"
+                      ></el-option>
+                    </el-select>
                   </el-form-item>
                 </el-col>
               </el-row>
               <el-row>
-                <el-col :span="12">
+                <el-col :span="4">
                   <el-form-item label="用户性别">
-                    <el-select v-model="form.sex" placeholder="请选择性别">
+                    <el-select v-model="form.sex" placeholder="请选择性别" style="width: 100%;">
                       <el-option
                         v-for="dict in dict.type.sys_user_sex"
                         :key="dict.value"
@@ -230,7 +222,51 @@
                     </el-select>
                   </el-form-item>
                 </el-col>
-                <el-col :span="12">
+                <el-col :span="4">
+                  <el-form-item label="用户账户" prop="userName">
+                    <el-input v-model="form.userName" placeholder="请输入用户账户" maxlength="30" :disabled="form.userId != undefined" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row>
+                <el-col :span="4">
+                  <el-form-item label="工作组">
+                    <el-select v-model="form.deptId" placeholder="请选择工作组" clearable style="width: 100%;">
+                      <el-option
+                        v-for="item in postOptions"
+                        :key="item.postId"
+                        :label="item.postName"
+                        :value="item.postId"
+                        :disabled="item.status == 1"
+                      ></el-option>
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="4">
+                  <el-form-item label="用户密码" prop="password" v-if="form.userId == undefined">
+                    <el-input v-model="form.password" placeholder="请输入用户密码" type="password" maxlength="20" show-password/>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row>
+                <el-col :span="4">
+                  <el-form-item label="邮箱" prop="email">
+                    <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="4">
+                  <el-form-item label="用户姓名" prop="nickName">
+                    <el-input v-model="form.nickName" placeholder="请输入用户姓名" maxlength="30" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row>
+                <el-col :span="4">
+                  <el-form-item label="手机号码" prop="phonenumber">
+                    <el-input v-model="form.phonenumber" placeholder="请输入手机号码" maxlength="11" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="4">
                   <el-form-item label="状态">
                     <el-radio-group v-model="form.status">
                       <el-radio
@@ -244,34 +280,15 @@
               </el-row>
               <el-row>
                 <el-col :span="12">
-                  <el-form-item label="工作组">
-                    <el-select v-model="form.deptId" placeholder="请选择工作组" clearable style="width: 100%;">
-                      <el-option
-                        v-for="item in postOptions"
-                        :key="item.postId"
-                        :label="item.postName"
-                        :value="item.postId"
-                        :disabled="item.status == 1"
-                      ></el-option>
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="角色">
-                    <el-select v-model="form.roleIds" multiple placeholder="请选择角色">
-                      <el-option
-                        v-for="item in roleOptions"
-                        :key="item.roleId"
-                        :label="item.roleName"
-                        :value="item.roleId"
-                        :disabled="item.status == 1"
-                      ></el-option>
-                    </el-select>
+                  <el-form-item label="备注" prop="remark">
+                    <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
                   </el-form-item>
                 </el-col>
               </el-row>
+              <el-row></el-row>
+              <el-row></el-row>
 
-              <el-row>
+              <el-row v-if="false">
                 <el-col :span="24">
                   <el-form-item label="仓库权限">
                     <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">全选</el-checkbox>
@@ -286,7 +303,7 @@
                 </el-col>
               </el-row>
 
-              <el-row>
+              <el-row v-if="false">
                 <el-col :span="24">
                   <el-form-item label="科室权限">
                     <el-checkbox :indeterminate="departmentIndeterminate" v-model="materialCheckAll" @change="handleCheckDepartmentAllChange">全选</el-checkbox>
@@ -300,10 +317,51 @@
                   </el-form-item>
                 </el-col>
               </el-row>
-              <el-row>
+              <el-row v-if="false">
                 <el-col :span="24">
-                  <el-form-item label="备注">
-                    <el-input v-model="form.remark" type="textarea" placeholder="请输入内容"></el-input>
+                  <el-form-item label="授权菜单">
+                    <el-checkbox :indeterminate="menuIndeterminate" v-model="menuCheckAll" @change="handleCheckMenuAllChange">全选</el-checkbox>
+                    <el-tree
+                      ref="menuTree"
+                      :data="menuOptions"
+                      :props="defaultProps"
+                      node-key="id"
+                      show-checkbox
+                      :check-strictly="false"
+                      :default-expand-all="false"
+                      :expand-on-click-node="false"
+                      :check-on-click-node="true"
+                      @check="handleMenuCheck"
+                      style="margin-top: 10px; max-height: 300px; overflow-y: auto;"
+                    >
+                      <span class="custom-tree-node" slot-scope="{ node, data }">
+                        <span>{{ node.label }}</span>
+                      </span>
+                    </el-tree>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row v-if="false">
+                <el-col :span="24">
+                  <el-form-item label="授权菜单">
+                    <el-checkbox :indeterminate="menuIndeterminate" v-model="menuCheckAll" @change="handleCheckMenuAllChange">全选</el-checkbox>
+                    <el-tree
+                      ref="menuTree"
+                      :data="menuOptions"
+                      :props="defaultProps"
+                      node-key="id"
+                      show-checkbox
+                      :check-strictly="false"
+                      :default-expand-all="false"
+                      :expand-on-click-node="false"
+                      :check-on-click-node="true"
+                      @check="handleMenuCheck"
+                      style="margin-top: 10px; max-height: 300px; overflow-y: auto;"
+                    >
+                      <span class="custom-tree-node" slot-scope="{ node, data }">
+                        <span>{{ node.label }}</span>
+                      </span>
+                    </el-tree>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -346,6 +404,85 @@
         <el-button @click="upload.open = false">取 消</el-button>
       </div>
     </el-dialog>
+
+    <!-- 授权弹窗 -->
+    <el-dialog :title="authTitle || '授权'" :visible.sync="authOpen" width="700px" append-to-body>
+    <el-tabs type="card">
+      <el-tab-pane label="菜单权限">
+        <div style="margin-bottom: 8px;">
+          <el-button size="mini" @click="handleAuthMenuAll(true)">全选</el-button>
+          <el-button size="mini" @click="handleAuthMenuAll(false)">取消</el-button>
+        </div>
+        <el-tree
+          ref="authMenuTree"
+          :data="menuOptions"
+          :props="defaultProps"
+          node-key="id"
+          show-checkbox
+          :check-strictly="false"
+          :default-expand-all="false"
+          :expand-on-click-node="false"
+          :check-on-click-node="true"
+          @check="handleAuthMenuCheck"
+          style="max-height: 300px; overflow-y: auto;"
+        >
+          <span class="custom-tree-node" slot-scope="{ node, data }">
+            <span>{{ node.label }}</span>
+          </span>
+        </el-tree>
+      </el-tab-pane>
+      <el-tab-pane label="科室权限">
+        <div style="margin-bottom: 8px;">
+          <el-button size="mini" @click="handleAuthDepartmentAll(true)">全选</el-button>
+          <el-button size="mini" @click="handleAuthDepartmentAll(false)">取消</el-button>
+          <el-input
+            v-model="departmentKeyword"
+            size="mini"
+            clearable
+            placeholder="搜索科室"
+            style="width: 180px; margin-left: 10px;"
+          />
+        </div>
+        <div class="auth-checkbox-container">
+          <el-checkbox-group v-model="authForm.departmentIds" class="auth-checkbox-group">
+            <el-checkbox v-for="item in filteredDepartmentOptions"
+                         :key="item.id"
+                         :label="item.id"
+                         class="auth-checkbox-item">{{item.name}}
+            </el-checkbox>
+          </el-checkbox-group>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="仓库权限">
+        <div style="margin-bottom: 8px;">
+          <el-button size="mini" @click="handleAuthWarehouseAll(true)">全选</el-button>
+          <el-button size="mini" @click="handleAuthWarehouseAll(false)">取消</el-button>
+        </div>
+        <div style="max-height: 300px; overflow-y: auto;">
+          <el-checkbox-group v-model="authForm.warehouseIds">
+            <el-checkbox v-for="item in userWarehouseOptions"
+                         :key="item.id"
+                         :label="item.id">{{item.name}}
+            </el-checkbox>
+          </el-checkbox-group>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="单位权限">
+        <div style="max-height: 300px; overflow-y: auto;">
+          <div style="color:#909399; padding: 20px; text-align: center;">暂无数据</div>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="待办事项">
+        <div style="max-height: 300px; overflow-y: auto;">
+          <div style="color:#909399; padding: 20px; text-align: center;">暂无数据</div>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+    <span slot="footer" class="dialog-footer">
+      <el-button type="primary" @click="submitAuth">保 存</el-button>
+      <el-button @click="authOpen = false">取 消</el-button>
+    </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -353,7 +490,8 @@
 import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect } from "@/api/system/user";
 import { workgroupTreeSelect } from "@/api/system/workgroup";
 import { listPost } from "@/api/system/post";
-import { getConfigKey } from "@/api/system/config";
+import { getConfigKey, listConfig } from "@/api/system/config";
+import { treeselect as menuTreeselect } from "@/api/system/menu";
 import { getToken } from "@/utils/auth";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
@@ -362,6 +500,18 @@ export default {
   name: "User",
   dicts: ['sys_normal_disable', 'sys_user_sex','warehouse_role'],
   components: { Treeselect },
+  computed: {
+    /** 科室筛选 */
+    filteredDepartmentOptions() {
+      const keyword = (this.departmentKeyword || "").trim();
+      if (!keyword) {
+        return this.userDepartmentOptions || [];
+      }
+      return (this.userDepartmentOptions || []).filter(item =>
+        (item.name || "").includes(keyword)
+      );
+    },
+  },
   data() {
     return {
       // 遮罩层
@@ -400,6 +550,8 @@ export default {
       initPassword: undefined,
       // 医院名称
       hospitalName: undefined,
+      // 机构单位
+      organizationUnit: undefined,
       // 日期范围
       dateRange: [],
       // 岗位选项
@@ -410,6 +562,25 @@ export default {
       userWarehouseOptions: [],
       // 耗材选项
       userDepartmentOptions: [],
+      // 科室搜索关键字
+      departmentKeyword: "",
+      // 菜单选项
+      menuOptions: [],
+      // 菜单全选
+      menuCheckAll: false,
+      // 菜单半选状态
+      menuIndeterminate: false,
+      // 授权弹窗
+      authOpen: false,
+      authTitle: "",
+      authForm: {
+        userId: null,
+        menuIds: [],
+        departmentIds: [],
+        warehouseIds: []
+      },
+      authMenuCheckAll: false,
+      authMenuIndeterminate: false,
       // 表单参数
       form: {},
       defaultProps: {
@@ -492,6 +663,8 @@ export default {
     this.getConfigKey("sys.hospital.name").then(response => {
       this.hospitalName = response.msg;
     });
+    // 获取参数设置第七条参数的值
+    this.getOrganizationUnit();
 
   },
   methods: {
@@ -522,6 +695,208 @@ export default {
       }
       this.form.departmentIds = val ? checkeddepartmentIds : [];
       this.departmentIndeterminate = false;
+    },
+    /** 获取菜单树 */
+    getMenuTree() {
+      return menuTreeselect().then(response => {
+        this.menuOptions = response.data || [];
+        return response;
+      });
+    },
+    /** 菜单全选 */
+    handleCheckMenuAllChange(val) {
+      if (this.$refs.menuTree) {
+        if (val) {
+          // 获取所有菜单ID
+          const allMenuIds = this.getAllMenuIds(this.menuOptions);
+          this.$refs.menuTree.setCheckedKeys(allMenuIds);
+          this.form.menuIds = allMenuIds;
+        } else {
+          this.$refs.menuTree.setCheckedKeys([]);
+          this.form.menuIds = [];
+        }
+        this.menuIndeterminate = false;
+      }
+    },
+    /** 获取所有菜单ID（递归） */
+    getAllMenuIds(menuList) {
+      let ids = [];
+      menuList.forEach(menu => {
+        ids.push(menu.id);
+        if (menu.children && menu.children.length > 0) {
+          ids = ids.concat(this.getAllMenuIds(menu.children));
+        }
+      });
+      return ids;
+    },
+    /** 菜单选择变化 */
+    handleMenuCheck(data, checked) {
+      const checkedKeys = this.$refs.menuTree.getCheckedKeys();
+      const halfCheckedKeys = this.$refs.menuTree.getHalfCheckedKeys();
+      this.form.menuIds = checkedKeys;
+      
+      // 更新全选和半选状态
+      const allMenuIds = this.getAllMenuIds(this.menuOptions);
+      if (checkedKeys.length === 0) {
+        this.menuCheckAll = false;
+        this.menuIndeterminate = false;
+      } else if (checkedKeys.length === allMenuIds.length) {
+        this.menuCheckAll = true;
+        this.menuIndeterminate = false;
+      } else {
+        this.menuCheckAll = false;
+        this.menuIndeterminate = checkedKeys.length > 0 || halfCheckedKeys.length > 0;
+      }
+    },
+    /** 授权弹窗 - 打开 */
+    handleAuth(row) {
+      this.authOpen = false;
+      const userId = row.userId || row;
+      const userName = row.userName || (typeof row === 'string' ? row : '');
+      this.authTitle = `授权 - ${userName || userId}`;
+      getUser(userId).then(response => {
+        // 载入基础数据
+        this.postOptions = response.posts;
+        this.roleOptions = response.roles;
+        this.userWarehouseOptions = response.warehouses;
+        this.userDepartmentOptions = response.departments;
+        // 载入授权数据
+        const menuIds = response.menuIds || [];
+        console.log('获取到的菜单权限:', menuIds);
+        this.authForm = {
+          userId: response.data.userId,
+          menuIds: menuIds,
+          departmentIds: response.departmentIds || [],
+          warehouseIds: response.warehouseIds || []
+        };
+        return this.getMenuTree();
+      }).then(() => {
+        this.$nextTick(() => {
+          if (this.$refs.authMenuTree) {
+            // 确保 menuIds 是数字数组
+            const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            console.log('设置菜单树选中状态 - menuIds:', menuIds);
+            this.$refs.authMenuTree.setCheckedKeys(menuIds);
+            this.updateAuthMenuCheckState();
+          }
+        });
+        // 确保弹窗打开后再设置一次（有时候需要延迟）
+        setTimeout(() => {
+          if (this.$refs.authMenuTree && this.authForm.menuIds && this.authForm.menuIds.length > 0) {
+            const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            console.log('延迟设置菜单树选中状态 - menuIds:', menuIds);
+            this.$refs.authMenuTree.setCheckedKeys(menuIds);
+            this.updateAuthMenuCheckState();
+          }
+        }, 100);
+        this.authOpen = true;
+      });
+    },
+    /** 授权菜单全选/取消 */
+    handleAuthMenuAll(val) {
+      if (this.$refs.authMenuTree) {
+        if (val) {
+          const allMenuIds = this.getAllMenuIds(this.menuOptions);
+          this.$refs.authMenuTree.setCheckedKeys(allMenuIds);
+          this.authForm.menuIds = allMenuIds;
+        } else {
+          this.$refs.authMenuTree.setCheckedKeys([]);
+          this.authForm.menuIds = [];
+        }
+        this.updateAuthMenuCheckState();
+      }
+    },
+    /** 授权菜单选择变化 */
+    handleAuthMenuCheck(data, checked) {
+      const checkedKeys = this.$refs.authMenuTree.getCheckedKeys();
+      const halfCheckedKeys = this.$refs.authMenuTree.getHalfCheckedKeys();
+      this.authForm.menuIds = checkedKeys;
+      this.updateAuthMenuCheckState(checkedKeys, halfCheckedKeys);
+    },
+    /** 更新授权菜单全选/半选状态 */
+    updateAuthMenuCheckState(checkedKeysParam, halfCheckedKeysParam) {
+      const checkedKeys = checkedKeysParam || (this.$refs.authMenuTree ? this.$refs.authMenuTree.getCheckedKeys() : []);
+      const halfCheckedKeys = halfCheckedKeysParam || (this.$refs.authMenuTree ? this.$refs.authMenuTree.getHalfCheckedKeys() : []);
+      const allMenuIds = this.getAllMenuIds(this.menuOptions);
+      if (!checkedKeys || checkedKeys.length === 0) {
+        this.authMenuCheckAll = false;
+        this.authMenuIndeterminate = false;
+      } else if (checkedKeys.length === allMenuIds.length) {
+        this.authMenuCheckAll = true;
+        this.authMenuIndeterminate = false;
+      } else {
+        this.authMenuCheckAll = false;
+        this.authMenuIndeterminate = checkedKeys.length > 0 || halfCheckedKeys.length > 0;
+      }
+    },
+    /** 授权科室权限全选/取消 */
+    handleAuthDepartmentAll(val) {
+      if (val) {
+        // 全选：将所有科室ID添加到数组
+        this.authForm.departmentIds = this.userDepartmentOptions.map(item => item.id);
+      } else {
+        // 取消：清空数组
+        this.authForm.departmentIds = [];
+      }
+    },
+    /** 授权仓库权限全选/取消 */
+    handleAuthWarehouseAll(val) {
+      if (val) {
+        // 全选：将所有仓库ID添加到数组
+        this.authForm.warehouseIds = this.userWarehouseOptions.map(item => item.id);
+      } else {
+        // 取消：清空数组
+        this.authForm.warehouseIds = [];
+      }
+    },
+    /** 授权提交 */
+    submitAuth() {
+      console.log('开始提交授权 - 当前 menuIds:', this.authForm.menuIds);
+      // 先获取完整的用户信息，然后合并权限数据
+      getUser(this.authForm.userId).then(response => {
+        const userData = response.data;
+        // 确保 menuIds 是数字数组
+        const menuIds = Array.isArray(this.authForm.menuIds) 
+          ? this.authForm.menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0)
+          : [];
+        console.log('处理后的 menuIds:', menuIds);
+        console.log('userData 中的 menuIds:', userData.menuIds);
+        // 合并权限数据到用户对象，确保 menuIds 不被覆盖
+        const payload = {
+          ...userData,
+          userId: this.authForm.userId,
+          menuIds: menuIds, // 明确设置 menuIds，确保不被 userData 中的值覆盖
+          departmentIds: this.authForm.departmentIds || [],
+          warehouseIds: this.authForm.warehouseIds || []
+        };
+        // 再次确认 menuIds 没有被覆盖
+        if (payload.menuIds !== menuIds) {
+          console.warn('警告：menuIds 被覆盖！原始值:', menuIds, '当前值:', payload.menuIds);
+          payload.menuIds = menuIds;
+        }
+        console.log('提交授权数据 - userId:', payload.userId, 'menuIds:', payload.menuIds, 'menuIds类型:', typeof payload.menuIds, '是数组:', Array.isArray(payload.menuIds));
+        console.log('完整 payload:', JSON.stringify(payload, null, 2));
+        return updateUser(payload);
+      }).then(response => {
+        console.log('保存授权响应:', response);
+        this.$modal.msgSuccess("授权成功");
+        // 不关闭弹窗，刷新授权数据
+        const userId = this.authForm.userId;
+        // 重新获取用户信息以刷新菜单权限
+        return getUser(userId);
+      }).then(response => {
+        const menuIds = response.menuIds || [];
+        console.log('保存后重新获取的菜单权限:', menuIds, '完整响应:', response);
+        this.authForm.menuIds = menuIds;
+        if (this.$refs.authMenuTree) {
+          this.$refs.authMenuTree.setCheckedKeys(menuIds);
+          this.updateAuthMenuCheckState();
+        }
+      }).catch(error => {
+        console.error('授权保存失败 - 错误详情:', error);
+        console.error('错误堆栈:', error.stack);
+        this.$modal.msgError("授权保存失败：" + (error.msg || error.message || error || '未知错误'));
+      });
     },
     /** 查询部门下拉树结构 */
     getDeptTree() {
@@ -564,6 +939,16 @@ export default {
     getWorkgroupIndex(index) {
       return index + 1;
     },
+    /** 获取机构单位（参数设置第七条参数） */
+    getOrganizationUnit() {
+      listConfig({}).then(response => {
+        if (response.rows && response.rows.length >= 7) {
+          // 获取第七条参数的值
+          const seventhConfig = response.rows[6]; // 索引从0开始，第七条是索引6
+          this.organizationUnit = seventhConfig.configValue;
+        }
+      });
+    },
     // 用户状态修改
     handleStatusChange(row) {
       let text = row.status === "0" ? "启用" : "停用";
@@ -596,9 +981,16 @@ export default {
         postIds: [],
         roleIds: [],
         warehouseIds: [],
-        departmentIds: []
+        departmentIds: [],
+        menuIds: []
       };
       this.resetForm("form");
+      // 重置菜单树
+      if (this.$refs.menuTree) {
+        this.$refs.menuTree.setCheckedKeys([]);
+      }
+      this.menuCheckAll = false;
+      this.menuIndeterminate = false;
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -645,6 +1037,15 @@ export default {
         this.userWarehouseOptions = response.warehouses;
         this.userDepartmentOptions = response.departments;
 
+        // 设置默认角色为"普通角色"
+        const normalRole = this.roleOptions.find(role => role.roleName === '普通角色');
+        if (normalRole) {
+          this.$set(this.form, "roleIds", [normalRole.roleId]);
+        }
+
+        // 获取菜单树
+        this.getMenuTree();
+
         this.open = true;
         this.title = "添加用户";
         this.form.password = this.initPassword;
@@ -668,6 +1069,24 @@ export default {
         this.$set(this.form, "roleIds", response.roleIds);
         this.$set(this.form, "warehouseIds", response.warehouseIds);
         this.$set(this.form, "departmentIds", response.departmentIds);
+        this.$set(this.form, "menuIds", response.menuIds || []);
+
+        // 获取菜单树并设置选中状态
+        this.getMenuTree();
+        this.$nextTick(() => {
+          if (this.$refs.menuTree && response.menuIds && response.menuIds.length > 0) {
+            this.$refs.menuTree.setCheckedKeys(response.menuIds);
+            // 更新全选和半选状态
+            const allMenuIds = this.getAllMenuIds(this.menuOptions);
+            if (response.menuIds.length === allMenuIds.length) {
+              this.menuCheckAll = true;
+              this.menuIndeterminate = false;
+            } else {
+              this.menuCheckAll = false;
+              this.menuIndeterminate = response.menuIds.length > 0;
+            }
+          }
+        });
 
         this.open = true;
         this.title = "修改用户";
@@ -693,10 +1112,61 @@ export default {
       const userId = row.userId;
       this.$router.push("/system/user-auth/role/" + userId);
     },
+    /** 角色选择变化处理 */
+    handleRoleChange(value) {
+      // 过滤掉无效的角色ID，只保留在 roleOptions 中存在的角色ID
+      if (value && value.length > 0) {
+        const validRoleIds = this.roleOptions.map(role => role.roleId);
+        const filteredRoleIds = value.filter(roleId => {
+          // 确保角色ID是数字类型，并且在有效列表中
+          const numRoleId = Number(roleId);
+          return !isNaN(numRoleId) && validRoleIds.includes(numRoleId);
+        });
+        
+        if (filteredRoleIds.length !== value.length) {
+          // 如果有无效的角色ID，更新为过滤后的值
+          this.$set(this.form, "roleIds", filteredRoleIds);
+          this.$modal.msgWarning("已自动移除无效的角色选择");
+        } else {
+          // 确保所有角色ID都是数字类型
+          this.$set(this.form, "roleIds", filteredRoleIds.map(id => Number(id)));
+        }
+      } else {
+        this.$set(this.form, "roleIds", []);
+      }
+    },
     /** 提交按钮 */
     submitForm: function() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          // 再次验证并清理角色ID，确保只提交有效的角色ID
+          if (this.form.roleIds && this.form.roleIds.length > 0) {
+            const validRoleIds = this.roleOptions.map(role => role.roleId);
+            const filteredRoleIds = this.form.roleIds.filter(roleId => {
+              const numRoleId = Number(roleId);
+              return !isNaN(numRoleId) && validRoleIds.includes(numRoleId);
+            });
+            
+            // 保存原始长度用于比较
+            const originalLength = this.form.roleIds.length;
+            // 确保 roleIds 是数组且只包含有效的数字ID
+            this.form.roleIds = filteredRoleIds.map(id => Number(id));
+            
+            if (filteredRoleIds.length !== originalLength) {
+              this.$modal.msgWarning("已自动移除无效的角色选择");
+            }
+          } else {
+            // 如果没有选择角色，设置为空数组
+            this.form.roleIds = [];
+          }
+          
+          // 将工作组 deptId 转换为 postIds 数组
+          if (this.form.deptId != null && this.form.deptId !== undefined && this.form.deptId !== '') {
+            this.form.postIds = [this.form.deptId];
+          } else {
+            this.form.postIds = [];
+          }
+          
           if (this.form.userId != undefined) {
             updateUser(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -951,8 +1421,8 @@ export default {
   padding: 16px 20px;
   background-color: #F5F7FA;
   border-bottom: 1px solid #EBEEF5;
-  font-weight: 500;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 18px;
   color: #606266;
   text-align: center;
 }
@@ -991,7 +1461,7 @@ export default {
 ::v-deep .dept-panel .el-table th {
   padding: 8px 0;
   background-color: #F5F7FA;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 ::v-deep .dept-panel .el-table td {
@@ -1017,6 +1487,54 @@ export default {
 
 ::v-deep .dept-panel .el-table tbody tr.workgroup-row-active:hover > td {
   background-color: #ECF5FF !important;
+}
+
+/* 授权菜单树样式 */
+.custom-tree-node {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  padding-right: 8px;
+}
+
+/* 授权复选框容器样式 */
+.auth-checkbox-container {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid #DCDFE6;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.auth-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+
+.auth-checkbox-item {
+  margin-right: 0 !important;
+  min-width: 120px;
+  font-size: 14px;
+}
+
+::v-deep .el-tree {
+  background-color: #fff;
+  border: 1px solid #DCDFE6;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+::v-deep .el-tree-node__content {
+  height: 32px;
+  line-height: 32px;
+}
+
+::v-deep .el-tree-node__label {
+  font-size: 14px;
 }
 
 /* 查询表单卡片样式 - 参照定数监测 */
@@ -1075,13 +1593,13 @@ export default {
   background-color: #F5F7FA !important;
   color: #606266;
   font-weight: bold !important;
-  height: 50px;
-  padding: 8px 0;
+  height: 42px;
+  padding: 4px 0;
   border-bottom: 1px solid #EBEEF5;
 }
 
 .table-wrapper .el-table td {
-  padding: 12px 0;
+  padding: 6px 0;
   color: #606266;
   border-bottom: 1px solid #EBEEF5;
 }

@@ -1,69 +1,79 @@
 ﻿<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <div class="form-fields-container">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item label="业务单号" prop="billNo" class="query-item-inline">
-            <el-input v-model="queryParams.billNo"
-                      placeholder="请输入业务单号"
-                      clearable
-                      style="width: 180px"
-                      @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-          <el-form-item label="耗材" prop="materialId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectMaterial v-model="queryParams.materialId" />
-            </div>
-          </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
-            </div>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item label="业务日期" style="display: flex; align-items: center;">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
-              clearable
-              style="width: 180px; margin-right: 8px;"
-            />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据类型" prop="billType" class="query-item-status-aligned">
-            <el-select v-model="queryParams.billType" placeholder="全部"
-                       clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.in_warehouse_bill_type"
-                         :key="dict.value"
-                         :label="dict.label"
-                         :value="dict.value"
+        <el-row class="query-row-left">
+          <el-col :span="24">
+            <el-form-item label="业务单号" prop="billNo" class="query-item-inline">
+              <el-input v-model="queryParams.billNo"
+                        placeholder="请输入业务单号"
+                        clearable
+                        style="width: 180px"
+                        @keyup.enter.native="handleQuery"
               />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
+            </el-form-item>
+            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectMaterial v-model="queryParams.materialId" />
+              </div>
+            </el-form-item>
+            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-    </el-form>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="12">
+            <el-form-item label="业务日期" style="display: flex; align-items: center;">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                style="width: 180px; margin-right: 8px;"
+              />
+              <span style="margin: 0 4px;">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                style="width: 180px; margin-left: 8px;"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12" class="query-status-col">
+            <el-form-item label="单据类型" prop="billType" class="query-item-status-aligned">
+              <el-select v-model="queryParams.billType" placeholder="全部"
+                         clearable style="width: 150px">
+                <el-option v-for="dict in dict.type.in_warehouse_bill_type"
+                           :key="dict.value"
+                           :label="dict.label"
+                           :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+      </el-form>
+    </div>
+
+    <el-row :gutter="10" class="mb8" style="padding-top: 10px; margin-top: 0px">
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          icon="el-icon-download"
+          size="small"
+          @click="handleExport"
+        >导出</el-button>
+      </el-col>
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -79,7 +89,7 @@
           @click="resetQuery"
         >重置</el-button>
       </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </el-row>
 
     <!-- 保留原来的表单组件 -->
@@ -97,57 +107,57 @@
           {{ scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="业务单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable />
-      <el-table-column label="业务日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="80" show-overflow-tooltip resizable v-if="columns[0].visible"/>
+      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable v-if="columns[1].visible"/>
+      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable v-if="columns[2].visible"/>
+      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable v-if="columns[3].visible"/>
+      <el-table-column label="业务单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable v-if="columns[4].visible" />
+      <el-table-column label="业务日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable v-if="columns[5].visible">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable v-if="columns[6].visible"/>
 
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="价格" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable v-if="columns[7].visible"/>
+      <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable v-if="columns[8].visible"/>
+      <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable v-if="columns[9].visible"/>
+      <el-table-column label="价格" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable v-if="columns[10].visible">
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable>
+      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable v-if="columns[11].visible">
         <template slot-scope="scope">
           {{ scope.row.materialQty }}
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable v-if="columns[12].visible">
         <template slot-scope="scope">
           <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="批次" align="center" prop="batchNo" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="批号" align="center" prop="batchNumber" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="生产日期" align="center" prop="beginDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="批次" align="center" prop="batchNo" width="180" show-overflow-tooltip resizable v-if="columns[13].visible"/>
+      <el-table-column label="批号" align="center" prop="batchNumber" width="80" show-overflow-tooltip resizable v-if="columns[14].visible"/>
+      <el-table-column label="生产日期" align="center" prop="beginDate" width="180" show-overflow-tooltip resizable v-if="columns[15].visible">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="有效期" align="center" prop="endDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="有效期" align="center" prop="endDate" width="180" show-overflow-tooltip resizable v-if="columns[16].visible">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable v-if="columns[17].visible"/>
+      <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable v-if="columns[18].visible"/>
+      <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable v-if="columns[19].visible"/>
+      <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable v-if="columns[20].visible"/>
+      <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable v-if="columns[21].visible">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
         </template>
@@ -250,7 +260,32 @@ export default {
         billType: [
           { required: true, message: "入/退货类型不能为空", trigger: "change" }
         ],
-      }
+      },
+      // 列显隐配置
+      columns: [
+        { key: 0, label: `耗材编码`, visible: true },
+        { key: 1, label: `耗材名称`, visible: true },
+        { key: 2, label: `仓库`, visible: true },
+        { key: 3, label: `供应商`, visible: true },
+        { key: 4, label: `业务单号`, visible: true },
+        { key: 5, label: `业务日期`, visible: true },
+        { key: 6, label: `型号`, visible: true },
+        { key: 7, label: `规格`, visible: true },
+        { key: 8, label: `单位`, visible: true },
+        { key: 9, label: `生产厂家`, visible: true },
+        { key: 10, label: `价格`, visible: true },
+        { key: 11, label: `数量`, visible: true },
+        { key: 12, label: `金额`, visible: true },
+        { key: 13, label: `批次`, visible: true },
+        { key: 14, label: `批号`, visible: true },
+        { key: 15, label: `生产日期`, visible: true },
+        { key: 16, label: `有效期`, visible: true },
+        { key: 17, label: `注册证号`, visible: true },
+        { key: 18, label: `包装规格`, visible: true },
+        { key: 19, label: `库房分类`, visible: true },
+        { key: 20, label: `财务分类`, visible: true },
+        { key: 21, label: `储存方式`, visible: true }
+      ]
     };
   },
   created() {
@@ -404,7 +439,7 @@ export default {
     <!-- 添加CSS样式确保汇总行可见 -->
     <style scoped>
     .table-container {
-      margin-top: 20px;
+      margin-top: 10px;
       overflow: visible;
       width: 100%;
       position: relative;
@@ -465,5 +500,16 @@ export default {
 
     .query-item-status-aligned .el-form-item__label {
       width: 80px !important;
+    }
+
+    /* 查询条件容器框样式 */
+    .form-fields-container {
+      background: #fff;
+      padding: 16px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+      margin-bottom: 16px;
+      margin-top: -20px;
+      border: 1px solid #EBEEF5;
     }
     </style>

@@ -63,6 +63,11 @@
         </template>
       </el-table-column>
       <el-table-column prop="orderNum" label="排序" width="60"></el-table-column>
+      <el-table-column label="隐藏" align="center" width="80">
+        <template slot-scope="scope">
+          <span>{{ scope.row.visible === '1' || scope.row.visible === 1 ? '是' : '否' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="perms" label="权限标识" :show-overflow-tooltip="true"></el-table-column>
       <el-table-column prop="component" label="组件路径" :show-overflow-tooltip="true"></el-table-column>
       <el-table-column prop="status" label="状态" width="80">

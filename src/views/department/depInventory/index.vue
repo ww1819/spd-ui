@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="app-container">
-    <el-tabs v-model="activeTab" type="border-card">
+    <el-tabs v-model="activeTab" type="card">
       <el-tab-pane label="库存明细查询" name="detail">
         <InventoryDetail />
       </el-tab-pane>

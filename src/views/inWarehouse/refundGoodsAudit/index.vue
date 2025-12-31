@@ -79,6 +79,16 @@
           @click="resetQuery"
         >重置</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="success"
+          icon="el-icon-check"
+          size="small"
+          :disabled="multiple"
+          @click="handleBatchAudit"
+          v-hasPermi="['inWarehouse:refundGoodsAudit:audit']"
+        >审核</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -86,72 +96,90 @@
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="58vh" border>
-      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="退货单号" align="center" prop="billNo" show-overflow-tooltip resizable>
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable />
+      <el-table-column label="退货单号" align="center" prop="billNo" width="150" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="退货日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="200" show-overflow-tooltip resizable/>
+      <el-table-column label="退货日期" align="center" prop="billDate" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
-      <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
+      <el-table-column label="退货人" align="center" prop="creater.nickName" width="100" show-overflow-tooltip resizable/>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
-
-      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" show-overflow-tooltip resizable />
-
-      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" resizable>
+      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="100" show-overflow-tooltip resizable />
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <el-button
-            size="small"
-            type="text"
-            @click="handlePrint(scope.row,true)"
-            v-if="scope.row.billStatus == 2"
-          >打印</el-button>
-          <el-button
-            size="small"
-            type="text"
-            icon="el-icon-view"
-            @click="handleView(scope.row)"
-            v-hasPermi="['inWarehouse:refundGoodsApply:view']"
-          >查看</el-button>
-          <el-dropdown v-if="scope.row.billStatus != 2">
-            <el-button type="primary">
-              更多操作<i class="el-icon-arrow-down el-icon--right"></i>
-            </el-button>
-            <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item @click.native="handleUpdate(scope.row)"
-                                v-hasPermi="['inWarehouse:refundGoodsApply:edit']"
-              >修改</el-dropdown-item>
-
-              <el-dropdown-item @click.native="handleAudit(scope.row)"
-                                v-hasPermi="['inWarehouse:refundGoodsApply:audit']"
-              >审核</el-dropdown-item>
-
-              <el-dropdown-item @click.native="handleDelete(scope.row)"
-                                v-hasPermi="['inWarehouse:refundGoodsApply:remove']"
-              >删除</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
+          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
         </template>
-
-
+      </el-table-column>
+      <el-table-column label="打印状态" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.printDate" type="success" size="small">已打印</el-tag>
+          <el-tag v-else type="info" size="small">未打印</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="打印人" align="center" prop="printPerson" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.printPerson || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="打印日期" align="center" prop="printDate" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.printDate">{{ parseTime(scope.row.printDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+        <template slot-scope="scope">
+          <span style="white-space: nowrap; display: inline-block;">
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-printer"
+              @click="handlePrint(scope.row,true)"
+              v-if="scope.row.billStatus == 2"
+              style="padding: 0 5px; margin: 0;"
+            >打印</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-edit"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['inWarehouse:refundGoodsApply:edit']"
+              v-if="scope.row.billStatus != 2"
+              style="padding: 0 5px; margin: 0;"
+            >修改</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-delete"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['inWarehouse:refundGoodsApply:remove']"
+              v-if="scope.row.billStatus != 2"
+              style="padding: 0 5px; margin: 0;"
+            >删除</el-button>
+          </span>
+        </template>
       </el-table-column>
     </el-table>
 
@@ -170,10 +198,14 @@
           <div v-if="open" class="local-modal-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
+              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
+            <div class="modal-content-wrapper">
+            <div class="modal-form-wrapper">
             <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
+        <!-- 顶部输入框容器 -->
+        <div class="form-fields-container">
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="供应商" prop="supplerId">
@@ -249,8 +281,12 @@
             </el-form-item>
           </el-col>
         </el-row>
+        </div>
+            </el-form>
+            </div>
 
-
+            <!-- 表格区域 - 可滚动 -->
+            <div class="modal-table-wrapper">
         <!--        <el-divider content-position="left">退货明细信息</el-divider>-->
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
@@ -264,6 +300,12 @@
             <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
+            <el-col :span="1.5">
+              <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button size="small" @click="cancel">取 消</el-button>
+            </el-col>
           </div>
 
         </el-row>
@@ -273,7 +315,6 @@
                   @selection-change="handleStkIoBillEntrySelectionChange"
                   ref="stkIoBillEntry"
                   border
-                  height="48vh"
         >
           <el-table-column type="selection" width="60" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
@@ -357,10 +398,7 @@
           </el-table-column>
         </el-table>
         </div>
-            </el-form>
-            <div v-show="action" class="modal-footer">
-              <el-button type="primary" @click="submitForm">确 定</el-button>
-              <el-button @click="cancel">取 消</el-button>
+            </div>
             </div>
           </div>
         </transition>
@@ -724,6 +762,23 @@ export default {
         this.$modal.msgSuccess("审核退货成功！");
       }).catch(() => {});
     },
+    /** 批量审核按钮操作 */
+    handleBatchAudit() {
+      const ids = this.ids;
+      if (!ids || ids.length === 0) {
+        this.$modal.msgWarning("请先选择要审核的数据");
+        return;
+      }
+      const auditBy = this.$store.state.user.userId;
+      this.$modal.confirm('确定要审核选中的"' + ids.length + '"条数据项？').then(() => {
+        // 批量审核：循环调用审核接口
+        const promises = ids.map(id => auditThInventory({id: id, auditBy: auditBy}));
+        return Promise.all(promises);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("批量审核成功！");
+      }).catch(() => {});
+    },
     /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
@@ -963,6 +1018,33 @@ export default {
   flex-direction: column;
 }
 
+/* 弹窗内容包装器 - 固定顶部，表格区域可滚动 */
+.modal-content-wrapper {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 表单区域 - 固定不滚动 */
+.modal-form-wrapper {
+  flex-shrink: 0;
+  overflow: visible;
+  padding: 20px;
+  background: #fff;
+}
+
+/* 表格区域 - 可滚动 */
+.modal-table-wrapper {
+  flex: 1;
+  overflow: auto;
+  padding: 0 20px 20px 20px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -992,8 +1074,11 @@ export default {
 
 .modal-body {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .modal-footer {
@@ -1092,6 +1177,16 @@ export default {
   width: 80px !important;
 }
 
+/* 弹窗内表单字段容器样式 */
+.local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
+}
+
 /* 弹窗表单紧凑样式 */
 .modal-form-compact {
   padding: 20px;
@@ -1138,16 +1233,38 @@ export default {
 .table-wrapper {
   margin-top: 10px;
   margin-bottom: 10px;
-}
-
-.local-modal-content .el-table {
-  height: 48vh;
-  max-height: 48vh;
-}
-
-.local-modal-content .el-table__body-wrapper {
-  max-height: calc(48vh - 48px);
+  overflow-x: auto;
   overflow-y: auto;
+}
+
+/* 隐藏弹窗右侧滚动条 */
+.local-modal-content {
+  overflow: hidden !important;
+}
+
+/* 表格区域可以滚动 */
+.modal-table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.modal-table-wrapper::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.modal-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+
+.modal-table-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 5px;
+}
+
+.modal-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 /* 表格滚动条样式 */
@@ -1168,5 +1285,86 @@ export default {
 
 .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+/* 搜索区域样式 */
+.app-container > .el-form {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+}
+
+.app-container > .el-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container > .el-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container > .el-form .el-form-item {
+  margin-bottom: 0;
+}
+
+/* 第一行查询条件左对齐紧凑布局 */
+.app-container > .el-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+/* 统一控制查询条件输入框宽度 */
+.app-container > .el-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container > .el-form .query-row-left .query-item-inline .el-select {
+  width: 150px;
+}
+
+/* 第二行单据状态对齐到仓库位置 */
+.app-container > .el-form .query-row-second {
+  position: relative;
+}
+
+/* 确保退货日期的两个日期选择器在同一行 */
+.app-container > .el-form .query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.app-container > .el-form .query-row-second .query-status-col {
+  position: absolute;
+  left: 552px;
+  width: auto;
+  padding-left: 0;
+  padding-right: 0;
 }
 </style>

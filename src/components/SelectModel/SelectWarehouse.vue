@@ -45,9 +45,17 @@ export default {
       }
       // 如果指定了排除某个类型，则排除该类型的仓库
       if (this.excludeWarehouseType) {
+        // 支持数组、逗号分隔的字符串或单个字符串
+        let excludeTypes = [];
+        if (Array.isArray(this.excludeWarehouseType)) {
+          excludeTypes = this.excludeWarehouseType;
+        } else if (typeof this.excludeWarehouseType === 'string') {
+          excludeTypes = this.excludeWarehouseType.split(',').map(t => t.trim());
+        }
+        
         return this.warehouseOptions.filter(item => {
-          // 如果仓库类型为空或不是要排除的类型，则保留
-          return !item.warehouseType || item.warehouseType !== this.excludeWarehouseType;
+          // 如果仓库类型为空或不在排除列表中，则保留
+          return !item.warehouseType || !excludeTypes.includes(item.warehouseType);
         });
       }
       // 如果都没有指定，返回所有仓库

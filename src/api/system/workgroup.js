@@ -1,9 +1,9 @@
 import request from '@/utils/request'
 
-// 查询工作组下拉树结构
+// 查询工作组下拉树结构（使用岗位接口）
 export function workgroupTreeSelect() {
   return request({
-    url: '/system/workgroup/treeselect',
+    url: '/system/post/treeselect',
     method: 'get'
   })
 }

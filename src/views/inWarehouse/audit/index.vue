@@ -55,6 +55,7 @@
                          :key="dict.value"
                          :label="dict.label"
                          :value="dict.value"
+                         v-if="dict.label !== '待审核'"
               />
             </el-select>
           </el-form-item>
@@ -74,10 +75,13 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="success"
+          icon="el-icon-check"
           size="small"
-          @click="resetQuery"
-        >重置</el-button>
+          :disabled="multiple"
+          @click="handleBatchAudit"
+          v-hasPermi="['inWarehouse:apply:audit']"
+        >审核</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -86,22 +90,24 @@
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="58vh" border>
+      <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="入库单号" align="center" prop="billNo" show-overflow-tooltip resizable >
+      <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="180" show-overflow-tooltip resizable />
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="250" show-overflow-tooltip resizable/>
+      <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
-      <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
+      <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
@@ -116,7 +122,35 @@
       <el-table-column label="审核人" align="center" prop="auditPerson.nickName" show-overflow-tooltip resizable />
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="发票号" align="center" prop="invoiceNumber" width="150" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.invoiceNumber || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="发票日期" align="center" prop="invoiceTime" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.invoiceTime">{{ parseTime(scope.row.invoiceTime, '{y}-{m}-{d}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="打印状态" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.printDate" type="success" size="small">已打印</el-tag>
+          <el-tag v-else type="info" size="small">未打印</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="打印人" align="center" prop="printPerson" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.printPerson || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="打印日期" align="center" prop="printDate" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.printDate">{{ parseTime(scope.row.printDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
 <!--      <el-table-column label="入库类型" align="center" prop="billType" >-->
@@ -125,7 +159,7 @@
 <!--        </template>-->
 <!--      </el-table-column>-->
       <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right">
         <template slot-scope="scope">
           <el-button
             size="small"
@@ -133,24 +167,14 @@
             @click="handlePrint(scope.row,true)"
             v-if="scope.row.billStatus == 2"
           >打印</el-button>
-          <el-dropdown v-if="scope.row.billStatus != 2">
-            <el-button type="primary">
-              更多操作<i class="el-icon-arrow-down el-icon--right"></i>
-            </el-button>
-            <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item @click.native="handleUpdate(scope.row)"
-                                v-hasPermi="['inWarehouse:apply:edit']"
-              >修改</el-dropdown-item>
-
-              <el-dropdown-item @click.native="handleAudit(scope.row)"
-                                v-hasPermi="['inWarehouse:apply:audit']"
-              >审核</el-dropdown-item>
-
-              <el-dropdown-item @click.native="handleDelete(scope.row)"
-                                v-hasPermi="['inWarehouse:apply:remove']"
-              >删除</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
+          <el-button
+            size="small"
+            type="text"
+            icon="el-icon-edit"
+            @click="handleUpdate(scope.row)"
+            v-if="scope.row.billStatus != 2"
+            v-hasPermi="['inWarehouse:apply:edit']"
+          >修改</el-button>
         </template>
 
 
@@ -172,10 +196,11 @@
           <div v-if="open" class="local-modal-content">
         <div class="modal-header">
           <div class="modal-title">{{ title }}</div>
-          <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
+          <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
         </div>
         <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
+        <div class="form-fields-container">
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="供应商" prop="supplerId">
@@ -251,6 +276,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+        </div>
 
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
@@ -263,6 +289,9 @@
             </el-col>
             <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="primary" size="small" @click="submitForm">保 存</el-button>
             </el-col>
           </div>
 
@@ -277,6 +306,11 @@
         >
           <el-table-column type="selection" width="60" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
+            </template>
+          </el-table-column>
 <!--          <el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>-->
 <!--            <template slot-scope="scope">-->
 <!--              <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>-->
@@ -365,10 +399,6 @@
         </el-table>
         </div>
         </el-form>
-        <div v-show="action" class="modal-footer">
-          <el-button @click="cancel">取 消</el-button>
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-        </div>
           </div>
         </transition>
       </div>
@@ -722,6 +752,23 @@ export default {
         this.$modal.msgSuccess("审核入库成功！");
       }).catch(() => {});
     },
+    /** 批量审核按钮操作 */
+    handleBatchAudit() {
+      const ids = this.ids;
+      if (!ids || ids.length === 0) {
+        this.$modal.msgWarning("请先选择要审核的数据");
+        return;
+      }
+      const auditBy = this.$store.state.user.userId;
+      this.$modal.confirm('确定要审核选中的"' + ids.length + '"条数据项？').then(() => {
+        // 批量审核：循环调用审核接口
+        const promises = ids.map(id => auditWarehouse({id: id, auditBy: auditBy}));
+        return Promise.all(promises);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("批量审核成功！");
+      }).catch(() => {});
+    },
     /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
@@ -751,14 +798,16 @@ export default {
           if (this.form.id != null) {
             updateWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
-              this.open = false;
               this.getList();
+              // 保存成功后不关闭弹窗，允许继续修改
+              // this.open = false;
             });
           } else {
             addWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
-              this.open = false;
               this.getList();
+              // 保存成功后不关闭弹窗，允许继续新增
+              // this.open = false;
             });
           }
         }
@@ -1157,6 +1206,16 @@ export default {
   padding-right: 0;
 }
 
+/* 弹窗内表单字段容器样式 */
+.local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
+}
+
 /* 弹窗内表单紧凑布局 */
 .local-modal-content .modal-form-compact .el-row {
   margin-bottom: 10px;
@@ -1235,5 +1294,28 @@ export default {
 /* 确保页面容器有相对定位，以便内部弹窗正确定位 */
 .app-container {
   position: relative;
+}
+/* 主表格滚动条样式 */
+::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar,
+::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  width: 16px !important;
+  height: 8px !important;
+}
+
+::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 8px !important;
+}
+
+::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8 !important;
+}
+
+::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-track,
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 8px !important;
 }
 </style>

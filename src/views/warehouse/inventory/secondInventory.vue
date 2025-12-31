@@ -1,30 +1,52 @@
 ﻿<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="耗材" prop="materialId" label-width="100px">
-            <MaterialAutocomplete v-model="queryParams.materialName"/>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-            <WarehouseAutocomplete v-model="queryParams.warehouseName"/>
-          </el-form-item>
-        </el-col>
-      </el-row>
+    <div class="form-fields-container">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+        <el-row class="query-row-left">
+          <el-col :span="24">
+            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <MaterialAutocomplete v-model="queryParams.materialName"/>
+              </div>
+            </el-form-item>
+            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <WarehouseAutocomplete v-model="queryParams.warehouseName"/>
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
+    <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -10px">
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          icon="el-icon-download"
+          size="small"
+          @click="handleExport"
+        >导出</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          icon="el-icon-search"
+          size="small"
+          @click="handleQuery"
+        >搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          icon="el-icon-refresh"
+          size="small"
+          @click="resetQuery"
+        >重置</el-button>
+      </el-col>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
 
-    </el-form>
-
+    <div class="table-container">
     <el-table v-loading="loading" :data="inventoryList"
               show-summary
               @selection-change="handleSelectionChange" 
@@ -58,6 +80,7 @@
       <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
 
     </el-table>
+    </div>
 
     <!-- 手动添加合计信息 -->
     <div v-if="inventoryList.length > 0" style="margin-top: 10px; padding: 10px; background-color: #f5f7fa; border: 1px solid #ebeef5; border-radius: 4px; text-align: right;">
@@ -87,11 +110,12 @@ import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import WarehouseAutocomplete from "@/components/SelectModel/WarehouseAutocomplete";
 import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
+import RightToolbar from "@/components/RightToolbar";
 import { listWarehouse } from "@/api/foundation/warehouse";
 
 export default {
   name: "secondInventory",
-  components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete},
+  components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete,RightToolbar},
   data() {
     return {
       // 遮罩层
@@ -243,3 +267,42 @@ export default {
 
 };
 </script>
+
+<style scoped>
+/* 查询条件样式 */
+.query-row-left {
+  margin-bottom: 10px;
+}
+
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 10px;
+}
+
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+/* 查询条件容器框样式 */
+.form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  margin-top: -20px;
+  border: 1px solid #EBEEF5;
+}
+
+.table-container {
+  margin-top: 0px;
+  overflow: visible;
+  width: 100%;
+  position: relative;
+}
+</style>

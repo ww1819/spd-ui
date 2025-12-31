@@ -1,12 +1,13 @@
 ﻿<template>
   <div class="app-container">
     <el-tabs v-model="activeName" type="card">
-      <el-tab-pane label="科室消耗明细报表" name="detail"></el-tab-pane>
-      <el-tab-pane label="科室消耗汇总报表" name="summary"></el-tab-pane>
+      <el-tab-pane label="科室消耗明细报表" name="detail">
+        <DetailReport />
+      </el-tab-pane>
+      <el-tab-pane label="科室消耗汇总报表" name="summary">
+        <SummaryReport />
+      </el-tab-pane>
     </el-tabs>
-    <DetailReport v-if="activeName === 'detail'"></DetailReport>
-    <SummaryReport v-if="activeName === 'summary'"></SummaryReport>
-
   </div>
 </template>
 
@@ -24,11 +25,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.app-container {
-  padding: 20px;
-  background-color: #f5f7fa;
-  min-height: calc(100vh - 40px);
-}
-</style>

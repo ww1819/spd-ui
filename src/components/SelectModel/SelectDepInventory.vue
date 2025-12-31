@@ -8,39 +8,42 @@
         <el-button icon="el-icon-close" size="small" circle @click="handleClose" class="close-btn"></el-button>
       </div>
       <div class="modal-body">
-      <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
-        <el-row :gutter="20">
+      <div class="query-fields-container">
+        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+          <el-row :gutter="20">
+            <el-col :span="6">
+              <el-form-item label="科室" prop="departmentId" label-width="100px">
+                <SelectDepartment v-model="queryParams.departmentId" :value2="isShow"/>
+              </el-form-item>
+            </el-col>
 
-          <el-col :span="6">
-            <el-form-item label="科室" prop="departmentId" label-width="100px">
-              <SelectDepartment v-model="queryParams.departmentId" :value2="isShow"/>
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="6">
-            <el-form-item label="耗材" prop="materialId" label-width="100px">
-              <SelectMaterial v-model="queryParams.materialId" />
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="6">
-            <el-form-item label="批次号" prop="batchNo" label-width="100px">
-              <el-input
-                v-model="queryParams.batchNo"
-                placeholder="请输入批次号"
-                clearable
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item>
-              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-              <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+            <el-col :span="6">
+              <el-form-item label="耗材" prop="materialId" label-width="100px">
+                <SelectMaterial v-model="queryParams.materialId" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="6">
+              <el-form-item label="批次号" prop="batchNo" label-width="100px">
+                <el-input
+                  v-model="queryParams.batchNo"
+                  placeholder="请输入批次号"
+                  clearable
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+      </div>
+      
+      <div style="text-align: left; margin: 10px 0;">
+        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button size="small" @click="handleClose">取 消</el-button>
+        <el-button type="primary" size="small" @click="checkBtn">确 定</el-button>
+      </div>
 
       <el-table :data="inventoryList" :row-class-name="inventoryIndex" @selection-change="handleSelectionChange" height="calc(50vh)" border>
         <el-table-column type="selection" width="55" align="center" resizable />
@@ -98,10 +101,6 @@
         :limit.sync="queryParams.pageSize"
         @pagination="getList"
       />
-      </div>
-      <div class="modal-footer">
-        <el-button @click="handleClose">取 消</el-button>
-        <el-button type="primary" @click="checkBtn">确 定</el-button>
       </div>
         </div>
       </transition>
@@ -332,5 +331,15 @@ export default {
 .el-form-item__label {
   color: #606266;
   font-weight: 500;
+}
+
+/* 查询条件容器框样式 */
+.query-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
 }
 </style>

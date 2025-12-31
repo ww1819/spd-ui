@@ -55,6 +55,7 @@
                          :key="dict.value"
                          :label="dict.label"
                          :value="dict.value"
+                         v-if="dict.label !== '待审核'"
               />
             </el-select>
           </el-form-item>
@@ -106,7 +107,7 @@
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="58vh" border>
-<!--      <el-table-column type="selection" width="55" align="center" />-->
+      <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="退货单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -115,13 +116,13 @@
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="引用单号" align="center" prop="refBillNo" width="180" show-overflow-tooltip resizable/>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
       <el-table-column label="退货日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="退货人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
       <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
         <template slot-scope="scope">
@@ -134,39 +135,63 @@
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
-
-      <el-table-column label="操作人" align="center" prop="createBy" show-overflow-tooltip resizable />
-<!--      <el-table-column label="退货类型" align="center" prop="billType" >-->
-<!--        <template slot-scope="scope">-->
-<!--          <dict-tag :options="dict.type.bill_type" :value="scope.row.billType"/>-->
-<!--        </template>-->
-<!--      </el-table-column>-->
-      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <el-button
-            size="small"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['inWarehouse:refundGoodsApply:edit']"
-            v-if="scope.row.billStatus != 2"
-          >修改</el-button>
-          <el-button
-            size="small"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['inWarehouse:refundGoodsApply:remove']"
-            v-if="scope.row.billStatus != 2"
-          >删除</el-button>
-          <el-button
-            size="small"
-            type="text"
-            icon="el-icon-view"
-            @click="handleView(scope.row)"
-            v-hasPermi="['inWarehouse:refundGoodsApply:view']"
-          >查看</el-button>
+          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="打印状态" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.printDate" type="success" size="small">已打印</el-tag>
+          <el-tag v-else type="info" size="small">未打印</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="打印人" align="center" prop="printPerson" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.printPerson || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="打印日期" align="center" prop="printDate" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.printDate">{{ parseTime(scope.row.printDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="引用单号" align="center" prop="refBillNo" width="180" show-overflow-tooltip resizable/>
+      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+        <template slot-scope="scope">
+          <span style="white-space: nowrap; display: inline-block;">
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-printer"
+              @click="handlePrint(scope.row,true)"
+              v-if="scope.row.billStatus == 2"
+              style="padding: 0 5px; margin: 0;"
+            >打印</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-edit"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['inWarehouse:refundGoodsApply:edit']"
+              v-if="scope.row.billStatus != 2"
+              style="padding: 0 5px; margin: 0;"
+            >修改</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-delete"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['inWarehouse:refundGoodsApply:remove']"
+              v-if="scope.row.billStatus != 2"
+              style="padding: 0 5px; margin: 0;"
+            >删除</el-button>
+          </span>
         </template>
       </el-table-column>
     </el-table>
@@ -186,10 +211,11 @@
           <div v-if="open" class="local-modal-content">
         <div class="modal-header">
           <div class="modal-title">{{ title }}</div>
-          <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
+          <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
         </div>
         <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
+        <div class="form-fields-container">
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="供应商" prop="supplerId">
@@ -264,6 +290,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+        </div>
 
 <!--        <el-divider content-position="left">退货明细信息</el-divider>-->
         <el-row :gutter="10" class="mb8">
@@ -284,6 +311,9 @@
             </el-col>
             <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="primary" size="small" @click="submitForm">保 存</el-button>
             </el-col>
           </div>
 
@@ -379,10 +409,6 @@
         </el-table>
         </div>
         </el-form>
-        <div v-show="action" class="modal-footer">
-          <el-button @click="cancel">取 消</el-button>
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-        </div>
           </div>
         </transition>
       </div>
@@ -794,14 +820,16 @@ export default {
           if (this.form.id != null) {
             updateThInventory(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
-              this.open = false;
               this.getList();
+              // 保存成功后不关闭弹窗，允许继续办理业务
+              // this.open = false;
             });
           } else {
             addThInventory(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
-              this.open = false;
               this.getList();
+              // 保存成功后不关闭弹窗，允许继续办理业务
+              // this.open = false;
             });
           }
         }
@@ -816,6 +844,10 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
+    },
+    /** 打印按钮操作 */
+    handlePrint(row, print) {
+      this.$modal.msgWarning("打印功能开发中");
     },
     /** 退货明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {
@@ -1122,6 +1154,16 @@ export default {
   width: auto;
   padding-left: 0;
   padding-right: 0;
+}
+
+/* 弹窗内表单字段容器样式 */
+.local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
 }
 
 /* 弹窗内表单紧凑布局 */

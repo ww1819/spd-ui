@@ -17,12 +17,12 @@
 
         <div class="warehouse-panel">
           <div class="warehouse-panel-header">
-            <span>{{ fixedNumberType === '1' ? '仓库列表' : fixedNumberType === '2' ? '科室列表' : '仓库列表' }}</span>
+            <span>{{ queryParams.fixedNumberType === '1' ? '仓库列表' : queryParams.fixedNumberType === '2' ? '科室列表' : '仓库列表' }}</span>
           </div>
           <div class="warehouse-panel-content">
             <!-- 仓库列表 -->
-            <template v-if="fixedNumberType === '1' || !fixedNumberType">
-              <el-table :data="warehouseList" 
+            <template v-if="queryParams.fixedNumberType === '1' || !queryParams.fixedNumberType">
+              <el-table :data="warehouseList" :key="'warehouse-' + queryParams.fixedNumberType" 
                         :highlight-current-row="true"
                         @row-click="handleWarehouseRowClick"
                         :row-class-name="getWarehouseRowClassName"
@@ -38,6 +38,9 @@
                   </template>
                 </el-table-column>
                 <el-table-column label="仓库" align="center" prop="name" show-overflow-tooltip>
+                  <template slot="header">
+                    <span @click.stop="handleWarehouseHeaderClick" style="cursor: pointer;">仓库</span>
+                  </template>
                   <template slot-scope="scope">
                     <span>{{ scope.row.name }}</span>
                   </template>
@@ -48,8 +51,8 @@
               </div>
             </template>
             <!-- 科室列表 -->
-            <template v-else-if="fixedNumberType === '2'">
-              <el-table :data="departmentList" 
+            <template v-if="queryParams.fixedNumberType === '2'">
+              <el-table ref="departmentTable" :data="departmentList" :key="'department-table-' + queryParams.fixedNumberType + '-' + departmentList.length" 
                         :highlight-current-row="true"
                         @row-click="handleDepartmentRowClick"
                         :row-class-name="getDepartmentRowClassName"
@@ -65,12 +68,15 @@
                   </template>
                 </el-table-column>
                 <el-table-column label="科室" align="center" prop="name" show-overflow-tooltip>
+                  <template slot="header">
+                    <span @click.stop="handleDepartmentHeaderClick" style="cursor: pointer;">科室</span>
+                  </template>
                   <template slot-scope="scope">
                     <span>{{ scope.row.name }}</span>
                   </template>
                 </el-table-column>
               </el-table>
-              <div v-if="departmentList.length === 0" class="warehouse-empty">
+              <div v-if="false" class="warehouse-empty">
                 暂无科室数据
               </div>
             </template>
@@ -80,18 +86,15 @@
 
       <!-- 右侧：查询条件和表格区域 -->
       <el-col :span="19">
-        <!-- 查询条件 -->
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="80px" style="background: #fff; padding: 16px 20px; border-radius: 8px; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05); margin-bottom: 16px;">
-          <el-row>
+        <!-- 查询条件容器 -->
+        <div class="query-container">
+          <div class="form-fields-container">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="80px">
+              <el-row class="query-row-left">
             <el-col :span="24">
               <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectSupplier v-model="queryParams.supplierId"/>
-                </div>
-              </el-form-item>
-              <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-                <div class="query-select-wrapper">
-                  <SelectWarehouse v-model="queryParams.warehouseId"/>
                 </div>
               </el-form-item>
               <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
@@ -112,45 +115,63 @@
               </el-form-item>
             </el-col>
           </el-row>
-          <el-row>
+              <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item class="query-item-inline">
+                  <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+                    <div class="query-select-wrapper">
+                      <SelectWarehouse v-model="queryParams.warehouseId"/>
+                    </div>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-form>
+          </div>
+        </div>
+
+        <!-- 按钮行 -->
+        <el-row :gutter="10" class="mb8 button-row-container">
+          <el-col :span="1.5">
                 <el-button
                   type="primary"
                   icon="el-icon-plus"
-                  size="small"
+              size="medium"
                   :disabled="isAddDisabled"
                   @click="handleAdd"
                 >新增</el-button>
+          </el-col>
+          <el-col :span="1.5">
                 <el-button
                   type="success"
                   icon="el-icon-check"
-                  size="small"
+              size="medium"
                   @click="handleSave"
-                  style="margin-left: 10px;"
                 >保存</el-button>
+          </el-col>
+          <el-col :span="1.5">
                 <el-button
                   type="primary"
                   icon="el-icon-search"
-                  size="small"
+              size="medium"
                   @click="handleQuery"
-                  style="margin-left: 10px;"
                 >搜索</el-button>
+          </el-col>
+          <el-col :span="1.5">
                 <el-button
                   icon="el-icon-refresh"
-                  size="small"
+              size="medium"
                   @click="resetQuery"
-                  style="margin-left: 10px;"
                 >重置</el-button>
-              </el-form-item>
             </el-col>
           </el-row>
-        </el-form>
 
+        <!-- 明细表 -->
+        <div class="detail-table-container">
         <el-table v-loading="loading" :data="fixedNumberList"
               :row-class-name="fixedNumberListIndex"
               @selection-change="handleSelectionChange"
-              height="58vh" border>
+                ref="fixedNumberTable"
+                :height="tableHeight"
+                border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="编码" align="center" prop="code" width="150" show-overflow-tooltip resizable>
@@ -268,14 +289,20 @@
         </template>
       </el-table-column>
         </el-table>
+        </div>
 
+        <!-- 明细框容器（翻页） -->
+        <div class="table-container" ref="tableContainer">
+          <div class="pagination-container fixed-number-pagination">
         <pagination
-          v-show="total>0"
+              v-show="true"
           :total="total"
           :page.sync="queryParams.pageNum"
           :limit.sync="queryParams.pageSize"
           @pagination="getList"
         />
+          </div>
+        </div>
       </el-col>
     </el-row>
 
@@ -498,10 +525,16 @@ export default {
         return !this.queryParams.departmentId;
       }
       return true;
+    },
+    // 表格高度计算（容器高度减去分页高度）
+    tableHeight() {
+      // 明细表容器高度是 calc(100vh - 420px)，容器没有padding了，只需要减去表头高度（约48px）
+      // 表格实际可用高度 = 容器高度 - 表头高度
+      return 'calc(100vh - 468px)';
     }
   },
   watch: {
-    'queryParams.fixedNumberType'(newVal) {
+    'queryParams.fixedNumberType'(newVal, oldVal) {
       // 当定数类型改变时，清空选择并重新加载列表
       this.queryParams.warehouseId = null;
       this.queryParams.departmentId = null;
@@ -530,13 +563,113 @@ export default {
       }
     }
   },
+  watch: {
+    // 监听数据变化，重新设置表格高度
+    fixedNumberList: {
+      handler() {
+        this.$nextTick(() => {
+          setTimeout(() => {
+            this.setTableHeight();
+          }, 300);
+        });
+      },
+      deep: true
+    },
+    // 监听loading变化
+    loading(newVal) {
+      if (!newVal) {
+        // 数据加载完成后设置表格高度
+        this.$nextTick(() => {
+          setTimeout(() => {
+            this.setTableHeight();
+          }, 300);
+        });
+      }
+    }
+  },
   created() {
-    this.getList();
+    // 默认显示所有定数监测信息
+    this.queryParams.warehouseId = null;
+    this.queryParams.departmentId = null;
+    // 根据定数类型加载对应的列表
+    if (this.queryParams.fixedNumberType === '1' || !this.queryParams.fixedNumberType) {
     this.getWarehouseList();
+    } else if (this.queryParams.fixedNumberType === '2') {
+      // 确保科室列表被加载
+      this.getDepartmentList();
+    }
+    this.getList();
     // 从 localStorage 恢复数据
     this.loadFromLocalStorage();
   },
+  mounted() {
+    // 延迟执行，确保DOM完全渲染
+    setTimeout(() => {
+      this.setTableHeight();
+      // 监听窗口大小变化
+      window.addEventListener('resize', this.setTableHeight);
+      
+      // 确保在 mounted 时也检查并加载科室列表（参考仓库列表的逻辑）
+      if (this.queryParams.fixedNumberType === '2' && this.departmentList.length === 0) {
+        this.getDepartmentList();
+      }
+    }, 200);
+  },
+  beforeDestroy() {
+    // 移除窗口大小变化监听
+    window.removeEventListener('resize', this.setTableHeight);
+  },
   methods: {
+    /** 设置表格高度 */
+    setTableHeight() {
+      setTimeout(() => {
+        const container = this.$refs.tableContainer;
+        if (!container) {
+          console.warn('表格容器未找到');
+          return;
+        }
+        
+        // 获取容器高度
+        const containerHeight = container.offsetHeight;
+        // 翻页容器高度是180px，加上margin和padding约32px，总共约172px（减少翻页占用空间）
+        const paginationHeight = 172;
+        // 表格应该占据的高度 = 容器高度 - 翻页高度
+        const tableMaxHeight = containerHeight - paginationHeight;
+        
+        // 方法1: 通过ref获取
+        const tableEl = this.$refs.fixedNumberTable;
+        let tableElement = null;
+        
+        if (tableEl && tableEl.$el) {
+          tableElement = tableEl.$el;
+        } else {
+          // 方法2: 通过DOM查询获取
+          tableElement = container.querySelector('.el-table');
+        }
+        
+        if (tableElement) {
+          // 设置表格最大高度，确保不覆盖翻页
+          tableElement.style.setProperty('max-height', `${tableMaxHeight}px`, 'important');
+          tableElement.style.setProperty('height', 'auto', 'important');
+          
+          // 设置body-wrapper最大高度
+          const bodyWrapper = tableElement.querySelector('.el-table__body-wrapper');
+          if (bodyWrapper) {
+            // body-wrapper高度 = 表格高度 - 表头高度（约48px）
+            const bodyMaxHeight = tableMaxHeight - 48;
+            bodyWrapper.style.setProperty('max-height', `${bodyMaxHeight}px`, 'important');
+            bodyWrapper.style.setProperty('height', 'auto', 'important');
+          }
+          
+          // 强制触发表格重新计算布局
+          if (tableEl && tableEl.doLayout) {
+            tableEl.doLayout();
+          }
+        } else {
+          console.warn('表格元素未找到，无法设置高度');
+        }
+      }, 300);
+    },
     /** 获取 localStorage 的 key */
     getStorageKey() {
       const type = this.queryParams.fixedNumberType || '1';
@@ -598,20 +731,53 @@ export default {
           this.saveToLocalStorage();
         }
         this.loading = false;
+        // 数据加载完成后设置表格高度
+        setTimeout(() => {
+          this.setTableHeight();
+        }, 200);
       });
     },
     /** 查询仓库列表 */
     getWarehouseList() {
       listWarehouse({ pageNum: 1, pageSize: 1000 }).then(response => {
-        this.warehouseList = response.rows || [];
+        // 过滤掉仓库类型为设备的仓库
+        this.warehouseList = (response.rows || []).filter(warehouse => {
+          // 仓库类型字段为 warehouseType，值为 '设备' 的过滤掉
+          return warehouse.warehouseType !== '设备';
+        });
       });
     },
     /** 查询科室列表 */
     getDepartmentList() {
       let userId = this.$store.state.user.userId;
+      if (!userId) {
+        this.departmentList = [];
+        return;
+      }
+      
+      // 参考 getWarehouseList 的实现方式，直接调用 API
       listdepartAll(userId).then(response => {
+        // 参考 SelectDepartment 组件的处理方式：直接使用 response || []
+        // 根据 request.js 的响应拦截器，如果 code === 200，返回 res.data
+        // 如果后端直接返回 List，那么 response 就是数组
         this.departmentList = response || [];
+      }).catch(error => {
+        this.departmentList = [];
       });
+    },
+    /** 点击仓库列头，显示所有仓库定数监测信息 */
+    handleWarehouseHeaderClick() {
+      // 清空仓库选择
+      this.queryParams.warehouseId = null;
+      // 重新加载所有定数监测信息
+      this.getList();
+    },
+    /** 点击科室列头，显示所有科室定数监测信息 */
+    handleDepartmentHeaderClick() {
+      // 清空科室选择
+      this.queryParams.departmentId = null;
+      // 重新加载所有定数监测信息
+      this.getList();
     },
     /** 点击仓库项 */
     handleWarehouseClick(warehouseId) {
@@ -929,35 +1095,55 @@ export default {
 }
 
 /* 第一行查询条件左对齐紧凑布局 */
-.app-container > .el-form .query-row-left .el-col {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
+/* 查询容器样式 */
+.query-container {
+  margin-top: -5px;
+  margin-bottom: 16px;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline {
+/* 查询条件容器框样式 */
+.form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #EBEEF5;
+}
+
+/* 查询条件样式 */
+.query-row-left {
+  margin-bottom: 10px;
+}
+
+.query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
+  margin-bottom: 10px;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
 }
 
-/* 统一控制查询条件输入框宽度 */
-.app-container > .el-form .query-row-left .query-item-inline .el-input {
+.query-select-wrapper {
   width: 180px;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
+/* 隐藏按钮行容器，但保留按钮可见 */
+.button-row-container.mb8,
+.el-row.button-row-container {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 16px !important;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
-  width: 100%;
+/* 确保按钮正常显示 */
+.button-row-container .el-button {
+  display: inline-block !important;
+  visibility: visible !important;
 }
 
 /* 表格样式优化 */
@@ -1167,6 +1353,377 @@ export default {
 .modal-zoom-enter, .modal-zoom-leave-to {
   opacity: 0;
   transform: scale(0.9);
+}
+
+/* 明细表容器 */
+.detail-table-container {
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  margin-bottom: 16px;
+  height: calc(100vh - 420px) !important;
+  min-height: calc(100vh - 420px) !important;
+  max-height: calc(100vh - 420px) !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.detail-table-container .el-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100% !important;
+}
+
+/* 确保表头完全显示 */
+.detail-table-container .el-table__header-wrapper {
+  flex-shrink: 0;
+  height: auto !important;
+  overflow: visible !important;
+  position: relative;
+  z-index: 1;
+}
+
+.detail-table-container .el-table__header {
+  display: table-header-group;
+  width: 100%;
+}
+
+.detail-table-container .el-table th {
+  padding: 12px 0 !important;
+  height: auto !important;
+  line-height: 1.5 !important;
+}
+
+/* 确保滚动条在底部显示 */
+.detail-table-container .el-table__body-wrapper {
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  position: relative;
+  min-height: 0;
+  display: block !important;
+}
+
+.detail-table-container .el-table__body {
+  display: table;
+  width: 100%;
+  table-layout: auto;
+}
+
+/* 确保滚动条在底部可见 */
+.detail-table-container .el-table__body-wrapper::-webkit-scrollbar {
+  height: 12px !important;
+}
+
+.detail-table-container .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+  position: absolute !important;
+  bottom: 0 !important;
+}
+
+.detail-table-container .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 6px;
+}
+
+.detail-table-container .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 6px;
+}
+
+.detail-table-container .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #909399;
+}
+
+/* 明细框容器（翻页） */
+.table-container {
+  background: #fff;
+  padding: 4px 16px 8px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #EBEEF5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  height: 60px !important;
+  min-height: 60px !important;
+  max-height: 60px !important;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.table-container .el-table {
+  margin-bottom: 0;
+  overflow: hidden;
+  flex: 0 0 auto;
+  min-height: calc(100% - 172px) !important;
+  max-height: calc(100% - 172px) !important;
+  height: calc(100% - 172px) !important;
+  /* 确保表格高度固定 */
+  box-sizing: border-box;
+}
+
+/* 更具体的选择器，确保覆盖Element UI的默认样式 */
+.table-container > .el-table.el-table--fit.el-table--border {
+  height: calc(100% - 172px) !important;
+  max-height: calc(100% - 172px) !important;
+  min-height: calc(100% - 172px) !important;
+}
+
+/* 使用::v-deep强制覆盖Element UI动态设置的高度 */
+::v-deep .table-container .el-table {
+  height: calc(100% - 172px) !important;
+  max-height: calc(100% - 172px) !important;
+  min-height: calc(100% - 172px) !important;
+  flex: 0 0 auto !important;
+}
+
+::v-deep .table-container .el-table__body-wrapper {
+  max-height: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  flex: 1 1 auto !important;
+}
+
+.table-container .el-table__body-wrapper {
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  height: calc(100% - 48px) !important;
+  max-height: calc(100% - 48px) !important;
+  min-height: calc(100% - 48px) !important;
+  flex: 1 1 auto !important;
+}
+
+/* 更具体的选择器 */
+.table-container .el-table .el-table__body-wrapper {
+  height: calc(100% - 48px) !important;
+  max-height: calc(100% - 48px) !important;
+  min-height: calc(100% - 48px) !important;
+}
+
+/* 确保水平滚动条在底部显示 */
+.table-container .el-table__body {
+  display: table;
+  width: 100%;
+  table-layout: auto;
+}
+
+/* 确保滚动条容器正确显示 */
+.table-container .el-table__body-wrapper.is-scrolling-left,
+.table-container .el-table__body-wrapper.is-scrolling-right {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+
+/* 覆盖全局分页容器样式 */
+.table-container .pagination-container.fixed-number-pagination,
+.table-container .fixed-number-pagination {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 0 !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  min-height: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  position: relative !important;
+  z-index: 10 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  box-sizing: border-box;
+  overflow: visible;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100%;
+}
+
+/* 覆盖全局分页组件样式 */
+.table-container .pagination-container .el-pagination {
+  width: auto !important;
+  position: relative !important;
+  right: auto !important;
+  padding: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  height: auto !important;
+}
+
+/* 使用深度选择器确保样式生效 */
+::v-deep .table-container .pagination-container.fixed-number-pagination,
+::v-deep .table-container .fixed-number-pagination {
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  width: 100%;
+}
+
+::v-deep .table-container .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+</style>
+
+<!-- 非 scoped 样式，用于覆盖全局样式 -->
+<style>
+/* 强制覆盖全局分页容器样式 */
+.table-container .pagination-container.fixed-number-pagination,
+.table-container .fixed-number-pagination {
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 10 !important;
+  width: 100%;
+}
+
+.table-container .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: flex !important;
+}
+</style>
+
+<style>
+/* 强制覆盖Element UI表格高度 - 非scoped样式 */
+.table-container .el-table {
+  height: calc(100% - 172px) !important;
+  max-height: calc(100% - 172px) !important;
+  min-height: calc(100% - 172px) !important;
+  overflow: hidden !important;
+  flex: 0 0 auto !important;
+}
+
+/* 更具体的选择器，覆盖Element UI的默认样式 */
+.table-container .el-table.el-table--fit.el-table--border.el-table--scrollable-x {
+  height: calc(100% - 172px) !important;
+  max-height: calc(100% - 172px) !important;
+  min-height: calc(100% - 172px) !important;
+  flex: 0 0 auto !important;
+}
+
+.table-container .el-table__body-wrapper {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  flex: 1 1 auto !important;
+}
+
+.table-container .el-table .el-table__body-wrapper {
+  height: calc(100% - 48px) !important;
+  max-height: calc(100% - 48px) !important;
+  min-height: calc(100% - 48px) !important;
+  flex: 1 1 auto !important;
+}
+
+/* 确保表格头部和body正确显示 */
+.table-container .el-table__header-wrapper {
+  flex-shrink: 0;
+}
+
+/* 隐藏按钮行容器，但保留按钮可见 - 非scoped样式 */
+.button-row-container.mb8,
+.el-row.button-row-container {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 16px !important;
+}
+
+.button-row-container .el-button {
+  display: inline-block !important;
+  visibility: visible !important;
+}
+
+/* 隐藏明细表容器背景，只显示表格 - 非scoped样式 */
+.detail-table-container {
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.detail-table-container .el-table {
+  background: #fff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid #EBEEF5 !important;
+}
+
+/* 确保滚动条在底部显示 - 非scoped样式 */
+.detail-table-container .el-table {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+.detail-table-container .el-table__body-wrapper {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  display: block !important;
+  position: relative !important;
+  min-height: 0 !important;
+}
+
+.detail-table-container .el-table__body-wrapper::-webkit-scrollbar {
+  height: 12px !important;
+}
+
+.detail-table-container .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+  position: absolute !important;
+  bottom: 0 !important;
+}
+
+.detail-table-container .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 6px !important;
+}
+
+.detail-table-container .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c0c4cc !important;
+  border-radius: 6px !important;
+}
+
+.detail-table-container .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #909399 !important;
 }
 </style>
 

@@ -1,83 +1,81 @@
 ﻿<template>
-  <div>
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+  <div class="app-container">
+    <div class="query-container">
+      <div class="form-fields-container">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+          <el-row class="query-row-left">
+            <el-col :span="24">
+              <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+                <div class="query-select-wrapper">
+                  <SelectMaterial v-model="queryParams.materialId" />
+                </div>
+              </el-form-item>
+              <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+                <div class="query-select-wrapper">
+                  <SelectDepartment v-model="queryParams.departmentId" />
+                </div>
+              </el-form-item>
+              <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+                <div class="query-select-wrapper">
+                  <SelectWarehouse v-model="queryParams.warehouseId" />
+                </div>
+              </el-form-item>
+              <el-form-item label="单据类型" prop="billType" class="query-item-inline">
+                <el-select v-model="queryParams.billType" placeholder="请选择单据类型" clearable style="width: 180px">
+                  <el-option label="全部" value="" />
+                  <el-option label="入库" value="101" />
+                  <el-option label="出库" value="102" />
+                  <el-option label="调拨" value="103" />
+                  <el-option label="盘点" value="104" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="耗材" prop="materialId" label-width="100px">
-            <SelectMaterial v-model="queryParams.materialId" />
-          </el-form-item>
-        </el-col>
+          <el-row :gutter="16" class="query-row-second">
+            <el-col :span="6">
+              <el-form-item label="开始日期" prop="beginDate" label-width="100px">
+                <el-date-picker clearable
+                                v-model="queryParams.beginDate"
+                                type="date"
+                                value-format="yyyy-MM-dd"
+                                placeholder="请选择开始日期"
+                                style="width: 180px">
+                </el-date-picker>
+              </el-form-item>
+            </el-col>
 
-        <el-col :span="6">
-          <el-form-item label="科室" prop="departmentId" label-width="100px">
-            <SelectDepartment v-model="queryParams.departmentId" />
-          </el-form-item>
-        </el-col>
+            <el-col :span="6">
+              <el-form-item label="结束日期" prop="endDate" label-width="100px">
+                <el-date-picker clearable
+                                v-model="queryParams.endDate"
+                                type="date"
+                                value-format="yyyy-MM-dd"
+                                placeholder="请选择结束日期"
+                                style="width: 180px">
+                </el-date-picker>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+      </div>
+    </div>
 
-        <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-            <SelectWarehouse v-model="queryParams.warehouseId" />
-          </el-form-item>
-        </el-col>
+    <el-row :gutter="10" class="mb8" style="padding-top: 0; margin-top: 0; margin-bottom: 16px;">
+      <el-col :span="1.5">
+        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+      </el-col>
+    </el-row>
 
-        <el-col :span="6">
-          <el-form-item label="单据类型" prop="billType" label-width="100px">
-            <el-select v-model="queryParams.billType" placeholder="请选择单据类型" clearable>
-              <el-option label="全部" value="" />
-              <el-option label="入库" value="101" />
-              <el-option label="出库" value="102" />
-              <el-option label="调拨" value="103" />
-              <el-option label="盘点" value="104" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="单据状态" prop="billStatus" label-width="100px">
-            <el-select v-model="queryParams.billStatus" placeholder="请选择单据状态" clearable>
-              <el-option label="全部" value="" />
-              <el-option label="未审核" value="0" />
-              <el-option label="已审核" value="1" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item label="开始日期" prop="beginDate" label-width="100px">
-            <el-date-picker clearable
-                            v-model="queryParams.beginDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="请选择开始日期">
-            </el-date-picker>
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item label="结束日期" prop="endDate" label-width="100px">
-            <el-date-picker clearable
-                            v-model="queryParams.endDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="请选择结束日期">
-            </el-date-picker>
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item >
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-    </el-form>
-
-    <el-table v-loading="loading" :data="inOutList" show-summary :summary-method="getSummaries" height="54vh" border>
+    <div class="table-container">
+    <el-table v-loading="loading" :data="inOutList"
+              :row-class-name="inOutListIndex"
+              show-summary :summary-method="getSummaries"
+              height="51vh" border>
+      <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
       <el-table-column label="单据编号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -88,11 +86,6 @@
       <el-table-column label="单据类型" align="center" prop="billType" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.bill_type" :value="scope.row.billType"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" width="100" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
       <el-table-column label="制单日期" align="center" prop="billDate" width="120" show-overflow-tooltip resizable>
@@ -129,6 +122,7 @@
       <el-table-column label="操作人" align="center" prop="createBy" width="100" show-overflow-tooltip resizable />
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
     </el-table>
+    </div>
 
     <pagination
       v-show="total>0"
@@ -297,6 +291,12 @@ export default {
       };
       this.resetForm("form");
     },
+    /** 行序号计算 */
+    inOutListIndex({ row, rowIndex }) {
+      const pageNum = Math.max(1, parseInt(this.queryParams.pageNum, 10));
+      const pageSize = Math.max(1, parseInt(this.queryParams.pageSize, 10));
+      row.index = (pageNum - 1) * pageSize + rowIndex + 1;
+    },
     /** 合计行计算 */
     getSummaries(param) {
       const { columns, data } = param;
@@ -330,3 +330,75 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* 查询条件样式 */
+.query-row-left {
+  margin-bottom: 10px;
+}
+
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 10px;
+}
+
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+.query-row-second {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* 查询容器样式 */
+.query-container {
+  margin-top: -20px;
+  margin-bottom: 16px;
+}
+
+/* 查询条件容器框样式 */
+.form-fields-container {
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #EBEEF5;
+}
+
+.table-container {
+  margin-top: 0px;
+  overflow: visible;
+  width: 100%;
+  position: relative;
+}
+
+/* 表格滚动条样式（稍微加粗） */
+.table-container ::-webkit-scrollbar {
+  height: 12px;
+}
+
+.table-container ::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background-color: #c0c4cc;
+}
+
+.table-container ::-webkit-scrollbar-track {
+  background-color: #f5f7fa;
+}
+</style>

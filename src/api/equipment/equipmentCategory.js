@@ -9,6 +9,15 @@ export function listEquipmentCategory(query) {
   })
 }
 
+// 查询所有设备分类列表（无需权限）
+export function listEquipmentCategoryAll(query) {
+  return request({
+    url: '/equipment/category/listAll',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询设备分类详细
 export function getEquipmentCategory(categoryId) {
   return request({

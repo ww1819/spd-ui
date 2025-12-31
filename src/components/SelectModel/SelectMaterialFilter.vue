@@ -3,88 +3,119 @@
     <div class="local-modal-content">
       <div class="modal-header">
         <div class="modal-title">耗材明细</div>
-        <el-button icon="el-icon-close" size="small" circle @click="handleClose" class="close-btn"></el-button>
+        <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
       </div>
       <div class="modal-body">
         <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
         <el-row :gutter="20">
-
-          <el-col :span="6">
-            <el-form-item :label="useDepInventory ? '科室' : '仓库'" :prop="useDepInventory ? 'departmentId' : 'warehouseId'" label-width="100px">
-              <SelectDepartment v-if="useDepInventory" v-model="queryParams.departmentId" :value2="true"/>
-              <SelectWarehouse v-else v-model="queryParams.warehouseId" :value2="true" includeWarehouseType="高值"/>
+          <el-col :span="8">
+            <el-form-item label="库房分类" prop="storeroomId" label-width="100px">
+              <SelectWarehouseCategory v-model="queryParams.storeroomId"/>
             </el-form-item>
           </el-col>
-
-          <el-col :span="6">
-            <el-form-item label="供应商" prop="supplierId" label-width="100px">
-              <SelectSupplier v-model="queryParams.supplierId"/>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="生产厂家" prop="factoryId" label-width="100px">
+              <SelectFactory v-model="queryParams.factoryId"/>
             </el-form-item>
           </el-col>
-
-          <el-col :span="6">
-            <el-form-item label="耗材" prop="materialName" label-width="100px">
-              <el-input v-model="queryParams.materialName" placeholder="请输入耗材名称" clearable @keyup.enter.native="handleQuery"/>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item>
-              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-              <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-              <el-button size="small" @click="handleClose">取 消</el-button>
-              <el-button type="primary" size="small" @click="checkMaterialBtn">确 定</el-button>
+          <el-col :span="8">
+            <el-form-item label="耗材" prop="materialKeyword" label-width="100px">
+              <el-input 
+                v-model="queryParams.materialKeyword" 
+                placeholder="请输入耗材编码、名称或首字母" 
+                clearable 
+                @keyup.enter.native="handleQuery"
+                @input="handleMaterialKeywordInput"
+              />
             </el-form-item>
           </el-col>
         </el-row>
       </el-form>
 
-        <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(50vh)" border>
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
+      <!-- 搜索和重置按钮放在搜索框和明细框中间，靠左显示 -->
+      <div style="text-align: left; margin: 10px 0;">
+        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button size="small" @click="handleClose" style="margin-left: 20px;">取 消</el-button>
+        <el-button type="primary" size="small" @click="checkMaterialBtn">确 定</el-button>
+      </div>
+
+        <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(50vh)" border :cell-style="{padding: '8px 4px'}">
+          <el-table-column type="selection" width="50" align="center" />
+          <el-table-column label="序号" align="center" width="60" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
             </template>
           </el-table-column>
-          <el-table-column label="耗材编码" align="center" prop="material.code" width="80" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材名称" align="center" prop="material.name" width="160" show-overflow-tooltip resizable/>
-          <el-table-column label="供应商" align="center" width="160" show-overflow-tooltip resizable>
+          <el-table-column label="耗材编码" align="center" prop="material.code" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材名称" align="center" prop="material.name" width="150" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="material.speci" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
+              <span>{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="库存数量" align="center" prop="qty" width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.model" width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable>
+          <el-table-column label="计费" align="center" prop="material.isBilling" width="70" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
+              <span>{{ (scope.row.material && (scope.row.material.isBilling === '1' || scope.row.material.isBilling === 1)) ? '是' : '否' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="库存分类" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="财务分类" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="生产厂家" align="center" width="150" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="供应商" align="center" width="150" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="注册证有效期" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.material && scope.row.material.periodDate">
+                {{ formatDate(scope.row.material.periodDate) }}
+              </span>
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="批号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="批次号" align="center" prop="batchNo" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="生产日期" align="center" prop="materialDate" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="存储方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span v-if="scope.row.materialDate">{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
+              <dict-tag v-if="scope.row.material && scope.row.material.isWay" :options="dict.type.way_status" :value="scope.row.material.isWay"/>
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" align="center" prop="endTime" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span v-if="scope.row.endTime">{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
-              <span v-else>--</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="院内码" align="center" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.inHospitalCode || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column :label="useDepInventory ? '出库单号' : '入库单号'" align="center" :prop="useDepInventory ? 'shipmentNo' : 'orderNo'" width="180" show-overflow-tooltip resizable/>
         </el-table>
 
         <pagination
@@ -104,18 +135,21 @@
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
+import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
+import SelectFactory from "@/components/SelectModel/SelectFactory";
 import { listDepotInventory} from "@/api/gz/depotInventory";
 import { listGzDepInventory} from "@/api/gzDepartment/gzDepInventory";
 import { checkInHospitalCode } from "@/api/gz/order";
 
 export default {
   name: "SelectMaterialFilter",
-  components: {SelectWarehouse, SelectDepartment, SelectSupplier},
+  components: {SelectWarehouse, SelectDepartment, SelectSupplier, SelectWarehouseCategory, SelectFactory},
   dicts: ['way_status'],
   props: {
     DialogComponentShow: Boolean,
     warehouseValue: [Number, String],
     departmentValue: [Number, String],
+    supplierValue: [Number, String], // 供应商ID，用于过滤产品
     gzOrderEntryList: Array,
     useDepInventory: { // 是否使用科室库存（true=科室库存，false=仓库库存）
       type: Boolean,
@@ -147,15 +181,24 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      // 定数监测的产品ID列表（用于过滤）
+      fixedNumberMaterialIds: [],
+      // 定数监测的产品列表（直接显示）
+      fixedNumberMaterials: [],
+      // 是否使用定数监测模式（有仓库ID且仓库ID来自父组件）
+      useFixedNumberMode: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         materialId: null,
         materialName: undefined,
+        materialKeyword: undefined, // 耗材搜索关键词（支持编码、名称、首字母）
         warehouseId: undefined,
         departmentId: undefined,
         supplierId: null,
+        storeroomId: null, // 库房分类ID
+        factoryId: null, // 生产厂家ID
       },
       // 表单参数
       form: {},
@@ -168,6 +211,14 @@ export default {
       this.queryParams.departmentId = this.departmentValue;
     } else {
       this.queryParams.warehouseId = this.warehouseValue;
+      // 如果有仓库ID，加载该仓库的定数监测产品列表
+      if (this.warehouseValue) {
+        this.loadFixedNumberMaterials(this.warehouseValue);
+      }
+    }
+    // 如果有供应商ID，设置查询参数（用于过滤）
+    if (this.supplierValue) {
+      this.queryParams.supplierId = this.supplierValue;
     }
     this.getList();
   },
@@ -180,6 +231,14 @@ export default {
           this.queryParams.departmentId = this.departmentValue;
         } else {
           this.queryParams.warehouseId = this.warehouseValue;
+          // 如果有仓库ID，加载该仓库的定数监测产品列表
+          if (this.warehouseValue) {
+            this.loadFixedNumberMaterials(this.warehouseValue);
+          }
+        }
+        // 如果有供应商ID，设置查询参数（用于过滤，但不显示在搜索框中）
+        if (this.supplierValue) {
+          this.queryParams.supplierId = this.supplierValue;
         }
         this.getList();
       }
@@ -188,6 +247,8 @@ export default {
       // 当父组件传递的仓库值变化时，更新查询参数
       if (!this.useDepInventory && newVal) {
         this.queryParams.warehouseId = newVal;
+        // 加载该仓库的定数监测产品列表
+        this.loadFixedNumberMaterials(newVal);
       }
     },
     departmentValue(newVal) {
@@ -201,8 +262,119 @@ export default {
     // this.getList();
   },
   methods: {
+    /** 加载定数监测的产品列表 */
+    loadFixedNumberMaterials(warehouseId) {
+      if (!warehouseId) {
+        this.fixedNumberMaterialIds = [];
+        this.fixedNumberMaterials = [];
+        this.useFixedNumberMode = false;
+        return;
+      }
+      
+      try {
+        // 从localStorage读取定数监测数据（仓库定数监测类型为'1'）
+        const storageKey = `fixedNumber_1_${warehouseId}`;
+        const savedData = localStorage.getItem(storageKey);
+        
+        if (savedData) {
+          const fixedNumberList = JSON.parse(savedData);
+          // 提取所有做了定数监测的产品（只要在列表中就认为是做了定数监测）
+          const materials = fixedNumberList
+            .filter(item => {
+              // 只要在定数监测列表中，就认为是做了定数监测的产品
+              return item.material && item.material.id;
+            })
+            .map(item => {
+              // 转换为库存格式，用于显示
+              return {
+                material: item.material,
+                qty: item.stockQuantity || 0, // 库存数量
+                unitPrice: item.price || item.material.price || 0, // 单价
+                amt: (item.stockQuantity || 0) * (item.price || item.material.price || 0), // 金额
+                materialNo: '', // 批号
+                batchNo: '', // 批次号
+                materialDate: null, // 生产日期
+                endTime: null, // 有效期
+                inHospitalCode: '', // 院内码
+                orderNo: '' // 入库单号
+              };
+            });
+          
+          this.fixedNumberMaterials = materials;
+          this.fixedNumberMaterialIds = materials.map(m => m.material.id).filter(id => id);
+          this.useFixedNumberMode = true;
+        } else {
+          this.fixedNumberMaterials = [];
+          this.fixedNumberMaterialIds = [];
+          this.useFixedNumberMode = false;
+        }
+      } catch (error) {
+        console.error('加载定数监测数据失败:', error);
+        this.fixedNumberMaterials = [];
+        this.fixedNumberMaterialIds = [];
+        this.useFixedNumberMode = false;
+      }
+    },
     /** 查询库存信息列表 */
     getList() {
+      // 如果使用定数监测模式，直接显示定数监测的产品列表
+      if (this.useFixedNumberMode && this.fixedNumberMaterials.length > 0) {
+        this.loading = true;
+        let filteredMaterials = this.fixedNumberMaterials;
+        
+        // 根据供应商过滤（优先使用props传入的supplierValue）
+        const supplierId = this.supplierValue || this.queryParams.supplierId;
+        if (supplierId) {
+          filteredMaterials = filteredMaterials.filter(item => {
+            return item.material && item.material.supplierId == supplierId;
+          });
+        }
+        
+        // 根据库房分类过滤
+        if (this.queryParams.storeroomId) {
+          filteredMaterials = filteredMaterials.filter(item => {
+            return item.material && item.material.storeroomId == this.queryParams.storeroomId;
+          });
+        }
+        
+        // 根据生产厂家过滤
+        if (this.queryParams.factoryId) {
+          filteredMaterials = filteredMaterials.filter(item => {
+            return item.material && item.material.factoryId == this.queryParams.factoryId;
+          });
+        }
+        
+        // 根据耗材关键词过滤（支持编码、名称、首字母）
+        if (this.queryParams.materialKeyword) {
+          const keyword = this.queryParams.materialKeyword.toLowerCase().trim();
+          filteredMaterials = filteredMaterials.filter(item => {
+            if (!item.material) return false;
+            const material = item.material;
+            // 检查编码
+            if (material.code && material.code.toLowerCase().includes(keyword)) {
+              return true;
+            }
+            // 检查名称
+            if (material.name && material.name.toLowerCase().includes(keyword)) {
+              return true;
+            }
+            // 检查首字母（名称简码）
+            if (material.referredName && material.referredName.toLowerCase().includes(keyword)) {
+              return true;
+            }
+            return false;
+          });
+        }
+        
+        // 分页处理
+        const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize;
+        const end = start + this.queryParams.pageSize;
+        this.materialList = filteredMaterials.slice(start, end);
+        this.total = filteredMaterials.length;
+        this.loading = false;
+        return;
+      }
+      
       // 根据 useDepInventory 判断使用哪个查询条件
       if (this.useDepInventory) {
         if (!this.queryParams.departmentId) {
@@ -219,8 +391,62 @@ export default {
       // 根据 useDepInventory 决定使用哪个 API
       const apiCall = this.useDepInventory ? listGzDepInventory(this.queryParams) : listDepotInventory(this.queryParams);
       apiCall.then(response => {
-        this.materialList = response.rows;
-        this.total = response.total;
+        let materialList = response.rows || [];
+        
+        // 如果有定数监测产品ID列表，只显示这些产品的库存
+        if (!this.useDepInventory && this.fixedNumberMaterialIds.length > 0) {
+          materialList = materialList.filter(item => {
+            const materialId = item.material && item.material.id;
+            return materialId && this.fixedNumberMaterialIds.includes(materialId);
+          });
+        }
+        
+        // 根据供应商过滤（优先使用props传入的supplierValue）
+        const supplierId = this.supplierValue || this.queryParams.supplierId;
+        if (supplierId) {
+          materialList = materialList.filter(item => {
+            return item.material && item.material.supplierId == supplierId;
+          });
+        }
+        
+        // 根据库房分类过滤
+        if (this.queryParams.storeroomId) {
+          materialList = materialList.filter(item => {
+            return item.material && item.material.storeroomId == this.queryParams.storeroomId;
+          });
+        }
+        
+        // 根据生产厂家过滤
+        if (this.queryParams.factoryId) {
+          materialList = materialList.filter(item => {
+            return item.material && item.material.factoryId == this.queryParams.factoryId;
+          });
+        }
+        
+        // 根据耗材关键词过滤（支持编码、名称、首字母）
+        if (this.queryParams.materialKeyword) {
+          const keyword = this.queryParams.materialKeyword.toLowerCase().trim();
+          materialList = materialList.filter(item => {
+            if (!item.material) return false;
+            const material = item.material;
+            // 检查编码
+            if (material.code && material.code.toLowerCase().includes(keyword)) {
+              return true;
+            }
+            // 检查名称
+            if (material.name && material.name.toLowerCase().includes(keyword)) {
+              return true;
+            }
+            // 检查首字母（名称简码）
+            if (material.referredName && material.referredName.toLowerCase().includes(keyword)) {
+              return true;
+            }
+            return false;
+          });
+        }
+        
+        this.materialList = materialList;
+        this.total = materialList.length;
         this.loading = false;
       }).catch(() => {
         this.loading = false;
@@ -233,10 +459,16 @@ export default {
     },
     /** 重置按钮操作 */
     resetQuery() {
-      this.queryParams.materialName = undefined;
-      this.queryParams.supplierId = null;
+      this.queryParams.materialKeyword = undefined;
+      this.queryParams.storeroomId = null;
+      this.queryParams.factoryId = null;
       // 保留仓库ID或科室ID，不重置
       this.handleQuery();
+    },
+    /** 耗材关键词输入处理 */
+    handleMaterialKeywordInput(value) {
+      // 实时搜索可以在这里实现，或者保持为空，只在点击搜索时查询
+      // 如果需要实时搜索，可以调用 this.handleQuery()
     },
     handleSelectionChange(val) {
       //获取选择的行数据
@@ -329,6 +561,26 @@ export default {
       
       this.$emit('selectData', this.selectRow)   //发送数据到父组件
       this.handleClose()
+    },
+    /** 格式化日期 */
+    formatDate(date) {
+      if (!date) return '--';
+      if (typeof date === 'string') {
+        // 如果是字符串，尝试解析
+        const d = new Date(date);
+        if (isNaN(d.getTime())) {
+          // 如果解析失败，直接返回原字符串（可能是已格式化的日期）
+          return date;
+        }
+        date = d;
+      }
+      if (date instanceof Date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      return '--';
     },
   }
 };
