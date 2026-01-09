@@ -829,8 +829,8 @@
                 <!-- 右侧二维码区域 -->
                 <div class="asset-card-qrcode">
                   <img
-                    v-if="form.assetCode"
-                    :src="getQRCodeUrl(form.assetCode)"
+                    v-if="form.barcode"
+                    :src="getQRCodeUrl(form.barcode)"
                     alt="二维码"
                     class="qrcode-image"
                   />
@@ -2739,8 +2739,8 @@
                 <!-- 右侧二维码区域 -->
                 <div class="asset-card-qrcode">
                   <img
-                    v-if="form.assetCode"
-                    :src="getQRCodeUrl(form.assetCode)"
+                    v-if="form.barcode"
+                    :src="getQRCodeUrl(form.barcode)"
                     alt="二维码"
                     class="qrcode-image"
                   />

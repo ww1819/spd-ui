@@ -50,8 +50,8 @@
         <!-- 右侧二维码区域 -->
         <div class="card-qrcode">
           <img
-            v-if="item.assetCode"
-            :src="getQRCodeUrl(item.assetCode)"
+            v-if="item.barcode"
+            :src="getQRCodeUrl(item.barcode)"
             alt="二维码"
             class="qrcode-img"
           />
