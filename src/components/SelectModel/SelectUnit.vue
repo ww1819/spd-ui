@@ -1,7 +1,7 @@
 ﻿<template>
   <el-select v-model="unit" filterable
              clearable
-             placeholder="请选择生产厂家"
+             placeholder="请选择单位"
              :disabled="value2"
   >
     <el-option

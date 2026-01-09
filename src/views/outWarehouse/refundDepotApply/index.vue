@@ -72,7 +72,7 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
+          size="medium"
           @click="handleAdd"
           v-hasPermi="['outWarehouse:refundDepotApply:add']"
         >新增</el-button>
@@ -82,7 +82,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['outWarehouse:refundDepotApply:export']"
         >导出</el-button>
@@ -91,14 +91,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -167,11 +167,10 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-printer"
-              @click="handlePrint(scope.row,true)"
-              v-if="scope.row.billStatus == 2"
+              icon="el-icon-view"
+              @click="handleView(scope.row)"
               style="padding: 0 5px; margin: 0;"
-            >打印</el-button>
+            >查看</el-button>
             <el-button
               size="small"
               type="text"
@@ -196,7 +195,6 @@
     </el-table>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"

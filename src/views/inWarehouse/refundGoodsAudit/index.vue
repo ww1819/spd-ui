@@ -27,7 +27,7 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="退货日期" style="display: flex; align-items: center;">
+          <el-form-item label="日期" style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -68,14 +68,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -83,7 +83,7 @@
         <el-button
           type="success"
           icon="el-icon-check"
-          size="small"
+          size="medium"
           :disabled="multiple"
           @click="handleBatchAudit"
           v-hasPermi="['inWarehouse:refundGoodsAudit:audit']"
@@ -106,7 +106,7 @@
         </template>
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="200" show-overflow-tooltip resizable/>
-      <el-table-column label="退货日期" align="center" prop="billDate" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="制单日期" align="center" prop="billDate" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
@@ -420,6 +420,10 @@
         <el-button @click=" modalObj.ok " type="primary">确认</el-button>
       </template>
     </el-dialog>
+    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
+    <div v-show="false">
+      <refund-goods-order-print v-if="printRowData" :row="printRowData" ref="receiptRefundGoodsPrintRefAuto"></refund-goods-order-print>
+    </div>
     <!-- 3、使用组件 -->
     <SelectInventory
       v-if="DialogComponentShow"
@@ -473,6 +477,8 @@ export default {
         cancel: () => {
         }
       },
+      // 打印数据（用于隐藏的打印组件）
+      printRowData: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -595,7 +601,13 @@ export default {
       this.loading = true;
 
       this.queryParams.billType = "301";
-      listThInventory(this.queryParams).then(response => {
+      // 如果 endDate 是日期格式（不包含时间），追加 " 23:59:59" 以包含当天的所有记录
+      const queryParams = { ...this.queryParams };
+      if (queryParams.endDate && queryParams.endDate.length === 10 && !queryParams.endDate.includes(' ')) {
+        queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
+      
+      listThInventory(queryParams).then(response => {
         this.warehouseList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -643,19 +655,25 @@ export default {
       });
     },
     getStatDate(){
+      // 返回前5天的日期
       let myDate = new Date();
+      myDate.setDate(myDate.getDate() - 5);
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
-      return statDate;
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      return year + "-" + month + "-" + day;
     },
     getEndDate(){
+      // 返回当前日期
       let myDate = new Date();
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
-      return endDate;
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      return year + "-" + month + "-" + day;
     },
     //当天日期
     getBillDate(){
@@ -823,6 +841,23 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
+      // 如果传入 print 参数为 true，直接执行打印
+      if (print === true) {
+        // 直接获取数据并触发打印
+        this.getRefundGoodsDetail(row).then(res => {
+          // 设置打印数据
+          this.printRowData = res
+          // 等待组件渲染后调用 start()
+          this.$nextTick(() => {
+            if (this.$refs['receiptRefundGoodsPrintRefAuto']) {
+              // start() 方法会直接触发浏览器打印对话框
+              this.$refs['receiptRefundGoodsPrintRefAuto'].start()
+            }
+          })
+        })
+        return
+      }
+      // 否则显示选择打印方式的对话框
       this.modalObj = {
         show: true,
         title: '选择打印方式',

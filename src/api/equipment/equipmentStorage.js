@@ -50,4 +50,12 @@ export function exportEquipmentStorage(query) {
     method: 'get',
     params: query
   })
+}
+
+// 审核设备入库
+export function auditEquipmentStorage(storageId) {
+  return request({
+    url: '/equipment/storage/audit/' + storageId,
+    method: 'put'
+  })
 } 

@@ -1,7 +1,9 @@
 ﻿<template>
   <div class="order-print" ref="receiptOrderPrintRef" hidden="hidden">
 <!--    <div class="title" style="padding-top: 15px">入库单</div>-->
-    <div style="font-size: 22px;text-align: center;">入库单</div>
+    <div style="font-size: 22px;text-align: center;">
+      <span v-if="hospitalName">{{ hospitalName }}</span>入库单
+    </div>
     <div class="summary">
       <div class="col1" style="width:45%">单号: {{ row.billNo }}</div>
       <div class="col1" style="width:30%">仓库: {{ row.warehouseName }}</div>
@@ -63,13 +65,26 @@
 </template>
 
 <script>
+import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 
 export default {
+  mixins: [hospitalNameMixin],
   props: ['row'],
   methods: {
     start() {
-      this.$print(this.$refs.receiptOrderPrintRef, {}, 'A4')
-    },
+      // 确保医院名称已加载完成后再打印
+      this.ensureHospitalNameLoaded().then(() => {
+        // 等待Vue更新DOM
+        this.$nextTick(() => {
+          this.$print(this.$refs.receiptOrderPrintRef, {}, 'A4')
+        })
+      }).catch(() => {
+        // 即使加载失败也继续打印
+        this.$nextTick(() => {
+          this.$print(this.$refs.receiptOrderPrintRef, {}, 'A4')
+        })
+      })
+    }
   }
 }
 </script>
@@ -106,6 +121,9 @@ export default {
   table, table tr th, table tr td {
     border: 0.05rem solid #000;
     font-size: 12px;
+    overflow: hidden;
+    word-wrap: break-word;
+    word-break: break-all;
   }
 
 }
@@ -128,6 +146,9 @@ export default {
   .common-table
     td, th
       border-color black
+      overflow: hidden !important
+      word-wrap: break-word
+      word-break: break-all
 
   .content
     display flex

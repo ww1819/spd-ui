@@ -24,12 +24,22 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+            <el-form-item v-if="currentBillType !== '3'" label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId"/>
               </div>
             </el-form-item>
-            <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+            <el-form-item v-if="currentBillType !== '3'" label="科室" prop="departmentId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectDepartment v-model="queryParams.departmentId" />
+              </div>
+            </el-form-item>
+            <el-form-item v-if="currentBillType === '3'" label="调出科室" prop="warehouseId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectDepartment v-model="queryParams.warehouseId"/>
+              </div>
+            </el-form-item>
+            <el-form-item v-if="currentBillType === '3'" label="调入科室" prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
@@ -98,10 +108,20 @@
           @click="resetQuery"
         >重置</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          icon="el-icon-check"
+          size="medium"
+          @click="handleBatchAudit"
+          v-hasPermi="['department:dApply:audit']"
+          :disabled="ids.length === 0"
+        >审核</el-button>
+      </el-col>
     </el-row>
 
     <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange"  height="56vh" border>
-<!--      <el-table-column type="selection" width="55" align="center" />-->
+      <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="单号" align="center" width="180" show-overflow-tooltip resizable >
         <template slot-scope="scope">
@@ -115,8 +135,10 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column v-if="currentBillType !== '3'" label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column v-if="currentBillType !== '3'" label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column v-if="currentBillType === '3'" label="调出科室" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column v-if="currentBillType === '3'" label="调入科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="制单人" align="center" prop="createrNmae" width="100" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -196,8 +218,8 @@
               <div class="form-fields-container">
                 <el-row>
                   <el-col :span="4">
-                    <el-form-item label="申领状态" prop="billStatus" label-width="100px">
-                      <el-select v-model="form.applyBillStatus" placeholder="请选择申领状态"
+                    <el-form-item :label="currentBillType === '3' ? '转科状态' : '申领状态'" prop="billStatus" label-width="100px">
+                      <el-select v-model="form.applyBillStatus" :placeholder="currentBillType === '3' ? '请选择转科状态' : '请选择申领状态'"
                                  :disabled="true"
                                  clearable style="width: 150px">
                         <el-option v-for="dict in dict.type.biz_status"
@@ -209,8 +231,18 @@
                     </el-form-item>
                   </el-col>
 
-                  <el-col :span="4">
+                  <el-col :span="4" v-if="currentBillType !== '3'">
                     <el-form-item label="科室" prop="departmentId" label-width="100px">
+                      <SelectDepartment v-model="form.departmentId"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4" v-if="currentBillType === '3'">
+                    <el-form-item label="调出科室" prop="warehouseId" label-width="100px">
+                      <SelectDepartment v-model="form.warehouseId"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4" v-if="currentBillType === '3'">
+                    <el-form-item label="调入科室" prop="departmentId" label-width="100px">
                       <SelectDepartment v-model="form.departmentId"/>
                     </el-form-item>
                   </el-col>
@@ -233,7 +265,7 @@
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <el-row>
+                <el-row v-if="currentBillType !== '3'">
                   <el-col :span="4">
                     <el-form-item label="仓库" prop="warehouseId" label-width="100px">
                       <SelectWarehouse v-model="form.warehouseId"/>
@@ -246,7 +278,7 @@
 <!--        <el-divider content-position="center">科室申领明细信息</el-divider>-->
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
-            <span>科室申领明细信息</span>
+            <span>{{ currentBillType === '3' ? '转科申请明细信息' : '科室申领明细信息' }}</span>
           </el-col>
 
           <div v-show="action">
@@ -266,13 +298,25 @@
           </div>
 
         </el-row>
-        <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" @selection-change="handleBasApplyEntrySelectionChange" ref="basApplyEntry" height="calc(42vh)" border :summary-method="getSummaries" show-summary>
+        <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" @selection-change="handleBasApplyEntrySelectionChange" ref="basApplyEntry" height="calc(32vh)" border :summary-method="getSummaries" show-summary>
           <el-table-column type="selection" width="60" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable/>
           <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
-          <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="型号" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
-          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.materialSpec || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="型号" align="center" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || scope.row.unit || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.unitPrice">{{ parseFloat(scope.row.unitPrice).toFixed(2) }}</span>
@@ -295,14 +339,35 @@
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
-          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="储存方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable>
+          <el-table-column label="生产厂家" align="center" width="140" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+              <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="包装规格" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="库房分类" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="财务分类" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="注册证号" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="储存方式" align="center" width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <dict-tag v-if="scope.row.material && scope.row.material.isWay" :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+              <span v-else>--</span>
             </template>
           </el-table-column>
 
@@ -344,7 +409,8 @@
 
 <script>
 import { listApply, getApply, delApply, addApply, updateApply,auditApply } from "@/api/department/apply";
-import { listPurchase, getPurchase, delPurchase, updatePurchase } from "@/api/department/purchase";
+import { listPurchase, getPurchase, delPurchase, updatePurchase, auditPurchase } from "@/api/department/purchase";
+import { listDepartmentTransfer, getDepartmentTransfer, delDepartmentTransfer, updateDepartmentTransfer, auditDepartmentTransfer } from "@/api/department/departmentTransfer";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
@@ -409,7 +475,10 @@ export default {
       // 表单校验
       rules: {
         warehouseId: [
-          { required: true, message: "仓库不能为空", trigger: "blur" }
+          { required: true, message: this.currentBillType === '3' ? "调出科室不能为空" : "仓库不能为空", trigger: "blur" }
+        ],
+        departmentId: [
+          { required: this.currentBillType === '3', message: "调入科室不能为空", trigger: "blur" }
         ],
       }
     };
@@ -430,18 +499,63 @@ export default {
     getList() {
       this.loading = true;
       if (this.currentBillType === '1') {
-        // 查询申领单
+        // 查询申领单 - 设置billType=1，只查询申领单类型，排除转科申请（billType=3）
         const params = {
           ...this.queryParams,
           applyBillNo: this.queryParams.applyBillNo,
           applyBillStatus: this.queryParams.applyBillStatus,
+          billType: 1  // 明确指定只查询申领单类型（SL），排除转科申请（ZK）
         };
         listApply(params).then(response => {
-          this.applyList = (response.rows || response.data || []).map(item => ({
+          // 获取所有返回的数据
+          const allRows = response.rows || response.data || [];
+          console.log('[科室申领] 后端返回的原始数据:', allRows);
+          
+          // 过滤掉ZK类型（转科申请）的单据，只保留SL类型（申领单）的单据
+          const filteredRows = allRows.filter(item => {
+            // 获取单号
+            const billNo = (item.applyBillNo || item.billNo || '').toString().trim();
+            console.log('[科室申领] 检查单据:', billNo, 'billType:', item.billType);
+            
+            // 如果单号为空，排除
+            if (!billNo) {
+              return false;
+            }
+            
+            const upperBillNo = billNo.toUpperCase();
+            
+            // 明确排除ZK开头的转科申请单据
+            if (upperBillNo.startsWith('ZK')) {
+              console.log('[科室申领] 排除ZK单据:', billNo);
+              return false;
+            }
+            
+            // 如果billType存在且为3，明确排除转科申请
+            if (item.billType === 3) {
+              console.log('[科室申领] 排除billType=3的单据:', billNo);
+              return false;
+            }
+            
+            // 只保留SL开头的申领单
+            if (upperBillNo.startsWith('SL')) {
+              console.log('[科室申领] 保留SL单据:', billNo);
+              return true;
+            }
+            
+            // 其他情况也排除
+            console.log('[科室申领] 排除其他类型单据:', billNo);
+            return false;
+          });
+          
+          // 映射数据并设置billType
+          this.applyList = filteredRows.map(item => ({
             ...item,
-            billType: 1
+            billType: item.billType || 1
           }));
-          this.total = response.total || 0;
+          
+          // 更新总数（过滤后的数量）
+          this.total = this.applyList.length;
+          console.log('[科室申领] 过滤前总数:', allRows.length, '过滤后总数:', this.applyList.length);
           this.loading = false;
         }).catch(() => {
           this.loading = false;
@@ -464,11 +578,29 @@ export default {
           this.loading = false;
         });
       } else if (this.currentBillType === '3') {
-        // 转科申请单（暂时使用空数据，等待后端接口）
-        this.applyList = [];
-        this.total = 0;
-        this.loading = false;
-        this.$modal.msgWarning("转科申请单功能待开发");
+        // 查询转科申请单
+        const params = {
+          ...this.queryParams,
+          transferBillNo: this.queryParams.applyBillNo,
+          transferBillStatus: this.queryParams.applyBillStatus,
+          outDepartmentId: this.queryParams.warehouseId, // 转科申请使用warehouseId作为调出科室
+          inDepartmentId: this.queryParams.departmentId, // 转科申请使用departmentId作为调入科室
+          beginDate: this.queryParams.beginDate,
+          endDate: this.queryParams.endDate
+        };
+        listDepartmentTransfer(params).then(response => {
+          // 字段映射：applyBillNo -> transferBillNo, warehouseId -> outDepartmentId, departmentId -> inDepartmentId
+          this.applyList = (response.rows || response.data || []).map(item => ({
+            ...item,
+            billType: 3,
+            applyBillNo: item.transferBillNo || item.applyBillNo,
+            applyBillStatus: item.transferBillStatus || item.applyBillStatus
+          }));
+          this.total = response.total || 0;
+          this.loading = false;
+        }).catch(() => {
+          this.loading = false;
+        });
       }
     },
     /** 切换单据类型 */
@@ -481,13 +613,25 @@ export default {
       this.getList();
     },
     nameBtn() {
-      if(!this.form.warehouseId) {
-        this.$message({ message: '请先选择仓库', type: 'warning' })
-        return
+      if (this.currentBillType === '3') {
+        // 转科申请单：使用调出科室（warehouseId）
+        if(!this.form.warehouseId) {
+          this.$message({ message: '请先选择调出科室', type: 'warning' })
+          return
+        }
+        //打开"弹窗组件" - 转科申请需要使用科室库存选择组件
+        this.DialogComponentShow = true
+        this.warehouseValue = this.form.warehouseId;
+      } else {
+        // 申领单：使用仓库
+        if(!this.form.warehouseId) {
+          this.$message({ message: '请先选择仓库', type: 'warning' })
+          return
+        }
+        //打开"弹窗组件"
+        this.DialogComponentShow = true
+        this.warehouseValue = this.form.warehouseId;
       }
-      //打开“弹窗组件”
-      this.DialogComponentShow = true
-      this.warehouseValue = this.form.warehouseId;
     },
     closeDialog() {
       //关闭“弹窗组件”
@@ -656,7 +800,31 @@ export default {
         });
       } else if (this.currentBillType === '3') {
         // 查看转科申请单
-        this.$modal.msgWarning("转科申请单查看功能待开发");
+        getDepartmentTransfer(id).then(response => {
+          // 字段映射：warehouseId -> outDepartmentId, departmentId -> inDepartmentId
+          this.form = {
+            ...response.data,
+            warehouseId: response.data.outDepartmentId || response.data.warehouseId,
+            departmentId: response.data.inDepartmentId || response.data.departmentId,
+            applyBillNo: response.data.transferBillNo || response.data.applyBillNo,
+            applyBillStatus: response.data.transferBillStatus || response.data.applyBillStatus,
+            applyBillDate: response.data.transferBillDate || response.data.applyBillDate
+          };
+          this.basApplyEntryList = response.data.basApplyEntryList || response.data.transferEntryList || [];
+          this.open = true;
+          this.action = false;
+          this.$nextTick(() => {
+            this.calculateTotals();
+          });
+
+          if(response.data.applyBillStatus == 1 || response.data.transferBillStatus == 1){
+            this.form.applyBillStatus = '1';
+          }else{
+            this.form.applyBillStatus = '2';
+          }
+
+          this.title = "查看转科申请";
+        });
       }
     },
     /** 审核按钮操作 */
@@ -666,12 +834,77 @@ export default {
 
       const auditBy = this.$store.state.user.userId;
 
-      this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(function () {
-        return auditApply({id: id,auditBy:auditBy});
+      this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+        if (this.currentBillType === '1') {
+          return auditApply({id: id,auditBy:auditBy});
+        } else if (this.currentBillType === '2') {
+          // 申购单审核
+          return auditPurchase({id: id,auditBy:auditBy});
+        } else if (this.currentBillType === '3') {
+          // 转科申请单审核
+          return auditDepartmentTransfer({id: id,auditBy:auditBy});
+        }
       }).then(() => {
         this.getList();
-        this.$modal.msgSuccess("审核入库成功！");
+        this.$modal.msgSuccess("审核成功！");
       }).catch(() => {
+      });
+    },
+    /** 批量审核按钮操作 */
+    handleBatchAudit() {
+      if (this.ids.length === 0) {
+        this.$modal.msgWarning("请先选择要审核的数据项");
+        return;
+      }
+      
+      // 检查选中的单据是否都是未审核状态
+      const selectedRows = this.applyList.filter(item => this.ids.includes(item.id));
+      const unapprovedRows = selectedRows.filter(row => this.getBillStatus(row) == 1);
+      
+      if (unapprovedRows.length === 0) {
+        this.$modal.msgWarning("选中的单据中没有未审核的单据");
+        return;
+      }
+      
+      if (unapprovedRows.length < selectedRows.length) {
+        this.$modal.confirm('选中的单据中有部分已审核，是否只审核未审核的单据？').then(() => {
+          this.doBatchAudit(unapprovedRows.map(row => row.id));
+        }).catch(() => {});
+      } else {
+        const billTypeName = this.currentBillType === '1' ? '申领单' : (this.currentBillType === '2' ? '申购单' : '转科申请单');
+        this.$modal.confirm('确定要审核选中的' + unapprovedRows.length + '条' + billTypeName + '数据？').then(() => {
+          this.doBatchAudit(this.ids);
+        }).catch(() => {});
+      }
+    },
+    /** 执行批量审核 */
+    doBatchAudit(ids) {
+      const auditBy = this.$store.state.user.userId;
+      const promises = [];
+      
+      if (this.currentBillType === '1') {
+        // 申领单批量审核
+        ids.forEach(id => {
+          promises.push(auditApply({id: id, auditBy: auditBy}));
+        });
+      } else if (this.currentBillType === '2') {
+        // 申购单批量审核
+        ids.forEach(id => {
+          promises.push(auditPurchase({id: id, auditBy: auditBy}));
+        });
+      } else if (this.currentBillType === '3') {
+        // 转科申请单批量审核
+        ids.forEach(id => {
+          promises.push(auditDepartmentTransfer({id: id, auditBy: auditBy}));
+        });
+      }
+      
+      Promise.all(promises).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("批量审核成功！");
+        this.ids = [];
+      }).catch(() => {
+        this.$modal.msgError("批量审核失败，请重试");
       });
     },
     /** 新增按钮操作 */
@@ -712,7 +945,26 @@ export default {
           this.title = "修改科室申购";
         });
       } else if (this.currentBillType === '3') {
-        this.$modal.msgWarning("转科申请单修改功能待开发");
+        // 修改转科申请单
+        getDepartmentTransfer(id).then(response => {
+          // 字段映射：warehouseId -> outDepartmentId, departmentId -> inDepartmentId
+          this.form = {
+            ...response.data,
+            warehouseId: response.data.outDepartmentId || response.data.warehouseId,
+            departmentId: response.data.inDepartmentId || response.data.departmentId,
+            applyBillNo: response.data.transferBillNo || response.data.applyBillNo,
+            applyBillStatus: response.data.transferBillStatus || response.data.applyBillStatus,
+            applyBillDate: response.data.transferBillDate || response.data.applyBillDate
+          };
+          this.basApplyEntryList = response.data.basApplyEntryList || response.data.transferEntryList || [];
+          this.open = true;
+          this.action = true;
+          this.$nextTick(() => {
+            this.calculateTotals();
+          });
+          this.form.applyBillStatus = '1';
+          this.title = "修改转科申请";
+        });
       }
     },
     /** 提交按钮 */
@@ -755,8 +1007,7 @@ export default {
         } else if (this.currentBillType === '2') {
           return delPurchase(ids);
         } else if (this.currentBillType === '3') {
-          this.$modal.msgWarning("转科申请单删除功能待开发");
-          return Promise.reject();
+          return delDepartmentTransfer(ids);
         }
       }).then(() => {
         this.getList();
@@ -832,7 +1083,7 @@ export default {
       } else if (this.currentBillType === '2') {
         return row.purchaseBillNo || '';
       } else if (this.currentBillType === '3') {
-        return row.transferOrderCode || '';
+        return row.transferBillNo || row.applyBillNo || '';
       }
       return '';
     },
@@ -843,7 +1094,7 @@ export default {
       } else if (this.currentBillType === '2') {
         return row.purchaseBillStatus;
       } else if (this.currentBillType === '3') {
-        return row.status;
+        return row.transferBillStatus || row.applyBillStatus;
       }
       return null;
     },

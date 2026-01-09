@@ -9,7 +9,7 @@
       </div>
       <div class="modal-body">
         <!-- 查询条件容器框 -->
-        <div class="query-fields-container">
+        <div ref="formFieldsContainer" class="form-fields-container" style="background: #fff !important; padding: 16px 20px !important; border-radius: 8px !important; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important; margin-bottom: 16px !important; border: 1px solid #EBEEF5 !important; width: 100% !important; box-sizing: border-box !important; display: block !important;">
           <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
             <el-row :gutter="20">
 
@@ -117,7 +117,7 @@ export default {
   name: "SelectInventory",
   dicts:['way_status'],
   components: {SelectMaterial,SelectWarehouse,SelectSupplier},
-  props: ['DialogComponentShow','warehouseValue','supplierValue'], //接受父组件传递过来的数据
+  props: ['DialogComponentShow','warehouseValue','supplierValue','selectedDetails'], //接受父组件传递过来的数据
   data() {
     return {
       // 遮罩层
@@ -157,15 +157,130 @@ export default {
   },
   mounted() {
     //显示弹窗
-    this.show = this.DialogComponentShow
+    this.show = this.DialogComponentShow || false;
     this.queryParams.warehouseId = this.warehouseValue
     this.queryParams.supplierId = this.supplierValue
-    this.getList();
+    if (this.show) {
+      this.getList();
+      // 动态设置容器样式
+      this.$nextTick(() => {
+        this.setContainerStyle();
+      });
+    }
+  },
+  watch: {
+    show(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          this.setContainerStyle();
+        });
+      }
+    },
+    DialogComponentShow(newVal) {
+      this.show = newVal;
+      if (newVal) {
+        this.$nextTick(() => {
+          this.setContainerStyle();
+          // 当弹窗打开时，如果有已选择的明细，标记已添加的项目
+          if (this.inventoryList && this.inventoryList.length > 0) {
+            this.markSelectedItems();
+          }
+        });
+      }
+    },
+    selectedDetails: {
+      handler() {
+        // 当已选择的明细变化时，重新标记
+        if (this.show && this.inventoryList && this.inventoryList.length > 0) {
+          this.$nextTick(() => {
+            this.markSelectedItems();
+          });
+        }
+      },
+      deep: true
+    }
   },
   created() {
     // this.getList();
   },
   methods: {
+    /** 动态设置容器样式 */
+    setContainerStyle() {
+      console.log('开始查找容器元素', {
+        show: this.show,
+        DialogComponentShow: this.DialogComponentShow,
+        $el: this.$el,
+        refs: Object.keys(this.$refs)
+      });
+
+      // 多次尝试，确保元素已渲染
+      const trySetStyle = (attempt = 0) => {
+        if (attempt > 20) {
+          console.error('多次尝试后仍找不到 .form-fields-container 元素', {
+            $el: this.$el,
+            $elHTML: this.$el ? this.$el.outerHTML.substring(0, 500) : null,
+            show: this.show,
+            showSearch: this.showSearch,
+            DialogComponentShow: this.DialogComponentShow,
+            refs: Object.keys(this.$refs),
+            allElements: this.$el ? Array.from(this.$el.querySelectorAll('*')).map(el => el.className).filter(Boolean) : []
+          });
+          return;
+        }
+
+        // 使用 ref 直接引用元素
+        if (this.$refs.formFieldsContainer) {
+          const container = this.$refs.formFieldsContainer;
+          container.style.cssText = `
+            background: #fff !important;
+            padding: 16px 20px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important;
+            margin-bottom: 16px !important;
+            border: 1px solid #EBEEF5 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            display: block !important;
+            min-height: 100px !important;
+            position: relative !important;
+            z-index: 10 !important;
+          `;
+          console.log('✅ 容器样式已通过 ref 设置', container, container.getBoundingClientRect());
+          return;
+        }
+
+        // 如果 ref 不存在，尝试使用 querySelector 查找
+        const container = this.$el && this.$el.querySelector('.form-fields-container');
+        if (container) {
+          container.style.cssText = `
+            background: #fff !important;
+            padding: 16px 20px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important;
+            margin-bottom: 16px !important;
+            border: 1px solid #EBEEF5 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            display: block !important;
+            min-height: 100px !important;
+            position: relative !important;
+            z-index: 10 !important;
+          `;
+          console.log('✅ 容器样式已通过 querySelector 设置', container, container.getBoundingClientRect());
+          return;
+        }
+
+        // 如果还没找到，延迟后重试
+        if (attempt < 5) {
+          console.log(`尝试 ${attempt + 1}/20: 未找到容器，继续重试...`);
+        }
+        setTimeout(() => {
+          trySetStyle(attempt + 1);
+        }, 50);
+      };
+
+      trySetStyle();
+    },
     /** 查询库存信息列表 */
     getList() {
       this.loading = true;
@@ -173,7 +288,43 @@ export default {
         this.inventoryList = response.rows;
         this.total = response.total;
         this.loading = false;
+        // 如果有已选择的明细，标记已添加的项目
+        this.$nextTick(() => {
+          this.markSelectedItems();
+        });
       });
+    },
+    /** 标记已选择的明细 */
+    markSelectedItems() {
+      if (!this.selectedDetails || !this.selectedDetails.length || !this.inventoryList || !this.inventoryList.length) {
+        return;
+      }
+      
+      // 清空之前的选择
+      if (this.$refs.singleTable) {
+        this.$refs.singleTable.clearSelection();
+      }
+      
+      // 根据已选择的明细，在库存列表中标记已添加的项目
+      const selectedRows = [];
+      this.inventoryList.forEach(inventoryItem => {
+        // 匹配规则：materialId + batchNo 相同则认为已添加
+        const isSelected = this.selectedDetails.some(detail => {
+          return detail.materialId === inventoryItem.materialId && 
+                 detail.batchNo === inventoryItem.batchNo;
+        });
+        
+        if (isSelected) {
+          selectedRows.push(inventoryItem);
+        }
+      });
+      
+      // 预选已添加的项目
+      if (selectedRows.length > 0 && this.$refs.singleTable) {
+        selectedRows.forEach(row => {
+          this.$refs.singleTable.toggleRowSelection(row, true);
+        });
+      }
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -211,6 +362,8 @@ export default {
 </script>
 
 <style scoped>
+/* 使用深度选择器确保样式正确应用 */
+/* 使用深度选择器确保样式正确应用 */
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: fixed;
@@ -266,8 +419,22 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: 20px 24px;
-  background: #fff;
+  background: #f5f7fa;
+  display: flex;
+  flex-direction: column;
 }
+
+/* 确保容器在modal-body内正确显示 */
+.modal-body .form-fields-container {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  max-width: 100%;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
 
 .modal-footer {
   padding: 16px 24px;
@@ -308,14 +475,36 @@ export default {
   transition: all 0.3s;
 }
 
-/* 查询条件容器样式 */
-.query-fields-container {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
+/* 查询条件容器样式 - 与到货验收页面保持一致 */
+::v-deep .form-fields-container,
+.form-fields-container {
+  background: #fff !important;
+  padding: 16px 20px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important;
+  margin-bottom: 16px !important;
+  border: 1px solid #EBEEF5 !important;
+  flex-shrink: 0;
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-height: 100px !important;
+}
+
+/* 使用更强的选择器优先级 */
+.modal-body .form-fields-container,
+.local-modal-content .modal-body .form-fields-container {
+  background: #fff !important;
+  padding: 16px 20px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important;
+  margin-bottom: 16px !important;
+  border: 1px solid #EBEEF5 !important;
+  flex-shrink: 0;
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-height: 100px !important;
 }
 
 /* 操作按钮容器样式 */
@@ -327,16 +516,22 @@ export default {
   width: 100%;
 }
 
-/* 搜索表单样式 */
-.el-form {
-  background: transparent;
-  padding: 0;
+/* 搜索表单样式 - 确保在容器内透明 */
+::v-deep .form-fields-container .el-form,
+.form-fields-container .el-form,
+.modal-body .form-fields-container .el-form,
+.local-modal-content .form-fields-container .el-form {
+  background: transparent !important;
+  padding: 0 !important;
   border-radius: 0;
   box-shadow: none;
   margin-bottom: 0;
 }
 
-.el-form .el-form-item {
+::v-deep .form-fields-container .el-form .el-form-item,
+.form-fields-container .el-form .el-form-item,
+.modal-body .form-fields-container .el-form .el-form-item,
+.local-modal-content .form-fields-container .el-form .el-form-item {
   margin-bottom: 15px;
 }
 
@@ -362,5 +557,25 @@ export default {
 .modal-zoom-leave-to {
   opacity: 0;
   transform: scale(0.8);
+}
+</style>
+
+<style>
+/* 非scoped样式，确保容器样式不被覆盖 - 使用最高优先级 */
+.local-modal-content .modal-body .form-fields-container,
+div.local-modal-content div.modal-body div.form-fields-container {
+  background: #fff !important;
+  padding: 16px 20px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important;
+  margin-bottom: 16px !important;
+  border: 1px solid #EBEEF5 !important;
+  flex-shrink: 0 !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-height: 100px !important;
+  position: relative !important;
+  z-index: 10 !important;
 }
 </style>

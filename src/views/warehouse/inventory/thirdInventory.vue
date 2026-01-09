@@ -19,14 +19,14 @@
             </el-form-item>
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
-                <WarehouseAutocomplete v-model="queryParams.warehouseName"/>
+                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']" clearable/>
               </div>
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
+          <el-col :span="24">
             <el-form-item label="业务日期" style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
@@ -48,15 +48,30 @@
             </el-form-item>
           </el-col>
         </el-row>
+
+        <el-row :gutter="16" class="query-row-third">
+          <el-col :span="24">
+            <el-form-item label="单据类型" prop="billType" class="query-item-inline">
+              <el-select v-model="queryParams.billType" placeholder="请选择单据类型"
+                         multiple collapse-tags clearable style="width: 300px">
+                <el-option label="入库单" value="101"/>
+                <el-option label="出库单" value="201"/>
+                <el-option label="退库单" value="401"/>
+                <el-option label="退货单" value="301"/>
+                <el-option label="调拨单" value="501"/>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -10px">
+    <el-row :gutter="10" class="mb8" style="padding-top: 2px; margin-top: -8px">
       <el-col :span="1.5">
         <el-button
           type="warning"
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
         >导出</el-button>
       </el-col>
@@ -64,14 +79,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -80,8 +95,8 @@
 
     <div class="table-container">
     <el-table v-loading="loading" :data="inventoryList"
-              show-summary :summary-method="getTotalSummaries" height="51vh" border>
-      <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
+              show-summary :summary-method="getTotalSummaries" height="55vh" border>
+      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
         </template>
@@ -105,7 +120,11 @@
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单价" align="center" prop="price" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.price">{{ scope.row.price | formatCurrency}}</span>
+          <span v-if="scope.row.price != null && scope.row.price !== undefined && scope.row.price !== '' && Number(scope.row.price) !== 0">{{ Number(scope.row.price) | formatCurrency}}</span>
+          <span v-else-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== '' && Number(scope.row.unitPrice) !== 0">{{ Number(scope.row.unitPrice) | formatCurrency}}</span>
+          <span v-else-if="scope.row.materialAmt != null && scope.row.materialQty != null && Number(scope.row.materialQty) !== 0">
+            {{ (Number(scope.row.materialAmt) / Number(scope.row.materialQty)) | formatCurrency}}
+          </span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -124,7 +143,6 @@
     </div>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -180,10 +198,10 @@ export default {
         billNo: null,
         materialId: null,
         warehouseId: null,
-        warehouseName: null,
         materialName: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
+        billType: null
       },
       // 表单参数
       form: {},
@@ -238,26 +256,66 @@ export default {
     /** 查询库存明细列表 */
     getList() {
       this.loading = true;
-      listPurInventory(this.queryParams).then(response => {
+      // 处理 billType 参数：如果是数组，转换为逗号分隔的字符串，使用 billTypeStr 参数名
+      const queryParams = {
+        ...this.queryParams
+      };
+      // 移除 billType，使用 billTypeStr 传递
+      let billTypeStr = null;
+      if (Array.isArray(queryParams.billType) && queryParams.billType.length > 0) {
+        // 将数组转换为逗号分隔的字符串
+        billTypeStr = queryParams.billType.join(',');
+      }
+      // 删除 billType，添加 billTypeStr
+      delete queryParams.billType;
+      if (billTypeStr) {
+        queryParams.billTypeStr = billTypeStr;
+      }
+      // 处理日期参数：如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
+      if (queryParams.endDate && queryParams.endDate.length === 10) {
+        queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
+      // 如果日期为空字符串，设置为 null
+      if (queryParams.beginDate === '') {
+        queryParams.beginDate = null;
+      }
+      if (queryParams.endDate === '') {
+        queryParams.endDate = null;
+      }
+      listPurInventory(queryParams).then(response => {
         this.inventoryList = response.rows;
         this.total = response.total;
         this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0, subTotalAmt: 0, subTotalQty: 0 };
         this.loading = false;
+        // 调试：检查第一条数据的price字段
+        if (this.inventoryList && this.inventoryList.length > 0) {
+          console.log('第一条数据:', this.inventoryList[0]);
+          console.log('price字段:', this.inventoryList[0].price);
+          console.log('unitPrice字段:', this.inventoryList[0].unitPrice);
+        }
       });
     },
     getStatDate(){
+      // 当前日期往前推5天
       let myDate = new Date();
+      myDate.setDate(myDate.getDate() - 5);
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      let statDate = year + "-" + month + "-" + day;
       return statDate;
     },
     getEndDate(){
+      // 当前日期
       let myDate = new Date();
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      let endDate = year + "-" + month + "-" + day;
       return endDate;
     },
     // 取消按钮
@@ -288,8 +346,11 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      this.queryParams.warehouseName = null;
+      this.queryParams.warehouseId = null;
       this.queryParams.materialName = null;
+      this.queryParams.billType = null;
+      this.queryParams.beginDate = this.getStatDate();
+      this.queryParams.endDate = this.getEndDate();
       this.handleQuery();
     },
     /** 导出按钮操作 */
@@ -304,19 +365,27 @@ export default {
 </script>
 
 <style scoped>
+.app-container {
+  margin-top: -10px;
+}
+
 /* 查询条件样式 */
 .query-row-left {
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 
 .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 
 .query-item-inline .el-form-item__label {
   width: 80px !important;
+}
+
+.query-item-inline .el-form-item {
+  margin-bottom: 0;
 }
 
 .query-select-wrapper {
@@ -324,12 +393,13 @@ export default {
 }
 
 .query-row-second {
-  margin-bottom: 10px;
+  margin-bottom: 2px;
   position: relative;
 }
 
 .query-row-second .el-form-item {
   white-space: nowrap;
+  margin-bottom: 0;
 }
 
 .query-row-second .el-form-item .el-form-item__content {
@@ -338,21 +408,65 @@ export default {
   flex-wrap: nowrap;
 }
 
+.query-row-third {
+  margin-bottom: 2px;
+}
+
+.query-row-third .el-form-item {
+  margin-bottom: 0;
+}
+
 /* 查询条件容器框样式 */
 .form-fields-container {
   background: #fff;
-  padding: 16px 20px;
+  padding: 6px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
   margin-top: -20px;
+  margin-left: -20px;
+  margin-right: -20px;
   border: 1px solid #EBEEF5;
 }
 
 .table-container {
-  margin-top: 0px;
+  margin-top: 5px;
   overflow: visible;
-  width: 100%;
+  width: calc(100% + 40px);
+  margin-left: -20px;
+  margin-right: -20px;
   position: relative;
+}
+
+/* 表格水平滚动条增粗 */
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 12px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 8px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 优化表格列间距 */
+.table-container ::v-deep .el-table th.el-table__cell {
+  padding: 10px 12px !important;
+}
+
+.table-container ::v-deep .el-table td.el-table__cell {
+  padding: 10px 12px !important;
+}
+
+.table-container ::v-deep .el-table .cell {
+  padding: 0 4px;
 }
 </style>

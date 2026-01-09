@@ -1,6 +1,8 @@
 ﻿<template>
   <div class="gz-order-print" ref="receiptOrderPrintRef" hidden="hidden">
-    <div style="font-size: 22px;text-align: center;">高值入库单</div>
+    <div style="font-size: 22px;text-align: center;">
+      <span v-if="hospitalName">{{ hospitalName }}</span>高值入库单
+    </div>
     <div class="summary">
       <div class="col1" style="width:45%">单号: {{ row.orderNo }}</div>
       <div class="col1" style="width:30%">仓库: {{ row.warehouseName }}</div>
@@ -62,13 +64,26 @@
 </template>
 
 <script>
+import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 
 export default {
+  mixins: [hospitalNameMixin],
   props: ['row'],
   methods: {
     start() {
-      this.$print(this.$refs.receiptOrderPrintRef, {}, 'A4')
-    },
+      // 确保医院名称已加载完成后再打印
+      this.ensureHospitalNameLoaded().then(() => {
+        // 等待Vue更新DOM
+        this.$nextTick(() => {
+          this.$print(this.$refs.receiptOrderPrintRef, {}, 'A4')
+        })
+      }).catch(() => {
+        // 即使加载失败也继续打印
+        this.$nextTick(() => {
+          this.$print(this.$refs.receiptOrderPrintRef, {}, 'A4')
+        })
+      })
+    }
   }
 }
 </script>

@@ -19,7 +19,7 @@
         </el-row>
 
         <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
+          <el-col :span="24">
             <el-form-item label="业务日期" style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
@@ -42,15 +42,25 @@
           </el-col>
         </el-row>
 
+        <el-row :gutter="16" class="query-row-third">
+          <el-col :span="24">
+            <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectSupplier v-model="queryParams.supplerId" />
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -10px">
+    <el-row :gutter="10" class="mb8" style="padding-top: 2px; margin-top: -8px">
       <el-col :span="1.5">
         <el-button
           type="warning"
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
         >导出</el-button>
       </el-col>
@@ -58,14 +68,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -76,19 +86,20 @@
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="51vh" border>
-      <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
+      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
       <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="科室" align="center" prop="departmentName" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
       <el-table-column label="价格" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
@@ -115,7 +126,6 @@
     </div>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -130,12 +140,13 @@ import { listCTKWarehouseSummary} from "@/api/warehouse/outWarehouse";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
+import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import RightToolbar from "@/components/RightToolbar";
 
 export default {
   name: "secondOutQuery",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {SelectMaterial,SelectWarehouse,SelectDepartment,RightToolbar},
+  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectSupplier,RightToolbar},
   data() {
     return {
       // 遮罩层
@@ -231,26 +242,64 @@ export default {
     /** 查询出/退货列表 */
     getList() {
       this.loading = true;
-      listCTKWarehouseSummary(this.queryParams).then(response => {
-        this.warehouseList = response;
-        console.log(this.warehouseList)
-        this.total = 10;
+      // 处理日期参数，确保空值转换为 null，以便查询所有数据
+      const queryParams = {
+        ...this.queryParams
+      };
+      // 如果日期为空字符串、null 或 undefined，设置为 null，这样后端不会应用日期过滤
+      if (!queryParams.beginDate || queryParams.beginDate === '' || queryParams.beginDate === null || queryParams.beginDate === undefined) {
+        queryParams.beginDate = null;
+      }
+      if (!queryParams.endDate || queryParams.endDate === '' || queryParams.endDate === null || queryParams.endDate === undefined) {
+        queryParams.endDate = null;
+      } else if (queryParams.endDate && queryParams.endDate.length === 10) {
+        // 如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
+        queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
+      // 删除空字符串的参数，确保传递 null 而不是空字符串
+      Object.keys(queryParams).forEach(key => {
+        if (queryParams[key] === '') {
+          queryParams[key] = null;
+        }
+      });
+      listCTKWarehouseSummary(queryParams).then(response => {
+        // 确保数据格式正确，处理单价和金额
+        this.warehouseList = (response || []).map(item => ({
+          ...item,
+          unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
+          materialAmt: item.materialAmt != null ? Number(item.materialAmt) : null,
+          materialQty: item.materialQty != null ? Number(item.materialQty) : 0
+        }));
+        this.total = this.warehouseList.length;
+        this.loading = false;
+      }).catch(error => {
+        console.error('获取数据失败:', error);
+        this.warehouseList = [];
+        this.total = 0;
         this.loading = false;
       });
     },
     getStatDate(){
+      // 当前日期往前推5天
       let myDate = new Date();
+      myDate.setDate(myDate.getDate() - 5);
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      let statDate = year + "-" + month + "-" + day;
       return statDate;
     },
     getEndDate(){
+      // 当前日期
       let myDate = new Date();
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      let endDate = year + "-" + month + "-" + day;
       return endDate;
     },
     //当天日期
@@ -321,17 +370,21 @@ export default {
 <style scoped>
 /* 查询条件样式 */
 .query-row-left {
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 
 .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 
 .query-item-inline .el-form-item__label {
   width: 80px !important;
+}
+
+.query-item-inline .el-form-item {
+  margin-bottom: 0;
 }
 
 .query-select-wrapper {
@@ -339,12 +392,12 @@ export default {
 }
 
 .query-row-second {
-  margin-bottom: 10px;
-  position: relative;
+  margin-bottom: 2px;
 }
 
 .query-row-second .el-form-item {
   white-space: nowrap;
+  margin-bottom: 0;
 }
 
 .query-row-second .el-form-item .el-form-item__content {
@@ -353,21 +406,72 @@ export default {
   flex-wrap: nowrap;
 }
 
+.query-row-third {
+  margin-bottom: 2px;
+}
+
+.query-row-third .el-form-item {
+  margin-bottom: 0;
+}
+
 /* 查询条件容器框样式 */
 .form-fields-container {
   background: #fff;
-  padding: 16px 20px;
+  padding: 6px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
   margin-top: -20px;
+  margin-left: -20px;
+  margin-right: -20px;
   border: 1px solid #EBEEF5;
 }
 
 .table-container {
-  margin-top: 0px;
+  margin-top: 5px;
   overflow: visible;
-  width: 100%;
+  width: calc(100% + 40px);
+  margin-left: -20px;
+  margin-right: -20px;
   position: relative;
+}
+
+/* 表格水平滚动条增粗 */
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 12px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 8px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 优化表格列间距 */
+.table-container ::v-deep .el-table th {
+  padding: 10px 12px !important;
+}
+
+.table-container ::v-deep .el-table td {
+  padding: 8px 12px !important;
+}
+
+.table-container ::v-deep .el-table .cell {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* 确保表格容器有足够空间显示汇总行 */
+.app-container {
+  padding: 20px;
+  margin-top: -10px;
 }
 </style>

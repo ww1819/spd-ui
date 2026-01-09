@@ -42,3 +42,21 @@ export function delPurchase(id) {
     method: 'delete'
   })
 }
+
+// 审核科室申购
+export function auditPurchase(data) {
+  return request({
+    url: '/department/purchase/auditApply',
+    method: 'put',
+    data: data
+  })
+}
+
+// 驳回科室申购
+export function rejectPurchase(data) {
+  return request({
+    url: '/department/purchase/reject',
+    method: 'put',
+    data: data
+  })
+}

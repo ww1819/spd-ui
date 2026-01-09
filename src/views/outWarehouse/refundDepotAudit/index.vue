@@ -71,14 +71,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -86,7 +86,7 @@
         <el-button
           type="success"
           icon="el-icon-check"
-          size="small"
+          size="medium"
           :disabled="multiple"
           @click="handleBatchAudit"
           v-hasPermi="['outWarehouse:refundDepotApply:audit']"
@@ -182,7 +182,6 @@
     </el-table>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -387,6 +386,10 @@
         <el-button @click=" modalObj.ok " type="primary">确认</el-button>
       </template>
     </el-dialog>
+    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
+    <div v-show="false">
+      <refund-depot-order-print v-if="printRowData" :row="printRowData" ref="receiptRefundDepotOrderPrintRefAuto"></refund-depot-order-print>
+    </div>
 
     <!-- 3、使用组件 -->
     <SelectDepInventory
@@ -437,6 +440,8 @@ export default {
         cancel: () => {
         }
       },
+      // 打印数据（用于隐藏的打印组件）
+      printRowData: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -781,6 +786,23 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
+      // 如果传入 print 参数为 true，直接执行打印
+      if (print === true) {
+        // 直接获取数据并触发打印
+        this.getRefundGoodsDetail(row).then(res => {
+          // 设置打印数据
+          this.printRowData = res
+          // 等待组件渲染后调用 start()
+          this.$nextTick(() => {
+            if (this.$refs['receiptRefundDepotOrderPrintRefAuto']) {
+              // start() 方法会直接触发浏览器打印对话框
+              this.$refs['receiptRefundDepotOrderPrintRefAuto'].start()
+            }
+          })
+        })
+        return
+      }
+      // 否则显示选择打印方式的对话框
       this.modalObj = {
         show: true,
         title: '选择打印方式',

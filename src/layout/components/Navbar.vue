@@ -343,6 +343,12 @@ export default {
       margin-right: 8px;
       display: inline-block;
       vertical-align: middle;
+      position: relative;
+      top: -6px;
+      
+      ::v-deep .el-badge__content {
+        top: 8px !important;
+      }
       
       .message-icon-wrapper {
         display: inline-block;

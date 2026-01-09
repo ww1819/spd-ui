@@ -1,39 +1,55 @@
 ﻿<template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+  <div class="app-container department-container">
+    <el-row :gutter="20">
+      <!-- 左侧科室列表 -->
+      <el-col :span="6">
+        <el-card class="department-card">
+          <div slot="header" class="department-header">
+            <span>科室</span>
+          </div>
+          <div class="department-list">
+            <div
+              v-for="department in allDepartmentList"
+              :key="department.id"
+              :class="['department-item', { 'active': selectedDepartmentId === department.id }]"
+              @click="handleDepartmentClick(department)">
+              {{ department.name }}
+            </div>
+          </div>
+        </el-card>
+      </el-col>
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="科室编码" prop="code">
-            <el-input
-              v-model="queryParams.code"
-              placeholder="请输入科室编码"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item label="科室名称" prop="name">
-            <el-input
-              v-model="queryParams.name"
-              placeholder="请输入科室名称"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-    </el-form>
+      <!-- 右侧表格区域 -->
+      <el-col :span="18">
+    <!-- 查询条件容器 -->
+    <div class="query-container" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="68px">
+        <el-row :gutter="20">
+          <el-col :span="6">
+            <el-form-item label="科室编码" prop="code" label-width="100px">
+              <el-input
+                v-model="queryParams.code"
+                placeholder="请输入科室编码"
+                clearable
+                @keyup.enter.native="handleQuery"
+                style="width: 150px"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="科室名称" prop="name" label-width="100px">
+              <el-input
+                v-model="queryParams.name"
+                placeholder="请输入科室名称"
+                clearable
+                @keyup.enter.native="handleQuery"
+                style="width: 150px"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
@@ -78,15 +94,23 @@
           v-hasPermi="['foundation:depart:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          icon="el-icon-search"
+          size="small"
+          @click="handleQuery"
+        >搜索</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="departList" :row-class-name="departIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+    <el-table v-loading="loading" :data="departList" :row-class-name="departIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" align="center" prop="index" />
-      <el-table-column label="科室编码" align="center" prop="code" />
-      <el-table-column label="科室名称" align="center" prop="name" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip />
+      <el-table-column label="科室编码" align="center" prop="code" width="150" show-overflow-tooltip />
+      <el-table-column label="科室名称" align="center" prop="name" min-width="200" show-overflow-tooltip />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150" fixed="right">
         <template slot-scope="scope">
           <el-button
             size="small"
@@ -113,27 +137,32 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+      </el-col>
+    </el-row>
 
     <!-- 添加或修改科室对话框 -->
     <div v-if="open" class="local-modal-mask">
       <div class="local-modal-content">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+          <span>{{ title }}</span>
+          <el-button type="text" @click="cancel" style="font-size:14px;padding:0;color:#909399;">关闭</el-button>
+        </div>
         <el-form ref="form" :model="form" :rules="rules" label-width="100px">
           <el-row>
-            <el-col :span="12">
+            <el-col :span="6">
               <el-form-item label="科室编码" prop="code">
                 <el-input v-model="form.code" placeholder="请输入科室编码" />
               </el-form-item>
             </el-col>
-            <el-col :span="12">
+            <el-col :span="6">
               <el-form-item label="科室名称" prop="name">
                 <el-input v-model="form.name" placeholder="请输入科室名称" />
               </el-form-item>
             </el-col>
           </el-row>
         </el-form>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+        <div class="modal-footer-fixed">
+          <el-button type="primary" @click="submitForm">保 存</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
       </div>
@@ -162,6 +191,10 @@ export default {
       total: 0,
       // 科室表格数据
       departList: [],
+      // 所有科室列表（用于左侧列表）
+      allDepartmentList: [],
+      // 选中的科室ID
+      selectedDepartmentId: null,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -188,8 +221,15 @@ export default {
   },
   created() {
     this.getList();
+    this.getAllDepartmentList();
   },
   methods: {
+    /** 获取所有科室列表（用于左侧列表） */
+    getAllDepartmentList() {
+      listdepart({ pageNum: 1, pageSize: 10000 }).then(response => {
+        this.allDepartmentList = response.rows || [];
+      });
+    },
     /** 查询科室列表 */
     getList() {
       this.loading = true;
@@ -198,6 +238,19 @@ export default {
         this.total = response.total;
         this.loading = false;
       });
+    },
+    /** 科室列表项点击 */
+    handleDepartmentClick(department) {
+      if (this.selectedDepartmentId === department.id) {
+        // 如果点击的是已选中的项，则取消选择
+        this.selectedDepartmentId = null;
+        this.queryParams.name = null;
+      } else {
+        // 选中新的科室
+        this.selectedDepartmentId = department.id;
+        this.queryParams.name = department.name;
+      }
+      this.handleQuery();
     },
     // 取消按钮
     cancel() {
@@ -225,6 +278,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.selectedDepartmentId = null;
       this.handleQuery();
     },
     // 多选框选中数据
@@ -258,12 +312,14 @@ export default {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
+              this.getAllDepartmentList();
             });
           } else {
             adddepart(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
+              this.getAllDepartmentList();
             });
           }
         }
@@ -276,6 +332,7 @@ export default {
         return deldepart(ids);
       }).then(() => {
         this.getList();
+        this.getAllDepartmentList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
@@ -291,3 +348,147 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.local-modal-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+.local-modal-content {
+  background: #fff;
+  border-radius: 6px;
+  width: 100% !important;
+  max-width: 1900px !important;
+  min-width: 1700px !important;
+  max-height: 92%;
+  min-height: 870px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  overflow-y: auto;
+}
+
+/* 科室卡片样式 */
+.department-card {
+  margin-right: 15px;
+  height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
+}
+
+.department-card ::v-deep .el-card__header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.department-card ::v-deep .el-card__body {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+}
+
+.department-header {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.department-list {
+  height: 100%;
+  overflow-y: auto;
+  padding: 10px 0;
+}
+
+.department-item {
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #606266;
+  transition: all 0.3s;
+  border-left: 3px solid transparent;
+}
+
+.department-item:hover {
+  background-color: #f5f7fa;
+  color: #409EFF;
+}
+
+.department-item.active {
+  background-color: #ecf5ff;
+  color: #409EFF;
+  border-left-color: #409EFF;
+  font-weight: 500;
+}
+
+/* 查询条件容器 */
+.query-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+/* 表格列不换行 */
+.el-table {
+  white-space: nowrap;
+}
+
+.el-table td,
+.el-table th {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 表格横向滚动 */
+.el-table__body-wrapper {
+  overflow-x: auto;
+}
+
+/* 确保科室容器有相对定位，以便弹窗正确定位 */
+.department-container {
+  position: relative;
+  min-height: calc(100vh - 84px);
+  width: 100%;
+  overflow: visible;
+}
+
+/* 固定底部按钮样式 */
+.modal-footer-fixed {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 16px 24px;
+  text-align: center;
+  border-top: 1px solid #EBEEF5;
+  margin-top: 20px;
+  z-index: 10;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.modal-footer-fixed .el-button {
+  margin: 0 8px;
+}
+</style>

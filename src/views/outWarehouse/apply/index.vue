@@ -70,7 +70,7 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
+          size="medium"
           @click="handleAdd"
           v-hasPermi="['outWarehouse:apply:add']"
         >新增</el-button>
@@ -80,7 +80,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['outWarehouse:apply:export']"
         >导出</el-button>
@@ -89,14 +89,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -423,6 +423,25 @@
     >
 
     </SelectRkApply>
+
+    <el-dialog :visible.sync="modalObj.show" :title="modalObj.title" :width="modalObj.width">
+      <template v-if="modalObj.component === 'print-type'">
+        <el-radio-group v-model="modalObj.form.value">
+          <el-radio :label="2">浏览器打印</el-radio>
+        </el-radio-group>
+      </template>
+      <template v-if="modalObj.form.value === 2 || modalObj.component === 'window-print-preview'">
+        <out-order-print :row="modalObj.form.row" ref="receiptOrderPrintRef"></out-order-print>
+      </template>
+      <template slot="footer" class="dialog-footer">
+        <el-button @click="modalObj.cancel">取消</el-button>
+        <el-button @click="modalObj.ok" type="primary">确认</el-button>
+      </template>
+    </el-dialog>
+    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
+    <div v-show="false">
+      <out-order-print v-if="printRowData" :row="printRowData" ref="receiptOrderPrintRefAuto"></out-order-print>
+    </div>
   </div>
 </template>
 
@@ -445,11 +464,14 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 import SelectDApply from "@/components/SelectModel/SelectDApply";
 import SelectRkApply from "@/components/SelectModel/SelectRkApply";
+import outOrderPrint from "@/views/outWarehouse/audit/outOrderPrint";
+import RMBConverter from "@/utils/tools";
+import {STOCK_OUT_TEMPLATE} from '@/utils/printData'
 
 export default {
   name: "OutWarehouseApply",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectDApply,SelectRkApply},
+  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectDApply,SelectRkApply,outOrderPrint},
   data() {
     return {
       // 遮罩层
@@ -460,6 +482,22 @@ export default {
       warehouseValue: "",
       departmentValue: "",
       isShow: true,
+      modalObj: {
+        show: false,
+        title: '选择打印方式',
+        width: '520px',
+        component: null,
+        form: {
+          value: null,
+          row: null
+        },
+        ok: () => {
+        },
+        cancel: () => {
+        }
+      },
+      // 打印数据（用于隐藏的打印组件）
+      printRowData: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -869,7 +907,137 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print) {
-      this.$modal.msgWarning("打印功能开发中");
+      // 如果传入 print 参数为 true，直接执行打印
+      if (print === true) {
+        // 直接获取数据并触发打印
+        this.getOutWarehouseDetail(row).then(res => {
+          // 设置打印数据
+          this.printRowData = res
+          // 等待组件渲染后调用 start()
+          this.$nextTick(() => {
+            if (this.$refs['receiptOrderPrintRefAuto']) {
+              // start() 方法会直接触发浏览器打印对话框
+              this.$refs['receiptOrderPrintRefAuto'].start()
+            }
+          })
+        })
+        return
+      }
+      // 否则显示选择打印方式的对话框
+      this.modalObj = {
+        show: true,
+        title: '选择打印方式',
+        width: '520px',
+        component: 'print-type',
+        form: {
+          value: 2,
+          row
+        },
+        ok: () => {
+          this.modalObj.show = false
+          if (this.modalObj.form.value === 1) {
+            this.doPrintOut(row, false)
+          } else {
+            this.windowPrintOut(row, print)
+          }
+        },
+        cancel: () => {
+          this.modalObj.show = false
+        }
+      }
+    },
+    windowPrintOut(row, print) {
+      this.getOutWarehouseDetail(row).then(res => {
+        if (print) {
+          this.modalObj.form.row = res
+          this.$nextTick(() => {
+            this.$refs['receiptOrderPrintRef'].start()
+          })
+          return
+        }
+        this.$nextTick(() => {
+          this.modalObj = {
+            show: true,
+            title: '浏览器打印预览',
+            width: '800px',
+            component: 'window-print-preview',
+            form: {
+              value: 2,
+              row: res,
+              print
+            },
+            ok: () => {
+              this.modalObj.show = false
+            },
+            cancel: () => {
+              this.modalObj.show = false
+            }
+          }
+        })
+      })
+    },
+    doPrintOut(row, print) {
+      this.getOutWarehouseDetail(row).then(result => {
+        if (print) {
+          this.$lodop.print(STOCK_OUT_TEMPLATE, [result])
+        } else {
+          this.$lodop.preview(STOCK_OUT_TEMPLATE, [result])
+        }
+      })
+    },
+    //组装打印信息
+    getOutWarehouseDetail(row) {
+      //查询详情
+      return getOutWarehouse(row.id).then(response => {
+        const details = response.data.stkIoBillEntryList
+        const materiaDetails = response.data.materialList
+        const map = {};
+
+        (materiaDetails || []).forEach(it => {
+          map[it.id] = it
+        })
+
+        let detailList = [], totalAmt = 0, totalQty = 0
+
+        details && details.forEach(item => {
+          totalAmt += item.amt
+          totalQty += item.qty
+
+          const prod = map[item.materialId]
+
+          detailList.push({
+            batchNumber: item.batchNumber,
+            amt: item.amt,
+            qty: item.qty,
+            price: item.unitPrice,
+            unitPrice: item.unitPrice,
+            materialCode: prod ? prod.code : '',
+            materialName: prod ? prod.name : '',
+            materialSpeci: prod ? prod.speci : '',
+            periodDate: prod ? prod.periodDate : '',
+            factoryName: prod && prod.fdFactory ? prod.fdFactory.factoryName : '',
+            warehouseCategoryName: prod && prod.fdWarehouseCategory ? prod.fdWarehouseCategory.warehouseCategoryName : '',
+            supplierId: prod ? prod.supplierId : '',
+            beginTime: prod ? prod.beginTime : '',
+            endTime: prod ? prod.endTime : ''
+          })
+
+        })
+
+        let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
+
+        return {
+          billNo: row.billNo,
+          departmentName: row.department ? row.department.name : '',
+          warehouseName: row.warehouse ? row.warehouse.name : '',
+          billDate: row.billDate,
+          auditDate: row.auditDate,
+          totalAmt: totalAmt,
+          totalQty: totalQty,
+          totalAmtConverter: totalAmtConverter,
+          detailList: detailList
+        }
+      })
     },
     /** 出库明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {

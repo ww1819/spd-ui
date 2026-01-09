@@ -1,7 +1,9 @@
 ﻿<template>
   <div class="refund-goods-print" ref="receiptRefundGoodsPrintRef" hidden="hidden">
 <!--    <div class="title" style="padding-top: 15px">入库单</div>-->
-    <div style="font-size: 22px;text-align: center;">采购退货单</div>
+    <div style="font-size: 22px;text-align: center;">
+      <span v-if="hospitalName">{{ hospitalName }}</span>采购退货单
+    </div>
     <div class="summary">
       <div class="col1" style="width:45%">单号: {{ row.billNo }}</div>
       <div class="col1" style="width:30%">仓库: {{ row.warehouseName }}</div>
@@ -30,9 +32,9 @@
         <td>{{ item.materialName || '' }}</td>
         <td>{{ item.materialSpeci || '' }}</td>
 <!--        <td>{{ item.planQuantity }}</td>-->
-        <td>{{ item.price || '' }}</td>
+        <td>{{ formatAmount(item.price) }}</td>
         <td>{{ item.qty || '' }}</td>
-        <td>{{ item.amt || '' }}</td>
+        <td>{{ formatAmount(item.amt) }}</td>
         <td>{{ item.batchNumber || '' }}</td>
         <td>{{ item.periodDate || '' }}</td>
         <td>{{ item.factoryName || '' }}</td>
@@ -42,13 +44,13 @@
         <td>本页小计：</td>
         <td colspan="3"></td>
         <td >{{ row.totalQty }}</td>
-        <td >{{ row.totalAmt }}</td>
+        <td >{{ formatAmount(row.totalAmt) }}</td>
         <td colspan="4"></td>
       </tr>
       <tr>
         <td colspan="4" style="text-align: left;">合计金额：（大写）：{{ row.totalAmtConverter }}</td>
         <td colspan="2">（小写）：</td>
-        <td colspan="4">{{ row.totalAmt }}</td>
+        <td colspan="4">{{ formatAmount(row.totalAmt) }}</td>
       </tr>
     </table>
     <div class="foot" style="padding-top: 15px">
@@ -63,13 +65,36 @@
 </template>
 
 <script>
+import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 
 export default {
+  mixins: [hospitalNameMixin],
   props: ['row'],
   methods: {
     start() {
-      this.$print(this.$refs.receiptRefundGoodsPrintRef, {}, 'A4')
+      // 确保医院名称已加载完成后再打印
+      this.ensureHospitalNameLoaded().then(() => {
+        // 等待Vue更新DOM
+        this.$nextTick(() => {
+          this.$print(this.$refs.receiptRefundGoodsPrintRef, {}, 'A4')
+        })
+      }).catch(() => {
+        // 即使加载失败也继续打印
+        this.$nextTick(() => {
+          this.$print(this.$refs.receiptRefundGoodsPrintRef, {}, 'A4')
+        })
+      })
     },
+    formatAmount(value) {
+      if (value === null || value === undefined || value === '') {
+        return ''
+      }
+      const num = parseFloat(value)
+      if (isNaN(num)) {
+        return ''
+      }
+      return num.toFixed(2)
+    }
   }
 }
 </script>

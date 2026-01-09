@@ -200,6 +200,11 @@
               <div class="form-fields-container">
                 <el-row>
                   <el-col :span="4">
+                    <el-form-item label="科室" prop="departmentId" label-width="100px">
+                      <SelectDepartment v-model="form.departmentId" filterable/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
                     <el-form-item label="申购状态" prop="purchaseBillStatus" label-width="100px">
                       <el-select v-model="form.purchaseBillStatus" placeholder="请选择申购状态"
                                  :disabled="true"
@@ -212,13 +217,6 @@
                       </el-select>
                     </el-form-item>
                   </el-col>
-
-                  <el-col :span="4">
-                    <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-                      <SelectWarehouse v-model="form.warehouseId" exclude-warehouse-type="高值,设备"/>
-                    </el-form-item>
-                  </el-col>
-
                   <el-col :span="4">
                     <el-form-item label="制单日期" prop="purchaseBillDate" label-width="100px">
                       <el-date-picker clearable
@@ -231,16 +229,22 @@
                       </el-date-picker>
                     </el-form-item>
                   </el-col>
-
                   <el-col :span="4">
                     <el-form-item label="制单人" prop="userId" label-width="100px">
                       <el-input v-model="form.userName" :disabled="true" placeholder="制单人" style="width: 150px"/>
                     </el-form-item>
                   </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="仓库" prop="warehouseId" label-width="100px">
+                      <SelectWarehouse v-model="form.warehouseId" exclude-warehouse-type="高值,设备"/>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
 
+                <el-row>
                   <el-col :span="4">
                     <el-form-item label="紧急程度" prop="urgencyLevel" label-width="100px">
-                      <el-select v-model="form.urgencyLevel" placeholder="请选择紧急程度"
+                      <el-select v-if="action" v-model="form.urgencyLevel" placeholder="请选择紧急程度"
                                  clearable style="width: 150px">
                         <el-option v-for="dict in dict.type.urgency_level"
                                    :key="dict.value"
@@ -248,11 +252,9 @@
                                    :value="dict.value"
                         />
                       </el-select>
+                      <el-input v-else v-model="urgencyLevelText" disabled style="width: 150px"></el-input>
                     </el-form-item>
                   </el-col>
-                </el-row>
-
-                <el-row>
                   <el-col :span="4">
                     <el-form-item label="期望到货日期" prop="expectedDeliveryDate" label-width="100px">
                       <el-date-picker clearable
@@ -262,11 +264,6 @@
                                       value-format="yyyy-MM-dd"
                                       placeholder="请选择期望到货日期">
                       </el-date-picker>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="科室" prop="departmentId" label-width="100px">
-                      <SelectDepartment v-model="form.departmentId" filterable/>
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -284,18 +281,22 @@
                   <el-col :span="1.5">
                     <el-button type="danger" icon="el-icon-delete" @click="handleDeleteDepPurchaseApplyEntry">删除</el-button>
                   </el-col>
-                  <el-col :span="1.5" v-show="action">
-                    <el-button type="primary" @click="submitForm">保 存</el-button>
+                  <el-col :span="1.5">
+                    <el-button @click="cancel">取消</el-button>
+                  </el-col>
+                  <el-col :span="1.5">
+                    <el-button type="primary" @click="submitForm">确认</el-button>
                   </el-col>
                 </div>
               </el-row>
 
-              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" height="calc(42vh)" border>
+              <div class="table-wrapper">
+              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" border>
                 <el-table-column type="selection" width="50" align="center" resizable />
                 <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.materialCode || scope.row.code || '--' }}</span>
+                    <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="耗材" align="center" prop="materialName" width="200" show-overflow-tooltip resizable>
@@ -341,9 +342,9 @@
                     <span>{{ scope.row.supplierName }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="生产厂家" align="center" prop="producer" width="200" show-overflow-tooltip resizable>
+                <el-table-column label="生产厂家" align="center" width="200" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.producer || '--' }}</span>
+                    <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.producer || '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
@@ -363,6 +364,7 @@
                   </template>
                 </el-table-column>
               </el-table>
+              </div>
             </el-form>
           </div>
         </transition>
@@ -413,6 +415,8 @@ export default {
       purchaseList: [],
       // 科室申购明细表格数据
       depPurchaseApplyEntryList: [],
+      // 紧急程度文本显示
+      urgencyLevelText: '',
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -562,6 +566,9 @@ export default {
         }else{
           this.form.purchaseBillStatus = '3';
         }
+        
+        // 设置紧急程度文本显示
+        this.setUrgencyLevelText(response.data.urgencyLevel);
 
         this.title = "查看科室申购";
       });
@@ -596,6 +603,10 @@ export default {
           }
         }
         this.depPurchaseApplyEntryList = response.data.depPurchaseApplyEntryList;
+        
+        // 设置紧急程度文本显示
+        this.setUrgencyLevelText(response.data.urgencyLevel);
+        
         this.open = true;
         this.action = true;
         this.form.purchaseBillStatus = '1';
@@ -746,6 +757,15 @@ export default {
         this.qtyChange(row);
       }
     },
+    /** 设置紧急程度文本显示 */
+    setUrgencyLevelText(urgencyLevel) {
+      if (urgencyLevel !== null && urgencyLevel !== undefined) {
+        const dict = this.dict.type.urgency_level.find(d => d.value == urgencyLevel || d.value === String(urgencyLevel));
+        this.urgencyLevelText = dict ? dict.label : '--';
+      } else {
+        this.urgencyLevelText = '--';
+      }
+    },
     /** 科室申购明细删除按钮操作 */
     handleDeleteDepPurchaseApplyEntry() {
       if (this.checkedDepPurchaseApplyEntry.length == 0) {
@@ -864,9 +884,21 @@ export default {
 }
 
 .local-modal-content .table-wrapper {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   overflow: auto;
+  height: 18vh !important;
+  max-height: 18vh !important;
+}
+
+.local-modal-content .table-wrapper .el-table {
+  height: 18vh !important;
+  max-height: 18vh !important;
+}
+
+.local-modal-content .table-wrapper .el-table__body-wrapper {
+  max-height: calc(18vh - 48px) !important;
+  overflow-y: auto;
 }
 
 /* 弹窗动画效果 */

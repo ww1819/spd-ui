@@ -70,7 +70,7 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
+          size="medium"
           @click="handleAdd"
           v-hasPermi="['inWarehouse:apply:add']"
         >新增</el-button>
@@ -80,7 +80,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['inWarehouse:apply:export']"
         >导出</el-button>
@@ -89,14 +89,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -116,7 +116,7 @@
         </template>
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" width="150" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
@@ -126,7 +126,10 @@
       <el-table-column label="制单人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
       <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <!-- 使用 createTime 显示实际创建时间，包含时分秒 -->
+          <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else-if="scope.row.billDate">{{ parseTime(scope.row.billDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
@@ -195,11 +198,9 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-view"
-              @click="handleView(scope.row)"
-              v-hasPermi="['inWarehouse:apply:view']"
-              style="padding: 0 5px; margin: 0;"
-            >查看</el-button>
+              @click="handlePrint(scope.row,true)"
+              v-if="scope.row.billStatus == 2"
+            >打印</el-button>
           </span>
         </template>
       </el-table-column>
@@ -503,6 +504,26 @@
       @selectData="selectDingdanData"
     ></SelectDingdan>
 
+    <!-- 打印对话框 -->
+    <el-dialog :visible.sync="modalObj.show" :title="modalObj.title" :width="modalObj.width" @close="handlePrintDialogClose">
+      <template v-if="modalObj.component === 'print-type'">
+        <el-radio-group v-model="modalObj.form.value">
+          <el-radio :label="2">浏览器打印</el-radio>
+        </el-radio-group>
+      </template>
+      <template v-if="modalObj.form.value === 2 || modalObj.component === 'window-print-preview'">
+        <order-print v-if="modalObj.form.row" :row="modalObj.form.row" ref="receiptOrderPrintRef"></order-print>
+      </template>
+      <template slot="footer" class="dialog-footer">
+        <el-button @click="handlePrintDialogClose">取消</el-button>
+        <el-button @click="modalObj.ok" type="primary">确认</el-button>
+      </template>
+    </el-dialog>
+    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
+    <div v-show="false">
+      <order-print v-if="printRowData" :row="printRowData" ref="receiptOrderPrintRefAuto"></order-print>
+    </div>
+
   </div>
 </template>
 
@@ -516,11 +537,14 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 
 import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
 import SelectDingdan from '@/components/SelectModel/SelectDingdan';
+import orderPrint from "@/views/inWarehouse/audit/orderPrint";
+import RMBConverter from "@/utils/tools";
+import {STOCK_IN_TEMPLATE} from '@/utils/printData'
 
 export default {
   name: "InWarehouse",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMaterialFilter,SelectDingdan},
+  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMaterialFilter,SelectDingdan,orderPrint},
   data() {
     return {
       // 遮罩层
@@ -532,6 +556,23 @@ export default {
       departmentValue: "",
       materialValue: "",
       isShow: true,
+      // 打印对话框（与入库审核页面初始化一致）
+      modalObj: {
+        title: '选择打印方式',
+        width: '520px',
+        component: null,
+        form: {
+          value: null,
+          row: null
+        },
+        ok: () => {
+        },
+        cancel: () => {
+        },
+        show: false
+      },
+      // 打印数据（用于隐藏的打印组件）
+      printRowData: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -662,9 +703,25 @@ export default {
     getList() {
       this.loading = true;
       this.queryParams.billType = "101";
-      listWarehouse(this.queryParams).then(response => {
-        this.warehouseList = response.rows;
-        this.total = response.total;
+      // 如果 billStatus 为空字符串，转换为 null，确保查询所有状态
+      if (this.queryParams.billStatus === '') {
+        this.queryParams.billStatus = null;
+      }
+      // 处理截止日期，确保包含当天的所有数据（23:59:59）
+      const queryParams = {
+        ...this.queryParams
+      };
+      if (queryParams.endDate && queryParams.endDate.length === 10) {
+        // 如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
+        queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
+      // 与入库审核页面保持一致的查询逻辑
+      listWarehouse(queryParams).then(response => {
+        this.warehouseList = response.rows || [];
+        this.total = response.total || 0;
+        this.loading = false;
+      }).catch(error => {
+        console.error('查询入库列表失败:', error);
         this.loading = false;
       });
     },
@@ -713,18 +770,26 @@ export default {
       });
     },
     getStatDate(){
+      // 获取前5天日期
       let myDate = new Date();
+      myDate.setDate(myDate.getDate() - 5); // 前5天
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      let statDate = year.toString() + "-" + month + "-" + day;
       return statDate;
     },
     getEndDate(){
+      // 获取当前日期
       let myDate = new Date();
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      let endDate = year.toString() + "-" + month + "-" + day;
       return endDate;
     },
     //当天日期
@@ -824,6 +889,155 @@ export default {
         this.title = "查看入库";
       });
     },
+    /** 打印对话框关闭处理 */
+    handlePrintDialogClose() {
+      this.modalObj.show = false
+      // 重置 modalObj
+      this.modalObj = {
+        show: false,
+        title: '',
+        width: '',
+        component: '',
+        form: {},
+        ok: () => {},
+        cancel: () => {}
+      }
+    },
+    /** 打印按钮操作 */
+    handlePrint(row, print){
+      // 如果传入 print 参数为 true，直接执行打印
+      if (print === true) {
+        // 直接获取数据并触发打印
+        this.getInWarehouseDetail(row).then(res => {
+          // 设置打印数据
+          this.printRowData = res
+          // 等待组件渲染后调用 start()
+          this.$nextTick(() => {
+            if (this.$refs['receiptOrderPrintRefAuto']) {
+              // start() 方法会直接触发浏览器打印对话框
+              this.$refs['receiptOrderPrintRefAuto'].start()
+            }
+          })
+        })
+        return
+      }
+      // 否则显示选择打印方式的对话框
+      this.modalObj = {
+        show: true,
+        title: '选择打印方式',
+        width: '520px',
+        component: 'print-type',
+        form: {
+          value: 1,
+          row
+        },
+        ok: () => {
+          this.modalObj.show = false
+          if (this.modalObj.form.value === 1) {
+            this.doPrintOut(row, false)
+          } else {
+            this.windowPrintOut(row, print)
+          }
+        },
+        cancel: () => {
+          this.modalObj.show = false
+        }
+      }
+    },
+    windowPrintOut(row, print) {
+      this.getInWarehouseDetail(row).then(res => {
+        if (print) {
+          // 与入库审核页面完全一致：只更新 modalObj.form.row，然后直接调用打印
+          // 注意：对话框已经在 handlePrint 中打开了
+          this.modalObj.form.row = res
+          this.$nextTick(() => {
+            if (this.$refs['receiptOrderPrintRef']) {
+              // start() 方法会直接触发浏览器打印对话框，不需要显示预览对话框
+              this.$refs['receiptOrderPrintRef'].start()
+            }
+          })
+          return
+        }
+        this.$nextTick(() => {
+          this.modalObj = {
+            show: true,
+            title: '浏览器打印预览',
+            width: '800px',
+            component: 'window-print-preview',
+            form: {
+              value: 1,
+              row: res,
+              print
+            },
+            ok: () => {
+              this.modalObj.show = false
+            },
+            cancel: () => {
+              this.modalObj.show = false
+            }
+          }
+        })
+      })
+    },
+    doPrintOut(row, print) {
+      this.getInWarehouseDetail(row).then(result => {
+        if (print) {
+          this.$lodop.print(STOCK_IN_TEMPLATE, [result])
+        } else {
+          this.$lodop.preview(STOCK_IN_TEMPLATE, [result])
+        }
+      })
+    },
+    //组装打印信息
+    getInWarehouseDetail(row) {
+      //查询详情
+      return getInWarehouse(row.id).then(response => {
+        const details = response.data.stkIoBillEntryList
+        const materiaDetails = response.data.materialList
+        const map = {};
+
+        (materiaDetails || []).forEach(it => {
+          map[it.id] = it
+        })
+
+        let detailList = [], totalAmt = 0, totalQty = 0
+
+        details && details.forEach(item => {
+          totalAmt += item.amt
+          totalQty += item.qty
+
+          const prod = map[item.materialId]
+
+          detailList.push({
+            batchNumber: item.batchNumber,
+            amt: item.amt,
+            qty: item.qty,
+            unitPrice: item.unitPrice,
+            materialCode: prod.code,
+            materialName: prod.name,
+            materialSpeci: prod.speci,
+            periodDate: prod.periodDate,
+            factoryName: prod.fdFactory.factoryName,
+            warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
+          })
+
+        })
+
+        let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
+
+        return {
+          billNo: row.billNo,
+          supplierName: row.supplier.name,
+          warehouseName: row.warehouse.name,
+          billDate: row.billDate,
+          auditDate: row.auditDate,
+          totalAmt: totalAmt,
+          totalQty: totalQty,
+          totalAmtConverter: totalAmtConverter,
+          detailList: detailList
+        }
+      })
+    },
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
@@ -857,6 +1071,12 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          // 检查明细列表是否为空
+          if (!this.stkIoBillEntryList || this.stkIoBillEntryList.length === 0) {
+            this.$modal.msgError("请添加明细！");
+            return;
+          }
+
           // 新增数量非空校验
           const hasEmptyQty = this.stkIoBillEntryList.some(item =>
             !item.qty || String(item.qty).trim() === ''
@@ -878,6 +1098,8 @@ export default {
           if (this.form.id != null) {
             updateWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
+              // 重置单据状态查询条件，确保能查询到所有状态的单据
+              this.queryParams.billStatus = null;
               this.getList();
               // 保存成功后不关闭弹窗，允许继续修改
               // this.open = false;
@@ -885,6 +1107,8 @@ export default {
           } else {
             addWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
+              // 重置单据状态查询条件，确保新增的单据能显示出来
+              this.queryParams.billStatus = null;
               this.getList();
               // 保存成功后不关闭弹窗，允许继续修改
               // this.open = false;

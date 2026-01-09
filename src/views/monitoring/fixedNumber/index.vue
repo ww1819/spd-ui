@@ -284,7 +284,8 @@
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
-            style="color: #F56C6C;"
+            :disabled="scope.row.hasInventoryRecord"
+            :style="scope.row.hasInventoryRecord ? 'color: #C0C4CC; cursor: not-allowed;' : 'color: #F56C6C;'"
           >删除</el-button>
         </template>
       </el-table-column>
@@ -438,6 +439,7 @@ import { listFixedNumber, addFixedNumber } from "@/api/monitoring/fixedNumber";
 import { listWarehouse } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
 import { listMaterial } from "@/api/foundation/material";
+import { listInventory } from "@/api/warehouse/inventory";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 
@@ -699,43 +701,167 @@ export default {
                 ...item,
                 index: index + 1,
                 // 确保 monitoring 有默认值
-                monitoring: item.monitoring || '2'
+                monitoring: item.monitoring || '2',
+                // 初始化入库记录标记
+                hasInventoryRecord: item.hasInventoryRecord || false
               };
             });
             this.total = this.fixedNumberList.length;
+            // 不在loadFromLocalStorage中检查入库记录，避免在没有选择仓库时调用API
+            // 检查入库记录会在getList或其他合适的地方进行
           }
         } catch (e) {
           console.error('恢复数据失败:', e);
         }
       }
     },
-    /** 查询定数监测列表 */
-    getList() {
-      this.loading = true;
-      listFixedNumber(this.queryParams).then(response => {
-        // 如果后端返回空数据，尝试从 localStorage 恢复
-        if (!response.rows || response.rows.length === 0) {
-          this.loadFromLocalStorage();
-        } else {
-          this.fixedNumberList = response.rows.map((item, index) => {
+    /** 检查所有产品的入库记录 */
+    checkInventoryRecords() {
+      try {
+        if (!this.fixedNumberList || this.fixedNumberList.length === 0) {
+          return;
+        }
+        
+        // 只检查仓库定数监测的入库记录
+        if (this.queryParams.fixedNumberType !== '1') {
+          return;
+        }
+        
+        const warehouseId = this.queryParams.warehouseId;
+        if (!warehouseId) {
+          return;
+        }
+        
+        // 批量检查所有产品的入库记录
+        const checkPromises = this.fixedNumberList.map(item => {
+          const materialId = item.material ? item.material.id : (item.materialId || null);
+          if (!materialId) {
+            return Promise.resolve({
+              item: item,
+              hasRecord: false
+            });
+          }
+          
+          return listInventory({
+            materialId: materialId,
+            warehouseId: warehouseId,
+            pageNum: 1,
+            pageSize: 1
+          }).then(response => {
             return {
-              ...item,
-              index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1,
-              difference: item.actualQuantity !== null && item.stockQuantity !== null 
-                ? item.actualQuantity - item.stockQuantity 
-                : null
+              item: item,
+              hasRecord: response && response.rows && response.rows.length > 0
+            };
+          }).catch(error => {
+            // 静默处理错误，不抛出异常
+            console.warn('检查入库记录失败:', error);
+            return {
+              item: item,
+              hasRecord: false
             };
           });
-          this.total = response.total;
-          // 保存到 localStorage
+        });
+        
+        Promise.all(checkPromises).then(results => {
+          if (!results || results.length === 0) {
+            return;
+          }
+          
+          results.forEach(result => {
+            if (result && result.item) {
+              result.item.hasInventoryRecord = result.hasRecord || false;
+            }
+          });
+          // 更新localStorage
           this.saveToLocalStorage();
-        }
+        }).catch(error => {
+          // 静默处理错误，不抛出异常
+          console.warn('批量检查入库记录失败:', error);
+        });
+      } catch (error) {
+        // 捕获所有可能的异常，避免影响页面正常使用
+        console.warn('checkInventoryRecords 执行异常:', error);
+      }
+    },
+    /** 查询定数监测列表 */
+    getList() {
+      try {
+        this.loading = true;
+        // 优先从 localStorage 加载数据
+        this.loadFromLocalStorage();
+        
+        // 同时查询后端数据，用于合并和更新
+        listFixedNumber(this.queryParams).then(response => {
+          try {
+            if (response && response.rows && response.rows.length > 0) {
+              // 后端有数据，合并到现有列表中
+              const backendData = response.rows.map((item, index) => {
+                return {
+                  ...item,
+                  index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1,
+                  difference: item.actualQuantity !== null && item.stockQuantity !== null 
+                    ? item.actualQuantity - item.stockQuantity 
+                    : null
+                };
+              });
+              
+              // 合并逻辑：以后端数据为主，但保留localStorage中新增但未保存的数据
+              const localStorageData = this.fixedNumberList || [];
+              const mergedList = [];
+              const backendCodes = new Set(backendData.map(item => item.code || item.materialCode));
+              
+              // 先添加后端数据
+              mergedList.push(...backendData);
+              
+              // 再添加localStorage中但后端没有的数据（新增但未保存的）
+              localStorageData.forEach(item => {
+                const code = item.code || item.materialCode;
+                if (code && !backendCodes.has(code)) {
+                  mergedList.push(item);
+                }
+              });
+              
+              this.fixedNumberList = mergedList;
+              this.total = mergedList.length;
+              // 保存合并后的数据到 localStorage
+              this.saveToLocalStorage();
+            } else {
+              // 后端没有数据，保持localStorage的数据
+              if (!this.fixedNumberList || this.fixedNumberList.length === 0) {
+                this.loadFromLocalStorage();
+              }
+            }
+            this.loading = false;
+            // 数据加载完成后设置表格高度
+            setTimeout(() => {
+              this.setTableHeight();
+            }, 200);
+            // 暂时禁用自动检查入库记录，避免频繁调用导致异常
+            // 入库记录检查将在删除时进行
+          } catch (error) {
+            console.error('处理查询结果时出错:', error);
+            this.loading = false;
+            // 如果处理出错，至少保持localStorage的数据
+            if (!this.fixedNumberList || this.fixedNumberList.length === 0) {
+              this.loadFromLocalStorage();
+            }
+          }
+        }).catch(error => {
+          // 如果后端查询失败，保持localStorage的数据
+          console.warn('查询定数监测列表失败:', error);
+          if (!this.fixedNumberList || this.fixedNumberList.length === 0) {
+            this.loadFromLocalStorage();
+          }
+          this.loading = false;
+        });
+      } catch (error) {
+        console.error('getList 执行异常:', error);
         this.loading = false;
-        // 数据加载完成后设置表格高度
-        setTimeout(() => {
-          this.setTableHeight();
-        }, 200);
-      });
+        // 如果出错，至少保持localStorage的数据
+        if (!this.fixedNumberList || this.fixedNumberList.length === 0) {
+          this.loadFromLocalStorage();
+        }
+      }
     },
     /** 查询仓库列表 */
     getWarehouseList() {
@@ -793,15 +919,21 @@ export default {
     },
     /** 点击仓库行 */
     handleWarehouseRowClick(row) {
-      this.queryParams.warehouseId = row.id;
-      this.queryParams.departmentId = null;
-      // 清空当前列表
-      this.fixedNumberList = [];
-      this.total = 0;
-      // 从 localStorage 加载新仓库的数据
-      this.loadFromLocalStorage();
-      // 同时触发查询（如果后端有数据）
-      this.handleQuery();
+      try {
+        this.queryParams.warehouseId = row.id;
+        this.queryParams.departmentId = null;
+        // 清空当前列表
+        this.fixedNumberList = [];
+        this.total = 0;
+        // 从 localStorage 加载新仓库的数据
+        this.loadFromLocalStorage();
+        // 同时触发查询（如果后端有数据）
+        this.handleQuery();
+        // 暂时禁用自动检查入库记录，避免频繁调用导致异常
+        // 入库记录检查将在删除时进行
+      } catch (error) {
+        console.error('handleWarehouseRowClick 执行异常:', error);
+      }
     },
     /** 点击科室项 */
     handleDepartmentClick(departmentId) {
@@ -826,6 +958,7 @@ export default {
       this.loadFromLocalStorage();
       // 同时触发查询（如果后端有数据）
       this.handleQuery();
+      // 科室定数监测不需要检查入库记录（入库记录是针对仓库的）
     },
     /** 获取仓库行样式类名 */
     getWarehouseRowClassName({ row, rowIndex }) {
@@ -929,7 +1062,10 @@ export default {
         // 保存成功后，保存到 localStorage
         this.saveToLocalStorage();
         // 保持列表显示，不清空
-      }).catch(() => {
+        // 暂时禁用自动检查入库记录，避免频繁调用导致异常
+        // 入库记录检查将在删除时进行
+      }).catch(error => {
+        console.error('保存定数监测失败:', error);
         this.$modal.msgError("保存失败");
       });
     },
@@ -1045,6 +1181,43 @@ export default {
     },
     /** 删除按钮操作 */
     handleDelete(row) {
+      // 检查是否有入库记录
+      if (row.hasInventoryRecord) {
+        this.$modal.msgWarning("该产品已有入库记录，不能删除");
+        return;
+      }
+      
+      // 如果有materialId和warehouseId，再次检查入库记录
+      const materialId = row.material ? row.material.id : (row.materialId || null);
+      const warehouseId = this.queryParams.fixedNumberType === '1' ? this.queryParams.warehouseId : null;
+      
+      if (materialId && warehouseId) {
+        // 检查是否有入库记录
+        listInventory({
+          materialId: materialId,
+          warehouseId: warehouseId,
+          pageNum: 1,
+          pageSize: 1
+        }).then(response => {
+          if (response.rows && response.rows.length > 0) {
+            // 有入库记录，标记并提示
+            row.hasInventoryRecord = true;
+            this.$modal.msgWarning("该产品已有入库记录，不能删除");
+            return;
+          }
+          // 没有入库记录，执行删除
+          this.doDelete(row);
+        }).catch(() => {
+          // 查询失败，仍然执行删除（避免因为网络问题导致无法删除）
+          this.doDelete(row);
+        });
+      } else {
+        // 没有materialId或warehouseId，直接删除
+        this.doDelete(row);
+      }
+    },
+    /** 执行删除操作 */
+    doDelete(row) {
       const index = this.fixedNumberList.findIndex(item => item === row);
       if (index > -1) {
         this.fixedNumberList.splice(index, 1);

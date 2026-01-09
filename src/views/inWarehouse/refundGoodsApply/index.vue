@@ -27,7 +27,7 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="退货日期" style="display: flex; align-items: center;">
+          <el-form-item label="日期" style="display: flex; align-items: center;">
             <el-date-picker
                             v-model="queryParams.beginDate"
                             type="date"
@@ -70,7 +70,7 @@
           type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
+          size="medium"
           @click="handleAdd"
           v-hasPermi="['inWarehouse:refundGoodsApply:add']"
         >新增</el-button>
@@ -80,7 +80,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['inWarehouse:refundGoodsApply:export']"
         >导出</el-button>
@@ -89,14 +89,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -116,13 +116,13 @@
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
-      <el-table-column label="退货日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.createTime || scope.row.billDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="退货人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
       <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
         <template slot-scope="scope">
@@ -135,7 +135,6 @@
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable />
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -442,6 +441,10 @@
     >
 
     </SelectTkApply>
+    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
+    <div v-show="false">
+      <refund-goods-order-print v-if="printRowData" :row="printRowData" ref="receiptRefundGoodsPrintRefAuto"></refund-goods-order-print>
+    </div>
   </div>
 </template>
 
@@ -467,11 +470,14 @@ import SelectInventory from '@/components/SelectModel/SelectInventory';
 import SelectRkApply from "@/components/SelectModel/SelectRkApply";
 import SelectTkApply from "@/components/SelectModel/SelectTkApply";
 import {createEntriesByDApply} from "@/api/warehouse/outWarehouse";
+import refundGoodsOrderPrint from "@/views/inWarehouse/refundGoodsAudit/refundGoodsOrderPrint.vue";
+import RMBConverter from "@/utils/tools";
+import {STOCK_IN_TEMPLATE} from '@/utils/printData';
 
 export default {
   name: "InWarehouseGoodsApply",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectRkApply,SelectTkApply},
+  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectRkApply,SelectTkApply,refundGoodsOrderPrint},
   data() {
     return {
       // 遮罩层
@@ -522,6 +528,8 @@ export default {
       },
       // 表单参数
       form: {},
+      // 打印数据（用于隐藏的打印组件）
+      printRowData: null,
       // 表单校验
       rules: {
         supplerId: [
@@ -602,7 +610,13 @@ export default {
     getList() {
       this.loading = true;
       this.queryParams.billType = "301";
-      listThInventory(this.queryParams).then(response => {
+      // 如果 endDate 是日期格式（不包含时间），追加 " 23:59:59" 以包含当天的所有记录
+      const queryParams = { ...this.queryParams };
+      if (queryParams.endDate && queryParams.endDate.length === 10 && !queryParams.endDate.includes(' ')) {
+        queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
+      
+      listThInventory(queryParams).then(response => {
         this.warehouseList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -650,19 +664,25 @@ export default {
 
     },
     getStatDate(){
+      // 返回前5天的日期
       let myDate = new Date();
+      myDate.setDate(myDate.getDate() - 5);
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
-      return statDate;
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      return year + "-" + month + "-" + day;
     },
     getEndDate(){
+      // 返回当前日期
       let myDate = new Date();
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
-      return endDate;
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      return year + "-" + month + "-" + day;
     },
     //当天日期
     getBillDate(){
@@ -846,8 +866,75 @@ export default {
       }).catch(() => {});
     },
     /** 打印按钮操作 */
-    handlePrint(row, print) {
-      this.$modal.msgWarning("打印功能开发中");
+    handlePrint(row, print){
+      // 如果传入 print 参数为 true，直接执行打印（与退货审核页面一致）
+      if (print === true) {
+        // 直接获取数据并触发打印
+        this.getRefundGoodsDetail(row).then(res => {
+          // 设置打印数据
+          this.printRowData = res
+          // 等待组件渲染后调用 start()
+          this.$nextTick(() => {
+            if (this.$refs['receiptRefundGoodsPrintRefAuto']) {
+              // start() 方法会直接触发浏览器打印对话框
+              this.$refs['receiptRefundGoodsPrintRefAuto'].start()
+            }
+          })
+        })
+        return
+      }
+    },
+    //组装打印信息（与退货审核页面完全一致）
+    getRefundGoodsDetail(row) {
+      //查询详情
+      return getThInventory(row.id).then(response => {
+        const details = response.data.stkIoBillEntryList
+        const materiaDetails = response.data.materialList
+        const map = {};
+
+        (materiaDetails || []).forEach(it => {
+          map[it.id] = it
+        })
+
+        let detailList = [], totalAmt = 0, totalQty = 0
+
+        details && details.forEach(item => {
+          totalAmt += item.amt
+          totalQty += item.qty
+
+          const prod = map[item.materialId]
+
+          detailList.push({
+            batchNumber: item.batchNumber,
+            amt: item.amt,
+            qty: item.qty,
+            unitPrice: item.unitPrice,
+            price: item.unitPrice, // 打印组件需要 price 字段
+            materialCode: prod.code,
+            materialName: prod.name,
+            materialSpeci: prod.speci,
+            periodDate: prod.periodDate,
+            factoryName: prod.fdFactory.factoryName,
+            warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
+          })
+
+        })
+
+        let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
+
+        // 与退货审核页面完全一致的数据结构
+        return {
+          billNo: row.billNo,
+          supplierName: row.supplier.name,
+          warehouseName: row.warehouse.name,
+          billDate: row.billDate,
+          auditDate: row.auditDate,
+          totalAmt: totalAmt,
+          totalQty: totalQty,
+          totalAmtConverter: totalAmtConverter,
+          detailList: detailList
+        }
+      })
     },
     /** 退货明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {

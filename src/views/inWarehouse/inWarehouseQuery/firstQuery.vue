@@ -27,7 +27,7 @@
         </el-row>
 
         <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
+          <el-col :span="24">
             <el-form-item label="业务日期" style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
@@ -48,8 +48,11 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12" class="query-status-col">
-            <el-form-item label="单据类型" prop="billType" class="query-item-status-aligned">
+        </el-row>
+
+        <el-row :gutter="16" class="query-row-third">
+          <el-col :span="24">
+            <el-form-item label="单据类型" prop="billType" class="query-item-inline">
               <el-select v-model="queryParams.billType" placeholder="全部"
                          clearable style="width: 150px">
                 <el-option v-for="dict in dict.type.in_warehouse_bill_type"
@@ -59,18 +62,26 @@
                 />
               </el-select>
             </el-form-item>
+            <el-form-item label="计费" prop="isBilling" class="query-item-inline">
+              <el-select v-model="queryParams.isBilling" placeholder="请选择计费"
+                         clearable style="width: 150px">
+                <el-option label="全部" value="" />
+                <el-option label="是" value="1" />
+                <el-option label="否" value="0" />
+              </el-select>
+            </el-form-item>
           </el-col>
         </el-row>
 
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px; margin-top: 0px">
+    <el-row :gutter="10" class="mb8" style="padding-top: 2px; margin-top: -8px">
       <el-col :span="1.5">
         <el-button
           type="warning"
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
         >导出</el-button>
       </el-col>
@@ -78,14 +89,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -99,15 +110,15 @@
       <el-table v-loading="loading" :data="displayData"
                 show-summary
                 :summary-method="getSummaries"
-                height="51vh"
+                height="55vh"
                 border
                 style="width: 100%">
-      <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
+      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="80" show-overflow-tooltip resizable v-if="columns[0].visible"/>
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable v-if="columns[0].visible"/>
       <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable v-if="columns[1].visible"/>
       <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable v-if="columns[2].visible"/>
       <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable v-if="columns[3].visible"/>
@@ -122,7 +133,6 @@
 
       <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable v-if="columns[7].visible"/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable v-if="columns[8].visible"/>
-      <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable v-if="columns[9].visible"/>
       <el-table-column label="价格" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable v-if="columns[10].visible">
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
@@ -140,7 +150,6 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="批次" align="center" prop="batchNo" width="180" show-overflow-tooltip resizable v-if="columns[13].visible"/>
       <el-table-column label="批号" align="center" prop="batchNumber" width="80" show-overflow-tooltip resizable v-if="columns[14].visible"/>
       <el-table-column label="生产日期" align="center" prop="beginDate" width="180" show-overflow-tooltip resizable v-if="columns[15].visible">
         <template slot-scope="scope">
@@ -152,6 +161,8 @@
           <span>{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable v-if="columns[9].visible"/>
+      <el-table-column label="批次" align="center" prop="batchNo" width="220" show-overflow-tooltip resizable v-if="columns[13].visible"/>
 
       <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable v-if="columns[17].visible"/>
       <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable v-if="columns[18].visible"/>
@@ -162,12 +173,23 @@
           <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
         </template>
       </el-table-column>
+      <el-table-column label="计费" align="center" prop="material.isBilling" width="80" show-overflow-tooltip resizable v-if="columns[22].visible">
+        <template slot-scope="scope">
+          <span v-if="scope.row.material && (scope.row.material.isBilling === '1' || scope.row.material.isBilling === 1)">是</span>
+          <span v-else-if="scope.row.material && (scope.row.material.isBilling === '0' || scope.row.material.isBilling === 0 || scope.row.material.isBilling === '2')">否</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="备注" align="center" prop="remark" width="180" show-overflow-tooltip resizable v-if="columns[23].visible">
+        <template slot-scope="scope">
+          <span>{{ scope.row.remark || (scope.row.material && scope.row.material.remark) || '--' }}</span>
+        </template>
+      </el-table-column>
       </el-table>
     </div>
 
     <!-- 分页控件 -->
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -241,6 +263,7 @@ export default {
         billStatus: null,
         userId: null,
         billType: null,
+        isBilling: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
@@ -284,7 +307,9 @@ export default {
         { key: 18, label: `包装规格`, visible: true },
         { key: 19, label: `库房分类`, visible: true },
         { key: 20, label: `财务分类`, visible: true },
-        { key: 21, label: `储存方式`, visible: true }
+        { key: 21, label: `储存方式`, visible: true },
+        { key: 22, label: `计费`, visible: true },
+        { key: 23, label: `备注`, visible: true }
       ]
     };
   },
@@ -332,49 +357,58 @@ export default {
     /** 查询入/退货列表 */
     getList() {
       this.loading = true;
-      listRTHWarehouse(this.queryParams).then(response => {
+      // 处理截止日期，确保包含当天的所有数据（23:59:59）
+      const queryParams = {
+        ...this.queryParams
+      };
+      if (queryParams.endDate && queryParams.endDate.length === 10) {
+        // 如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
+        queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
+      listRTHWarehouse(queryParams).then(response => {
         console.log('API响应数据:', response);
-        this.warehouseList = response.rows;
-        this.total = response.total;
+        this.warehouseList = response.rows || [];
+        this.total = response.total || 0;
 
-        // 为测试汇总功能，确保displayData有模拟数据
-        if (!this.warehouseList || this.warehouseList.length === 0) {
-          console.log('使用模拟数据进行汇总测试');
-          this.displayData = [
-            { unitPrice: 100.50, materialQty: 5, materialAmt: 502.50 },
-            { unitPrice: 200.75, materialQty: 3, materialAmt: 602.25 },
-            { unitPrice: 150.25, materialQty: 4, materialAmt: 601.00 }
-          ];
-        } else {
-          // 确保数据格式正确
-          this.displayData = this.warehouseList.map(item => ({
-            ...item,
-            unitPrice: Number(item.unitPrice) || 0,
-            materialQty: Number(item.materialQty) || 0,
-            materialAmt: Number(item.materialAmt) || 0
-          }));
-        }
+        // 确保数据格式正确，直接使用实际数据
+        this.displayData = this.warehouseList.map(item => ({
+          ...item,
+          unitPrice: Number(item.unitPrice) || 0,
+          materialQty: Number(item.materialQty) || 0,
+          materialAmt: Number(item.materialAmt) || 0
+        }));
 
         console.log('显示数据:', this.displayData);
         this.loading = false;
       }).catch(error => {
         console.error('获取数据失败:', error);
+        this.warehouseList = [];
+        this.displayData = [];
+        this.total = 0;
         this.loading = false;
       });
     },
     getStatDate(){
+      // 当前日期往前推5天
       let myDate = new Date();
+      myDate.setDate(myDate.getDate() - 5);
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      let statDate = year + "-" + month + "-" + day;
       return statDate;
     },
     getEndDate(){
+      // 当前日期
       let myDate = new Date();
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      let endDate = year + "-" + month + "-" + day;
       return endDate;
     },
     // 取消按钮
@@ -439,30 +473,70 @@ export default {
     <!-- 添加CSS样式确保汇总行可见 -->
     <style scoped>
     .table-container {
-      margin-top: 10px;
+      margin-top: 5px;
       overflow: visible;
-      width: 100%;
+      width: calc(100% + 40px);
+      margin-left: -20px;
+      margin-right: -20px;
       position: relative;
+    }
+
+    /* 表格水平滚动条增粗 */
+    .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+      height: 12px;
+    }
+
+    .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 8px;
+    }
+
+    .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 8px;
+    }
+
+    .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+
+    /* 优化表格列间距 */
+    .table-container ::v-deep .el-table th {
+      padding: 10px 12px !important;
+    }
+
+    .table-container ::v-deep .el-table td {
+      padding: 8px 12px !important;
+    }
+
+    .table-container ::v-deep .el-table .cell {
+      padding-left: 0;
+      padding-right: 0;
     }
 
     /* 确保表格容器有足够空间显示汇总行 */
     .app-container {
       padding: 20px;
+      margin-top: -10px;
     }
 
     /* 查询条件样式 */
     .query-row-left {
-      margin-bottom: 10px;
+      margin-bottom: 2px;
     }
 
     .query-item-inline {
       display: inline-block;
       margin-right: 16px;
-      margin-bottom: 10px;
+      margin-bottom: 2px;
     }
 
     .query-item-inline .el-form-item__label {
       width: 80px !important;
+    }
+
+    .query-item-inline .el-form-item {
+      margin-bottom: 0;
     }
 
     .query-select-wrapper {
@@ -470,12 +544,12 @@ export default {
     }
 
     .query-row-second {
-      margin-bottom: 10px;
-      position: relative;
+      margin-bottom: 2px;
     }
 
     .query-row-second .el-form-item {
       white-space: nowrap;
+      margin-bottom: 0;
     }
 
     .query-row-second .el-form-item .el-form-item__content {
@@ -484,32 +558,24 @@ export default {
       flex-wrap: nowrap;
     }
 
-    .query-status-col {
-      position: absolute;
-      left: 552px;
-      width: auto;
-      padding-left: 0;
-      padding-right: 0;
-      display: flex;
-      align-items: center;
+    .query-row-third {
+      margin-bottom: 2px;
     }
 
-    .query-item-status-aligned {
-      margin-left: 0;
-    }
-
-    .query-item-status-aligned .el-form-item__label {
-      width: 80px !important;
+    .query-row-third .el-form-item {
+      margin-bottom: 0;
     }
 
     /* 查询条件容器框样式 */
     .form-fields-container {
       background: #fff;
-      padding: 16px 20px;
+      padding: 6px 20px;
       border-radius: 8px;
       box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
       margin-bottom: 16px;
       margin-top: -20px;
+      margin-left: -20px;
+      margin-right: -20px;
       border: 1px solid #EBEEF5;
     }
     </style>

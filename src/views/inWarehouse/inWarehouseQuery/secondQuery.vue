@@ -19,7 +19,7 @@
         </el-row>
 
         <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
+          <el-col :span="24">
             <el-form-item label="业务日期" style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
@@ -42,15 +42,25 @@
           </el-col>
         </el-row>
 
+        <el-row :gutter="16" class="query-row-third">
+          <el-col :span="24">
+            <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectSupplier v-model="queryParams.supplerId" />
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px; margin-top: 0px">
+    <el-row :gutter="10" class="mb8" style="padding-top: 2px; margin-top: -8px">
       <el-col :span="1.5">
         <el-button
           type="warning"
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
         >导出</el-button>
       </el-col>
@@ -58,14 +68,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -88,20 +98,20 @@
       <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable v-if="columns[1].visible"/>
       <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable v-if="columns[2].visible"/>
       <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable v-if="columns[3].visible"/>
-      <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable v-if="columns[4].visible"/>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable v-if="columns[5].visible"/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="120" show-overflow-tooltip resizable v-if="columns[4].visible"/>
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="120" show-overflow-tooltip resizable v-if="columns[5].visible"/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable v-if="columns[6].visible"/>
       <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable v-if="columns[7].visible"/>
       <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable v-if="columns[8].visible">
         <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
+          <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== ''">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable v-if="columns[9].visible"/>
       <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable v-if="columns[10].visible">
         <template slot-scope="scope">
-          <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
+          <span v-if="scope.row.materialAmt != null && scope.row.materialAmt !== undefined && scope.row.materialAmt !== ''">{{ scope.row.materialAmt | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -253,9 +263,28 @@ export default {
     /** 查询入/退货列表 */
     getList() {
       this.loading = true;
-      listRTHSummary(this.queryParams).then(response => {
-        this.warehouseList = response;
-        this.total = 10;
+      // 处理截止日期，确保包含当天的所有数据（23:59:59）
+      const queryParams = {
+        ...this.queryParams
+      };
+      if (queryParams.endDate && queryParams.endDate.length === 10) {
+        // 如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
+        queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
+      listRTHSummary(queryParams).then(response => {
+        // 确保数据格式正确，处理单价和金额
+        this.warehouseList = (response || []).map(item => ({
+          ...item,
+          unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
+          materialAmt: item.materialAmt != null ? Number(item.materialAmt) : null,
+          materialQty: item.materialQty != null ? Number(item.materialQty) : 0
+        }));
+        this.total = this.warehouseList.length;
+        this.loading = false;
+      }).catch(error => {
+        console.error('获取数据失败:', error);
+        this.warehouseList = [];
+        this.total = 0;
         this.loading = false;
       });
     },
@@ -335,30 +364,70 @@ export default {
 
 <style scoped>
 .table-container {
-  margin-top: 10px;
+  margin-top: 5px;
   overflow: visible;
-  width: 100%;
+  width: calc(100% + 40px);
+  margin-left: -20px;
+  margin-right: -20px;
   position: relative;
+}
+
+/* 表格水平滚动条增粗 */
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 12px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 8px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 优化表格列间距 */
+.table-container ::v-deep .el-table th {
+  padding: 10px 12px !important;
+}
+
+.table-container ::v-deep .el-table td {
+  padding: 8px 12px !important;
+}
+
+.table-container ::v-deep .el-table .cell {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* 确保表格容器有足够空间显示汇总行 */
 .app-container {
   padding: 20px;
+  margin-top: -10px;
 }
 
 /* 查询条件样式 */
 .query-row-left {
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 
 .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 
 .query-item-inline .el-form-item__label {
   width: 80px !important;
+}
+
+.query-item-inline .el-form-item {
+  margin-bottom: 0;
 }
 
 .query-select-wrapper {
@@ -366,7 +435,26 @@ export default {
 }
 
 .query-row-second {
-  margin-bottom: 10px;
+  margin-bottom: 2px;
+}
+
+.query-row-second .el-form-item {
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.query-row-third {
+  margin-bottom: 2px;
+}
+
+.query-row-third .el-form-item {
+  margin-bottom: 0;
 }
 
 .query-status-col {
@@ -385,11 +473,13 @@ export default {
 /* 查询条件容器框样式 */
 .form-fields-container {
   background: #fff;
-  padding: 16px 20px;
+  padding: 6px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
   margin-top: -20px;
+  margin-left: -20px;
+  margin-right: -20px;
   border: 1px solid #EBEEF5;
 }
 </style>

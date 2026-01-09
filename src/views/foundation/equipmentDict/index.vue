@@ -2,7 +2,7 @@
   <div class="app-container">
     <el-row :gutter="20">
       <!-- 左侧68分类树 -->
-      <el-col :span="6">
+      <el-col :span="4">
         <el-card class="tree-card">
           <div slot="header" class="tree-header">
             <span>68分类</span>
@@ -25,130 +25,131 @@
       </el-col>
 
       <!-- 右侧表格区域 -->
-      <el-col :span="18">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-col :span="20">
+        <!-- 查询条件容器 -->
+        <div class="query-container">
+          <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+            <el-row class="query-row-first">
+              <el-col :span="24">
+                <el-form-item label="档案名称" prop="name" class="query-item-inline">
+                  <el-input
+                    v-model="queryParams.name"
+                    placeholder="请输入档案名称"
+                    clearable
+                    @keyup.enter.native="handleQuery"
+                    style="width: 180px"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
 
-      <el-row class="query-row-first">
-        <el-col :span="24">
-          <el-form-item label="资产名称" prop="name" class="query-item-inline">
-            <el-input
-              v-model="queryParams.name"
-              placeholder="请输入资产名称"
-              clearable
-              @keyup.enter.native="handleQuery"
-              style="width: 180px"
-            />
-          </el-form-item>
-        </el-col>
-      </el-row>
+            <el-row class="query-row-second">
+              <el-col :span="24" style="display: flex; flex-wrap: nowrap; align-items: center;">
+                <el-form-item label="创建日期" class="query-item-inline" style="margin-right: 16px;">
+                  <el-date-picker
+                    v-model="queryParams.beginDate"
+                    type="date"
+                    value-format="yyyy-MM-dd"
+                    placeholder="起始日期"
+                    clearable
+                    style="width: 100px; margin-right: 4px;"
+                  />
+                  <span style="margin: 0 2px;">至</span>
+                  <el-date-picker
+                    v-model="queryParams.endDate"
+                    type="date"
+                    value-format="yyyy-MM-dd"
+                    placeholder="截止日期"
+                    clearable
+                    style="width: 100px; margin-left: 4px;"
+                  />
+                </el-form-item>
 
-      <el-row class="query-row-second">
-        <el-col :span="24">
-          <el-form-item label="创建日期" style="display: flex; align-items: center;" class="query-item-inline">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
-              clearable
-              style="width: 100px; margin-right: 4px;"
-            />
-            <span style="margin: 0 2px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 100px; margin-left: 4px;"
-            />
-          </el-form-item>
+                <el-form-item label="状态" prop="isUse" class="query-item-inline" style="margin-right: 16px;">
+                  <el-select v-model="queryParams.isUse" placeholder="请选择" style="width: 100px">
+                    <el-option
+                      v-for="dict in dict.type.is_use_status"
+                      :key="dict.value"
+                      :label="dict.label"
+                      :value="dict.value"
+                    ></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+        </div>
 
-          <el-form-item label="状态" prop="isUse" class="query-item-inline">
-            <el-select v-model="queryParams.isUse" placeholder="请选择" style="width: 100px">
-              <el-option
-                v-for="dict in dict.type.is_use_status"
-                :key="dict.value"
-                :label="dict.label"
-                :value="dict.value"
-              ></el-option>
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-    </el-form>
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="small"
-          @click="handleAdd"
-          v-hasPermi="['foundation:equipmentDict:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="small"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['foundation:equipmentDict:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="small"
-          :disabled="single"
-          @click="handleDelete"
-          v-hasPermi="['foundation:equipmentDict:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
-          @click="handleExport"
-          v-hasPermi="['foundation:equipmentDict:export']"
-        >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="info"
-          icon="el-icon-upload2"
-          size="small"
-          @click="handleImport"
-          v-hasPermi="['foundation:equipmentDict:import']"
-        >导入</el-button>
-      </el-col>
-      <el-col :span="1.5">
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          icon="el-icon-search"
-          size="small"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          icon="el-icon-refresh"
-          size="small"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+        <!-- 操作按钮 -->
+        <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+          <el-col :span="1.5">
+            <el-button
+              type="primary"
+              plain
+              icon="el-icon-plus"
+              size="small"
+              @click="handleAdd"
+              v-hasPermi="['foundation:equipmentDict:add']"
+            >新增</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button
+              type="success"
+              plain
+              icon="el-icon-edit"
+              size="small"
+              :disabled="single"
+              @click="handleUpdate"
+              v-hasPermi="['foundation:equipmentDict:edit']"
+            >修改</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button
+              type="danger"
+              plain
+              icon="el-icon-delete"
+              size="small"
+              :disabled="single"
+              @click="handleDelete"
+              v-hasPermi="['foundation:equipmentDict:remove']"
+            >删除</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button
+              type="warning"
+              plain
+              icon="el-icon-download"
+              size="small"
+              @click="handleExport"
+              v-hasPermi="['foundation:equipmentDict:export']"
+            >导出</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button
+              type="primary"
+              icon="el-icon-search"
+              size="small"
+              @click="handleQuery"
+            >搜索</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button
+              icon="el-icon-refresh"
+              size="small"
+              @click="resetQuery"
+            >重置</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button
+              type="info"
+              icon="el-icon-upload2"
+              size="small"
+              @click="handleImport"
+              v-hasPermi="['foundation:equipmentDict:import']"
+            >导入</el-button>
+          </el-col>
+          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        </el-row>
 
     <el-table v-loading="loading" :data="equipmentDictList" :row-class-name="equipmentDictIndex" @selection-change="handleSelectionChange" height="58vh" border>
       <el-table-column type="selection" width="55" align="center" />
@@ -157,42 +158,18 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="资产编码" align="center" prop="code" width="100" show-overflow-tooltip resizable/>
-      <el-table-column label="资产名称" align="center" prop="name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="资产单位" align="center" prop="fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="储存方式" align="center" prop="isWay" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="档案编码" align="center" prop="code" width="100" show-overflow-tooltip resizable/>
+      <el-table-column label="档案名称" align="center" prop="name" width="180" show-overflow-tooltip resizable/>
+      <el-table-column label="所属分类" align="center" prop="speci" width="250" show-overflow-tooltip resizable/>
+      <el-table-column label="资产分类" align="center" prop="model" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="财务分类" align="center" prop="isWay" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.way_status" :value="scope.row.isWay"/>
         </template>
       </el-table-column>
-      <el-table-column label="启用" align="center" prop="isUse" width="100" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.isUse === '1' || scope.row.isUse === 1 ? '是' : '否' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="高值" align="center" prop="isGz" width="80" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.is_yes_no" :value="scope.row.isGz"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="跟台" align="center" prop="isFollow" width="80" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.is_yes_no" :value="scope.row.isFollow"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="计费" align="center" prop="isBilling" width="80" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.isBilling === '1' || scope.row.isBilling === 1 ? '是' : '否' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="品牌" align="center" prop="brand" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="创建日期" align="center" prop="createTime" width="100" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
+      <el-table-column label="折旧年限" align="center" prop="depreciationYears" width="100" show-overflow-tooltip resizable/>
+      <el-table-column label="使用年限" align="center" prop="useYears" width="100" show-overflow-tooltip resizable/>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right">
         <template slot-scope="scope">
           <el-button
@@ -227,334 +204,82 @@
       <div class="local-modal-content equipmentDict-modal-content">
         <div class="modal-header">
           <div class="modal-title">{{ title }}</div>
-          <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
+          <el-button @click="cancel" class="close-btn">关闭</el-button>
           </div>
         <el-tabs v-model="activeTab">
           <!-- 基本信息 -->
           <el-tab-pane label="基本信息" name="form">
             <el-form ref="form" :model="form" :rules="rules" label-width="120px">
               <!-- 第一行 -->
-          <el-row :gutter="20">
+              <el-row :gutter="20">
                 <el-col :span="4">
-                  <el-form-item label="资产编码：" prop="code">
-                <el-input 
-                  v-model="form.code" 
-                  :disabled="isDisabled || form.id != null" 
-                  placeholder="请输入资产编码（留空自动生成6位数字，手工输入可为任意长度）" 
-                  @blur="validateCode"
-                  @input="handleCodeInput"
-                />
-              </el-form-item>
-            </el-col>
+                  <el-form-item label="档案编码：" prop="code">
+                    <el-input 
+                      v-model="form.code" 
+                      :disabled="true"
+                      placeholder="选择所属分类后自动显示" 
+                    />
+                  </el-form-item>
+                </el-col>
                 <el-col :span="4">
-                  <el-form-item label="资产名称：" prop="name">
-                <el-input v-model="form.name" @input="nameChange" placeholder="请输入资产名称" />
-              </el-form-item>
-            </el-col>
+                  <el-form-item label="档案名称：" prop="name">
+                    <el-input v-model="form.name" @input="nameChange" placeholder="请输入档案名称" />
+                  </el-form-item>
+                </el-col>
                 <el-col :span="4">
-                  <el-form-item label="资产简码：" prop="referredName">
-                <el-input v-model="form.referredName" :disabled="true" placeholder="请输入资产简码" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-              <!-- 第二行 -->
-          <el-row :gutter="20">
-                <el-col :span="4">
-                  <el-form-item label="规格：" prop="speci">
-                    <el-input v-model="form.speci" placeholder="请输入规格" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="型号：" prop="model">
-                    <el-input v-model="form.model" placeholder="请输入型号" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="资产单位：" prop="unitId">
-                <SelectUnit v-model="form.unitId" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-              <!-- 第三行 -->
-          <el-row :gutter="20">
-                <el-col :span="4">
-                  <el-form-item label="资产分类：" prop="category68Id">
-                    <el-select v-model="form.category68Id" placeholder="请选择资产分类" style="width: 100%">
+                  <el-form-item label="所属分类：" prop="category68Id">
+                    <el-select 
+                      v-model="form.category68Id" 
+                      placeholder="请选择所属分类" 
+                      style="width: 100%"
+                      filterable
+                      clearable
+                      @change="handleCategory68Change"
+                    >
                       <el-option
                         v-for="item in category68Options"
                         :key="item.category68Id"
-                        :label="item.category68Name"
+                        :label="getCategory68DisplayLabel(item)"
                         :value="item.category68Id"
-                      ></el-option>
+                      >
+                        <span>{{ item.category68Name }}</span>
+                      </el-option>
                     </el-select>
-              </el-form-item>
-            </el-col>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+
+              <!-- 第二行 -->
+              <el-row :gutter="20">
                 <el-col :span="4">
-                  <el-form-item label="注册证名称：" prop="registerName">
-                    <el-input v-model="form.registerName" placeholder="请输入注册证名称" />
-              </el-form-item>
-            </el-col>
+                  <el-form-item label="单位：" prop="unitId">
+                    <SelectUnit v-model="form.unitId" />
+                  </el-form-item>
+                </el-col>
                 <el-col :span="4">
-                  <el-form-item label="注册证件号：" prop="registerNo">
-                    <el-input v-model="form.registerNo" placeholder="请输入注册证件号" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="注册证有效期：" prop="periodDate">
-                <el-date-picker clearable
-                                v-model="form.periodDate"
-                                type="date"
-                                value-format="yyyy-MM-dd"
-                                    style="width:100%"
-                                placeholder="请选择注册证有效期">
-                </el-date-picker>
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="注册证级别：">
-                    <el-select v-model="form.registerLevel" placeholder="请选择注册证级别" style="width: 100%">
+                  <el-form-item label="财务分类：" prop="isWay">
+                    <el-select v-model="form.isWay" placeholder="请选择财务分类" style="width: 100%">
                       <el-option
-                        v-for="dict in dict.type.register_level_status"
-                        :key="dict.value"
-                        :label="dict.label"
-                        :value="dict.value"
-                      ></el-option>
-                    </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-              <!-- 第四行 -->
-          <el-row :gutter="20">
-                <el-col :span="4">
-                  <el-form-item label="医保编码：" prop="medicalNo">
-                <el-input v-model="form.medicalNo" placeholder="请输入医保编码" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="医保名称：" prop="medicalName">
-                    <el-input v-model="form.medicalName" placeholder="请输入医保名称" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="销售价：" prop="salePrice">
-                    <el-input v-model="form.salePrice" placeholder="请输入销售价" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="中标价格：" prop="successfulPrice">
-                    <el-input v-model="form.successfulPrice" placeholder="请输入中标价格" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="中标号：" prop="successfulNo">
-                    <el-input v-model="form.successfulNo" placeholder="请输入中标号" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="招标类别：" prop="successfulType">
-                    <el-input v-model="form.successfulType" placeholder="请输入招标类别" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-              <!-- 第五行 -->
-          <el-row :gutter="20">
-                <el-col :span="4">
-                  <el-form-item label="包装规格：" prop="packageSpeci">
-                    <el-input v-model="form.packageSpeci" placeholder="请输入包装规格" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="储存方式：" prop="isWay">
-                    <el-select v-model="form.isWay" placeholder="请选择储存方式" style="width: 100%">
-                  <el-option
                         v-for="dict in dict.type.way_status"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  ></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="品牌：" prop="brand">
-                    <el-input v-model="form.brand" placeholder="请输入品牌" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="用途：" prop="useto">
-                    <el-input v-model="form.useto" placeholder="请输入用途" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="材质：" prop="quality">
-                    <el-input v-model="form.quality" placeholder="请输入材质" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="功能：" prop="function">
-                    <el-input v-model="form.function" placeholder="请输入功能" />
-                  </el-form-item>
-                </el-col>
-          </el-row>
-
-              <!-- 第六行 -->
-          <el-row :gutter="20">
-                <el-col :span="4">
-                  <el-form-item label="UDI码：" prop="udiNo">
-                <el-input v-model="form.udiNo" placeholder="请输入UDI码" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="阳光平台编码：" prop="sunshineCode">
-                <el-input v-model="form.sunshineCode" placeholder="请输入阳光平台编码" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="设备级别：">
-                    <el-select v-model="form.equipmentLevel" placeholder="请选择设备级别" style="width: 100%">
-                      <el-option
-                        v-for="dict in dict.type.equipment_level_status"
                         :key="dict.value"
                         :label="dict.label"
                         :value="dict.value"
                       ></el-option>
                     </el-select>
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="风险级别：">
-                    <el-select v-model="form.riskLevel" placeholder="请选择风险级别" style="width: 100%">
-                  <el-option
-                        v-for="dict in dict.type.risk_level_status"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  ></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="急救类型：" prop="firstaidLevel">
-                    <el-select v-model="form.firstaidLevel" placeholder="请选择急救类型" style="width: 100%">
-                  <el-option
-                        v-for="dict in dict.type.firstaid_level_status"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  ></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="医用级别：" prop="doctorLevel">
-                    <el-select v-model="form.doctorLevel" placeholder="请选择医用级别" style="width: 100%">
-                  <el-option
-                        v-for="dict in dict.type.doctor_level_status"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  ></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-              <!-- 第七行 -->
-          <el-row :gutter="20">
-                <el-col :span="4">
-                  <el-form-item label="贯标码：" prop="countryNo">
-                    <el-input v-model="form.countryNo" placeholder="请输入贯标码" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
-                  <el-form-item label="许可证编号：" prop="permitNo">
-                    <el-input v-model="form.permitNo" placeholder="请输入许可证编号" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="商品说明：" prop="description">
-                    <el-input v-model="form.description" placeholder="请输入商品说明" />
+                  <el-form-item label="折旧年限：" prop="depreciationYears">
+                    <el-input-number v-model="form.depreciationYears" placeholder="请输入折旧年限" :min="0" :precision="0" style="width: 100%" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
-                  <el-form-item label="备注：" prop="countryName">
-                <el-input v-model="form.countryName" placeholder="请输入备注" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-              <!-- 第八行 -->
-          <el-row :gutter="20">
-                <el-col :span="3">
-                  <el-form-item label="" prop="isUse">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isUse === '1' }">启用</span>
-                      <el-switch
-                        v-model="form.isUse"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      ></el-switch>
-                    </div>
-              </el-form-item>
-            </el-col>
-                <el-col :span="3">
-                  <el-form-item label="" prop="isBilling">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isBilling === '1' }">计费</span>
-                      <el-switch
-                        v-model="form.isBilling"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      ></el-switch>
-                    </div>
-              </el-form-item>
-            </el-col>
-                <el-col :span="3">
-                  <el-form-item label="" prop="isGz">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isGz === '1' }">高值</span>
-                      <el-switch
-                        v-model="form.isGz"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      ></el-switch>
-                    </div>
-              </el-form-item>
-            </el-col>
-                <el-col :span="3">
-                  <el-form-item label="" prop="isFollow">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isFollow === '1' }">跟台</span>
-                      <el-switch
-                        v-model="form.isFollow"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      ></el-switch>
-                    </div>
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
+                  <el-form-item label="使用年限：" prop="useYears">
+                    <el-input-number v-model="form.useYears" placeholder="请输入使用年限" :min="0" :precision="0" style="width: 100%" />
+                  </el-form-item>
                 </el-col>
-                <el-col :span="5">
-                </el-col>
-          </el-row>
-
-              <!-- 第十行 -->
-          <el-row :gutter="20">
-          </el-row>
-
-              <!-- 第十一行 -->
-          <el-row :gutter="20">
-          </el-row>
-
-              <!-- 第十二行 -->
-          <el-row :gutter="20">
-          </el-row>
-          </el-form>
+              </el-row>
+            </el-form>
           </el-tab-pane>
         
           <!-- 产品图片 -->
@@ -749,11 +474,8 @@ export default {
         name: [
           { required: true, message: "资产名称不能为空", trigger: "blur" }
         ],
-        speci: [
-          { required: true, message: "规格不能为空", trigger: "blur" }
-        ],
-        model: [
-          { required: true, message: "型号不能为空", trigger: "blur" }
+        category68Id: [
+          { required: true, message: "所属分类不能为空", trigger: "change" }
         ],
         referredName: [
           { required: true, message: "资产简码不能为空", trigger: "blur" }
@@ -827,13 +549,15 @@ export default {
     },
     /** 加载68分类选项（用于资产分类下拉框） */
     loadCategory68Options() {
-      treeselect().then(response => {
+      return treeselect().then(response => {
         const allData = response.data || [];
         // 将树形数据扁平化为选项数组
         this.category68Options = this.flattenCategory68Tree(allData);
+        return this.category68Options;
       }).catch(() => {
         console.error('加载68分类选项失败');
         this.category68Options = [];
+        return [];
       });
     },
     /** 将68分类树形数据扁平化为选项数组 */
@@ -841,14 +565,57 @@ export default {
       const options = [];
       const flatten = (items) => {
         items.forEach(item => {
+          // 生成首字母拼音码
+          let pinyinCode = '';
+          if (item.category68Name) {
+            try {
+              pinyinCode = pinyin(item.category68Name, {
+                pattern: 'first',
+                toneType: 'none',
+                type: 'array',
+              }).join('').toUpperCase();
+            } catch (e) {
+              console.error('生成拼音码失败:', e);
+            }
+          }
           options.push({
             category68Id: item.category68Id,
-            category68Name: item.category68Name
+            category68Name: item.category68Name,
+            category68Code: item.category68Code,
+            pinyinCode: pinyinCode
           });
+          if (item.children && item.children.length > 0) {
+            flatten(item.children);
+          }
         });
       };
       flatten(data);
       return options;
+    },
+    /** 获取所属分类的显示标签（包含拼音码用于搜索，但显示时隐藏） */
+    getCategory68DisplayLabel(item) {
+      // 在 label 中包含拼音码，用特殊字符分隔
+      // Element UI 的默认过滤会搜索整个 label，包括拼音码
+      // 但显示时我们只显示中文名称（通过 el-option 的 slot）
+      if (item.pinyinCode) {
+        return `${item.category68Name}|${item.pinyinCode}`;
+      }
+      return item.category68Name;
+    },
+    /** 所属分类选择变化事件 */
+    handleCategory68Change(value) {
+      if (value) {
+        const selectedCategory = this.category68Options.find(item => item.category68Id === value);
+        if (selectedCategory && selectedCategory.category68Code) {
+          this.form.code = selectedCategory.category68Code;
+          // 触发code字段验证
+          this.$nextTick(() => {
+            this.$refs.form && this.$refs.form.validateField('code');
+          });
+        }
+      } else {
+        this.form.code = '';
+      }
     },
     /** 68分类树节点点击事件 */
     handleCategoryNodeClick(data) {
@@ -906,6 +673,9 @@ export default {
     nameChange(val){
       if (!val || val.trim() === '') {
         this.form.referredName = '';
+        // 清空所属分类
+        this.form.category68Id = null;
+        this.form.code = '';
         return;
       }
       
@@ -917,6 +687,62 @@ export default {
       }).join('').toUpperCase();
 
       this.form.referredName = pinYinCode;
+      
+      // 自动匹配所属分类
+      this.autoMatchCategory68(val);
+    },
+    /** 自动匹配68分类 */
+    autoMatchCategory68(name) {
+      if (!name || !name.trim() || !this.category68Options || this.category68Options.length === 0) {
+        return;
+      }
+      
+      const searchName = name.trim();
+      let bestMatch = null;
+      let bestScore = 0;
+      
+      // 遍历所有68分类选项，查找匹配项
+      this.category68Options.forEach(item => {
+        if (!item.category68Name) return;
+        
+        const categoryName = item.category68Name;
+        let score = 0;
+        
+        // 如果分类名称完全包含档案名称，得分最高
+        if (categoryName.includes(searchName)) {
+          score = searchName.length / categoryName.length;
+          // 如果分类名称以档案名称结尾，得分更高
+          if (categoryName.endsWith(searchName)) {
+            score += 0.5;
+          }
+          // 如果分类名称完全等于档案名称，得分最高
+          if (categoryName === searchName) {
+            score = 1;
+          }
+        }
+        
+        // 如果档案名称包含分类名称的关键部分，也给一定分数
+        // 提取分类名称的最后部分（通常是具体分类）
+        const parts = categoryName.split('-');
+        if (parts.length > 0) {
+          const lastPart = parts[parts.length - 1];
+          if (lastPart.includes(searchName) || searchName.includes(lastPart)) {
+            score = Math.max(score, 0.3);
+          }
+        }
+        
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = item;
+        }
+      });
+      
+      // 如果找到匹配项且得分足够高（大于0.3），自动选择
+      if (bestMatch && bestScore >= 0.3) {
+        this.form.category68Id = bestMatch.category68Id;
+        // 触发分类变化事件，自动填充档案编码
+        this.handleCategory68Change(bestMatch.category68Id);
+      }
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -1022,8 +848,7 @@ export default {
       this.form.isFollow = '2';
       this.form.isMonitor = '2';
       this.form.isUse = '1'; // 默认为启用
-      // 自动生成6位数字编码
-      this.form.code = await this.generateCode();
+      this.form.code = ''; // 初始为空，选择所属分类后自动填充
       this.activeTab = 'form'; // 默认显示表单视图
     },
     /** 修改按钮操作 */
@@ -1031,7 +856,14 @@ export default {
       this.reset();
       this.isDisabled = true; // 修改模式下，资产编码不可修改
       const id = row.id || this.ids
-      getEquipmentDict(id).then(response => {
+      // 确保68分类选项已加载
+      Promise.resolve().then(() => {
+        if (!this.category68Options || this.category68Options.length === 0) {
+          return this.loadCategory68Options();
+        }
+      }).then(() => {
+        return getEquipmentDict(id);
+      }).then(response => {
         this.form = response.data;
         // 确保 isUse 是字符串类型，以便开关组件正常工作
         if (this.form.isUse !== null && this.form.isUse !== undefined) {
@@ -1063,6 +895,26 @@ export default {
         } else {
           this.form.isMonitor = '2'; // 默认为否
         }
+        // 根据speci字段反向匹配category68Id
+        if (this.form.speci && this.category68Options && this.category68Options.length > 0) {
+          const matchedCategory = this.category68Options.find(item => 
+            item.category68Name === this.form.speci || 
+            item.category68Name.includes(this.form.speci) ||
+            this.form.speci.includes(item.category68Name)
+          );
+          if (matchedCategory) {
+            this.form.category68Id = matchedCategory.category68Id;
+            // 自动填充档案编码
+            this.$nextTick(() => {
+              this.handleCategory68Change(matchedCategory.category68Id);
+            });
+          }
+        } else if (this.form.category68Id) {
+          // 如果已有所属分类，自动填充档案编码
+          this.$nextTick(() => {
+            this.handleCategory68Change(this.form.category68Id);
+          });
+        }
         this.open = true;
         this.isDisabled = true;
         this.title = "修改资产字典";
@@ -1072,6 +924,14 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          // 将68分类名称保存到speci字段
+          if (this.form.category68Id) {
+            const selectedCategory = this.category68Options.find(item => item.category68Id === this.form.category68Id);
+            if (selectedCategory && selectedCategory.category68Name) {
+              this.form.speci = selectedCategory.category68Name;
+            }
+          }
+          
           if (this.form.id != null) {
             updateEquipmentDict(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -1154,6 +1014,15 @@ export default {
 </script>
 
 <style scoped>
+/* 查询条件容器 */
+.query-container {
+  background: #fff;
+  border: 1px solid #EBEEF5;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 10px;
+}
+
 .tree-card {
   margin-right: 15px;
   height: calc(100vh - 180px);
@@ -1236,12 +1105,22 @@ export default {
 }
 
 .close-btn {
-  border: none;
-  background: transparent;
+  border: 1px solid #dcdfe6;
+  background: #fff;
+  color: #606266;
+  padding: 8px 16px;
+  border-radius: 4px;
 }
 
 .close-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: #f5f7fa;
+  color: #409eff;
+  border-color: #c6e2ff;
+}
+
+/* 所属分类下拉框样式 - 隐藏拼音码显示 */
+.category68-pinyin {
+  display: none;
 }
 .app-container > .el-form .el-row {
   margin-bottom: 8px;
@@ -1294,6 +1173,13 @@ export default {
 /* 第二行日期范围布局 */
 .app-container > .el-form .query-row-second {
   position: relative;
+}
+
+.app-container > .el-form .query-row-second .query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+  vertical-align: top;
 }
 
 /* 第三行字段间距调整 - 状态、高值、跟台更紧凑 */

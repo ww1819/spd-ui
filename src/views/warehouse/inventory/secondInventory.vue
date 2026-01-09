@@ -4,6 +4,11 @@
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
         <el-row class="query-row-left">
           <el-col :span="24">
+            <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectSupplier v-model="queryParams.supplierId" />
+              </div>
+            </el-form-item>
             <el-form-item label="耗材" prop="materialId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <MaterialAutocomplete v-model="queryParams.materialName"/>
@@ -11,20 +16,56 @@
             </el-form-item>
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
-                <WarehouseAutocomplete v-model="queryParams.warehouseName"/>
+                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['设备', '高值']"/>
               </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24">
+            <el-form-item label="业务日期" style="display: flex; align-items: center;">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                style="width: 180px; margin-right: 8px;"
+              />
+              <span style="margin: 0 4px;">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                style="width: 180px; margin-left: 8px;"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16" class="query-row-third">
+          <el-col :span="24">
+            <el-form-item label="计费" prop="isBilling" class="query-item-inline">
+              <el-select v-model="queryParams.isBilling" placeholder="请选择计费"
+                         clearable style="width: 150px">
+                <el-option label="是" value="1"/>
+                <el-option label="否" value="0"/>
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -10px">
+    <el-row :gutter="10" class="mb8" style="padding-top: 2px; margin-top: -8px">
       <el-col :span="1.5">
         <el-button
           type="warning"
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
         >导出</el-button>
       </el-col>
@@ -32,14 +73,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -50,9 +91,9 @@
     <el-table v-loading="loading" :data="inventoryList"
               show-summary
               @selection-change="handleSelectionChange" 
-              height="51vh"
+              height="55vh"
               border>
-      <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
+      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
         </template>
@@ -75,6 +116,24 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="计费" align="center" prop="isBilling" width="80" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.isBilling === '1' || scope.row.isBilling === 1 || scope.row.isBilling === 'true'">是</span>
+          <span v-else-if="scope.row.isBilling === '0' || scope.row.isBilling === 0 || scope.row.isBilling === '2' || scope.row.isBilling === 'false'">否</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="注册证号" align="center" prop="registerNo" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.registerNo || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="注册证有效期" align="center" prop="periodDate" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.periodDate">{{ parseTime(scope.row.periodDate, '{y}-{m}-{d}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
@@ -82,19 +141,9 @@
     </el-table>
     </div>
 
-    <!-- 手动添加合计信息 -->
-    <div v-if="inventoryList.length > 0" style="margin-top: 10px; padding: 10px; background-color: #f5f7fa; border: 1px solid #ebeef5; border-radius: 4px; text-align: right;">
-      <span style="margin-right: 20px; font-weight: bold;">
-        合计数量：{{ calculateTotalQty }}
-      </span>
-      <span style="margin-right: 20px; font-weight: bold;">
-        合计金额：{{ calculateTotalAmt }}
-      </span>
-    </div>
 
     <!-- 汇总查询不需要分页 -->
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -108,14 +157,14 @@
 import { listInventorySummary, listInventory } from "@/api/warehouse/inventory";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
-import WarehouseAutocomplete from "@/components/SelectModel/WarehouseAutocomplete";
+import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
 import RightToolbar from "@/components/RightToolbar";
 import { listWarehouse } from "@/api/foundation/warehouse";
 
 export default {
   name: "secondInventory",
-  components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete,RightToolbar},
+  components: {SelectMaterial,SelectWarehouse,SelectSupplier,MaterialAutocomplete,RightToolbar},
   data() {
     return {
       // 遮罩层
@@ -148,8 +197,11 @@ export default {
         pageSize: 10,
         materialId: null,
         warehouseId: null,
-        warehouseName: null,
-        materialName: null
+        materialName: null,
+        supplierId: null,
+        beginDate: null,
+        endDate: null,
+        isBilling: null
       },
       // 表单参数
       form: {},
@@ -247,8 +299,11 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      this.queryParams.warehouseName = null;
       this.queryParams.materialName = null;
+      this.queryParams.supplierId = null;
+      this.queryParams.beginDate = null;
+      this.queryParams.endDate = null;
+      this.queryParams.isBilling = null;
       this.handleQuery();
     },
     // 多选框选中数据
@@ -269,19 +324,51 @@ export default {
 </script>
 
 <style scoped>
+.app-container {
+  margin-top: -10px;
+}
+
 /* 查询条件样式 */
 .query-row-left {
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 
 .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
+}
+
+.query-row-second {
+  margin-bottom: 2px;
+  position: relative;
+}
+
+.query-row-second .el-form-item {
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.query-row-third {
+  margin-bottom: 2px;
+}
+
+.query-row-third .el-form-item {
+  margin-bottom: 0;
 }
 
 .query-item-inline .el-form-item__label {
   width: 80px !important;
+}
+
+.query-item-inline .el-form-item {
+  margin-bottom: 0;
 }
 
 .query-select-wrapper {
@@ -291,18 +378,63 @@ export default {
 /* 查询条件容器框样式 */
 .form-fields-container {
   background: #fff;
-  padding: 16px 20px;
+  padding: 6px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
   margin-top: -20px;
+  margin-left: -20px;
+  margin-right: -20px;
   border: 1px solid #EBEEF5;
 }
 
 .table-container {
-  margin-top: 0px;
+  margin-top: 5px;
   overflow: visible;
-  width: 100%;
+  width: calc(100% + 40px);
+  margin-left: -20px;
+  margin-right: -20px;
   position: relative;
+}
+
+/* 表格水平滚动条增粗 */
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 12px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 8px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 优化表格列间距 */
+.table-container ::v-deep .el-table th.el-table__cell {
+  padding: 10px 12px !important;
+}
+
+.table-container ::v-deep .el-table td.el-table__cell {
+  padding: 10px 12px !important;
+}
+
+.table-container ::v-deep .el-table .cell {
+  padding: 0 8px;
+}
+
+/* 优化表格列间距 */
+.table-container ::v-deep .el-table th.el-table__cell {
+  padding: 10px 12px !important;
+}
+
+.table-container ::v-deep .el-table td.el-table__cell {
+  padding: 10px 12px !important;
 }
 </style>

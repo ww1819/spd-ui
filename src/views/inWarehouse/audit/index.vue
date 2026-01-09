@@ -19,7 +19,7 @@
           </el-form-item>
           <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
             </div>
           </el-form-item>
         </el-col>
@@ -69,7 +69,7 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
@@ -77,7 +77,7 @@
         <el-button
           type="success"
           icon="el-icon-check"
-          size="small"
+          size="medium"
           :disabled="multiple"
           @click="handleBatchAudit"
           v-hasPermi="['inWarehouse:apply:audit']"
@@ -104,7 +104,10 @@
       <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <!-- 使用 createTime 显示实际创建时间，包含时分秒 -->
+          <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else-if="scope.row.billDate">{{ parseTime(scope.row.billDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable >
@@ -122,7 +125,8 @@
       <el-table-column label="审核人" align="center" prop="auditPerson.nickName" show-overflow-tooltip resizable />
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column label="发票号" align="center" prop="invoiceNumber" width="150" show-overflow-tooltip resizable>
@@ -346,7 +350,7 @@
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <span>{{ scope.row.amt || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
@@ -378,7 +382,7 @@
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
+              <span>{{ scope.row.batchNo || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
@@ -419,6 +423,10 @@
         <el-button @click=" modalObj.ok " type="primary">确认</el-button>
       </template>
     </el-dialog>
+    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
+    <div v-show="false">
+      <order-print v-if="printRowData" :row="printRowData" ref="receiptOrderPrintRefAuto"></order-print>
+    </div>
 
     <!-- 3、使用组件 -->
     <SelectMaterialFilter
@@ -470,6 +478,8 @@ export default {
         cancel: () => {
         }
       },
+      // 打印数据（用于隐藏的打印组件）
+      printRowData: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -591,11 +601,21 @@ export default {
     /** 查询入库列表 */
     getList() {
       this.loading = true;
-
       this.queryParams.billType = "101";
-      listWarehouse(this.queryParams).then(response => {
-        this.warehouseList = response.rows;
-        this.total = response.total;
+      // 处理截止日期，确保包含当天的所有数据（23:59:59）
+      const queryParams = {
+        ...this.queryParams
+      };
+      if (queryParams.endDate && queryParams.endDate.length === 10) {
+        // 如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
+        queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
+      listWarehouse(queryParams).then(response => {
+        this.warehouseList = response.rows || [];
+        this.total = response.total || 0;
+        this.loading = false;
+      }).catch(error => {
+        console.error('查询入库列表失败:', error);
         this.loading = false;
       });
     },
@@ -634,18 +654,26 @@ export default {
       });
     },
     getStatDate(){
+      // 获取前5天日期
       let myDate = new Date();
+      myDate.setDate(myDate.getDate() - 5); // 前5天
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      let statDate = year.toString() + "-" + month + "-" + day;
       return statDate;
     },
     getEndDate(){
+      // 获取当前日期
       let myDate = new Date();
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      let endDate = year.toString() + "-" + month + "-" + day;
       return endDate;
     },
     //当天日期
@@ -815,6 +843,23 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
+      // 如果传入 print 参数为 true，直接执行打印
+      if (print === true) {
+        // 直接获取数据并触发打印
+        this.getInWarehouseDetail(row).then(res => {
+          // 设置打印数据
+          this.printRowData = res
+          // 等待组件渲染后调用 start()
+          this.$nextTick(() => {
+            if (this.$refs['receiptOrderPrintRefAuto']) {
+              // start() 方法会直接触发浏览器打印对话框
+              this.$refs['receiptOrderPrintRefAuto'].start()
+            }
+          })
+        })
+        return
+      }
+      // 否则显示选择打印方式的对话框
       this.modalObj = {
         show: true,
         title: '选择打印方式',

@@ -1,84 +1,82 @@
 ﻿<template>
   <div class="app-container">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item label="出库单号" prop="billNo" class="query-item-inline">
-              <el-input v-model="queryParams.billNo"
-                        placeholder="请输入出库单号"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item label="出库单号" prop="billNo" class="query-item-inline">
+            <el-input v-model="queryParams.billNo"
+                      placeholder="请输入出库单号"
+                      clearable
+                      style="width: 180px"
+                      @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+          <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectDepartment v-model="queryParams.departmentId" />
+            </div>
+          </el-form-item>
+          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+            </div>
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="12">
+          <el-form-item label="制单日期" style="display: flex; align-items: center;">
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="起始日期"
+              clearable
+              style="width: 180px; margin-right: 8px;"
+            />
+            <span style="margin: 0 4px;">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="截止日期"
+              clearable
+              style="width: 180px; margin-left: 8px;"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12" class="query-status-col">
+          <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
+                       clearable style="width: 150px">
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+                         v-if="dict.label !== '待审核'"
               />
-            </el-form-item>
-            <el-form-item label="科室" prop="departmentId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
-            </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-              </div>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
-            <el-form-item label="制单日期" style="display: flex; align-items: center;">
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
-                clearable
-                style="width: 180px; margin-right: 8px;"
-              />
-              <span style="margin: 0 4px;">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
-                clearable
-                style="width: 180px; margin-left: 8px;"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12" class="query-status-col">
-            <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
-              <el-select v-model="queryParams.billStatus" placeholder="全部"
-                         clearable style="width: 150px">
-                <el-option v-for="dict in dict.type.biz_status"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                           v-if="dict.label !== '待审核'"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+    </el-form>
 
-      </el-form>
-    </div>
-
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8" style="padding-top: 5px; margin-top: -5px">
       <el-col :span="1.5">
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -86,7 +84,7 @@
         <el-button
           type="success"
           icon="el-icon-check"
-          size="small"
+          size="medium"
           :disabled="multiple"
           @click="handleBatchAudit"
           v-hasPermi="['outWarehouse:apply:audit']"
@@ -188,7 +186,6 @@
     </el-table>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -390,6 +387,10 @@
         <el-button @click=" modalObj.ok " type="primary">确认</el-button>
       </template>
     </el-dialog>
+    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
+    <div v-show="false">
+      <out-order-print v-if="printRowData" :row="printRowData" ref="receiptOrderPrintRefAuto"></out-order-print>
+    </div>
 
     <!-- 3、使用组件 -->
     <SelectInventory
@@ -439,6 +440,8 @@ export default {
         cancel: () => {
         }
       },
+      // 打印数据（用于隐藏的打印组件）
+      printRowData: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -781,6 +784,23 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
+      // 如果传入 print 参数为 true，直接执行打印
+      if (print === true) {
+        // 直接获取数据并触发打印
+        this.getOutWarehouseDetail(row).then(res => {
+          // 设置打印数据
+          this.printRowData = res
+          // 等待组件渲染后调用 start()
+          this.$nextTick(() => {
+            if (this.$refs['receiptOrderPrintRefAuto']) {
+              // start() 方法会直接触发浏览器打印对话框
+              this.$refs['receiptOrderPrintRefAuto'].start()
+            }
+          })
+        })
+        return
+      }
+      // 否则显示选择打印方式的对话框
       this.modalObj = {
         show: true,
         title: '选择打印方式',
