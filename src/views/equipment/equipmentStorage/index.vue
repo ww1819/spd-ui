@@ -265,7 +265,7 @@
                       </el-form-item>
                     </el-col>
                   </el-row>
-                  
+
                   <el-row :gutter="20">
                     <el-col :span="4">
                       <el-form-item label="制单人" prop="createrId">
@@ -284,9 +284,9 @@
                     </el-col>
                     <el-col :span="4">
                       <el-form-item label="供应商" prop="supplierId">
-                        <el-select 
-                          v-model="form.supplierId" 
-                          placeholder="请选择供应商" 
+                        <el-select
+                          v-model="form.supplierId"
+                          placeholder="请选择供应商"
                           style="width: 100%"
                           filterable
                           clearable
@@ -978,9 +978,7 @@ export default {
         return '0.00';
       }
       return this.$options.filters.formatCurrency(this.form.storageAmount);
-    }
-  },
-  computed: {
+    },
     // 打印总数量
     printTotalQuantity() {
       return this.printDetailList.reduce((sum, item) => {
@@ -1035,12 +1033,12 @@ export default {
     reset() {
       // 生成单号（ZCRK-开头 + 日期 + 序号）
       const now = new Date();
-      const dateStr = now.getFullYear().toString() + 
-                     String(now.getMonth() + 1).padStart(2, '0') + 
+      const dateStr = now.getFullYear().toString() +
+                     String(now.getMonth() + 1).padStart(2, '0') +
                      String(now.getDate()).padStart(2, '0');
       const seq = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
       const autoNo = `ZCRK-${dateStr}${seq}`;
-      
+
       // 获取当前日期时间（格式：YYYY-MM-DD HH:mm:ss）
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -1049,12 +1047,12 @@ export default {
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
       const billDateStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-      
+
       // 获取当前登录用户信息
       const currentUser = this.$store?.state?.user || {};
       const createrId = currentUser.userId || null;
       const createrName = currentUser.userName || currentUser.nickName || '';
-      
+
       this.form = {
         storageId: null,
         storageNo: autoNo,
@@ -1214,7 +1212,7 @@ export default {
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
       const dateStr = `${year}${month}${day}`;
-      
+
       // 遍历明细列表，提取每个分类编码的最大序号
       this.detailList.forEach(detail => {
         if (detail.equipmentCode) {
@@ -1223,12 +1221,12 @@ export default {
           if (parts.length >= 2) {
             const categoryCode = parts[0];
             const dateAndSeq = parts.slice(1).join('-');
-            
+
             // 检查是否是今天的日期
             if (dateAndSeq.startsWith(dateStr)) {
               const seqStr = dateAndSeq.substring(dateStr.length);
               const seq = parseInt(seqStr) || 0;
-              
+
               if (!this.categoryCodeSequence[categoryCode] || seq > this.categoryCodeSequence[categoryCode]) {
                 this.categoryCodeSequence[categoryCode] = seq;
               }
@@ -1250,7 +1248,7 @@ export default {
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
       const dateStr = `${year}${month}${day}`;
-      
+
       // 获取或初始化该分类编码的序号
       if (!this.categoryCodeSequence[categoryCode]) {
         // 查找已存在的明细中该分类编码的最大序号
@@ -1267,10 +1265,10 @@ export default {
         });
         this.categoryCodeSequence[categoryCode] = maxSeq;
       }
-      
+
       // 序号自增
       this.categoryCodeSequence[categoryCode]++;
-      
+
       // 生成档案编码：分类编码-日期+序号（序号2位，不足补0）
       const seqStr = String(this.categoryCodeSequence[categoryCode]).padStart(2, '0');
       return `${categoryCode}-${dateStr}${seqStr}`;
@@ -1285,7 +1283,7 @@ export default {
       this.selectedDetailItems.forEach(item => {
         // 根据分类编码自动生成档案编码
         const equipmentCode = this.generateEquipmentCode(item.categoryCode);
-        
+
         const detailItem = {
           equipmentCode: equipmentCode, // 自动生成的档案编码
           categoryCode: item.categoryCode, // 分类编码
@@ -1349,32 +1347,32 @@ export default {
     /** 数字转大写金额 */
     numberToChinese(num) {
       if (!num || num === 0) return '零元整';
-      
+
       const cnNums = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
       const cnIntRadice = ['', '拾', '佰', '仟'];
       const cnIntUnits = ['', '万', '亿', '兆'];
       const cnDecUnits = ['角', '分'];
       const cnInteger = '整';
       const cnIntLast = '元';
-      
+
       // 转换为字符串并处理小数
       const numStr = num.toFixed(2).toString();
       const parts = numStr.split('.');
       let integerPart = parts[0];
       let decimalPart = parts[1] || '';
-      
+
       // 处理整数部分
       let integerStr = '';
       if (integerPart && parseInt(integerPart) > 0) {
         let zeroCount = 0;
         const intLen = integerPart.length;
-        
+
         for (let i = 0; i < intLen; i++) {
           const n = parseInt(integerPart[i]);
           const p = intLen - i - 1;
           const q = Math.floor(p / 4);
           const m = p % 4;
-          
+
           if (n === 0) {
             zeroCount++;
           } else {
@@ -1384,7 +1382,7 @@ export default {
             zeroCount = 0;
             integerStr += cnNums[n] + cnIntRadice[m];
           }
-          
+
           if (m === 0 && zeroCount < 4) {
             integerStr += cnIntUnits[q];
           }
@@ -1393,7 +1391,7 @@ export default {
       } else {
         integerStr = cnNums[0] + cnIntLast;
       }
-      
+
       // 处理小数部分（只处理角和分）
       let decimalStr = '';
       if (decimalPart) {
@@ -1404,7 +1402,7 @@ export default {
           }
         }
       }
-      
+
       if (decimalStr === '') {
         return integerStr + cnInteger;
       } else {
@@ -1414,16 +1412,16 @@ export default {
     /** 格式化制单日期，如果时分秒是00:00:00则显示当前时分秒 */
     formatBillDate(dateStr) {
       if (!dateStr) return '--';
-      
+
       // 解析日期字符串
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) return dateStr;
-      
+
       // 检查时分秒是否为00:00:00
       const hours = date.getHours();
       const minutes = date.getMinutes();
       const seconds = date.getSeconds();
-      
+
       // 如果时分秒都是0，使用当前时间的时分秒
       if (hours === 0 && minutes === 0 && seconds === 0) {
         const now = new Date();
@@ -1447,14 +1445,14 @@ export default {
         row.totalPrice = row.quantity * row.unitPrice;
         row.amount = row.totalPrice; // 同步金额字段
       }
-      
+
       // 当金额变化时，自动生成大写金额
       if (row.amount !== null && row.amount !== undefined && row.amount !== '') {
         row.amountInWords = this.numberToChinese(row.amount);
       } else {
         row.amountInWords = '';
       }
-      
+
       // 重新计算总金额
       this.calculateTotalAmount();
     },
@@ -1548,7 +1546,7 @@ export default {
       if (num === null || num === undefined || num === '') {
         return '零元整';
       }
-      
+
       const n = parseFloat(num);
       if (isNaN(n) || n === 0) {
         return '零元整';
@@ -1622,7 +1620,7 @@ export default {
         this.$modal.msgWarning('已审核的单据不能修改');
         return;
       }
-      
+
       // 如果通过工具栏修改，检查选中的单据
       if (!row && this.ids && this.ids.length > 0) {
         const selectedRows = this.storageList.filter(item => this.ids.includes(item.storageId));
@@ -1632,14 +1630,14 @@ export default {
           return;
         }
       }
-      
+
       this.reset();
       const storageId = row ? row.storageId : this.ids[0]
       // 确保供应商选项已加载
-      const loadSupplierPromise = this.supplierOptions.length > 0 
-        ? Promise.resolve() 
+      const loadSupplierPromise = this.supplierOptions.length > 0
+        ? Promise.resolve()
         : this.loadSupplierOptions();
-      
+
       Promise.all([
         getEquipmentStorage(storageId),
         loadSupplierPromise
@@ -1713,7 +1711,7 @@ export default {
             ...this.form,
             warehouseId: this.form.warehouseId ? (typeof this.form.warehouseId === 'string' ? parseInt(this.form.warehouseId) : this.form.warehouseId) : null
           };
-          
+
           // 处理明细列表，确保所有字段都包含
           const detailList = this.detailList.map(detail => ({
             ...detail,
@@ -1746,13 +1744,13 @@ export default {
             acceptanceDate: detail.acceptanceDate || null,
             categoryCode: detail.categoryCode || ''
           }));
-          
+
           // 将明细列表添加到表单数据中
           const submitData = {
             ...formData,
             detailList: detailList
           };
-          
+
           if (this.form.storageId != null) {
             updateEquipmentStorage(submitData).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -1776,7 +1774,7 @@ export default {
         this.$modal.msgWarning('已审核的单据不能删除');
         return;
       }
-      
+
       // 如果通过工具栏删除，检查选中的单据
       if (!row && this.ids && this.ids.length > 0) {
         const selectedRows = this.storageList.filter(item => this.ids.includes(item.storageId));
@@ -1786,7 +1784,7 @@ export default {
           return;
         }
       }
-      
+
       const storageIds = row ? row.storageId : this.ids;
       this.$modal.confirm('是否确认删除设备入库编号为"' + storageIds + '"的数据项？').then(function() {
         return delEquipmentStorage(storageIds);

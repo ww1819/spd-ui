@@ -429,6 +429,11 @@
                   </el-select>
                 </el-form-item>
               </el-col>
+              <el-col :span="4">
+                <el-form-item label="卡片编号：" prop="barcode">
+                  <el-input v-model="form.barcode" disabled="disabled"></el-input>
+                </el-form-item>
+              </el-col>
             </el-row>
 
             <!-- 第三行 -->
@@ -4214,8 +4219,6 @@ export default {
         adverseEventList: [],
         deviceOperatorList: [],
         operatorCertificateList: [],
-        assetCardList: [],
-        assetCardList: [],
         supplier: '',
         supplierContact: '',
         supplierPhone: '',
@@ -4245,7 +4248,8 @@ export default {
         maintenanceImage: '',
         qualityControlImage: '',
         customsDocument: '',
-        inspectionQualification: ''
+        inspectionQualification: '',
+        originalPrice: 0
       },
       // 表单校验
       rules: {
@@ -4559,27 +4563,7 @@ export default {
       this.assetCategoryKeyword = value || '';
     },
     /** 根据用户ID获取用户名称 */
-    getUserName(userId) {
-      if (!userId && userId !== 0 && userId !== '0') {
-        return '';
-      }
-      // 如果用户选项列表为空，返回原始ID
-      if (!this.userOptions || this.userOptions.length === 0) {
-        console.warn('用户选项列表为空，无法查找用户名称，userId:', userId);
-        return userId || '';
-      }
-      // 统一转换为字符串和数字进行比较，确保类型匹配
-      const idStr = String(userId).trim();
-      const user = this.userOptions.find(item => {
-        const itemIdStr = String(item.id).trim();
-        return itemIdStr === idStr;
-      });
-      if (user) {
-        return user.name || '';
-      }
-      console.warn('未找到用户，userId:', userId);
-      return userId || '';
-    },
+
     /** 根据科室ID获取科室名称 */
     getDepartmentName(departmentId) {
       if (!departmentId && departmentId !== 0 && departmentId !== '0') {
@@ -4709,6 +4693,7 @@ export default {
               productionDate: detail.productionDate || '',
               financialCode: detail.financialCode || '',
               factoryCode: '',
+              originalPrice:0,
               maintenanceStatus: ''
             }));
             this.equipmentList = flatDetails.map((detail, index) => ({
@@ -4724,7 +4709,7 @@ export default {
               hospitalCode: detail.warehouseName || '',
               storageNo: detail.storageNo || '', // 入库单号
               serialNumber: detail.serialNumber || detail.serialNo || '',
-              barcode: detail.unitPrice || detail.amount || 0,
+              barcode: detail.barcode || 0,
               assetStatus: '正常使用',
               brand: detail.brand || '',
               createTime: detail.createTime || '',
@@ -4782,6 +4767,7 @@ export default {
         assetCode: '',
         hospitalCode: '',
         barcode: '',
+        originalPrice: 0,
         assetName: '',
         assetAlias: '',
         auxiliaryCategory: '',
@@ -4858,7 +4844,6 @@ export default {
         adverseEventList: [],
         deviceOperatorList: [],
         operatorCertificateList: [],
-        assetCardList: [],
         assetCardList: [],
         supplier: '',
         supplierContact: '',
@@ -5178,6 +5163,7 @@ export default {
         assetStatus: '正常使用',
         // 其他字段保持为空或默认值
         id: null, // 标记这不是已存在的设备信息
+        originalPrice: detail.originalPrice || 0,//原值
         attachedMaterialsList: [],
         additionalInfoList: []
       };
@@ -5722,6 +5708,7 @@ export default {
         accessorySpecification: '',
         quantity: 0,
         unitPrice: 0,
+        originalPrice: 0,
         totalValue: 0,
         useStatus: ''
       });
@@ -5895,12 +5882,7 @@ export default {
              String(d.getMonth() + 1).padStart(2, '0') + '-' +
              String(d.getDate()).padStart(2, '0');
     },
-    /** 获取用户名 */
-    getUserName(userId) {
-      if (!userId) return '';
-      const user = this.userOptions.find(u => u.id === userId);
-      return user ? user.name : userId;
-    },
+
     /** 图片加载错误处理 */
     handleImageError(event) {
       event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+5Zu+54mH5pyq5Yqg6L29PC90ZXh0Pjwvc3ZnPg==';
