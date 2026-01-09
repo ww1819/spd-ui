@@ -230,7 +230,7 @@
         </template>
       </el-table-column>
       <el-table-column label="资产序列号" align="center" prop="serialNumber" width="150" show-overflow-tooltip/>
-      <el-table-column label="价格" align="center" prop="barcode" width="100" show-overflow-tooltip/>
+      <el-table-column label="价格" align="center" prop="originalPrice" width="100" show-overflow-tooltip/>
       <el-table-column label="存放地点" align="center" prop="storageLocation" width="100" show-overflow-tooltip/>
       <el-table-column label="资产状态" align="center" prop="assetStatus" width="120" show-overflow-tooltip>
         <template slot-scope="scope">
@@ -287,8 +287,8 @@
             <el-row :gutter="20">
               <el-col :span="4">
                 <el-form-item label="档案编码：" prop="assetCode">
-                  <el-input 
-                    v-model="form.assetCode" 
+                  <el-input
+                    v-model="form.assetCode"
                     :disabled="form.id != null"
                     placeholder="请选择所属分类后自动生成"
                     @blur="validateAssetCode"
@@ -313,24 +313,24 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="仓库：" prop="hospitalCode">
-                  <el-select 
-                    v-model="form.hospitalCode" 
-                    placeholder="请选择仓库" 
+                  <el-select
+                    v-model="form.hospitalCode"
+                    placeholder="请选择仓库"
                     style="width:100%"
                     filterable
                     clearable>
-                    <el-option 
-                      v-for="item in warehouseOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in warehouseOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.id">
                     </el-option>
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="4">
-                <el-form-item label="价格/元：" prop="barcode">
-                  <el-input v-model="form.barcode"></el-input>
+                <el-form-item label="价格/元：" prop="originalPrice">
+                  <el-input v-model="form.originalPrice"></el-input>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -389,9 +389,9 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="供应商：" prop="supplier">
-                  <el-select 
-                    v-model="form.supplier" 
-                    placeholder="请选择供应商" 
+                  <el-select
+                    v-model="form.supplier"
+                    placeholder="请选择供应商"
                     style="width:100%"
                     filterable
                     clearable
@@ -410,9 +410,9 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="生产厂家：" prop="factoryId">
-                  <el-select 
-                    v-model="form.factoryId" 
-                    placeholder="请选择生产厂家" 
+                  <el-select
+                    v-model="form.factoryId"
+                    placeholder="请选择生产厂家"
                     style="width:100%"
                     filterable
                     clearable
@@ -440,16 +440,16 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="单位：" prop="unit">
-                  <el-select 
-                    v-model="form.unit" 
-                    placeholder="请选择单位" 
+                  <el-select
+                    v-model="form.unit"
+                    placeholder="请选择单位"
                     style="width:100%"
                     filterable
                     clearable>
-                    <el-option 
-                      v-for="item in unitOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in unitOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.name">
                     </el-option>
                   </el-select>
@@ -465,16 +465,16 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="资产负责人：" prop="assetManager">
-                  <el-select 
-                    v-model="form.assetManager" 
-                    placeholder="请选择资产负责人" 
+                  <el-select
+                    v-model="form.assetManager"
+                    placeholder="请选择资产负责人"
                     style="width:100%"
                     filterable
                     clearable>
-                    <el-option 
-                      v-for="item in userOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in userOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.name">
                     </el-option>
                   </el-select>
@@ -482,16 +482,16 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="维修负责人：" prop="maintenanceManager">
-                  <el-select 
-                    v-model="form.maintenanceManager" 
-                    placeholder="请选择维修负责人" 
+                  <el-select
+                    v-model="form.maintenanceManager"
+                    placeholder="请选择维修负责人"
                     style="width:100%"
                     filterable
                     clearable>
-                    <el-option 
-                      v-for="item in userOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in userOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.name">
                     </el-option>
                   </el-select>
@@ -503,16 +503,16 @@
             <el-row :gutter="20">
               <el-col :span="4" v-if="switchValue === '全部'">
                 <el-form-item label="使用科室：" prop="useDepartment" required>
-                  <el-select 
-                    v-model="form.useDepartment" 
-                    placeholder="请选择使用科室" 
+                  <el-select
+                    v-model="form.useDepartment"
+                    placeholder="请选择使用科室"
                     style="width:100%"
                     filterable
                     clearable>
-                    <el-option 
-                      v-for="item in departmentOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in departmentOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.id">
                     </el-option>
                   </el-select>
@@ -520,16 +520,16 @@
               </el-col>
               <el-col :span="4" v-if="switchValue === '全部'">
                 <el-form-item label="管理科室：" prop="manageDepartment">
-                  <el-select 
-                    v-model="form.manageDepartment" 
-                    placeholder="请选择管理科室" 
+                  <el-select
+                    v-model="form.manageDepartment"
+                    placeholder="请选择管理科室"
                     style="width:100%"
                     filterable
                     clearable>
-                    <el-option 
-                      v-for="item in departmentOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in departmentOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.id">
                     </el-option>
                   </el-select>
@@ -542,18 +542,18 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="所属分类：" prop="assetType">
-                  <el-select 
-                    v-model="form.assetType" 
-                    placeholder="请选择所属分类" 
-                    style="width:100%" 
+                  <el-select
+                    v-model="form.assetType"
+                    placeholder="请选择所属分类"
+                    style="width:100%"
                     filterable
                     clearable
                     :filter-method="filterAssetCategory"
                     @change="handleAssetCategoryChange">
-                    <el-option 
-                      v-for="item in filteredAssetCategoryOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in filteredAssetCategoryOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.name"
                       :data-code="item.code">
                       <span style="float: left">{{ item.name }}</span>
@@ -638,9 +638,9 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="录入日期：" prop="createTime">
-                  <el-date-picker 
-                    v-model="form.createTime" 
-                    type="datetime" 
+                  <el-date-picker
+                    v-model="form.createTime"
+                    type="datetime"
                     value-format="yyyy-MM-dd HH:mm:ss"
                     format="yyyy-MM-dd HH:mm:ss"
                     style="width:100%"
@@ -771,9 +771,9 @@
         <el-tab-pane label="资产卡片" name="assetCard">
           <div class="asset-card-container">
             <div class="asset-card-header">
-              <el-button 
-                type="primary" 
-                icon="el-icon-printer" 
+              <el-button
+                type="primary"
+                icon="el-icon-printer"
                 size="small"
                 @click="handlePrintAssetCard"
                 :disabled="!form.assetCode"
@@ -782,7 +782,7 @@
             <div class="asset-card" v-if="form.assetCode">
               <!-- 卡片标题 -->
               <div class="asset-card-title">{{ hospitalName || '医院' }}固定资产</div>
-              
+
               <!-- 卡片内容 -->
               <div class="asset-card-content">
                 <!-- 左侧信息区域 -->
@@ -797,11 +797,11 @@
                   </div>
                   <div class="asset-card-row">
                     <div class="asset-card-label">卡片编号：</div>
-                    <div class="asset-card-value">{{ form.assetCode || '--' }}</div>
+                    <div class="asset-card-value">{{ form.barcode || '--' }}</div>
                   </div>
                   <div class="asset-card-row">
                     <div class="asset-card-label">原值(元)：</div>
-                    <div class="asset-card-value">{{ form.invoiceAmount ? parseFloat(form.invoiceAmount).toFixed(2) : '--' }}</div>
+                    <div class="asset-card-value">{{ form.originalPrice ? parseFloat(form.originalPrice).toFixed(2) : '--' }}</div>
                   </div>
                   <div class="asset-card-row">
                     <div class="asset-card-label">规格型号：</div>
@@ -820,13 +820,13 @@
                     <div class="asset-card-value">{{ form.storageLocation || '--' }}</div>
                   </div>
                 </div>
-                
+
                 <!-- 右侧二维码区域 -->
                 <div class="asset-card-qrcode">
-                  <img 
-                    v-if="form.assetCode" 
-                    :src="getQRCodeUrl(form.assetCode)" 
-                    alt="二维码" 
+                  <img
+                    v-if="form.assetCode"
+                    :src="getQRCodeUrl(form.assetCode)"
+                    alt="二维码"
                     class="qrcode-image"
                   />
                 </div>
@@ -1034,7 +1034,7 @@
               <el-button type="danger" icon="el-icon-delete" @click="handleDocumentDelete" :disabled="documentSelectedFiles.length === 0">选中删除</el-button>
               <el-button type="success" icon="el-icon-view" @click="handleDocumentPreview" :disabled="documentSelectedFiles.length !== 1">Q预览图片</el-button>
             </div>
-            
+
             <!-- 主内容区域 -->
             <div class="document-content">
               <!-- 左侧文件类型 -->
@@ -1045,8 +1045,8 @@
                 <div class="file-type-content">
                   <el-radio-group v-model="selectedDocumentType" size="small">
                     <div class="file-type-item-row">
-                      <el-radio 
-                        v-for="(type, index) in filteredDocumentTypeList" 
+                      <el-radio
+                        v-for="(type, index) in filteredDocumentTypeList"
                         :key="type.value"
                         :label="type.value"
                         class="file-type-radio"
@@ -1055,15 +1055,15 @@
                   </el-radio-group>
                 </div>
               </div>
-              
+
               <!-- 中间文件列表 -->
               <div class="document-file-list-box">
                 <div class="file-list-header">
                   <span>文件列表</span>
                 </div>
                 <div class="file-list-content">
-                  <div 
-                    v-for="file in filteredDocumentList" 
+                  <div
+                    v-for="file in filteredDocumentList"
                     :key="file.id"
                     class="file-list-item"
                     :class="{ 'active': previewFile && previewFile.id === file.id, 'selected': isFileSelected(file) }"
@@ -1077,7 +1077,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- 右侧文件预览框 -->
               <div class="image-preview-box">
                 <div class="preview-box-header">
@@ -1098,7 +1098,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- 图片查看对话框 -->
               <el-dialog
                 title="图片查看"
@@ -1108,9 +1108,9 @@
                 custom-class="image-viewer-dialog"
               >
                 <div class="image-viewer-container" @wheel.prevent="handleImageWheel">
-                  <img 
+                  <img
                     ref="viewerImage"
-                    :src="viewerImageUrl" 
+                    :src="viewerImageUrl"
                     alt="查看图片"
                     class="viewer-image"
                     :style="{ transform: `scale(${imageScale})`, transformOrigin: 'center center' }"
@@ -1594,7 +1594,7 @@
               <el-button type="warning" icon="el-icon-download" @click="handleDeviceImageDownload" :disabled="deviceImageSelectedIndex === -1">下载</el-button>
               <el-button type="success" icon="el-icon-view" @click="handleDeviceImagePreview" :disabled="deviceImageSelectedIndex === -1">预览</el-button>
             </div>
-            
+
             <!-- 底部图片展示区域 -->
             <div class="device-image-gallery">
               <div v-if="form.deviceImageList && form.deviceImageList.length > 0" class="image-grid">
@@ -1622,7 +1622,7 @@
               </div>
             </div>
           </div>
-          
+
           <!-- 图片预览对话框 -->
           <el-dialog
             title="图片预览"
@@ -2283,14 +2283,14 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="仓库：">
-                  <el-select 
-                    v-model="form.hospitalCode" 
-                    style="width:100%" 
+                  <el-select
+                    v-model="form.hospitalCode"
+                    style="width:100%"
                     :disabled="true">
-                    <el-option 
-                      v-for="item in warehouseOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in warehouseOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.id">
                     </el-option>
                   </el-select>
@@ -2360,6 +2360,11 @@
                   <el-input v-model="form.factoryId" :disabled="true"></el-input>
                 </el-form-item>
               </el-col>
+              <el-col :span="4">
+                <el-form-item label="卡片编号：">
+                  <el-input v-model="form.barcode" :disabled="true"></el-input>
+                </el-form-item>
+              </el-col>
             </el-row>
 
             <!-- 第三行 -->
@@ -2371,15 +2376,15 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="单位：">
-                  <el-select 
-                    v-model="form.unit" 
-                    placeholder="请选择单位" 
+                  <el-select
+                    v-model="form.unit"
+                    placeholder="请选择单位"
                     style="width:100%"
                     :disabled="true">
-                    <el-option 
-                      v-for="item in unitOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in unitOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.name">
                     </el-option>
                   </el-select>
@@ -2400,15 +2405,15 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="资产负责人：">
-                  <el-select 
-                    v-model="form.assetManager" 
-                    placeholder="请选择资产负责人" 
-                    style="width:100%" 
+                  <el-select
+                    v-model="form.assetManager"
+                    placeholder="请选择资产负责人"
+                    style="width:100%"
                     :disabled="true">
-                    <el-option 
-                      v-for="item in userOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in userOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.name">
                     </el-option>
                   </el-select>
@@ -2416,15 +2421,15 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="维修负责人：">
-                  <el-select 
-                    v-model="form.maintenanceManager" 
-                    placeholder="请选择维修负责人" 
-                    style="width:100%" 
+                  <el-select
+                    v-model="form.maintenanceManager"
+                    placeholder="请选择维修负责人"
+                    style="width:100%"
                     :disabled="true">
-                    <el-option 
-                      v-for="item in userOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in userOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.name">
                     </el-option>
                   </el-select>
@@ -2437,10 +2442,10 @@
               <el-col :span="4" v-if="switchValue === '全部'">
                 <el-form-item label="使用科室：">
                   <el-select v-model="form.useDepartment" style="width:100%" :disabled="true">
-                    <el-option 
-                      v-for="item in departmentOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in departmentOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.id">
                     </el-option>
                   </el-select>
@@ -2449,10 +2454,10 @@
               <el-col :span="4" v-if="switchValue === '全部'">
                 <el-form-item label="管理科室：">
                   <el-select v-model="form.manageDepartment" style="width:100%" :disabled="true">
-                    <el-option 
-                      v-for="item in departmentOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in departmentOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.id">
                     </el-option>
                   </el-select>
@@ -2465,17 +2470,17 @@
               </el-col>
               <el-col :span="4">
                 <el-form-item label="所属分类：">
-                  <el-select 
-                    v-model="form.assetType" 
-                    placeholder="请选择所属分类" 
-                    style="width:100%" 
+                  <el-select
+                    v-model="form.assetType"
+                    placeholder="请选择所属分类"
+                    style="width:100%"
                     :disabled="true"
                     filterable
                     :filter-method="filterAssetCategory">
-                    <el-option 
-                      v-for="item in filteredAssetCategoryOptions" 
-                      :key="item.id" 
-                      :label="item.name" 
+                    <el-option
+                      v-for="item in filteredAssetCategoryOptions"
+                      :key="item.id"
+                      :label="item.name"
                       :value="item.name">
                       <span style="float: left">{{ item.name }}</span>
                       <span v-if="item.code" style="float: right; color: #8492a6; font-size: 13px">{{ item.code }}</span>
@@ -2687,7 +2692,7 @@
             <div class="asset-card" v-if="form.assetCode">
               <!-- 卡片标题 -->
               <div class="asset-card-title">{{ hospitalName || '医院' }}固定资产</div>
-              
+
               <!-- 卡片内容 -->
               <div class="asset-card-content">
                 <!-- 左侧信息区域 -->
@@ -2702,11 +2707,11 @@
                   </div>
                   <div class="asset-card-row">
                     <div class="asset-card-label">卡片编号：</div>
-                    <div class="asset-card-value">{{ form.assetCode || '--' }}</div>
+                    <div class="asset-card-value">{{ form.barcode || '--' }}</div>
                   </div>
                   <div class="asset-card-row">
                     <div class="asset-card-label">原值(元)：</div>
-                    <div class="asset-card-value">{{ form.invoiceAmount ? parseFloat(form.invoiceAmount).toFixed(2) : '--' }}</div>
+                    <div class="asset-card-value">{{ form.originalPrice ? parseFloat(form.originalPrice).toFixed(2) : '--' }}</div>
                   </div>
                   <div class="asset-card-row">
                     <div class="asset-card-label">规格型号：</div>
@@ -2725,13 +2730,13 @@
                     <div class="asset-card-value">{{ form.storageLocation || '--' }}</div>
                   </div>
                 </div>
-                
+
                 <!-- 右侧二维码区域 -->
                 <div class="asset-card-qrcode">
-                  <img 
-                    v-if="form.assetCode" 
-                    :src="getQRCodeUrl(form.assetCode)" 
-                    alt="二维码" 
+                  <img
+                    v-if="form.assetCode"
+                    :src="getQRCodeUrl(form.assetCode)"
+                    alt="二维码"
                     class="qrcode-image"
                   />
                 </div>
@@ -2937,7 +2942,7 @@
               <el-button type="danger" icon="el-icon-delete" @click="handleDocumentDelete" :disabled="documentSelectedFiles.length === 0">选中删除</el-button>
               <el-button type="success" icon="el-icon-view" @click="handleDocumentPreview" :disabled="documentSelectedFiles.length !== 1">Q预览图片</el-button>
             </div>
-            
+
             <!-- 主内容区域 -->
             <div class="document-content">
               <!-- 左侧文件类型 -->
@@ -2948,8 +2953,8 @@
                 <div class="file-type-content">
                   <el-radio-group v-model="selectedDocumentType" size="small">
                     <div class="file-type-item-row">
-                      <el-radio 
-                        v-for="(type, index) in filteredDocumentTypeList" 
+                      <el-radio
+                        v-for="(type, index) in filteredDocumentTypeList"
                         :key="type.value"
                         :label="type.value"
                         class="file-type-radio"
@@ -2958,15 +2963,15 @@
                   </el-radio-group>
                 </div>
               </div>
-              
+
               <!-- 中间文件列表 -->
               <div class="document-file-list-box">
                 <div class="file-list-header">
                   <span>文件列表</span>
                 </div>
                 <div class="file-list-content">
-                  <div 
-                    v-for="file in filteredDocumentList" 
+                  <div
+                    v-for="file in filteredDocumentList"
                     :key="file.id"
                     class="file-list-item"
                     :class="{ 'active': previewFile && previewFile.id === file.id, 'selected': isFileSelected(file) }"
@@ -2980,7 +2985,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- 右侧文件预览框 -->
               <div class="image-preview-box">
                 <div class="preview-box-header">
@@ -3001,7 +3006,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- 图片查看对话框 -->
               <el-dialog
                 title="图片查看"
@@ -3011,9 +3016,9 @@
                 custom-class="image-viewer-dialog"
               >
                 <div class="image-viewer-container" @wheel.prevent="handleImageWheel">
-                  <img 
+                  <img
                     ref="viewerImage"
-                    :src="viewerImageUrl" 
+                    :src="viewerImageUrl"
                     alt="查看图片"
                     class="viewer-image"
                     :style="{ transform: `scale(${imageScale})`, transformOrigin: 'center center' }"
@@ -4251,11 +4256,11 @@ export default {
               callback();
               return;
             }
-            
+
             // 只验证编码不能为空，不限制长度和格式
             // 手工输入的编码可以是任意长度和格式
             // 自动生成的编码格式：分类编码-年月日序号
-            
+
             // 检查编码是否已存在（排除当前编辑的记录）
             listEquipment({ assetCode: value, pageNum: 1, pageSize: 1 }).then(response => {
               if (response.rows && response.rows.length > 0) {
@@ -4308,10 +4313,10 @@ export default {
       if (!this.documentSearchName || !this.documentSearchName.trim()) {
         return this.documentTypeList;
       }
-      
+
       // 根据搜索名称过滤文件类型列表
       const searchKeyword = this.documentSearchName.trim().toLowerCase();
-      return this.documentTypeList.filter(type => 
+      return this.documentTypeList.filter(type =>
         type.label && type.label.toLowerCase().includes(searchKeyword)
       );
     },
@@ -4319,21 +4324,21 @@ export default {
     filteredDocumentList() {
       // 根据搜索名称和选中的类型过滤文档列表
       let filtered = this.documentFileList;
-      
+
       // 按搜索名称过滤
       if (this.documentSearchName) {
-        filtered = filtered.filter(file => 
+        filtered = filtered.filter(file =>
           file.name && file.name.toLowerCase().includes(this.documentSearchName.toLowerCase())
         );
       }
-      
+
       // 按选中的类型过滤
       if (this.selectedDocumentType) {
-        filtered = filtered.filter(file => 
+        filtered = filtered.filter(file =>
           file.type === this.selectedDocumentType
         );
       }
-      
+
       return filtered;
     }
   },
@@ -4588,22 +4593,22 @@ export default {
       // 统一转换为字符串和数字进行比较，确保类型匹配
       const idStr = String(departmentId).trim();
       const idNum = Number(departmentId);
-      
+
       // 使用宽松匹配（==）和严格匹配（===）来查找科室
       const department = this.departmentOptions.find(item => {
         if (!item || (item.id === null && item.id !== 0)) {
           return false;
         }
         // 使用==进行宽松比较，可以处理字符串和数字的自动转换
-        return item.id == departmentId || 
+        return item.id == departmentId ||
                String(item.id) === idStr ||
                Number(item.id) === idNum;
       });
-      
+
       if (department && department.name) {
         return department.name;
       }
-      
+
       // 如果找不到，输出调试信息
       console.warn('未找到科室名称 - departmentId:', departmentId, '类型:', typeof departmentId, '科室选项:', this.departmentOptions.map(d => ({id: d.id, name: d.name, idType: typeof d.id})));
       // 返回原始ID（可能是科室名称本身，或者ID）
@@ -4636,22 +4641,22 @@ export default {
       // 统一转换为字符串和数字进行比较，确保类型匹配
       const idStr = String(warehouseId).trim();
       const idNum = Number(warehouseId);
-      
+
       // 使用宽松匹配（==）和严格匹配（===）来查找仓库
       const warehouse = this.warehouseOptions.find(item => {
         if (!item || (item.id === null && item.id !== 0)) {
           return false;
         }
         // 使用==进行宽松比较，可以处理字符串和数字的自动转换
-        return item.id == warehouseId || 
+        return item.id == warehouseId ||
                String(item.id) === idStr ||
                Number(item.id) === idNum;
       });
-      
+
       if (warehouse && warehouse.name) {
         return warehouse.name;
       }
-      
+
       // 如果找不到，返回原始ID
       return warehouseId || '';
     },
@@ -4681,7 +4686,7 @@ export default {
               }));
             });
           });
-          
+
           Promise.all(detailPromises).then(allDetails => {
             // 合并所有明细数据
             const flatDetails = allDetails.flat();
@@ -4943,20 +4948,20 @@ export default {
       if (!categoryCode) {
         return '';
       }
-      
+
       // 获取当前日期
       const now = new Date();
       const year = String(now.getFullYear()).slice(-2); // 后两位年份，如25
       const month = String(now.getMonth() + 1).padStart(2, '0'); // 月份，如12
       const day = String(now.getDate()).padStart(2, '0'); // 日期，如08
       const dateStr = month + day; // 月日，如1208
-      
+
       // 查询当天已有的相同前缀的编码数量
       try {
         const prefix = `${categoryCode}-${year}${dateStr}`;
         const response = await listEquipment({ pageNum: 1, pageSize: 10000 });
         const equipmentList = response.rows || response.data || [];
-        
+
         // 筛选出当天相同分类的编码
         const todayCodes = equipmentList
           .map(item => item.assetCode)
@@ -4972,11 +4977,11 @@ export default {
             return 0;
           })
           .filter(seq => seq > 0);
-        
+
         // 计算下一个序号
         const nextSeq = todayCodes.length > 0 ? Math.max(...todayCodes) + 1 : 1;
         const seqStr = String(nextSeq).padStart(2, '0');
-        
+
         return `${prefix}${seqStr}`;
       } catch (error) {
         console.error('查询编码失败:', error);
@@ -4990,7 +4995,7 @@ export default {
         // 如果是修改模式，不自动生成
         return;
       }
-      
+
       // 根据分类名称找到对应的编码
       const category = this.assetCategoryOptions.find(item => item.name === categoryName);
       if (category && category.code) {
@@ -5082,7 +5087,7 @@ export default {
         });
         return;
       }
-      
+
       const id = row.id;
       getEquipment(id).then(response => {
         this.loadEquipmentDetail(response.data);
@@ -5127,12 +5132,12 @@ export default {
         //   this.form.additionalInfoList.push('科研/科教');
         // }
         // 其他新增字段类似处理
-        
+
         // 映射生产厂家字段：后端返回的是manufacturer，表单使用的是factoryId
         if (this.form.manufacturer) {
           this.form.factoryId = this.form.manufacturer;
         }
-        
+
         // 统一ID类型为字符串，确保下拉框能正确匹配显示
         if (this.form.hospitalCode !== null && this.form.hospitalCode !== undefined) {
           this.form.hospitalCode = String(this.form.hospitalCode);
@@ -5143,7 +5148,7 @@ export default {
         if (this.form.manageDepartment !== null && this.form.manageDepartment !== undefined) {
           this.form.manageDepartment = String(this.form.manageDepartment);
         }
-        
+
         this.viewOpen = true;
     },
     /** 加载入库明细数据到详情页面 */
@@ -5153,7 +5158,7 @@ export default {
         this.currentStorageDetail = detail;
         this.currentStorageDetailKey = detail.equipmentCode;
       }
-      
+
       // 将入库明细数据转换为设备信息格式
       this.form = {
         ...this.form,
@@ -5176,7 +5181,7 @@ export default {
         attachedMaterialsList: [],
         additionalInfoList: []
       };
-      
+
       // 根据分类编码查找所属分类名称
       if (detail.categoryCode && this.assetCategoryOptions && this.assetCategoryOptions.length > 0) {
         const category = this.assetCategoryOptions.find(item => item.code === detail.categoryCode);
@@ -5184,7 +5189,7 @@ export default {
           this.form.assetType = category.name;
         } else {
           // 如果找不到，尝试通过分类编码的前缀匹配
-          const matchedCategory = this.assetCategoryOptions.find(item => 
+          const matchedCategory = this.assetCategoryOptions.find(item =>
             item.code && detail.categoryCode && item.code.startsWith(detail.categoryCode.substring(0, 2))
           );
           if (matchedCategory) {
@@ -5192,12 +5197,12 @@ export default {
           }
         }
       }
-      
+
       // 统一ID类型为字符串
       if (this.form.hospitalCode !== null && this.form.hospitalCode !== undefined) {
         this.form.hospitalCode = String(this.form.hospitalCode);
       }
-      
+
       this.viewOpen = true;
       // 提示用户这是入库明细数据
       this.$modal.msgInfo('当前显示的是入库明细数据，该档案编码尚未创建设备信息记录');
@@ -5214,17 +5219,17 @@ export default {
         console.log('detail.warehouseName:', detail.warehouseName);
         console.log('detail.warehouseId:', detail.warehouseId);
       }
-      
+
       // 检查 detail 是否有效
       if (!detail || (typeof detail === 'object' && Object.keys(detail).length === 0)) {
         console.error('入库明细数据无效:', detail);
         this.$modal.msgError('入库明细数据无效，无法加载编辑表单');
         return;
       }
-      
+
       // 先重置表单，避免保留之前的值
       this.reset();
-      
+
       // 将入库明细数据转换为设备信息格式
       this.form = {
         ...this.form,
@@ -5249,7 +5254,7 @@ export default {
         additionalInfoList: [],
         contractDetailList: []
       };
-      
+
       // 根据分类编码查找所属分类名称
       if (detail.categoryCode && this.assetCategoryOptions && this.assetCategoryOptions.length > 0) {
         const category = this.assetCategoryOptions.find(item => item.code === detail.categoryCode);
@@ -5257,7 +5262,7 @@ export default {
           this.form.assetType = category.name;
         } else {
           // 如果找不到，尝试通过分类编码的前缀匹配
-          const matchedCategory = this.assetCategoryOptions.find(item => 
+          const matchedCategory = this.assetCategoryOptions.find(item =>
             item.code && detail.categoryCode && item.code.startsWith(detail.categoryCode.substring(0, 2))
           );
           if (matchedCategory) {
@@ -5265,7 +5270,7 @@ export default {
           }
         }
       }
-      
+
       // 处理仓库下拉框：如果是仓库名称，需要找到对应的ID
       if (this.form.hospitalCode !== null && this.form.hospitalCode !== undefined && this.form.hospitalCode !== '') {
         // 如果是仓库名称（字符串且不是数字），需要找到对应的ID
@@ -5285,7 +5290,7 @@ export default {
       } else {
         this.form.hospitalCode = '';
       }
-      
+
       // 处理供应商下拉框：确保供应商名称匹配下拉框选项
       if (this.form.supplier && this.supplierOptions && this.supplierOptions.length > 0) {
         const supplier = this.supplierOptions.find(s => s.name === this.form.supplier || s.supplierName === this.form.supplier);
@@ -5294,7 +5299,7 @@ export default {
           console.log('供应商未在下拉框中找到:', this.form.supplier);
         }
       }
-      
+
       // 处理生产厂家下拉框：确保生产厂家名称匹配下拉框选项
       if (this.form.factoryId && this.factoryOptions && this.factoryOptions.length > 0) {
         const factory = this.factoryOptions.find(f => f.name === this.form.factoryId || f.factoryName === this.form.factoryId);
@@ -5303,7 +5308,7 @@ export default {
           console.log('生产厂家未在下拉框中找到:', this.form.factoryId);
         }
       }
-      
+
       // 处理单位下拉框：确保单位名称匹配下拉框选项
       if (this.form.unit && this.unitOptions && this.unitOptions.length > 0) {
         const unit = this.unitOptions.find(u => u.name === this.form.unit);
@@ -5315,7 +5320,7 @@ export default {
           this.form.unit = unit.name;
         }
       }
-      
+
       // 确保所有字段都有值
       if (!this.form.assetCode) this.form.assetCode = '';
       if (!this.form.assetName) this.form.assetName = '';
@@ -5332,10 +5337,10 @@ export default {
       if (this.form.barcode === null || this.form.barcode === undefined || this.form.barcode === '') {
         this.form.barcode = 0;
       }
-      
+
       // 设置标题
       this.title = "修改设备信息" + this.getViewDetailTitleSuffix();
-      
+
       // 使用 $nextTick 确保下拉框选项已加载完成后再打开对话框
       this.$nextTick(() => {
         console.log('从入库明细加载的编辑数据 - form:', JSON.parse(JSON.stringify(this.form)));
@@ -5343,7 +5348,7 @@ export default {
         console.log('供应商选项:', this.supplierOptions);
         console.log('生产厂家选项:', this.factoryOptions);
         console.log('单位选项:', this.unitOptions);
-        
+
         // 再次处理仓库下拉框，确保选项已加载
         if (this.form.hospitalCode && typeof this.form.hospitalCode === 'string' && isNaN(this.form.hospitalCode)) {
           const warehouse = this.warehouseOptions.find(w => w.name === this.form.hospitalCode);
@@ -5351,13 +5356,13 @@ export default {
             this.form.hospitalCode = String(warehouse.id);
           }
         }
-        
+
         // 打开对话框
         this.open = true;
-        
+
         // 加载文档列表
         this.loadDocumentList();
-        
+
         // 提示用户这是入库明细数据
         this.$modal.msgInfo('当前编辑的是入库明细数据，该档案编码尚未创建设备信息记录');
       });
@@ -5391,7 +5396,7 @@ export default {
           return;
         }
       }
-      
+
       console.log('点击修改的行数据:', row);
       console.log('switchValue:', this.switchValue);
       console.log('_storageDetail:', row._storageDetail);
@@ -5401,12 +5406,12 @@ export default {
       console.log('currentStorageDetailKey:', this.currentStorageDetailKey);
       console.log('equipmentList 长度:', this.equipmentList.length);
       console.log('equipmentList 中是否有 _storageDetail:', this.equipmentList.some(item => item._storageDetail));
-      
+
       // 如果是仓库查询，使用档案编码查询；否则使用ID查询
       if (this.switchValue === '仓库' && row.assetCode) {
         // 优先级1: 如果 row._storageDetail 存在，直接使用
         let storageDetail = row._storageDetail;
-        
+
         // 优先级2: 如果 row._storageDetail 不存在，尝试从保存的 currentStorageDetail 中获取
         if (!storageDetail || Object.keys(storageDetail).length === 0) {
           if (this.currentStorageDetail && this.currentStorageDetailKey === row.assetCode) {
@@ -5414,7 +5419,7 @@ export default {
             console.log('从 currentStorageDetail 中获取到数据:', storageDetail);
           }
         }
-        
+
         // 优先级3: 如果仍然没有，尝试从 equipmentList 中获取
         if (!storageDetail || Object.keys(storageDetail).length === 0) {
           console.warn('row._storageDetail 不存在，尝试从 equipmentList 中获取');
@@ -5425,7 +5430,7 @@ export default {
             hasStorageDetail: !!item._storageDetail,
             storageDetailKeys: item._storageDetail ? Object.keys(item._storageDetail) : []
           })));
-          
+
           // 优先通过 id 匹配（更可靠）
           let listItem = this.equipmentList.find(item => item.id === row.id);
           if (listItem && listItem._storageDetail) {
@@ -5451,7 +5456,7 @@ export default {
             }
           }
         }
-        
+
         // 优先级4: 如果仍然没有明细数据，尝试从 row.id 中提取 storageId 重新获取
         if ((!storageDetail || Object.keys(storageDetail).length === 0) && row.id && typeof row.id === 'string' && row.id.startsWith('storage_')) {
           console.warn('尝试从 row.id 中提取 storageId 重新获取数据，row.id:', row.id);
@@ -5516,7 +5521,7 @@ export default {
             console.error('row.id 格式不正确，无法提取 storageId，row.id:', row.id);
           }
         }
-        
+
         // 如果存在入库明细数据，直接使用明细数据
         if (storageDetail && Object.keys(storageDetail).length > 0) {
           console.log('使用入库明细数据加载编辑表单，明细数据:', storageDetail);
@@ -5526,13 +5531,13 @@ export default {
           this.loadStorageDetailForEdit(storageDetail);
           return;
         }
-        
+
         // 如果没有明细数据，尝试查询设备信息
         console.warn('入库明细数据不存在或为空，尝试查询设备信息');
         this.tryLoadEquipmentByAssetCode(row.assetCode);
         return;
       }
-      
+
       // 非仓库查询的逻辑保持不变
       const id = row.id || this.ids[0];
       console.log('要查询的ID:', id);
@@ -5607,20 +5612,20 @@ export default {
         //   this.form.additionalInfoList.push('科研/科教');
         // }
         // 其他新增字段类似处理
-        
+
         // 映射生产厂家字段：后端返回的是manufacturer，表单使用的是factoryId（下拉框显示名称）
         if (this.form.manufacturer) {
           this.form.factoryId = this.form.manufacturer;
         } else {
           this.form.factoryId = '';
         }
-        
+
         // 映射供应商字段：确保供应商名称正确显示（下拉框使用名称作为value）
         // 如果后端返回的是供应商名称，直接使用；如果需要匹配下拉框，可以在这里处理
         if (!this.form.supplier) {
           this.form.supplier = '';
         }
-        
+
         // 统一ID类型为字符串，确保下拉框能正确匹配显示
         if (this.form.hospitalCode !== null && this.form.hospitalCode !== undefined) {
           // 如果是数字ID，转换为字符串；如果是名称，需要查找对应的ID
@@ -5642,7 +5647,7 @@ export default {
         if (this.form.manageDepartment !== null && this.form.manageDepartment !== undefined) {
           this.form.manageDepartment = String(this.form.manageDepartment);
         }
-        
+
         // 确保所有字段都有值（即使是空字符串）
         // 档案编码
         if (!this.form.assetCode) {
@@ -5668,7 +5673,7 @@ export default {
         if (!this.form.unit) {
           this.form.unit = '';
         }
-        
+
         console.log('设置到表单的数据:', this.form);
         this.open = true;
         this.title = "修改设备信息" + this.getViewDetailTitleSuffix();
@@ -5800,11 +5805,11 @@ export default {
         this.$modal.msgWarning('请先选择图片文件！');
         return;
       }
-      
+
       try {
         const formData = new FormData();
         formData.append('file', this.selectedDeviceImageFile);
-        
+
         const response = await axios({
           url: process.env.VUE_APP_BASE_API + '/common/upload',
           method: 'post',
@@ -5814,20 +5819,20 @@ export default {
             'Content-Type': 'multipart/form-data'
           }
         });
-        
+
         const responseData = response.data;
-        
+
         if (!responseData || responseData.code !== 200) {
           this.$modal.msgError(responseData?.msg || "图片上传失败");
           return;
         }
-        
+
         const imageUrl = responseData.url || '';
         if (!imageUrl) {
           this.$modal.msgError("图片上传失败：未返回图片URL");
           return;
         }
-        
+
         // 添加到图片列表
         const newImage = {
           imageUrl: imageUrl,
@@ -5836,12 +5841,12 @@ export default {
           fileName: responseData.fileName || this.selectedDeviceImageFile.name,
           originalFilename: responseData.originalFilename || this.selectedDeviceImageFile.name
         };
-        
+
         if (!this.form.deviceImageList) {
           this.form.deviceImageList = [];
         }
         this.form.deviceImageList.push(newImage);
-        
+
         this.$modal.msgSuccess("图片上传成功");
         this.selectedDeviceImageFile = null;
       } catch (error) {
@@ -5855,15 +5860,15 @@ export default {
         this.$modal.msgWarning('请先选择要下载的图片！');
         return;
       }
-      
+
       const image = this.form.deviceImageList[this.deviceImageSelectedIndex];
       const imageUrl = image.imageUrl;
-      
+
       if (!imageUrl) {
         this.$modal.msgError('图片URL不存在！');
         return;
       }
-      
+
       // 创建下载链接
       const link = document.createElement('a');
       link.href = imageUrl;
@@ -5879,15 +5884,15 @@ export default {
         this.$modal.msgWarning('请先选择要预览的图片！');
         return;
       }
-      
+
       this.deviceImagePreviewVisible = true;
     },
     /** 格式化日期 */
     formatDate(date) {
       if (!date) return '';
       const d = new Date(date);
-      return d.getFullYear() + '-' + 
-             String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+      return d.getFullYear() + '-' +
+             String(d.getMonth() + 1).padStart(2, '0') + '-' +
              String(d.getDate()).padStart(2, '0');
     },
     /** 获取用户名 */
@@ -5916,14 +5921,14 @@ export default {
           // submitData.researchEducation = submitData.additionalInfoList.includes('科研/科教') ? '1' : '0';
           // submitData.largeEquipment = submitData.additionalInfoList.includes('大型设备') ? '1' : '0';
           // 其他新增字段类似处理
-          
+
           // 映射生产厂家字段：表单使用的是factoryId，后端字段是manufacturer
           if (submitData.factoryId) {
             submitData.manufacturer = submitData.factoryId;
           }
           // 删除factoryId字段，避免后端报错
           delete submitData.factoryId;
-          
+
           if (this.form.id != null) {
             updateEquipment(submitData).then(response => {
               // 保存文件列表到后端
@@ -5969,20 +5974,20 @@ export default {
         this.$modal.msgWarning("请先选择要打印的设备");
         return;
       }
-      
+
       const selectedIds = this.ids;
       const totalCount = selectedIds.length;
-      
+
       // 显示加载提示
       this.$modal.loading(`正在准备打印 ${totalCount} 个设备卡片，请稍候...`);
-      
+
       try {
         // 批量获取所有设备信息
         const equipmentDataList = [];
-        
+
         for (let i = 0; i < selectedIds.length; i++) {
           const equipmentId = selectedIds[i];
-          
+
           try {
             const response = await getEquipment(equipmentId);
             if (response.code === 200 && response.data) {
@@ -5994,18 +5999,18 @@ export default {
             console.error(`获取设备 ${equipmentId} 信息失败:`, error);
           }
         }
-        
+
         if (equipmentDataList.length === 0) {
           this.$modal.closeLoading();
           this.$modal.msgError("未能获取到任何设备信息");
           return;
         }
-        
+
         // 设置打印数据（包含多个设备）
-        this.printAssetCardData = equipmentDataList.length === 1 
-          ? equipmentDataList[0] 
+        this.printAssetCardData = equipmentDataList.length === 1
+          ? equipmentDataList[0]
           : { multiple: true, list: equipmentDataList };
-        
+
         // 等待组件渲染后调用打印
         this.$nextTick(() => {
           this.$modal.closeLoading();
@@ -6015,7 +6020,7 @@ export default {
             this.$modal.msgError("打印组件未找到");
           }
         });
-        
+
       } catch (error) {
         this.$modal.closeLoading();
         console.error('批量打印失败:', error);
@@ -6099,12 +6104,12 @@ export default {
         this.$modal.msgWarning("请先保存设备信息");
         return;
       }
-      
+
       try {
         // 创建FormData对象上传文件
         const formData = new FormData();
         formData.append('file', this.selectedUploadFile);
-        
+
         // 上传文件到服务器
         // 使用axios直接上传，因为request工具会将FormData转换为JSON导致上传失败
         const uploadResponse = await axios({
@@ -6116,15 +6121,15 @@ export default {
             'Content-Type': 'multipart/form-data'
           }
         });
-        
+
         // 处理响应数据
         const responseData = uploadResponse.data;
-        
+
         if (!responseData || responseData.code !== 200) {
           this.$modal.msgError(responseData?.msg || "文件上传失败");
           return;
         }
-        
+
         // 后端返回的数据结构：{ code: 200, url: "...", fileName: "...", originalFilename: "..." }
         const fileInfo = {
           id: Date.now(),
@@ -6135,23 +6140,23 @@ export default {
           originalFilename: responseData.originalFilename || this.selectedUploadFile.name,
           equipmentId: this.form.id
         };
-        
+
         // 验证必要字段
         if (!fileInfo.url) {
           console.error('上传响应数据:', uploadResponse);
           this.$modal.msgError("文件上传失败：无法获取文件URL");
           return;
         }
-        
+
         // 添加到文件列表
         this.documentFileList.push(fileInfo);
-        
+
         // 设置为预览文件
         this.previewFile = fileInfo;
-        
+
         // 清空选择
         this.selectedUploadFile = null;
-        
+
         this.$modal.msgSuccess("上传成功");
       } catch (error) {
         console.error('文件上传失败:', error);
@@ -6228,7 +6233,7 @@ export default {
       // 切换文件选择状态（单选模式：点击文件时选中该文件，取消其他选中）
       const fileId = file && file.id ? file.id : file;
       const fileObj = typeof file === 'object' ? file : this.documentFileList.find(f => f.id === fileId);
-      
+
       // 如果点击的是已选中的文件，取消选中；否则选中该文件（单选）
       if (this.documentSelectedFiles.includes(fileId)) {
         this.documentSelectedFiles = [];
@@ -6278,13 +6283,13 @@ export default {
         this.documentFileList = [];
         return;
       }
-      
+
       try {
         // 调用API获取设备文件列表
         const response = await listEquipmentFile({
           equipmentId: this.form.id
         });
-        
+
         if (response.code === 200 && response.rows) {
           // 转换后端数据格式为前端格式
           this.documentFileList = response.rows.map(file => ({
@@ -6310,7 +6315,7 @@ export default {
       if (!this.form.id || !this.documentFileList || this.documentFileList.length === 0) {
         return;
       }
-      
+
       try {
         // 遍历文件列表，保存每个文件信息
         for (const file of this.documentFileList) {
@@ -6318,7 +6323,7 @@ export default {
           if (file.fileId) {
             continue;
           }
-          
+
           // 调用API保存文件信息
           await addEquipmentFile({
             equipmentId: this.form.id,

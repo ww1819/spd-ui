@@ -1,9 +1,9 @@
 <template>
   <div class="asset-card-print-container" ref="assetCardPrintRef" hidden="hidden">
     <!-- 单个卡片 -->
-    <div 
-      v-for="(item, index) in cardList" 
-      :key="index" 
+    <div
+      v-for="(item, index) in cardList"
+      :key="index"
       class="asset-card-print"
       :class="{ 'page-break': index > 0 }"
     >
@@ -12,18 +12,18 @@
         <div class="asset-name-label">资产名称：</div>
         <div class="asset-name-value">{{ item.assetName || '--' }}</div>
       </div>
-      
+
       <!-- 卡片内容区域 -->
       <div class="card-content">
         <!-- 左侧信息区域 -->
         <div class="card-info">
           <div class="info-row">
             <div class="info-label">卡片编号：</div>
-            <div class="info-value">{{ item.assetCode || '--' }}</div>
+            <div class="info-value">{{ item.barcode || '--' }}</div>
           </div>
           <div class="info-row">
             <div class="info-label">原值(元)：</div>
-            <div class="info-value">{{ item.invoiceAmount ? parseFloat(item.invoiceAmount).toFixed(2) : '--' }}</div>
+            <div class="info-value">{{ item.originalPrice ? parseFloat(item.originalPrice).toFixed(2) : '--' }}</div>
           </div>
           <div class="info-row">
             <div class="info-label">使用科室：</div>
@@ -46,13 +46,13 @@
             <div class="info-value">{{ getDepartmentName(item.manageDepartment) || '--' }}</div>
           </div>
         </div>
-        
+
         <!-- 右侧二维码区域 -->
         <div class="card-qrcode">
-          <img 
-            v-if="item.assetCode" 
-            :src="getQRCodeUrl(item.assetCode)" 
-            alt="二维码" 
+          <img
+            v-if="item.assetCode"
+            :src="getQRCodeUrl(item.assetCode)"
+            alt="二维码"
             class="qrcode-img"
           />
         </div>
@@ -231,7 +231,7 @@ export default {
   display: flex;
   align-items: flex-start;
   margin-bottom: 1.5mm;
-  
+
   &:last-child {
     margin-bottom: 0;
   }
