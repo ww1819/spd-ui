@@ -3,7 +3,7 @@
     <div class="local-modal-content">
       <div class="modal-header">
         <div class="modal-title">耗材明细</div>
-        <el-button icon="el-icon-close" size="small" circle @click="handleClose" class="close-btn"></el-button>
+        <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
       </div>
       <div class="modal-body">
         <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
@@ -20,14 +20,17 @@
               <SelectMaterial v-model="queryParams.id" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
-            <el-form-item>
-              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-              <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
         </el-row>
       </el-form>
+
+      <el-row :gutter="10" class="mb8" style="margin-bottom: 20px;">
+        <el-col :span="24" style="text-align: left;">
+          <el-button type="primary" icon="el-icon-search" size="medium" @click="handleQuery">搜索</el-button>
+          <el-button icon="el-icon-refresh" size="medium" @click="resetQuery">重置</el-button>
+          <el-button size="medium" @click="handleClose" style="margin-left: 12px;">取 消</el-button>
+          <el-button type="primary" size="medium" @click="checkMaterialBtn" style="margin-left: 12px;">确 定</el-button>
+        </el-col>
+      </el-row>
 
          <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(50vh)" border>
            <el-table-column type="selection" width="55" align="center" />
@@ -66,11 +69,6 @@
           @pagination="getList"
         />
       </div>
-
-      <div class="modal-footer">
-        <el-button @click="handleClose">取 消</el-button>
-        <el-button type="primary" @click="checkMaterialBtn">确 定</el-button>
-      </div>
     </div>
   </div>
 </template>
@@ -84,7 +82,7 @@ export default {
   name: "SelectGZMaterialFilter",
   components: {SelectMaterial},
   dicts: ['way_status'],
-  props: ['DialogComponentShow','supplierValue'], //接受父组件传递过来的数据
+  props: ['DialogComponentShow','supplierValue','warehouseValue'], //接受父组件传递过来的数据
   data() {
     return {
       // 遮罩层
@@ -124,6 +122,8 @@ export default {
         isGz: undefined,
         isFollow: undefined,
       },
+      // 定数监测的产品ID列表（用于过滤）
+      fixedNumberMaterialIds: [],
       // 表单参数
       form: {},
     };
@@ -132,6 +132,10 @@ export default {
     //显示弹窗
     this.show = this.DialogComponentShow
     this.queryParams.supplierId = this.supplierValue
+    // 如果有仓库ID，加载定数监测的产品列表（只查询高值仓库的定数监测）
+    if (this.warehouseValue) {
+      this.loadFixedNumberMaterials(this.warehouseValue);
+    }
     this.getList();
   },
   watch: {
@@ -140,6 +144,10 @@ export default {
       if (newVal) {
         // 弹窗打开时更新供应商并重新加载数据
         this.queryParams.supplierId = this.supplierValue;
+        // 如果有仓库ID，加载定数监测的产品列表（只查询高值仓库的定数监测）
+        if (this.warehouseValue) {
+          this.loadFixedNumberMaterials(this.warehouseValue);
+        }
         this.getList();
       }
     }
@@ -154,10 +162,46 @@ export default {
       this.queryParams.isGz = '1'; // 只查询高值耗材
       this.queryParams.isFollow = '1'; // 只查询"是跟台"的耗材
       listMaterial(this.queryParams).then(response => {
-        this.materialList = response.rows;
-        this.total = response.total;
+        let materials = response.rows || [];
+        // 如果仓库已选择且有定数监测数据，只显示定数监测中的产品
+        if (this.warehouseValue && this.fixedNumberMaterialIds.length > 0) {
+          materials = materials.filter(material => {
+            return this.fixedNumberMaterialIds.includes(material.id);
+          });
+        }
+        this.materialList = materials;
+        this.total = materials.length;
         this.loading = false;
       });
+    },
+    /** 加载定数监测的产品列表（只查询高值仓库的定数监测） */
+    loadFixedNumberMaterials(warehouseId) {
+      if (!warehouseId) {
+        this.fixedNumberMaterialIds = [];
+        return;
+      }
+      
+      try {
+        // 从localStorage读取定数监测数据（仓库定数监测类型为'1'）
+        const storageKey = `fixedNumber_1_${warehouseId}`;
+        const savedData = localStorage.getItem(storageKey);
+        
+        if (savedData) {
+          const fixedNumberList = JSON.parse(savedData);
+          // 提取所有做了定数监测的产品ID
+          this.fixedNumberMaterialIds = fixedNumberList
+            .filter(item => {
+              return item.material && item.material.id;
+            })
+            .map(item => item.material.id)
+            .filter(id => id);
+        } else {
+          this.fixedNumberMaterialIds = [];
+        }
+      } catch (error) {
+        console.error('加载定数监测数据失败:', error);
+        this.fixedNumberMaterialIds = [];
+      }
     },
     /** 搜索按钮操作 */
     handleQuery() {

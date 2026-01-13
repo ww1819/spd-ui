@@ -29,6 +29,16 @@ export default {
   computed: {
     warehouse: {
       get() {
+        // 确保返回的值能在选项列表中找到对应的项
+        if (this.value && this.filteredWarehouseOptions.length > 0) {
+          // 检查值是否在选项列表中（支持字符串和数字类型匹配）
+          const found = this.filteredWarehouseOptions.find(item => {
+            return String(item.id) === String(this.value) || item.id == this.value;
+          });
+          if (found) {
+            return found.id;
+          }
+        }
         return this.value;
       },
       set(v) {

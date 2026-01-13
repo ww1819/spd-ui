@@ -2,7 +2,7 @@
   <el-dialog
     :title="title"
     :visible.sync="dialogVisible"
-    width="95%"
+    width="80%"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     class="print-dialog"
@@ -377,7 +377,7 @@ export default {
 /* 打印弹窗样式 */
 .print-dialog ::v-deep .el-dialog {
   margin: 0 auto;
-  height: 90vh;
+  height: 75vh;
   display: flex;
   flex-direction: column;
 }

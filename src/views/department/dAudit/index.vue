@@ -414,12 +414,13 @@ import { listDepartmentTransfer, getDepartmentTransfer, delDepartmentTransfer, u
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
+import SelectInventory from '@/components/SelectModel/SelectInventory';
 import {auditWarehouse, getWarehouse} from "@/api/warehouse/warehouse";
 
 export default {
   name: "dAudit",
   dicts: ['biz_status','way_status'],
-  components: {SelectWarehouse,SelectDepartment,SelectUser},
+  components: {SelectWarehouse,SelectDepartment,SelectUser,SelectInventory},
   data() {
     return {
       // 遮罩层

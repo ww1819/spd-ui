@@ -6,92 +6,101 @@
       <el-tab-pane label="跟台表" name="follow"></el-tab-pane>
     </el-tabs>
 
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId">
-            <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值" style="width: 100%"/>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label="供应商" prop="supplierId">
-            <SelectSupplier v-model="queryParams.supplierId" style="width: 100%"/>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item :label="activeName === 'inbound' ? '单号' : activeName === 'outbound' ? '出库单号' : '单号'" prop="orderNo">
-            <el-input
-              v-model="queryParams.orderNo"
-              :placeholder="activeName === 'inbound' ? '请输入单号' : activeName === 'outbound' ? '请输入出库单号' : '请输入单号'"
-              clearable
-              @keyup.enter.native="handleQuery"
-              style="width: 100%"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label="耗材" prop="materialId">
-            <SelectMaterial v-model="queryParams.materialId" style="width: 100%"/>
-          </el-form-item>
-        </el-col>
-      </el-row>
+    <div class="query-container">
+      <div class="form-fields-container">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+          <el-row class="query-row-left">
+            <el-col :span="24">
+              <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+                <div class="query-select-wrapper">
+                  <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值" />
+                </div>
+              </el-form-item>
+              <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+                <div class="query-select-wrapper">
+                  <SelectSupplier v-model="queryParams.supplierId" />
+                </div>
+              </el-form-item>
+              <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+                <div class="query-select-wrapper">
+                  <SelectMaterial v-model="queryParams.materialId" />
+                </div>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row class="query-row-left">
+            <el-col :span="24">
+              <el-form-item :label="activeName === 'inbound' ? '单号' : activeName === 'outbound' ? '出库单号' : '单号'" prop="orderNo" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.orderNo"
+                  :placeholder="activeName === 'inbound' ? '请输入单号' : activeName === 'outbound' ? '请输入出库单号' : '请输入单号'"
+                  clearable
+                  @keyup.enter.native="handleQuery"
+                  style="width: 180px"
+                />
+              </el-form-item>
+              <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+                <div class="query-select-wrapper">
+                  <SelectDepartment v-model="queryParams.departmentId" />
+                </div>
+              </el-form-item>
+              <el-form-item :label="activeName === 'inbound' ? '入库日期' : activeName === 'outbound' ? '出库日期' : '日期'" prop="dateRange" class="query-item-inline">
+                <el-date-picker
+                  v-model="queryParams.beginDate"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  placeholder="起始日期"
+                  clearable
+                  style="width: 180px; margin-right: 8px;"
+                />
+                <span style="margin: 0 4px;">至</span>
+                <el-date-picker
+                  v-model="queryParams.endDate"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  placeholder="截止日期"
+                  clearable
+                  style="width: 180px; margin-left: 8px;"
+                />
+              </el-form-item>
+              <el-form-item label="单据状态" prop="orderStatus" class="query-item-inline">
+                <el-select v-model="queryParams.orderStatus" placeholder="全部" clearable style="width: 150px">
+                  <el-option v-for="dict in dict.type.biz_status"
+                             :key="dict.value"
+                             :label="dict.label"
+                             :value="dict.value"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+      </div>
+    </div>
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="科室" prop="departmentId">
-            <SelectDepartment v-model="queryParams.departmentId" style="width: 100%"/>
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item :label="activeName === 'inbound' ? '入库日期' : activeName === 'outbound' ? '出库日期' : '日期'" prop="dateRange">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
-              clearable
-              style="width: 180px; margin-right: 8px;"
-            />
-            <span style="margin: 0 4px; color: #909399;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label="单据状态" prop="orderStatus">
-            <el-select v-model="queryParams.orderStatus" placeholder="全部" clearable style="width: 100%">
-              <el-option v-for="dict in dict.type.biz_status"
-                         :key="dict.value"
-                         :label="dict.label"
-                         :value="dict.value"
-              />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="20">
-        <el-col :span="24" style="text-align: right;">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-            <el-button
-              type="warning"
-              icon="el-icon-download"
-              size="small"
-              @click="handleExport"
-              v-hasPermi="['gz:stockQuery:export']"
-            >导出</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+    <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <el-button
+          type="warning"
+          icon="el-icon-download"
+          size="medium"
+          @click="handleExport"
+          v-hasPermi="['gz:stockQuery:export']"
+        >导出</el-button>
+        <el-button
+          type="primary"
+          icon="el-icon-search"
+          size="medium"
+          @click="handleQuery"
+        >搜索</el-button>
+        <el-button
+          icon="el-icon-refresh"
+          size="medium"
+          @click="resetQuery"
+        >重置</el-button>
+      </div>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="handleQuery"></right-toolbar>
+    </el-row>
 
     <InboundRefundTable 
       v-if="activeName === 'inbound'" 
@@ -116,6 +125,7 @@ import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
+import RightToolbar from "@/components/RightToolbar";
 import InboundRefundTable from "./components/InboundRefundTable.vue";
 import OutboundRefundTable from "./components/OutboundRefundTable.vue";
 import FollowTable from "./components/FollowTable.vue";
@@ -128,6 +138,7 @@ export default {
     SelectSupplier,
     SelectMaterial,
     SelectDepartment,
+    RightToolbar,
     InboundRefundTable,
     OutboundRefundTable,
     FollowTable
@@ -229,53 +240,80 @@ export default {
   }
 }
 
-/* 搜索表单样式优化 */
-.query-form {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  
-  .el-row {
-    margin-bottom: 16px;
-    
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-  
-  .el-form-item {
-    margin-bottom: 0;
-    
-    .el-form-item__label {
-      color: #606266;
-      font-weight: 500;
-      padding-right: 12px;
-    }
-  }
-  
-  .el-input,
-  .el-select {
-    width: 100%;
-  }
+/* 查询条件样式 */
+.query-row-left {
+  margin-bottom: 8px;
 }
 
-/* 按钮样式优化 */
-.el-button {
-  margin-left: 8px;
-  
-  &:first-child {
-    margin-left: 0;
-  }
+.query-row-left:first-child {
+  margin-top: 4px;
+}
+
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+.query-row-second {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* 查询容器样式 */
+.query-container {
+  margin-top: -20px;
+  margin-bottom: 16px;
+}
+
+/* 查询条件容器框样式 */
+.form-fields-container {
+  background: #fff;
+  padding: 6px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #EBEEF5;
 }
 
 /* 表格容器样式 */
 ::v-deep .table-container {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  padding: 16px;
+  margin-top: -8px;
+  overflow: visible;
+  width: 100%;
+  position: relative;
+}
+
+/* 按钮行布局优化 */
+.mb8 {
+  width: 100%;
+}
+
+.mb8 > div:first-child {
+  flex: 0 0 auto;
+}
+
+.mb8 .top-right-btn {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 </style>
 

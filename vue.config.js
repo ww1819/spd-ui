@@ -63,6 +63,7 @@ module.exports = {
   configureWebpack: {
     name: name,
     devtool: '#eval-source-map',
+    cache: false, // 禁用 webpack 缓存
     resolve: {
       alias: {
         '@': resolve('src')
@@ -84,6 +85,24 @@ module.exports = {
   chainWebpack(config) {
     config.plugins.delete('preload') // TODO: need test
     config.plugins.delete('prefetch') // TODO: need test
+    
+    // 禁用 cache-loader 缓存以解决编译问题
+    const rules = ['js', 'vue']
+    rules.forEach(ruleName => {
+      const rule = config.module.rule(ruleName)
+      if (rule) {
+        const uses = rule.uses
+        if (uses.has('cache-loader')) {
+          uses.delete('cache-loader')
+        }
+        // 也检查所有 use 链
+        rule.uses.store.forEach((use, key) => {
+          if (key.includes('cache-loader')) {
+            uses.delete(key)
+          }
+        })
+      }
+    })
 
     // set svg-sprite-loader
     config.module

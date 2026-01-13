@@ -1,126 +1,182 @@
 <template>
   <div class="table-container">
-    <el-table v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" border style="width: 100%">
-      <el-table-column type="selection" width="55" align="center" />
+    <el-table ref="table" v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" border height="58vh" style="width: 100%">
+      <el-table-column type="selection" width="55" align="center" fixed="left" />
+      <!-- 1. 序号 -->
       <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
+      <!-- 2. 单号 -->
       <el-table-column label="单号" align="center" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <el-button type="text" @click="handleView(scope.row)">
-            <span>{{ scope.row.orderNo || '--' }}</span>
-          </el-button>
+          <span>{{ scope.row.orderNo || '--' }}</span>
         </template>
       </el-table-column>
+      <!-- 3. 仓库 -->
       <el-table-column label="仓库" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
         </template>
       </el-table-column>
+      <!-- 4. 供应商 -->
       <el-table-column label="供应商" align="center" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ (scope.row.supplier && scope.row.supplier.name) || '--' }}</span>
         </template>
       </el-table-column>
+      <!-- 5. 院内码 -->
+      <el-table-column label="院内码" align="center" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.inHospitalCode && String(scope.row.inHospitalCode).trim() !== '' && scope.row.inHospitalCode !== scope.row.qty">{{ String(scope.row.inHospitalCode) }}</span>
+          <span v-else-if="scope.row.inHospitalCode && scope.row.inHospitalCode === scope.row.qty">--</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <!-- 6. 耗材编码 -->
+      <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 7. 耗材名称 -->
+      <el-table-column label="耗材名称" align="center" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 8. 规格 -->
+      <el-table-column label="规格" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.specification || '--' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 9. 型号 -->
+      <el-table-column label="型号" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 10. 单位 -->
+      <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.unitName">{{ scope.row.unitName }}</span>
+          <span v-else-if="scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName">{{ scope.row.material.fdUnit.unitName }}</span>
+          <span v-else-if="scope.row.material && scope.row.material.unitName">{{ scope.row.material.unitName }}</span>
+          <span v-else-if="scope.row.material && scope.row.material.unit">
+            <span v-if="typeof scope.row.material.unit === 'string'">{{ scope.row.material.unit }}</span>
+            <span v-else-if="scope.row.material.unit.unitName">{{ scope.row.material.unit.unitName }}</span>
+            <span v-else-if="scope.row.material.unit.name">{{ scope.row.material.unit.name }}</span>
+            <span v-else>--</span>
+          </span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <!-- 11. 单价 -->
       <el-table-column label="单价" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.price != null && scope.row.price !== undefined">{{ parseFloat(scope.row.price).toFixed(2) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <!-- 12. 数量 -->
       <el-table-column label="数量" align="center" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.qty != null && scope.row.qty !== undefined">{{ scope.row.qty }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="耗材名称" align="center" width="160" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="生产厂家" align="center" width="160" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.factoryName || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="院内码" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <!-- 确保显示的是 inHospitalCode，而不是 qty -->
-          <span v-if="scope.row.inHospitalCode && String(scope.row.inHospitalCode).trim() !== '' && scope.row.inHospitalCode !== scope.row.qty">{{ String(scope.row.inHospitalCode) }}</span>
-          <span v-else-if="scope.row.inHospitalCode && scope.row.inHospitalCode === scope.row.qty">--</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="UDI码" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <!-- 确保显示的是 UDI码，而不是耗材编码 -->
-          <span v-if="scope.row.udiNo && scope.row.udiNo !== scope.row.materialCode">{{ scope.row.udiNo }}</span>
-          <span v-else-if="scope.row.material && scope.row.material.udiNo && scope.row.material.udiNo !== scope.row.materialCode">{{ scope.row.material.udiNo }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="有效期" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.endTime">{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="生产日期" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.beginTime">{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="注册证号" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="注册证有效期" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.material && scope.row.material.periodDate">{{ parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
+      <!-- 13. 金额 -->
       <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.amt != null && scope.row.amt !== undefined">{{ parseFloat(scope.row.amt).toFixed(2) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <!-- 14. 生产日期 -->
+      <el-table-column label="生产日期" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.beginTime">{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <!-- 15. 有效期 -->
+      <el-table-column label="有效期" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.endTime">{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <!-- 16. 批号 -->
+      <el-table-column label="批号" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.batchNo || '--' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 17. 批次 -->
+      <el-table-column label="批次" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.batchNumber || '--' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 18. 生产厂家 -->
+      <el-table-column label="生产厂家" align="center" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.factoryName || '--' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 19. 注册证号 -->
+      <el-table-column label="注册证号" align="center" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 20. 注册证有效期 -->
+      <el-table-column label="注册证有效期" align="center" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.material && scope.row.material.periodDate">{{ parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <!-- 21. UDI码 -->
+      <el-table-column label="UDI码" align="center" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.udiNo && scope.row.udiNo !== scope.row.materialCode">{{ scope.row.udiNo }}</span>
+          <span v-else-if="scope.row.material && scope.row.material.udiNo && scope.row.material.udiNo !== scope.row.materialCode">{{ scope.row.material.udiNo }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <!-- 22. 单据状态 -->
       <el-table-column label="单据状态" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="审核日期" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作人" align="center" width="120" show-overflow-tooltip resizable>
+      <!-- 23. 制单人 -->
+      <el-table-column label="制单人" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.createBy || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="入库日期" align="center" width="180" show-overflow-tooltip resizable>
+      <!-- 24. 制单日期 -->
+      <el-table-column label="制单日期" align="center" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.orderDate">{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" show-overflow-tooltip resizable>
+      <!-- 25. 审核人 -->
+      <el-table-column label="审核人" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.remark || '--' }}</span>
+          <span>{{ scope.row.updateBy || '--' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 26. 审核日期 -->
+      <el-table-column label="审核日期" align="center" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
     </el-table>
@@ -177,112 +233,66 @@ export default {
     }
   },
   mounted() {
-    // 延迟执行，避免阻塞初始渲染
-    setTimeout(() => {
-      this.hideHeaderScrollbar();
-    }, 300);
+    // 同步表头和表体的滚动
+    this.$nextTick(() => {
+      this.syncTableScroll();
+    });
   },
   methods: {
-    hideHeaderScrollbar() {
-      // 使用防抖，避免频繁调用
-      if (this._hideScrollbarTimer) {
-        clearTimeout(this._hideScrollbarTimer);
+    syncTableScroll() {
+      const headerWrapper = this.$el?.querySelector('.el-table__header-wrapper');
+      const bodyWrapper = this.$el?.querySelector('.el-table__body-wrapper');
+      
+      if (!headerWrapper || !bodyWrapper) {
+        return;
       }
-      this._hideScrollbarTimer = setTimeout(() => {
-        this.$nextTick(() => {
-          const table = this.$el?.querySelector('.el-table');
-          const headerWrapper = this.$el?.querySelector('.el-table__header-wrapper');
-          const bodyWrapper = this.$el?.querySelector('.el-table__body-wrapper');
-          
-          if (!headerWrapper || !bodyWrapper) {
-            return;
-          }
-          
-          // 简化：只设置必要的样式，避免昂贵的DOM操作
-          headerWrapper.style.setProperty('overflow-x', 'hidden', 'important');
-          headerWrapper.style.setProperty('overflow-y', 'hidden', 'important');
-          headerWrapper.style.setProperty('overflow', 'hidden', 'important');
-          
-          // 添加全局样式（只执行一次）
-          const styleId = 'hide-header-scrollbar-' + this._uid;
-          if (!document.getElementById(styleId)) {
-            const styleEl = document.createElement('style');
-            styleEl.id = styleId;
-            const tableId = table?.id || `table-${this._uid}`;
-            if (table && !table.id) {
-              table.id = tableId;
-            }
-            styleEl.textContent = `
-              #${tableId} .el-table__header-wrapper {
-                overflow-x: hidden !important;
-                overflow-y: hidden !important;
-                overflow: hidden !important;
-              }
-              #${tableId} .el-table__header-wrapper::-webkit-scrollbar {
-                display: none !important;
-                width: 0 !important;
-                height: 0 !important;
-              }
-              #${tableId} .el-table__header-wrapper * {
-                scrollbar-width: none !important;
-                -ms-overflow-style: none !important;
-              }
-            `;
-            document.head.appendChild(styleEl);
-          }
-          
-          // 监听表体滚动，同步表头（使用节流优化性能）
-          let scrollTimer = null;
-          const syncHeaderScroll = () => {
-            if (scrollTimer) return;
-            scrollTimer = requestAnimationFrame(() => {
-              if (headerWrapper && bodyWrapper && headerWrapper.scrollLeft !== bodyWrapper.scrollLeft) {
-                headerWrapper.scrollLeft = bodyWrapper.scrollLeft;
-              }
-              scrollTimer = null;
-            });
-          };
-          
-          // 移除旧的事件监听器
-          if (this._syncHeaderScroll) {
-            bodyWrapper.removeEventListener('scroll', this._syncHeaderScroll);
-          }
-          this._syncHeaderScroll = syncHeaderScroll;
-          bodyWrapper.addEventListener('scroll', syncHeaderScroll, { passive: true });
-          
-          // 阻止表头直接滚动
-          const preventHeaderScroll = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (bodyWrapper) {
-              bodyWrapper.scrollLeft += e.deltaX || (e.deltaY > 0 ? 30 : -30);
-            }
-          };
-          
-          if (this._preventHeaderScroll) {
-            headerWrapper.removeEventListener('wheel', this._preventHeaderScroll);
-          }
-          this._preventHeaderScroll = preventHeaderScroll;
-          headerWrapper.addEventListener('wheel', preventHeaderScroll, { passive: false });
-          
-          // 保存清理函数
-          this._headerScrollbarCleanup = () => {
-            if (this._syncHeaderScroll) {
-              bodyWrapper?.removeEventListener('scroll', this._syncHeaderScroll);
-            }
-            if (this._preventHeaderScroll) {
-              headerWrapper?.removeEventListener('wheel', this._preventHeaderScroll);
-            }
-            const styleEl = document.getElementById(styleId);
-            if (styleEl) {
-              styleEl.remove();
-            }
-            if (this._hideScrollbarTimer) {
-              clearTimeout(this._hideScrollbarTimer);
-            }
-          };
-        });
-      }, 100);
+      
+      // 双向同步滚动：表体滚动时同步表头，表头滚动时同步表体
+      const syncScroll = (source, target) => {
+        if (source.scrollLeft !== target.scrollLeft) {
+          target.scrollLeft = source.scrollLeft;
+        }
+      };
+      
+      // 表体滚动时同步表头
+      const syncBodyToHeader = () => {
+        syncScroll(bodyWrapper, headerWrapper);
+      };
+      
+      // 表头滚动时同步表体
+      const syncHeaderToBody = () => {
+        syncScroll(headerWrapper, bodyWrapper);
+      };
+      
+      // 移除旧的事件监听器
+      if (this._syncBodyToHeader) {
+        bodyWrapper.removeEventListener('scroll', this._syncBodyToHeader);
+      }
+      if (this._syncHeaderToBody) {
+        headerWrapper.removeEventListener('scroll', this._syncHeaderToBody);
+      }
+      
+      // 添加新的事件监听器
+      this._syncBodyToHeader = syncBodyToHeader;
+      this._syncHeaderToBody = syncHeaderToBody;
+      bodyWrapper.addEventListener('scroll', syncBodyToHeader, { passive: true });
+      headerWrapper.addEventListener('scroll', syncHeaderToBody, { passive: true });
+      
+      // 保存清理函数
+      this._headerScrollbarCleanup = () => {
+        if (this._syncBodyToHeader) {
+          bodyWrapper?.removeEventListener('scroll', this._syncBodyToHeader);
+        }
+        if (this._syncHeaderToBody) {
+          headerWrapper?.removeEventListener('scroll', this._syncHeaderToBody);
+        }
+      };
+    },
+    updated() {
+      // 数据更新后重新同步滚动
+      this.$nextTick(() => {
+        this.syncTableScroll();
+      });
     },
     getList() {
       this.loading = true;
@@ -299,6 +309,10 @@ export default {
           this.tableList = [];
           this.total = 0;
           this.loading = false;
+          // 数据清空后，重新同步滚动
+          this.$nextTick(() => {
+            this.syncTableScroll();
+          });
           return;
         }
         
@@ -406,7 +420,14 @@ export default {
                         materialCode: materialCode,
                         materialUdiNo: materialUdiNo,
                         inHospitalCode: inHospitalCode,
-                        qty: entry.qty
+                        qty: entry.qty,
+                        unitInfo: {
+                          materialFdUnit: material && material.fdUnit,
+                          materialUnitName: material && material.unitName,
+                          materialUnit: material && material.unit,
+                          entryUnitName: entry.unitName,
+                          entryUnit: entry.unit
+                        }
                       });
                     }
                     
@@ -429,15 +450,21 @@ export default {
                       orderStatus: detail.orderStatus !== undefined && detail.orderStatus !== null ? detail.orderStatus : (order.orderStatus !== undefined ? order.orderStatus : null),
                       auditDate: detail.auditDate || order.auditDate || null,
                       createBy: detail.createBy || order.createBy || '',
+                      updateBy: detail.updateBy || order.updateBy || null,  // 审核人
                       orderDate: detail.orderDate || order.orderDate || null,  // 入库日期列
                       warehouse: detail.warehouse || order.warehouse || null,
                       supplier: detail.supplier || order.supplier || null,
+                      order: order || null,  // 保存完整的 order 对象以便访问审核人
                       // 物料相关字段 - 确保正确映射，避免字段错位
                       material: material || null,
                       materialName: materialName,
                       factoryName: factoryName,
                       // 耗材编码列 - 使用 material.code
                       materialCode: materialCode,
+                      // 规格、型号、单位
+                      specification: (material && material.speci) || entry.specification || null,
+                      model: (material && material.model) || entry.model || null,
+                      unitName: (material && material.fdUnit && material.fdUnit.unitName) || (material && material.unitName) || (material && material.unit && (material.unit.unitName || material.unit.name)) || entry.unitName || entry.unit || null,
                       // UDI码列 - 使用 material.udiNo 或 entry.udiNo
                       udiNo: materialUdiNo,
                       // 院内码列 - 从库存查询或entry中获取，确保是字符串，不是 qty
@@ -473,6 +500,14 @@ export default {
             this.tableList = detailList;
             this.total = detailList.length;
             this.loading = false;
+            // 数据加载完成后，重新同步滚动以确保列对齐
+            this.$nextTick(() => {
+              this.syncTableScroll();
+              // 强制表格重新布局
+              if (this.$refs.table) {
+                this.$refs.table.doLayout();
+              }
+            });
           }).catch(error => {
             this.$message.error('获取库存信息失败: ' + (error.message || '未知错误'));
             this.tableList = [];
@@ -506,11 +541,10 @@ export default {
 
 <style lang="scss" scoped>
 .table-container {
-  width: 100%;
+  margin-top: 0px;
   overflow: visible;
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
+  width: 100%;
+  position: relative;
   
   ::v-deep .el-table {
     width: 100%;
@@ -518,40 +552,67 @@ export default {
     overflow: visible;
   }
   
+  /* 表头不显示滚动条，但可以同步滚动 */
+  ::v-deep .el-table__header-wrapper {
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
+  }
+  
+  /* 表体可以滚动（水平和垂直），显示滚动条 */
   ::v-deep .el-table__body-wrapper {
     overflow-x: auto !important;
-    overflow-y: hidden !important;
+    overflow-y: auto !important;
     max-height: none !important;
   }
   
-  /* 隐藏表格体垂直滚动条 */
+  /* 垂直滚动条样式 */
   ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-    width: 0 !important;
-    display: none !important;
+    width: 12px;
+    height: 12px;
   }
   
-  ::v-deep .el-table__body-wrapper {
+  ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+    border-radius: 6px;
+    background-color: #c0c4cc;
+  }
+  
+  ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+    background-color: #f5f7fa;
+  }
+  
+  /* 隐藏表头滚动条 */
+  ::v-deep .el-table__header-wrapper::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  ::v-deep .el-table__header-wrapper {
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
   }
+  
   
   /* 表格头部样式优化 */
   ::v-deep .el-table th {
     background-color: #F5F7FA !important;
     color: #606266;
     font-weight: 500;
-    height: 48px;
-    padding: 12px 0;
+    height: 50px;
+    padding: 8px 0;
+    border-bottom: 1px solid #EBEEF5;
   }
   
   /* 表格行样式优化 */
   ::v-deep .el-table td {
     padding: 12px 0;
     color: #606266;
+    border-bottom: 1px solid #EBEEF5;
   }
   
   ::v-deep .el-table tr:hover > td {
     background-color: #F5F7FA !important;
+    transition: all 0.3s;
   }
   
   /* 分页样式优化 */
@@ -561,86 +622,30 @@ export default {
     background: #fff;
   }
   
-  /* 完全隐藏表头滚动条，但允许内容滚动（通过JavaScript同步） */
-  /* 使用更高优先级的选择器确保覆盖其他样式 */
-  .table-container ::v-deep .el-table__header-wrapper,
-  .table-container ::v-deep .el-table .el-table__header-wrapper,
-  ::v-deep .table-container .el-table__header-wrapper {
-    overflow-x: hidden !important;
-    overflow-y: hidden !important;
-    overflow: hidden !important;
+  /* 确保表头和表体列宽一致，对齐 */
+  ::v-deep .el-table__header,
+  ::v-deep .el-table__body {
     width: 100% !important;
-    position: relative !important;
   }
   
-  /* 隐藏表头滚动条（Webkit浏览器 - 所有可能的滚动条元素） */
-  ::v-deep .el-table__header-wrapper::-webkit-scrollbar,
-  ::v-deep .el-table__header-wrapper *::-webkit-scrollbar,
-  ::v-deep .el-table__header-wrapper * *::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    background: transparent !important;
-    -webkit-appearance: none !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
+  ::v-deep .el-table__header table,
+  ::v-deep .el-table__body table {
+    width: 100% !important;
   }
   
-  /* 隐藏表头滚动条轨道和滑块 */
-  ::v-deep .el-table__header-wrapper::-webkit-scrollbar-track,
-  ::v-deep .el-table__header-wrapper::-webkit-scrollbar-thumb,
-  ::v-deep .el-table__header-wrapper *::-webkit-scrollbar-track,
-  ::v-deep .el-table__header-wrapper *::-webkit-scrollbar-thumb,
-  ::v-deep .el-table__header-wrapper * *::-webkit-scrollbar-track,
-  ::v-deep .el-table__header-wrapper * *::-webkit-scrollbar-thumb {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    background: transparent !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
+  /* 确保表头和表体的列宽完全一致 */
+  ::v-deep .el-table__header th,
+  ::v-deep .el-table__body td {
+    box-sizing: border-box;
   }
   
-  /* 隐藏Element UI的滚动条组件 */
-  ::v-deep .el-table__header-wrapper .el-scrollbar__wrap {
-    overflow-x: hidden !important;
-    overflow-y: hidden !important;
-  }
-  
-  ::v-deep .el-table__header-wrapper .el-scrollbar__bar {
-    display: none !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-  }
-  
-  /* 隐藏表头滚动条（Firefox和IE/Edge） */
-  ::v-deep .el-table__header-wrapper {
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-  }
-  
-  /* 隐藏表头内部所有元素的滚动条 */
-  ::v-deep .el-table__header-wrapper * {
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-  }
-  
-  /* 确保表头内容可以超出容器（用于同步滚动） */
-  ::v-deep .el-table__header {
-    width: auto !important;
-    min-width: 100% !important;
-    overflow: visible !important;
-  }
-  
-  /* 确保表头表格宽度与表体一致 */
-  ::v-deep .el-table__header table {
-    width: auto !important;
-    min-width: 100% !important;
-  }
-  
-  ::v-deep .el-table__fixed,
+  /* 固定列样式优化 - 只保留左侧固定列（选择框） */
   ::v-deep .el-table__fixed-right {
-    height: auto !important;
+    display: none !important;
+  }
+  
+  ::v-deep .el-table__fixed-left {
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
   }
 }
 </style>
