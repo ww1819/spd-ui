@@ -4,9 +4,9 @@
 
       <el-row class="query-row-left">
         <el-col :span="24">
-          <el-form-item label="退货单号" prop="goodsNo" class="query-item-inline">
+          <el-form-item label="退库单号" prop="goodsNo" class="query-item-inline">
             <el-input v-model="queryParams.goodsNo"
-                      placeholder="请输入退货单号"
+                      placeholder="请输入退库单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
@@ -62,24 +62,9 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
-          size="small"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          icon="el-icon-refresh"
-          size="small"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
+          size="medium"
           @click="handleAdd"
           v-hasPermi="['gzOrder:goodsApply:add']"
         >新增</el-button>
@@ -89,17 +74,32 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['gzOrder:goodsApply:export']"
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="primary"
+          icon="el-icon-search"
+          size="medium"
+          @click="handleQuery"
+        >搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          icon="el-icon-refresh"
+          size="medium"
+          @click="resetQuery"
+        >重置</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="success"
           plain
           icon="el-icon-check"
-          size="small"
+          size="medium"
           @click="handleBatchAudit"
           v-hasPermi="['gzOrder:goodsApply:audit']"
         >审核</el-button>
@@ -112,7 +112,7 @@
               @selection-change="handleSelectionChange" height="58vh" border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="退货单号" align="center" prop="goodsNo" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="退库单号" align="center" prop="goodsNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.goodsNo }}</span>
@@ -120,6 +120,11 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
+      <el-table-column label="科室" align="center" prop="department.name" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.department && scope.row.department.name) || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="总金额" align="center" prop="totalAmt" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ (scope.row.totalAmt != null && scope.row.totalAmt !== undefined) ? parseFloat(scope.row.totalAmt).toFixed(2) : formatTotalAmt(scope.row) }}</span>
@@ -130,40 +135,53 @@
           <dict-tag :options="dict.type.biz_status" :value="scope.row.goodsStatus"/>
         </template>
       </el-table-column>
+      <el-table-column label="审核人" align="center" prop="auditBy" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.auditBy || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作人" align="center" prop="createBy" show-overflow-tooltip resizable />
-      <el-table-column label="退货日期" align="center" prop="goodsDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单人" align="center" prop="createBy" show-overflow-tooltip resizable />
+      <el-table-column label="制单日期" align="center" prop="goodsDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.goodsDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
         <template slot-scope="scope">
-            <el-button
-            size="small"
-            type="text"
-            @click="handlePrint(scope.row,true)"
-            v-if="scope.row.goodsStatus == 2"
-          >打印</el-button>
-          <template v-if="scope.row.goodsStatus != 2">
+          <span style="white-space: nowrap; display: inline-block;">
             <el-button
               size="small"
               type="text"
+              icon="el-icon-printer"
+              @click="handlePrint(scope.row,true)"
+              v-if="scope.row.goodsStatus == 2"
+              style="padding: 0 5px; margin: 0;"
+            >打印</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
-                              v-hasPermi="['gzOrder:goodsApply:edit']"
+              v-hasPermi="['gzOrder:goodsApply:edit']"
+              v-if="scope.row.goodsStatus != 2"
+              style="padding: 0 5px; margin: 0;"
             >修改</el-button>
             <el-button
               size="small"
               type="text"
+              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
-                              v-hasPermi="['gzOrder:goodsApply:remove']"
+              v-hasPermi="['gzOrder:goodsApply:remove']"
+              v-if="scope.row.goodsStatus != 2"
+              style="padding: 0 5px; margin: 0;"
             >删除</el-button>
-          </template>
+          </span>
         </template>
       </el-table-column>
     </el-table>
@@ -183,81 +201,85 @@
           <div v-if="open" class="local-modal-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
+              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
+              <div class="form-fields-container">
+                <el-row :gutter="8">
+                  <el-col :span="4">
+                    <el-form-item label="仓库" prop="warehouseId">
+                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action" includeWarehouseType="高值"/>
+                    </el-form-item>
+                    <el-form-item label="总金额">
+                      <el-input :value="getTotalAmount()" :disabled="true" style="width: 140px; background-color: #fff;">
+                      </el-input>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="科室" prop="departmentId">
+                      <SelectDepartment v-model="form.departmentId" :disabled="!action"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="单据状态" prop="goodsStatus">
+                      <dict-tag :options="dict.type.biz_status" :value="form.goodsStatus"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="制单日期" prop="goodsDate">
+                      <el-date-picker clearable
+                                      v-model="form.goodsDate"
+                                      type="date"
+                                      :disabled="true"
+                                      value-format="yyyy-MM-dd"
+                                      style="width: 140px"
+                                      placeholder="请选择制单日期">
+                      </el-date-picker>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="制单人" prop="createBy">
+                      <el-input v-model="form.createBy" :disabled="true" style="width: 140px" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4" v-show="false">
+                    <el-form-item label="退货类型" prop="goodsType">
+                      <el-select v-model="form.goodsType" placeholder="请选择退货类型"
+                                 :disabled="true"
+                                 clearable style="width: 140px">
+                        <el-option v-for="dict in dict.type.bill_type"
+                                   :key="dict.value"
+                                   :label="dict.label"
+                                   :value="dict.value"
+                        />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </div>
+              <div class="modal-body">
+                <el-row :gutter="10" class="mb8">
+                  <el-col :span="1.5">
+                    <span>备货退库明细信息</span>
+                  </el-col>
 
-        <el-row :gutter="8">
-          <el-col :span="4">
-            <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :disabled="!action" includeWarehouseType="高值"/>
-            </el-form-item>
-            <el-form-item label="总金额">
-              <el-input :value="getTotalAmount()" :disabled="true" style="width: 140px; background-color: #fff;">
-              </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="单据状态" prop="goodsStatus">
-              <el-select v-model="form.goodsStatus" placeholder="请选择单据状态"
-                         :disabled="true"
-                         clearable style="width: 140px">
-                <el-option v-for="dict in dict.type.biz_status"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="退货日期" prop="goodsDate">
-              <el-date-picker clearable
-                              v-model="form.goodsDate"
-                              type="date"
-                              :disabled="true"
-                              value-format="yyyy-MM-dd"
-                              style="width: 140px"
-                              placeholder="请选择退货日期">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="操作人" prop="createBy">
-              <el-input v-model="form.createBy" :disabled="true" style="width: 140px" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="4" v-show="false">
-            <el-form-item label="退货类型" prop="goodsType">
-              <el-select v-model="form.goodsType" placeholder="请选择退货类型"
-                         :disabled="true"
-                         clearable style="width: 140px">
-                <el-option v-for="dict in dict.type.bill_type"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
-            <span>备货退货明细信息</span>
-          </el-col>
-
-          <div v-show="action">
-            <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzRefundGoodsEntry">删除</el-button>
-            </el-col>
-          </div>
-        </el-row>
-        <div class="table-wrapper">
-        <el-table :data="gzRefundGoodsEntryList" :row-class-name="rowGzRefundGoodsEntryIndex" @selection-change="handleGzRefundGoodsEntrySelectionChange" ref="gzRefundGoodsEntry" border height="48vh">
+                  <div v-show="action" style="display: flex; align-items: center; gap: 10px;">
+                    <el-col :span="1.5">
+                      <el-button @click="cancel">取 消</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
+                      <el-button type="primary" @click="submitForm">保 存</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
+                      <el-button type="primary" icon="el-icon-plus" @click="checkMaterialBtn">添加</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
+                      <el-button type="danger" icon="el-icon-delete" @click="handleDeleteGzRefundGoodsEntry">删除</el-button>
+                    </el-col>
+                  </div>
+                </el-row>
+                <div class="table-wrapper">
+                  <el-table :data="gzRefundGoodsEntryList" :row-class-name="rowGzRefundGoodsEntryIndex" @selection-change="handleGzRefundGoodsEntrySelectionChange" ref="gzRefundGoodsEntry" border height="48vh">
           <el-table-column type="selection" width="50" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
           <el-table-column label="耗材" prop="materialName" width="120" show-overflow-tooltip resizable>
@@ -267,12 +289,12 @@
           </el-table-column>
           <el-table-column label="规格" prop="speci" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.speci || '--' }}</span>
+              <span>{{ scope.row.speci || (scope.row.material && scope.row.material.speci) || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="型号" prop="model" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
+              <span>{{ scope.row.model || (scope.row.material && scope.row.material.model) || '--' }}</span>
             </template>
           </el-table-column>
           <!-- 库存列已隐藏 -->
@@ -325,12 +347,12 @@
           </el-table-column>
           <el-table-column label="生产厂家" prop="factoryName" width="160" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.factoryName || '--' }}</span>
+              <span>{{ scope.row.factoryName || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="供应商" prop="supplierName" width="160" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || (scope.row.supplier && scope.row.supplier.name) || scope.row.supplierName || '--' }}</span>
+              <span>{{ scope.row.supplierName || (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || (scope.row.supplier && scope.row.supplier.name) || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="院内码" prop="inHospitalCode" width="240" show-overflow-tooltip resizable>
@@ -353,39 +375,55 @@
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
             </template>
           </el-table-column>
-        </el-table>
-        </div>
+                  </el-table>
+                </div>
+              </div>
             </el-form>
-            <div v-show="action" class="modal-footer">
-              <el-button @click="cancel">取 消</el-button>
-              <el-button type="primary" @click="submitForm">确 定</el-button>
-            </div>
           </div>
         </transition>
       </div>
     </transition>
 
-    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width ">
+    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width " @close="handlePrintDialogClose">
+      <!-- 打印方式选择（包含布局选择） -->
       <template v-if=" modalObj.component === 'print-type' ">
         <el-radio-group v-model=" modalObj.form.value ">
           <el-radio :label=" 2 ">浏览器打印</el-radio>
         </el-radio-group>
+        <div style="margin-top: 20px;">
+          <el-form-item label="页面方向：">
+            <el-radio-group v-model=" modalObj.form.orientation ">
+              <el-radio label="portrait">纵向</el-radio>
+              <el-radio label="landscape">横向</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </div>
       </template>
-      <template v-if=" modalObj.form.value === 2 || modalObj.component === 'window-print-preview' ">
-        <gz-order-print :row=" modalObj.form.row " ref="receiptOrderPrintRef"></gz-order-print>
+      <!-- 打印预览 -->
+      <template v-else-if=" modalObj.component === 'window-print-preview' ">
+        <gz-order-print v-if=" modalObj.form.row && modalObj.form.row.detailList && modalObj.form.row.detailList.length > 0 " :key="`print-${modalObj.form.row.goodsNo || Date.now()}-${modalObj.form.orientation || 'landscape'}-${modalObj.form.row.detailList.length}`" :row=" modalObj.form.row " :orientation=" modalObj.form.orientation || 'landscape' " :printType="'refund'" ref="receiptOrderPrintRef"></gz-order-print>
+        <div v-else-if=" modalObj.form.row " style="padding: 20px; text-align: center; color: #999;">
+          <p>正在加载打印数据...</p>
+        </div>
       </template>
       <template slot="footer" class="dialog-footer">
         <el-button @click=" modalObj.cancel ">取消</el-button>
         <el-button @click=" modalObj.ok " type="primary">确认</el-button>
       </template>
     </el-dialog>
+    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
+    <div v-show="false">
+      <gz-order-print v-if="printRowData" :row="printRowData" :orientation="printOrientation || 'landscape'" :printType="'refund'" ref="receiptOrderPrintRefAuto"></gz-order-print>
+    </div>
 
     <!-- 3、使用组件 -->
     <SelectMaterialFilter
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="form.warehouseId"
+      :departmentValue="form.departmentId"
       :gzOrderEntryList="gzRefundGoodsEntryList"
+      :useDepInventory="true"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>
@@ -397,15 +435,17 @@
 import { listGoods, getGoods, delGoods, addGoods, updateGoods, auditGoods } from "@/api/gz/goods";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
+import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
 import {STOCK_IN_TEMPLATE} from "@/utils/printData";
 import RMBConverter from "@/utils/tools";
+import { parseTime } from "@/utils/ruoyi";
 import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
 
 export default {
   name: "RefundGoods",
   dicts: ['biz_status','bill_type'],
-  components: {SelectMaterial,SelectWarehouse,SelectMaterialFilter,gzOrderPrint},
+  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectMaterialFilter,gzOrderPrint},
   data() {
     return {
       // 遮罩层
@@ -417,14 +457,20 @@ export default {
         width: '520px',
         component: null,
         form: {
-          value: null,
+          value: 2,
+          orientation: 'landscape', // 默认横向
           row: null
         },
         ok: () => {
         },
         cancel: () => {
-        }
+        },
+        show: false
       },
+      // 打印数据（用于隐藏的打印组件）
+      printRowData: null,
+      // 打印方向，默认横向
+      printOrientation: 'landscape',
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -491,6 +537,11 @@ export default {
     },
     /** 格式化总金额 */
     formatTotalAmt(row) {
+      // 优先使用totalAmt字段
+      if (row.totalAmt != null && row.totalAmt !== undefined) {
+        return parseFloat(row.totalAmt).toFixed(2);
+      }
+      // 如果没有totalAmt，从明细列表计算
       if (row.gzRefundGoodsEntryList && row.gzRefundGoodsEntryList.length > 0) {
         const total = row.gzRefundGoodsEntryList.reduce((sum, entry) => {
           return sum + (parseFloat(entry.amt) || 0);
@@ -512,7 +563,23 @@ export default {
     /** 查询高值退货列表 */
     getList() {
       this.loading = true;
-      listGoods(this.queryParams).then(response => {
+      // 备货退库页面：只显示GZTK-开头的单号
+      const params = {
+        ...this.queryParams
+      };
+      // 如果用户输入了单号，确保以GZTK-开头
+      if (params.goodsNo && !params.goodsNo.startsWith('GZTK-')) {
+        params.goodsNo = 'GZTK-' + params.goodsNo;
+      } else if (!params.goodsNo) {
+        // 如果没有输入单号，默认搜索GZTK-开头的
+        params.goodsNo = 'GZTK-';
+      }
+      listGoods(params).then(response => {
+        // 过滤结果，只显示GZTK-开头的单号
+        if (response.rows) {
+          response.rows = response.rows.filter(row => row.goodsNo && row.goodsNo.startsWith('GZTK-'));
+          response.total = response.rows.length;
+        }
         this.goodsList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -522,6 +589,11 @@ export default {
       // 检查是否选择了仓库
       if (!this.form.warehouseId) {
         this.$message.warning('请先选择仓库');
+        return;
+      }
+      // 检查是否选择了科室
+      if (!this.form.departmentId) {
+        this.$message.warning('请先选择科室');
         return;
       }
       //打开"弹窗组件"
@@ -555,18 +627,31 @@ export default {
         obj.supplierName = (item.material && item.material.supplier && item.material.supplier.name) || (item.supplier && item.supplier.name) || "";
         obj.qty = item.qty || "";
         obj.stockQty = item.qty || 0; // 保存原始库存数量，用于验证
-        obj.price = item.unitPrice || "";
-        obj.amt = item.amt || "";
+        obj.price = item.unitPrice || item.price || "";
+        // 计算金额：如果item.amt为空，则计算qty * price
+        if (item.amt) {
+          obj.amt = parseFloat(item.amt).toFixed(2);
+        } else if (obj.qty && obj.price) {
+          obj.amt = (parseFloat(obj.qty) * parseFloat(obj.price)).toFixed(2);
+        } else {
+          obj.amt = "";
+        }
+        // 批次号：从batchNo获取
         obj.batchNo = item.batchNo || "";
-        obj.batchNumber = item.materialNo || "";
-        obj.beginTime = item.materialDate || "";
+        // 批号：优先从materialNo获取（后端字段名），其次从batchNumber获取
+        obj.batchNumber = item.materialNo || item.batchNumber || "";
+        obj.beginTime = item.materialDate || item.beginTime || "";
         obj.endTime = item.endTime || "";
         obj.remark = "";
-        obj.masterBarcode = "";
-        obj.secondaryBarcode = "";
+        obj.masterBarcode = item.masterBarcode || "";
+        // 辅助条码：从secondaryBarcode获取
+        obj.secondaryBarcode = item.secondaryBarcode || "";
+        // 院内码：从多个可能的位置获取
         obj.inHospitalCode = item.inHospitalCode || "";
         // 保存UDI码，优先从material对象获取，如果没有则从udiNo字段获取
-        obj.udiNo = (item.material && item.material.udiNo) || item.udiNo || "";
+        obj.udiNo = (item.material && item.material.udiNo) || item.udiNo || item.masterBarcode || "";
+        // 确保materialId正确设置
+        obj.materialId = obj.materialId || item.materialId || (item.material && item.material.id);
         this.gzRefundGoodsEntryList.push(obj);
       });
     },
@@ -590,6 +675,7 @@ export default {
         goodsNo: null,
         goodsDate: null,
         warehouseId: null,
+        departmentId: null,
         supplerId: null,
         goodsStatus: null,
         goodsType: null,
@@ -609,7 +695,7 @@ export default {
       // 只计算金额，不做验证（验证在提交时进行）
       let totalAmt = 0;
       if(row.qty && row.price){
-        totalAmt = row.qty * row.price;
+        totalAmt = parseFloat(row.qty) * parseFloat(row.price);
       }else{
         totalAmt = 0;
       }
@@ -648,42 +734,109 @@ export default {
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
+    /** 映射明细数据 */
+    mapEntryData(responseData) {
+      this.gzRefundGoodsEntryList = responseData.gzRefundGoodsEntryList || [];
+      
+      console.log('mapEntryData - 原始数据:', {
+        gzRefundGoodsEntryList: this.gzRefundGoodsEntryList,
+        materialList: responseData.materialList,
+        firstEntry: this.gzRefundGoodsEntryList[0]
+      });
+      
+      // 构建materialMap
+      const materialMap = {};
+      if (responseData.materialList && responseData.materialList.length > 0) {
+        responseData.materialList.forEach(material => {
+          if (material && material.id) {
+            materialMap[material.id] = material;
+          }
+        });
+      }
+      
+      this.gzRefundGoodsEntryList.forEach(entry => {
+        // 优先从entry.material对象获取，其次从materialMap获取，最后保持entry原有值
+        let material = entry.material;
+        if (!material && entry.materialId && materialMap[entry.materialId]) {
+          material = materialMap[entry.materialId];
+        }
+        
+        // 优先使用entry中已有的字段值，如果没有则从material对象获取
+        // 如果找到了material对象，使用它来填充缺失的字段
+        if (material) {
+          if (!entry.materialName && material.name) {
+            entry.materialName = material.name;
+          }
+          if (!entry.speci && material.speci) {
+            entry.speci = material.speci;
+          }
+          if (!entry.model && material.model) {
+            entry.model = material.model;
+          }
+          if (!entry.factoryName && material.fdFactory && material.fdFactory.factoryName) {
+            entry.factoryName = material.fdFactory.factoryName;
+          }
+          if (!entry.supplierName && material.supplier && material.supplier.name) {
+            entry.supplierName = material.supplier.name;
+          }
+          if (!entry.udiNo && material.udiNo) {
+            entry.udiNo = material.udiNo;
+          }
+        }
+        
+        // 如果entry中已经有这些字段的值，保持它们（不覆盖）
+        // 如果没有值，尝试从entry.material获取
+        if (!entry.materialName && entry.material && entry.material.name) {
+          entry.materialName = entry.material.name;
+        }
+        if (!entry.speci && entry.material && entry.material.speci) {
+          entry.speci = entry.material.speci;
+        }
+        if (!entry.model && entry.material && entry.material.model) {
+          entry.model = entry.material.model;
+        }
+        if (!entry.factoryName && entry.material && entry.material.fdFactory && entry.material.fdFactory.factoryName) {
+          entry.factoryName = entry.material.fdFactory.factoryName;
+        }
+        if (!entry.supplierName && entry.material && entry.material.supplier && entry.material.supplier.name) {
+          entry.supplierName = entry.material.supplier.name;
+        }
+        if (!entry.udiNo && entry.material && entry.material.udiNo) {
+          entry.udiNo = entry.material.udiNo;
+        }
+        
+        // 处理其他字段，保持原有值或从其他字段获取
+        if (!entry.batchNumber && entry.materialNo) {
+          entry.batchNumber = entry.materialNo;
+        }
+        if (!entry.beginTime && entry.materialDate) {
+          entry.beginTime = entry.materialDate;
+        }
+        if (!entry.price && entry.unitPrice) {
+          entry.price = entry.unitPrice;
+        }
+        
+        console.log('处理后的entry:', entry);
+      });
+      
+      console.log('mapEntryData - 最终数据:', this.gzRefundGoodsEntryList);
+    },
     /** 查看按钮操作 */
     handleView(row){
       const id = row.id
       getGoods(id).then(response => {
         this.form = response.data;
-        this.gzRefundGoodsEntryList = response.data.gzRefundGoodsEntryList || [];
-        // 如果有materialList，为每个entry添加materialName和udiNo
-        if (response.data.materialList && response.data.materialList.length > 0) {
-          const materialMap = {};
-          response.data.materialList.forEach(material => {
-            if (material && material.id) {
-              materialMap[material.id] = material;
-            }
-          });
-          this.gzRefundGoodsEntryList.forEach(entry => {
-            if (entry.materialId && materialMap[entry.materialId]) {
-              const material = materialMap[entry.materialId];
-              entry.materialName = material.name || "";
-              entry.speci = material.speci || "";
-              entry.model = material.model || "";
-              entry.factoryName = (material.fdFactory && material.fdFactory.factoryName) || "";
-              entry.supplierName = (material.supplier && material.supplier.name) || "";
-              entry.udiNo = material.udiNo || entry.udiNo || "";
-            }
-          });
-        }
+        this.mapEntryData(response.data);
         this.open = true;
         this.action = false;
-        this.title = "查看备货退货";
+        this.title = "查看备货退库";
       });
     },
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
       this.open = true;
-      this.title = "添加备货退货";
+      this.title = "添加备货退库";
       this.form.goodsStatus = 1;
       //操作人
       var userName = this.$store.state.user.name;
@@ -723,42 +876,9 @@ export default {
       getGoods(id).then(response => {
         this.form = response.data;
         this.form.goodsStatus = 1;
-        this.gzRefundGoodsEntryList = response.data.gzRefundGoodsEntryList || [];
-        // 调试：打印查询返回的数据，特别是院内码
-        console.log('查询返回的数据（修改）:', {
-          gzOrderEntryList: this.gzOrderEntryList.map(entry => ({
-            id: entry.id,
-            materialId: entry.materialId,
-            batchNo: entry.batchNo,
-            inHospitalCode: entry.inHospitalCode,
-            materialName: entry.materialName,
-            fullEntry: entry
-          })),
-          materialList: response.data.materialList,
-          rawResponse: response.data
-        });
-        // 如果有materialList，为每个entry添加materialName和udiNo
-        if (response.data.materialList && response.data.materialList.length > 0) {
-          const materialMap = {};
-          response.data.materialList.forEach(material => {
-            if (material && material.id) {
-              materialMap[material.id] = material;
-            }
-          });
-          this.gzRefundGoodsEntryList.forEach(entry => {
-            if (entry.materialId && materialMap[entry.materialId]) {
-              const material = materialMap[entry.materialId];
-              entry.materialName = material.name || "";
-              entry.speci = material.speci || "";
-              entry.model = material.model || "";
-              entry.factoryName = (material.fdFactory && material.fdFactory.factoryName) || "";
-              entry.supplierName = (material.supplier && material.supplier.name) || "";
-              entry.udiNo = material.udiNo || entry.udiNo || "";
-            }
-          });
-        }
+        this.mapEntryData(response.data);
         this.open = true;
-        this.title = "修改备货退货";
+        this.title = "修改备货退库";
         this.action = true;
       });
     },
@@ -780,14 +900,32 @@ export default {
           if (this.form.id != null) {
             updateGoods(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
-              this.open = false;
+              // 保存成功后不关闭弹窗，刷新列表和表单数据
               this.getList();
+              // 重新获取最新数据
+              getGoods(this.form.id).then(res => {
+                this.form = res.data;
+                this.gzRefundGoodsEntryList = res.data.gzRefundGoodsEntryList || [];
+                // 重新映射数据
+                this.mapEntryData(res.data);
+              });
             });
           } else {
             addGoods(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
-              this.open = false;
+              // 保存成功后不关闭弹窗，刷新列表
               this.getList();
+              // 如果是新增，重置表单但保持弹窗打开
+              this.form.id = response.data.id || response.data;
+              // 重新获取最新数据
+              if (this.form.id) {
+                getGoods(this.form.id).then(res => {
+                  this.form = res.data;
+                  this.gzRefundGoodsEntryList = res.data.gzRefundGoodsEntryList || [];
+                  // 重新映射数据
+                  this.mapEntryData(res.data);
+                });
+              }
             });
           }
         }
@@ -795,57 +933,135 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
-      this.modalObj = {
-        show: true,
-        title: '选择打印方式',
-        width: '520px',
-        component: 'print-type',
-        form: {
-          value: 1,
-          row
-        },
-        ok: () => {
-          this.modalObj.show = false
-          if (this.modalObj.form.value === 1) {
-            this.doPrintOut(row, false)
-          } else {
-            this.windowPrintOut(row, print)
+      console.log('handlePrint called with:', { row, print });
+      // 如果传入 print 参数为 true，直接执行打印
+      if (print === true) {
+        // 直接获取数据并触发打印
+        this.getOrderDetail(row).then(res => {
+          console.log('getOrderDetail result:', res);
+          // 验证数据完整性
+          if (!res || !res.detailList || res.detailList.length === 0) {
+            console.warn('打印数据不完整:', res);
+            this.$modal.msgWarning('打印数据不完整，请重试');
+            return;
           }
-        },
-        cancel: () => {
-          this.modalObj.show = false
-        }
+          // 设置打印数据
+          this.printRowData = res;
+          // 设置默认方向为横向
+          this.printOrientation = 'landscape';
+          // 等待组件渲染后调用 start()
+          this.$nextTick(() => {
+            this.$nextTick(() => {
+              console.log('Checking receiptOrderPrintRefAuto:', this.$refs['receiptOrderPrintRefAuto']);
+              if (this.$refs['receiptOrderPrintRefAuto']) {
+                // start() 方法会直接触发浏览器打印对话框
+                console.log('Calling start() on print component');
+                this.$refs['receiptOrderPrintRefAuto'].start();
+              } else {
+                console.error('receiptOrderPrintRefAuto not found');
+                this.$modal.msgError('打印组件未找到，请刷新页面重试');
+              }
+            });
+          });
+        }).catch(error => {
+          console.error('getOrderDetail error:', error);
+          this.$modal.msgError('获取打印数据失败：' + (error.message || '未知错误'));
+        });
+        return;
       }
+      // 否则显示选择打印方式的对话框
+      this.$nextTick(() => {
+        this.modalObj = {
+          show: true,
+          title: '选择打印方式',
+          width: '520px',
+          component: 'print-type',
+          form: {
+            value: 2,
+            orientation: 'landscape', // 默认横向
+            row: null
+          },
+          ok: () => {
+            this.modalObj.show = false;
+            if (this.modalObj.form.value === 2) {
+              this.windowPrintOut(row, false);
+            }
+          },
+          cancel: () => {
+            this.modalObj.show = false;
+          }
+        };
+      });
+    },
+    handlePrintDialogClose() {
+      this.modalObj.show = false;
+      // 重置 modalObj，清空打印数据以强制重新渲染
+      this.modalObj = {
+        show: false,
+        title: '',
+        width: '',
+        component: null,
+        form: {
+          value: 2,
+          orientation: 'landscape',
+          row: null
+        },
+        ok: () => {},
+        cancel: () => {}
+      };
     },
     windowPrintOut(row, print) {
       this.getOrderDetail(row).then(res => {
         if (print) {
-          this.modalObj.form.row = res
-          this.$nextTick(() => {
-            this.$refs['receiptOrderPrintRef'].start()
-          })
-          return
-        }
-        this.$nextTick(() => {
-          this.modalObj = {
-            show: true,
-            title: '浏览器打印预览',
-            width: '800px',
-            component: 'window-print-preview',
-            form: {
-              value: 1,
-              row,
-              print
-            },
-            ok: () => {
-              this.modalObj.show = false
-            },
-            cancel: () => {
-              this.modalObj.show = false
-            }
+          // 与入库验收页面完全一致：只更新 modalObj.form.row，然后直接调用打印
+          // 注意：对话框已经在 handlePrint 中打开了
+          this.modalObj.form.row = res;
+          // 确保有方向设置
+          if (!this.modalObj.form.orientation) {
+            this.modalObj.form.orientation = 'landscape';
           }
-        })
-      })
+          this.$nextTick(() => {
+            if (this.$refs['receiptOrderPrintRef']) {
+              // start() 方法会直接触发浏览器打印对话框，不需要显示预览对话框
+              this.$refs['receiptOrderPrintRef'].start();
+            }
+          });
+        } else {
+          // 先清空row，强制组件重新渲染
+          this.modalObj.form.row = null;
+          // 确保有方向设置
+          if (!this.modalObj.form.orientation) {
+            this.modalObj.form.orientation = 'landscape';
+          }
+          // 等待组件销毁后再设置新数据
+          this.$nextTick(() => {
+            this.$nextTick(() => {
+              // 验证数据完整性
+              if (!res || !res.detailList || res.detailList.length === 0) {
+                console.warn('打印数据不完整:', res);
+                this.$modal.msgWarning('打印数据不完整，请重试');
+                return;
+              }
+              // 更新 modalObj.form.row 以显示预览
+              this.modalObj.form.row = res;
+              // 等待组件完全渲染后再显示预览
+              this.$nextTick(() => {
+                this.$nextTick(() => {
+                  // 再次验证组件是否已正确渲染
+                  if (this.$refs['receiptOrderPrintRef']) {
+                    this.modalObj.component = 'window-print-preview';
+                  } else {
+                    // 如果组件还未渲染，再等待一次
+                    setTimeout(() => {
+                      this.modalObj.component = 'window-print-preview';
+                    }, 100);
+                  }
+                });
+              });
+            });
+          });
+        }
+      });
     },
     doPrintOut(row, print) {
       this.getOrderDetail(row).then(result => {
@@ -881,12 +1097,12 @@ export default {
             amt: item.amt,
             qty: item.qty,
             price: item.price,
-            materialCode: prod.code,
-            materialName: prod.name,
-            materialSpeci: prod.speci,
-            periodDate: prod.periodDate,
-            factoryName: prod.fdFactory.factoryName,
-            warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
+            materialCode: prod ? prod.code : '',
+            materialName: prod ? prod.name : '',
+            materialSpeci: prod ? prod.speci : '',
+            periodDate: prod ? prod.periodDate : '',
+            factoryName: prod && prod.fdFactory ? prod.fdFactory.factoryName : '',
+            warehouseCategoryName: prod && prod.fdWarehouseCategory ? prod.fdWarehouseCategory.warehouseCategoryName : '',
           })
 
         })
@@ -895,14 +1111,14 @@ export default {
 
         return {
           orderNo: row.goodsNo,
-          supplierName: row.supplier.name,
-          warehouseName: row.warehouse.name,
+          supplierName: row.supplier ? row.supplier.name : '',
+          warehouseName: row.warehouse ? row.warehouse.name : '',
           orderDate: row.goodsDate,
           auditDate: row.auditDate,
           totalAmt: totalAmt,
           totalQty: totalQty,
           totalAmtConverter: totalAmtConverter,
-          detailList:detailList
+          detailList: detailList
         }
       })
     },
@@ -980,7 +1196,6 @@ export default {
   background: #fff;
   width: 100%;
   height: 100%;
-  min-height: 95vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1012,12 +1227,27 @@ export default {
   background: rgba(0, 0, 0, 0.1);
 }
 
+/* 查询条件容器框样式 */
+.local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
+}
+
+.modal-body {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
 .modal-footer {
   padding: 16px 24px;
   text-align: right;
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
-  margin-top: 10px;
 }
 
 .modal-footer .el-button {
@@ -1212,35 +1442,63 @@ export default {
 }
 
 .local-modal-content .el-table {
-  height: 48vh;
-  max-height: 48vh;
+  height: 55vh;
+  max-height: 55vh;
 }
 
 .local-modal-content .el-table__body-wrapper {
-  max-height: calc(48vh - 48px);
+  max-height: calc(55vh - 48px);
   overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+/* 表格滚动条样式 - 隐藏滚动条 */
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-track {
+  display: none;
+}
+
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  display: none;
+}
+
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  display: none;
+}
+
+/* 主表格滚动条隐藏 */
+.el-table__body-wrapper {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.el-table__body-wrapper::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 /* 表格样式优化 */
 .el-table {
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .el-table th {
-  background-color: #F5F7FA !important;
+  background-color: #F5F7FA;
   color: #606266;
-  font-weight: 500;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
+  font-weight: 600;
 }
 
-.el-table td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
+.el-table .cell {
+  padding: 0 8px;
+  line-height: 1.5;
 }
 
 .el-table tr:hover > td {
@@ -1255,5 +1513,20 @@ export default {
 
 .el-button--text:hover {
   color: #409EFF;
+}
+
+/* 确保按钮大小生效 - 与备货出库页面保持一致 */
+.app-container > .mb8 .el-col .el-button,
+.app-container > .mb8 .el-col .el-button--medium,
+.app-container > .mb8 .el-col .el-button.is-plain {
+  height: 36px !important;
+  padding: 9px 15px !important;
+  font-size: 14px !important;
+  line-height: 18px !important;
+  min-width: auto !important;
+}
+
+.app-container > .mb8 .el-col .el-button [class*="el-icon"] {
+  font-size: 14px !important;
 }
 </style>

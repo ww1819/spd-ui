@@ -66,15 +66,53 @@
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="数量" align="center" prop="qty" width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.qty || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
+          <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
           <el-table-column label="计费" align="center" prop="material.isBilling" width="70" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && (scope.row.material.isBilling === '1' || scope.row.material.isBilling === 1)) ? '是' : '否' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="院内码" align="center" prop="inHospitalCode" width="200" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.inHospitalCode || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="生产日期" align="center" prop="materialDate" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.materialDate">{{ formatDate(scope.row.materialDate) }}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="有效期" align="center" prop="endTime" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.endTime">{{ formatDate(scope.row.endTime) }}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="批号" align="center" prop="materialNo" width="150" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.materialNo || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="批次号" align="center" prop="batchNo" width="150" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.batchNo || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="库存分类" align="center" width="120" show-overflow-tooltip resizable>
@@ -582,6 +620,11 @@ export default {
       }
       return '--';
     },
+    /** 格式化金额 */
+    formatCurrency(value) {
+      if (!value && value !== 0) return '--';
+      return parseFloat(value).toFixed(2);
+    },
   }
 };
 </script>
@@ -645,6 +688,7 @@ export default {
 .modal-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: auto;
   padding: 20px 24px;
   background: #fff;
 }
@@ -666,6 +710,13 @@ export default {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 20px;
+  min-width: 100%;
+}
+
+/* 确保表格可以左右滚动 */
+.el-table__body-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 .el-table th {

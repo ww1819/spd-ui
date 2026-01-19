@@ -1,5 +1,4 @@
 module.exports = {
-  cache: false, // 禁用 babel 缓存以解决编译问题
   presets: [
     // https://github.com/vuejs/vue-cli/tree/master/packages/@vue/babel-preset-app
     '@vue/cli-plugin-babel/preset'

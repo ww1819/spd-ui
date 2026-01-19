@@ -27,7 +27,7 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="日期" style="display: flex; align-items: center;">
+          <el-form-item label="制单日期" style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -61,51 +61,61 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-      <div style="display: flex; align-items: center; gap: 10px;">
+    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+      <el-col :span="1.5">
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
-          @click="handleExport"
-          v-hasPermi="['gzOrder:apply:export']"
-        >导出</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button
           type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
+          size="medium"
           @click="handleAdd"
           v-hasPermi="['gzOrder:apply:add']"
         >新增</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          plain
+          icon="el-icon-download"
+          size="medium"
+          @click="handleExport"
+          v-hasPermi="['gzOrder:apply:export']"
+        >导出</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button
           type="success"
           plain
           icon="el-icon-check"
-          size="small"
+          size="medium"
           :disabled="multiple"
           @click="handleAudit"
           v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
-      </div>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="orderList"
               :row-class-name="orderListIndex"
-              @selection-change="handleSelectionChange" height="58vh" border>
+              @selection-change="handleSelectionChange" 
+              ref="orderTable"
+              height="58vh" border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="单号" align="center" prop="orderNo" width="180" show-overflow-tooltip resizable>
@@ -148,7 +158,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right">
         <template slot-scope="scope">
           <template v-if="scope.row.orderStatus == '2' || scope.row.orderStatus == 2">
             <el-button
@@ -160,7 +170,9 @@
             <el-button
               size="small"
               type="text"
-              @click="handlePrint(scope.row, true)"
+              icon="el-icon-printer"
+              @click="handlePrint(scope.row,true)"
+              style="padding: 0 5px; margin: 0;"
             >打印</el-button>
           </template>
           <template v-else>
@@ -447,9 +459,37 @@
       </div>
     </transition>
 
+    <!-- 打印对话框 -->
+    <el-dialog :visible.sync="modalObj.show" :title="modalObj.title" :width="modalObj.width" @close="handlePrintDialogClose">
+      <!-- 打印方式选择（包含布局选择） -->
+      <template v-if="modalObj.component === 'print-type'">
+        <el-radio-group v-model="modalObj.form.value">
+          <el-radio :label="2">浏览器打印</el-radio>
+        </el-radio-group>
+        <div style="margin-top: 20px;">
+          <el-form-item label="页面方向：">
+            <el-radio-group v-model="modalObj.form.orientation">
+              <el-radio label="portrait">纵向</el-radio>
+              <el-radio label="landscape">横向</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </div>
+      </template>
+      <!-- 打印预览 -->
+      <template v-else-if="modalObj.component === 'window-print-preview'">
+        <gz-order-print v-if="modalObj.form.row && modalObj.form.row.detailList && modalObj.form.row.detailList.length > 0" :key="`print-${modalObj.form.row.orderNo || Date.now()}-${modalObj.form.orientation || 'landscape'}-${modalObj.form.row.detailList.length}`" :row="modalObj.form.row" :orientation="modalObj.form.orientation || 'landscape'" ref="receiptOrderPrintRef"></gz-order-print>
+        <div v-else-if="modalObj.form.row" style="padding: 20px; text-align: center; color: #999;">
+          <p>正在加载打印数据...</p>
+        </div>
+      </template>
+      <template slot="footer" class="dialog-footer">
+        <el-button @click="handlePrintDialogClose">取消</el-button>
+        <el-button @click="modalObj.ok" type="primary">确认</el-button>
+      </template>
+    </el-dialog>
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
-      <gz-order-print v-if="printRowData" :row="printRowData" ref="receiptOrderPrintRefAuto"></gz-order-print>
+      <gz-order-print v-if="printRowData" :row="printRowData" :orientation="printOrientation || 'landscape'" ref="receiptOrderPrintRefAuto"></gz-order-print>
       <barcode-print v-if="printBarcodeData" :barcode-list="printBarcodeData" ref="barcodePrintRefAuto"></barcode-print>
     </div>
 
@@ -501,6 +541,7 @@ import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFil
 import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
 import barcodePrint from "@/views/gzOrder/apply/barcodePrint";
 import RMBConverter from "@/utils/tools";
+import { parseTime } from "@/utils/ruoyi";
 import item from "@/layout/components/Sidebar/Item.vue";
 
 export default {
@@ -565,10 +606,28 @@ export default {
       form: {},
       // 用户列表
       userOptions: [],
+      // 打印对话框（与入库验收页面初始化一致）
+      modalObj: {
+        title: '选择打印方式',
+        width: '520px',
+        component: null,
+        form: {
+          value: 2,
+          orientation: 'landscape', // 默认横向
+          row: null
+        },
+        ok: () => {
+        },
+        cancel: () => {
+        },
+        show: false
+      },
       // 打印数据（用于隐藏的打印组件）
       printRowData: null,
       // 打印条码数据（用于隐藏的打印组件）
       printBarcodeData: null,
+      // 打印方向，默认横向
+      printOrientation: 'landscape',
       // 仓库是否被自动填充（如果是，则禁用仓库选择）
       warehouseAutoFilled: false,
       // 仓库选择弹窗显示
@@ -1163,17 +1222,33 @@ export default {
       });
       
       listOrder(this.queryParams).then(response => {
-        this.orderList = response.rows;
-        this.total = response.total;
+        console.log('查询响应:', response);
+        this.orderList = response.rows || [];
+        this.total = response.total || 0;
         this.loading = false;
-        console.log('查询结果数量:', response.rows.length);
+        console.log('查询结果数量:', this.orderList.length, '总条数:', this.total);
         // 调试：打印总金额信息
-        if (response.rows && response.rows.length > 0) {
-          console.log('查询结果中的总金额:', response.rows.map(row => ({
+        if (this.orderList && this.orderList.length > 0) {
+          console.log('查询结果中的总金额:', this.orderList.map(row => ({
             orderNo: row.orderNo,
             totalAmt: row.totalAmt
           })));
+        } else if (this.total > 0) {
+          console.warn('警告：总条数为', this.total, '但rows为空数组，可能是分页参数问题');
+          console.warn('完整响应:', JSON.stringify(response, null, 2));
         }
+        // 强制更新表格
+        this.$nextTick(() => {
+          if (this.$refs.orderTable) {
+            this.$refs.orderTable.doLayout();
+          }
+        });
+      }).catch(error => {
+        console.error('查询失败:', error);
+        this.orderList = [];
+        this.total = 0;
+        this.loading = false;
+        this.$modal.msgError('查询失败：' + (error.message || '未知错误'));
       });
     },
     checkMaterialBtn() {
@@ -1344,15 +1419,28 @@ export default {
       getOrder(id).then(response => {
         this.form = response.data;
         this.gzOrderEntryList = response.data.gzOrderEntryList || [];
-        // 如果有materialList，为每个entry添加materialName
+        // 如果有materialList，为每个entry添加完整的物料信息
         if (response.data.materialList && response.data.materialList.length > 0) {
           const materialMap = {};
           response.data.materialList.forEach(material => {
-            materialMap[material.id] = material.name;
+            materialMap[material.id] = material;
           });
           this.gzOrderEntryList.forEach(entry => {
             if (entry.materialId && materialMap[entry.materialId]) {
-              entry.materialName = materialMap[entry.materialId];
+              const material = materialMap[entry.materialId];
+              // 保存完整的物料对象
+              entry.material = material;
+              // 映射物料信息
+              entry.materialName = material.name || entry.materialName || '';
+              entry.materialCode = material.code || entry.materialCode || '';
+              entry.speci = material.speci || entry.speci || '';
+              entry.model = material.model || entry.model || '';
+              // 映射单位信息
+              if (material.fdUnit && material.fdUnit.unitName) {
+                entry.unit = material.fdUnit;
+              } else if (material.unit) {
+                entry.unit = material.unit;
+              }
             }
             // 确保masterBarcode有值，优先使用masterBarcode，其次使用udiNo
             if (!entry.masterBarcode && entry.udiNo) {
@@ -1364,7 +1452,7 @@ export default {
           this.gzOrderEntryList.forEach(entry => {
             if (!entry.masterBarcode && entry.udiNo) {
               entry.masterBarcode = entry.udiNo;
-        }
+            }
           });
         }
         // 设置制单人和审核人姓名
@@ -1469,24 +1557,132 @@ export default {
       const row = { id: this.form.id };
       this.handlePrintBarcode(row);
     },
+    /** 打印对话框关闭处理 */
+    handlePrintDialogClose() {
+      this.modalObj.show = false;
+      // 重置 modalObj，清空打印数据以强制重新渲染
+      this.modalObj = {
+        show: false,
+        title: '',
+        width: '',
+        component: null,
+        form: {
+          value: 2,
+          orientation: 'landscape',
+          row: null
+        },
+        ok: () => {},
+        cancel: () => {}
+      };
+    },
     /** 打印按钮操作 */
-    handlePrint(row, print) {
+    handlePrint(row, print){
       // 如果传入 print 参数为 true，直接执行打印
       if (print === true) {
         // 直接获取数据并触发打印
         this.getOrderDetail(row).then(res => {
+          // 验证数据完整性
+          if (!res || !res.detailList || res.detailList.length === 0) {
+            this.$modal.msgWarning('打印数据不完整，请重试');
+            return;
+          }
           // 设置打印数据
           this.printRowData = res;
+          // 设置默认方向为横向
+          this.printOrientation = 'landscape';
           // 等待组件渲染后调用 start()
           this.$nextTick(() => {
-            if (this.$refs['receiptOrderPrintRefAuto']) {
-              // start() 方法会直接触发浏览器打印对话框
-              this.$refs['receiptOrderPrintRefAuto'].start();
-            }
+            this.$nextTick(() => {
+              if (this.$refs['receiptOrderPrintRefAuto']) {
+                // start() 方法会直接触发浏览器打印对话框
+                this.$refs['receiptOrderPrintRefAuto'].start();
+              } else {
+                this.$modal.msgError('打印组件未找到，请刷新页面重试');
+              }
+            });
           });
+        }).catch(error => {
+          this.$modal.msgError('获取打印数据失败：' + (error.message || '未知错误'));
         });
         return;
       }
+      // 否则显示选择打印方式的对话框
+      // 使用 $nextTick 确保对话框正确渲染
+      this.$nextTick(() => {
+        this.modalObj = {
+          show: true,
+          title: '选择打印方式',
+          width: '520px',
+          component: 'print-type',
+          form: {
+            value: 2,
+            orientation: 'landscape', // 默认横向
+            row: null
+          },
+          ok: () => {
+            this.modalObj.show = false;
+            if (this.modalObj.form.value === 2) {
+              this.windowPrintOut(row, false);
+            }
+          },
+          cancel: () => {
+            this.modalObj.show = false;
+          }
+        };
+      });
+    },
+    windowPrintOut(row, print) {
+      this.getOrderDetail(row).then(res => {
+        if (print) {
+          // 与入库验收页面完全一致：只更新 modalObj.form.row，然后直接调用打印
+          // 注意：对话框已经在 handlePrint 中打开了
+          this.modalObj.form.row = res;
+          // 确保有方向设置
+          if (!this.modalObj.form.orientation) {
+            this.modalObj.form.orientation = 'landscape';
+          }
+          this.$nextTick(() => {
+            if (this.$refs['receiptOrderPrintRef']) {
+              // start() 方法会直接触发浏览器打印对话框，不需要显示预览对话框
+              this.$refs['receiptOrderPrintRef'].start();
+            }
+          });
+        } else {
+          // 先清空row，强制组件重新渲染
+          this.modalObj.form.row = null;
+          // 确保有方向设置
+          if (!this.modalObj.form.orientation) {
+            this.modalObj.form.orientation = 'landscape';
+          }
+          // 等待组件销毁后再设置新数据
+          this.$nextTick(() => {
+            this.$nextTick(() => {
+              // 验证数据完整性
+              if (!res || !res.detailList || res.detailList.length === 0) {
+                console.warn('打印数据不完整:', res);
+                this.$modal.msgWarning('打印数据不完整，请重试');
+                return;
+              }
+              // 更新 modalObj.form.row 以显示预览
+              this.modalObj.form.row = res;
+              // 等待组件完全渲染后再显示预览
+              this.$nextTick(() => {
+                this.$nextTick(() => {
+                  // 再次验证组件是否已正确渲染
+                  if (this.$refs['receiptOrderPrintRef']) {
+                    this.modalObj.component = 'window-print-preview';
+                  } else {
+                    // 如果组件还未渲染，再等待一次
+                    setTimeout(() => {
+                      this.modalObj.component = 'window-print-preview';
+                    }, 100);
+                  }
+                });
+              });
+            });
+          });
+        }
+      });
     },
     //组装打印信息
     getOrderDetail(row) {
@@ -1739,7 +1935,32 @@ export default {
         this.form = response.data;
         this.form.orderStatus = '1';
         this.form.orderType = '101';
-        this.gzOrderEntryList = response.data.gzOrderEntryList;
+        this.gzOrderEntryList = response.data.gzOrderEntryList || [];
+        // 如果有materialList，为每个entry添加完整的物料信息
+        if (response.data.materialList && response.data.materialList.length > 0) {
+          const materialMap = {};
+          response.data.materialList.forEach(material => {
+            materialMap[material.id] = material;
+          });
+          this.gzOrderEntryList.forEach(entry => {
+            if (entry.materialId && materialMap[entry.materialId]) {
+              const material = materialMap[entry.materialId];
+              // 保存完整的物料对象
+              entry.material = material;
+              // 映射物料信息
+              entry.materialName = material.name || entry.materialName || '';
+              entry.materialCode = material.code || entry.materialCode || '';
+              entry.speci = material.speci || entry.speci || '';
+              entry.model = material.model || entry.model || '';
+              // 映射单位信息
+              if (material.fdUnit && material.fdUnit.unitName) {
+                entry.unit = material.fdUnit;
+              } else if (material.unit) {
+                entry.unit = material.unit;
+              }
+            }
+          });
+        }
         this.open = true;
         this.title = "修改高值入库";
         this.action = true;
@@ -1922,13 +2143,106 @@ export default {
 </script>
 
 <style scoped>
-/* 确保页面容器有相对定位 */
-.app-container {
-  position: relative;
+/* 内部弹窗样式 - 占满整个遮罩层 */
+.local-modal-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
-/* 按钮行布局 - 按钮靠左，right-toolbar靠右 */
-.mb8 {
+.local-modal-content {
+  background: #fff;
+  width: 100%;
+  height: 100%;
+  min-height: 95vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  min-height: 48px;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  text-align: right;
+  border-top: 1px solid #EBEEF5;
+  background: #F5F7FA;
+  margin-top: 10px;
+}
+
+.modal-footer .el-button {
+  margin-left: 12px;
+}
+
+.local-modal-content .el-form {
+  flex: 1;
+  overflow: visible;
+  padding: 24px;
+  background: #fff;
+  box-shadow: none;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* 弹窗动画效果 */
+.modal-fade-enter-active, .modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter, .modal-fade-leave-to {
+  opacity: 0;
+}
+
+.modal-zoom-enter-active, .modal-zoom-leave-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transform-origin: center center;
+}
+
+.modal-zoom-enter {
+  opacity: 0;
+  transform: scale(0.3) translateY(-50px);
+}
+
+.modal-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+/* 确保页面容器有相对定位，以便内部弹窗正确定位 */
+.app-container {
   position: relative;
 }
 
@@ -2013,153 +2327,6 @@ export default {
   padding-right: 0;
 }
 
-/* 表格样式优化 */
-.el-table {
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
-}
-
-.el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266;
-  font-weight: 500;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.el-table td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.el-table tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
-}
-
-/* 按钮样式 */
-.el-button--text {
-  padding: 0 4px;
-}
-
-.el-button--text:hover {
-  color: #409EFF;
-}
-
-/* 内部弹窗样式 - 占满整个遮罩层 */
-.local-modal-mask {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.3);
-  z-index: 1000;
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
-}
-
-.local-modal-content {
-  background: #fff;
-  width: 100%;
-  height: 100vh;
-  max-height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  min-height: 48px;
-}
-
-.modal-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  line-height: 1.4;
-}
-
-.close-btn {
-  border: 1px solid #DCDFE6;
-  background: #fff;
-  color: #606266;
-  padding: 7px 15px;
-}
-
-.close-btn:hover {
-  background: #F5F7FA;
-  color: #409EFF;
-  border-color: #C6E2FF;
-}
-
-/* 弹窗内表单字段容器 */
-.form-fields-container {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
-}
-
-.modal-footer {
-  padding: 16px 24px;
-  text-align: right;
-  border-top: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  margin-top: 10px;
-}
-
-.modal-footer .el-button {
-  margin-left: 12px;
-}
-
-.local-modal-content .el-form {
-  flex: 1;
-  overflow: visible;
-  padding: 24px;
-  background: #fff;
-  box-shadow: none;
-  margin-bottom: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 弹窗动画效果 */
-.modal-fade-enter-active, .modal-fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.modal-fade-enter, .modal-fade-leave-to {
-  opacity: 0;
-}
-
-.modal-zoom-enter-active, .modal-zoom-leave-active {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  transform-origin: center center;
-}
-
-.modal-zoom-enter {
-  opacity: 0;
-  transform: scale(0.3) translateY(-50px);
-}
-
-.modal-zoom-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
-}
-
 /* 弹窗内表单紧凑布局 */
 .local-modal-content .modal-form-compact .el-row {
   margin-bottom: 10px;
@@ -2201,8 +2368,121 @@ export default {
   line-height: 28px !important;
 }
 
+.local-modal-content .modal-form-compact .el-form-item__content {
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__label {
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+/* 弹窗内表格样式 - 高度调到确定按钮上面一点 */
+.local-modal-content .table-wrapper {
+  flex: 1;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.local-modal-content .el-table {
+  height: 48vh;
+  max-height: 48vh;
+}
+
+.local-modal-content .el-table__body-wrapper {
+  max-height: calc(48vh - 48px);
+  overflow-y: auto;
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.el-table th {
+  background-color: #F5F7FA !important;
+  color: #606266;
+  font-weight: 500;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+/* 按钮样式 */
+.el-button--text {
+  padding: 0 4px;
+}
+
+.el-button--text:hover {
+  color: #409EFF;
+}
+
+/* 弹窗内表单字段容器 */
+.form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
+}
+
+/* 弹窗内表单紧凑布局 */
+.local-modal-content .modal-form-compact .el-row {
+  margin-bottom: 10px;
+}
+
 .local-modal-content .modal-form-compact .el-form-item {
   margin-bottom: 0;
+}
+
+.local-modal-content .modal-form-compact .el-input,
+.local-modal-content .modal-form-compact .el-select,
+.local-modal-content .modal-form-compact .el-date-picker {
+  width: 140px;
+  max-width: 140px;
+}
+
+/* 缩小所有输入框高度 */
+.local-modal-content .modal-form-compact .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+}
+
+.local-modal-content .modal-form-compact .el-input__icon {
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-select .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor.el-input {
+  height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
 }
 
 .local-modal-content .modal-form-compact .el-form-item__content {
@@ -2288,6 +2568,15 @@ export default {
 
 .local-modal-content .el-table th {
   text-align: center;
+}
+
+/* 固定列样式 */
+::v-deep .el-table__fixed-right {
+  display: block !important;
+}
+
+::v-deep .el-table__fixed-right-patch {
+  background-color: #fff;
 }
 
 </style>

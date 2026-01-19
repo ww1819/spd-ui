@@ -2183,11 +2183,11 @@ export default {
 
 /* 查询条件容器框样式 */
 .form-fields-container {
-  background: #fff;
+  background: #F5F7FA;
   padding: 6px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid #EBEEF5;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
+  border: 1px solid #DCDFE6;
 }
 
 /* 图片容器样式 */
@@ -2645,6 +2645,43 @@ export default {
 .el-table__fixed-right .el-scrollbar__bar {
   z-index: 13 !important;
   position: relative;
+}
+
+/* 表格边框加粗 */
+.app-container .el-table {
+  border: 2px solid #C0C4CC !important;
+}
+
+.app-container .el-table th,
+.app-container .el-table td {
+  border-right: 2px solid #C0C4CC !important;
+  border-bottom: 2px solid #C0C4CC !important;
+}
+
+.app-container .el-table th:first-child,
+.app-container .el-table td:first-child {
+  border-left: 2px solid #C0C4CC !important;
+}
+
+.app-container .el-table::before {
+  height: 2px !important;
+  background-color: #C0C4CC !important;
+}
+
+.app-container .el-table::after {
+  width: 2px !important;
+  background-color: #C0C4CC !important;
+}
+
+/* 表格标题行字体加粗加大 */
+.app-container .el-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.app-container .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
 }
 </style>
 

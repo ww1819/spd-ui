@@ -62,24 +62,9 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
-          size="small"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          icon="el-icon-refresh"
-          size="small"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
+          size="medium"
           @click="handleAdd"
           v-hasPermi="['gzOrder:apply:add']"
         >新增</el-button>
@@ -89,17 +74,32 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['gzOrder:apply:export']"
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="primary"
+          icon="el-icon-search"
+          size="medium"
+          @click="handleQuery"
+        >搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          icon="el-icon-refresh"
+          size="medium"
+          @click="resetQuery"
+        >重置</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="success"
           plain
           icon="el-icon-check"
-          size="small"
+          size="medium"
           @click="handleBatchAudit"
           v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
@@ -147,28 +147,36 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
         <template slot-scope="scope">
-          <el-button
-            size="small"
-            type="text"
-            @click="handlePrint(scope.row,true)"
-            v-if="scope.row.orderStatus == 2"
-          >打印</el-button>
-          <template v-if="scope.row.orderStatus != 2">
+          <span style="white-space: nowrap; display: inline-block;">
             <el-button
               size="small"
               type="text"
+              icon="el-icon-printer"
+              @click="handlePrint(scope.row,true)"
+              v-if="scope.row.orderStatus == 2"
+              style="padding: 0 5px; margin: 0;"
+            >打印</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
-                              v-hasPermi="['gzOrder:apply:edit']"
+              v-hasPermi="['gzOrder:apply:edit']"
+              v-if="scope.row.orderStatus != 2"
+              style="padding: 0 5px; margin: 0;"
             >修改</el-button>
             <el-button
               size="small"
               type="text"
+              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
-                              v-hasPermi="['gzOrder:apply:remove']"
+              v-hasPermi="['gzOrder:apply:remove']"
+              v-if="scope.row.orderStatus != 2"
+              style="padding: 0 5px; margin: 0;"
             >删除</el-button>
-          </template>
+          </span>
         </template>
       </el-table-column>
     </el-table>
@@ -375,20 +383,37 @@
       </div>
     </transition>
 
-    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width ">
+    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width " @close="handlePrintDialogClose">
+      <!-- 打印方式选择（包含布局选择） -->
       <template v-if=" modalObj.component === 'print-type' ">
         <el-radio-group v-model=" modalObj.form.value ">
           <el-radio :label=" 2 ">浏览器打印</el-radio>
         </el-radio-group>
+        <div style="margin-top: 20px;">
+          <el-form-item label="页面方向：">
+            <el-radio-group v-model=" modalObj.form.orientation ">
+              <el-radio label="portrait">纵向</el-radio>
+              <el-radio label="landscape">横向</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </div>
       </template>
-      <template v-if=" modalObj.form.value === 2 || modalObj.component === 'window-print-preview' ">
-        <gz-order-print :row=" modalObj.form.row " ref="receiptOrderPrintRef"></gz-order-print>
+      <!-- 打印预览 -->
+      <template v-else-if=" modalObj.component === 'window-print-preview' ">
+        <gz-order-print v-if=" modalObj.form.row && modalObj.form.row.detailList && modalObj.form.row.detailList.length > 0 " :key="`print-${modalObj.form.row.orderNo || Date.now()}-${modalObj.form.orientation || 'landscape'}-${modalObj.form.row.detailList.length}`" :row=" modalObj.form.row " :orientation=" modalObj.form.orientation || 'landscape' " ref="receiptOrderPrintRef"></gz-order-print>
+        <div v-else-if=" modalObj.form.row " style="padding: 20px; text-align: center; color: #999;">
+          <p>正在加载打印数据...</p>
+        </div>
       </template>
       <template slot="footer" class="dialog-footer">
         <el-button @click=" modalObj.cancel ">取消</el-button>
         <el-button @click=" modalObj.ok " type="primary">确认</el-button>
       </template>
     </el-dialog>
+    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
+    <div v-show="false">
+      <gz-order-print v-if="printRowData" :row="printRowData" :orientation="printOrientation || 'landscape'" ref="receiptOrderPrintRefAuto"></gz-order-print>
+    </div>
 
     <!-- 3、使用组件 -->
     <SelectMaterialFilter
@@ -429,14 +454,20 @@ export default {
         width: '520px',
         component: null,
         form: {
-          value: null,
+          value: 2,
+          orientation: 'landscape', // 默认横向
           row: null
         },
         ok: () => {
         },
         cancel: () => {
-        }
+        },
+        show: false
       },
+      // 打印数据（用于隐藏的打印组件）
+      printRowData: null,
+      // 打印方向，默认横向
+      printOrientation: 'landscape',
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -1216,57 +1247,135 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
-      this.modalObj = {
-        show: true,
-        title: '选择打印方式',
-        width: '520px',
-        component: 'print-type',
-        form: {
-          value: 1,
-          row
-        },
-        ok: () => {
-          this.modalObj.show = false
-          if (this.modalObj.form.value === 1) {
-            this.doPrintOut(row, false)
-          } else {
-            this.windowPrintOut(row, print)
+      console.log('handlePrint called with:', { row, print });
+      // 如果传入 print 参数为 true，直接执行打印
+      if (print === true) {
+        // 直接获取数据并触发打印
+        this.getOrderDetail(row).then(res => {
+          console.log('getOrderDetail result:', res);
+          // 验证数据完整性
+          if (!res || !res.detailList || res.detailList.length === 0) {
+            console.warn('打印数据不完整:', res);
+            this.$modal.msgWarning('打印数据不完整，请重试');
+            return;
           }
-        },
-        cancel: () => {
-          this.modalObj.show = false
-        }
+          // 设置打印数据
+          this.printRowData = res;
+          // 设置默认方向为横向
+          this.printOrientation = 'landscape';
+          // 等待组件渲染后调用 start()
+          this.$nextTick(() => {
+            this.$nextTick(() => {
+              console.log('Checking receiptOrderPrintRefAuto:', this.$refs['receiptOrderPrintRefAuto']);
+              if (this.$refs['receiptOrderPrintRefAuto']) {
+                // start() 方法会直接触发浏览器打印对话框
+                console.log('Calling start() on print component');
+                this.$refs['receiptOrderPrintRefAuto'].start();
+              } else {
+                console.error('receiptOrderPrintRefAuto not found');
+                this.$modal.msgError('打印组件未找到，请刷新页面重试');
+              }
+            });
+          });
+        }).catch(error => {
+          console.error('getOrderDetail error:', error);
+          this.$modal.msgError('获取打印数据失败：' + (error.message || '未知错误'));
+        });
+        return;
       }
+      // 否则显示选择打印方式的对话框
+      this.$nextTick(() => {
+        this.modalObj = {
+          show: true,
+          title: '选择打印方式',
+          width: '520px',
+          component: 'print-type',
+          form: {
+            value: 2,
+            orientation: 'landscape', // 默认横向
+            row: null
+          },
+          ok: () => {
+            this.modalObj.show = false;
+            if (this.modalObj.form.value === 2) {
+              this.windowPrintOut(row, false);
+            }
+          },
+          cancel: () => {
+            this.modalObj.show = false;
+          }
+        };
+      });
+    },
+    handlePrintDialogClose() {
+      this.modalObj.show = false;
+      // 重置 modalObj，清空打印数据以强制重新渲染
+      this.modalObj = {
+        show: false,
+        title: '',
+        width: '',
+        component: null,
+        form: {
+          value: 2,
+          orientation: 'landscape',
+          row: null
+        },
+        ok: () => {},
+        cancel: () => {}
+      };
     },
     windowPrintOut(row, print) {
       this.getOrderDetail(row).then(res => {
         if (print) {
-          this.modalObj.form.row = res
-          this.$nextTick(() => {
-            this.$refs['receiptOrderPrintRef'].start()
-          })
-          return
-        }
-        this.$nextTick(() => {
-          this.modalObj = {
-            show: true,
-            title: '浏览器打印预览',
-            width: '800px',
-            component: 'window-print-preview',
-            form: {
-              value: 1,
-              row,
-              print
-            },
-            ok: () => {
-              this.modalObj.show = false
-            },
-            cancel: () => {
-              this.modalObj.show = false
-            }
+          // 与入库验收页面完全一致：只更新 modalObj.form.row，然后直接调用打印
+          // 注意：对话框已经在 handlePrint 中打开了
+          this.modalObj.form.row = res;
+          // 确保有方向设置
+          if (!this.modalObj.form.orientation) {
+            this.modalObj.form.orientation = 'landscape';
           }
-        })
-      })
+          this.$nextTick(() => {
+            if (this.$refs['receiptOrderPrintRef']) {
+              // start() 方法会直接触发浏览器打印对话框，不需要显示预览对话框
+              this.$refs['receiptOrderPrintRef'].start();
+            }
+          });
+        } else {
+          // 先清空row，强制组件重新渲染
+          this.modalObj.form.row = null;
+          // 确保有方向设置
+          if (!this.modalObj.form.orientation) {
+            this.modalObj.form.orientation = 'landscape';
+          }
+          // 等待组件销毁后再设置新数据
+          this.$nextTick(() => {
+            this.$nextTick(() => {
+              // 验证数据完整性
+              if (!res || !res.detailList || res.detailList.length === 0) {
+                console.warn('打印数据不完整:', res);
+                this.$modal.msgWarning('打印数据不完整，请重试');
+                return;
+              }
+              // 更新 modalObj.form.row 以显示预览
+              this.modalObj.form.row = res;
+              // 等待组件完全渲染后再显示预览
+              this.$nextTick(() => {
+                this.$nextTick(() => {
+                  // 再次验证组件是否已正确渲染
+                  if (this.$refs['receiptOrderPrintRef']) {
+                    this.modalObj.component = 'window-print-preview';
+                  } else {
+                    // 如果组件还未渲染，再等待一次
+                    setTimeout(() => {
+                      this.modalObj.component = 'window-print-preview';
+                    }, 100);
+                  }
+                });
+              });
+            });
+          });
+        }
+      });
     },
     doPrintOut(row, print) {
       this.getOrderDetail(row).then(result => {
@@ -1302,12 +1411,12 @@ export default {
             amt: item.amt,
             qty: item.qty,
             price: item.price,
-            materialCode: prod.code,
-            materialName: prod.name,
-            materialSpeci: prod.speci,
-            periodDate: prod.periodDate,
-            factoryName: prod.fdFactory.factoryName,
-            warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
+            materialCode: prod ? prod.code : '',
+            materialName: prod ? prod.name : '',
+            materialSpeci: prod ? prod.speci : '',
+            periodDate: prod ? prod.periodDate : '',
+            factoryName: prod && prod.fdFactory ? prod.fdFactory.factoryName : '',
+            warehouseCategoryName: prod && prod.fdWarehouseCategory ? prod.fdWarehouseCategory.warehouseCategoryName : '',
           })
 
         })
@@ -1316,14 +1425,14 @@ export default {
 
         return {
           orderNo: row.orderNo,
-          supplierName: row.supplier.name,
-          warehouseName: row.warehouse.name,
+          supplierName: row.supplier ? row.supplier.name : '',
+          warehouseName: row.warehouse ? row.warehouse.name : '',
           orderDate: row.orderDate,
           auditDate: row.auditDate,
           totalAmt: totalAmt,
           totalQty: totalQty,
           totalAmtConverter: totalAmtConverter,
-          detailList:detailList
+          detailList: detailList
         }
       })
     },
@@ -1408,7 +1517,6 @@ export default {
   background: #fff;
   width: 100%;
   height: 100%;
-  min-height: 95vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1440,12 +1548,27 @@ export default {
   background: rgba(0, 0, 0, 0.1);
 }
 
+/* 查询条件容器框样式 */
+.local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
+}
+
+.modal-body {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
 .modal-footer {
   padding: 16px 24px;
   text-align: right;
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
-  margin-top: 10px;
 }
 
 .modal-footer .el-button {
@@ -1640,35 +1763,50 @@ export default {
 }
 
 .local-modal-content .el-table {
-  height: 48vh;
-  max-height: 48vh;
+  height: 55vh;
+  max-height: 55vh;
 }
 
 .local-modal-content .el-table__body-wrapper {
-  max-height: calc(48vh - 48px);
+  max-height: calc(55vh - 48px);
   overflow-y: auto;
+}
+
+/* 表格滚动条样式 */
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 5px;
+}
+
+.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 /* 表格样式优化 */
 .el-table {
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .el-table th {
-  background-color: #F5F7FA !important;
+  background-color: #F5F7FA;
   color: #606266;
-  font-weight: 500;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
+  font-weight: 600;
 }
 
-.el-table td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
+.el-table .cell {
+  padding: 0 8px;
+  line-height: 1.5;
 }
 
 .el-table tr:hover > td {

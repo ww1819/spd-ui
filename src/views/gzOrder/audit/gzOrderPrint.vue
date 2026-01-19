@@ -1,7 +1,7 @@
 ﻿<template>
-  <div class="gz-order-print" ref="receiptOrderPrintRef" hidden="hidden">
+  <div class="gz-order-print" :class="{'orientation-portrait': orientation === 'portrait', 'orientation-landscape': orientation === 'landscape'}" :data-orientation="orientation" ref="receiptOrderPrintRef" hidden="hidden">
     <div style="font-size: 22px;text-align: center;">
-      <span v-if="hospitalName">{{ hospitalName }}</span>高值入库单
+      <span v-if="hospitalName">{{ hospitalName }}</span><span v-if="printType === 'refund'">备货退货单</span><span v-else>高值入库单</span>
     </div>
     <div class="summary">
       <div class="col1" style="width:45%">单号: {{ row.orderNo }}</div>
@@ -26,30 +26,33 @@
         <th>厂家</th>
         <th>耗材分类</th>
       </tr>
-      <tr v-for="item in row.detailList">
+      <tr v-for="(item, index) in (row.detailList || [])" :key="index">
         <td>{{ item.materialCode || '' }}</td>
         <td>{{ item.materialName || '' }}</td>
         <td>{{ item.materialSpeci || '' }}</td>
 <!--        <td>{{ item.planQuantity }}</td>-->
-        <td>{{ item.price || '' }}</td>
+        <td>{{ formatAmount(item.price) }}</td>
         <td>{{ item.qty || '' }}</td>
-        <td>{{ item.amt || '' }}</td>
+        <td>{{ formatAmount(item.amt) }}</td>
         <td>{{ item.batchNumber || '' }}</td>
         <td>{{ item.periodDate || '' }}</td>
         <td>{{ item.factoryName || '' }}</td>
         <td>{{ item.warehouseCategoryName || '' }}</td>
       </tr>
+      <tr v-if="!row.detailList || row.detailList.length === 0">
+        <td colspan="11" style="text-align: center; padding: 20px;">暂无数据</td>
+      </tr>
       <tr>
         <td>本页小计：</td>
         <td colspan="3"></td>
         <td >{{ row.totalQty }}</td>
-        <td >{{ row.totalAmt }}</td>
+        <td >{{ formatAmount(row.totalAmt) }}</td>
         <td colspan="4"></td>
       </tr>
       <tr>
         <td colspan="4" style="text-align: left;">合计金额：（大写）：{{ row.totalAmtConverter }}</td>
         <td colspan="2">（小写）：</td>
-        <td colspan="4">{{ row.totalAmt }}</td>
+        <td colspan="4">{{ formatAmount(row.totalAmt) }}</td>
       </tr>
     </table>
     <div class="foot" style="padding-top: 15px">
@@ -68,21 +71,100 @@ import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 
 export default {
   mixins: [hospitalNameMixin],
-  props: ['row'],
+  props: {
+    printType: {
+      type: String,
+      default: ''
+    },
+    row: {
+      type: Object,
+      required: true
+    },
+    orientation: {
+      type: String,
+      default: 'landscape' // 默认横向
+    }
+  },
+  computed: {
+    pageSize() {
+      return this.orientation === 'landscape' ? 'A4 landscape' : 'A4'
+    },
+    pageSizeStyle() {
+      return this.orientation === 'landscape' ? 'A4 landscape' : 'A4'
+    }
+  },
+  mounted() {
+    // 组件挂载后，强制刷新样式以确保正确显示
+    this.$nextTick(() => {
+      if (this.$refs.receiptOrderPrintRef) {
+        // 触发重排以确保样式正确应用
+        this.$refs.receiptOrderPrintRef.offsetHeight;
+        // 验证数据
+        if (this.row && this.row.detailList) {
+          console.log('打印组件已挂载，明细数量:', this.row.detailList.length);
+        } else {
+          console.warn('打印组件挂载时数据不完整:', this.row);
+        }
+      }
+    });
+  },
+  watch: {
+    // 监听 orientation 变化，强制重新渲染
+    orientation() {
+      this.$nextTick(() => {
+        if (this.$refs.receiptOrderPrintRef) {
+          this.$refs.receiptOrderPrintRef.offsetHeight;
+        }
+      });
+    },
+    // 监听 row 变化，确保数据更新后重新渲染
+    row: {
+      handler() {
+        this.$nextTick(() => {
+          if (this.$refs.receiptOrderPrintRef) {
+            this.$refs.receiptOrderPrintRef.offsetHeight;
+          }
+        });
+      },
+      deep: true
+    }
+  },
   methods: {
     start() {
       // 确保医院名称已加载完成后再打印
       this.ensureHospitalNameLoaded().then(() => {
-        // 等待Vue更新DOM
+        // 使用双重nextTick确保DOM完全更新
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptOrderPrintRef, {}, 'A4')
+          this.$nextTick(() => {
+            // 强制刷新样式
+            if (this.$refs.receiptOrderPrintRef) {
+              this.$refs.receiptOrderPrintRef.offsetHeight;
+            }
+            this.$print(this.$refs.receiptOrderPrintRef, {}, this.pageSize)
+          })
         })
       }).catch(() => {
         // 即使加载失败也继续打印
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptOrderPrintRef, {}, 'A4')
+          this.$nextTick(() => {
+            // 强制刷新样式
+            if (this.$refs.receiptOrderPrintRef) {
+              this.$refs.receiptOrderPrintRef.offsetHeight;
+            }
+            this.$print(this.$refs.receiptOrderPrintRef, {}, this.pageSize)
+          })
         })
       })
+    },
+    formatAmount(value) {
+      if (value === null || value === undefined || value === '') {
+        return ''
+      }
+      const num = parseFloat(value)
+      if (isNaN(num)) {
+        return ''
+      }
+      return num.toFixed(2)
     }
   }
 }
@@ -90,9 +172,27 @@ export default {
 
 
 <style lang="stylus" media="print">
+/* 默认横向 */
 @page {
-  size: auto;
+  size: A4 landscape;
   margin: 0;
+}
+
+/* 纵向布局 */
+@media print {
+  .gz-order-print.orientation-portrait {
+    @page {
+      size: A4;
+      margin: 0;
+    }
+  }
+  
+  .gz-order-print.orientation-landscape {
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+  }
 }
 
 @media print {
@@ -120,6 +220,9 @@ export default {
   table, table tr th, table tr td {
     border: 0.05rem solid #000;
     font-size: 12px;
+    overflow: hidden;
+    word-wrap: break-word;
+    word-break: break-all;
   }
 
 }
@@ -142,6 +245,9 @@ export default {
   .common-table
     td, th
       border-color black
+      overflow: hidden !important
+      word-wrap: break-word
+      word-break: break-all
 
   .content
     display flex

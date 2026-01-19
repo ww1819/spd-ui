@@ -5,7 +5,7 @@
         <div v-if="show" class="local-modal-content">
           <div class="modal-header">
             <div class="modal-title">高值备货库存明细</div>
-            <el-button icon="el-icon-close" size="small" circle @click="handleClose" class="close-btn"></el-button>
+            <el-button @click="handleClose" class="close-btn">关闭</el-button>
           </div>
           <div class="modal-body">
             <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
@@ -14,6 +14,17 @@
           <el-col :span="6">
             <el-form-item label="仓库" prop="warehouseId" label-width="100px">
               <SelectWarehouse v-model="queryParams.warehouseId" :value2="isShow"/>
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="6">
+            <el-form-item label="院内码" prop="inHospitalCode" label-width="100px">
+              <el-input
+                v-model="queryParams.inHospitalCode"
+                placeholder="请输入院内码（支持模糊搜索）"
+                clearable
+                @keyup.enter.native="handleQuery"
+              />
             </el-form-item>
           </el-col>
 
@@ -29,6 +40,9 @@
             </el-form-item>
           </el-col>
 
+        </el-row>
+
+        <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="入库批次号" prop="batchNo" label-width="100px">
               <el-input
@@ -39,40 +53,67 @@
               />
             </el-form-item>
           </el-col>
-
-        </el-row>
-
-        <el-row :gutter="24">
-          <el-col :span="6">
-            <el-form-item>
-              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-              <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
         </el-row>
       </el-form>
 
-      <el-table ref="singleTable" :data="depotInventoryList" @selection-change="handleSelectionChange" height="calc(42vh)" border>
+      <div class="button-container">
+        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button size="small" @click="handleClose">取 消</el-button>
+        <el-button type="primary" size="small" @click="checkBtn">确 定</el-button>
+      </div>
+
+      <el-table ref="singleTable" :data="depotInventoryList" :row-class-name="rowIndex" @selection-change="handleSelectionChange" height="calc(95vh - 380px)" border style="overflow: hidden;">
         <el-table-column type="selection" width="55" align="center" />
+        <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable/>
         <el-table-column label="耗材" align="center" prop="material.name" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable/>
+        <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="型号" align="center" prop="material.model" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="库存数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable/>
         <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="入库批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable/>
-        <el-table-column label="耗材批次号" align="center" prop="materialNo" width="200" show-overflow-tooltip resizable/>
+        <el-table-column label="生产日期" align="center" prop="materialDate" width="140" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.materialDate">{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="有效期" align="center" prop="endTime" width="140" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.endTime">{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="批号" align="center" prop="materialNo" width="150" show-overflow-tooltip resizable/>
+        <el-table-column label="院内码" align="center" prop="inHospitalCode" width="180" show-overflow-tooltip resizable/>
+        <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable/>
+        <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable/>
         <el-table-column label="耗材日期" align="center" prop="materialDate" width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            <span>{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
+            <span v-if="scope.row.materialDate">{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
           </template>
         </el-table-column>
         <el-table-column label="入库日期" align="center" prop="warehouseDate" width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            <span>{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
+            <span v-if="scope.row.warehouseDate">{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
           </template>
         </el-table-column>
-
             </el-table>
 
             <pagination
@@ -83,11 +124,6 @@
               @pagination="getList"
             />
           </div>
-          
-          <div class="modal-footer">
-            <el-button @click="handleClose">取 消</el-button>
-            <el-button type="primary" @click="checkBtn">确 定</el-button>
-          </div>
         </div>
       </transition>
     </div>
@@ -96,6 +132,7 @@
 
 <script>
 import { listDepotInventory } from "@/api/gz/depotInventory";
+import { parseTime } from "@/utils/ruoyi";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
@@ -136,6 +173,7 @@ export default {
         materialId: null,
         supplierId: null,
         batchNo: null,
+        inHospitalCode: null,
       },
       // 表单参数
       form: {},
@@ -175,6 +213,10 @@ export default {
       //获取选择的行数据
       this.selectRow = val
     },
+    /** 表格序号 */
+    rowIndex({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
     handleClose() {
       //关闭弹窗
       this.show = false
@@ -182,7 +224,7 @@ export default {
     },
     checkBtn() {
       //确定按钮
-      if(!this.selectRow) {
+      if(!this.selectRow || this.selectRow.length === 0) {
         this.$message({ message: '请先选择数据', type: 'warning' })
         return
       }
@@ -202,19 +244,25 @@ export default {
   right: 0; 
   bottom: 0;
   background: rgba(0,0,0,0.4);
-  z-index: 2000;
+  z-index: 3000;
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
 }
 
 .local-modal-content {
   background: #fff;
-  width: 100%;
-  height: 100%;
+  width: 95%;
+  max-width: 1600px;
+  height: calc(100vh - 40px);
+  max-height: calc(100vh - 40px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
@@ -238,16 +286,34 @@ export default {
 .close-btn {
   border: none;
   background: transparent;
+  padding: 5px 15px;
 }
 
 .close-btn:hover {
   background: rgba(0, 0, 0, 0.1);
 }
 
+.button-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 16px 20px;
+  background: #fff;
+  border-top: 1px solid #EBEEF5;
+  border-bottom: 1px solid #EBEEF5;
+  margin-bottom: 20px;
+}
+
+.button-container .el-button {
+  margin-right: 12px;
+}
+
 .modal-body {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-footer {
@@ -267,7 +333,47 @@ export default {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 20px;
-  height: calc(100vh - 310px);
+  height: calc(95vh - 380px);
+  min-height: 400px;
+}
+
+/* 隐藏表格滚动条并固定高度 */
+.el-table__body-wrapper {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+  overflow: hidden !important; /* 禁止滚动 */
+}
+
+.el-table__body-wrapper::-webkit-scrollbar {
+  display: none; /* Chrome Safari */
+}
+
+.el-table {
+  overflow: hidden !important;
+}
+
+.el-table__body {
+  overflow: hidden !important;
+}
+
+/* 隐藏弹窗内容区域的滚动条 */
+.modal-body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.modal-body::-webkit-scrollbar {
+  display: none; /* Chrome Safari */
+}
+
+/* 隐藏整个弹窗的滚动条 */
+.local-modal-content {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+.local-modal-content::-webkit-scrollbar {
+  display: none; /* Chrome Safari */
 }
 
 .el-table th {

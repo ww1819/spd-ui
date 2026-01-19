@@ -7,64 +7,52 @@
         
         <!-- 内容区域 -->
         <div class="content">
-          <!-- 上半部分：前5行信息 + 二维码 -->
-          <div class="top-section">
-            <!-- 左侧信息（前5行） -->
-            <div class="left-info">
-              <table class="info-table">
-                <tr>
-                  <td class="label-cell">品名</td>
-                  <td class="value-cell">{{ barcode.materialName }}</td>
-                </tr>
-                <tr>
-                  <td class="label-cell">批号</td>
-                  <td class="value-cell">{{ barcode.batchNumber }}</td>
-                </tr>
-                <tr>
-                  <td class="label-cell">单价</td>
-                  <td class="value-cell">{{ barcode.price }}</td>
-                </tr>
-                <tr>
-                  <td class="label-cell">有效期</td>
-                  <td class="value-cell">{{ barcode.endTime }}</td>
-                </tr>
-                <tr>
-                  <td class="label-cell">规格</td>
-                  <td class="value-cell">{{ barcode.speci }}</td>
-                </tr>
-              </table>
-            </div>
-            
-            <!-- 右侧二维码 -->
-            <div class="right-qrcode">
-              <img v-if="barcode.qrCodeUrl" 
-                   :src="barcode.qrCodeUrl" 
-                   alt="二维码" 
-                   class="qrcode-img"
-                   loading="lazy"
-                   decoding="async" />
-              <div v-else class="qrcode-placeholder">二维码</div>
-            </div>
+          <!-- 左侧信息区域 -->
+          <div class="left-info">
+            <table class="info-table">
+              <tr>
+                <td class="label-cell">品名</td>
+                <td class="value-cell">{{ barcode.materialName }}</td>
+              </tr>
+              <tr>
+                <td class="label-cell">批号</td>
+                <td class="value-cell">{{ barcode.batchNumber }}</td>
+              </tr>
+              <tr>
+                <td class="label-cell">单价</td>
+                <td class="value-cell">{{ barcode.price }}</td>
+              </tr>
+              <tr>
+                <td class="label-cell">有效期</td>
+                <td class="value-cell">{{ barcode.endTime }}</td>
+              </tr>
+              <tr>
+                <td class="label-cell">规格</td>
+                <td class="value-cell">{{ barcode.speci }}</td>
+              </tr>
+              <tr>
+                <td class="label-cell">厂家</td>
+                <td class="value-cell">{{ barcode.factoryName }}</td>
+              </tr>
+              <tr>
+                <td class="label-cell">院内码</td>
+                <td class="value-cell">{{ barcode.inHospitalCode }}</td>
+              </tr>
+            </table>
           </div>
           
-          <!-- 下半部分：厂家和院内码（两列布局） -->
-          <div class="bottom-section">
-            <!-- 左侧：厂家和院内码 -->
-            <div class="bottom-left">
-              <table class="bottom-table">
-                <tr>
-                  <td class="bottom-label">厂家</td>
-                  <td class="bottom-value">{{ barcode.factoryName }}</td>
-                </tr>
-                <tr>
-                  <td class="bottom-label">院内码</td>
-                  <td class="bottom-value">{{ barcode.inHospitalCode }}</td>
-                </tr>
-              </table>
+          <!-- 右侧二维码区域 -->
+          <div class="right-qrcode">
+            <img v-if="barcode.qrCodeUrl" 
+                 :src="barcode.qrCodeUrl" 
+                 alt="二维码" 
+                 class="qrcode-img"
+                 @error="handleQRCodeError"
+                 @load="handleQRCodeLoad" />
+            <div v-else class="qrcode-placeholder">
+              <div v-if="!barcode.inHospitalCode">无院内码: {{ barcode.inHospitalCode }}</div>
+              <div v-else>二维码生成失败</div>
             </div>
-            
-            <!-- 右侧：空白区域（与二维码区域对齐） -->
-            <div class="bottom-right"></div>
           </div>
         </div>
       </div>
@@ -83,23 +71,68 @@ export default {
   },
   computed: {
     // 预计算所有二维码URL，避免在模板中重复计算
-    // 使用较小的尺寸（60x60）以提高加载速度
+    // 使用较大的尺寸（200x200）以确保打印清晰度
     barcodeListWithQRCode() {
-      return this.barcodeList.map(barcode => ({
-        ...barcode,
-        qrCodeUrl: barcode.inHospitalCode 
-          ? `https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(barcode.inHospitalCode)}`
-          : ''
-      }))
+      return this.barcodeList.map(barcode => {
+        const qrCodeUrl = barcode.inHospitalCode 
+          ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(barcode.inHospitalCode)}`
+          : '';
+        console.log('生成二维码:', {
+          inHospitalCode: barcode.inHospitalCode,
+          qrCodeUrl: qrCodeUrl,
+          hasQRCode: !!qrCodeUrl
+        });
+        return {
+          ...barcode,
+          qrCodeUrl: qrCodeUrl
+        };
+      });
     }
   },
   methods: {
     start() {
-      // 立即显示预览，不等待图片加载
-      // 浏览器会在打印时处理图片
+      // 等待二维码图片加载完成后再打印
       this.$nextTick(() => {
-        this.$print(this.$refs.barcodePrintRef, {}, '6cm 4cm')
-      })
+        // 检查所有二维码是否已加载
+        const images = this.$refs.barcodePrintRef.querySelectorAll('.qrcode-img');
+        let loadedCount = 0;
+        const totalImages = images.length;
+        
+        if (totalImages === 0) {
+          // 没有二维码图片，直接打印
+          this.$print(this.$refs.barcodePrintRef, {}, '6cm 4cm');
+          return;
+        }
+        
+        const checkAllLoaded = () => {
+          loadedCount++;
+          if (loadedCount >= totalImages) {
+            // 所有图片加载完成，延迟一点时间确保渲染完成
+            setTimeout(() => {
+              this.$print(this.$refs.barcodePrintRef, {}, '6cm 4cm');
+            }, 100);
+          }
+        };
+        
+        images.forEach(img => {
+          if (img.complete) {
+            checkAllLoaded();
+          } else {
+            img.addEventListener('load', checkAllLoaded);
+            img.addEventListener('error', () => {
+              console.error('二维码图片加载失败:', img.src);
+              checkAllLoaded(); // 即使失败也继续
+            });
+          }
+        });
+      });
+    },
+    handleQRCodeError(event) {
+      console.error('二维码图片加载失败:', event.target.src);
+      console.error('院内码:', this.barcodeList.find(b => b.qrCodeUrl === event.target.src)?.inHospitalCode);
+    },
+    handleQRCodeLoad(event) {
+      console.log('二维码图片加载成功:', event.target.src);
     }
   }
 }
@@ -153,13 +186,8 @@ export default {
   .content {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     height: calc(100% - 12px);
-  }
-
-  .top-section {
-    display: flex;
-    flex: 1;
   }
 
   .left-info {
@@ -173,30 +201,10 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.5mm 2mm;
-    border-right: 0.1px solid #000;
-    margin-right: -1px;
-    position: relative;
-    right: -1px;
-    height: 75%;
-    align-self: flex-start;
-    margin-top: 2mm;
-  }
-
-  .bottom-section {
-    width: 100%;
-    display: flex;
-  }
-
-  .bottom-left {
-    width: 70%;
-    border-right: 1px solid #000;
-    padding: 0;
-  }
-
-  .bottom-right {
-    width: 30%;
-    padding: 0;
+    padding: 2mm;
+    height: 100%;
+    min-height: 100px;
+    border-left: 1px solid #000;
   }
 
   .info-table {
@@ -232,50 +240,23 @@ export default {
     padding-left: 1.5mm;
   }
 
-  .bottom-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .bottom-table td {
-    border: none;
-    padding: 0.5mm 1.5mm;
-    font-size: 8px;
-    line-height: 1.1;
-  }
-
-  .bottom-label {
-    width: 30%;
-    font-weight: bold;
-    background-color: #f9f9f9;
-    text-align: left;
-    vertical-align: middle;
-    padding-left: 1.5mm;
-    white-space: nowrap;
-  }
-
-  .bottom-value {
-    width: 70%;
-    text-align: left;
-    vertical-align: middle;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-left: 1.5mm;
-  }
-
   .qrcode-img {
-    max-width: 40%;
-    max-height: 40%;
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    min-width: 50px;
+    min-height: 50px;
     object-fit: contain;
     display: block;
+    margin: auto;
   }
 
   .qrcode-placeholder {
     font-size: 9px;
     color: #999;
+    text-align: center;
+    padding: 10px;
   }
 }
 </style>
@@ -319,13 +300,8 @@ export default {
 .content {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: calc(100% - 12px);
-}
-
-.top-section {
-  display: flex;
-  flex: 1;
 }
 
 .left-info {
@@ -339,30 +315,10 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5mm 2mm;
-  border-right: 0.1px solid #000;
-  margin-right: -1px;
-  position: relative;
-  right: -1px;
-  height: 75%;
-  align-self: flex-start;
-  margin-top: 2mm;
-}
-
-.bottom-section {
-  width: 100%;
-  display: flex;
-}
-
-.bottom-left {
-  width: 70%;
-  border-right: 1px solid #000;
-  padding: 0;
-}
-
-.bottom-right {
-  width: 30%;
-  padding: 0;
+  padding: 2mm;
+  height: 100%;
+  min-height: 100px;
+  border-left: 1px solid #000;
 }
 
 .info-table {
@@ -398,49 +354,22 @@ export default {
   padding-left: 1.5mm;
 }
 
-.bottom-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.bottom-table td {
-  border: none;
-  padding: 0.5mm 1.5mm;
-  font-size: 8px;
-  line-height: 1.1;
-}
-
-.bottom-label {
-  width: 30%;
-  font-weight: bold;
-  background-color: #f9f9f9;
-  text-align: left;
-  vertical-align: middle;
-  padding-left: 1.5mm;
-  white-space: nowrap;
-}
-
-.bottom-value {
-  width: 70%;
-  text-align: left;
-  vertical-align: middle;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-left: 1.5mm;
-}
-
 .qrcode-img {
-  max-width: 40%;
-  max-height: 40%;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 50px;
+  min-height: 50px;
   object-fit: contain;
   display: block;
+  margin: auto;
 }
 
 .qrcode-placeholder {
   font-size: 9px;
   color: #999;
+  text-align: center;
+  padding: 10px;
 }
 </style>
