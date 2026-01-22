@@ -1206,7 +1206,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  flex-shrink: 0;
+    flex-shrink: 0;
 }
     
 .right-panel {

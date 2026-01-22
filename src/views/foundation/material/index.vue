@@ -31,34 +31,30 @@
                   style="width: 150px"
             />
           </el-form-item>
-        </el-col>
-      </el-row>
 
-      <el-row class="query-row-second">
-        <el-col :span="24">
-              <el-form-item label="注册证号" prop="registerNo" class="query-item-inline">
-                <el-input
-                  v-model="queryParams.registerNo"
-                  placeholder="请输入注册证号"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                  style="width: 150px"
-                />
+          <el-form-item label="注册证号" prop="registerNo" class="query-item-inline">
+            <el-input
+              v-model="queryParams.registerNo"
+              placeholder="请输入注册证号"
+              clearable
+              @keyup.enter.native="handleQuery"
+              style="width: 150px"
+            />
           </el-form-item>
 
-              <el-form-item label="阳采编码" prop="sunshineCode" class="query-item-inline">
-                <el-input
-                  v-model="queryParams.sunshineCode"
-                  placeholder="请输入阳采编码"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                  style="width: 150px"
-                />
-              </el-form-item>
+          <el-form-item label="阳采编码" prop="sunshineCode" class="query-item-inline">
+            <el-input
+              v-model="queryParams.sunshineCode"
+              placeholder="请输入阳采编码"
+              clearable
+              @keyup.enter.native="handleQuery"
+              style="width: 150px"
+            />
+          </el-form-item>
 
-              <el-form-item label="生产厂家" prop="factoryId" class="query-item-inline">
-                <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
-                  <SelectFactory v-model="queryParams.factoryId"/>
+          <el-form-item label="生产厂家" prop="factoryId" class="query-item-inline">
+            <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
+              <SelectFactory v-model="queryParams.factoryId"/>
             </div>
           </el-form-item>
         </el-col>
@@ -1993,12 +1989,28 @@ export default {
 
 /* 减小查询条件表单项的内边距 */
 .form-fields-container .el-form-item {
-  margin-bottom: 0 !important;
+  margin-bottom: 8px !important;
   padding: 0 !important;
 }
 
 .form-fields-container .el-form-item__content {
-  line-height: 1 !important;
+  line-height: 36px !important;
+}
+
+/* 增加输入框高度 */
+.form-fields-container .el-input__inner {
+  height: 36px !important;
+  line-height: 36px !important;
+}
+
+.form-fields-container .el-select .el-input__inner {
+  height: 36px !important;
+  line-height: 36px !important;
+}
+
+.form-fields-container .el-date-editor .el-input__inner {
+  height: 36px !important;
+  line-height: 36px !important;
 }
 
 .form-fields-container .el-form-item__label {
@@ -2184,10 +2196,13 @@ export default {
 /* 查询条件容器框样式 */
 .form-fields-container {
   background: #F5F7FA;
-  padding: 6px 20px;
+  padding: 12px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
   border: 1px solid #DCDFE6;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* 图片容器样式 */
@@ -2647,29 +2662,39 @@ export default {
   position: relative;
 }
 
-/* 表格边框加粗 */
+/* 表格外边框使用细边框（与内部列边框一致） */
 .app-container .el-table {
-  border: 2px solid #C0C4CC !important;
+  border: 1px solid #C0C4CC !important;
 }
 
-.app-container .el-table th,
-.app-container .el-table td {
+/* 表头（th）保持粗边框 */
+.app-container .el-table th {
   border-right: 2px solid #C0C4CC !important;
   border-bottom: 2px solid #C0C4CC !important;
 }
 
-.app-container .el-table th:first-child,
-.app-container .el-table td:first-child {
+.app-container .el-table th:first-child {
   border-left: 2px solid #C0C4CC !important;
 }
 
+/* 数据行（td）使用细边框 */
+.app-container .el-table td {
+  border-right: 1px solid #C0C4CC !important;
+  border-bottom: 1px solid #C0C4CC !important;
+  padding: 8px 0 !important; /* 统一上下间距 */
+}
+
+.app-container .el-table td:first-child {
+  border-left: 1px solid #C0C4CC !important;
+}
+
 .app-container .el-table::before {
-  height: 2px !important;
+  height: 1px !important;
   background-color: #C0C4CC !important;
 }
 
 .app-container .el-table::after {
-  width: 2px !important;
+  width: 1px !important;
   background-color: #C0C4CC !important;
 }
 

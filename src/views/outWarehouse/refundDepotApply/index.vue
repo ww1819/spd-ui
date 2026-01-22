@@ -260,6 +260,11 @@
               <el-input v-model="form.refBillNo" :disabled="true" placeholder="引用单号" />
             </el-form-item>
           </el-col>
+          <el-col :span="4">
+            <el-form-item label="退库原因" prop="returnReason">
+              <el-input v-model="form.returnReason" placeholder="请输入退库原因" />
+            </el-form-item>
+          </el-col>
         </el-row>
         </div>
 
@@ -640,6 +645,7 @@ export default {
         id: null,
         billNo: null,
         refBillNo: null,
+        returnReason: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,

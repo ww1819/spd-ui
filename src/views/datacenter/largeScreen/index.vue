@@ -86,8 +86,33 @@
             </el-col>
             <!-- 第二列 -->
             <el-col :span="12">
-              <!-- 中国地图 -->
-              <div id="china-map"></div>
+              <!-- 统计框区域（替换地图位置） -->
+              <div class="stats_container_map">
+                <dv-border-box-8 class="stats_box">
+                  <div class="stats_label">验收总金额</div>
+                  <div class="stats_value">￥{{ statsData.acceptanceAmount }}</div>
+                </dv-border-box-8>
+                <dv-border-box-8 class="stats_box">
+                  <div class="stats_label">出库总金额</div>
+                  <div class="stats_value">￥{{ statsData.outboundAmount }}</div>
+                </dv-border-box-8>
+                <dv-border-box-8 class="stats_box">
+                  <div class="stats_label">消耗总金额</div>
+                  <div class="stats_value">￥{{ statsData.consumptionAmount }}</div>
+                </dv-border-box-8>
+                <dv-border-box-8 class="stats_box">
+                  <div class="stats_label">验收总数量</div>
+                  <div class="stats_value">{{ statsData.acceptanceQuantity }}<span class="stats_unit">件</span></div>
+                </dv-border-box-8>
+                <dv-border-box-8 class="stats_box">
+                  <div class="stats_label">出库总数量</div>
+                  <div class="stats_value">{{ statsData.outboundQuantity }}<span class="stats_unit">件</span></div>
+                </dv-border-box-8>
+                <dv-border-box-8 class="stats_box">
+                  <div class="stats_label">消耗总数量</div>
+                  <div class="stats_value">{{ statsData.consumptionQuantity }}<span class="stats_unit">件</span></div>
+                </dv-border-box-8>
+              </div>
               <!-- 折线图 -->
               <div class="line_center">
                 <dv-border-box-8>
@@ -323,6 +348,15 @@ export default {
           },
         ],
         showValue: true,
+      },
+      //统计数据
+      statsData: {
+        acceptanceAmount: '0.00',      // 验收总金额
+        outboundAmount: '0.00',        // 出库总金额
+        consumptionAmount: '0.00',      // 消耗总金额
+        acceptanceQuantity: '0',        // 验收总数量
+        outboundQuantity: '0',          // 出库总数量
+        consumptionQuantity: '0'        // 消耗总数量
       },
     };
   },
@@ -1273,15 +1307,56 @@ a {
   .fullscreen-btn:active {
     transform: translateY(0);
   }
-  //中国地图
+  //中国地图（隐藏）
   #china-map {
-    height: 660px;
+    display: none;
+  }
+  //统计框容器（地图位置）
+  .stats_container_map {
     width: 100%;
+    height: 660px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-content: space-between;
+    padding: 20px;
+  }
+  //统计框
+  .stats_box {
+    width: calc(33.33% - 14px);
+    height: calc(50% - 10px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+  }
+  //统计标签
+  .stats_label {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  //统计值
+  .stats_value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #00b891;
+    text-align: center;
+  }
+  //统计单位
+  .stats_unit {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-left: 5px;
   }
   //中间折线图
   .line_center {
     width: 100%;
     height: 288px;
+    margin-top: 10px;
   }
   //左1模块
   .left_box1 {

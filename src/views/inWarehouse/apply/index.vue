@@ -106,7 +106,7 @@
     <el-table v-loading="loading" :data="warehouseList"
               :row-class-name="warehouseListIndex"
               @selection-change="handleSelectionChange" height="calc(100vh - 380px)" border>
-      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column type="selection" width="55" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -132,7 +132,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" min-width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
@@ -207,7 +207,6 @@
     </el-table>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -334,8 +333,8 @@
                    height="48vh"
         >
           <el-table-column type="selection" width="60" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
+          <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
             </template>
@@ -347,27 +346,27 @@
             </template>
           </el-table-column>-->
 
-          <el-table-column label="名称" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="名称" align="center" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.name) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="规格" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="规格" align="center" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="型号" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="型号" align="center" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="单位" align="center" width="55" show-overflow-tooltip resizable>
+          <el-table-column label="单位" align="center" width="80" min-width="80" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="数量" align="center" prop="qty" width="140" show-overflow-tooltip resizable>
+          <el-table-column label="数量" align="center" prop="qty" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
               <!--                        @input="qtyChange(scope.row)"-->
@@ -387,7 +386,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="价格" align="center" prop="unitPrice" width="140" show-overflow-tooltip resizable>
+          <el-table-column label="价格" align="center" prop="unitPrice" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
                 <el-input v-model="scope.row.unitPrice" 
@@ -401,19 +400,19 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="金额" align="center" prop="amt" width="140" show-overflow-tooltip resizable>
+          <el-table-column label="金额" align="center" prop="amt" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
                 <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" size="small" style="width: 100%"/>
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="批号" align="center" prop="batchNumber" width="200" show-overflow-tooltip resizable>
+          <el-table-column label="批号" align="center" prop="batchNumber" width="200" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.batchNumber"  placeholder="请输入批号" />
             </template>
           </el-table-column>
-          <el-table-column label="有效期" align="center" prop="endTime" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="有效期" align="center" prop="endTime" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <el-date-picker clearable
                               v-model="scope.row.endTime"
@@ -424,7 +423,7 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="生产日期" align="center" prop="beginTime" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="生产日期" align="center" prop="beginTime" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <el-date-picker clearable
                               v-model="scope.row.beginTime"
@@ -435,42 +434,42 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable>
+          <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
             </template>
           </el-table-column>
-          <el-table-column label="生产厂家" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="生产厂家" align="center" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="包装规格" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="包装规格" align="center" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="注册证号" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="注册证号" align="center" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="库房分类" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="库房分类" align="center" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="财务分类" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="财务分类" align="center" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
+          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
             </template>
@@ -1241,7 +1240,7 @@ export default {
   align-items: center;
   padding: 12px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
+  background: #EBEEF5;
   min-height: 48px;
 }
 
@@ -1291,13 +1290,22 @@ export default {
   margin-bottom: 20px;
 }
 
-.el-table th {
-  background-color: #F5F7FA !important;
+/* 主表格表头样式：字体加粗加大、背景加深 */
+.app-container > .el-table th {
+  background-color: #EBEEF5 !important;
   color: #606266;
-  font-weight: 500;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
   height: 50px;
   padding: 8px 0;
   border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
 }
 
 .el-table td {
@@ -1503,6 +1511,35 @@ export default {
   max-height: 48vh;
 }
 
+/* 明细框表头样式：字体加粗、背景加深 */
+::v-deep .local-modal-content .el-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+::v-deep .local-modal-content .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table thead th {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table thead th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table th.is-leaf {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
 .local-modal-content .el-table__body-wrapper {
   max-height: calc(48vh - 48px);
   overflow-y: auto;
@@ -1672,33 +1709,152 @@ export default {
   background: #a8a8a8 !important;
 }
 
-/* 主表格滚动条增粗 */
+/* 主表格滚动条优化 - 增加宽度和灵敏度 */
 ::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar,
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  width: 16px !important;
-  height: 8px !important;
+  width: 20px !important;
+  height: 12px !important;
 }
 
 ::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #c1c1c1 !important;
-  border-radius: 8px !important;
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
+  transition: background 0.2s ease !important;
 }
 
 ::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8 !important;
+  background: #606266 !important;
+}
+
+::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:active,
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
+  background: #303133 !important;
 }
 
 ::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-track,
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
   background: #f1f1f1 !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
 }
 
 /* 控制滚动条滑块长度 - 通过调整滚动条轨道和滑块的显示比例 */
 ::v-deep .el-table .el-table__body-wrapper {
   scrollbar-width: thick;
   -ms-overflow-style: -ms-autohiding-scrollbar;
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+</style>
+
+<style>
+/* 明细框表头样式：使用非scoped样式确保生效 */
+.local-modal-content .el-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+.local-modal-content .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.local-modal-content .el-table thead th {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.local-modal-content .el-table thead th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.local-modal-content .el-table th.is-leaf {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+/* 序号列表头不换行 */
+.local-modal-content .el-table thead th:nth-child(2) .cell {
+  white-space: nowrap !important;
+}
+
+/* 单位列表头不换行 */
+.local-modal-content .el-table thead th:nth-child(7) .cell {
+  white-space: nowrap !important;
+}
+
+/* 主表格表头样式：使用非scoped样式确保生效 */
+.app-container > .el-table th {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container > .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container > .el-table thead th {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container > .el-table thead th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* 单据状态列表头不换行 - 第9列（选择框+序号+入库单号+供应商+仓库+金额+制单人+制单日期+单据状态） */
+.app-container > .el-table thead th:nth-child(9) .cell {
+  white-space: nowrap !important;
+}
+
+/* 主表格滚动条优化 - 非scoped样式确保生效 */
+.app-container > .el-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 20px !important;
+  height: 12px !important;
+}
+
+.app-container > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
+  transition: background 0.2s ease !important;
+}
+
+.app-container > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #606266 !important;
+}
+
+.app-container > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
+  background: #303133 !important;
+}
+
+.app-container > .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
+}
+
+.app-container > .el-table .el-table__body-wrapper {
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 </style>
