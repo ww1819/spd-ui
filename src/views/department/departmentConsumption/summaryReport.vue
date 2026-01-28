@@ -207,30 +207,39 @@ export default {
       this.loading = true
       // 构建查询参数
       const params = {
-        ...this.searchForm,
+        departmentId: this.searchForm.departmentId,
+        materialId: this.searchForm.materialId,
+        materialName: this.searchForm.materialName,
+        specification: this.searchForm.specification,
+        model: this.searchForm.model,
+        hisChargeCode: this.searchForm.hisChargeCode,
+        patientId: this.searchForm.patientId,
         pageNum: this.queryParams.pageNum,
         pageSize: this.queryParams.pageSize
       }
       
-      // 添加排序参数
-      if (this.sortProp && this.sortOrder) {
-        params.sortField = this.sortProp
-        params.sortOrder = this.sortOrder === 'ascending' ? 'asc' : 'desc'
+      // 处理日期范围
+      if (this.searchForm.dateRange && this.searchForm.dateRange.length === 2) {
+        params.beginDate = this.searchForm.dateRange[0]
+        params.endDate = this.searchForm.dateRange[1]
       }
       
-      // 模拟API调用（实际项目中替换为真实API调用）
-      // this.$axios.get('/api/department/consumption/summary', { params })
-      //   .then(res => {
-      //     this.tableData = res.data.list
-      //     this.total = res.data.total
-      //     this.loading = false
-      //   })
-      
-      // 模拟数据
-      setTimeout(() => {
-        this.mockDepartmentConsumptionSummary()
+      // 调用后端接口
+      request({
+        url: '/department/batchConsume/auditedSummaryList',
+        method: 'get',
+        params: params
+      }).then(response => {
+        this.tableData = response.rows || []
+        this.total = response.total || 0
         this.loading = false
-      }, 300)
+      }).catch(error => {
+        console.error('查询失败:', error)
+        this.$modal.msgError('查询失败：' + (error.msg || error.message || '未知错误'))
+        this.tableData = []
+        this.total = 0
+        this.loading = false
+      })
     },
     
     // 模拟科室消耗汇总数据

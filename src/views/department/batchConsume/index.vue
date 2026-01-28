@@ -14,11 +14,6 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId"/>
-              </div>
-            </el-form-item>
             <el-form-item label="科室" prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
@@ -96,6 +91,16 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="success"
+          icon="el-icon-check"
+          size="medium"
+          :disabled="multiple"
+          @click="handleBatchAudit"
+          v-hasPermi="['department:batchConsume:audit']"
+        >审核</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           icon="el-icon-refresh"
           size="medium"
           @click="resetQuery"
@@ -151,12 +156,6 @@
                                  :value="dict.value"
                       />
                     </el-select>
-                  </el-form-item>
-                </el-col>
-
-                <el-col :span="4">
-                  <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-                    <SelectWarehouse v-model="form.warehouseId"/>
                   </el-form-item>
                 </el-col>
 
@@ -229,24 +228,23 @@
       </div>
     </transition>
 
-    <!-- 使用库存选择组件 -->
-    <SelectInventory
+    <!-- 使用科室库存选择组件 -->
+    <SelectDepInventory
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
-      :warehouseValue="warehouseValue"
+      :departmentValue="departmentValue"
       @closeDialog="closeDialog"
       @selectData="selectData"
-    ></SelectInventory>
+    ></SelectDepInventory>
 
   </div>
 </template>
 
 <script>
 import { listConsume, getConsume, delConsume, addConsume, updateConsume, auditConsume } from "@/api/department/batchConsume";
-import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
-import SelectInventory from '@/components/SelectModel/SelectInventory';
+import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
 import MainTable from './components/MainTable.vue';
 import DetailTable from './components/DetailTable.vue';
 
@@ -254,10 +252,9 @@ export default {
   name: "BatchConsume",
   dicts: ['biz_status','way_status'],
   components: {
-    SelectWarehouse,
     SelectDepartment,
     SelectUser,
-    SelectInventory,
+    SelectDepInventory,
     MainTable,
     DetailTable
   },
@@ -266,7 +263,7 @@ export default {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
-      warehouseValue: "",
+      departmentValue: "",
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -301,7 +298,6 @@ export default {
         consumeBillNo: null,
         beginDate: null,
         endDate: null,
-        warehouseId: null,
         departmentId: null,
         userId: null,
         consumeBillStatus: null,
@@ -312,8 +308,8 @@ export default {
       form: {},
       // 表单校验
       rules: {
-        warehouseId: [
-          { required: true, message: "仓库不能为空", trigger: "blur" }
+        departmentId: [
+          { required: true, message: "科室不能为空", trigger: "blur" }
         ],
       }
     };
@@ -338,13 +334,13 @@ export default {
       });
     },
     nameBtn() {
-      if(!this.form.warehouseId) {
-        this.$message({ message: '请先选择仓库', type: 'warning' })
+      if(!this.form.departmentId) {
+        this.$message({ message: '请先选择科室', type: 'warning' })
         return
       }
-      //打开"弹窗组件"
+      //打开"弹窗组件" - 显示科室库存明细
       this.DialogComponentShow = true
-      this.warehouseValue = this.form.warehouseId;
+      this.departmentValue = this.form.departmentId;
     },
     closeDialog() {
       //关闭"弹窗组件"
@@ -390,7 +386,6 @@ export default {
       this.form = {
         id: null,
         consumeBillDate: null,
-        warehouseId: null,
         departmentId: null,
         userId: null,
         consumeBillStatus: null,
@@ -495,9 +490,9 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
-      // 验证仓库是否选择
-      if (!this.form.warehouseId) {
-        this.$modal.msgError("请先选择仓库");
+      // 验证科室是否选择
+      if (!this.form.departmentId) {
+        this.$modal.msgError("请先选择科室");
         return;
       }
       
@@ -574,6 +569,56 @@ export default {
       this.download('department/batchConsume/export', {
         ...this.queryParams
       }, `batchConsume_${new Date().getTime()}.xlsx`)
+    },
+    /** 批量审核按钮操作 */
+    handleBatchAudit() {
+      if (this.ids.length === 0) {
+        this.$modal.msgError("请先选择要审核的数据");
+        return;
+      }
+      
+      // 检查选中的数据是否都是未审核状态
+      const selectedRows = this.consumeList.filter(item => this.ids.includes(item.id));
+      const unreviewedRows = selectedRows.filter(row => row.consumeBillStatus == 1 || row.consumeBillStatus == '1');
+      
+      if (unreviewedRows.length === 0) {
+        this.$modal.msgError("选中的数据中没有未审核的记录");
+        return;
+      }
+      
+      if (unreviewedRows.length < selectedRows.length) {
+        this.$modal.confirm('选中的数据中包含已审核的记录，是否只审核未审核的记录？').then(() => {
+          this.doBatchAudit(unreviewedRows.map(row => row.id));
+        }).catch(() => {});
+      } else {
+        this.$modal.confirm('确认审核选中的 ' + unreviewedRows.length + ' 条数据？').then(() => {
+          this.doBatchAudit(unreviewedRows.map(row => row.id));
+        }).catch(() => {});
+      }
+    },
+    /** 执行批量审核 */
+    doBatchAudit(ids) {
+      const auditBy = this.$store.state.user.userName || this.$store.state.user.nickName || 'admin';
+      let successCount = 0;
+      let failCount = 0;
+      
+      // 循环调用审核接口
+      const auditPromises = ids.map(id => {
+        return auditConsume({ id: id.toString(), auditBy: auditBy }).then(() => {
+          successCount++;
+        }).catch(() => {
+          failCount++;
+        });
+      });
+      
+      Promise.all(auditPromises).then(() => {
+        if (successCount > 0) {
+          this.$modal.msgSuccess(`成功审核 ${successCount} 条数据${failCount > 0 ? '，失败 ' + failCount + ' 条' : ''}`);
+          this.getList();
+        } else {
+          this.$modal.msgError('审核失败');
+        }
+      });
     }
   }
 };
