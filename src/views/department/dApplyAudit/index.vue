@@ -24,16 +24,13 @@
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
             </el-form-item>
-            <el-form-item label="单据状态" prop="applyBillStatus" class="query-item-inline">
+            <el-form-item label="状态" prop="applyBillStatus" class="query-item-inline">
               <el-select v-model="queryParams.applyBillStatus" placeholder="全部"
-                         :disabled="false"
                          clearable
                          style="width: 180px">
-                <el-option v-for="dict in dict.type.biz_status.filter(item => item.value == '1' || item.value == '2' || item.value == 1 || item.value == 2)"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
+                <el-option label="全部" :value="null" />
+                <el-option label="未审核" :value="1" />
+                <el-option label="已审核" :value="2" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -68,22 +65,12 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="medium"
-          @click="handleAdd"
-          v-hasPermi="['department:dApply:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
           type="warning"
           plain
           icon="el-icon-download"
           size="medium"
           @click="handleExport"
-          v-hasPermi="['department:dApply:export']"
+          v-hasPermi="['department:dApplyAudit:export']"
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -145,7 +132,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -153,27 +140,26 @@
               type="text"
               icon="el-icon-view"
               @click="handleView(scope.row)"
-              v-if="scope.row.applyBillStatus == 2"
               style="padding: 0 5px; margin: 0;"
             >查看</el-button>
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
-              @click="handleUpdate(scope.row)"
-              v-hasPermi="['department:dApply:edit']"
-              v-if="scope.row.applyBillStatus != 2"
-              style="padding: 0 5px; margin: 0;"
-            >修改</el-button>
+              icon="el-icon-check"
+              @click="handleAudit(scope.row)"
+              v-hasPermi="['department:dApplyAudit:audit']"
+              v-if="scope.row.applyBillStatus == 1"
+              style="padding: 0 5px; margin: 0; color: #67C23A;"
+            >审核</el-button>
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
-              @click="handleDelete(scope.row)"
-              v-hasPermi="['department:dApply:remove']"
-              v-if="scope.row.applyBillStatus != 2"
-              style="padding: 0 5px; margin: 0;"
-            >删除</el-button>
+              icon="el-icon-close"
+              @click="handleReject(scope.row)"
+              v-hasPermi="['department:dApplyAudit:reject']"
+              v-if="scope.row.applyBillStatus == 1"
+              style="padding: 0 5px; margin: 0; color: #F56C6C;"
+            >驳回</el-button>
           </span>
         </template>
       </el-table-column>
@@ -220,13 +206,13 @@
 
                 <el-col :span="4">
                   <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-                    <SelectWarehouse v-model="form.warehouseId"/>
+                    <SelectWarehouse v-model="form.warehouseId" :disabled="true"/>
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="4">
                   <el-form-item label="科室" prop="departmentId" label-width="100px">
-                    <SelectDepartment v-model="form.departmentId"/>
+                    <SelectDepartment v-model="form.departmentId" :disabled="true"/>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -246,12 +232,26 @@
 
                 <el-col :span="4">
                   <el-form-item label="操作人" prop="userId" label-width="100px">
-                    <SelectUser v-model="form.userId"/>
+                    <SelectUser v-model="form.userId" :disabled="true"/>
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="备注" prop="remark" label-width="100px">
-                    <el-input v-model="form.remark" placeholder="请输入备注" style="width: 150px" />
+                    <el-input v-model="form.remark" placeholder="请输入备注" style="width: 150px" :disabled="true" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <!-- 审核操作区域 -->
+              <el-row v-if="form.applyBillStatus == 1">
+                <el-col :span="12">
+                  <el-form-item label="驳回原因" prop="rejectReason" label-width="100px">
+                    <el-input 
+                      v-model="form.rejectReason" 
+                      type="textarea" 
+                      :rows="3"
+                      placeholder="请输入驳回原因（驳回时必填）" 
+                      style="width: 100%" 
+                    />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -262,30 +262,13 @@
                 <el-col :span="1.5">
                   <span>科室申领明细信息</span>
                 </el-col>
-
-                <div v-show="action">
-                  <el-col :span="1.5">
-<!--              <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddBasApplyEntry">添加</el-button>-->
-                    <el-button type="primary" icon="el-icon-plus" size="medium" @click="nameBtn">添加</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="danger" icon="el-icon-delete" size="medium" @click="handleDeleteBasApplyEntry">删除</el-button>
-                  </el-col>
-                  <el-col :span="1.5" v-show="action">
-                    <el-button @click="cancel">取 消</el-button>
-                  </el-col>
-                  <el-col :span="1.5" v-show="action">
-                    <el-button type="primary" @click="submitForm">保 存</el-button>
-                  </el-col>
-                </div>
               </el-row>
               <div class="table-wrapper">
-              <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" @selection-change="handleBasApplyEntrySelectionChange" ref="basApplyEntry" height="100%" border :summary-method="getSummaries" show-summary>
-                <el-table-column type="selection" width="50" align="center" resizable />
+              <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" ref="basApplyEntry" height="100%" border :summary-method="getSummaries" show-summary>
                 <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable/>
                 <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="型号" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
+                <el-table-column label="型号" align="center" prop="material.model" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
@@ -294,12 +277,7 @@
                 </el-table-column>
                 <el-table-column label="数量" prop="qty" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
-                              onkeyup="value=value.replace(/\D/g,'')"
-                              onafterpaste="value=value.replace(/\D/g,'')"
-                              @blur="form.result=$event.target.value"
-                              @input="qtyChange(scope.row)"
-                    />
+                    <span>{{ scope.row.qty || '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
@@ -317,24 +295,18 @@
                     <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
                   </template>
                 </el-table-column>
-
                 <el-table-column label="备注" prop="remark" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input v-model="scope.row.remark" placeholder="请输入备注" />
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" align="center" width="100" fixed="right">
-                  <template slot-scope="scope">
-                    <el-button
-                      size="small"
-                      type="text"
-                      icon="el-icon-delete"
-                      @click="handleDeleteDetailRow(scope.$index)"
-                      style="padding: 0 5px; margin: 0;"
-                    >删除</el-button>
+                    <span>{{ scope.row.remark || '--' }}</span>
                   </template>
                 </el-table-column>
               </el-table>
+              </div>
+              <!-- 审核操作按钮 -->
+              <div class="modal-footer" v-if="form.applyBillStatus == 1">
+                <el-button @click="cancel">取 消</el-button>
+                <el-button type="danger" @click="handleRejectSubmit">驳 回</el-button>
+                <el-button type="primary" @click="handleAuditSubmit">审 核</el-button>
               </div>
             </el-form>
           </div>
@@ -342,38 +314,26 @@
       </div>
     </transition>
 
-    <!-- 3、使用组件 -->
-    <SelectInventory
-      v-if="DialogComponentShow"
-      :DialogComponentShow="DialogComponentShow"
-      :warehouseValue="warehouseValue"
-      @closeDialog="closeDialog"
-      @selectData="selectData"
-    ></SelectInventory>
 
   </div>
 </template>
 
 <script>
-import { listApply, getApply, delApply, addApply, updateApply } from "@/api/department/apply";
+import { listApplyAudit, getApplyAudit, auditApply, rejectApply } from "@/api/department/applyAudit";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 
 export default {
-  name: "dApply",
+  name: "dApplyAudit",
   dicts: ['biz_status','way_status'],
   components: {SelectWarehouse,SelectDepartment,SelectUser},
   data() {
     return {
       // 遮罩层
       loading: true,
-      DialogComponentShow: false,
-      warehouseValue: "",
       // 选中数组
       ids: [],
-      // 子表选中数据
-      checkedBasApplyEntry: [],
       // 非单个禁用
       single: true,
       // 非多个禁用
@@ -384,7 +344,6 @@ export default {
       total: 0,
       // 科室申领表格数据
       applyList: [],
-      selectRow: [],
       // 科室申领明细表格数据
       basApplyEntryList: [],
       // 合计数量
@@ -395,8 +354,6 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
-      //是否显示
-      action: true,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -407,7 +364,7 @@ export default {
         warehouseId: null,
         departmentId: null,
         userId: null,
-        applyBillStatus: null,
+        applyBillStatus: null, // 默认显示全部状态（未审核和已审核）
         billType: 1, // 只查询申领单类型，排除转科申请（billType=3）
         orderByColumn: 'create_time',
         isAsc: 'desc',
@@ -426,13 +383,18 @@ export default {
     this.getList();
   },
   methods: {
-    /** 查询科室申领列表 */
+    /** 查询申领单列表（支持全部、未审核、已审核） */
     getList() {
       this.loading = true;
       // 确保只查询申领单类型（billType=1），排除转科申请（billType=3）
+      // applyBillStatus根据用户选择：null=全部，1=未审核，2=已审核
       const params = { ...this.queryParams };
       params.billType = 1;
-      listApply(params).then(response => {
+      // 如果applyBillStatus为null，则不传该参数，查询全部状态
+      if (params.applyBillStatus === null || params.applyBillStatus === '') {
+        delete params.applyBillStatus;
+      }
+      listApplyAudit(params).then(response => {
         // 前端二次过滤：确保只显示SL开头的单号，排除ZK开头的转科申请
         if (response.rows && response.rows.length > 0) {
           this.applyList = response.rows.filter(item => {
@@ -450,36 +412,6 @@ export default {
         this.loading = false;
       });
     },
-    nameBtn() {
-      if(!this.form.warehouseId) {
-        this.$message({ message: '请先选择仓库', type: 'warning' })
-        return
-      }
-      //打开“弹窗组件”
-      this.DialogComponentShow = true
-      this.warehouseValue = this.form.warehouseId;
-    },
-    closeDialog() {
-      //关闭“弹窗组件”
-      this.DialogComponentShow = false
-    },
-    selectData(val) {
-      //监听“弹窗组件”返回的数据
-      this.selectRow = val;
-
-      this.selectRow.forEach((item, index) => {
-        this.basApplyEntryList.splice(this.basApplyEntryList.length, 0, JSON.parse(JSON.stringify(item)));
-      });
-      this.calculateTotals();
-    },
-    //当天日期
-    getBillDate(){
-      let now = new Date();
-      let year = now.getFullYear();
-      let month = now.getMonth() + 1;
-      let day = now.getDate();
-      return year + "-" + month + "-" + day;
-    },
     // 取消按钮
     cancel() {
       this.open = false;
@@ -489,10 +421,13 @@ export default {
     reset() {
       this.form = {
         id: null,
+        applyBillNo: null,
         applyBillDate: null,
         warehouseId: null,
+        departmentId: null,
         userId: null,
         applyBillStatus: null,
+        rejectReason: null,
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -552,28 +487,6 @@ export default {
       return sums;
     },
     
-    //数量改变事件
-    qtyChange(row){
-      let totalAmt = 0;
-      if(row.qty && row.unitPrice){
-        totalAmt = row.qty * row.unitPrice;
-      }else{
-        totalAmt = 0;
-      }
-      row.amt = totalAmt.toFixed(2);
-      this.calculateTotals();
-    },
-    //价格改变事件
-    priceChange(row){
-      let totalAmt = 0;
-      if(row.qty && row.unitPrice){
-        totalAmt = row.qty * row.unitPrice;
-      }else{
-        totalAmt = 0;
-      }
-      row.amt = totalAmt.toFixed(2);
-      this.calculateTotals();
-    },
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
@@ -582,6 +495,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.applyBillStatus = null; // 重置后显示全部状态
       this.queryParams.billType = 1; // 重置后仍只查询申领单类型
       this.handleQuery();
     },
@@ -593,14 +507,12 @@ export default {
     },
     /** 查看按钮操作 */
     handleView(row){
-
       const id = row.id
-      getApply(id).then(response => {
+      getApplyAudit(id).then(response => {
         this.form = response.data;
-        this.basApplyEntryList = response.data.basApplyEntryList;
+        this.basApplyEntryList = response.data.basApplyEntryList || [];
         this.open = true;
         this.calculateTotals();
-        this.action = false;
 
         if(response.data.applyBillStatus == 1){
           this.form.applyBillStatus = '1';
@@ -608,143 +520,72 @@ export default {
           this.form.applyBillStatus = '2';
         }
 
-        this.title = "查看科室申领";
+        this.title = "申领单审核";
       });
     },
-    /** 新增按钮操作 */
-    handleAdd() {
-      this.reset();
-      this.open = true;
-      this.form.applyBillStatus = '1';
-      this.form.applyBillDate = this.getBillDate();
-      this.title = "添加科室申领";
-      this.action = true;
-      var userName = this.$store.state.user.name;
-      var userId = this.$store.state.user.userId;
-      this.form.createBy = userId;
+    /** 审核按钮操作（表格中） */
+    handleAudit(row) {
+      this.handleView(row);
     },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset();
-      const id = row.id || this.ids
-      getApply(id).then(response => {
-        this.form = response.data;
-        this.basApplyEntryList = response.data.basApplyEntryList;
-        this.open = true;
-        this.calculateTotals();
-        this.action = true;
-        this.form.applyBillStatus = '1';
-        this.title = "修改科室申领";
-      });
+    /** 驳回按钮操作（表格中） */
+    handleReject(row) {
+      this.handleView(row);
     },
-    /** 提交按钮 */
-    submitForm() {
-      // 验证仓库是否选择
-      if (!this.form.warehouseId) {
-        this.$modal.msgError("请先选择仓库");
+    /** 审核提交 */
+    handleAuditSubmit() {
+      if (!this.form.id) {
+        this.$modal.msgError("请先选择要审核的申领单");
         return;
       }
-      
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          this.form.basApplyEntryList = this.basApplyEntryList;
-          var totalAmt = 0;
-          this.basApplyEntryList.forEach(item => {
-            if(item.amt){
-              totalAmt += parseFloat(item.amt);
-            }
-          });
-          this.form.totalAmount = totalAmt.toFixed(2);
-          if (this.form.id != null) {
-            updateApply(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              // 保存成功后不关闭弹窗，允许继续修改
-              // this.open = false;
-              this.getList();
-            });
-          } else {
-            addApply(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              // 保存成功后更新表单ID，后续保存将变为修改操作
-              // 后端返回的response.data就是basApply对象，包含id和applyBillNo
-              if (response && response.data) {
-                if (response.data.id) {
-                  this.form.id = response.data.id;
-                }
-                if (response.data.applyBillNo) {
-                  this.form.applyBillNo = response.data.applyBillNo;
-                }
-                // 更新标题为修改模式
-                this.title = "修改科室申领";
-              }
-              // 保存成功后不关闭弹窗，允许继续修改
-              // this.open = false;
-              this.getList();
-            }).catch(error => {
-              console.error("新增失败:", error);
-            });
-          }
-        }
+      const userId = this.$store.state.user.userId;
+      auditApply({
+        id: String(this.form.id),
+        auditBy: userId
+      }).then(() => {
+        this.$modal.msgSuccess("审核成功");
+        this.open = false;
+        this.getList();
       });
     },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const ids = row.id || this.ids;
-      const billNo = row.applyBillNo || '';
-      this.$modal.confirm('你好！是否确认删除申领单，单号"' + billNo + '"的数据项？').then(function() {
-        return delApply(ids);
+    /** 驳回提交 */
+    handleRejectSubmit() {
+      if (!this.form.id) {
+        this.$modal.msgError("请先选择要驳回的申领单");
+        return;
+      }
+      if (!this.form.rejectReason || this.form.rejectReason.trim() === '') {
+        this.$modal.msgError("请填写驳回原因");
+        return;
+      }
+      const userId = this.$store.state.user.userId;
+      rejectApply({
+        id: String(this.form.id),
+        rejectReason: this.form.rejectReason,
+        auditBy: userId
       }).then(() => {
+        this.$modal.msgSuccess("驳回成功");
+        this.open = false;
         this.getList();
-        this.$modal.msgSuccess("删除成功");
-      }).catch(() => {});
+      });
     },
 	/** 科室申领明细序号 */
     rowBasApplyEntryIndex({ row, rowIndex }) {
-    row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+      row.index = rowIndex + 1;
     },
     rowApplyIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
-    /** 科室申领明细添加按钮操作 */
-    handleAddBasApplyEntry() {
-      let obj = {};
-      obj.materialId = "";
-      obj.unitPrice = "";
-      obj.qty = "";
-      obj.amt = "";
-      obj.batchNo = "";
-      obj.batchNumer = "";
-      obj.remark = "";
-      this.basApplyEntryList.push(obj);
-      this.calculateTotals();
-    },
-    /** 科室申领明细删除按钮操作 */
-    handleDeleteBasApplyEntry() {
-      if (this.checkedBasApplyEntry.length == 0) {
-        this.$modal.msgError("请先选择要删除的科室申领明细数据");
-      } else {
-        const basApplyEntryList = this.basApplyEntryList;
-        const checkedBasApplyEntry = this.checkedBasApplyEntry;
-        this.basApplyEntryList = basApplyEntryList.filter(function(item) {
-          return checkedBasApplyEntry.indexOf(item.index) == -1
-        });
-        this.calculateTotals();
-      }
-    },
-    /** 删除明细行 */
-    handleDeleteDetailRow(index) {
-      this.basApplyEntryList.splice(index, 1);
-      this.calculateTotals();
-    },
-    /** 复选框选中数据 */
-    handleBasApplyEntrySelectionChange(selection) {
-      this.checkedBasApplyEntry = selection.map(item => item.index)
-    },
     /** 导出按钮操作 */
     handleExport() {
+      const params = { ...this.queryParams };
+      params.billType = 1; // 只导出申领单类型
+      // 如果applyBillStatus为null，则不传该参数，导出全部状态
+      if (params.applyBillStatus === null || params.applyBillStatus === '') {
+        delete params.applyBillStatus;
+      }
       this.download('department/apply/export', {
-        ...this.queryParams
-      }, `apply_${new Date().getTime()}.xlsx`)
+        ...params
+      }, `applyAudit_${new Date().getTime()}.xlsx`)
     }
   }
 };

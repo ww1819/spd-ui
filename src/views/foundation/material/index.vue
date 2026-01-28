@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="app-container">
+  <div class="app-container material-page-container">
     <div class="query-container">
       <div class="form-fields-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -2662,49 +2662,49 @@ export default {
   position: relative;
 }
 
-/* 表格外边框使用细边框（与内部列边框一致） */
-.app-container .el-table {
+/* 表格外边框使用细边框（与内部列边框一致） - 仅针对当前页面 */
+.material-page-container .el-table {
   border: 1px solid #C0C4CC !important;
 }
 
-/* 表头（th）保持粗边框 */
-.app-container .el-table th {
+/* 表头（th）保持粗边框 - 仅针对当前页面 */
+.material-page-container .el-table th {
   border-right: 2px solid #C0C4CC !important;
   border-bottom: 2px solid #C0C4CC !important;
 }
 
-.app-container .el-table th:first-child {
+.material-page-container .el-table th:first-child {
   border-left: 2px solid #C0C4CC !important;
 }
 
-/* 数据行（td）使用细边框 */
-.app-container .el-table td {
+/* 数据行（td）使用细边框 - 仅针对当前页面 */
+.material-page-container .el-table td {
   border-right: 1px solid #C0C4CC !important;
   border-bottom: 1px solid #C0C4CC !important;
   padding: 8px 0 !important; /* 统一上下间距 */
 }
 
-.app-container .el-table td:first-child {
+.material-page-container .el-table td:first-child {
   border-left: 1px solid #C0C4CC !important;
 }
 
-.app-container .el-table::before {
+.material-page-container .el-table::before {
   height: 1px !important;
   background-color: #C0C4CC !important;
 }
 
-.app-container .el-table::after {
+.material-page-container .el-table::after {
   width: 1px !important;
   background-color: #C0C4CC !important;
 }
 
-/* 表格标题行字体加粗加大 */
-.app-container .el-table th {
+/* 表格标题行字体加粗加大 - 仅针对当前页面 */
+.material-page-container .el-table th {
   font-size: 15px !important;
   font-weight: 600 !important;
 }
 
-.app-container .el-table th .cell {
+.material-page-container .el-table th .cell {
   font-size: 15px !important;
   font-weight: 600 !important;
 }

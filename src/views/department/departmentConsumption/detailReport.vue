@@ -27,7 +27,7 @@
             </el-col>
           </el-row>
           <el-row class="query-row-left">
-            <el-col :span="24">
+            <el-col :span="24" style="white-space: nowrap; overflow-x: auto;">
               <el-form-item label="HIS收费编码" prop="hisChargeCode" class="query-item-inline">
                 <el-input v-model="searchForm.hisChargeCode" placeholder="请输入HIS收费编码" clearable style="width: 180px" />
               </el-form-item>
@@ -75,13 +75,17 @@
       <el-table
         :data="tableData"
         v-loading="loading"
-        :row-class-name="tableDataIndex"
-        height="54vh"
+        height="450"
         border
         show-summary
         :summary-method="getSummaries"
       >
-        <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
+        <el-table-column type="index" label="序号" align="center" width="80" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+          </template>
+        </el-table-column>
+        <el-table-column label="单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable />
         <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable />
         <el-table-column label="名称" align="center" prop="materialName" width="150" show-overflow-tooltip resizable />
         <el-table-column label="规格" align="center" prop="specification" width="120" show-overflow-tooltip resizable />
@@ -108,7 +112,6 @@
     </div>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -121,9 +124,13 @@
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
+import request from '@/utils/request';
+import RightToolbar from '@/components/RightToolbar';
+import Pagination from '@/components/Pagination';
+
 export default {
   name: 'DetailReport',
-  components: {SelectMaterial,SelectDepartment,SelectSupplier},
+  components: {SelectMaterial, SelectDepartment, SelectSupplier, RightToolbar, Pagination},
   data() {
     return {
       // 遮罩层
@@ -198,33 +205,59 @@ export default {
       this.loading = true
       // 构建查询参数
       const params = {
-        ...this.searchForm,
+        departmentId: this.searchForm.departmentId,
+        materialId: this.searchForm.materialId,
+        materialName: this.searchForm.materialName,
+        specification: this.searchForm.specification,
+        model: this.searchForm.model,
+        hisChargeCode: this.searchForm.hisChargeCode,
+        patientId: this.searchForm.patientId,
         pageNum: this.queryParams.pageNum,
         pageSize: this.queryParams.pageSize
       }
       
-      // 添加排序参数
-      if (this.sortProp && this.sortOrder) {
-        params.sortField = this.sortProp
-        params.sortOrder = this.sortOrder === 'ascending' ? 'asc' : 'desc'
+      // 处理日期范围
+      if (this.searchForm.dateRange && this.searchForm.dateRange.length === 2) {
+        params.beginDate = this.searchForm.dateRange[0]
+        params.endDate = this.searchForm.dateRange[1]
       }
       
-      // 模拟API调用（实际项目中替换为真实API调用）
-      // this.$axios.get('/api/department/consumption', { params })
-      //   .then(res => {
-      //     this.tableData = res.data.list
-      //     this.total = res.data.total
-      //     this.loading = false
-      //   })
-      
-      // 模拟数据
-      setTimeout(() => {
-        this.mockDepartmentConsumptionData()
+      // 调用后端接口
+      request({
+        url: '/department/batchConsume/auditedDetailList',
+        method: 'get',
+        params: params
+      }).then(response => {
+        console.log('接口返回数据:', response)
+        // 处理响应数据，兼容不同的响应格式
+        if (response) {
+          if (response.code === 200 || response.code === undefined) {
+            // 如果 response 直接包含 rows 和 total，说明已经是处理后的数据
+            this.tableData = response.rows || response.data?.rows || []
+            this.total = response.total || response.data?.total || 0
+            console.log('表格数据:', this.tableData, '总数:', this.total)
+          } else {
+            this.tableData = []
+            this.total = 0
+            if (response.msg) {
+              this.$modal.msgWarning(response.msg)
+            }
+          }
+        } else {
+          this.tableData = []
+          this.total = 0
+        }
         this.loading = false
-      }, 300)
+      }).catch(error => {
+        console.error('查询失败:', error)
+        this.$modal.msgError('查询失败：' + (error.msg || error.message || '未知错误'))
+        this.tableData = []
+        this.total = 0
+        this.loading = false
+      })
     },
     
-    // 模拟科室消耗数据
+    // 模拟科室消耗数据（已废弃，保留用于参考）
     mockDepartmentConsumptionData() {
       // 生成模拟数据
       const mockData = []
@@ -315,6 +348,11 @@ export default {
   margin-bottom: 10px;
 }
 
+.query-row-left .el-col[style*="white-space: nowrap"] {
+  white-space: nowrap !important;
+  overflow-x: auto;
+}
+
 .query-item-inline {
   display: inline-block;
   margin-right: 16px;
@@ -346,9 +384,9 @@ export default {
 
 .table-container {
   margin-top: 0px;
-  overflow: visible;
   width: 100%;
   position: relative;
+  min-height: 450px;
 }
 
 /* 加粗表格底部滚动条，提升可操作性 */

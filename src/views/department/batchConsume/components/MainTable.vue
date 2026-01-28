@@ -21,7 +21,6 @@
         <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
       </template>
     </el-table-column>
-    <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
     <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
     <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
       <template slot-scope="scope">
@@ -38,12 +37,8 @@
     <el-table-column label="审核人" align="center" prop="auditPersonName" width="100" show-overflow-tooltip resizable />
     <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
       <template slot-scope="scope">
-        <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
-      </template>
-    </el-table-column>
-    <el-table-column label="驳回原因" align="center" prop="rejectReason" width="150" show-overflow-tooltip resizable>
-      <template slot-scope="scope">
-        <span>{{ scope.row.rejectReason || '--' }}</span>
+        <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+        <span v-else>--</span>
       </template>
     </el-table-column>
     <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
