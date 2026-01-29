@@ -13,6 +13,18 @@
       <div class="col1" style="width:25%">单位: 元</div>
     </div>
     <table class="common-table">
+      <colgroup>
+        <col class="col-code">
+        <col class="col-name">
+        <col class="col-spec">
+        <col class="col-price">
+        <col class="col-qty">
+        <col class="col-amt">
+        <col class="col-batch">
+        <col class="col-period">
+        <col class="col-factory">
+        <col class="col-category">
+      </colgroup>
       <tr>
         <th>耗材编码</th>
         <th>耗材名称</th>
@@ -175,7 +187,7 @@ export default {
 /* 默认横向 */
 @page {
   size: A4 landscape;
-  margin: 0;
+  margin: 10mm;
 }
 
 /* 纵向布局 */
@@ -183,14 +195,14 @@ export default {
   .gz-order-print.orientation-portrait {
     @page {
       size: A4;
-      margin: 0;
+      margin: 10mm;
     }
   }
   
   .gz-order-print.orientation-landscape {
     @page {
       size: A4 landscape;
-      margin: 0;
+      margin: 10mm;
     }
   }
 }
@@ -200,29 +212,74 @@ export default {
     color: #000 !important;
   }
 
+  .gz-order-print {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
   table {
-    width 100%
-    table-layout: fixed;
+    width: 100% !important;
+    table-layout: fixed !important;
     border-collapse: collapse;
     border-spacing: 0;
     text-align: center;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 设置各列的宽度 */
+  table.common-table col.col-code {
+    width: 8% !important;
+  }
+  table.common-table col.col-name {
+    width: 18% !important;
+  }
+  table.common-table col.col-spec {
+    width: 8% !important;
+  }
+  table.common-table col.col-price {
+    width: 8% !important;
+  }
+  table.common-table col.col-qty {
+    width: 6% !important;
+  }
+  table.common-table col.col-amt {
+    width: 8% !important;
+  }
+  table.common-table col.col-batch {
+    width: 10% !important;
+  }
+  table.common-table col.col-period {
+    width: 10% !important;
+  }
+  table.common-table col.col-factory {
+    width: 12% !important;
+  }
+  table.common-table col.col-category {
+    width: 12% !important;
   }
 
   table, tbody, thead {
     width: 100% !important;
   }
 
-  .gz-order-print {
-    width: 100% !important;
-    font-size: 14px;
-  }
-
-  table, table tr th, table tr td {
+  table tr th, table tr td {
     border: 0.05rem solid #000;
     font-size: 12px;
     overflow: hidden;
     word-wrap: break-word;
     word-break: break-all;
+    padding: 6px 8px;
+    box-sizing: border-box;
+    white-space: normal;
+    vertical-align: middle;
+  }
+  
+  table tr th {
+    font-weight: bold;
+    background-color: #f5f5f5;
   }
 
 }
@@ -243,11 +300,39 @@ export default {
     text-align center
 
   .common-table
+    width: 100% !important
+    table-layout: fixed !important
+    border-collapse: collapse
+    
+    col.col-code
+      width: 8% !important
+    col.col-name
+      width: 18% !important
+    col.col-spec
+      width: 8% !important
+    col.col-price
+      width: 8% !important
+    col.col-qty
+      width: 6% !important
+    col.col-amt
+      width: 8% !important
+    col.col-batch
+      width: 10% !important
+    col.col-period
+      width: 10% !important
+    col.col-factory
+      width: 12% !important
+    col.col-category
+      width: 12% !important
+      
     td, th
       border-color black
       overflow: hidden !important
       word-wrap: break-word
       word-break: break-all
+      padding: 6px 8px
+      box-sizing: border-box
+      white-space: normal
 
   .content
     display flex

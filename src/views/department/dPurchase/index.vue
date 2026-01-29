@@ -206,13 +206,18 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="申购状态" prop="purchaseBillStatus" label-width="100px">
-                      <el-select v-model="form.purchaseBillStatus" placeholder="请选择申购状态"
-                                 :disabled="true"
-                                 clearable style="width: 150px">
-                        <el-option v-for="dict in dict.type.purchase_status"
-                                   :key="dict.value"
-                                   :label="dict.label"
-                                   :value="dict.value"
+                      <el-select
+                        v-model="form.purchaseBillStatus"
+                        placeholder="请选择申购状态"
+                        :disabled="true"
+                        clearable
+                        style="width: 150px"
+                      >
+                        <el-option
+                          v-for="dict in dict.type.purchase_status"
+                          :key="dict.value"
+                          :label="dict.value == '1' || dict.value == 1 ? '未审核' : dict.label"
+                          :value="dict.value"
                         />
                       </el-select>
                     </el-form-item>
@@ -244,14 +249,22 @@
                 <el-row>
                   <el-col :span="4">
                     <el-form-item label="紧急程度" prop="urgencyLevel" label-width="100px">
-                      <el-select v-if="action" v-model="form.urgencyLevel" placeholder="请选择紧急程度"
-                                 clearable style="width: 150px">
-                        <el-option v-for="dict in dict.type.urgency_level"
-                                   :key="dict.value"
-                                   :label="dict.label"
-                                   :value="dict.value"
+                      <!-- 编辑状态：下拉框显示中文标签 -->
+                      <el-select
+                        v-if="action"
+                        v-model="form.urgencyLevel"
+                        placeholder="请选择紧急程度"
+                        clearable
+                        style="width: 150px"
+                      >
+                        <el-option
+                          v-for="dict in dict.type.urgency_level"
+                          :key="dict.value"
+                          :label="dict.label"
+                          :value="String(dict.value)"
                         />
                       </el-select>
+                      <!-- 查看状态：只读汉字显示 -->
                       <el-input v-else v-model="urgencyLevelText" disabled style="width: 150px"></el-input>
                     </el-form-item>
                   </el-col>
@@ -566,9 +579,10 @@ export default {
         }else{
           this.form.purchaseBillStatus = '3';
         }
-        
         // 设置紧急程度文本显示
         this.setUrgencyLevelText(response.data.urgencyLevel);
+        // 确保紧急程度下拉框使用字符串值，避免显示纯数字
+        this.form.urgencyLevel = response.data.urgencyLevel != null ? String(response.data.urgencyLevel) : '';
 
         this.title = "查看科室申购";
       });
@@ -580,7 +594,8 @@ export default {
       const currentUser = this.$store.state.user;
       if (currentUser) {
         this.form.userId = currentUser.userId;
-        this.form.userName = currentUser.name || currentUser.nickName || '';
+        // 优先显示中文姓名（nickName），避免显示登录名 admin
+        this.form.userName = currentUser.nickName || currentUser.name || currentUser.userName || '';
       }
       this.open = true;
       this.form.purchaseBillStatus = '1';
@@ -595,17 +610,24 @@ export default {
       const id = row.id || this.ids
       getPurchase(id).then(response => {
         this.form = response.data;
-        // 如果form中没有userName，从store获取当前用户信息
-        if (!this.form.userName && this.form.userId) {
+        // 优先使用后端返回的用户中文姓名，其次使用当前登录用户信息
+        if (response.data.user) {
+          this.form.userName =
+            response.data.user.nickName ||
+            response.data.user.name ||
+            response.data.user.userName ||
+            this.form.userName;
+        } else if (!this.form.userName && this.form.userId) {
           const currentUser = this.$store.state.user;
           if (currentUser && currentUser.userId == this.form.userId) {
-            this.form.userName = currentUser.name || currentUser.nickName || '';
+            this.form.userName = currentUser.nickName || currentUser.name || currentUser.userName || '';
           }
         }
         this.depPurchaseApplyEntryList = response.data.depPurchaseApplyEntryList;
-        
         // 设置紧急程度文本显示
         this.setUrgencyLevelText(response.data.urgencyLevel);
+        // 确保紧急程度下拉框使用字符串值，避免显示纯数字
+        this.form.urgencyLevel = response.data.urgencyLevel != null ? String(response.data.urgencyLevel) : '';
         
         this.open = true;
         this.action = true;
@@ -883,22 +905,22 @@ export default {
   margin-bottom: 10px;
 }
 
+/* 明细表格区域，参考科室申领弹窗布局，占满剩余高度，表头固定不滚动 */
 .local-modal-content .table-wrapper {
-  flex: 0 0 auto;
+  flex: 1;
+  overflow: hidden;
   min-height: 0;
-  overflow: auto;
-  height: 18vh !important;
-  max-height: 18vh !important;
+  height: 0;
 }
 
 .local-modal-content .table-wrapper .el-table {
-  height: 18vh !important;
-  max-height: 18vh !important;
+  height: 100% !important;
 }
 
 .local-modal-content .table-wrapper .el-table__body-wrapper {
-  max-height: calc(18vh - 48px) !important;
-  overflow-y: auto;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  max-height: calc(100vh - 450px) !important;
 }
 
 /* 弹窗动画效果 */

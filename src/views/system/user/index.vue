@@ -729,6 +729,20 @@ export default {
       });
       return ids;
     },
+    /** 获取所有选中的菜单ID（包括半选中的父节点） */
+    getAuthMenuAllCheckedKeys() {
+      if (!this.$refs.authMenuTree) {
+        return [];
+      }
+      // 目前被选中的菜单节点
+      let checkedKeys = this.$refs.authMenuTree.getCheckedKeys() || [];
+      // 半选中的菜单节点（父节点）
+      let halfCheckedKeys = this.$refs.authMenuTree.getHalfCheckedKeys() || [];
+      // 合并选中的和半选中的节点
+      let allKeys = [...checkedKeys, ...halfCheckedKeys];
+      // 去重
+      return [...new Set(allKeys)];
+    },
     /** 菜单选择变化 */
     handleMenuCheck(data, checked) {
       const checkedKeys = this.$refs.menuTree.getCheckedKeys();
@@ -808,9 +822,11 @@ export default {
     },
     /** 授权菜单选择变化 */
     handleAuthMenuCheck(data, checked) {
+      // 获取所有选中的菜单ID（包括半选中的父节点）
+      const allMenuIds = this.getAuthMenuAllCheckedKeys();
+      this.authForm.menuIds = allMenuIds;
       const checkedKeys = this.$refs.authMenuTree.getCheckedKeys();
       const halfCheckedKeys = this.$refs.authMenuTree.getHalfCheckedKeys();
-      this.authForm.menuIds = checkedKeys;
       this.updateAuthMenuCheckState(checkedKeys, halfCheckedKeys);
     },
     /** 更新授权菜单全选/半选状态 */
@@ -851,28 +867,44 @@ export default {
     },
     /** 授权提交 */
     submitAuth() {
-      console.log('开始提交授权 - 当前 menuIds:', this.authForm.menuIds);
+      // 从菜单树组件获取最新的选中菜单ID（包括半选中的父节点）
+      let menuIds = [];
+      if (this.$refs.authMenuTree) {
+        menuIds = this.getAuthMenuAllCheckedKeys();
+        console.log('从菜单树获取的 menuIds（包括半选中节点）:', menuIds);
+      } else {
+        // 如果菜单树组件不存在，使用 authForm 中的 menuIds
+        menuIds = Array.isArray(this.authForm.menuIds) ? this.authForm.menuIds : [];
+        console.log('从 authForm 获取的 menuIds:', menuIds);
+      }
+      
+      console.log('开始提交授权 - 当前 menuIds:', menuIds);
+      
       // 先获取完整的用户信息，然后合并权限数据
       getUser(this.authForm.userId).then(response => {
         const userData = response.data;
         // 确保 menuIds 是数字数组
-        const menuIds = Array.isArray(this.authForm.menuIds) 
-          ? this.authForm.menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0)
-          : [];
-        console.log('处理后的 menuIds:', menuIds);
+        const finalMenuIds = menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+        console.log('处理后的 menuIds:', finalMenuIds);
         console.log('userData 中的 menuIds:', userData.menuIds);
+        
+        if (finalMenuIds.length === 0) {
+          this.$modal.msgWarning("请至少选择一个菜单权限");
+          return Promise.reject(new Error("菜单权限不能为空"));
+        }
+        
         // 合并权限数据到用户对象，确保 menuIds 不被覆盖
         const payload = {
           ...userData,
           userId: this.authForm.userId,
-          menuIds: menuIds, // 明确设置 menuIds，确保不被 userData 中的值覆盖
+          menuIds: finalMenuIds, // 明确设置 menuIds，确保不被 userData 中的值覆盖
           departmentIds: this.authForm.departmentIds || [],
           warehouseIds: this.authForm.warehouseIds || []
         };
         // 再次确认 menuIds 没有被覆盖
-        if (payload.menuIds !== menuIds) {
-          console.warn('警告：menuIds 被覆盖！原始值:', menuIds, '当前值:', payload.menuIds);
-          payload.menuIds = menuIds;
+        if (payload.menuIds !== finalMenuIds) {
+          console.warn('警告：menuIds 被覆盖！原始值:', finalMenuIds, '当前值:', payload.menuIds);
+          payload.menuIds = finalMenuIds;
         }
         console.log('提交授权数据 - userId:', payload.userId, 'menuIds:', payload.menuIds, 'menuIds类型:', typeof payload.menuIds, '是数组:', Array.isArray(payload.menuIds));
         console.log('完整 payload:', JSON.stringify(payload, null, 2));
@@ -889,6 +921,7 @@ export default {
         console.log('保存后重新获取的菜单权限:', menuIds, '完整响应:', response);
         this.authForm.menuIds = menuIds;
         if (this.$refs.authMenuTree) {
+          // 设置选中状态时，需要同时设置选中的和半选中的节点
           this.$refs.authMenuTree.setCheckedKeys(menuIds);
           this.updateAuthMenuCheckState();
         }

@@ -1,5 +1,5 @@
-﻿<template>
-  <div class="app-container">
+<template>
+  <div class="app-container third-inventory-page">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
         <el-row class="query-row-left">
@@ -66,7 +66,7 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 2px; margin-top: -8px">
+    <el-row :gutter="10" class="mb8 button-row-inventory">
       <el-col :span="1.5">
         <el-button
           type="warning"
@@ -95,30 +95,33 @@
 
     <div class="table-container">
     <el-table v-loading="loading" :data="inventoryList"
-              show-summary :summary-method="getTotalSummaries" height="55vh" border>
-      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
+              @selection-change="handleSelectionChange"
+              height="57vh"
+              border>
+      <el-table-column type="selection" width="48" align="center" fixed="left"/>
+      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable fixed="left">
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="类型" align="center" prop="billType" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="100" min-width="100" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" min-width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" min-width="90" show-overflow-tooltip resizable/>
+      <el-table-column label="类型" align="center" prop="billType" width="100" min-width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.bill_type" :value="scope.row.billType"/>
         </template>
       </el-table-column>
-      <el-table-column label="业务单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable />
-      <el-table-column label="业务日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="业务单号" align="center" prop="billNo" width="180" min-width="100" show-overflow-tooltip resizable />
+      <el-table-column label="业务日期" align="center" prop="billDate" width="180" min-width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="单价" align="center" prop="price" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="90" show-overflow-tooltip resizable/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable/>
+      <el-table-column label="单位" align="center" prop="unitName" width="80" min-width="70" show-overflow-tooltip resizable/>
+      <el-table-column label="单价" align="center" prop="price" width="120" min-width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.price != null && scope.row.price !== undefined && scope.row.price !== '' && Number(scope.row.price) !== 0">{{ Number(scope.row.price) | formatCurrency}}</span>
           <span v-else-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== '' && Number(scope.row.unitPrice) !== 0">{{ Number(scope.row.unitPrice) | formatCurrency}}</span>
@@ -128,26 +131,31 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="数量" align="center" prop="materialQty" width="80" min-width="70" show-overflow-tooltip resizable/>
+      <el-table-column label="金额" align="center" prop="materialAmt" width="120" min-width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="科室" align="center" prop="departmentName" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="厂家" align="center" prop="factoryName" width="120" min-width="90" show-overflow-tooltip resizable/>
+      <el-table-column label="供应商" align="center" prop="supplierName" width="160" min-width="100" show-overflow-tooltip resizable/>
+      <el-table-column label="科室" align="center" prop="departmentName" width="160" min-width="90" show-overflow-tooltip resizable/>
 
     </el-table>
     </div>
 
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="pagination-wrapper">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额: {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
 
   </div>
 </template>
@@ -210,6 +218,19 @@ export default {
       }
     };
   },
+  computed: {
+    /** 当前页数量合计 */
+    pageTotalQty() {
+      return (this.inventoryList || []).reduce((s, r) => s + Number(r.materialQty || 0), 0);
+    },
+    /** 当前页金额合计（格式化） */
+    pageTotalAmtFormatted() {
+      const amt = (this.inventoryList || []).reduce((s, r) => s + Number(r.materialAmt || 0), 0);
+      return this.$options.filters && this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(amt)
+        : String(Number(amt).toFixed(2));
+    },
+  },
   created() {
     this.getList();
   },
@@ -219,27 +240,6 @@ export default {
     });
   },
   methods: {
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      // 在现有合计数据后追加新的一行用于展示总计金额和数量
-      const subTotalRow = [];
-      const totalRow = [];
-      subTotalRow[0] = '合计';
-      totalRow[0] = '总计';
-      for (let i = 1; i < columns.length; i++) {
-        if (i === 11) { // 金额列
-          subTotalRow[i] = (this.totalInfo && this.totalInfo.subTotalAmt) ? this.totalInfo.subTotalAmt.toFixed(2) : '0.00';
-          totalRow[i] = (this.totalInfo && this.totalInfo.totalAmt) ? this.totalInfo.totalAmt.toFixed(2) : '0.00';
-        } else if (i === 10) { // 数量列
-          subTotalRow[i] = (this.totalInfo && this.totalInfo.subTotalQty) ? this.totalInfo.subTotalQty.toFixed(2) : '0.00';
-          totalRow[i] = (this.totalInfo && this.totalInfo.totalQty) ? this.totalInfo.totalQty.toFixed(2) : '0.00';
-        } else {
-          subTotalRow[i] = ''; // 其他列为空
-          totalRow[i] = ''; // 其他列为空
-        }
-      }
-      return [subTotalRow, totalRow];
-    },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
       if(res.length>0) {
@@ -353,6 +353,12 @@ export default {
       this.queryParams.endDate = this.getEndDate();
       this.handleQuery();
     },
+    /** 多选框选中数据 */
+    handleSelectionChange(selection) {
+      this.ids = selection.map(item => item.id);
+      this.single = selection.length !== 1;
+      this.multiple = !selection.length;
+    },
     /** 导出按钮操作 */
     handleExport() {
       this.download('warehouse/inventory/export', {
@@ -364,12 +370,46 @@ export default {
 };
 </script>
 
+<style>
+/* 与库存明细查询一致：内层不叠加左右 padding */
+.app-container.third-inventory-page {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.third-inventory-page .pagination-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  margin-top: -12px !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+.third-inventory-page .pagination-wrapper .pagination-summary {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #606266;
+}
+.third-inventory-page .pagination-wrapper .pagination-summary .summary-label {
+  font-weight: 700;
+}
+.third-inventory-page .pagination-wrapper .pagination-container {
+  margin-top: 0 !important;
+  margin-left: auto !important;
+  padding: 4px 0 4px 16px !important;
+  flex-shrink: 0;
+}
+.third-inventory-page .pagination-wrapper .pagination-container .el-pagination {
+  padding: 2px 0 !important;
+}
+</style>
+
 <style scoped>
 .app-container {
   margin-top: -10px;
 }
 
-/* 查询条件样式 */
 .query-row-left {
   margin-bottom: 2px;
 }
@@ -416,56 +456,69 @@ export default {
   margin-bottom: 0;
 }
 
-/* 查询条件容器框样式 */
 .form-fields-container {
   background: #fff;
-  padding: 6px 20px;
+  padding: 6px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   margin-top: -20px;
-  margin-left: -20px;
-  margin-right: -20px;
+  margin-left: 0;
+  margin-right: 0;
   border: 1px solid #EBEEF5;
 }
 
+.button-row-inventory {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+}
+
 .table-container {
-  margin-top: 5px;
+  margin-top: 8px;
+  margin-bottom: 0;
   overflow: visible;
-  width: calc(100% + 40px);
-  margin-left: -20px;
-  margin-right: -20px;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
   position: relative;
 }
 
-/* 表格水平滚动条增粗 */
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 6px;
+  transition: height 0.2s ease;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:hover {
   height: 12px;
 }
-
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 8px;
+  background: #e8e8e8;
+  border-radius: 3px;
+  margin: 0 2px;
+  cursor: pointer;
 }
-
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 8px;
+  background: #a0a0a0;
+  border-radius: 3px;
+  cursor: grab;
 }
-
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #808080;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
+  background: #606060;
+  cursor: grabbing;
 }
 
-/* 优化表格列间距 */
 .table-container ::v-deep .el-table th.el-table__cell {
   padding: 10px 12px !important;
 }
-
+.table-container ::v-deep .el-table th.el-table__cell .cell {
+  white-space: nowrap;
+}
 .table-container ::v-deep .el-table td.el-table__cell {
   padding: 10px 12px !important;
 }
-
 .table-container ::v-deep .el-table .cell {
   padding: 0 4px;
 }

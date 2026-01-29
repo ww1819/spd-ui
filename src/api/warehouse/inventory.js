@@ -70,3 +70,21 @@ export function listPDFilter(query) {
     params: query
   })
 }
+
+// 库存预警列表
+export function listInventoryAlert(query) {
+  return request({
+    url: '/warehouse/inventory/listInventoryAlert',
+    method: 'get',
+    params: query
+  })
+}
+
+// 有效期预警表列表
+export function listExpiryAlert(query) {
+  return request({
+    url: '/warehouse/inventory/listExpiryAlert',
+    method: 'get',
+    params: query
+  })
+}

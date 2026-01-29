@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="工作组编码" prop="postCode">
@@ -522,9 +522,9 @@ export default {
       
       const postId = this.ids[0]; // 获取选中的工作组ID
       
-      // 从后端获取工作组的权限
-      getPost(postId).then(response => {
-        const post = response.data;
+      // 从后端获取工作组的权限，同时获取菜单树用于查找父级目录
+      Promise.all([getPost(postId), this.getMenuTree()]).then(([postResponse, menuTreeResponse]) => {
+        const post = postResponse.data;
         const menuIds = post.menuIds || [];
         
         if (!menuIds || menuIds.length === 0) {
@@ -532,12 +532,56 @@ export default {
           return;
         }
         
-        this.$modal.confirm(`是否确认将工作组的菜单权限同步到该工作组下的所有用户？`).then(() => {
-          this.syncMenuToUsers(postId, menuIds);
+        // 自动获取所有父级目录ID
+        const parentIds = this.getParentMenuIds(menuIds, this.menuOptions);
+        // 合并菜单ID和父级目录ID（去重）
+        const allMenuIds = [...new Set([...menuIds, ...parentIds])];
+        console.log('工作组菜单:', menuIds, '父级目录:', parentIds, '合并后:', allMenuIds);
+        
+        this.$modal.confirm(`是否确认将工作组的菜单权限同步到该工作组下的所有用户？（包含${parentIds.length}个父级目录）`).then(() => {
+          this.syncMenuToUsers(postId, allMenuIds);
         }).catch(() => {});
       }).catch(error => {
         this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
       });
+    },
+    /** 获取指定菜单ID列表的所有父级目录ID */
+    getParentMenuIds(menuIds, menuTree) {
+      const parentIds = new Set();
+      const menuIdSet = new Set(menuIds.map(id => Number(id)));
+      
+      // 递归查找父级
+      const findParents = (tree, parents = []) => {
+        tree.forEach(node => {
+          const currentParents = [...parents];
+          if (node.children && node.children.length > 0) {
+            // 检查子节点中是否有目标菜单
+            const hasTargetChild = this.hasTargetMenuInChildren(node, menuIdSet);
+            if (hasTargetChild) {
+              // 将当前节点和所有祖先节点加入父级列表
+              parentIds.add(Number(node.id));
+              currentParents.forEach(p => parentIds.add(Number(p)));
+            }
+            // 继续递归，将当前节点ID加入父级链
+            findParents(node.children, [...currentParents, node.id]);
+          }
+        });
+      };
+      
+      findParents(menuTree);
+      // 移除已经在menuIds中的ID
+      menuIds.forEach(id => parentIds.delete(Number(id)));
+      return Array.from(parentIds);
+    },
+    /** 检查节点的子孙节点中是否包含目标菜单 */
+    hasTargetMenuInChildren(node, menuIdSet) {
+      if (menuIdSet.has(Number(node.id))) {
+        return true;
+      }
+      if (node.children && node.children.length > 0) {
+        return node.children.some(child => this.hasTargetMenuInChildren(child, menuIdSet));
+      }
+      return false;
     },
     /** 获取工作组下的所有用户 */
     getUsersByPostId(postId) {
@@ -585,19 +629,21 @@ export default {
           return Promise.resolve(0);
         }
         
-        // 批量更新用户的菜单权限
+        // 批量更新用户的菜单权限（替换模式：清除原有权限，使用工作组权限）
         const updatePromises = users.map(userResponse => {
           const userData = userResponse.data;
-          // 合并工作组的菜单权限到用户
+          
+          // 使用工作组的菜单权限替换用户原有的菜单权限
           const payload = {
             ...userData,
             userId: userData.userId,
-            menuIds: menuIds, // 使用工作组的菜单权限
+            menuIds: menuIds, // 直接使用工作组的菜单权限，替换用户原有权限
             // 保留用户原有的其他权限和工作组关联
             postIds: userResponse.postIds || [], // 保留用户的工作组关联
             departmentIds: userResponse.departmentIds || [],
             warehouseIds: userResponse.warehouseIds || []
           };
+          console.log('同步菜单权限 - userId:', userData.userId, '工作组菜单:', menuIds);
           return updateUser(payload);
         });
         

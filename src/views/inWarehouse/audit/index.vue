@@ -1,6 +1,6 @@
-﻿<template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+<template>
+  <div class="app-container inWarehouse-audit-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
@@ -64,7 +64,7 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -86,23 +86,22 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList"
+    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
-              show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="58vh" border>
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable >
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
+      <el-table-column type="selection" width="55" align="center" fixed="left" />
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable sortable />
+      <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="180" show-overflow-tooltip resizable />
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="250" show-overflow-tooltip resizable/>
-      <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')" />
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="250" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'supplier.name')" />
+      <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'creater.nickName')" />
+      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <!-- 使用 createTime 显示实际创建时间，包含时分秒 -->
           <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
@@ -110,13 +109,13 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable >
+      <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" min-width="120" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
@@ -186,7 +185,6 @@
     </el-table>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -597,6 +595,23 @@ export default {
         }
       });
       return sums;
+    },
+    /** 嵌套字段排序：按 path 如 'warehouse.name' 取值后比较 */
+    sortByNested(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return '';
+        const keys = path.split('.');
+        let v = obj;
+        for (const k of keys) {
+          v = v && v[k];
+        }
+        return v != null ? String(v) : '';
+      };
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
     },
     /** 查询入库列表 */
     getList() {
@@ -1138,7 +1153,7 @@ export default {
 .el-table {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .el-table th {
@@ -1362,5 +1377,50 @@ export default {
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
   background: #f1f1f1 !important;
   border-radius: 8px !important;
+}
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非scoped确保生效） */
+.app-container.inWarehouse-audit-page {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container > .el-form.query-form-compact {
+  margin-top: -8px !important;
+}
+
+.app-container > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container > .el-table.table-compact {
+  margin-top: 0;
+}
+
+/* 主表格表头样式：与到货验收一致 */
+.app-container > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* 单据状态列表头不换行 */
+.app-container > .el-table thead th:nth-child(9) .cell {
+  white-space: nowrap !important;
 }
 </style>

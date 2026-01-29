@@ -65,6 +65,26 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
+          type="primary"
+          plain
+          icon="el-icon-check"
+          size="medium"
+          @click="handleBatchAudit"
+          v-hasPermi="['department:purchaseAudit:audit']"
+        >审核</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="danger"
+          plain
+          icon="el-icon-close"
+          size="medium"
+          @click="handleToolbarReject"
+          v-hasPermi="['department:purchaseAudit:reject']"
+        >驳回</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="warning"
           plain
           icon="el-icon-download"
@@ -108,7 +128,15 @@
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="制单人" align="center" prop="user.userName" width="100" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>
+            {{ (scope.row.user && (scope.row.user.nickName || scope.row.user.name || scope.row.user.userName))
+               || scope.row.userName
+               || '--' }}
+          </span>
+        </template>
+      </el-table-column>
       <el-table-column label="申购状态" align="center" prop="purchaseBillStatus" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag v-if="scope.row.purchaseBillStatus != '1' && scope.row.purchaseBillStatus != 1" :options="dict.type.purchase_status" :value="scope.row.purchaseBillStatus"/>
@@ -143,7 +171,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -153,24 +181,6 @@
               @click="handleView(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >查看</el-button>
-            <el-button
-              size="small"
-              type="text"
-              icon="el-icon-check"
-              @click="handleAudit(scope.row)"
-              v-hasPermi="['department:purchaseAudit:audit']"
-              v-if="scope.row.purchaseBillStatus == 1"
-              style="padding: 0 5px; margin: 0; color: #67C23A;"
-            >审核</el-button>
-            <el-button
-              size="small"
-              type="text"
-              icon="el-icon-close"
-              @click="handleReject(scope.row)"
-              v-hasPermi="['department:purchaseAudit:reject']"
-              v-if="scope.row.purchaseBillStatus == 1"
-              style="padding: 0 5px; margin: 0; color: #F56C6C;"
-            >驳回</el-button>
           </span>
         </template>
       </el-table-column>
@@ -224,6 +234,11 @@
                       <SelectWarehouse v-model="form.warehouseId" :disabled="true"/>
                     </el-form-item>
                   </el-col>
+                  <el-col :span="4" v-if="form.purchaseBillStatus == 1">
+                    <el-form-item label="驳回原因" prop="rejectReason" label-width="100px">
+                      <el-input v-model="form.rejectReason" placeholder="请输入驳回原因（驳回时必填）" style="width: 150px" />
+                    </el-form-item>
+                  </el-col>
                 </el-row>
 
                 <el-row>
@@ -267,20 +282,13 @@
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <!-- 审核操作区域 -->
-                <el-row v-if="form.purchaseBillStatus == 1">
-                  <el-col :span="12">
-                    <el-form-item label="驳回原因" prop="rejectReason" label-width="100px">
-                      <el-input 
-                        v-model="form.rejectReason" 
-                        type="textarea" 
-                        :rows="3"
-                        placeholder="请输入驳回原因（驳回时必填）" 
-                        style="width: 100%" 
-                      />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
+              </div>
+
+              <!-- 审核操作按钮 -->
+              <div class="modal-action-buttons" v-if="form.purchaseBillStatus == 1">
+                <el-button @click="cancel">取 消</el-button>
+                <el-button type="danger" @click="handleRejectSubmit">驳 回</el-button>
+                <el-button type="primary" @click="handleAuditSubmit">审 核</el-button>
               </div>
 
               <el-row :gutter="10" class="mb8">
@@ -356,12 +364,6 @@
                 </el-table-column>
               </el-table>
               </div>
-              <!-- 审核操作按钮 -->
-              <div class="modal-footer" v-if="form.purchaseBillStatus == 1">
-                <el-button @click="cancel">取 消</el-button>
-                <el-button type="danger" @click="handleRejectSubmit">驳 回</el-button>
-                <el-button type="primary" @click="handleAuditSubmit">审 核</el-button>
-              </div>
             </el-form>
           </div>
         </transition>
@@ -386,10 +388,8 @@ export default {
       loading: true,
       // 选中数组
       ids: [],
-      // 非单个禁用
-      single: true,
-      // 非多个禁用
-      multiple: true,
+      // 当前勾选的行数据
+      selectedRows: [],
       // 显示搜索条件
       showSearch: true,
       // 总条数
@@ -489,9 +489,8 @@ export default {
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      this.ids = selection.map(item => item.id);
+      this.selectedRows = selection;
     },
     /** 科室申购序号 */
     rowPurchaseIndex({ row, rowIndex }) {
@@ -519,11 +518,11 @@ export default {
         this.title = "申购单审核";
       });
     },
-    /** 审核按钮操作（表格中） */
+    /** 审核按钮操作（表格中，已废弃，保留兼容） */
     handleAudit(row) {
       this.handleView(row);
     },
-    /** 驳回按钮操作（表格中） */
+    /** 驳回按钮操作（表格中，已废弃，保留兼容） */
     handleReject(row) {
       this.handleView(row);
     },
@@ -562,6 +561,51 @@ export default {
         this.open = false;
         this.getList();
       });
+    },
+    /** 工具栏批量审核：支持选择多条未审核申购单 */
+    handleBatchAudit() {
+      if (!this.selectedRows || this.selectedRows.length === 0) {
+        this.$modal.msgError("请先选择要审核的申购单");
+        return;
+      }
+      const pendingList = this.selectedRows.filter(
+        row => row.purchaseBillStatus == 1 || row.purchaseBillStatus === '1'
+      );
+      if (pendingList.length === 0) {
+        this.$modal.msgError("请选择未审核的申购单进行审核");
+        return;
+      }
+      const userId = this.$store.state.user.userId;
+      this.$modal.confirm(`确认审核选中的 ${pendingList.length} 条申购单吗？`).then(() => {
+        const requests = pendingList.map(row =>
+          auditPurchase({
+            id: String(row.id),
+            auditBy: userId
+          })
+        );
+        Promise.all(requests).then(() => {
+          this.$modal.msgSuccess("审核成功");
+          this.getList();
+        });
+      }).catch(() => {});
+    },
+    /** 工具栏驳回：只允许单条，弹出详情弹窗填写驳回原因 */
+    handleToolbarReject() {
+      if (!this.selectedRows || this.selectedRows.length === 0) {
+        this.$modal.msgError("请先选择要驳回的申购单");
+        return;
+      }
+      if (this.selectedRows.length > 1) {
+        this.$modal.msgError("驳回操作一次只能选择一条申购单");
+        return;
+      }
+      const row = this.selectedRows[0];
+      if (!(row.purchaseBillStatus == 1 || row.purchaseBillStatus === '1')) {
+        this.$modal.msgError("只能驳回未审核的申购单");
+        return;
+      }
+      // 复用现有查看逻辑，打开弹窗并填写驳回原因后点击“驳回提交”
+      this.handleView(row);
     },
     /** 科室申购明细序号 */
     rowDepPurchaseApplyEntryIndex({ row, rowIndex }) {
@@ -643,6 +687,19 @@ export default {
 .close-btn:hover {
   background: #F5F7FA;
   border-color: #C0C4CC;
+}
+
+.modal-action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 15px 20px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.modal-action-buttons .el-button {
+  min-width: 80px;
 }
 
 .modal-footer {

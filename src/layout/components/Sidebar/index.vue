@@ -3,15 +3,19 @@
         <logo v-if="showLogo" :collapse="isCollapse" />
         <el-scrollbar :class="settings.sideTheme" wrap-class="scrollbar-wrapper">
             <el-menu
+                ref="menu"
                 :default-active="activeMenu"
-                :default-openeds="defaultOpeneds"
+                :openeds="openedMenus"
                 :collapse="isCollapse"
                 :background-color="settings.sideTheme === 'theme-dark' ? variables.menuBackground : variables.menuLightBackground"
                 :text-color="settings.sideTheme === 'theme-dark' ? variables.menuColor : variables.menuLightColor"
-                :unique-opened="true"
+                :unique-opened="false"
                 :active-text-color="settings.theme"
                 :collapse-transition="false"
                 mode="vertical"
+                @open="handleMenuOpen"
+                @close="handleMenuClose"
+                @select="handleMenuSelect"
             >
                 <sidebar-item
                     v-for="(route, index) in sidebarRouters"
@@ -34,6 +38,12 @@ import { isExternal } from '@/utils/validate';
 
 export default {
     components: { SidebarItem, Logo },
+    data() {
+        return {
+            openedMenus: [], // 当前展开的菜单列表
+            manuallyClosedMenus: [] // 用户手动收起的菜单列表（用于记录用户意图）
+        };
+    },
     computed: {
         ...mapState(["settings"]),
         ...mapGetters(["sidebarRouters", "sidebar"]),
@@ -46,7 +56,7 @@ export default {
             }
             return path;
         },
-        // 计算默认展开的菜单，只展开直接包含当前激活菜单的父菜单（只展开一层）
+        // 计算默认展开的菜单，递归查找所有包含当前激活菜单的父菜单
         defaultOpeneds() {
             const activePath = this.activeMenu;
             if (!activePath) {
@@ -55,8 +65,8 @@ export default {
             
             const openedMenus = [];
             
-            // 查找直接包含当前激活路径的父菜单（只查找一层，不递归）
-            const findDirectParentMenu = (routes, targetPath, basePath = '') => {
+            // 递归查找所有包含当前激活路径的父菜单
+            const findAllParentMenus = (routes, targetPath, basePath = '') => {
                 for (const route of routes) {
                     if (route.hidden) {
                         continue;
@@ -76,17 +86,17 @@ export default {
                     
                     // 如果有子菜单
                     if (route.children && route.children.length > 0) {
-                        // 检查子菜单中是否直接包含目标路径（不递归检查子菜单的子菜单）
-                        if (this.hasDirectActiveChild(route.children, targetPath, currentPath)) {
+                        // 递归检查子菜单中是否包含目标路径
+                        if (this.hasActiveChild(route.children, targetPath, currentPath)) {
                             openedMenus.push(currentPath);
-                            // 找到直接父菜单后就不再继续查找，只展开一层
-                            return;
+                            // 继续递归查找子菜单中的父菜单
+                            findAllParentMenus(route.children, targetPath, currentPath);
                         }
                     }
                 }
             };
             
-            findDirectParentMenu(this.sidebarRouters, activePath);
+            findAllParentMenus(this.sidebarRouters, activePath);
             return openedMenus;
         },
         showLogo() {
@@ -99,9 +109,148 @@ export default {
             return !this.sidebar.opened;
         }
     },
+    watch: {
+        // 监听路由变化，动态更新展开的菜单
+        '$route': {
+            immediate: true,
+            handler() {
+                this.$nextTick(() => {
+                    this.updateOpenedMenus();
+                });
+            }
+        },
+        // 监听 defaultOpeneds 变化，更新 openedMenus
+        defaultOpeneds: {
+            immediate: true,
+            handler(newVal) {
+                // 合并默认展开的菜单和用户手动展开的菜单（去重）
+                // 但排除用户手动收起的菜单
+                const filteredNewVal = newVal.filter(menu => !this.manuallyClosedMenus.includes(menu));
+                const allOpened = [...new Set([...this.openedMenus, ...filteredNewVal])];
+                this.$nextTick(() => {
+                    this.openedMenus = allOpened;
+                });
+            }
+        }
+    },
+    mounted() {
+        // 组件挂载时初始化展开的菜单
+        this.$nextTick(() => {
+            this.updateOpenedMenus();
+        });
+    },
     methods: {
-        // 检查子路由中是否直接包含目标路径（只检查一层，不递归）
-        hasDirectActiveChild(children, targetPath, basePath) {
+        // 更新展开的菜单列表
+        updateOpenedMenus() {
+            const defaultOpened = this.defaultOpeneds;
+            // 合并默认展开的菜单和用户手动展开的菜单（去重）
+            // 但排除用户手动收起的菜单
+            const filteredDefaultOpened = defaultOpened.filter(menu => !this.manuallyClosedMenus.includes(menu));
+            const allOpened = [...new Set([...this.openedMenus, ...filteredDefaultOpened])];
+            this.openedMenus = allOpened;
+            // 确保菜单组件同步更新
+            if (this.$refs.menu) {
+                this.$refs.menu.openedMenus = allOpened;
+            }
+        },
+        // 菜单展开事件
+        handleMenuOpen(index) {
+            if (!this.openedMenus.includes(index)) {
+                this.openedMenus.push(index);
+            }
+            // 如果用户手动展开菜单，则从手动收起列表中移除（表示用户想要展开它）
+            const closedIndex = this.manuallyClosedMenus.indexOf(index);
+            if (closedIndex > -1) {
+                this.manuallyClosedMenus.splice(closedIndex, 1);
+            }
+        },
+        // 菜单收起事件（只有用户手动点击收起时才执行）
+        handleMenuClose(index) {
+            // 检查是否是当前激活菜单的父菜单，如果是则不收起
+            const activePath = this.activeMenu;
+            if (this.isParentOfActiveMenu(index, activePath)) {
+                // 如果是当前激活菜单的父菜单，阻止收起
+                this.$nextTick(() => {
+                    if (!this.openedMenus.includes(index)) {
+                        this.openedMenus.push(index);
+                    }
+                    // 强制重新设置菜单展开状态
+                    if (this.$refs.menu) {
+                        this.$refs.menu.openedMenus = [...this.openedMenus];
+                    }
+                });
+                return;
+            }
+            // 否则允许收起，并记录用户手动收起的意图
+            const indexPos = this.openedMenus.indexOf(index);
+            if (indexPos > -1) {
+                this.openedMenus.splice(indexPos, 1);
+                // 记录用户手动收起的菜单（如果还没有记录）
+                if (!this.manuallyClosedMenus.includes(index)) {
+                    this.manuallyClosedMenus.push(index);
+                }
+            }
+        },
+        // 菜单选择事件（点击菜单项时触发）
+        handleMenuSelect(index) {
+            // 确保所有父菜单都展开
+            this.$nextTick(() => {
+                this.ensureParentMenusOpen(index);
+            });
+        },
+        // 确保父菜单展开
+        ensureParentMenusOpen(menuPath) {
+            const parentMenus = this.findAllParentMenus(menuPath);
+            const allOpened = [...new Set([...this.openedMenus, ...parentMenus])];
+            this.openedMenus = allOpened;
+            // 强制更新菜单组件
+            if (this.$refs.menu) {
+                this.$refs.menu.openedMenus = allOpened;
+            }
+        },
+        // 查找所有父菜单路径
+        findAllParentMenus(targetPath) {
+            const parentMenus = [];
+            const findParents = (routes, targetPath, basePath = '', parents = []) => {
+                for (const route of routes) {
+                    if (route.hidden) {
+                        continue;
+                    }
+                    
+                    let currentPath = '';
+                    if (isExternal(route.path)) {
+                        currentPath = route.path;
+                    } else if (isExternal(basePath)) {
+                        currentPath = basePath;
+                    } else if (basePath) {
+                        currentPath = path.resolve(basePath, route.path);
+                    } else {
+                        currentPath = route.path.startsWith('/') ? route.path : '/' + route.path;
+                    }
+                    
+                    if (route.children && route.children.length > 0) {
+                        const newParents = [...parents, currentPath];
+                        if (this.hasActiveChild(route.children, targetPath, currentPath)) {
+                            parentMenus.push(...newParents);
+                            findParents(route.children, targetPath, currentPath, newParents);
+                            break;
+                        }
+                    }
+                }
+            };
+            findParents(this.sidebarRouters, targetPath);
+            return parentMenus;
+        },
+        // 检查菜单是否是当前激活菜单的父菜单
+        isParentOfActiveMenu(menuPath, activePath) {
+            if (!activePath || !menuPath) {
+                return false;
+            }
+            // 检查 activePath 是否以 menuPath 开头
+            return activePath.startsWith(menuPath + '/') || activePath === menuPath;
+        },
+        // 递归检查子路由中是否包含目标路径
+        hasActiveChild(children, targetPath, basePath) {
             if (!children || children.length === 0) {
                 return false;
             }
@@ -123,10 +272,16 @@ export default {
                     childPath = child.path.startsWith('/') ? child.path : '/' + child.path;
                 }
                 
-                // 检查路径是否匹配（只检查直接子菜单，不递归检查子菜单的子菜单）
-                // 支持精确匹配和前缀匹配（因为路由可能是 /department/batchConsume 而菜单路径可能是 /department）
+                // 检查路径是否匹配（精确匹配或前缀匹配）
                 if (targetPath === childPath || targetPath.startsWith(childPath + '/') || childPath === targetPath) {
                     return true;
+                }
+                
+                // 如果有子菜单，递归检查
+                if (child.children && child.children.length > 0) {
+                    if (this.hasActiveChild(child.children, targetPath, childPath)) {
+                        return true;
+                    }
                 }
             }
             

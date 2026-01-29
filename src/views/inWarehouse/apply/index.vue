@@ -1,6 +1,6 @@
-﻿<template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+<template>
+  <div class="app-container inWarehouse-apply-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
@@ -64,7 +64,7 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -103,28 +103,28 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList"
+    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
-              @selection-change="handleSelectionChange" height="calc(100vh - 380px)" border>
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable />
-      <el-table-column label="金额" align="center" prop="totalAmount" width="150" show-overflow-tooltip resizable >
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'supplier.name')"/>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')"/>
+      <el-table-column label="金额" align="center" prop="totalAmount" width="150" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column label="制单人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <!-- 使用 createTime 显示实际创建时间，包含时分秒 -->
           <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
@@ -138,7 +138,7 @@
         </template>
       </el-table-column>
       <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
@@ -698,6 +698,23 @@ export default {
       });
       return sums;
     },
+    /** 嵌套字段排序：按 path 如 'warehouse.name' 取值后比较 */
+    sortByNested(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return '';
+        const keys = path.split('.');
+        let v = obj;
+        for (const k of keys) {
+          v = v && v[k];
+        }
+        return v != null ? String(v) : '';
+      };
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    },
     /** 查询入库列表 */
     getList() {
       this.loading = true;
@@ -879,13 +896,47 @@ export default {
     handleView(row){
       const id = row.id
       getInWarehouse(id).then(response => {
-        this.form = response.data;
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+        const data = response.data;
+        console.log('入库单详情数据:', data);
+        console.log('明细列表原始数据:', data.stkIoBillEntryList);
+        console.log('明细列表长度:', data.stkIoBillEntryList ? data.stkIoBillEntryList.length : 0);
+        
+        this.form = data;
+        
+        // 确保明细数据正确设置，包括 material 对象
+        const entryList = (data.stkIoBillEntryList || []).map((item, index) => {
+          console.log(`明细项 ${index}:`, item);
+          console.log(`明细项 ${index} material 对象:`, item.material);
+          // 确保 material 对象存在，如果不存在则尝试从其他字段构建
+          if (!item.material && item.materialId) {
+            // 如果 material 对象不存在，但 materialId 存在，保留原始数据
+            // 后端应该已经加载了 material 对象，这里只是做保险处理
+            console.warn(`明细项 ${index} 缺少 material 对象, materialId:`, item.materialId);
+          }
+          return item;
+        });
+        
+        // 使用 Vue.set 确保响应式更新
+        this.$set(this, 'stkIoBillEntryList', entryList);
+        console.log('处理后的明细列表:', this.stkIoBillEntryList);
+        console.log('处理后的明细列表长度:', this.stkIoBillEntryList.length);
+        
         this.open = true;
         this.action = false;
         this.form.billStatus = '2';
         this.form.billType = '101';
         this.title = "查看入库";
+        
+        // 强制更新视图
+        this.$nextTick(() => {
+          console.log('视图更新后的明细列表:', this.stkIoBillEntryList);
+          if (this.$refs.stkIoBillEntry) {
+            this.$refs.stkIoBillEntry.doLayout();
+          }
+        });
+      }).catch(error => {
+        console.error('获取入库单详情失败:', error);
+        this.$modal.msgError('获取入库单详情失败');
       });
     },
     /** 打印对话框关闭处理 */
@@ -1287,7 +1338,7 @@ export default {
 .el-table {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 /* 主表格表头样式：字体加粗加大、背景加深 */
@@ -1753,6 +1804,29 @@ export default {
 </style>
 
 <style>
+/* 本页主容器左右仅留 8px，使搜索框/按钮/表格整体更宽（非scoped确保生效） */
+.app-container.inWarehouse-apply-page {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+/* 搜索框容器：往上移8px（非scoped确保生效） */
+.app-container > .el-form.query-form-compact {
+  margin-top: -8px !important;
+}
+
+/* 新增/导出/搜索/重置按钮行紧凑：往上移8px，与明细框间距8px（非scoped确保生效） */
+.app-container > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+/* 明细框与按钮行间距由按钮行 margin-bottom 控制，此处不再负 margin */
+.app-container > .el-table.table-compact {
+  margin-top: 0;
+}
+
 /* 明细框表头样式：使用非scoped样式确保生效 */
 .local-modal-content .el-table th {
   font-size: 15px !important;
