@@ -89,7 +89,7 @@
     <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
               @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
-      <el-table-column type="selection" width="55" align="center" fixed="left" />
+      <el-table-column type="selection" width="55" align="center" fixed="left" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable sortable />
       <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
@@ -480,6 +480,8 @@ export default {
       printRowData: null,
       // 选中数组
       ids: [],
+      // 选中的行（含 billStatus，用于审核前过滤已审核）
+      selectedRows: [],
       // 子表选中数据
       checkedStkIoBillEntry: [],
       // 非单个禁用
@@ -763,9 +765,14 @@ export default {
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
+      this.selectedRows = selection
       this.ids = selection.map(item => item.id)
       this.single = selection.length!==1
       this.multiple = !selection.length
+    },
+    /** 仅待审核的单据可勾选，已审核的不可勾选 */
+    selectableAuditRow(row) {
+      return row.billStatus != 2
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -797,14 +804,16 @@ export default {
     },
     /** 批量审核按钮操作 */
     handleBatchAudit() {
-      const ids = this.ids;
-      if (!ids || ids.length === 0) {
-        this.$modal.msgWarning("请先选择要审核的数据");
+      const rows = this.selectedRows || [];
+      const pending = rows.filter(r => r.billStatus != 2);
+      if (pending.length === 0) {
+        this.$modal.msgWarning(rows.length ? "已选中的单据均为已审核状态，不能再次审核" : "请先选择要审核的数据");
         return;
       }
+      const ids = pending.map(r => r.id);
       const auditBy = this.$store.state.user.userId;
-      this.$modal.confirm('确定要审核选中的"' + ids.length + '"条数据项？').then(() => {
-        // 批量审核：循环调用审核接口
+      const skipTip = pending.length < rows.length ? "（已跳过" + (rows.length - pending.length) + "条已审核单据）" : "";
+      this.$modal.confirm('确定要审核选中的"' + pending.length + '"条待审核数据？' + skipTip).then(() => {
         const promises = ids.map(id => auditWarehouse({id: id, auditBy: auditBy}));
         return Promise.all(promises);
       }).then(() => {

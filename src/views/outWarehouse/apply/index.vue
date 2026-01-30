@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -849,7 +849,7 @@ export default {
     async submitForm() {
       this.$refs["form"].validate(async (valid) => {
         if (valid) {
-          // 新增耗材校验逻辑
+          // 新增/修改耗材校验逻辑：存在未审核出库单则提示（修改时排除当前单据）
           for (const [index, entry] of this.stkIoBillEntryList.entries()) {
             if (entry.materialId) {
               try {
@@ -859,7 +859,11 @@ export default {
                   billNo:'CK',
                   billStatus: 1
                 });
-                if (res && res.length > 0) {
+                let list = res && Array.isArray(res) ? res : [];
+                if (this.form.id != null) {
+                  list = list.filter(item => item.id != null && String(item.id) !== String(this.form.id));
+                }
+                if (list.length > 0) {
                   this.$modal.msgError(`第${index + 1}行耗材存在未审核出库单，请先审核后再出库`);
                   return;
                 }
@@ -887,6 +891,12 @@ export default {
           } else {
             addOutWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
+              // 用后端返回的 id、billNo 更新当前 form，使下次保存走修改逻辑（request 拦截器返回 res.data，实体在 response.data）
+              const resData = response && response.data;
+              if (resData && (resData.id != null || resData.billNo != null)) {
+                this.form.id = resData.id;
+                this.form.billNo = resData.billNo;
+              }
               this.getList();
               // 保存成功后不关闭弹窗，允许继续修改
               // this.open = false;

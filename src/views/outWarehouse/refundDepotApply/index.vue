@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -751,7 +751,7 @@ export default {
     async submitForm() {
       this.$refs["form"].validate(async (valid) => {
         if (valid) {
-          // 新增退库校验逻辑（与出库逻辑保持一致）
+          // 新增/修改退库校验逻辑：存在未审核退库单则提示（修改时排除当前单据）
           for (const [index, entry] of this.stkIoBillEntryList.entries()) {
             if (entry.materialId) {
               try {
@@ -761,7 +761,11 @@ export default {
                   billNo: 'TK',
                   billStatus: 1
                 });
-                if (res && res.length > 0) {
+                let list = res && Array.isArray(res) ? res : [];
+                if (this.form.id != null) {
+                  list = list.filter(item => item.id != null && String(item.id) !== String(this.form.id));
+                }
+                if (list.length > 0) {
                   this.$modal.msgError(`第${index + 1}行耗材存在未审核退库单，请先审核后再退库`);
                   return;
                 }

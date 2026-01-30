@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -853,6 +853,12 @@ export default {
           } else {
             addThInventory(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
+              // 用后端返回的 id、billNo 更新当前 form，使下次保存走修改逻辑（request 拦截器返回 res.data，实体在 response.data）
+              const resData = response && response.data;
+              if (resData && (resData.id != null || resData.billNo != null)) {
+                this.form.id = resData.id;
+                this.form.billNo = resData.billNo;
+              }
               this.getList();
               // 保存成功后不关闭弹窗，允许继续办理业务
               // this.open = false;

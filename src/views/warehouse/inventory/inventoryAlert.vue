@@ -23,6 +23,15 @@
             </el-form-item>
           </el-col>
         </el-row>
+        <el-row class="query-row-second">
+          <el-col :span="24">
+            <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectSupplier v-model="queryParams.supplierId" />
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
     </div>
 
@@ -83,12 +92,13 @@
 <script>
 import { listInventoryAlert } from '@/api/warehouse/inventory'
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse'
+import SelectSupplier from '@/components/SelectModel/SelectSupplier'
 import MaterialAutocomplete from '@/components/SelectModel/MaterialAutocomplete'
 import RightToolbar from '@/components/RightToolbar'
 
 export default {
   name: 'InventoryAlert',
-  components: { SelectWarehouse, MaterialAutocomplete, RightToolbar },
+  components: { SelectWarehouse, SelectSupplier, MaterialAutocomplete, RightToolbar },
   data() {
     return {
       loading: true,
@@ -103,7 +113,8 @@ export default {
         pageSize: 10,
         warehouseId: null,
         materialName: null,
-        alertStatus: null
+        alertStatus: null,
+        supplierId: null
       }
     }
   },
@@ -132,6 +143,7 @@ export default {
       this.queryParams.materialName = null
       this.queryParams.warehouseId = null
       this.queryParams.alertStatus = null
+      this.queryParams.supplierId = null
       this.handleQuery()
     },
     handleSelectionChange(selection) {
@@ -184,6 +196,8 @@ export default {
 <style scoped>
 .app-container { margin-top: -10px; }
 .query-row-left { margin-bottom: 2px; }
+.query-row-second { margin-bottom: 2px; position: relative; }
+.query-row-second .el-form-item { white-space: nowrap; margin-bottom: 0; }
 .query-item-inline { display: inline-block; margin-right: 16px; margin-bottom: 2px; }
 .query-item-inline .el-form-item__label { width: 80px !important; }
 .query-item-inline .el-form-item { margin-bottom: 0; }

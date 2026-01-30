@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -832,6 +832,11 @@ export default {
           } else {
             addThInventory(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
+              const resData = response && response.data;
+              if (resData && (resData.id != null || resData.billNo != null)) {
+                this.form.id = resData.id;
+                this.form.billNo = resData.billNo;
+              }
               this.open = false;
               this.getList();
             });

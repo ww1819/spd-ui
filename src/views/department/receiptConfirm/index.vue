@@ -14,6 +14,15 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
+            <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialName"
+                placeholder="请输入耗材名称"
+                clearable
+                style="width: 180px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId"/>
@@ -38,9 +47,9 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="12">
-            <el-form-item label="制单日期" style="display: flex; align-items: center;">
+            <el-form-item label="出库日期" style="display: flex; align-items: center;">
               <el-date-picker
-                v-model="queryParams.beginDate"
+                v-model="queryParams.auditBeginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
@@ -49,7 +58,7 @@
               />
               <span style="margin: 0 4px;">至</span>
               <el-date-picker
-                v-model="queryParams.endDate"
+                v-model="queryParams.auditEndDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
@@ -97,7 +106,7 @@
           :disabled="multiple"
           @click="handleBatchConfirm"
           v-hasPermi="['department:receiptConfirm:confirm']"
-        >确认</el-button>
+        >确认收货</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -122,6 +131,12 @@
       <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column label="收货状态" align="center" prop="receiptConfirmStatus" width="100" show-overflow-tooltip resizable>
@@ -359,12 +374,13 @@ export default {
         pageNum: 1,
         pageSize: 10,
         billNo: null,
-        beginDate: null,
-        endDate: null,
+        materialName: null,
+        auditBeginDate: null,
+        auditEndDate: null,
         warehouseId: null,
         departmentId: null,
         userId: null,
-        receiptConfirmStatus: null, // 默认显示全部状态（0=未确认，1=已确认）
+        receiptConfirmStatus: 0, // 默认未确认（0=未确认，1=已确认）
         orderByColumn: 'create_time',
         isAsc: 'desc',
       },
@@ -429,7 +445,10 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      this.queryParams.receiptConfirmStatus = null; // 重置后显示全部状态
+      this.queryParams.materialName = null;
+      this.queryParams.auditBeginDate = null;
+      this.queryParams.auditEndDate = null;
+      this.queryParams.receiptConfirmStatus = 0; // 重置后默认未确认
       this.handleQuery();
     },
     // 多选框选中数据

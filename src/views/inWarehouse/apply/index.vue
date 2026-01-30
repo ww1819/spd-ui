@@ -1157,6 +1157,12 @@ export default {
           } else {
             addWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
+              // 用后端返回的 id、billNo 更新当前 form，使单据号展示且下次保存走修改逻辑（request 拦截器已返回 res.data，故实体在 response.data）
+              const resData = response && response.data;
+              if (resData && (resData.id != null || resData.billNo != null)) {
+                this.form.id = resData.id;
+                this.form.billNo = resData.billNo;
+              }
               // 重置单据状态查询条件，确保新增的单据能显示出来
               this.queryParams.billStatus = null;
               this.getList();
