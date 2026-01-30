@@ -1,5 +1,13 @@
 import request from '@/utils/request'
 
+// 按科室汇总出库总金额（数据可视化大屏用）
+export function outboundSummaryByDepartment() {
+  return request({
+    url: '/warehouse/warehouse/outboundSummaryByDepartment',
+    method: 'get'
+  })
+}
+
 // 查询入库列表
 export function listWarehouse(query) {
   return request({

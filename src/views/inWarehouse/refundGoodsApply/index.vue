@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+  <div class="app-container inWarehouse-refundGoodsApply-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
@@ -64,7 +64,7 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -103,12 +103,12 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList"
+    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="58vh" border>
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
+      <el-table-column type="selection" width="55" align="center" fixed="left" />
+      <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable />
       <el-table-column label="退货单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -124,13 +124,13 @@
         </template>
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
+      <el-table-column label="金额" align="center" prop="totalAmount" width="120" min-width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" min-width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
@@ -142,7 +142,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="打印状态" align="center" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="打印状态" align="center" width="100" min-width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-tag v-if="scope.row.printDate" type="success" size="small">已打印</el-tag>
           <el-tag v-else type="info" size="small">未打印</el-tag>
@@ -160,7 +160,7 @@
         </template>
       </el-table-column>
       <el-table-column label="引用单号" align="center" prop="refBillNo" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip resizable />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
@@ -1367,5 +1367,79 @@ export default {
 .modal-zoom-leave-to {
   opacity: 0;
   transform: scale(0.8);
+}
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+.app-container.inWarehouse-refundGoodsApply-page {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page > .el-form.query-form-compact {
+  margin-top: -8px !important;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page > .el-table.table-compact {
+  margin-top: 0;
+  border: 1px solid #EBEEF5 !important;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page > .el-table.table-compact::before,
+.app-container.inWarehouse-refundGoodsApply-page > .el-table.table-compact::after {
+  background-color: #EBEEF5 !important;
+}
+
+/* 搜索区域：与到货验收一致 */
+.app-container.inWarehouse-refundGoodsApply-page > .el-form {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+}
+
+/* 主表格表头：淡色线条、加粗 */
+.app-container.inWarehouse-refundGoodsApply-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-right: 1px solid #EBEEF5 !important;
+  border-bottom: 1px solid #EBEEF5 !important;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page > .el-table td {
+  padding: 12px 0;
+  color: #606266;
+  border-right: 1px solid #EBEEF5 !important;
+  border-bottom: 1px solid #EBEEF5 !important;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page > .el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page .pagination-container {
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
 }
 </style>

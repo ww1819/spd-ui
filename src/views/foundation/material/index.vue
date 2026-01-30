@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container material-page-container">
     <div class="query-container">
       <div class="form-fields-container">
@@ -1994,28 +1994,38 @@ export default {
 }
 
 .form-fields-container .el-form-item__content {
-  line-height: 36px !important;
+  line-height: 24px !important;
 }
 
-/* 增加输入框高度 */
+/* 搜索框高度降低：输入框、下拉、日期选择器整体与内层统一压低 */
+.form-fields-container .el-input,
+.form-fields-container .el-select .el-input,
+.form-fields-container .el-date-editor {
+  height: 24px !important;
+}
 .form-fields-container .el-input__inner {
-  height: 36px !important;
-  line-height: 36px !important;
+  height: 24px !important;
+  line-height: 24px !important;
 }
 
 .form-fields-container .el-select .el-input__inner {
-  height: 36px !important;
-  line-height: 36px !important;
+  height: 24px !important;
+  line-height: 24px !important;
 }
 
 .form-fields-container .el-date-editor .el-input__inner {
-  height: 36px !important;
-  line-height: 36px !important;
+  height: 24px !important;
+  line-height: 24px !important;
+}
+
+.form-fields-container .el-date-editor .el-input__prefix,
+.form-fields-container .el-date-editor .el-input__suffix {
+  line-height: 24px !important;
 }
 
 .form-fields-container .el-form-item__label {
   padding-bottom: 0 !important;
-  line-height: 32px !important;
+  line-height: 24px !important;
 }
 
 /* 第一行查询条件左对齐紧凑布局 */
@@ -2187,16 +2197,29 @@ export default {
   flex-wrap: nowrap;
 }
 
+/* 页面左右仅留 8px，使顶部搜索容器更宽；底部少留白 */
+.material-page-container.app-container {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+/* 翻页上移、底部不留白 */
+.material-page-container .pagination-container {
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+}
+
 /* 查询容器样式 */
 .query-container {
   margin-top: -15px;
   margin-bottom: 16px;
 }
 
-/* 查询条件容器框样式 */
+/* 查询条件容器框样式：左右内边距 8px，容器更宽 */
 .form-fields-container {
   background: #F5F7FA;
-  padding: 12px 20px;
+  padding: 12px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
   border: 1px solid #DCDFE6;
@@ -2662,40 +2685,38 @@ export default {
   position: relative;
 }
 
-/* 表格外边框使用细边框（与内部列边框一致） - 仅针对当前页面 */
+/* 表格线条淡色（参考耗材对照明细框）：使用 #EBEEF5 细线 */
 .material-page-container .el-table {
-  border: 1px solid #C0C4CC !important;
+  border: 1px solid #EBEEF5 !important;
 }
 
-/* 表头（th）保持粗边框 - 仅针对当前页面 */
 .material-page-container .el-table th {
-  border-right: 2px solid #C0C4CC !important;
-  border-bottom: 2px solid #C0C4CC !important;
+  border-right: 1px solid #EBEEF5 !important;
+  border-bottom: 1px solid #EBEEF5 !important;
 }
 
 .material-page-container .el-table th:first-child {
-  border-left: 2px solid #C0C4CC !important;
+  border-left: 1px solid #EBEEF5 !important;
 }
 
-/* 数据行（td）使用细边框 - 仅针对当前页面 */
 .material-page-container .el-table td {
-  border-right: 1px solid #C0C4CC !important;
-  border-bottom: 1px solid #C0C4CC !important;
-  padding: 8px 0 !important; /* 统一上下间距 */
+  border-right: 1px solid #EBEEF5 !important;
+  border-bottom: 1px solid #EBEEF5 !important;
+  padding: 8px 0 !important;
 }
 
 .material-page-container .el-table td:first-child {
-  border-left: 1px solid #C0C4CC !important;
+  border-left: 1px solid #EBEEF5 !important;
 }
 
 .material-page-container .el-table::before {
   height: 1px !important;
-  background-color: #C0C4CC !important;
+  background-color: #EBEEF5 !important;
 }
 
 .material-page-container .el-table::after {
   width: 1px !important;
-  background-color: #C0C4CC !important;
+  background-color: #EBEEF5 !important;
 }
 
 /* 表格标题行字体加粗加大 - 仅针对当前页面 */

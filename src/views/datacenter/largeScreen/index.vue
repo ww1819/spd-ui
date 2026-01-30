@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div id="index" ref="appRef">
     <div class="bg">
       <dv-loading v-show="loading">Loading...</dv-loading>
@@ -69,7 +69,7 @@
               <!-- 柱状图部分 -->
               <div class="left_box2">
                 <dv-border-box-12 style="padding-top: 10px">
-                  <p style="margin-left: 15px">数据统计图</p>
+                  <p style="margin-left: 15px">高值消耗统计图</p>
                   <div id="columnar"></div>
                 </dv-border-box-12>
               </div>
@@ -79,7 +79,6 @@
                   <dv-scroll-board
                     :config="board_info"
                     class="carousel_list"
-                    oddRowBGC="#fff"
                   />
                 </dv-border-box-12>
               </div>
@@ -140,10 +139,13 @@
                   <div id="dotter_bar"></div>
                 </dv-border-box-12>
               </div>
-              <!-- 部分 -->
+              <!-- 科室领用排名 -->
               <div class="right_box3">
                 <dv-border-box-12 :reverse="true">
-                  <dv-conical-column-chart :config="cone" class="cone_box" />
+                  <div class="cone_title">科室领用排名</div>
+                  <div class="cone_chart_wrapper">
+                    <dv-conical-column-chart :config="cone" class="cone_box" />
+                  </div>
                 </dv-border-box-12>
               </div>
             </el-col>
@@ -158,6 +160,8 @@
 import drawMixin from "@/utils/drawMixin"; //自适应缩放
 import { formatTimeDT } from "@/utils"; //日期格式转换
 import * as echarts from "echarts";
+import { listdepart } from "@/api/foundation/depart";
+import { outboundSummaryByDepartment } from "@/api/warehouse/warehouse";
 export default {
   mixins: [drawMixin],
   data() {
@@ -230,19 +234,19 @@ export default {
           text: "正在编译数量",
         },
       ],
-      //左侧轮播表格配置项
+      //左侧轮播表格配置项（无背景色，与边框框内容一致）
       board_info: {
-        header: ["供应商", "出库量"],
+        header: ["供应商", "数量", "金额"],
         data: [
-          ["国药器械有限责任公司", "1083"],
-          ["广东华润医疗器械有限公司", "1350"],
-          ["江门国药器械责任有限责任公司", "1035"],
-          ["华融医疗器械有限责任公司", "1330"],
-          ["四川科华生物医疗器械有限责任公司", "1250"],
+          ["国药器械有限责任公司", "1083", "￥0"],
+          ["广东华润医疗器械有限公司", "1350", "￥0"],
+          ["江门国药器械责任有限责任公司", "1035", "￥0"],
+          ["华融医疗器械有限责任公司", "1330", "￥0"],
+          ["四川科华生物医疗器械有限责任公司", "1250", "￥0"],
         ],
-        evenRowBGC: "#020308",
-        oddRowBGC: "#382B47",
-        headerBGC: "#020308",
+        headerBGC: "transparent",
+        evenRowBGC: "transparent",
+        oddRowBGC: "transparent",
       },
       // 定义颜色
       colorList: {
@@ -315,40 +319,15 @@ export default {
           ],
         },
       },
-      //锥形柱状图
+      //锥形柱状图（科室，名称从系统科室列表读取）
       cone: {
-        data: [
-          {
-            name: "周口",
-            value: 55,
-          },
-          {
-            name: "南阳",
-            value: 120,
-          },
-          {
-            name: "西峡",
-            value: 71,
-          },
-          {
-            name: "驻马店",
-            value: 66,
-          },
-          {
-            name: "新乡",
-            value: 80,
-          },
-          {
-            name: "信阳",
-            value: 35,
-          },
-          {
-            name: "漯河",
-            value: 15,
-          },
-        ],
+        data: [],
         showValue: true,
       },
+      //高值消耗柱状图：固定显示5个科室，金额+数量
+      columnarCategories: ["手术室", "导管室", "口腔科", "眼科", "骨科"],
+      columnarOutboundData: [],
+      columnarOutboundQuantity: [],
       //统计数据
       statsData: {
         acceptanceAmount: '0.00',      // 验收总金额
@@ -366,12 +345,14 @@ export default {
     this.timeFn();
     //加载loading图
     this.cancelLoading();
+    //加载科室列表用于锥形图
+    this.loadConeDepartmentData();
     //中国地图
     // this.china_map();
     //左侧玫瑰饼图
     this.Rose_diagram();
-    //左侧柱状图
-    this.columnar();
+    //左侧高值消耗柱状图（科室出库数据）
+    this.loadColumnarData();
     //中间折线图
     this.line_center_diagram();
     //虚线柱状图
@@ -460,6 +441,69 @@ export default {
       setTimeout(() => {
         this.loading = false;
       }, 500);
+    },
+    /** 高值消耗柱状图：拉取手术室/导管室/口腔科/眼科/骨科的科室出库数据 */
+    loadColumnarData() {
+      Promise.all([
+        listdepart({ pageNum: 1, pageSize: 200 }),
+        outboundSummaryByDepartment()
+      ]).then(([deptRes, outboundRes]) => {
+        const rows = deptRes.rows || deptRes.data || [];
+        const outboundList = outboundRes.data || outboundRes || [];
+        const outboundAmountByDeptId = {};
+        const outboundQtyByDeptId = {};
+        outboundList.forEach(item => {
+          const id = item.departmentId != null ? item.departmentId : item.department_id;
+          if (id != null) {
+            outboundAmountByDeptId[id] = parseFloat(item.outboundAmount || item.outbound_amount || 0) || 0;
+            outboundQtyByDeptId[id] = parseInt(item.outboundQuantity || item.outbound_quantity || 0, 10) || 0;
+          }
+        });
+        const nameToId = {};
+        rows.forEach(d => {
+          const name = d.name || d.departmentName || "";
+          const id = d.id != null ? d.id : d.departmentId;
+          if (name && id != null) nameToId[name] = id;
+        });
+        const categories = this.columnarCategories;
+        this.columnarOutboundData = categories.map(name => {
+          const id = nameToId[name];
+          return id != null ? (outboundAmountByDeptId[id] != null ? outboundAmountByDeptId[id] : 0) : 0;
+        });
+        this.columnarOutboundQuantity = categories.map(name => {
+          const id = nameToId[name];
+          return id != null ? (outboundQtyByDeptId[id] != null ? outboundQtyByDeptId[id] : 0) : 0;
+        });
+        this.columnar();
+      }).catch(() => {
+        this.columnarOutboundData = this.columnarCategories.map(() => 0);
+        this.columnarOutboundQuantity = this.columnarCategories.map(() => 0);
+        this.columnar();
+      });
+    },
+    /** 从系统读取科室列表并拉取科室出库总数据，只显示前5个科室 */
+    loadConeDepartmentData() {
+      Promise.all([
+        listdepart({ pageNum: 1, pageSize: 200 }),
+        outboundSummaryByDepartment()
+      ]).then(([deptRes, outboundRes]) => {
+        const rows = deptRes.rows || deptRes.data || [];
+        const outboundList = outboundRes.data || outboundRes || [];
+        const outboundMap = {};
+        outboundList.forEach(item => {
+          const id = item.departmentId != null ? item.departmentId : item.department_id;
+          if (id != null) outboundMap[id] = parseFloat(item.outboundAmount || item.outbound_amount || 0) || 0;
+        });
+        const all = rows.slice(0, 5).map((dept, index) => {
+          const id = dept.id != null ? dept.id : dept.departmentId;
+          const name = dept.name || dept.departmentName || '科室' + (index + 1);
+          const value = id != null ? (outboundMap[id] != null ? outboundMap[id] : 0) : 0;
+          return { name, value };
+        });
+        this.cone.data = all.length ? all : [{ name: '暂无科室', value: 0 }];
+      }).catch(() => {
+        this.cone.data = [{ name: '加载失败', value: 0 }];
+      });
     },
     //中国地图
     china_map() {
@@ -876,101 +920,73 @@ export default {
       };
       mapChart.setOption(option); //生成图表
     },
-    //柱状图
+    //柱状图（高值消耗：金额+数量，仅显示手术室/导管室/口腔科/眼科/骨科）
     columnar() {
-      let mapChart = this.$echarts.init(document.getElementById("columnar")); //图表初始化，china-map是绑定的元素
-      window.onresize = mapChart.resize; //如果容器变大小，自适应从新构图
+      let mapChart = this.$echarts.init(document.getElementById("columnar"));
+      window.onresize = mapChart.resize;
+      const categories = this.columnarCategories || ["手术室", "导管室", "口腔科", "眼科", "骨科"];
+      const amountData = (this.columnarOutboundData && this.columnarOutboundData.length) ? this.columnarOutboundData : categories.map(() => 0);
+      const qtyData = (this.columnarOutboundQuantity && this.columnarOutboundQuantity.length) ? this.columnarOutboundQuantity : categories.map(() => 0);
       let option = {
-        title: {
-          text: "",
-        },
+        title: { text: "" },
         tooltip: {
           trigger: "axis",
           backgroundColor: "rgba(255,255,255,0.1)",
-          axisPointer: {
-            type: "shadow",
-            label: {
-              show: true,
-              backgroundColor: "#7B7DDC",
-            },
+          axisPointer: { type: "shadow", label: { show: true, backgroundColor: "#7B7DDC" } },
+          formatter: (params) => {
+            if (!params || !params.length) return "";
+            const name = params[0].name;
+            const amt = params.find(p => p.seriesName === "金额");
+            const qty = params.find(p => p.seriesName === "数量");
+            let s = name + "<br/>";
+            if (amt != null) s += "金额：￥" + (typeof amt.value === "number" ? amt.value.toFixed(2) : amt.value) + "<br/>";
+            if (qty != null) s += "数量：" + (qty.value != null ? qty.value : 0);
+            return s;
           },
         },
         legend: {
-          data: ["已贯通", "计划贯通", "贯通率"],
-          textStyle: {
-            color: "#B4B4B4",
-          },
+          data: ["金额", "数量"],
+          textStyle: { color: "#B4B4B4" },
           top: "0%",
+          selected: { "金额": true, "数量": true },
         },
-        grid: {
-          x: "8%",
-          width: "95%",
-          y: "4%",
-        },
+        grid: { left: 52, right: 48, x: "16%", width: "78%", y: "4%" },
         xAxis: {
-          data: [
-            "市区",
-            "万州",
-            "江北",
-            "南岸",
-            "北碚",
-            "綦南",
-            "长寿",
-            "永川",
-            "璧山",
-            "江津",
-            "城口",
-            "大足",
-            "垫江",
-            "丰都",
-            "奉节",
-            "合川",
-            "江津区",
-            "开州",
-            "南川",
-            "彭水",
-            "黔江",
-            "石柱",
-            "铜梁",
-            "潼南",
-            "巫山",
-            "巫溪",
-            "武隆",
-            "秀山",
-            "酉阳",
-            "云阳",
-            "忠县",
-            "川东",
-            "检修",
-          ],
-          axisLine: {
-            lineStyle: {
-              color: "#B4B4B4",
-            },
-          },
-          axisTick: {
-            show: false,
-          },
+          data: categories,
+          axisLine: { lineStyle: { color: "#B4B4B4" } },
+          axisTick: { show: false },
         },
         yAxis: [
           {
+            type: "value",
+            position: "left",
             splitLine: { show: false },
-            axisLine: {
-              lineStyle: {
-                color: "#B4B4B4",
-              },
-            },
-
+            axisLine: { lineStyle: { color: "#B4B4B4" } },
             axisLabel: {
-              formatter: "{value} ",
+              margin: 8,
+              color: "#B4B4B4",
+              formatter: (value) => value >= 10000 ? (value / 10000) + "万" : String(value),
+            },
+          },
+          {
+            type: "value",
+            position: "right",
+            splitLine: { show: false },
+            axisLine: { lineStyle: { color: "#B4B4B4" } },
+            axisLabel: {
+              margin: 8,
+              color: "#B4B4B4",
+              formatter: "{value}",
             },
           },
         ],
         series: [
           {
-            name: "已贯通",
+            name: "金额",
+            yAxisIndex: 0,
             type: "bar",
-            barWidth: 10,
+            barWidth: 14,
+            barGap: "30%",
             itemStyle: {
               normal: {
                 barBorderRadius: 5,
@@ -980,17 +996,14 @@ export default {
                 ]),
               },
             },
-            data: [
-              46, 50, 55, 650, 75, 85, 99, 125, 140, 215, 232, 244, 252, 333,
-              46, 50, 55, 65, 75, 85, 99, 225, 140, 215, 85, 99, 125, 140, 215,
-              232, 244, 252, 75,
-            ],
+            data: amountData,
           },
           {
-            name: "计划贯通",
+            name: "数量",
+            yAxisIndex: 1,
             type: "bar",
-            barGap: "-100%",
-            barWidth: 10,
+            barWidth: 14,
+            barGap: "30%",
             itemStyle: {
               normal: {
                 barBorderRadius: 5,
@@ -1001,16 +1014,11 @@ export default {
                 ]),
               },
             },
-            z: -12,
-            data: [
-              180, 207, 240, 283, 328, 360, 398, 447, 484, 504, 560, 626, 595,
-              675, 180, 207, 240, 283, 328, 360, 398, 447, 484, 504, 360, 398,
-              447, 484, 504, 500, 326, 495, 328,
-            ],
+            data: qtyData,
           },
         ],
       };
-      mapChart.setOption(option); //生成图表
+      mapChart.setOption(option);
     },
     //折线图
     line_center_diagram() {
@@ -1018,10 +1026,20 @@ export default {
         document.getElementById("line_center_diagram")
       ); //图表初始化，china-map是绑定的元素
       window.onresize = mapChart.resize; //如果容器变大小，自适应从新构图
+      const currentYear = new Date().getFullYear();
       let option = {
+        title: {
+          text: "年度采购（" + currentYear + "）",
+          left: 50,
+          top: 12,
+          textStyle: {
+            color: "rgba(255,255,255,.9)",
+            fontSize: 14,
+          },
+        },
         xAxis: {
           type: "category",
-          data: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+          data: ["一月份", "二月份", "三月份", "四月份", "五月份", "六月份", "七月份", "八月份", "九月份", "十月份", "十一月份", "十二月份"],
           position: "bottom",
           axisLine: true,
           axisLabel: {
@@ -1031,13 +1049,6 @@ export default {
         },
         yAxis: {
           type: "value",
-          name: "年度生产量",
-          nameLocation: "end",
-          nameGap: 24,
-          nameTextStyle: {
-            color: "rgba(255,255,255,.5)",
-            fontSize: 14,
-          },
           splitNumber: 4,
           axisLine: {
             lineStyle: {
@@ -1060,11 +1071,11 @@ export default {
           left: 50,
           right: 10,
           bottom: 25,
-          top: "18%",
+          top: 42,
         },
         series: [
           {
-            data: [820, 932, 901, 934, 1290, 1330, 1320],
+            data: [820, 932, 901, 934, 1290, 1330, 1320, 1250, 1180, 1100, 1050, 1200],
             type: "line",
             smooth: true,
             symbol: "emptyCircle",
@@ -1352,11 +1363,13 @@ a {
     color: rgba(255, 255, 255, 0.6);
     margin-left: 5px;
   }
-  //中间折线图
+  //中间折线图（框体上移，预留顶部空间避免标题被裁切）
   .line_center {
     width: 100%;
     height: 288px;
-    margin-top: 10px;
+    margin-top: -6px;
+    padding-top: 4px;
+    box-sizing: border-box;
   }
   //左1模块
   .left_box1 {
@@ -1433,27 +1446,42 @@ a {
     margin-left: 3%;
     margin-top: 5px;
   }
-  //折线图
+  //折线图（overflow 避免标题被裁切）
   #line_center_diagram {
     height: 100%;
     width: 100%;
+    overflow: visible;
   }
-  //轮播表格
+  //轮播表格（无背景色，与其它框内容区一致）
   .carousel_list {
     width: 96%;
     height: 98%;
     margin-left: 10px;
+    background: transparent;
   }
   //虚线柱状图
   #dotter_bar {
     width: 100%;
     height: 100%;
   }
-  //锥形图
+  //锥形图：科室名与底框持平往上一点点
+  .cone_chart_wrapper {
+    height: calc(100% - 32px);
+    padding-bottom: 6px;
+    box-sizing: border-box;
+  }
   .cone_box {
     width: 95%;
-    height: 97%;
+    height: 95%;
     margin-left: 3%;
+    box-sizing: border-box;
+  }
+  .cone_title {
+    font-size: 14px;
+    color: #00d4ff;
+    text-align: center;
+    padding: 6px 0 4px 0;
+    font-weight: 600;
   }
 }
 </style>
