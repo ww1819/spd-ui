@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -281,7 +281,7 @@
               <el-button type="success" icon="el-icon-refresh" size="small" @click="handleStocktakingInit">盘点初始化</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="primary" size="small" @click="submitForm">保 存</el-button>
+              <el-button type="primary" size="small" @click="submitForm" :loading="submitLoading">保 存</el-button>
             </el-col>
           </div>
         </el-row>
@@ -475,6 +475,7 @@ export default {
       open: false,
       //是否显示
       action: true,
+      submitLoading: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -536,12 +537,13 @@ export default {
       this.DialogComponentShow = false
     },
     selectData(val) {
-      //监听“弹窗组件”返回的数据
+      //监听“弹窗组件”返回的数据（SelectInventory = 仓库库存，item.id 为 stk_inventory.id）
       this.selectRow = val;
       this.selectRow.forEach((item, index) => {
 
         let obj = {};
-        obj.materialId = item.material.id;
+        obj.kcNo = item.id;
+        obj.materialId = item.material && item.material.id ? item.material.id : item.materialId;
         obj.material = item.material;
         obj.stockQty = item.qty;
         obj.qty = item.qty;
@@ -757,20 +759,24 @@ export default {
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
-        if (valid) {
-          this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
-          if (this.form.id != null) {
-            updateStocktaking(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.getList();
-            });
-          } else {
-            addStocktaking(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.getList();
-            });
+        if (!valid) return;
+        if (this.submitLoading) return;
+        this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
+        this.submitLoading = true;
+        const isUpdate = this.form.id != null;
+        const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
+        request.then(response => {
+          const data = response.data || response;
+          if (!isUpdate && data) {
+            this.form.id = data.id;
+            if (data.stockNo != null) this.form.stockNo = data.stockNo;
           }
-        }
+          this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");
+          this.open = false;
+          this.getList();
+        }).finally(() => {
+          this.submitLoading = false;
+        });
       });
     },
     /** 删除按钮操作 */
@@ -886,10 +892,11 @@ export default {
             return;
           }
           
-          // 直接处理数据，保留完整的item对象，特别是material对象
+          // 直接处理数据，保留完整的item对象，特别是material对象；item.id 为 stk_inventory.id，存为 kcNo 供盈亏审核按库存主键查
           const newList = [];
           inventoryList.forEach((item) => {
             let obj = {};
+            obj.kcNo = item.id;
             // 保留完整的material对象，包括所有关联对象
             obj.materialId = (item.material && item.material.id) || item.materialId;
             obj.material = item.material || {};

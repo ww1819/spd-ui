@@ -1,6 +1,6 @@
-﻿<template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+<template>
+  <div class="app-container outWarehouse-audit-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
@@ -64,7 +64,7 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 5px; margin-top: -5px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -93,11 +93,10 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList"
+    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
-              show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="58vh" border>
-      <el-table-column type="selection" width="55" align="center" />
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
+      <el-table-column type="selection" width="55" align="center" fixed="left" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="出库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -120,7 +119,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" min-width="120" class-name="col-bill-status" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
@@ -695,6 +694,10 @@ export default {
       this.ids = selection.map(item => item.id)
       this.single = selection.length!==1
       this.multiple = !selection.length
+    },
+    /** 仅待审核的单据可勾选，已审核的不可勾选 */
+    selectableAuditRow(row) {
+      return row.billStatus != 2
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -1418,5 +1421,50 @@ export default {
 /* 覆盖弹窗组件的高度 - 调高添加弹窗中的弹窗高度 */
 ::v-deep .local-modal-content {
   min-height: 95vh !important;
+}
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+.app-container.outWarehouse-audit-page {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.outWarehouse-audit-page > .el-form.query-form-compact {
+  margin-top: -8px !important;
+}
+
+.app-container.outWarehouse-audit-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.outWarehouse-audit-page > .el-table.table-compact {
+  margin-top: 0;
+}
+
+/* 主表格表头样式：与到货验收一致 */
+.app-container.outWarehouse-audit-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.outWarehouse-audit-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* 单据状态列不换行，宽度不足时自动增加 */
+.app-container.outWarehouse-audit-page > .el-table .col-bill-status .cell {
+  white-space: nowrap !important;
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
-  <div class="app-container">
+  <div class="app-container stocktaking-apply-page">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
 
         <el-row class="query-row-left">
           <el-col :span="24">
@@ -48,13 +48,13 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
+          size="medium"
           @click="handleAdd"
           v-hasPermi="['department:stocktaking:add']"
         >新增</el-button>
@@ -64,7 +64,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['department:stocktaking:export']"
         >导出</el-button>
@@ -73,21 +73,21 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="stocktakingList" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="58vh" border>
+    <el-table v-loading="loading" :data="stocktakingList" class="table-compact" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="盘点单号" align="center" prop="stockNo" width="180" show-overflow-tooltip resizable>
@@ -231,7 +231,7 @@
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoStocktakingEntry">删除</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保存</el-button>
+              <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :loading="submitLoading">保存</el-button>
             </el-col>
           </div>
 
@@ -353,7 +353,7 @@
             </el-form>
             <div class="modal-footer" v-show="action">
               <el-button @click="cancel">取 消</el-button>
-              <el-button type="primary" @click="submitForm">确 定</el-button>
+              <el-button type="primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
             </div>
           </div>
         </transition>
@@ -414,6 +414,7 @@ export default {
       open: false,
       //是否显示
       action: true,
+      submitLoading: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -675,38 +676,28 @@ export default {
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
-        if (valid) {
-          this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
-          if (this.form.id != null) {
-            updateStocktaking(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.getList();
-              // 不关闭弹窗，继续编辑
-              // 重新获取最新数据
-              getStocktaking(this.form.id).then(res => {
-                this.form = res.data;
-                this.stkIoStocktakingEntryList = res.data.stkIoStocktakingEntryList || [];
-              });
-            });
-          } else {
-            addStocktaking(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.getList();
-              // 不关闭弹窗，继续编辑
-              // 后端返回保存后的完整对象（包括ID和明细）
-              if (response.data) {
-                this.form = response.data;
-                this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList || [];
-              } else if (this.form.id) {
-                // 如果后端没有返回数据，但有ID，则重新获取
-                getStocktaking(this.form.id).then(res => {
-                  this.form = res.data;
-                  this.stkIoStocktakingEntryList = res.data.stkIoStocktakingEntryList || [];
-                });
-              }
+        if (!valid) return;
+        if (this.submitLoading) return;
+        this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
+        this.submitLoading = true;
+        const isUpdate = this.form.id != null;
+        const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
+        request.then(response => {
+          if (response.data) {
+            this.form = response.data;
+            this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList || [];
+          } else if (!isUpdate && this.form.id) {
+            getStocktaking(this.form.id).then(res => {
+              this.form = res.data;
+              this.stkIoStocktakingEntryList = res.data.stkIoStocktakingEntryList || [];
             });
           }
-        }
+          this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");
+          this.open = false;
+          this.getList();
+        }).finally(() => {
+          this.submitLoading = false;
+        });
       });
     },
     /** 删除按钮操作 */
@@ -1011,5 +1002,50 @@ export default {
 ::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+.app-container.stocktaking-apply-page {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.stocktaking-apply-page > .form-fields-container > .el-form.query-form-compact {
+  margin-top: -8px !important;
+}
+
+.app-container.stocktaking-apply-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.stocktaking-apply-page > .el-table.table-compact {
+  margin-top: 0;
+}
+
+/* 主表格表头样式：与到货验收一致 */
+.app-container.stocktaking-apply-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.stocktaking-apply-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* 单据状态列表头不换行（第6列） */
+.app-container.stocktaking-apply-page > .el-table thead th:nth-child(6) .cell {
+  white-space: nowrap !important;
 }
 </style>

@@ -105,7 +105,6 @@
 
     <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
-              show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable />

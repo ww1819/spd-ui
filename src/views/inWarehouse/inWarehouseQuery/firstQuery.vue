@@ -1,5 +1,5 @@
-﻿<template>
-  <div class="app-container">
+<template>
+  <div class="app-container first-query-page">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -76,7 +76,7 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 2px; margin-top: -8px">
+    <el-row :gutter="10" class="mb8 button-row-inventory">
       <el-col :span="1.5">
         <el-button
           type="warning"
@@ -110,7 +110,7 @@
       <el-table v-loading="loading" :data="displayData"
                 show-summary
                 :summary-method="getSummaries"
-                height="55vh"
+                height="57vh"
                 border
                 style="width: 100%">
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
@@ -470,112 +470,126 @@ export default {
 };
 </script>
 
-    <!-- 添加CSS样式确保汇总行可见 -->
-    <style scoped>
-    .table-container {
-      margin-top: 5px;
-      overflow: visible;
-      width: calc(100% + 40px);
-      margin-left: -20px;
-      margin-right: -20px;
-      position: relative;
-    }
+<style>
+/* 与库存明细查询一致：内层不叠加左右 padding */
+.app-container.first-query-page {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+</style>
 
-    /* 表格水平滚动条增粗 */
-    .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-      height: 12px;
-    }
+<style scoped>
+.app-container {
+  margin-top: -10px;
+}
 
-    .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 8px;
-    }
+.query-row-left {
+  margin-bottom: 2px;
+}
 
-    .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-      background: #c1c1c1;
-      border-radius: 8px;
-    }
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 2px;
+}
 
-    .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-      background: #a8a8a8;
-    }
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
 
-    /* 优化表格列间距 */
-    .table-container ::v-deep .el-table th {
-      padding: 10px 12px !important;
-    }
+.query-item-inline .el-form-item {
+  margin-bottom: 0;
+}
 
-    .table-container ::v-deep .el-table td {
-      padding: 8px 12px !important;
-    }
+.query-select-wrapper {
+  width: 180px;
+}
 
-    .table-container ::v-deep .el-table .cell {
-      padding-left: 0;
-      padding-right: 0;
-    }
+.query-row-second {
+  margin-bottom: 2px;
+  position: relative;
+}
 
-    /* 确保表格容器有足够空间显示汇总行 */
-    .app-container {
-      padding: 20px;
-      margin-top: -10px;
-    }
+.query-row-second .el-form-item {
+  white-space: nowrap;
+  margin-bottom: 0;
+}
 
-    /* 查询条件样式 */
-    .query-row-left {
-      margin-bottom: 2px;
-    }
+.query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
 
-    .query-item-inline {
-      display: inline-block;
-      margin-right: 16px;
-      margin-bottom: 2px;
-    }
+.query-row-third {
+  margin-bottom: 2px;
+}
 
-    .query-item-inline .el-form-item__label {
-      width: 80px !important;
-    }
+.query-row-third .el-form-item {
+  margin-bottom: 0;
+}
 
-    .query-item-inline .el-form-item {
-      margin-bottom: 0;
-    }
+/* 与库存明细查询一致：由外层统一左右 8px，此处占满内容区 */
+.form-fields-container {
+  background: #fff;
+  padding: 6px 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 8px;
+  margin-top: -20px;
+  margin-left: 0;
+  margin-right: 0;
+  border: 1px solid #EBEEF5;
+}
 
-    .query-select-wrapper {
-      width: 180px;
-    }
+.button-row-inventory {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+}
 
-    .query-row-second {
-      margin-bottom: 2px;
-    }
+.table-container {
+  margin-top: 8px;
+  margin-bottom: 0;
+  overflow: visible;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  position: relative;
+}
 
-    .query-row-second .el-form-item {
-      white-space: nowrap;
-      margin-bottom: 0;
-    }
-
-    .query-row-second .el-form-item .el-form-item__content {
-      display: flex;
-      align-items: center;
-      flex-wrap: nowrap;
-    }
-
-    .query-row-third {
-      margin-bottom: 2px;
-    }
-
-    .query-row-third .el-form-item {
-      margin-bottom: 0;
-    }
-
-    /* 查询条件容器框样式 */
-    .form-fields-container {
-      background: #fff;
-      padding: 6px 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-      margin-bottom: 16px;
-      margin-top: -20px;
-      margin-left: -20px;
-      margin-right: -20px;
-      border: 1px solid #EBEEF5;
-    }
-    </style>
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 6px;
+  transition: height 0.2s ease;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:hover {
+  height: 12px;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #e8e8e8;
+  border-radius: 3px;
+  margin: 0 2px;
+  cursor: pointer;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a0a0a0;
+  border-radius: 3px;
+  cursor: grab;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #808080;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
+  background: #606060;
+  cursor: grabbing;
+}
+.table-container ::v-deep .el-table th.el-table__cell {
+  padding: 10px 12px !important;
+}
+.table-container ::v-deep .el-table td.el-table__cell {
+  padding: 10px 12px !important;
+}
+.table-container ::v-deep .el-table .cell {
+  padding: 0 4px;
+}
+</style>

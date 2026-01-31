@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+  <div class="app-container refund-goods-audit-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
@@ -27,7 +27,7 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="日期" style="display: flex; align-items: center;">
+          <el-form-item label="制单日期" style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -63,7 +63,7 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -92,10 +92,9 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList"
+    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
-              show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="58vh" border>
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable />
       <el-table-column label="退货单号" align="center" prop="billNo" width="150" show-overflow-tooltip resizable>
@@ -1384,27 +1383,49 @@ export default {
   width: 150px;
 }
 
-/* 第二行单据状态对齐到仓库位置 */
-.app-container > .el-form .query-row-second {
-  position: relative;
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+.app-container.refund-goods-audit-page {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
 }
 
-/* 确保退货日期的两个日期选择器在同一行 */
-.app-container > .el-form .query-row-second .el-form-item {
-  white-space: nowrap;
+.app-container.refund-goods-audit-page > .el-form.query-form-compact {
+  margin-top: -8px !important;
 }
 
-.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
+.app-container.refund-goods-audit-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
 }
 
-.app-container > .el-form .query-row-second .query-status-col {
-  position: absolute;
-  left: 552px;
-  width: auto;
-  padding-left: 0;
-  padding-right: 0;
+.app-container.refund-goods-audit-page > .el-table.table-compact {
+  margin-top: 0;
+}
+
+/* 主表格表头样式：与到货验收一致 */
+.app-container.refund-goods-audit-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.refund-goods-audit-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* 单据状态列表头不换行（第9列） */
+.app-container.refund-goods-audit-page > .el-table thead th:nth-child(9) .cell {
+  white-space: nowrap !important;
 }
 </style>

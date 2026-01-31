@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
 
@@ -289,7 +289,7 @@
             </el-form>
             <div class="modal-footer" v-show="action">
               <el-button @click="cancel">取 消</el-button>
-              <el-button type="primary" @click="submitForm">确 定</el-button>
+              <el-button type="primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
             </div>
           </div>
         </transition>
@@ -348,6 +348,7 @@ export default {
       open: false,
       //是否显示
       action: true,
+      submitLoading: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -410,20 +411,22 @@ export default {
       this.DialogComponentShow = false
     },
     selectData(val) {
-      //监听“弹窗组件”返回的数据
+      //监听“弹窗组件”返回的数据（SelectMaterialFilter 为盘点过滤库存，item.id 为 stk_inventory.id）
       this.selectRow = val;
 
       this.selectRow.forEach((item, index) => {
         let obj = {};
-        obj.materialId = item.id;
-        obj.qty = "";
-        obj.price = "";
-        obj.amt = "";
-        obj.batchNo = "";
-        obj.batchNumber = "";
-        obj.beginTime = "";
-        obj.endTime = "";
-        obj.remark = "";
+        obj.kcNo = item.id;
+        obj.materialId = (item.material && item.material.id) ? item.material.id : (item.materialId || null);
+        obj.qty = item.qty != null ? item.qty : "";
+        obj.price = item.unitPrice != null ? item.unitPrice : "";
+        obj.amt = item.amt != null ? item.amt : "";
+        obj.unitPrice = item.unitPrice;
+        obj.batchNo = item.batchNo || "";
+        obj.batchNumber = (item.materialNo != null ? item.materialNo : item.batchNumber) || "";
+        obj.beginTime = item.beginTime || "";
+        obj.endTime = item.endTime || "";
+        obj.remark = item.remark || "";
 
         this.stkIoStocktakingEntryList.push(obj);
       });
@@ -557,22 +560,24 @@ export default {
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
-        if (valid) {
-          this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
-          if (this.form.id != null) {
-            updateStocktaking(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addStocktaking(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
+        if (!valid) return;
+        if (this.submitLoading) return;
+        this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
+        this.submitLoading = true;
+        const isUpdate = this.form.id != null;
+        const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
+        request.then(response => {
+          const data = response.data || response;
+          if (!isUpdate && data) {
+            this.form.id = data.id;
+            if (data.stockNo != null) this.form.stockNo = data.stockNo;
           }
-        }
+          this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");
+          this.open = false;
+          this.getList();
+        }).finally(() => {
+          this.submitLoading = false;
+        });
       });
     },
     /** 删除按钮操作 */

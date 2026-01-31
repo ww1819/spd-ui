@@ -1,65 +1,58 @@
 <template>
-  <div class="app-container">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+  <div class="app-container stocktaking-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
 
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item label="业务单号" prop="billNo" class="query-item-inline">
-              <el-input v-model="queryParams.billNo"
-                        placeholder="请输入业务单号"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item label="业务单号" prop="billNo" class="query-item-inline">
+            <el-input v-model="queryParams.billNo"
+                      placeholder="请输入业务单号"
+                      clearable
+                      style="width: 180px"
+                      @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+            </div>
+          </el-form-item>
+        </el-col>
+      </el-row>
 
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-              </div>
-            </el-form-item>
-          </el-col>
-        </el-row>
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="12">
+          <el-form-item label="制单日期" style="display: flex; align-items: center;">
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="起始日期"
+              clearable
+              style="width: 180px; margin-right: 8px;"
+            />
+            <span style="margin: 0 4px;">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="截止日期"
+              clearable
+              style="width: 180px; margin-left: 8px;"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
-            <el-form-item label="制单日期" style="display: flex; align-items: center;">
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
-                clearable
-                style="width: 180px; margin-right: 8px;"
-              />
-              <span style="margin: 0 4px;">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
-                clearable
-                style="width: 180px; margin-left: 8px;"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+    </el-form>
 
-      </el-form>
-    </div>
-
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
+          size="medium"
           @click="handleAdd"
           v-hasPermi="['outWarehouse:apply:add']"
         >新增</el-button>
@@ -69,7 +62,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['outWarehouse:apply:export']"
         >导出</el-button>
@@ -78,21 +71,21 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList" :row-class-name="warehouseListIndex" @selection-change="handleSelectionChange" height="58vh" border>
+    <el-table v-loading="loading" :data="warehouseList" class="table-compact" :row-class-name="warehouseListIndex" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="业务单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
@@ -804,30 +797,13 @@ export default {
   font-weight: 500;
 }
 
-/* 查询条件容器框样式 */
-.form-fields-container {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
-}
-
-/* 搜索区域样式 */
+/* 搜索区域样式（与到货验收一致） */
 .app-container > .el-form {
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
-}
-
-.form-fields-container > .el-form {
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
-  margin-bottom: 0;
 }
 
 .app-container > .el-form .el-row {
@@ -924,5 +900,45 @@ export default {
 ::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+.app-container.stocktaking-page {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.stocktaking-page > .el-form.query-form-compact {
+  margin-top: -8px !important;
+}
+
+.app-container.stocktaking-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.stocktaking-page > .el-table.table-compact {
+  margin-top: 0;
+}
+
+/* 主表格表头样式：与到货验收一致 */
+.app-container.stocktaking-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.stocktaking-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
 }
 </style>

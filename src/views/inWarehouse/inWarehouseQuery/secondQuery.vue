@@ -1,5 +1,5 @@
-﻿<template>
-  <div class="app-container">
+<template>
+  <div class="app-container second-query-page">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -55,7 +55,7 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 2px; margin-top: -8px">
+    <el-row :gutter="10" class="mb8 button-row-inventory">
       <el-col :span="1.5">
         <el-button
           type="warning"
@@ -87,7 +87,7 @@
               show-summary
               :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
-              height="51vh"
+              height="57vh"
               border>
       <el-table-column type="index" label="序号" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -362,56 +362,19 @@ export default {
 };
 </script>
 
+<style>
+/* 与库存汇总查询一致：内层不叠加左右 padding */
+.app-container.second-query-page {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+</style>
+
 <style scoped>
-.table-container {
-  margin-top: 5px;
-  overflow: visible;
-  width: calc(100% + 40px);
-  margin-left: -20px;
-  margin-right: -20px;
-  position: relative;
-}
-
-/* 表格水平滚动条增粗 */
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 12px;
-}
-
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 8px;
-}
-
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 8px;
-}
-
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* 优化表格列间距 */
-.table-container ::v-deep .el-table th {
-  padding: 10px 12px !important;
-}
-
-.table-container ::v-deep .el-table td {
-  padding: 8px 12px !important;
-}
-
-.table-container ::v-deep .el-table .cell {
-  padding-left: 0;
-  padding-right: 0;
-}
-
-/* 确保表格容器有足够空间显示汇总行 */
 .app-container {
-  padding: 20px;
   margin-top: -10px;
 }
 
-/* 查询条件样式 */
 .query-row-left {
   margin-bottom: 2px;
 }
@@ -436,6 +399,7 @@ export default {
 
 .query-row-second {
   margin-bottom: 2px;
+  position: relative;
 }
 
 .query-row-second .el-form-item {
@@ -457,29 +421,70 @@ export default {
   margin-bottom: 0;
 }
 
-.query-status-col {
-  display: flex;
-  align-items: center;
-}
-
-.query-item-status-aligned {
-  margin-left: 0;
-}
-
-.query-item-status-aligned .el-form-item__label {
-  width: 80px !important;
-}
-
-/* 查询条件容器框样式 */
+/* 与库存汇总查询一致：由外层统一左右 8px */
 .form-fields-container {
   background: #fff;
-  padding: 6px 20px;
+  padding: 6px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   margin-top: -20px;
-  margin-left: -20px;
-  margin-right: -20px;
+  margin-left: 0;
+  margin-right: 0;
   border: 1px solid #EBEEF5;
+}
+
+.button-row-inventory {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+}
+
+.table-container {
+  margin-top: 8px;
+  margin-bottom: 0;
+  overflow: visible;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  position: relative;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 6px;
+  transition: height 0.2s ease;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:hover {
+  height: 12px;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #e8e8e8;
+  border-radius: 3px;
+  margin: 0 2px;
+  cursor: pointer;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a0a0a0;
+  border-radius: 3px;
+  cursor: grab;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #808080;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
+  background: #606060;
+  cursor: grabbing;
+}
+.table-container ::v-deep .el-table th.el-table__cell {
+  padding: 10px 12px !important;
+}
+.table-container ::v-deep .el-table th.el-table__cell .cell {
+  white-space: nowrap;
+}
+.table-container ::v-deep .el-table td.el-table__cell {
+  padding: 10px 12px !important;
+}
+.table-container ::v-deep .el-table .cell {
+  padding: 0 4px;
 }
 </style>

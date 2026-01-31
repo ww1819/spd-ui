@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -740,7 +740,8 @@ export default {
                 manufacturer: (material.fdFactory && material.fdFactory.factoryName) || entry.manufacturer || '',
                 supplier: (entry.supplier && entry.supplier.name) || entry.supplier || '',
                 remark: entry.remark || '',
-                material: material
+                material: material,
+                kcNo: entry.kcNo
               };
             });
           } else {
@@ -819,7 +820,8 @@ export default {
                 manufacturer: (material.fdFactory && material.fdFactory.factoryName) || '',
                 supplier: (material.supplier && material.supplier.name) || '',
                 remark: entry.remark || '',
-                material: material
+                material: material,
+                kcNo: entry.kcNo
               };
               console.log(`映射后的明细项 ${index}:`, mappedEntry);
               return mappedEntry;
@@ -857,13 +859,14 @@ export default {
       const timestamp = Date.now().toString().substring(8);
       const transferOrderCode = `DB-${dateStr}${timestamp}`;
       
+      // 制单日期默认“今天”：用本地日期（不用 toISOString，否则东八区凌晨会变成昨天）
       this.transferForm = {
         transferOrderCode: transferOrderCode,
         fromWarehouseId: '',
         fromWarehouseName: '',
         toWarehouseId: '',
         toWarehouseName: '',
-        transferDate: new Date().toISOString().split('T')[0],
+        transferDate: this.getLocalDateString(),
         status: '1',
         remark: ''
       };
@@ -977,6 +980,10 @@ export default {
                 if (detail.id) {
                   entry.id = detail.id;
                 }
+                // 转出仓库库存id，审核时按此精确查库存
+                if (detail.kcNo != null && detail.kcNo !== '') {
+                  entry.kcNo = detail.kcNo;
+                }
                 return entry;
               })
             };
@@ -1042,7 +1049,8 @@ export default {
                         manufacturer: (material.fdFactory && material.fdFactory.factoryName) || '',
                         supplier: (material.supplier && material.supplier.name) || '',
                         remark: entry.remark || '',
-                        material: material
+                        material: material,
+                        kcNo: entry.kcNo
                       };
                     });
                   } else {
@@ -1078,6 +1086,14 @@ export default {
       });
     },
 
+    /** 取浏览器本地“今天”的 yyyy-MM-dd，避免 toISOString() 用 UTC 导致东八区凌晨显示昨天 */
+    getLocalDateString() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    },
     // 添加明细
     addDetail() {
       if(!this.transferForm.fromWarehouseId) {
@@ -1131,6 +1147,8 @@ export default {
         obj.supplier = item.supplier ? item.supplier.name : '';
         obj.remark = item.remark || '';
         obj.material = item.material;
+        // 转出仓库库存id，审核时按此精确查库存
+        obj.kcNo = item.id != null ? item.id : undefined;
 
         this.transferDetails.push(obj);
         addedCount++;

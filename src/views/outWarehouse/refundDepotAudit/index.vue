@@ -1,72 +1,70 @@
-﻿<template>
-  <div class="app-container">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+<template>
+  <div class="app-container refund-depot-audit-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
 
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item label="退库单号" prop="billNo" class="query-item-inline">
-              <el-input v-model="queryParams.billNo"
-                        placeholder="请输入退库单号"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item label="退库单号" prop="billNo" class="query-item-inline">
+            <el-input v-model="queryParams.billNo"
+                      placeholder="请输入退库单号"
+                      clearable
+                      style="width: 180px"
+                      @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+          <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectMaterial v-model="queryParams.materialId" />
+            </div>
+          </el-form-item>
+          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+            </div>
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="12">
+          <el-form-item label="退库日期" style="display: flex; align-items: center;">
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="起始日期"
+              clearable
+              style="width: 180px; margin-right: 8px;"
+            />
+            <span style="margin: 0 4px;">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="截止日期"
+              clearable
+              style="width: 180px; margin-left: 8px;"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12" class="query-status-col">
+          <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.billStatus" placeholder="全部"
+                       clearable style="width: 150px">
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+                         v-if="dict.label !== '待审核'"
               />
-            </el-form-item>
-            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectMaterial v-model="queryParams.materialId" />
-              </div>
-            </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-              </div>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
-            <el-form-item label="退库日期" style="display: flex; align-items: center;">
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
-                clearable
-                style="width: 180px; margin-right: 8px;"
-              />
-              <span style="margin: 0 4px;">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
-                clearable
-                style="width: 180px; margin-left: 8px;"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12" class="query-status-col">
-            <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
-              <el-select v-model="queryParams.billStatus" placeholder="全部"
-                         clearable style="width: 150px">
-                <el-option v-for="dict in dict.type.biz_status"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                           v-if="dict.label !== '待审核'"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+    </el-form>
 
-      </el-form>
-    </div>
-
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -95,11 +93,11 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList"
+    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="58vh" border>
-      <el-table-column type="selection" width="55" align="center" />
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
+      <el-table-column type="selection" width="55" align="center" fixed="left" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="退库单号" align="center" prop="billNo" width="150" show-overflow-tooltip resizable >
         <template slot-scope="scope">
@@ -697,6 +695,10 @@ export default {
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
+    /** 仅待审核的单据可勾选，已审核的不可勾选 */
+    selectableAuditRow(row) {
+      return row.billStatus != 2
+    },
     /** 查看按钮操作 */
     handleView(row){
       const id = row.id
@@ -1238,25 +1240,24 @@ export default {
   background: #a8a8a8;
 }
 
-/* 搜索区域样式 - 使用容器框 */
-.form-fields-container {
+/* 搜索区域样式（与到货验收一致） */
+.app-container > .el-form {
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
 }
 
-.form-fields-container .el-form .el-row {
+.app-container > .el-form .el-row {
   margin-bottom: 8px;
 }
 
-.form-fields-container .el-form .el-row:last-child {
+.app-container > .el-form .el-row:last-child {
   margin-bottom: 0;
 }
 
-.form-fields-container .el-form .el-form-item {
+.app-container > .el-form .el-form-item {
   margin-bottom: 0;
 }
 
@@ -1276,58 +1277,58 @@ export default {
 }
 
 /* 第一行查询条件左对齐紧凑布局 */
-.form-fields-container .el-form .query-row-left .el-col {
+.app-container > .el-form .query-row-left .el-col {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
 }
 
-.form-fields-container .el-form .query-row-left .query-item-inline {
+.app-container > .el-form .query-row-left .query-item-inline {
   display: inline-block;
   margin-right: 16px;
   margin-bottom: 0;
   vertical-align: top;
 }
 
-.form-fields-container .el-form .query-row-left .query-item-inline:last-child {
+.app-container > .el-form .query-row-left .query-item-inline:last-child {
   margin-right: 0;
 }
 
 /* 统一控制查询条件输入框宽度 */
-.form-fields-container .el-form .query-row-left .query-item-inline .el-input {
+.app-container > .el-form .query-row-left .query-item-inline .el-input {
   width: 180px;
 }
 
-.form-fields-container .el-form .query-row-left .query-item-inline .query-select-wrapper {
+.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper {
   width: 180px;
   display: inline-block;
 }
 
-.form-fields-container .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
+.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
   width: 100%;
 }
 
-.form-fields-container .el-form .query-row-left .query-item-inline .el-select {
+.app-container > .el-form .query-row-left .query-item-inline .el-select {
   width: 150px;
 }
 
 /* 第二行单据状态对齐到仓库位置 */
-.form-fields-container .el-form .query-row-second {
+.app-container > .el-form .query-row-second {
   position: relative;
 }
 
 /* 确保退库日期的两个日期选择器在同一行 */
-.form-fields-container .el-form .query-row-second .el-form-item {
+.app-container > .el-form .query-row-second .el-form-item {
   white-space: nowrap;
 }
 
-.form-fields-container .el-form .query-row-second .el-form-item .el-form-item__content {
+.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
 
-.form-fields-container .el-form .query-row-second .query-status-col {
+.app-container > .el-form .query-row-second .query-status-col {
   position: absolute;
   left: 552px;
   width: auto;
@@ -1357,5 +1358,45 @@ export default {
 ::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+.app-container.refund-depot-audit-page {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.refund-depot-audit-page > .el-form.query-form-compact {
+  margin-top: -8px !important;
+}
+
+.app-container.refund-depot-audit-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.refund-depot-audit-page > .el-table.table-compact {
+  margin-top: 0;
+}
+
+/* 主表格表头样式：与到货验收一致 */
+.app-container.refund-depot-audit-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.refund-depot-audit-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
 }
 </style>
