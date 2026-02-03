@@ -22,6 +22,11 @@
                 <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']" clearable/>
               </div>
             </el-form-item>
+            <el-form-item label="库房分类" prop="warehouseCategoryId" class="query-item-inline">
+              <div class="query-select-wrapper query-select-wrapper-small" style="width: 100px !important;">
+                <SelectWarehouseCategory v-model="queryParams.warehouseCategoryId" style="width: 100%"/>
+              </div>
+            </el-form-item>
           </el-col>
         </el-row>
 
@@ -101,44 +106,96 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="150" show-overflow-tooltip resizable/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="类型" align="center" prop="billType" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="仓库ID" v-if="false" align="center" prop="warehouse_id" width="150" show-overflow-tooltip resizable />
+      <el-table-column label="仓库编码" align="center" prop="warehouse_code" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="仓库名称" align="center" prop="warehouse_name" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="库房分类ID" v-if="false" align="center" prop="storeroom_id" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="库房分类编码" align="center" prop="warehouse_category_code" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="库房分类" align="center" prop="warehouse_category_name" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="期初数量" align="center" prop="qc_qty" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.bill_type" :value="scope.row.billType"/>
+          <span v-if="scope.row.qc_qty">{{ scope.row.qc_qty | formatCurrency}}</span>
+          <span v-else>0.0</span>
         </template>
       </el-table-column>
-      <el-table-column label="业务单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable />
-      <el-table-column label="业务日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="期初金额" align="center" prop="qc_amt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.billDate">{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
+          <span v-if="scope.row.qc_amt">{{ scope.row.qc_amt | formatCurrency}}</span>
+          <span v-else>0.00</span>
         </template>
       </el-table-column>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="型号" align="center" prop="materialModel" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="数量" align="center" prop="materialQty" width="100" show-overflow-tooltip resizable/>
-      <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="单价" align="center" prop="price" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="入库数量" align="center" prop="rk_qty" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.price != null && scope.row.price !== undefined && scope.row.price !== '' && Number(scope.row.price) !== 0">{{ Number(scope.row.price) | formatCurrency}}</span>
-          <span v-else-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== '' && Number(scope.row.unitPrice) !== 0">{{ Number(scope.row.unitPrice) | formatCurrency}}</span>
-          <span v-else-if="scope.row.materialAmt != null && scope.row.materialQty != null && Number(scope.row.materialQty) !== 0">
-            {{ (Number(scope.row.materialAmt) / Number(scope.row.materialQty)) | formatCurrency}}
-          </span>
-          <span v-else>--</span>
+          <span v-if="scope.row.rk_qty">{{ scope.row.rk_qty | formatCurrency}}</span>
+          <span v-else>0.0</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="入库金额" align="center" prop="rk_amt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
-          <span v-else>--</span>
+          <span v-if="scope.row.rk_amt">{{ scope.row.rk_amt | formatCurrency}}</span>
+          <span v-else>0.00</span>
         </template>
       </el-table-column>
-      <el-table-column label="厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="科室" align="center" prop="departmentName" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="出库数量" align="center" prop="ck_qty" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.ck_qty">{{ scope.row.ck_qty | formatCurrency}}</span>
+          <span v-else>0.0</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="出库金额" align="center" prop="ck_amt" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.ck_amt">{{ scope.row.ck_amt | formatCurrency}}</span>
+          <span v-else>0.00</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="调入数量" align="center" prop="dbr_qty" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.dbr_qty">{{ scope.row.dbr_qty | formatCurrency}}</span>
+          <span v-else>0.0</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="调入金额" align="center" prop="dbr_amt" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.dbr_amt">{{ scope.row.dbr_amt | formatCurrency}}</span>
+          <span v-else>0.00</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="调出数量" align="center" prop="dbc_qty" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.dbc_qty">{{ scope.row.dbc_qty | formatCurrency}}</span>
+          <span v-else>0.0</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="调出金额" align="center" prop="dbc_amt" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.dbc_amt">{{ scope.row.dbc_amt | formatCurrency}}</span>
+          <span v-else>0.00</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="盘点数量" align="center" prop="pd_qty" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.pd_qty">{{ scope.row.pd_qty | formatCurrency}}</span>
+          <span v-else>0.0</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="盘点金额" align="center" prop="pd_amt" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.pd_amt">{{ scope.row.pd_amt | formatCurrency}}</span>
+          <span v-else>0.00</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="结存数量" align="center" prop="jc_qty" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.jc_qty">{{ scope.row.jc_qty | formatCurrency}}</span>
+          <span v-else>0.0</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="结存金额" align="center" prop="jc_amt" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.jc_amt">{{ scope.row.jc_amt | formatCurrency}}</span>
+          <span v-else>0.00</span>
+        </template>
+      </el-table-column>
     </el-table>
     </div>
 
@@ -152,20 +209,21 @@
 </template>
 
 <script>
-import { listPurInventory } from "@/api/warehouse/purInventory";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
+import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import WarehouseAutocomplete from "@/components/SelectModel/WarehouseAutocomplete";
 import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
 import RightToolbar from "@/components/RightToolbar";
 import Pagination from "@/components/Pagination";
 import { parseTime } from "@/utils/ruoyi";
 import { listWarehouse } from "@/api/foundation/warehouse";
+import {selectWarehousePsiReport} from "@/api/warehouse/warehousePsiReport";
 
 export default {
   name: "PurInventoryTable",
   dicts: ['bill_type'],
-  components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete,RightToolbar,Pagination},
+  components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete,RightToolbar,Pagination,SelectWarehouseCategory},
   data() {
     return {
       // 遮罩层
@@ -191,7 +249,8 @@ export default {
         materialName: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
-        billType: null
+        billType: null,
+        warehouseCategoryId: null
       }
     };
   },
@@ -280,7 +339,7 @@ export default {
       if (queryParams.endDate === '') {
         queryParams.endDate = null;
       }
-      listPurInventory(queryParams).then(response => {
+      selectWarehousePsiReport(queryParams).then(response => {
         this.inventoryList = response.rows || [];
         this.total = response.total || 0;
         this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0, subTotalAmt: 0, subTotalQty: 0 };
