@@ -181,11 +181,9 @@
 </template>
 
 <script>
-import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import WarehouseAutocomplete from "@/components/SelectModel/WarehouseAutocomplete";
-import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
 import RightToolbar from "@/components/RightToolbar";
 import Pagination from "@/components/Pagination";
 import { parseTime } from "@/utils/ruoyi";
@@ -201,7 +199,7 @@ export default {
     }
   },
   dicts: ['bill_type'],
-  components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete,RightToolbar,Pagination,SelectWarehouseCategory},
+  components: {SelectWarehouse,WarehouseAutocomplete,RightToolbar,Pagination,SelectWarehouseCategory},
   data() {
     return {
       // 遮罩层
@@ -221,13 +219,9 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        billNo: null,
-        materialId: null,
         warehouseId: null,
-        materialName: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
-        billType: null,
         warehouseCategoryId: null
       }
     };
@@ -295,17 +289,7 @@ export default {
       const queryParams = {
         ...this.queryParams
       };
-      // 移除 billType，使用 billTypeStr 传递
-      let billTypeStr = null;
-      if (Array.isArray(queryParams.billType) && queryParams.billType.length > 0) {
-        // 将数组转换为逗号分隔的字符串
-        billTypeStr = queryParams.billType.join(',');
-      }
-      // 删除 billType，添加 billTypeStr
-      delete queryParams.billType;
-      if (billTypeStr) {
-        queryParams.billTypeStr = billTypeStr;
-      }
+
       // 处理日期参数：如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
       if (queryParams.endDate && queryParams.endDate.length === 10) {
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
@@ -361,8 +345,7 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.queryParams.warehouseId = null;
-      this.queryParams.materialName = null;
-      this.queryParams.billType = null;
+      this.queryParams.warehouseCategoryId = null;
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
       this.handleQuery();
