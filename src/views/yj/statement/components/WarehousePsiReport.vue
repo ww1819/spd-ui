@@ -4,19 +4,6 @@
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="单号" prop="billNo" class="query-item-inline">
-              <el-input v-model="queryParams.billNo"
-                        placeholder="请输入单号"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <MaterialAutocomplete v-model="queryParams.materialName"/>
-              </div>
-            </el-form-item>
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']" clearable/>
@@ -50,21 +37,6 @@
                 clearable
                 style="width: 180px; margin-left: 8px;"
               />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="16" class="query-row-third">
-          <el-col :span="24">
-            <el-form-item label="单据类型" prop="billType" class="query-item-inline">
-              <el-select v-model="queryParams.billType" placeholder="请选择单据类型"
-                         multiple collapse-tags clearable style="width: 300px">
-                <el-option label="入库单" value="101"/>
-                <el-option label="出库单" value="201"/>
-                <el-option label="退库单" value="401"/>
-                <el-option label="退货单" value="301"/>
-                <el-option label="调拨单" value="501"/>
-              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -219,9 +191,15 @@ import Pagination from "@/components/Pagination";
 import { parseTime } from "@/utils/ruoyi";
 import { listWarehouse } from "@/api/foundation/warehouse";
 import {selectWarehousePsiReport} from "@/api/warehouse/warehousePsiReport";
+import formatCurrency from "../../../../utils/format-currency";
 
 export default {
   name: "PurInventoryTable",
+  computed: {
+    formatCurrency() {
+      return formatCurrency
+    }
+  },
   dicts: ['bill_type'],
   components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete,RightToolbar,Pagination,SelectWarehouseCategory},
   data() {
