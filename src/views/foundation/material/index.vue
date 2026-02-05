@@ -321,10 +321,10 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="耗材编码：" prop="code">
-                <el-input 
-                  v-model="form.code" 
-                  :disabled="isDisabled || form.id != null" 
-                  placeholder="请输入耗材编码（留空自动生成6位数字，手工输入可为任意长度）" 
+                <el-input
+                  v-model="form.code"
+                  :disabled="isDisabled || form.id != null"
+                  placeholder="请输入耗材编码（留空自动生成6位数字，手工输入可为任意长度）"
                   @blur="validateCode"
                   @input="handleCodeInput"
                 />
@@ -921,7 +921,7 @@
           </el-row>
           </el-form>
           </el-tab-pane>
-        
+
           <!-- 产品图片 -->
           <el-tab-pane label="产品图片" name="image">
             <div class="image-tab-content" style="text-align: center; padding: 40px 20px;">
@@ -958,7 +958,7 @@
           </div>
           </el-tab-pane>
         </el-tabs>
-        
+
         <div class="dialog-footer" style="text-align:center;margin-top:16px;">
           <el-button type="primary" size="medium" @click="submitForm">确 定</el-button>
           <el-button size="medium" @click="cancel">取 消</el-button>
@@ -1126,11 +1126,11 @@ export default {
               callback();
               return;
             }
-            
+
             // 只验证编码不能为空，不限制长度和格式
             // 手工输入的编码可以是任意长度和格式
             // 自动生成的编码仍然是6位数字
-            
+
             // 检查编码是否已存在（排除当前编辑的记录）
             listMaterial({ code: value, pageNum: 1, pageSize: 1 }).then(response => {
               if (response.rows && response.rows.length > 0) {
@@ -1297,7 +1297,7 @@ export default {
         this.form.referredName = '';
         return;
       }
-      
+
       // 提取每个字符的首字母
       const pinYinCode = pinyin(val, {
         pattern: 'first',
@@ -1317,7 +1317,7 @@ export default {
     /** 处理名称搜索参数 */
     processNameSearch() {
       const nameValue = this.queryParams.name;
-      
+
       if (!nameValue || nameValue.trim() === '') {
         // 清空搜索参数
         this.queryParams.code = undefined;
@@ -1325,9 +1325,9 @@ export default {
         this.queryParams.nameSearch = undefined;
         return;
       }
-      
+
       const trimmedValue = nameValue.trim();
-      
+
       // 判断输入类型
       // 1. 如果全是数字或字母数字组合，可能是编码
       const isCodePattern = /^[A-Za-z0-9]+$/.test(trimmedValue);
@@ -1335,7 +1335,7 @@ export default {
       const hasChinese = /[\u4e00-\u9fa5]/.test(trimmedValue);
       // 3. 如果全是字母，可能是首字母
       const isLetterOnly = /^[A-Za-z]+$/.test(trimmedValue);
-      
+
       // 生成首字母（用于首字母搜索）
       let pinyinCode = '';
       if (hasChinese) {
@@ -1349,7 +1349,7 @@ export default {
         // 如果输入的是纯字母，直接作为首字母搜索
         pinyinCode = trimmedValue.toUpperCase();
       }
-      
+
       // 设置搜索参数
       // 如果看起来像编码，同时设置 code 参数
       if (isCodePattern && !hasChinese) {
@@ -1357,14 +1357,14 @@ export default {
       } else {
         this.queryParams.code = undefined;
       }
-      
+
       // 设置名称搜索（支持中文名称模糊搜索）
       if (hasChinese) {
         this.queryParams.name = trimmedValue;
       } else {
         this.queryParams.name = undefined;
       }
-      
+
       // 设置首字母搜索参数（如果有）
       if (pinyinCode) {
         this.queryParams.nameSearch = pinyinCode;
@@ -1459,7 +1459,7 @@ export default {
           });
           return;
         }
-        
+
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
         script.onload = () => {
@@ -1505,14 +1505,14 @@ export default {
       }
 
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
           console.log('FileReader onload, file size:', e.target.result.byteLength);
           const data = new Uint8Array(e.target.result);
           const workbook = window.XLSX.read(data, { type: 'array' });
           console.log('Workbook loaded, sheets:', workbook.SheetNames);
-          
+
           if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
             this.parseResult = {
               show: true,
@@ -1525,10 +1525,10 @@ export default {
 
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
-          
+
           // 转换为JSON数组
           const jsonData = window.XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-          
+
           if (jsonData.length < 2) {
             this.parseResult = {
               show: true,
@@ -1545,19 +1545,19 @@ export default {
             const headerStr = String(h).trim();
             return headerStr.replace(/\*$/, '');
           });
-          
+
           // 必填字段映射（Excel列名 -> 字段名）
           const requiredFields = {
             '耗材编码': 'code',
-            '耗材名称': 'name',
-            '供应商': 'supplierId',
-            '规格': 'speci',
-            '型号': 'model',
-            '价格': 'price',
-            '生产厂家': 'factoryId',
-            '库房分类': 'storeroomId',
-            '财务分类': 'financeCategoryId',
-            '单位': 'unitId'
+            '耗材名称': 'name'
+            // '供应商': 'supplierId',
+            // '规格': 'speci',
+            // '型号': 'model',
+            // '价格': 'price',
+            // '生产厂家': 'factoryId',
+            // '库房分类': 'storeroomId',
+            // '财务分类': 'financeCategoryId',
+            // '单位': 'unitId'
           };
 
           // 验证每行数据
@@ -1568,7 +1568,7 @@ export default {
               continue; // 跳过空数组
             }
             const rowNum = i + 1; // Excel行号（从2开始，因为有表头）
-            
+
             // 检查是否为空行
             const isEmptyRow = row.every(cell => !cell || String(cell).trim() === '');
             if (isEmptyRow) {
@@ -1579,7 +1579,7 @@ export default {
             for (let j = 0; j < headers.length; j++) {
               const header = headers[j];
               const fieldName = requiredFields[header];
-              
+
               if (fieldName) {
                 const cellValue = row[j];
                 if (!cellValue || String(cellValue).trim() === '') {
@@ -1642,7 +1642,7 @@ export default {
           .filter(code => code && /^\d{6}$/.test(code))
           .map(code => parseInt(code))
           .filter(num => !isNaN(num) && num >= 100000 && num <= 999999);
-        
+
         if (codes.length > 0) {
           const maxCode = Math.max(...codes);
           const nextCode = maxCode + 1;
@@ -1654,7 +1654,7 @@ export default {
       } catch (error) {
         console.error('查询编码失败:', error);
       }
-      
+
       // 如果没有现有编码或已达到最大值，从100000开始
       return '100000';
     },
