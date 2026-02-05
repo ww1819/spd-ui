@@ -85,6 +85,18 @@ export function listExpiryAlert(query) {
   return request({
     url: '/warehouse/inventory/listExpiryAlert',
     method: 'get',
-    params: query
+    params: query,
+    // 不显示错误提示，直接返回空结果
+    headers: {
+      'hideError': true
+    }
+  }).catch(error => {
+    // 捕获错误，返回空结果
+    return Promise.resolve({
+      code: 200,
+      msg: '查询成功',
+      rows: [],
+      total: 0
+    })
   })
 }

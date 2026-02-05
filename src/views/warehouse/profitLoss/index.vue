@@ -1,28 +1,56 @@
 <template>
   <div class="app-container profit-loss-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="90px" class="query-form-compact">
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item label="盈亏单号" prop="billNo" class="query-item-inline">
-            <el-input v-model="queryParams.billNo" placeholder="请输入盈亏单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
-          </el-form-item>
-          <el-form-item label="盘点单号" prop="stocktakingNo" class="query-item-inline">
-            <el-input v-model="queryParams.stocktakingNo" placeholder="请输入盘点单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
-          </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-            <SelectWarehouse v-model="queryParams.warehouseId" />
-          </el-form-item>
-          <el-form-item label="单据状态" prop="billStatus" class="query-item-inline">
-            <el-select v-model="queryParams.billStatus" placeholder="请选择" clearable style="width: 120px">
-              <el-option label="待审核" :value="1" />
-              <el-option label="已审核" :value="2" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+    <div class="form-fields-container" style="margin-top: 10px;">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+        <el-row class="query-row-left">
+          <el-col :span="24">
+            <el-form-item label="盈亏单号" prop="billNo" class="query-item-inline">
+              <el-input v-model="queryParams.billNo" placeholder="请输入盈亏单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
+            </el-form-item>
+            <el-form-item label="盘点单号" prop="stocktakingNo" class="query-item-inline">
+              <el-input v-model="queryParams.stocktakingNo" placeholder="请输入盘点单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
+            </el-form-item>
+            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectWarehouse v-model="queryParams.warehouseId" />
+              </div>
+            </el-form-item>
+            <el-form-item label="单据状态" prop="billStatus" class="query-item-inline">
+              <el-select v-model="queryParams.billStatus" placeholder="请选择" clearable style="width: 180px">
+                <el-option label="待审核" :value="1" />
+                <el-option label="已审核" :value="2" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-    <el-row :gutter="10" class="mb8 button-row-compact">
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="12">
+            <el-form-item label="制单日期" style="display: flex; align-items: center;">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                style="width: 180px; margin-right: 8px;"
+              />
+              <span style="margin: 0 4px;">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                style="width: 180px; margin-left: 8px;"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button type="primary" plain icon="el-icon-plus" size="medium" @click="handleAdd" v-hasPermi="['warehouse:profitLoss:add']">新增</el-button>
       </el-col>
@@ -35,7 +63,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="dataList" class="table-compact" :row-class-name="tableRowIndex" height="calc(100vh - 340px)" border>
+    <el-table v-loading="loading" :data="dataList" :row-class-name="tableRowIndex" height="54vh" border>
       <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip />
       <el-table-column label="盈亏单号" align="center" prop="billNo" min-width="160" show-overflow-tooltip>
         <template slot-scope="scope">
@@ -62,12 +90,14 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="220" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right">
         <template slot-scope="scope">
-          <el-button size="mini" type="text" @click="handleView(scope.row)">查看</el-button>
-          <el-button size="mini" type="text" @click="handleUpdate(scope.row)" v-hasPermi="['warehouse:profitLoss:edit']" v-if="scope.row.billStatus === 1">修改</el-button>
-          <el-button size="mini" type="text" @click="handleAudit(scope.row)" v-hasPermi="['warehouse:profitLoss:audit']" v-if="scope.row.billStatus === 1">审核</el-button>
-          <el-button size="mini" type="text" @click="handleDelete(scope.row)" v-hasPermi="['warehouse:profitLoss:remove']" v-if="scope.row.billStatus === 1">删除</el-button>
+          <span style="white-space: nowrap; display: inline-block;">
+            <el-button size="small" type="text" icon="el-icon-view" @click="handleView(scope.row)" style="padding: 0 5px; margin: 0;">查看</el-button>
+            <el-button size="small" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['warehouse:profitLoss:edit']" v-if="scope.row.billStatus === 1" style="padding: 0 5px; margin: 0;">修改</el-button>
+            <el-button size="small" type="text" icon="el-icon-check" @click="handleAudit(scope.row)" v-hasPermi="['warehouse:profitLoss:audit']" v-if="scope.row.billStatus === 1" style="padding: 0 5px; margin: 0;">审核</el-button>
+            <el-button size="small" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)" v-hasPermi="['warehouse:profitLoss:remove']" v-if="scope.row.billStatus === 1" style="padding: 0 5px; margin: 0;">删除</el-button>
+          </span>
         </template>
       </el-table-column>
     </el-table>
@@ -116,7 +146,7 @@
           </el-col>
         </el-row>
       </el-form>
-      <div v-if="(form.entryList && form.entryList.length) || (form.id && entryList.length)" style="margin-top: 12px;">
+      <div v-if="(form.entryList && form.entryList.length) || (form.id && entryList.length)" style="margin-top: 6px;">
         <div style="margin-bottom: 8px; font-weight: 600;">盈亏明细</div>
         <el-table :data="form.entryList || entryList" border size="small" max-height="320">
           <el-table-column type="index" label="序号" width="55" align="center" />
@@ -174,7 +204,9 @@ export default {
         billNo: null,
         stocktakingNo: null,
         warehouseId: null,
-        billStatus: null
+        billStatus: null,
+        beginDate: null,
+        endDate: null
       },
       form: {},
       entryList: [],
@@ -339,30 +371,85 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-.profit-loss-page {
-  padding-left: 8px;
-  padding-right: 8px;
+<style scoped>
+/* 搜索条件容器样式 */
+.form-fields-container {
+  background: #fff;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-top: -10px;
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
+}
+
+.query-row-left {
+  margin-bottom: 10px;
+}
+
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 10px;
+}
+
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+.query-row-second {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* 确保页面容器有相对定位，以便内部弹窗正确定位 */
+.app-container {
+  position: relative;
+  padding: 10px 20px 10px 20px !important;
+}
+
+/* 按钮行间距调整 */
+.app-container.profit-loss-page > .el-row.mb8 {
+  margin-top: 8px;
+  margin-bottom: 8px;
 }
 </style>
 
 <style>
-.app-container.profit-loss-page > .el-form.query-form-compact {
-  margin-top: -8px;
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+.app-container.profit-loss-page {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
 }
-.app-container.profit-loss-page > .el-row.button-row-compact {
-  margin-top: -8px;
-  padding-top: 0;
-  margin-bottom: 8px;
-}
-.app-container.profit-loss-page > .el-table.table-compact {
-  margin-top: 0;
-}
+
 .app-container.profit-loss-page > .el-table th {
   background-color: #EBEEF5 !important;
   color: #606266;
   font-weight: 600 !important;
-  font-size: 14px;
-  height: 48px;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.profit-loss-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
 }
 </style>

@@ -59,3 +59,21 @@ export function auditProfitLoss(id) {
     method: 'put'
   })
 }
+
+// 查询盈亏明细列表（用于报表）
+export function listProfitLossEntry(query) {
+  return request({
+    url: '/warehouse/profitLoss/entry/list',
+    method: 'get',
+    params: query
+  })
+}
+
+// 查询盈亏明细汇总列表（用于报表）
+export function listProfitLossEntrySummary(query) {
+  return request({
+    url: '/warehouse/profitLoss/entry/summary',
+    method: 'get',
+    params: query
+  })
+}

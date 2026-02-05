@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="app-container">
+  <div class="app-container d-apply-page">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -104,8 +104,8 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="54vh" border>
-      <el-table-column type="selection" width="55" align="center" fixed="left" />
+    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="60vh" border>
+      <el-table-column type="selection" width="60" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="单号" align="center" prop="applyBillNo" width="180" show-overflow-tooltip resizable >
         <template slot-scope="scope">
@@ -829,7 +829,14 @@ export default {
   overflow: hidden;
 }
 
+/* 弹窗内表单字段容器 */
 .local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
+  border: 1px solid #EBEEF5;
   flex-shrink: 0;
 }
 
@@ -897,7 +904,7 @@ export default {
 }
 
 .el-table th {
-  background-color: #F5F7FA !important;
+  background-color: #EBEEF5 !important;
   color: #606266 !important;
   font-weight: 600 !important;
   border-right: 1px solid #EBEEF5 !important;
@@ -927,35 +934,27 @@ export default {
 /* 搜索条件容器样式 */
 .form-fields-container {
   background: #fff;
-  padding: 16px 20px;
+  padding: 16px 24px 2px 24px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  margin-top: -2px;
+  margin-bottom: 12px;
   border: 1px solid #EBEEF5;
 }
 
 .query-row-left {
-  margin-bottom: 10px;
+  margin-bottom: 0px;
+  margin-top: 0px;
 }
 
 .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .query-item-inline .el-form-item__label {
   width: 80px !important;
-}
-
-/* 弹窗内表单字段容器 */
-.local-modal-content .form-fields-container {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
 }
 
 .query-select-wrapper {
@@ -963,7 +962,8 @@ export default {
 }
 
 .query-row-second {
-  margin-bottom: 10px;
+  margin-bottom: 0px;
+  margin-top: 0px;
   position: relative;
 }
 
@@ -975,6 +975,12 @@ export default {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+
+/* 按钮行样式 */
+.mb8 {
+  margin-top: 4px !important;
+  margin-bottom: 8px !important;
 }
 
 /* 确保表格可以水平滚动和垂直滚动 */
@@ -1036,5 +1042,32 @@ export default {
 ::v-deep .local-modal-content .el-table__body-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
+}
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+.app-container.d-apply-page {
+  padding-top: 10px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 0px !important;
+}
+
+.app-container.d-apply-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.d-apply-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
 }
 </style>

@@ -126,10 +126,18 @@ export default {
                 // 合并默认展开的菜单和用户手动展开的菜单（去重）
                 // 但排除用户手动收起的菜单
                 const filteredNewVal = newVal.filter(menu => !this.manuallyClosedMenus.includes(menu));
-                const allOpened = [...new Set([...this.openedMenus, ...filteredNewVal])];
-                this.$nextTick(() => {
-                    this.openedMenus = allOpened;
-                });
+                // 只添加新的菜单，不删除用户手动收起的菜单
+                const newMenus = filteredNewVal.filter(menu => !this.openedMenus.includes(menu));
+                if (newMenus.length > 0) {
+                    const allOpened = [...new Set([...this.openedMenus, ...newMenus])];
+                    // 只有当 openedMenus 发生变化时才更新，避免覆盖用户的手动操作
+                    if (JSON.stringify(allOpened.sort()) !== JSON.stringify(this.openedMenus.sort())) {
+                        this.$nextTick(() => {
+                            this.openedMenus = allOpened;
+                            this.syncMenuState();
+                        });
+                    }
+                }
             }
         }
     },
@@ -147,10 +155,13 @@ export default {
             // 但排除用户手动收起的菜单
             const filteredDefaultOpened = defaultOpened.filter(menu => !this.manuallyClosedMenus.includes(menu));
             const allOpened = [...new Set([...this.openedMenus, ...filteredDefaultOpened])];
-            this.openedMenus = allOpened;
-            // 确保菜单组件同步更新
-            if (this.$refs.menu) {
-                this.$refs.menu.openedMenus = allOpened;
+            // 只有当 openedMenus 发生变化时才更新，避免覆盖用户的手动操作
+            if (JSON.stringify(allOpened.sort()) !== JSON.stringify(this.openedMenus.sort())) {
+                this.openedMenus = allOpened;
+                // 确保菜单组件同步更新
+                this.$nextTick(() => {
+                    this.syncMenuState();
+                });
             }
         },
         // 菜单展开事件
@@ -174,21 +185,58 @@ export default {
                     if (!this.openedMenus.includes(index)) {
                         this.openedMenus.push(index);
                     }
-                    // 强制重新设置菜单展开状态
-                    if (this.$refs.menu) {
-                        this.$refs.menu.openedMenus = [...this.openedMenus];
-                    }
+                    // 强制同步菜单组件状态
+                    this.syncMenuState();
                 });
                 return;
             }
             // 否则允许收起，并记录用户手动收起的意图
             const indexPos = this.openedMenus.indexOf(index);
             if (indexPos > -1) {
-                this.openedMenus.splice(indexPos, 1);
-                // 记录用户手动收起的菜单（如果还没有记录）
+                // 先记录用户手动收起的菜单（如果还没有记录）
                 if (!this.manuallyClosedMenus.includes(index)) {
                     this.manuallyClosedMenus.push(index);
                 }
+                // 从展开列表中移除
+                this.openedMenus.splice(indexPos, 1);
+                // 立即同步菜单组件状态，确保菜单能够收起
+                this.syncMenuState();
+                // 使用 $nextTick 再次确保状态同步，并防止自动展开
+                this.$nextTick(() => {
+                    // 再次检查并确保菜单已收起
+                    if (this.openedMenus.includes(index)) {
+                        const pos = this.openedMenus.indexOf(index);
+                        if (pos > -1) {
+                            this.openedMenus.splice(pos, 1);
+                        }
+                    }
+                    this.syncMenuState();
+                });
+            }
+        },
+        // 同步菜单组件状态
+        syncMenuState() {
+            if (this.$refs.menu) {
+                // 直接设置 openedMenus 属性
+                const currentOpeneds = [...this.openedMenus];
+                this.$refs.menu.openedMenus = currentOpeneds;
+                // 使用 Vue.set 确保响应式更新
+                if (this.$refs.menu.$set) {
+                    this.$refs.menu.$set(this.$refs.menu, 'openedMenus', currentOpeneds);
+                }
+                // 直接操作菜单组件的内部状态，确保菜单能够正确收起
+                if (this.$refs.menu.$children) {
+                    this.$refs.menu.$children.forEach(child => {
+                        if (child.$options.name === 'ElSubmenu' && child.index) {
+                            const shouldBeOpen = currentOpeneds.includes(child.index);
+                            if (child.opened !== shouldBeOpen) {
+                                child.opened = shouldBeOpen;
+                            }
+                        }
+                    });
+                }
+                // 强制更新菜单组件
+                this.$refs.menu.$forceUpdate();
             }
         },
         // 菜单选择事件（点击菜单项时触发）

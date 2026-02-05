@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" style="position: relative;">
+  <div class="app-container fixed-number-page">
     <el-row :gutter="20">
       <!-- 左侧：仓库列表面板 -->
       <el-col :span="5">
@@ -101,7 +101,15 @@
                 <el-input v-model="queryParams.materialName"
                           placeholder="请输入耗材名称"
                           clearable
-                          style="width: 180px"
+                          style="width: 300px"
+                          @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
+              <el-form-item label="规格型号" prop="speci" class="query-item-inline">
+                <el-input v-model="queryParams.speci"
+                          placeholder="请输入规格型号"
+                          clearable
+                          style="width: 300px"
                           @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
@@ -174,13 +182,13 @@
                 border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
-      <el-table-column label="编码" align="center" prop="code" width="150" show-overflow-tooltip resizable>
+      <el-table-column label="耗材编码" align="center" prop="code" width="150" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.code">{{ scope.row.code }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="名称" align="center" prop="name" width="200" show-overflow-tooltip resizable />
+      <el-table-column label="耗材名称" align="center" prop="name" width="200" show-overflow-tooltip resizable />
       <el-table-column label="规格" align="center" prop="specification" width="150" show-overflow-tooltip resizable />
       <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -292,16 +300,16 @@
         </el-table>
         </div>
 
-        <!-- 明细框容器（翻页） -->
+        <!-- 翻页组件：放在明细表容器外部 -->
         <div class="table-container" ref="tableContainer">
           <div class="pagination-container fixed-number-pagination">
-        <pagination
+            <pagination
               v-show="true"
-          :total="total"
-          :page.sync="queryParams.pageNum"
-          :limit.sync="queryParams.pageSize"
-          @pagination="getList"
-        />
+              :total="total"
+              :page.sync="queryParams.pageNum"
+              :limit.sync="queryParams.pageSize"
+              @pagination="getList"
+            />
           </div>
         </div>
       </el-col>
@@ -314,54 +322,79 @@
           <div v-if="addDialogVisible" class="local-modal-content">
             <div class="modal-header">
               <div class="modal-title">新增定数监测</div>
-              <el-button icon="el-icon-close" size="small" circle @click="addDialogVisible = false" class="close-btn"></el-button>
+              <el-button size="small" @click="addDialogVisible = false" class="close-btn">关闭</el-button>
             </div>
             <div class="modal-body">
-              <!-- 搜索框 -->
-              <el-form :model="addQueryParams" ref="addQueryForm" :inline="true" v-show="showSearch" label-width="100px">
-                <el-row :gutter="20">
-                  <el-col :span="6">
-                    <el-form-item label="供应商" prop="supplierId">
-                      <SelectSupplier v-model="addQueryParams.supplierId"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="6">
-                    <el-form-item label="耗材名称" prop="materialName">
-                      <el-input
-                        v-model="addQueryParams.materialName"
-                        placeholder="请输入耗材名称"
-                        clearable
-                        @keyup.enter.native="handleAddQuery"
-                      />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="6">
-                    <el-form-item label="规格型号" prop="speci">
-                      <el-input
-                        v-model="addQueryParams.speci"
-                        placeholder="请输入规格型号"
-                        clearable
-                        @keyup.enter.native="handleAddQuery"
-                      />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item>
-                      <el-button type="primary" icon="el-icon-search" size="small" @click="handleAddQuery">搜索</el-button>
-                      <el-button icon="el-icon-refresh" size="small" @click="resetAddQuery">重置</el-button>
-                      <el-button size="small" @click="addDialogVisible = false">取 消</el-button>
-                      <el-button type="primary" size="small" @click="handleAddConfirm">确 定</el-button>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </el-form>
+              <!-- 搜索框容器 -->
+              <div class="form-fields-container">
+                <el-form :model="addQueryParams" ref="addQueryForm" :inline="true" v-show="showSearch" label-width="100px">
+                  <el-row :gutter="20">
+                    <el-col :span="6">
+                      <el-form-item label="供应商" prop="supplierId">
+                        <SelectSupplier v-model="addQueryParams.supplierId"/>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                      <el-form-item label="耗材名称" prop="materialName">
+                        <el-input
+                          v-model="addQueryParams.materialName"
+                          placeholder="请输入耗材名称"
+                          clearable
+                          @keyup.enter.native="handleAddQuery"
+                        />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                      <el-form-item label="规格型号" prop="speci">
+                        <el-input
+                          v-model="addQueryParams.speci"
+                          placeholder="请输入规格型号"
+                          clearable
+                          @keyup.enter.native="handleAddQuery"
+                        />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </el-form>
+              </div>
+              <!-- 弹窗按钮行：放在搜索容器和表格之间，按钮大小与耗材产品维护一致 -->
+              <el-row :gutter="10" class="mb8 button-row-container">
+                <el-col :span="1.5">
+                  <el-button
+                    type="primary"
+                    icon="el-icon-search"
+                    size="medium"
+                    @click="handleAddQuery"
+                  >搜索</el-button>
+                </el-col>
+                <el-col :span="1.5">
+                  <el-button
+                    icon="el-icon-refresh"
+                    size="medium"
+                    @click="resetAddQuery"
+                  >重置</el-button>
+                </el-col>
+                <el-col :span="1.5">
+                  <el-button
+                    size="medium"
+                    @click="addDialogVisible = false"
+                  >取 消</el-button>
+                </el-col>
+                <el-col :span="1.5">
+                  <el-button
+                    type="primary"
+                    size="medium"
+                    @click="handleAddConfirm"
+                  >确 定</el-button>
+                </el-col>
+              </el-row>
 
-              <!-- 明细表 -->
+              <!-- 明细表：高度适当降低，避免遮挡底部翻页 -->
               <el-table
                 v-loading="addTableLoading"
                 :data="addMaterialList"
                 @selection-change="handleAddSelectionChange"
-                height="calc(50vh)"
+                height="calc(40vh)"
                 border
               >
                 <el-table-column type="selection" width="55" align="center" />
@@ -370,8 +403,8 @@
                     {{ (addQueryParams.pageNum - 1) * addQueryParams.pageSize + scope.$index + 1 }}
                   </template>
                 </el-table-column>
-                <el-table-column label="编码" align="center" prop="code" width="120" show-overflow-tooltip resizable />
-                <el-table-column label="名称" align="center" prop="name" width="200" show-overflow-tooltip resizable />
+                <el-table-column label="耗材编码" align="center" prop="code" width="120" show-overflow-tooltip resizable />
+                <el-table-column label="耗材名称" align="center" prop="name" width="200" show-overflow-tooltip resizable />
                 <el-table-column label="规格" align="center" prop="speci" width="150" show-overflow-tooltip resizable />
                 <el-table-column label="型号" align="center" prop="model" width="150" show-overflow-tooltip resizable />
                 <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="100" show-overflow-tooltip resizable>
@@ -435,10 +468,11 @@
 </template>
 
 <script>
+import { pinyin } from "pinyin-pro";
 import { listFixedNumber, addFixedNumber } from "@/api/monitoring/fixedNumber";
 import { listWarehouse } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
-import { listMaterial } from "@/api/foundation/material";
+import { listMaterial, listMaterialAll } from "@/api/foundation/material";
 import { listInventory } from "@/api/warehouse/inventory";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -466,6 +500,8 @@ export default {
       total: 0,
       // 定数监测表格数据
       fixedNumberList: [],
+      // 全量定数监测数据（用于本地过滤）
+      allFixedNumberList: [],
       // 仓库列表数据
       warehouseList: [],
       // 科室列表数据
@@ -497,6 +533,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         materialName: null,
+        speci: null,
         actualQuantity: null,
         supplierId: null,
         warehouseId: null,
@@ -528,11 +565,10 @@ export default {
       }
       return true;
     },
-    // 表格高度计算（容器高度减去分页高度）
+    // 表格高度计算（与容器高度保持一致，适当增高一点）
     tableHeight() {
-      // 明细表容器高度是 calc(100vh - 420px)，容器没有padding了，只需要减去表头高度（约48px）
-      // 表格实际可用高度 = 容器高度 - 表头高度
-      return 'calc(100vh - 468px)';
+      // 明细表容器高度约为 calc(100vh - 420px)，这里预留更少的空间，让表格整体更高
+      return 'calc(100vh - 450px)';
     }
   },
   watch: {
@@ -696,7 +732,7 @@ export default {
           const parsedData = JSON.parse(savedData);
           // 只有当当前查询条件匹配时才恢复数据
           if (parsedData && parsedData.length > 0) {
-            this.fixedNumberList = parsedData.map((item, index) => {
+            const restoredList = parsedData.map((item, index) => {
               return {
                 ...item,
                 index: index + 1,
@@ -706,6 +742,8 @@ export default {
                 hasInventoryRecord: item.hasInventoryRecord || false
               };
             });
+            this.allFixedNumberList = restoredList;
+            this.fixedNumberList = this.filterByQuery(restoredList);
             this.total = this.fixedNumberList.length;
             // 不在loadFromLocalStorage中检查入库记录，避免在没有选择仓库时调用API
             // 检查入库记录会在getList或其他合适的地方进行
@@ -821,14 +859,18 @@ export default {
                 }
               });
               
-              this.fixedNumberList = mergedList;
-              this.total = mergedList.length;
+              this.allFixedNumberList = mergedList;
+              this.fixedNumberList = this.filterByQuery(mergedList);
+              this.total = this.fixedNumberList.length;
               // 保存合并后的数据到 localStorage
               this.saveToLocalStorage();
             } else {
               // 后端没有数据，保持localStorage的数据
-              if (!this.fixedNumberList || this.fixedNumberList.length === 0) {
+              if (!this.allFixedNumberList || this.allFixedNumberList.length === 0) {
                 this.loadFromLocalStorage();
+              } else {
+                this.fixedNumberList = this.filterByQuery(this.allFixedNumberList);
+                this.total = this.fixedNumberList.length;
               }
             }
             this.loading = false;
@@ -842,15 +884,21 @@ export default {
             console.error('处理查询结果时出错:', error);
             this.loading = false;
             // 如果处理出错，至少保持localStorage的数据
-            if (!this.fixedNumberList || this.fixedNumberList.length === 0) {
+            if (!this.allFixedNumberList || this.allFixedNumberList.length === 0) {
               this.loadFromLocalStorage();
+            } else {
+              this.fixedNumberList = this.filterByQuery(this.allFixedNumberList);
+              this.total = this.fixedNumberList.length;
             }
           }
         }).catch(error => {
           // 如果后端查询失败，保持localStorage的数据
           console.warn('查询定数监测列表失败:', error);
-          if (!this.fixedNumberList || this.fixedNumberList.length === 0) {
+          if (!this.allFixedNumberList || this.allFixedNumberList.length === 0) {
             this.loadFromLocalStorage();
+          } else {
+            this.fixedNumberList = this.filterByQuery(this.allFixedNumberList);
+            this.total = this.fixedNumberList.length;
           }
           this.loading = false;
         });
@@ -858,8 +906,11 @@ export default {
         console.error('getList 执行异常:', error);
         this.loading = false;
         // 如果出错，至少保持localStorage的数据
-        if (!this.fixedNumberList || this.fixedNumberList.length === 0) {
+        if (!this.allFixedNumberList || this.allFixedNumberList.length === 0) {
           this.loadFromLocalStorage();
+        } else {
+          this.fixedNumberList = this.filterByQuery(this.allFixedNumberList);
+          this.total = this.fixedNumberList.length;
         }
       }
     },
@@ -1003,11 +1054,22 @@ export default {
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
+      // 先根据当前查询条件进行本地过滤
+      if (this.allFixedNumberList && this.allFixedNumberList.length > 0) {
+        this.fixedNumberList = this.filterByQuery(this.allFixedNumberList);
+        this.total = this.fixedNumberList.length;
+      }
+      // 再触发一次后端同步（预留后端实现）
       this.getList();
     },
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      // 清空耗材名称后，恢复全量列表
+      if (this.allFixedNumberList && this.allFixedNumberList.length > 0) {
+        this.fixedNumberList = [...this.allFixedNumberList];
+        this.total = this.fixedNumberList.length;
+      }
       this.handleQuery();
     },
     /** 保存按钮操作 */
@@ -1078,8 +1140,33 @@ export default {
     /** 新增弹窗搜索 */
     handleAddQuery() {
       this.addTableLoading = true;
-      listMaterial(this.addQueryParams).then(response => {
-        const allMaterials = response.rows || [];
+      // 如果选择了供应商，则按供应商+条件查询；否则查询全部耗材字典
+      const query = {
+        pageNum: this.addQueryParams.pageNum,
+        pageSize: this.addQueryParams.pageSize,
+        // 后端 FdMaterial 查询字段是 name / nameSearch，这里同时带上
+        materialName: this.addQueryParams.materialName,
+        speci: this.addQueryParams.speci,
+        supplierId: this.addQueryParams.supplierId
+      };
+      if (this.addQueryParams.materialName) {
+        query.name = this.addQueryParams.materialName;
+        query.nameSearch = this.addQueryParams.materialName;
+      }
+      // 如果当前是科室定数监测，并且已选择科室，则把科室ID一并传给后端
+      if (this.queryParams.fixedNumberType === '2' && this.queryParams.departmentId) {
+        query.departmentId = this.queryParams.departmentId;
+      }
+      // 如果是仓库定数监测，并且已选择仓库，也一并传过去（便于后端按仓库字典过滤）
+      if (this.queryParams.fixedNumberType === '1' && this.queryParams.warehouseId) {
+        query.warehouseId = this.queryParams.warehouseId;
+      }
+      const requestFn = this.addQueryParams.supplierId
+        ? listMaterial(query)
+        : listMaterialAll(query);
+
+      requestFn.then(response => {
+        const allMaterials = (response && response.rows) || response || [];
         // 获取已添加到明细列表的产品编码
         const addedCodes = this.fixedNumberList.map(item => item.code).filter(code => code);
         // 过滤掉已经添加的产品
@@ -1158,11 +1245,15 @@ export default {
       
       // 保存到 localStorage
       this.saveToLocalStorage();
+      // 同步更新全量数据，确保后续搜索和刷新仍然能显示
+      this.allFixedNumberList = [...this.fixedNumberList];
       
       this.$modal.msgSuccess("新增成功");
       this.addDialogVisible = false;
       // 清空弹窗选择
       this.addSelectedMaterials = [];
+      // 重新加载一次列表，确保明细表立刻显示最新数据
+      this.getList();
     },
     /** 根据仓库ID获取仓库名称 */
     getWarehouseNameById(warehouseId) {
@@ -1178,6 +1269,59 @@ export default {
     handleFieldChange(row) {
       // 字段变化时，自动保存到 localStorage
       this.saveToLocalStorage();
+    },
+    /** 判断是否为拼音首字母 */
+    isPinyin(str) {
+      return /^[a-zA-Z]+$/.test(str);
+    },
+    /** 获取中文拼音首字母 */
+    getPinyinInitials(str) {
+      try {
+        const initials = pinyin(str, {
+          pattern: 'first',
+          toneType: 'none',
+          type: 'array',
+        }).join('').toUpperCase();
+        return initials;
+      } catch (e) {
+        return '';
+      }
+    },
+    /** 通用字符串匹配（支持汉字模糊 + 首字母） */
+    matchWithPinyin(source, keyword) {
+      if (!keyword) return true;
+      if (!source) return false;
+      const kw = keyword.trim();
+      if (!kw) return true;
+      const upperKw = kw.toUpperCase();
+      const srcUpper = String(source).toUpperCase();
+      // 1. 直接模糊匹配
+      if (String(source).includes(kw) || srcUpper.includes(upperKw)) {
+        return true;
+      }
+      // 2. 首字母匹配
+      if (this.isPinyin(kw)) {
+        const initials = this.getPinyinInitials(String(source));
+        if (initials.includes(upperKw)) {
+          return true;
+        }
+      }
+      return false;
+    },
+    /** 根据耗材名称 + 规格型号过滤列表（支持汉字模糊和首字母检索） */
+    filterByQuery(list) {
+      const nameKeyword = (this.queryParams.materialName || '').trim();
+      const speciKeyword = (this.queryParams.speci || '').trim();
+      if (!nameKeyword && !speciKeyword) {
+        return list;
+      }
+      return list.filter(item => {
+        const name = item.name || item.materialName || '';
+        const speci = item.specification || item.speci || item.model || '';
+        const matchName = nameKeyword ? this.matchWithPinyin(name, nameKeyword) : true;
+        const matchSpeci = speciKeyword ? this.matchWithPinyin(speci, speciKeyword) : true;
+        return matchName && matchSpeci;
+      });
     },
     /** 删除按钮操作 */
     handleDelete(row) {
@@ -1246,7 +1390,7 @@ export default {
 </script>
 
 <style scoped>
-/* 搜索区域样式 */
+/* 搜索区域样式（目前页面顶部未使用，可保留作为备用） */
 .app-container > .el-form {
   background: #fff;
   padding: 16px 20px;
@@ -1270,14 +1414,17 @@ export default {
 /* 第一行查询条件左对齐紧凑布局 */
 /* 查询容器样式 */
 .query-container {
-  margin-top: -5px;
-  margin-bottom: 16px;
+  margin-top: -2px;
+  margin-bottom: 12px;
+  /* 去掉左右 padding，让容器本身更宽，占满整列 */
+  padding: 0;
 }
 
-/* 查询条件容器框样式 */
+/* 查询条件容器框样式：降低高度，左右预留8px */
 .form-fields-container {
   background: #fff;
-  padding: 16px 20px;
+  /* 适当减小左右 padding，让白色容器视觉上更宽一点 */
+  padding: 10px 12px 6px 12px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   border: 1px solid #EBEEF5;
@@ -1309,8 +1456,8 @@ export default {
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
-  margin-top: 0 !important;
-  margin-bottom: 16px !important;
+  margin-top: 4px !important;
+  margin-bottom: 10px !important;
 }
 
 /* 确保按钮正常显示 */
@@ -1490,14 +1637,21 @@ export default {
 .modal-body {
   flex: 1;
   overflow: hidden;
-  padding: 20px;
+  padding: 8px 8px 16px 8px;
   display: flex;
   flex-direction: column;
 }
 
 .modal-body .el-form {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   flex-shrink: 0;
+}
+
+/* 弹窗内搜索框容器：左右预留8px，向上贴近一些并降低高度 */
+.local-modal-content .form-fields-container {
+  margin: 0 8px 6px 8px;
+  /* 左右 padding 调小，让可用宽度更大 */
+  padding: 6px 10px 2px 10px;
 }
 
 .modal-body .el-table {
@@ -1535,7 +1689,8 @@ export default {
   border-radius: 0 !important;
   box-shadow: none !important;
   border: none !important;
-  margin-bottom: 16px;
+  margin-bottom: 0;
+  /* 再增加约 10px 高度，让明细表更高一些 */
   height: calc(100vh - 420px) !important;
   min-height: calc(100vh - 420px) !important;
   max-height: calc(100vh - 420px) !important;
@@ -1616,18 +1771,19 @@ export default {
 
 /* 明细框容器（翻页） */
 .table-container {
-  background: #fff;
-  padding: 4px 16px 8px 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid #EBEEF5;
+  /* 只作为分页容器，去掉白色背景和边框 */
+  background: transparent !important;
+  padding: 0 8px 0 8px !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-end;
-  height: 60px !important;
-  min-height: 60px !important;
-  max-height: 60px !important;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
   position: relative;
   box-sizing: border-box;
 }
@@ -1754,6 +1910,14 @@ export default {
 
 <!-- 非 scoped 样式，用于覆盖全局样式 -->
 <style>
+/* 整个页面左右预留 4px，顶部适当缩小内边距（让右侧白色搜索容器更宽） */
+.app-container.fixed-number-page {
+  padding-top: 10px !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  padding-bottom: 0 !important;
+}
+
 /* 强制覆盖全局分页容器样式 */
 .table-container .pagination-container.fixed-number-pagination,
 .table-container .fixed-number-pagination {

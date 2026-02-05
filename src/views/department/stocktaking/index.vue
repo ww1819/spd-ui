@@ -1,9 +1,8 @@
 <template>
   <div class="app-container stocktaking-apply-page">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
 
-        <el-row class="query-row-left">
+      <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item label="业务单号" prop="stockNo" class="query-item-inline">
               <el-input v-model="queryParams.stockNo"
@@ -21,7 +20,7 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="16" class="query-row-second">
+      <el-row :gutter="16" class="query-row-second">
           <el-col :span="12">
             <el-form-item label="制单日期" style="display: flex; align-items: center;">
               <el-date-picker
@@ -45,8 +44,7 @@
           </el-col>
         </el-row>
 
-      </el-form>
-    </div>
+    </el-form>
 
     <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
@@ -882,30 +880,13 @@ export default {
   font-weight: 500;
 }
 
-/* 查询条件容器框样式 */
-.form-fields-container {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
-}
-
-/* 搜索区域样式 */
+/* 搜索区域样式（与退库审核一致） */
 .app-container > .el-form {
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
-}
-
-.form-fields-container > .el-form {
-  background: transparent;
-  padding: 0;
-  box-shadow: none;
-  margin-bottom: 0;
 }
 
 .app-container > .el-form .el-row {
@@ -918,6 +899,40 @@ export default {
 
 .app-container > .el-form .el-form-item {
   margin-bottom: 0;
+}
+
+/* 查询条件样式（与退库审核一致） */
+.query-row-left {
+  margin-bottom: 10px;
+}
+
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 10px;
+}
+
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+.query-row-second {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 /* 第一行查询条件左对齐紧凑布局 */
@@ -956,30 +971,6 @@ export default {
   width: 150px;
 }
 
-/* 第二行单据状态对齐到仓库位置 */
-.app-container > .el-form .query-row-second {
-  position: relative;
-}
-
-/* 确保制单日期的两个日期选择器在同一行 */
-.app-container > .el-form .query-row-second .el-form-item {
-  white-space: nowrap;
-}
-
-.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.app-container > .el-form .query-row-second .query-status-col {
-  position: absolute;
-  left: 552px;
-  width: auto;
-  padding-left: 0;
-  padding-right: 0;
-}
-
 /* 主表格水平滚动条增粗 */
 ::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar,
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
@@ -1012,7 +1003,7 @@ export default {
   padding-right: 8px !important;
 }
 
-.app-container.stocktaking-apply-page > .form-fields-container > .el-form.query-form-compact {
+.app-container.stocktaking-apply-page > .el-form.query-form-compact {
   margin-top: -8px !important;
 }
 

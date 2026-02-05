@@ -58,6 +58,12 @@
         <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="90" show-overflow-tooltip resizable/>
         <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable/>
         <el-table-column label="单位" align="center" prop="unitName" width="80" min-width="70" show-overflow-tooltip resizable/>
+        <el-table-column label="单价" align="center" prop="unitPrice" width="100" min-width="90" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.unitPrice != null">{{ parseFloat(scope.row.unitPrice).toFixed(2) }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
         <el-table-column label="仓库" align="center" prop="warehouseName" width="120" min-width="90" show-overflow-tooltip resizable/>
         <el-table-column label="批号" align="center" prop="batchNo" width="120" min-width="90" show-overflow-tooltip resizable/>
         <el-table-column label="生产日期" align="center" prop="produceDate" width="120" min-width="100" show-overflow-tooltip resizable>
@@ -74,6 +80,7 @@
         </el-table-column>
         <el-table-column label="库存数量" align="center" prop="qty" width="100" min-width="90" show-overflow-tooltip resizable/>
         <el-table-column label="生产厂家" align="center" prop="factoryName" width="150" min-width="100" show-overflow-tooltip resizable/>
+        <el-table-column label="供应商" align="center" prop="supplierName" width="150" min-width="100" show-overflow-tooltip resizable/>
       </el-table>
     </div>
 
@@ -130,7 +137,9 @@ export default {
         this.list = response.rows || []
         this.total = response.total != null ? response.total : 0
         this.loading = false
-      }).catch(() => {
+      }).catch(error => {
+        console.error('查询有效期预警表失败:', error)
+        // 直接显示为空，不显示错误提示
         this.list = []
         this.total = 0
         this.loading = false

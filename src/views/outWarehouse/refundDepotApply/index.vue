@@ -12,9 +12,9 @@
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+          <el-form-item label="科室" prop="departmentId" class="query-item-inline">
             <div class="query-select-wrapper">
-              <SelectMaterial v-model="queryParams.materialId" />
+              <SelectDepartment v-model="queryParams.departmentId" />
             </div>
           </el-form-item>
           <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
@@ -124,9 +124,11 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
+          <span style="white-space: nowrap;">
+            <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
+          </span>
         </template>
       </el-table-column>
 

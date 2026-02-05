@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container">
-    <div class="form-fields-container" style="margin-top: 10px;">
+  <div class="app-container receipt-confirm-page">
+    <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
         <el-row class="query-row-left">
@@ -111,8 +111,8 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="receiptList" :row-class-name="rowReceiptIndex" @selection-change="handleSelectionChange" height="54vh" border>
-      <el-table-column type="selection" width="60" align="center" resizable />
+    <el-table v-loading="loading" :data="receiptList" :row-class-name="rowReceiptIndex" @selection-change="handleSelectionChange" height="58vh" border>
+      <el-table-column type="selection" width="60" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="出库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -163,7 +163,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
         <template slot-scope="scope">
           <el-button
             size="small"
@@ -675,7 +675,7 @@ export default {
 }
 
 .el-table th {
-  background-color: #F5F7FA !important;
+  background-color: #EBEEF5 !important;
   color: #606266 !important;
   font-weight: 600 !important;
   border-right: 1px solid #EBEEF5 !important;
@@ -705,22 +705,23 @@ export default {
 /* 搜索条件容器样式 */
 .form-fields-container {
   background: #fff;
-  padding: 16px 24px;
+  padding: 16px 24px 2px 24px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-top: -10px;
-  margin-bottom: 16px;
+  margin-top: -2px;
+  margin-bottom: 12px;
   border: 1px solid #EBEEF5;
 }
 
 .query-row-left {
-  margin-bottom: 10px;
+  margin-bottom: 0px;
+  margin-top: 0px;
 }
 
 .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .query-item-inline .el-form-item__label {
@@ -732,7 +733,8 @@ export default {
 }
 
 .query-row-second {
-  margin-bottom: 10px;
+  margin-bottom: 0px;
+  margin-top: 0px;
   position: relative;
 }
 
@@ -746,10 +748,26 @@ export default {
   flex-wrap: nowrap;
 }
 
+/* 按钮行样式 */
+.mb8 {
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+}
+
 /* 确保表格可以水平滚动和垂直滚动 */
 ::v-deep .el-table__body-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
+}
+
+/* 增大底部滚动条 */
+::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 12px !important;
+}
+
+::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  height: 12px !important;
+  border-radius: 6px;
 }
 
 /* 确保操作列固定 */
@@ -785,6 +803,32 @@ export default {
 /* 确保页面容器有相对定位，以便内部弹窗正确定位 */
 .app-container {
   position: relative;
-  padding: 10px 20px 10px 20px !important;
+}
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+.app-container.receipt-confirm-page {
+  padding-top: 10px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 0px !important;
+}
+
+.app-container.receipt-confirm-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.receipt-confirm-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
 }
 </style>

@@ -89,13 +89,21 @@ service.interceptors.response.use(res => {
     }
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
     } else if (code === 500) {
-      Message({ message: msg, type: 'error' })
+      // 检查请求配置中是否有hideError标记
+      const hideError = res.config?.headers?.hideError || res.config?.hideError;
+      if (!hideError) {
+        Message({ message: msg, type: 'error' })
+      }
       return Promise.reject(new Error(msg))
     } else if (code === 601) {
       Message({ message: msg, type: 'warning' })
       return Promise.reject('error')
     } else if (code !== 200) {
-      Notification.error({ title: msg })
+      // 检查请求配置中是否有hideError标记
+      const hideError = res.config?.headers?.hideError || res.config?.hideError;
+      if (!hideError) {
+        Notification.error({ title: msg })
+      }
       return Promise.reject('error')
     } else {
       return res.data
@@ -103,15 +111,19 @@ service.interceptors.response.use(res => {
   },
   error => {
     console.log('err' + error)
-    let { message } = error;
-    if (message == "Network Error") {
-      message = "后端接口连接异常";
-    } else if (message.includes("timeout")) {
-      message = "系统接口请求超时";
-    } else if (message.includes("Request failed with status code")) {
-      message = "系统接口" + message.substr(message.length - 3) + "异常";
+    // 检查请求配置中是否有hideError标记，如果有则不显示错误提示
+    const hideError = error.config?.headers?.hideError || error.config?.hideError;
+    if (!hideError) {
+      let { message } = error;
+      if (message == "Network Error") {
+        message = "后端接口连接异常";
+      } else if (message.includes("timeout")) {
+        message = "系统接口请求超时";
+      } else if (message.includes("Request failed with status code")) {
+        message = "系统接口" + message.substr(message.length - 3) + "异常";
+      }
+      Message({ message: message, type: 'error', duration: 5 * 1000 })
     }
-    Message({ message: message, type: 'error', duration: 5 * 1000 })
     return Promise.reject(error)
   }
 )

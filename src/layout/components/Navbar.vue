@@ -9,7 +9,8 @@
       <template v-if="device!=='mobile'">
         <!-- 组织机构显示框 -->
         <div class="organization-wrapper">
-          <span class="organization-text">{{ organizationUnit || '组织机构' }}</span>
+          <span class="organization-label">组织机构：</span>
+          <span class="organization-name">{{ organizationUnit || '组织机构' }}</span>
         </div>
 
         <search id="header-search" class="right-menu-item" />
@@ -80,6 +81,13 @@
 
       </template>
 
+      <!-- 系统版本信息按钮 -->
+      <el-tooltip content="系统版本信息" effect="dark" placement="bottom">
+        <div class="version-button right-menu-item hover-effect" @click="showVersionDialog">
+          <i class="el-icon-more"></i>
+        </div>
+      </el-tooltip>
+
       <el-dropdown class="avatar-container right-menu-item hover-effect" trigger="click">
         <div class="avatar-wrapper">
           <img :src="avatar" class="user-avatar">
@@ -98,6 +106,41 @@
         </el-dropdown-menu>
       </el-dropdown>
     </div>
+
+    <!-- 系统版本信息对话框 -->
+    <el-dialog
+      :visible.sync="versionDialogVisible"
+      width="500px"
+      append-to-body
+      :show-close="false"
+    >
+      <span slot="title" class="dialog-title">
+        <span>系统版本信息</span>
+        <el-button type="text" class="dialog-close-btn" @click="versionDialogVisible = false">关闭</el-button>
+      </span>
+      <div class="version-info">
+        <div class="version-item">
+          <span class="version-label">系统名称：</span>
+          <span class="version-value">医疗物资管理系统</span>
+        </div>
+        <div class="version-item">
+          <span class="version-label">系统版本：</span>
+          <span class="version-value">v{{ systemVersion }}</span>
+        </div>
+        <div class="version-item">
+          <span class="version-label">构建日期：</span>
+          <span class="version-value">{{ buildDate }}</span>
+        </div>
+        <div class="version-item">
+          <span class="version-label">版权所有：</span>
+          <span class="version-value">© 石家庄爱思普特科技有限公司 版本所有</span>
+        </div>
+        <div class="version-item version-about">
+          <span class="version-label">关于版本：</span>
+          <span class="version-value">医疗物资管理系统受国家计算机软件著作权保护，未经官网正规渠道授权擅自使用、以及直接对产品二次出售的，我们将保留追究法律责任的权利。</span>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -130,6 +173,12 @@ export default {
       organizationUnit: '',
       // 消息提醒弹窗显示状态
       messageVisible: false,
+      // 系统版本信息对话框显示状态
+      versionDialogVisible: false,
+      // 系统版本号
+      systemVersion: '3.8.6',
+      // 构建日期
+      buildDate: '2021/04/20',
       // 消息列表
       messageList: [
         {
@@ -244,6 +293,10 @@ export default {
       }).catch(() => {
         this.organizationUnit = ''
       })
+    },
+    // 显示系统版本信息对话框
+    showVersionDialog() {
+      this.versionDialogVisible = true
     }
   },
   created() {
@@ -373,19 +426,93 @@ export default {
       position: relative;
       top: -16px;
       
-      .organization-text {
+      .organization-label {
         font-weight: bold;
         font-size: 15px;
         color: #303133;
         white-space: nowrap;
       }
+      
+      .organization-name {
+        font-weight: normal;
+        font-size: 14px;
+        color: #303133;
+        white-space: nowrap;
+      }
+    }
+
+    .version-button {
+      margin-right: 8px;
+      
+      i {
+        font-size: 18px;
+        transform: rotate(90deg);
+        display: inline-block;
+      }
+    }
+  }
+}
+</style>
+
+<style lang="scss">
+// 系统版本信息对话框样式（不使用scoped，因为el-dialog内容插入到body）
+.dialog-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  
+  .dialog-close-btn {
+    padding: 0;
+    font-size: 14px;
+    color: #909399;
+    
+    &:hover {
+      color: #303133;
     }
   }
 }
 
-</style>
+.version-info {
+  padding: 20px 0;
+  
+  .version-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 14px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .version-label {
+      width: 100px;
+      color: #606266;
+      font-weight: 500;
+    }
+    
+    .version-value {
+      flex: 1;
+      color: #303133;
+    }
+    
+    &.version-about {
+      align-items: flex-start;
+      
+      .version-label {
+        margin-top: 2px;
+      }
+      
+      .version-value {
+        line-height: 1.6;
+        word-wrap: break-word;
+        white-space: normal;
+      }
+    }
+  }
+}
 
-<style lang="scss">
 // 消息提醒弹窗样式（不使用scoped，因为el-popover内容插入到body）
 .message-popover {
   .message-header {

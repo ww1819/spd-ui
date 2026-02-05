@@ -797,7 +797,7 @@ export default {
   font-weight: 500;
 }
 
-/* 搜索区域样式（与到货验收一致） */
+/* 搜索区域样式（与退库审核一致） */
 .app-container > .el-form {
   background: #fff;
   padding: 16px 20px;
@@ -854,30 +854,6 @@ export default {
   width: 150px;
 }
 
-/* 第二行单据状态对齐到仓库位置 */
-.app-container > .el-form .query-row-second {
-  position: relative;
-}
-
-/* 确保制单日期的两个日期选择器在同一行 */
-.app-container > .el-form .query-row-second .el-form-item {
-  white-space: nowrap;
-}
-
-.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.app-container > .el-form .query-row-second .query-status-col {
-  position: absolute;
-  left: 552px;
-  width: auto;
-  padding-left: 0;
-  padding-right: 0;
-}
-
 /* 主表格水平滚动条增粗 */
 ::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar,
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
@@ -904,6 +880,40 @@ export default {
 </style>
 
 <style>
+/* 查询条件样式（与退库审核一致，非 scoped 确保生效） */
+.query-row-left {
+  margin-bottom: 10px;
+}
+
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 10px;
+}
+
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+.query-row-second {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
 /* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
 .app-container.stocktaking-page {
   padding-left: 8px !important;
