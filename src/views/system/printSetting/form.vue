@@ -8,19 +8,18 @@
     <div class="dialog-layout">
       <!-- 左侧空白框，可后续扩展预览等信息 -->
       <div class="left-panel ruler-panel">
-        <!-- 模板大小预览 -->
+        <!-- 模板大小预览（标题隐藏） -->
         <div class="template-preview">
-          <div class="preview-title">模板大小预览</div>
           <!-- 顶部水平尺子 -->
           <div class="ruler-horizontal-main">
             <div 
               v-for="i in horizontalRuler" 
               :key="'h-' + i" 
-              class="ruler-mark-horizontal"
+              :class="['ruler-mark-horizontal', i % 10 === 0 ? 'major' : 'minor']"
               :style="{ left: getHorizontalPosition(i) + 'px' }"
             >
-              <div class="ruler-tick"></div>
-              <span class="ruler-number">{{ i }}</span>
+              <span v-if="i % 10 === 0" class="ruler-number ruler-number-top">{{ i }}</span>
+              <div class="ruler-tick" :class="i % 10 === 0 ? 'major' : 'minor'"></div>
             </div>
           </div>
           <!-- 左侧垂直尺子 -->
@@ -28,31 +27,33 @@
             <div 
               v-for="i in verticalRuler" 
               :key="'v-' + i" 
-              class="ruler-mark-vertical"
+              :class="['ruler-mark-vertical', i % 10 === 0 ? 'major' : 'minor']"
               :style="{ top: getVerticalPosition(i) + 'px' }"
             >
-              <div class="ruler-tick"></div>
-              <span class="ruler-number">{{ i }}</span>
+              <span v-if="i % 10 === 0" class="ruler-number ruler-number-left">{{ i }}</span>
+              <div class="ruler-tick" :class="i % 10 === 0 ? 'major' : 'minor'"></div>
             </div>
           </div>
           <!-- 预览内容区域 -->
           <div class="preview-container">
-            <div 
-              class="preview-paper" 
-              :style="previewStyle"
-            >
-              <div class="paper-content">
-                <div class="template-preview-content">
-                  <div v-if="form.headerTitle" class="template-header">{{ form.headerTitle }}</div>
-                  <div v-if="form.title1" class="template-title">{{ form.title1 }}</div>
-                  <div v-if="form.title2" class="template-title">{{ form.title2 }}</div>
-                  <div v-if="form.title3" class="template-title">{{ form.title3 }}</div>
-                  <div v-if="form.title4" class="template-title">{{ form.title4 }}</div>
-                  <div v-if="form.title5" class="template-title">{{ form.title5 }}</div>
-                  <div v-if="form.title6" class="template-title">{{ form.title6 }}</div>
-                </div>
+          <div 
+            ref="previewPaper"
+            class="preview-paper" 
+            :style="previewStyle"
+            @mousedown.stop="onPreviewMouseDown"
+          >
+            <div class="paper-content">
+              <div class="template-preview-content">
+                <div v-if="form.headerTitle" class="template-header">{{ form.headerTitle }}</div>
+                <div v-if="form.title1" class="template-title">{{ form.title1 }}</div>
+                <div v-if="form.title2" class="template-title">{{ form.title2 }}</div>
+                <div v-if="form.title3" class="template-title">{{ form.title3 }}</div>
+                <div v-if="form.title4" class="template-title">{{ form.title4 }}</div>
+                <div v-if="form.title5" class="template-title">{{ form.title5 }}</div>
+                <div v-if="form.title6" class="template-title">{{ form.title6 }}</div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -144,14 +145,108 @@
           <!-- 字体设置 -->
           <div class="section">
             <div class="section-title">字体设置</div>
-          <el-form-item label="标题字体大小(px)" prop="fontSize">
-            <el-input-number v-model="form.fontSize" :min="8" :max="72" style="width: 100%" />
+          <el-row :gutter="20" class="font-inline-row">
+            <el-col :span="8">
+              <el-form-item label="字体大小" prop="fontSize">
+                <el-input
+                  v-model.number="form.fontSize"
+                  placeholder="标题字号"
+                  class="font-inline-input"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="字体加粗" prop="fontBold">
+                <el-switch
+                  v-model="form.fontBold"
+                  active-text=""
+                  inactive-text=""
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="列间距(mm)" prop="columnSpacing">
+                <el-input
+                  v-model.number="form.columnSpacing"
+                  placeholder="列间距"
+                  class="font-inline-input"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item label="字体格式">
+            <el-select v-model="form.fontFamily" placeholder="请选择字体">
+              <el-option label="系统默认" value="" />
+              <el-option label="微软雅黑" value="Microsoft YaHei" />
+              <el-option label="宋体" value="SimSun" />
+              <el-option label="黑体" value="SimHei" />
+              <el-option label="Arial" value="Arial" />
+              <el-option label="Times New Roman" value="Times New Roman" />
+            </el-select>
           </el-form-item>
-          <el-form-item label="表格字体大小(px)" prop="tableFontSize">
-            <el-input-number v-model="form.tableFontSize" :min="8" :max="72" style="width: 100%" />
+          <el-form-item label="字体颜色">
+            <el-color-picker v-model="form.fontColor" show-alpha />
           </el-form-item>
-          <el-form-item label="列间距(mm)" prop="columnSpacing">
-            <el-input-number v-model="form.columnSpacing" :min="0" :max="50" :precision="2" style="width: 100%" />
+          <el-form-item label="">
+            <div class="text-align-toolbar">
+              <el-tooltip content="左对齐" placement="top">
+                <span
+                  class="align-icon align-left"
+                  :class="{ active: form.textAlign === 'left' }"
+                  @click="form.textAlign = 'left'"
+                ></span>
+              </el-tooltip>
+              <el-tooltip content="居中对齐" placement="top">
+                <span
+                  class="align-icon align-center"
+                  :class="{ active: form.textAlign === 'center' }"
+                  @click="form.textAlign = 'center'"
+                ></span>
+              </el-tooltip>
+              <el-tooltip content="右对齐" placement="top">
+                <span
+                  class="align-icon align-right"
+                  :class="{ active: form.textAlign === 'right' }"
+                  @click="form.textAlign = 'right'"
+                ></span>
+              </el-tooltip>
+              <el-tooltip content="两端对齐" placement="top">
+                <span
+                  class="align-icon align-justify"
+                  :class="{ active: form.textAlign === 'justify' }"
+                  @click="form.textAlign = 'justify'"
+                ></span>
+              </el-tooltip>
+              <el-tooltip content="分散对齐" placement="top">
+                <span
+                  class="align-icon align-distribute"
+                  :class="{ active: form.textAlign === 'distribute' }"
+                  @click="form.textAlign = 'distribute'"
+                ></span>
+              </el-tooltip>
+            </div>
+          </el-form-item>
+          <el-form-item label="">
+            <div class="spacing-inline-row">
+              <span class="spacing-label">字间距</span>
+              <el-input
+                v-model.number="form.wordSpacing"
+                class="spacing-input"
+                placeholder=""
+              />
+              <span class="spacing-label">字符间距</span>
+              <el-input
+                v-model.number="form.letterSpacing"
+                class="spacing-input"
+                placeholder=""
+              />
+              <span class="spacing-label">行距</span>
+              <el-input
+                v-model.number="form.lineHeight"
+                class="spacing-input"
+                placeholder=""
+              />
+            </div>
           </el-form-item>
           </div>
 
@@ -428,6 +523,7 @@ export default {
   data() {
     return {
       activeTab: "basic",
+      dragState: null,
       form: {
         templateName: '',
         billType: null,
@@ -441,6 +537,10 @@ export default {
         fontSize: 14,
         tableFontSize: 12,
         columnSpacing: 0,
+        fontFamily: '',
+        fontColor: '#000000',
+        fontBold: false,
+        textAlign: 'left',
         showPurchaser: false,
         showCreator: true,
         showAuditor: true,
@@ -530,25 +630,32 @@ export default {
       if (this.form.orientation === 'landscape') {
         [previewWidth, previewHeight] = [previewHeight, previewWidth];
       }
+
+      const marginTop = this.form.marginTop || 0;
+      const marginLeft = this.form.marginLeft || 0;
+      const topPx = 50 + marginTop * mmToPx;
+      const leftPx = 50 + marginLeft * mmToPx;
       
       return {
         width: `${previewWidth}px`,
         height: `${previewHeight}px`,
+        top: `${topPx}px`,
+        left: `${leftPx}px`,
         transform: 'none'
       };
     },
     horizontalRuler() {
-      // 生成整个面板宽度的尺子标记，每10mm一个标记
+      // 生成整个面板宽度的尺子标记：1mm 一个小刻度，10mm 一个大刻度
       const marks = [];
-      for (let i = 0; i <= 400; i += 10) {
+      for (let i = 0; i <= 400; i += 1) {
         marks.push(i);
       }
       return marks;
     },
     verticalRuler() {
-      // 生成整个面板高度的尺子标记，每10mm一个标记
+      // 生成整个面板高度的尺子标记：1mm 一个小刻度，10mm 一个大刻度
       const marks = [];
-      for (let i = 0; i <= 600; i += 10) {
+      for (let i = 0; i <= 600; i += 1) {
         marks.push(i);
       }
       return marks;
@@ -590,6 +697,91 @@ export default {
     }
   },
   methods: {
+    onPreviewMouseDown(event) {
+      if (!this.$refs.previewPaper) return;
+
+      const rect = this.$refs.previewPaper.getBoundingClientRect();
+      const offsetX = event.clientX - rect.left;
+      const offsetY = event.clientY - rect.top;
+      const edge = 8; // 判定为边缘拖拽的距离
+
+      const onLeft = offsetX <= edge;
+      const onRight = rect.width - offsetX <= edge;
+      const onTop = offsetY <= edge;
+      const onBottom = rect.height - offsetY <= edge;
+
+      const mmToPx = 3.78;
+
+      this.dragState = {
+        mode: (onLeft || onRight || onTop || onBottom) ? 'resize' : 'move',
+        onLeft,
+        onRight,
+        onTop,
+        onBottom,
+        startX: event.clientX,
+        startY: event.clientY,
+        startWidth: this.form.pageWidth || 241,
+        startHeight: this.form.pageHeight || 140,
+        startMarginTop: this.form.marginTop || 0,
+        startMarginLeft: this.form.marginLeft || 0,
+        mmToPx
+      };
+
+      this._onPreviewMouseMove = (e) => {
+        if (!this.dragState) return;
+        const dxPx = e.clientX - this.dragState.startX;
+        const dyPx = e.clientY - this.dragState.startY;
+        const dxMm = dxPx / this.dragState.mmToPx;
+        const dyMm = dyPx / this.dragState.mmToPx;
+
+        const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+        if (this.dragState.mode === 'move') {
+          let newMarginLeft = this.dragState.startMarginLeft + dxMm;
+          let newMarginTop = this.dragState.startMarginTop + dyMm;
+          // 简单限制不允许移出可视区域
+          newMarginLeft = Math.max(0, newMarginLeft);
+          newMarginTop = Math.max(0, newMarginTop);
+          this.form.marginLeft = Number(newMarginLeft.toFixed(2));
+          this.form.marginTop = Number(newMarginTop.toFixed(2));
+        } else {
+          // resize 模式
+          let newWidth = this.dragState.startWidth;
+          let newHeight = this.dragState.startHeight;
+          let newMarginLeft = this.dragState.startMarginLeft;
+          let newMarginTop = this.dragState.startMarginTop;
+
+          if (this.dragState.onRight) {
+            newWidth = this.dragState.startWidth + dxMm;
+          }
+          if (this.dragState.onBottom) {
+            newHeight = this.dragState.startHeight + dyMm;
+          }
+          if (this.dragState.onLeft) {
+            newWidth = this.dragState.startWidth - dxMm;
+            newMarginLeft = this.dragState.startMarginLeft + dxMm;
+          }
+          if (this.dragState.onTop) {
+            newHeight = this.dragState.startHeight - dyMm;
+            newMarginTop = this.dragState.startMarginTop + dyMm;
+          }
+
+          this.form.pageWidth = clamp(Number(newWidth.toFixed(2)), 50, 1000);
+          this.form.pageHeight = clamp(Number(newHeight.toFixed(2)), 50, 1000);
+          this.form.marginLeft = Number(newMarginLeft.toFixed(2));
+          this.form.marginTop = Number(newMarginTop.toFixed(2));
+        }
+      };
+
+      this._onPreviewMouseUp = () => {
+        this.dragState = null;
+        window.removeEventListener('mousemove', this._onPreviewMouseMove);
+        window.removeEventListener('mouseup', this._onPreviewMouseUp);
+      };
+
+      window.addEventListener('mousemove', this._onPreviewMouseMove);
+      window.addEventListener('mouseup', this._onPreviewMouseUp);
+    },
     setFormData(data) {
       if (data) {
         this.form = { ...this.form, ...data };
@@ -826,8 +1018,6 @@ export default {
 
 .preview-paper {
   position: absolute;
-  top: 50px;
-  left: 50px;
   background: #ffffff;
   border: 3px solid #409eff;
   box-shadow: 0 4px 16px rgba(64, 158, 255, 0.3);
@@ -848,7 +1038,7 @@ export default {
 
 .ruler-mark-horizontal {
   position: absolute;
-  top: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -856,10 +1046,18 @@ export default {
 }
 
 .ruler-tick {
-  width: 3px;
-  height: 25px;
+  width: 2px;
   background: #409eff;
-  margin-bottom: 6px;
+}
+
+.ruler-tick.major {
+  height: 24px;
+  margin-bottom: 0;
+}
+
+.ruler-tick.minor {
+  height: 10px;
+  margin-bottom: 0;
 }
 
 .ruler-number {
@@ -870,6 +1068,11 @@ export default {
   background: #fff;
   padding: 2px 4px;
   border-radius: 2px;
+}
+
+/* 水平尺子读数显示在刻度上方（外侧） */
+.ruler-number-top {
+  margin-bottom: 4px;
 }
 
 /* 左侧垂直尺子 */
@@ -886,7 +1089,7 @@ export default {
 
 .ruler-mark-vertical {
   position: absolute;
-  left: 0;
+  right: 0;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -894,10 +1097,24 @@ export default {
 }
 
 .ruler-mark-vertical .ruler-tick {
+  background: #409eff;
+}
+
+.ruler-mark-vertical .ruler-tick.major {
   width: 25px;
   height: 3px;
-  background: #409eff;
-  margin-right: 6px;
+  margin-right: 0;
+}
+
+.ruler-mark-vertical .ruler-tick.minor {
+  width: 12px;
+  height: 2px;
+  margin-right: 0;
+}
+
+/* 垂直尺子读数显示在刻度左侧（外侧） */
+.ruler-number-left {
+  margin-right: 4px;
 }
 
 .ruler-mark-vertical .ruler-number {
@@ -986,6 +1203,66 @@ export default {
   font-weight: 600;
   margin-bottom: 8px;
   color: #303133;
+}
+
+.font-inline-row .el-form-item {
+  margin-bottom: 8px;
+}
+
+.font-inline-input {
+  max-width: 140px;
+}
+
+.text-align-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.align-icon {
+  width: 28px;
+  height: 20px;
+  border-radius: 2px;
+  border: 1px solid #dcdfe6;
+  background-color: #f5f7fa;
+  cursor: pointer;
+  position: relative;
+}
+
+.align-icon::before,
+.align-icon::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background-color: #606266;
+  border-radius: 1px;
+}
+
+.align-icon::before {
+  top: 6px;
+}
+
+.align-icon::after {
+  bottom: 6px;
+}
+
+.align-center::before,
+.align-center::after {
+  left: 8px;
+  right: 8px;
+}
+
+.align-right::before,
+.align-right::after {
+  left: 12px;
+  right: 4px;
+}
+
+.align-icon.active {
+  border-color: #409eff;
+  background-color: #e6f0ff;
 }
 
 .title-config-row {
