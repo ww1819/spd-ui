@@ -51,3 +51,12 @@ export function delFactory(factoryId) {
     method: 'delete'
   })
 }
+
+// 批量更新厂家简码
+export function updateFactoryReferred(ids) {
+  return request({
+    url: '/foundation/factory/updateReferred',
+    method: 'post',
+    data: { ids }
+  })
+}

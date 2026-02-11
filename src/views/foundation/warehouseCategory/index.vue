@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-row :gutter="20">
       <!-- 左侧树形菜单 -->
@@ -88,6 +88,17 @@
               @click="handleDelete"
               v-hasPermi="['foundation:warehouseCategory:remove']"
             >删除</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button
+              type="primary"
+              plain
+              icon="el-icon-refresh"
+              size="small"
+              :disabled="multiple"
+              @click="handleUpdateReferred"
+              v-hasPermi="['foundation:warehouseCategory:updateReferred']"
+            >更新简码</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button
@@ -200,7 +211,7 @@
 </template>
 
 <script>
-import { listWarehouseCategory, getWarehouseCategory, delWarehouseCategory, addWarehouseCategory, updateWarehouseCategory, treeselect } from "@/api/foundation/warehouseCategory";
+import { listWarehouseCategory, getWarehouseCategory, delWarehouseCategory, addWarehouseCategory, updateWarehouseCategory, treeselect, updateWarehouseCategoryReferred } from "@/api/foundation/warehouseCategory";
 
 export default {
   name: "WarehouseCategory",
@@ -452,6 +463,19 @@ export default {
       this.download('foundation/warehouseCategory/export', {
         ...this.queryParams
       }, `warehouseCategory_${new Date().getTime()}.xlsx`)
+    },
+    /** 更新库房分类名称简码 */
+    handleUpdateReferred() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先选择要更新简码的库房分类");
+        return;
+      }
+      this.$modal.confirm("是否为选中的库房分类更新名称简码？").then(() => {
+        return updateWarehouseCategoryReferred(this.ids);
+      }).then(() => {
+        this.$modal.msgSuccess("更新简码成功");
+        this.getList();
+      }).catch(() => {});
     }
   }
 };

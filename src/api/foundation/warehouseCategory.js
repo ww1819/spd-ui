@@ -59,3 +59,12 @@ export function delWarehouseCategory(warehouseCategoryId) {
     method: 'delete'
   })
 }
+
+// 批量更新库房分类名称简码
+export function updateWarehouseCategoryReferred(ids) {
+  return request({
+    url: '/foundation/warehouseCategory/updateReferred',
+    method: 'post',
+    data: { ids }
+  })
+}

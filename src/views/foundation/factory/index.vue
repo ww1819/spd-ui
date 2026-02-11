@@ -1,4 +1,4 @@
-﻿<!--生产厂家信息维护-->
+<!--生产厂家信息维护-->
 <template>
   <div class="app-container factory-container">
     <el-row :gutter="20">
@@ -84,6 +84,17 @@
           @click="handleDelete"
           v-hasPermi="['foundation:factory:remove']"
         >删除</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-refresh"
+          size="small"
+          :disabled="multiple"
+          @click="handleUpdateReferred"
+          v-hasPermi="['foundation:factory:updateReferred']"
+        >更新简码</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -219,7 +230,7 @@
 </template>
 
 <script>
-import { listFactory, getFactory, delFactory, addFactory, updateFactory } from "@/api/foundation/factory";
+import { listFactory, getFactory, delFactory, addFactory, updateFactory, updateFactoryReferred } from "@/api/foundation/factory";
 import {pinyin} from "pinyin-pro";
 
 export default {
@@ -421,6 +432,19 @@ export default {
       this.download('foundation/factory/export', {
         ...this.queryParams
       }, `factory_${new Date().getTime()}.xlsx`)
+    },
+    /** 更新厂家简码 */
+    handleUpdateReferred() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先选择要更新简码的厂家");
+        return;
+      }
+      this.$modal.confirm("是否为选中的厂家更新简码？").then(() => {
+        return updateFactoryReferred(this.ids);
+      }).then(() => {
+        this.$modal.msgSuccess("更新简码成功");
+        this.getList();
+      }).catch(() => {});
     }
   }
 };

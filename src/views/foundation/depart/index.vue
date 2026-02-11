@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container department-container">
     <el-row :gutter="20">
       <!-- 左侧科室列表 -->
@@ -83,6 +83,17 @@
           @click="handleDelete"
           v-hasPermi="['foundation:depart:remove']"
         >删除</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-refresh"
+          size="small"
+          :disabled="multiple"
+          @click="handleUpdateReferred"
+          v-hasPermi="['foundation:depart:updateReferred']"
+        >更新简码</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -171,7 +182,7 @@
 </template>
 
 <script>
-import { listdepart, getdepart, deldepart, adddepart, updatedepart } from "@/api/foundation/depart";
+import { listdepart, getdepart, deldepart, adddepart, updatedepart, updateDepartReferred } from "@/api/foundation/depart";
 
 export default {
   name: "depart",
@@ -344,6 +355,19 @@ export default {
       this.download('foundation/depart/export', {
         ...this.queryParams
       }, `depart_${new Date().getTime()}.xlsx`)
+    },
+    /** 更新科室名称简码 */
+    handleUpdateReferred() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先选择要更新简码的科室");
+        return;
+      }
+      this.$modal.confirm("是否为选中的科室更新名称简码？").then(() => {
+        return updateDepartReferred(this.ids);
+      }).then(() => {
+        this.$modal.msgSuccess("更新简码成功");
+        this.getList();
+      }).catch(() => {});
     }
   }
 };

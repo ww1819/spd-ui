@@ -52,6 +52,15 @@ export function delUser(userId) {
   })
 }
 
+// 批量更新用户名称简码
+export function updateUserReferred(ids) {
+  return request({
+    url: '/system/user/updateReferred',
+    method: 'post',
+    data: { ids }
+  })
+}
+
 // 用户密码重置
 export function resetUserPwd(userId, password) {
   const data = {

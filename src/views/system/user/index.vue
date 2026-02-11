@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-row :gutter="20">
       <!--工作组数据-->
@@ -90,6 +90,7 @@
                 <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
                 <el-button type="success" icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']" style="margin-left: 10px;">修改</el-button>
                 <el-button type="danger" icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']" style="margin-left: 10px;">删除</el-button>
+                <el-button type="primary" icon="el-icon-refresh" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']" style="margin-left: 10px;">更新简码</el-button>
                 <el-button type="info" icon="el-icon-upload2" size="small" @click="handleImport" v-hasPermi="['system:user:import']" style="margin-left: 10px;">导入</el-button>
                 <el-button type="warning" icon="el-icon-download" size="small" @click="handleExport" v-hasPermi="['system:user:export']" style="margin-left: 10px;">导出</el-button>
                 <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery" style="margin-left: 10px;">搜索</el-button>
@@ -487,7 +488,7 @@
 </template>
 
 <script>
-import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect } from "@/api/system/user";
+import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred } from "@/api/system/user";
 import { workgroupTreeSelect } from "@/api/system/workgroup";
 import { listPost } from "@/api/system/post";
 import { getConfigKey, listConfig } from "@/api/system/config";
@@ -1231,6 +1232,19 @@ export default {
       this.download('system/user/export', {
         ...this.queryParams
       }, `user_${new Date().getTime()}.xlsx`)
+    },
+    /** 更新用户名称简码 */
+    handleUpdateReferred() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先选择要更新简码的用户");
+        return;
+      }
+      this.$modal.confirm("是否为选中的用户更新名称简码？").then(() => {
+        return updateUserReferred(this.ids);
+      }).then(() => {
+        this.$modal.msgSuccess("更新简码成功");
+        this.getList();
+      }).catch(() => {});
     },
     /** 导入按钮操作 */
     handleImport() {

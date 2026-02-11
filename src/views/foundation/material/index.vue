@@ -188,6 +188,17 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="primary"
+          plain
+          icon="el-icon-refresh"
+          size="medium"
+          :disabled="multiple"
+          @click="handleUpdateReferred"
+          v-hasPermi="['foundation:material:updateReferred']"
+        >更新简码</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="warning"
           plain
           icon="el-icon-download"
@@ -1029,7 +1040,7 @@
 </template>
 
 <script>
-import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive } from "@/api/foundation/material";
+import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred } from "@/api/foundation/material";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectFactory from '@/components/SelectModel/SelectFactory';
 import SelectFinanceCategory from "@/components/SelectModel/SelectFinanceCategory";
@@ -1802,6 +1813,19 @@ export default {
       this.download('foundation/material/export', {
         ...this.queryParams
       }, `material_${new Date().getTime()}.xlsx`)
+    },
+    /** 更新名称简码 */
+    handleUpdateReferred() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先选择要更新简码的产品档案");
+        return;
+      }
+      this.$modal.confirm("是否为选中的产品档案更新名称简码？").then(() => {
+        return updateMaterialReferred(this.ids);
+      }).then(() => {
+        this.$modal.msgSuccess("更新简码成功");
+        this.getList();
+      }).catch(() => {});
     },
     /** 推送档案按钮操作 */
     handlePushArchive() {

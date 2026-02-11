@@ -63,6 +63,15 @@ export function pushMaterialArchive(supplierId) {
   })
 }
 
+// 批量更新耗材产品名称简码
+export function updateMaterialReferred(ids) {
+  return request({
+    url: '/foundation/material/updateReferred',
+    method: 'post',
+    data: { ids }
+  })
+}
+
 export function sleft(str,x){
 		if(str){
 			return str.slice(0,x);

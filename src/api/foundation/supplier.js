@@ -51,3 +51,12 @@ export function delSupplier(id) {
     method: 'delete'
   })
 }
+
+// 批量更新供应商名称简码
+export function updateSupplierReferred(ids) {
+  return request({
+    url: '/foundation/supplier/updateReferred',
+    method: 'post',
+    data: { ids }
+  })
+}

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-row :gutter="20">
       <!-- 左侧固定高度树形结构 -->
@@ -87,6 +87,17 @@
               @click="handleDelete"
               v-hasPermi="['foundation:financeCategory:remove']"
             >删除</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button
+              type="primary"
+              plain
+              icon="el-icon-refresh"
+              size="small"
+              :disabled="multiple"
+              @click="handleUpdateReferred"
+              v-hasPermi="['foundation:financeCategory:updateReferred']"
+            >更新简码</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button
@@ -194,7 +205,7 @@
 </template>
 
 <script>
-import { listFinanceCategory, getFinanceCategory, delFinanceCategory, addFinanceCategory, updateFinanceCategory } from "@/api/foundation/financeCategory";
+import { listFinanceCategory, getFinanceCategory, delFinanceCategory, addFinanceCategory, updateFinanceCategory, updateFinanceCategoryReferred } from "@/api/foundation/financeCategory";
 
 export default {
   name: "FinanceCategory",
@@ -344,6 +355,19 @@ export default {
       this.download('foundation/financeCategory/export', {
         ...this.queryParams
       }, `financeCategory_${new Date().getTime()}.xlsx`);
+    },
+    /** 更新财务分类名称简码 */
+    handleUpdateReferred() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先选择要更新简码的财务分类");
+        return;
+      }
+      this.$modal.confirm("是否为选中的财务分类更新名称简码？").then(() => {
+        return updateFinanceCategoryReferred(this.ids);
+      }).then(() => {
+        this.$modal.msgSuccess("更新简码成功");
+        this.getList();
+      }).catch(() => {});
     },
     nameChange() {
       this.isDisabled = true;

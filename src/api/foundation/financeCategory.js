@@ -51,3 +51,12 @@ export function delFinanceCategory(financeCategoryId) {
     method: 'delete'
   })
 }
+
+// 批量更新财务分类名称简码
+export function updateFinanceCategoryReferred(ids) {
+  return request({
+    url: '/foundation/financeCategory/updateReferred',
+    method: 'post',
+    data: { ids }
+  })
+}

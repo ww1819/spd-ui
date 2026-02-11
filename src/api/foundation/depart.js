@@ -59,3 +59,12 @@ export function deldepart(id) {
     method: 'delete'
   })
 }
+
+// 批量更新科室名称简码
+export function updateDepartReferred(ids) {
+  return request({
+    url: '/foundation/depart/updateReferred',
+    method: 'post',
+    data: { ids }
+  })
+}

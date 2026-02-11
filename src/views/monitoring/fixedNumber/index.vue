@@ -174,7 +174,7 @@
 
         <!-- 明细表 -->
         <div class="detail-table-container">
-        <el-table v-loading="loading" :data="fixedNumberList"
+        <el-table v-loading="loading" :data="pagedFixedNumberList"
               :row-class-name="fixedNumberListIndex"
               @selection-change="handleSelectionChange"
                 ref="fixedNumberTable"
@@ -457,6 +457,7 @@
                 :total="addTotal"
                 :page.sync="addQueryParams.pageNum"
                 :limit.sync="addQueryParams.pageSize"
+                :page-sizes="[10, 20, 30, 50, 100, 500, 1000]"
                 @pagination="handleAddQuery"
               />
             </div>
@@ -472,7 +473,7 @@ import { pinyin } from "pinyin-pro";
 import { listFixedNumber, addFixedNumber } from "@/api/monitoring/fixedNumber";
 import { listWarehouse } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
-import { listMaterial, listMaterialAll } from "@/api/foundation/material";
+import { listMaterial } from "@/api/foundation/material";
 import { listInventory } from "@/api/warehouse/inventory";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -549,6 +550,14 @@ export default {
   computed: {
     fixedNumberType() {
       return this.queryParams.fixedNumberType;
+    },
+    // 明细表分页后的数据（前端切片，保证每页行数与分页一致）
+    pagedFixedNumberList() {
+      const pageNum = this.queryParams.pageNum || 1;
+      const pageSize = this.queryParams.pageSize || 10;
+      const start = (pageNum - 1) * pageSize;
+      const end = start + pageSize;
+      return (this.fixedNumberList || []).slice(start, end);
     },
     // 新增按钮是否禁用
     isAddDisabled() {
@@ -1137,14 +1146,12 @@ export default {
       this.resetAddQuery();
       this.handleAddQuery();
     },
-    /** 新增弹窗搜索 */
+    /** 新增弹窗搜索（使用分页接口，避免一次加载所有产品档案导致卡顿） */
     handleAddQuery() {
       this.addTableLoading = true;
-      // 如果选择了供应商，则按供应商+条件查询；否则查询全部耗材字典
       const query = {
         pageNum: this.addQueryParams.pageNum,
         pageSize: this.addQueryParams.pageSize,
-        // 后端 FdMaterial 查询字段是 name / nameSearch，这里同时带上
         materialName: this.addQueryParams.materialName,
         speci: this.addQueryParams.speci,
         supplierId: this.addQueryParams.supplierId
@@ -1153,28 +1160,19 @@ export default {
         query.name = this.addQueryParams.materialName;
         query.nameSearch = this.addQueryParams.materialName;
       }
-      // 如果当前是科室定数监测，并且已选择科室，则把科室ID一并传给后端
       if (this.queryParams.fixedNumberType === '2' && this.queryParams.departmentId) {
         query.departmentId = this.queryParams.departmentId;
       }
-      // 如果是仓库定数监测，并且已选择仓库，也一并传过去（便于后端按仓库字典过滤）
       if (this.queryParams.fixedNumberType === '1' && this.queryParams.warehouseId) {
         query.warehouseId = this.queryParams.warehouseId;
       }
-      const requestFn = this.addQueryParams.supplierId
-        ? listMaterial(query)
-        : listMaterialAll(query);
-
-      requestFn.then(response => {
-        const allMaterials = (response && response.rows) || response || [];
-        // 获取已添加到明细列表的产品编码
+      // 统一使用 listMaterial 分页接口，不再使用 listMaterialAll（listAll 会拉全量数据导致卡顿）
+      listMaterial(query).then(response => {
+        const rows = (response && response.rows) || [];
         const addedCodes = this.fixedNumberList.map(item => item.code).filter(code => code);
-        // 过滤掉已经添加的产品
-        this.addMaterialList = allMaterials.filter(material => {
-          return !addedCodes.includes(material.code);
-        });
-        // 更新总数（过滤后的数量）
-        this.addTotal = this.addMaterialList.length;
+        this.addMaterialList = rows.filter(material => !addedCodes.includes(material.code));
+        // 分页总数以后端返回的 total 为准，保证分页组件正确
+        this.addTotal = (response && response.total !== undefined) ? response.total : 0;
         this.addTableLoading = false;
       }).catch(() => {
         this.addTableLoading = false;

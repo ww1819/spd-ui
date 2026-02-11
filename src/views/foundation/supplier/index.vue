@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container supplier-container">
     <el-row :gutter="20">
       <!-- 左侧供应商列表 -->
@@ -83,6 +83,17 @@
           @click="handleDelete"
           v-hasPermi="['foundation:supplier:remove']"
         >删除</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-refresh"
+          size="small"
+          :disabled="multiple"
+          @click="handleUpdateReferred"
+          v-hasPermi="['foundation:supplier:updateReferred']"
+        >更新简码</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -287,7 +298,7 @@
 </template>
 
 <script>
-import { listSupplier, getSupplier, delSupplier, addSupplier, updateSupplier } from "@/api/foundation/supplier";
+import { listSupplier, getSupplier, delSupplier, addSupplier, updateSupplier, updateSupplierReferred } from "@/api/foundation/supplier";
 import {pinyin} from "pinyin-pro";
 
 export default {
@@ -598,6 +609,19 @@ export default {
       this.download('foundation/supplier/export', {
         ...this.queryParams
       }, `supplier_${new Date().getTime()}.xlsx`)
+    },
+    /** 更新名称简码 */
+    handleUpdateReferred() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先选择要更新简码的供应商");
+        return;
+      }
+      this.$modal.confirm("是否为选中的供应商更新名称简码？").then(() => {
+        return updateSupplierReferred(this.ids);
+      }).then(() => {
+        this.$modal.msgSuccess("更新简码成功");
+        this.getList();
+      }).catch(() => {});
     }
   }
 };
