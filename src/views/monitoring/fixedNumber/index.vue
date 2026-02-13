@@ -470,7 +470,7 @@
 
 <script>
 import { pinyin } from "pinyin-pro";
-import { listFixedNumber, addFixedNumber } from "@/api/monitoring/fixedNumber";
+import { listFixedNumber, addFixedNumber, delFixedNumber } from "@/api/monitoring/fixedNumber";
 import { listWarehouse } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
 import { listMaterial } from "@/api/foundation/material";
@@ -501,6 +501,8 @@ export default {
       total: 0,
       // 定数监测表格数据（当前页，来自后端分页 + 未保存的前端行）
       fixedNumberList: [],
+      // 全量定数监测数据（本地缓存，用于前端搜索）
+      allFixedNumberList: [],
       // 仓库列表数据
       warehouseList: [],
       // 科室列表数据
@@ -576,9 +578,14 @@ export default {
   },
   watch: {
     'queryParams.fixedNumberType'(newVal, oldVal) {
-      // 当定数类型改变时，清空选择并重新加载列表
+      // 当定数类型改变时，清空选择并清空明细列表
       this.queryParams.warehouseId = null;
       this.queryParams.departmentId = null;
+      this.queryParams.pageNum = 1;
+      this.fixedNumberList = [];
+      this.allFixedNumberList = [];
+      this.total = 0;
+
       if (newVal === '1' || !newVal) {
         // 仓库定数监测，加载仓库列表
         this.getWarehouseList();
@@ -586,10 +593,7 @@ export default {
         // 科室定数监测，加载科室列表
         this.getDepartmentList();
       }
-      // 切换类型时，清空当前列表并重新查询
-      this.fixedNumberList = [];
-      this.total = 0;
-      this.getList();
+      // 不立即查询，等待用户选择具体仓库/科室后再查询，避免无谓请求
     },
     'queryParams.warehouseId'(newVal) {
       // 仓库改变时，重新加载数据（仓库定数）
@@ -629,14 +633,10 @@ export default {
     }
   },
   created() {
-    // 根据定数类型加载对应的仓库/科室列表
-    if (this.queryParams.fixedNumberType === '1' || !this.queryParams.fixedNumberType) {
-      this.getWarehouseList();
-    } else if (this.queryParams.fixedNumberType === '2') {
-      // 确保科室列表被加载
-      this.getDepartmentList();
-    }
-    this.getList();
+    // 进入页面时：默认加载仓库列表和科室列表（科室按用户权限）
+    this.getWarehouseList();
+    this.getDepartmentList();
+    // 不主动加载明细，等待用户选择仓库/科室后再查询
   },
   mounted() {
     // 延迟执行，确保DOM完全渲染
@@ -832,6 +832,8 @@ export default {
                 index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1
               };
             });
+            // 同步一份到全量列表，用于前端名称/规格过滤
+            this.allFixedNumberList = [...this.fixedNumberList];
             this.total = response && response.total !== undefined ? response.total : rows.length;
             this.loading = false;
             // 数据加载完成后设置表格高度
@@ -899,59 +901,37 @@ export default {
       // 重新加载所有定数监测信息
       this.getList();
     },
-    /** 点击仓库项 */
+    /** 点击仓库项（左侧列表按钮） */
     handleWarehouseClick(warehouseId) {
       this.queryParams.warehouseId = warehouseId;
       this.queryParams.departmentId = null;
-      // 清空当前列表
-      this.fixedNumberList = [];
-      this.total = 0;
-      // 从 localStorage 加载新仓库的数据
-      this.loadFromLocalStorage();
-      // 同时触发查询（如果后端有数据）
-      this.handleQuery();
+      this.queryParams.pageNum = 1;
+      this.getList();
     },
     /** 点击仓库行 */
     handleWarehouseRowClick(row) {
       try {
         this.queryParams.warehouseId = row.id;
         this.queryParams.departmentId = null;
-        // 清空当前列表
-        this.fixedNumberList = [];
-        this.total = 0;
-        // 从 localStorage 加载新仓库的数据
-        this.loadFromLocalStorage();
-        // 同时触发查询（如果后端有数据）
-        this.handleQuery();
-        // 暂时禁用自动检查入库记录，避免频繁调用导致异常
-        // 入库记录检查将在删除时进行
+        this.queryParams.pageNum = 1;
+        this.getList();
       } catch (error) {
         console.error('handleWarehouseRowClick 执行异常:', error);
       }
     },
-    /** 点击科室项 */
+    /** 点击科室项（左侧列表按钮） */
     handleDepartmentClick(departmentId) {
       this.queryParams.departmentId = departmentId;
       this.queryParams.warehouseId = null;
-      // 清空当前列表
-      this.fixedNumberList = [];
-      this.total = 0;
-      // 从 localStorage 加载新科室的数据
-      this.loadFromLocalStorage();
-      // 同时触发查询（如果后端有数据）
-      this.handleQuery();
+      this.queryParams.pageNum = 1;
+      this.getList();
     },
     /** 点击科室行 */
     handleDepartmentRowClick(row) {
       this.queryParams.departmentId = row.id;
       this.queryParams.warehouseId = null;
-      // 清空当前列表
-      this.fixedNumberList = [];
-      this.total = 0;
-      // 从 localStorage 加载新科室的数据
-      this.loadFromLocalStorage();
-      // 同时触发查询（如果后端有数据）
-      this.handleQuery();
+      this.queryParams.pageNum = 1;
+      this.getList();
       // 科室定数监测不需要检查入库记录（入库记录是针对仓库的）
     },
     /** 获取仓库行样式类名 */
@@ -997,22 +977,12 @@ export default {
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
-      // 先根据当前查询条件进行本地过滤
-      if (this.allFixedNumberList && this.allFixedNumberList.length > 0) {
-        this.fixedNumberList = this.filterByQuery(this.allFixedNumberList);
-        this.total = this.fixedNumberList.length;
-      }
-      // 再触发一次后端同步（预留后端实现）
+      // 触发一次后端同步
       this.getList();
     },
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      // 清空耗材名称后，恢复全量列表
-      if (this.allFixedNumberList && this.allFixedNumberList.length > 0) {
-        this.fixedNumberList = [...this.allFixedNumberList];
-        this.total = this.fixedNumberList.length;
-      }
       this.handleQuery();
     },
     /** 保存按钮操作 */
@@ -1281,21 +1251,27 @@ export default {
         this.doDelete(row);
       }
     },
-    /** 执行删除操作 */
+    /** 执行删除操作（调用后端删除，再更新前端列表） */
     doDelete(row) {
-      const index = this.fixedNumberList.findIndex(item => item === row);
-      if (index > -1) {
-        this.fixedNumberList.splice(index, 1);
-        // 更新序号
-        this.fixedNumberList.forEach((item, idx) => {
-          item.index = idx + 1;
-        });
-        // 更新总数
-        this.total = this.fixedNumberList.length;
-        // 更新 localStorage
-        this.saveToLocalStorage();
-        this.$modal.msgSuccess("删除成功");
+      if (!row || !row.id) {
+        this.$modal.msgWarning("未找到要删除的定数记录ID");
+        return;
       }
+      this.$modal.confirm('是否确认删除该定数记录？').then(() => {
+        return delFixedNumber(row.id);
+      }).then(() => {
+        const index = this.fixedNumberList.findIndex(item => item === row);
+        if (index > -1) {
+          this.fixedNumberList.splice(index, 1);
+          // 更新序号
+          this.fixedNumberList.forEach((item, idx) => {
+            item.index = idx + 1;
+          });
+          // 更新总数
+          this.total = this.fixedNumberList.length;
+          this.$modal.msgSuccess("删除成功");
+        }
+      }).catch(() => {});
     },
     /** 多选框选中数据 */
     handleSelectionChange(selection) {
