@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div v-show="show" class="local-modal-mask">
     <div class="local-modal-content">
       <div class="modal-header">
@@ -18,6 +18,14 @@
           <el-col :span="8">
             <el-form-item label="生产厂家" prop="factoryId" label-width="100px">
               <SelectFactory v-model="queryParams.factoryId"/>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="按供应商过滤" prop="filterBySupplier" label-width="100px">
+              <el-radio-group v-model="queryParams.filterBySupplier">
+                <el-radio :label="true">是</el-radio>
+                <el-radio :label="false">否</el-radio>
+              </el-radio-group>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -237,6 +245,7 @@ export default {
         supplierId: null,
         storeroomId: null, // 库房分类ID
         factoryId: null, // 生产厂家ID
+        filterBySupplier: true, // 是否按供应商过滤（默认是）
       },
       // 表单参数
       form: {},
@@ -360,9 +369,9 @@ export default {
         this.loading = true;
         let filteredMaterials = this.fixedNumberMaterials;
         
-        // 根据供应商过滤（优先使用props传入的supplierValue）
+        // 根据供应商过滤（优先使用 props 传入的 supplierValue）
         const supplierId = this.supplierValue || this.queryParams.supplierId;
-        if (supplierId) {
+        if (this.queryParams.filterBySupplier && supplierId) {
           filteredMaterials = filteredMaterials.filter(item => {
             return item.material && item.material.supplierId == supplierId;
           });
@@ -439,9 +448,9 @@ export default {
           });
         }
         
-        // 根据供应商过滤（优先使用props传入的supplierValue）
+        // 根据供应商过滤（优先使用 props 传入的 supplierValue）
         const supplierId = this.supplierValue || this.queryParams.supplierId;
-        if (supplierId) {
+        if (this.queryParams.filterBySupplier && supplierId) {
           materialList = materialList.filter(item => {
             return item.material && item.material.supplierId == supplierId;
           });
@@ -500,6 +509,7 @@ export default {
       this.queryParams.materialKeyword = undefined;
       this.queryParams.storeroomId = null;
       this.queryParams.factoryId = null;
+      this.queryParams.filterBySupplier = true;
       // 保留仓库ID或科室ID，不重置
       this.handleQuery();
     },
