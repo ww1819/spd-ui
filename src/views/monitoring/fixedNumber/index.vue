@@ -499,10 +499,8 @@ export default {
       showSearch: true,
       // 总条数
       total: 0,
-      // 定数监测表格数据
+      // 定数监测表格数据（当前页，来自后端分页 + 未保存的前端行）
       fixedNumberList: [],
-      // 全量定数监测数据（用于本地过滤）
-      allFixedNumberList: [],
       // 仓库列表数据
       warehouseList: [],
       // 科室列表数据
@@ -551,13 +549,9 @@ export default {
     fixedNumberType() {
       return this.queryParams.fixedNumberType;
     },
-    // 明细表分页后的数据（前端切片，保证每页行数与分页一致）
+    // 表格数据（直接使用后端当前页数据）
     pagedFixedNumberList() {
-      const pageNum = this.queryParams.pageNum || 1;
-      const pageSize = this.queryParams.pageSize || 10;
-      const start = (pageNum - 1) * pageSize;
-      const end = start + pageSize;
-      return (this.fixedNumberList || []).slice(start, end);
+      return this.fixedNumberList || [];
     },
     // 新增按钮是否禁用
     isAddDisabled() {
@@ -592,21 +586,21 @@ export default {
         // 科室定数监测，加载科室列表
         this.getDepartmentList();
       }
-      // 切换类型时，清空当前列表并尝试加载新类型的数据
+      // 切换类型时，清空当前列表并重新查询
       this.fixedNumberList = [];
       this.total = 0;
-      this.loadFromLocalStorage();
+      this.getList();
     },
     'queryParams.warehouseId'(newVal) {
-      // 仓库改变时，重新加载数据
+      // 仓库改变时，重新加载数据（仓库定数）
       if (this.queryParams.fixedNumberType === '1') {
-        this.loadFromLocalStorage();
+        this.getList();
       }
     },
     'queryParams.departmentId'(newVal) {
-      // 科室改变时，重新加载数据
+      // 科室改变时，重新加载数据（科室定数）
       if (this.queryParams.fixedNumberType === '2') {
-        this.loadFromLocalStorage();
+        this.getList();
       }
     }
   },
@@ -635,19 +629,14 @@ export default {
     }
   },
   created() {
-    // 默认显示所有定数监测信息
-    this.queryParams.warehouseId = null;
-    this.queryParams.departmentId = null;
-    // 根据定数类型加载对应的列表
+    // 根据定数类型加载对应的仓库/科室列表
     if (this.queryParams.fixedNumberType === '1' || !this.queryParams.fixedNumberType) {
-    this.getWarehouseList();
+      this.getWarehouseList();
     } else if (this.queryParams.fixedNumberType === '2') {
       // 确保科室列表被加载
       this.getDepartmentList();
     }
     this.getList();
-    // 从 localStorage 恢复数据
-    this.loadFromLocalStorage();
   },
   mounted() {
     // 延迟执行，确保DOM完全渲染
@@ -830,97 +819,42 @@ export default {
         console.warn('checkInventoryRecords 执行异常:', error);
       }
     },
-    /** 查询定数监测列表 */
+    /** 查询定数监测列表（直接使用后端分页数据） */
     getList() {
       try {
         this.loading = true;
-        // 优先从 localStorage 加载数据
-        this.loadFromLocalStorage();
-        
-        // 同时查询后端数据，用于合并和更新
         listFixedNumber(this.queryParams).then(response => {
           try {
-            if (response && response.rows && response.rows.length > 0) {
-              // 后端有数据，合并到现有列表中
-              const backendData = response.rows.map((item, index) => {
-                return {
-                  ...item,
-                  index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1,
-                  difference: item.actualQuantity !== null && item.stockQuantity !== null 
-                    ? item.actualQuantity - item.stockQuantity 
-                    : null
-                };
-              });
-              
-              // 合并逻辑：以后端数据为主，但保留localStorage中新增但未保存的数据
-              const localStorageData = this.fixedNumberList || [];
-              const mergedList = [];
-              const backendCodes = new Set(backendData.map(item => item.code || item.materialCode));
-              
-              // 先添加后端数据
-              mergedList.push(...backendData);
-              
-              // 再添加localStorage中但后端没有的数据（新增但未保存的）
-              localStorageData.forEach(item => {
-                const code = item.code || item.materialCode;
-                if (code && !backendCodes.has(code)) {
-                  mergedList.push(item);
-                }
-              });
-              
-              this.allFixedNumberList = mergedList;
-              this.fixedNumberList = this.filterByQuery(mergedList);
-              this.total = this.fixedNumberList.length;
-              // 保存合并后的数据到 localStorage
-              this.saveToLocalStorage();
-            } else {
-              // 后端没有数据，保持localStorage的数据
-              if (!this.allFixedNumberList || this.allFixedNumberList.length === 0) {
-                this.loadFromLocalStorage();
-              } else {
-                this.fixedNumberList = this.filterByQuery(this.allFixedNumberList);
-                this.total = this.fixedNumberList.length;
-              }
-            }
+            const rows = (response && response.rows) || [];
+            this.fixedNumberList = rows.map((item, index) => {
+              return {
+                ...item,
+                index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1
+              };
+            });
+            this.total = response && response.total !== undefined ? response.total : rows.length;
             this.loading = false;
             // 数据加载完成后设置表格高度
             setTimeout(() => {
               this.setTableHeight();
             }, 200);
-            // 暂时禁用自动检查入库记录，避免频繁调用导致异常
-            // 入库记录检查将在删除时进行
           } catch (error) {
             console.error('处理查询结果时出错:', error);
             this.loading = false;
-            // 如果处理出错，至少保持localStorage的数据
-            if (!this.allFixedNumberList || this.allFixedNumberList.length === 0) {
-              this.loadFromLocalStorage();
-            } else {
-              this.fixedNumberList = this.filterByQuery(this.allFixedNumberList);
-              this.total = this.fixedNumberList.length;
-            }
+            this.fixedNumberList = [];
+            this.total = 0;
           }
         }).catch(error => {
-          // 如果后端查询失败，保持localStorage的数据
           console.warn('查询定数监测列表失败:', error);
-          if (!this.allFixedNumberList || this.allFixedNumberList.length === 0) {
-            this.loadFromLocalStorage();
-          } else {
-            this.fixedNumberList = this.filterByQuery(this.allFixedNumberList);
-            this.total = this.fixedNumberList.length;
-          }
           this.loading = false;
+          this.fixedNumberList = [];
+          this.total = 0;
         });
       } catch (error) {
         console.error('getList 执行异常:', error);
         this.loading = false;
-        // 如果出错，至少保持localStorage的数据
-        if (!this.allFixedNumberList || this.allFixedNumberList.length === 0) {
-          this.loadFromLocalStorage();
-        } else {
-          this.fixedNumberList = this.filterByQuery(this.allFixedNumberList);
-          this.total = this.fixedNumberList.length;
-        }
+        this.fixedNumberList = [];
+        this.total = 0;
       }
     },
     /** 查询仓库列表 */
@@ -1110,19 +1044,15 @@ export default {
         warehouseId: this.queryParams.warehouseId,
         departmentId: this.queryParams.departmentId,
         detailList: this.fixedNumberList.map(item => {
+          const materialId = item.material ? item.material.id : item.materialId || null;
           return {
-            materialId: item.material ? item.material.id : null,
-            materialCode: item.code,
-            materialName: item.name,
-            specification: item.specification,
-            model: item.model,
-            supplierId: item.material && item.material.supplier ? item.material.supplier.id : null,
-            unitId: item.material && item.material.fdUnit ? item.material.fdUnit.unitId : null,
-            price: item.price,
-            factoryId: item.material && item.material.fdFactory ? item.material.fdFactory.factoryId : null,
-            warehouseCategoryId: item.material && item.material.fdWarehouseCategory ? item.material.fdWarehouseCategory.warehouseCategoryId : null,
-            financeCategoryId: item.material && item.material.fdFinanceCategory ? item.material.fdFinanceCategory.financeCategoryId : null,
-            isBilling: item.material ? item.material.isBilling : null
+            materialId: materialId,
+            upperLimit: item.upperLimit,
+            lowerLimit: item.lowerLimit,
+            expiryReminder: item.expiryReminder,
+            monitoring: item.monitoring,
+            location: item.location,
+            locationId: item.locationId || null
           };
         })
       };
@@ -1194,7 +1124,7 @@ export default {
     handleAddSelectionChange(selection) {
       this.addSelectedMaterials = selection;
     },
-    /** 新增弹窗确定 */
+    /** 新增弹窗确定：仅更新前端列表，不立即刷新后端 */
     handleAddConfirm() {
       if (this.addSelectedMaterials.length === 0) {
         this.$modal.msgWarning("请至少选择一条数据");
@@ -1241,17 +1171,10 @@ export default {
       // 更新总数
       this.total = this.fixedNumberList.length;
       
-      // 保存到 localStorage
-      this.saveToLocalStorage();
-      // 同步更新全量数据，确保后续搜索和刷新仍然能显示
-      this.allFixedNumberList = [...this.fixedNumberList];
-      
       this.$modal.msgSuccess("新增成功");
       this.addDialogVisible = false;
       // 清空弹窗选择
       this.addSelectedMaterials = [];
-      // 重新加载一次列表，确保明细表立刻显示最新数据
-      this.getList();
     },
     /** 根据仓库ID获取仓库名称 */
     getWarehouseNameById(warehouseId) {
