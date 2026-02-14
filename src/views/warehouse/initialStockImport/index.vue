@@ -107,8 +107,12 @@
           <el-table-column type="index" label="行号" width="55" align="center" />
           <el-table-column label="耗材编码" prop="data.materialCode" min-width="90" show-overflow-tooltip />
           <el-table-column label="耗材名称" prop="data.materialName" min-width="90" show-overflow-tooltip />
-          <el-table-column label="第三方库存明细ID" prop="data.thirdPartyDetailId" width="110" show-overflow-tooltip />
-          <el-table-column label="第三方产品档案ID" prop="data.thirdPartyMaterialId" width="110" show-overflow-tooltip />
+          <el-table-column label="规格" prop="data.speci" width="90" show-overflow-tooltip />
+          <el-table-column label="型号" prop="data.model" width="90" show-overflow-tooltip />
+          <el-table-column label="注册证号" prop="data.registerNo" width="100" show-overflow-tooltip />
+          <el-table-column label="医保编码" prop="data.medicalNo" width="90" show-overflow-tooltip />
+          <el-table-column label="医保名称" prop="data.medicalName" width="90" show-overflow-tooltip />
+          <el-table-column label="主条码" prop="data.mainBarcode" width="100" show-overflow-tooltip />
           <el-table-column label="库房分类" prop="data.warehouseCategory" width="90" show-overflow-tooltip />
           <el-table-column label="财务分类" prop="data.financeCategory" width="90" show-overflow-tooltip />
           <el-table-column label="单价" prop="data.unitPrice" width="80" align="right" />
@@ -117,7 +121,9 @@
           <el-table-column label="效期" prop="data.endTime" width="90" />
           <el-table-column label="生产厂家" prop="data.factoryName" width="90" show-overflow-tooltip />
           <el-table-column label="供应商" prop="data.supplierName" width="90" show-overflow-tooltip />
-          <el-table-column label="校验" width="100">
+          <el-table-column label="第三方库存明细ID" prop="data.thirdPartyDetailId" width="110" show-overflow-tooltip />
+          <el-table-column label="第三方产品档案ID" prop="data.thirdPartyMaterialId" width="110" show-overflow-tooltip />
+          <el-table-column label="校验" width="120">
             <template slot-scope="scope">
               <span v-if="scope.row.error" style="color: #f56c6c;">{{ scope.row.error }}</span>
               <span v-else style="color: #67c23a;">通过</span>
@@ -149,6 +155,8 @@
         <el-table-column type="index" label="序号" width="55" align="center" />
         <el-table-column label="耗材编码" align="center" prop="material.code" min-width="100" show-overflow-tooltip />
         <el-table-column label="耗材名称" align="center" prop="material.name" min-width="120" show-overflow-tooltip />
+        <el-table-column label="规格" align="center" prop="speci" width="90" show-overflow-tooltip />
+        <el-table-column label="型号" align="center" prop="model" width="90" show-overflow-tooltip />
         <el-table-column label="批次号" align="center" prop="batchNo" width="140" show-overflow-tooltip />
         <el-table-column label="批号" align="center" prop="batchNumber" width="100" show-overflow-tooltip />
         <el-table-column label="单价" align="right" prop="unitPrice" width="90">
