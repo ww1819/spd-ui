@@ -104,8 +104,9 @@
 
           <el-row class="query-row-fourth">
             <el-col :span="24">
-          <el-form-item label="状态" prop="isUse" class="query-item-inline">
-            <el-select v-model="queryParams.isUse" placeholder="请选择" style="width: 100px">
+          <el-form-item label="启停用状态" prop="isUse" class="query-item-inline">
+            <el-select v-model="queryParams.isUse" placeholder="请选择" style="width: 110px">
+              <el-option label="全部" value=""></el-option>
               <el-option
                 v-for="dict in dict.type.is_use_status"
                 :key="dict.value"
@@ -117,6 +118,7 @@
 
               <el-form-item label="高值" prop="isGz" class="query-item-inline query-item-compact">
             <el-select v-model="queryParams.isGz" placeholder="请选择" style="width: 100px">
+              <el-option label="全部" value=""></el-option>
               <el-option
                 v-for="dict in dict.type.is_yes_no"
                 :key="dict.value"
@@ -128,6 +130,7 @@
 
               <el-form-item label="跟台" prop="isFollow" class="query-item-inline query-item-compact">
             <el-select v-model="queryParams.isFollow" placeholder="请选择" style="width: 100px">
+              <el-option label="全部" value=""></el-option>
               <el-option
                 v-for="dict in dict.type.is_yes_no"
                 :key="dict.value"
@@ -139,6 +142,7 @@
 
               <el-form-item label="计费" prop="isBilling" class="query-item-inline query-item-compact">
                 <el-select v-model="queryParams.isBilling" placeholder="请选择" style="width: 100px">
+                  <el-option label="全部" value=""></el-option>
                   <el-option
                     v-for="dict in dict.type.is_yes_no"
                     :key="dict.value"
@@ -1153,14 +1157,14 @@ export default {
         speci: undefined,
         model: undefined,
         price: undefined,
-        isGz: undefined,
+        isGz: '', // 默认全部
         storeroomId: undefined,
         financeCategoryId: undefined,
         factoryId: undefined,
         locationId: undefined,
-        isFollow: undefined,
-        isBilling: undefined,
-        isUse: '1', // 默认启用
+        isFollow: '', // 默认全部
+        isBilling: '', // 默认全部
+        isUse: '', // 默认全部（启停用状态）
         udiNo: undefined,
         registerNo: undefined,
         sunshineCode: undefined,
@@ -1460,7 +1464,10 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
-      this.queryParams.isUse = '1'; // 重置为默认启用
+      this.queryParams.isUse = ''; // 重置为全部
+      this.queryParams.isGz = '';
+      this.queryParams.isFollow = '';
+      this.queryParams.isBilling = '';
       this.handleQuery();
     },
     /** 导入按钮操作 */
