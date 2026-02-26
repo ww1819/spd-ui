@@ -324,7 +324,7 @@
           <div class="modal-title">{{ title }}</div>
           <el-button size="medium" @click="cancel" class="close-btn">关闭</el-button>
           </div>
-        <el-tabs v-model="activeTab">
+        <el-tabs v-model="activeTab" @tab-click="onTabClick">
           <!-- 基本信息 -->
           <el-tab-pane label="基本信息" name="form">
             <el-form ref="form" :model="form" :rules="rules" label-width="120px">
@@ -481,6 +481,11 @@
                     <el-input v-model="form.successfulType" placeholder="请输入招标类别" />
               </el-form-item>
             </el-col>
+                <el-col :span="4">
+                  <el-form-item label="入选原因：" prop="selectionReason">
+                    <el-input v-model="form.selectionReason" type="textarea" :rows="2" placeholder="请输入入选原因" />
+                  </el-form-item>
+                </el-col>
           </el-row>
 
               <!-- 第五行 -->
@@ -622,8 +627,12 @@
                         v-model="form.isUse"
                         :active-value="'1'"
                         :inactive-value="'2'"
+                        @change="onIsUseChange"
                       ></el-switch>
                     </div>
+                  </el-form-item>
+                  <el-form-item v-if="form.id && form.isUse !== originalIsUse" label="状态变更原因：" prop="statusChangeReason" class="status-reason-form-item">
+                    <el-input v-model="form.statusChangeReason" type="textarea" :rows="2" :placeholder="form.isUse === '1' ? '请填写启用原因' : '请填写停用原因'" />
                   </el-form-item>
                   <el-form-item label="" prop="isTemporaryPurchase" class="switch-form-item">
                     <div class="switch-with-label-left">
@@ -968,6 +977,65 @@
             </div>
           </div>
           </el-tab-pane>
+
+          <!-- 启用停用记录（仅编辑时显示） -->
+          <el-tab-pane v-if="form.id" label="启用停用记录" name="statusLog">
+            <div class="log-tab-content">
+              <el-table :data="statusLogList" border size="small" max-height="360">
+                <el-table-column label="操作类型" width="90" align="center">
+                  <template slot-scope="scope">
+                    <el-tag :type="scope.row.action === 'enable' ? 'success' : 'danger'" size="small">
+                      {{ scope.row.action === 'enable' ? '启用' : '停用' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="actionTime" label="操作时间" width="160" align="center" show-overflow-tooltip />
+                <el-table-column prop="operator" label="操作人" width="100" align="center" show-overflow-tooltip />
+                <el-table-column prop="reason" label="原因" min-width="200" show-overflow-tooltip />
+              </el-table>
+              <div v-if="statusLogList.length === 0" class="empty-log-tip">暂无启用停用记录</div>
+            </div>
+          </el-tab-pane>
+          <!-- 变更记录（仅编辑时显示，左侧时间轴 + 右侧变更记录表） -->
+          <el-tab-pane v-if="form.id" label="变更记录" name="changeLog">
+            <div class="log-tab-content change-log-with-timeline">
+              <el-row :gutter="16">
+                <el-col :span="10">
+                  <div class="timeline-panel">
+                    <div class="timeline-title">产品档案时间轴</div>
+                    <el-timeline v-if="timelineList.length > 0">
+                      <el-timeline-item
+                        v-for="(item, index) in timelineList"
+                        :key="index"
+                        :timestamp="item.eventTime"
+                        placement="top"
+                        :type="item.type === 'enable' ? 'success' : (item.type === 'disable' ? 'danger' : 'primary')"
+                        :color="item.type === 'enable' ? '#67c23a' : (item.type === 'disable' ? '#f56c6c' : '#409eff')"
+                      >
+                        <div class="timeline-item-title">{{ item.title }}</div>
+                        <div v-if="item.operator" class="timeline-item-meta">操作人：{{ item.operator }}</div>
+                        <div v-if="item.description" class="timeline-item-desc">{{ item.description }}</div>
+                      </el-timeline-item>
+                    </el-timeline>
+                    <div v-else class="empty-log-tip">暂无历史记录</div>
+                  </div>
+                </el-col>
+                <el-col :span="14">
+                  <div class="change-log-panel">
+                    <div class="timeline-title">变更明细</div>
+                    <el-table :data="changeLogList" border size="small" max-height="360">
+                      <el-table-column prop="changeTime" label="变更时间" width="160" align="center" show-overflow-tooltip />
+                      <el-table-column prop="operator" label="操作人" width="100" align="center" show-overflow-tooltip />
+                      <el-table-column prop="fieldLabel" label="字段" width="100" align="center" show-overflow-tooltip />
+                      <el-table-column prop="oldValue" label="原值" min-width="120" show-overflow-tooltip />
+                      <el-table-column prop="newValue" label="新值" min-width="120" show-overflow-tooltip />
+                    </el-table>
+                    <div v-if="changeLogList.length === 0" class="empty-log-tip">暂无变更记录</div>
+                  </div>
+                </el-col>
+              </el-row>
+            </div>
+          </el-tab-pane>
         </el-tabs>
 
         <div class="dialog-footer" style="text-align:center;margin-top:16px;">
@@ -1040,7 +1108,7 @@
 </template>
 
 <script>
-import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred } from "@/api/foundation/material";
+import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline } from "@/api/foundation/material";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectFactory from '@/components/SelectModel/SelectFactory';
 import SelectFinanceCategory from "@/components/SelectModel/SelectFinanceCategory";
@@ -1102,6 +1170,12 @@ export default {
       },
       // 表单参数
       form: {},
+      // 编辑时原始启用状态，用于检测是否变更并要求填写原因
+      originalIsUse: null,
+      // 启用停用记录、变更记录、时间轴（编辑弹窗内 Tab 使用）
+      statusLogList: [],
+      changeLogList: [],
+      timelineList: [],
       // 显隐列数据
       columns: [
         { key: 0, label: `序号`, visible: true },
@@ -1180,12 +1254,6 @@ export default {
         ],
         factoryId: [
           { required: true, message: "生产厂家不能为空", trigger: "blur" }
-        ],
-        storeroomId: [
-          { required: true, message: "库房分类不能为空", trigger: "blur" }
-        ],
-        financeCategoryId: [
-          { required: true, message: "财务分类不能为空", trigger: "blur" }
         ],
         unitId: [
           { required: true, message: "单位不能为空", trigger: "blur" }
@@ -1301,6 +1369,10 @@ export default {
         sunshineSource: null,
         sunshineCoefficient: null
       };
+      this.originalIsUse = null;
+      this.statusLogList = [];
+      this.changeLogList = [];
+      this.timelineList = [];
       this.resetForm("form");
     },
     nameChange(val){
@@ -1770,19 +1842,67 @@ export default {
         } else {
           this.form.isServiceFee = '2'; // 默认为否
         }
+        this.originalIsUse = this.form.isUse;
         this.open = true;
         this.isDisabled = true;
         this.title = "修改耗材产品";
       });
     },
+    /** 启用/停用开关变更：编辑模式下需填写原因并调用专用接口 */
+    onIsUseChange(newVal) {
+      if (!this.form.id) return;
+      const isEnable = newVal === '1';
+      const actionText = isEnable ? '启用' : '停用';
+      this.$prompt('请填写' + actionText + '原因', actionText + '原因', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputPattern: /\S+/,
+        inputErrorMessage: '原因不能为空',
+        inputPlaceholder: '请输入' + actionText + '原因'
+      }).then(({ value }) => {
+        const api = isEnable ? enableMaterial : disableMaterial;
+        api(this.form.id, value).then(() => {
+          this.$modal.msgSuccess(actionText + '成功');
+          this.originalIsUse = this.form.isUse;
+          this.getList();
+        }).catch(() => {
+          this.form.isUse = this.originalIsUse;
+        });
+      }).catch(() => {
+        this.form.isUse = this.originalIsUse;
+      });
+    },
+    /** 弹窗内 Tab 切换：切换到启用停用记录/变更记录时加载数据 */
+    onTabClick(tab) {
+      if (tab.name === 'statusLog' && this.form.id) {
+        getMaterialStatusLog(this.form.id).then(res => {
+          this.statusLogList = res.data || [];
+        });
+      } else if (tab.name === 'changeLog' && this.form.id) {
+        getMaterialChangeLog(this.form.id).then(res => {
+          this.changeLogList = res.data || [];
+        });
+        getMaterialTimeline(this.form.id).then(res => {
+          this.timelineList = res.data || [];
+        });
+      }
+    },
     /** 提交按钮 */
     submitForm() {
+      if (this.form.id != null && this.form.isUse !== this.originalIsUse) {
+        const reason = (this.form.statusChangeReason || '').trim();
+        if (!reason) {
+          this.$modal.msgError(this.form.isUse === '1' ? '请填写启用原因' : '请填写停用原因');
+          return;
+        }
+      }
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (this.form.id != null) {
             updateMaterial(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
+              this.originalIsUse = null;
               this.getList();
             });
           } else {
@@ -2753,5 +2873,40 @@ export default {
   font-size: 15px !important;
   font-weight: 600 !important;
 }
+
+/* 启用停用记录、变更记录 Tab 内容 */
+.log-tab-content {
+  padding: 12px 0;
+  min-height: 200px;
+}
+.empty-log-tip {
+  text-align: center;
+  color: #909399;
+  padding: 24px 0;
+  font-size: 14px;
+}
+.status-reason-form-item {
+  margin-left: 10px;
+}
+
+/* 变更记录 Tab：左侧时间轴 + 右侧变更明细 */
+.change-log-with-timeline .el-row { margin: 0; }
+.timeline-panel,
+.change-log-panel {
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 4px;
+  min-height: 320px;
+}
+.timeline-title {
+  font-weight: 600;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #303133;
+}
+.timeline-item-title { font-weight: 500; color: #303133; margin-bottom: 4px; }
+.timeline-item-meta { font-size: 12px; color: #909399; margin-bottom: 2px; }
+.timeline-item-desc { font-size: 12px; color: #606266; line-height: 1.4; word-break: break-all; }
+.el-timeline { padding-left: 8px; }
 </style>
 

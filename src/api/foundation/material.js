@@ -72,6 +72,48 @@ export function updateMaterialReferred(ids) {
   })
 }
 
+// 产品档案停用（记录停用原因）
+export function disableMaterial(id, reason) {
+  return request({
+    url: '/foundation/material/disable',
+    method: 'put',
+    data: { id, reason }
+  })
+}
+
+// 产品档案启用（记录启用原因）
+export function enableMaterial(id, reason) {
+  return request({
+    url: '/foundation/material/enable',
+    method: 'put',
+    data: { id, reason }
+  })
+}
+
+// 查询产品档案启用停用记录
+export function getMaterialStatusLog(id) {
+  return request({
+    url: '/foundation/material/' + id + '/statusLog',
+    method: 'get'
+  })
+}
+
+// 查询产品档案变更记录
+export function getMaterialChangeLog(id) {
+  return request({
+    url: '/foundation/material/' + id + '/changeLog',
+    method: 'get'
+  })
+}
+
+// 查询产品档案时间轴（合并启用停用与变更记录）
+export function getMaterialTimeline(id) {
+  return request({
+    url: '/foundation/material/' + id + '/timeline',
+    method: 'get'
+  })
+}
+
 export function sleft(str,x){
 		if(str){
 			return str.slice(0,x);
