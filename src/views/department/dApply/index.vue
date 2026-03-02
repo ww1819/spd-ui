@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container d-apply-page">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -104,7 +104,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="60vh" border>
+    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="64vh" border>
       <el-table-column type="selection" width="60" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="单号" align="center" prop="applyBillNo" width="180" show-overflow-tooltip resizable >
@@ -179,13 +179,15 @@
       </el-table-column>
     </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="pagination-bottom-wrap">
+      <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
 
     <!-- 添加或修改科室申领对话框 -->
     <transition name="modal-fade">
@@ -197,18 +199,18 @@
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="modal-form-wrapper">
-              <div class="form-fields-container">
+              <div class="form-fields-container d-apply-form-fields">
               <el-row>
                 <el-col :span="4">
                   <el-form-item label="单号" prop="applyBillNo" label-width="100px">
-                    <el-input v-model="form.applyBillNo" :disabled="true" style="width: 150px" />
+                    <el-input v-model="form.applyBillNo" :disabled="true" class="d-apply-form-input" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="申领状态" prop="billStatus" label-width="100px">
                     <el-select v-model="form.applyBillStatus" placeholder="请选择申领状态"
                                :disabled="true"
-                               clearable style="width: 150px">
+                               clearable class="d-apply-form-input">
                       <el-option v-for="dict in dict.type.biz_status"
                                  :key="dict.value"
                                  :label="dict.label"
@@ -220,13 +222,17 @@
 
                 <el-col :span="4">
                   <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-                    <SelectWarehouse v-model="form.warehouseId"/>
+                    <div class="d-apply-form-input">
+                      <SelectWarehouse v-model="form.warehouseId"/>
+                    </div>
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="4">
                   <el-form-item label="科室" prop="departmentId" label-width="100px">
-                    <SelectDepartment v-model="form.departmentId"/>
+                    <div class="d-apply-form-input">
+                      <SelectDepartment v-model="form.departmentId"/>
+                    </div>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -236,7 +242,7 @@
                     <el-date-picker clearable
                                     v-model="form.applyBillDate"
                                     type="date"
-                                    style="width: 150px"
+                                    class="d-apply-form-input"
                                     value-format="yyyy-MM-dd"
                                     :disabled="true"
                                     placeholder="请选择申请日期">
@@ -246,12 +252,14 @@
 
                 <el-col :span="4">
                   <el-form-item label="操作人" prop="userId" label-width="100px">
-                    <SelectUser v-model="form.userId"/>
+                    <div class="d-apply-form-input">
+                      <SelectUser v-model="form.userId"/>
+                    </div>
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="备注" prop="remark" label-width="100px">
-                    <el-input v-model="form.remark" placeholder="请输入备注" style="width: 150px" />
+                    <el-input v-model="form.remark" placeholder="请输入备注" class="d-apply-form-input" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -272,10 +280,13 @@
                     <el-button type="danger" icon="el-icon-delete" size="medium" @click="handleDeleteBasApplyEntry">删除</el-button>
                   </el-col>
                   <el-col :span="1.5" v-show="action">
-                    <el-button @click="cancel">取 消</el-button>
+                    <el-button size="medium" @click="cancel">取 消</el-button>
                   </el-col>
                   <el-col :span="1.5" v-show="action">
-                    <el-button type="primary" @click="submitForm">保 存</el-button>
+                    <el-button type="primary" size="medium" @click="submitForm">保 存</el-button>
+                  </el-col>
+                  <el-col :span="1.5" v-show="action">
+                    <el-button type="success" size="medium" @click="handleRefTemplate">引用模板</el-button>
                   </el-col>
                 </div>
               </el-row>
@@ -342,6 +353,81 @@
       </div>
     </transition>
 
+    <!-- 引用模板弹窗：制单模板（非打印设置），上搜索+左模板名列表+右明细 -->
+    <transition name="modal-fade">
+      <div v-if="templateDialogVisible" class="local-modal-mask template-dialog-mask" @click.self="closeTemplateDialog">
+        <transition name="modal-zoom">
+          <div v-if="templateDialogVisible" class="local-modal-content template-dialog-content">
+            <div class="modal-header">
+              <div class="modal-title">引用模板</div>
+              <el-button size="small" @click="closeTemplateDialog" class="close-btn">关闭</el-button>
+            </div>
+            <div class="template-dialog-body">
+              <p class="template-dialog-tip">请选择要引用的制单模板，将把该模板的明细耗材应用到当前申领单。（制单模板需在系统中单独创建，与打印设置无关。）</p>
+              <!-- 上部分：按模板名称搜索 -->
+              <div class="template-search-row">
+                <el-input
+                  v-model="templateNameSearch"
+                  placeholder="按模板名称搜索"
+                  clearable
+                  class="template-search-input"
+                  @keyup.enter.native="loadTemplateList"
+                />
+                <el-button type="primary" size="small" icon="el-icon-search" @click="loadTemplateList">搜索</el-button>
+              </div>
+              <!-- 下部分：左模板名称列表 + 右明细 -->
+              <div class="template-split-layout">
+                <div class="template-list-box">
+                  <div class="template-list-title">模板名称</div>
+                  <div class="template-list-inner">
+                    <div
+                      v-for="item in printTemplateList"
+                      :key="item.id"
+                      :class="['template-list-item', { active: selectedTemplate && selectedTemplate.id === item.id }]"
+                      @click="onSelectTemplate(item)"
+                    >
+                      {{ item.templateName }}
+                    </div>
+                    <div v-if="!printTemplateList || printTemplateList.length === 0" class="template-list-empty">暂无制单模板</div>
+                  </div>
+                </div>
+                <div class="template-detail-box">
+                  <div class="template-list-title">模板明细</div>
+                  <div class="template-detail-inner">
+                    <el-table :data="templateDetailList" border stripe max-height="100%" size="small">
+                      <el-table-column type="index" label="序号" width="50" align="center" />
+                      <el-table-column prop="materialCode" label="耗材编码" min-width="100" show-overflow-tooltip>
+                        <template slot-scope="scope">
+                          {{ scope.row.material && scope.row.material.code ? scope.row.material.code : '—' }}
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="materialName" label="名称" min-width="120" show-overflow-tooltip>
+                        <template slot-scope="scope">
+                          {{ scope.row.material && scope.row.material.name ? scope.row.material.name : '—' }}
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="materialSpeci" label="规格" width="100" show-overflow-tooltip>
+                        <template slot-scope="scope">
+                          {{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '—' }}
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="qty" label="数量" width="80" align="center" />
+                    </el-table>
+                    <div v-if="!selectedTemplate" class="template-detail-empty">请从左侧选择模板</div>
+                    <div v-else-if="!templateDetailList || templateDetailList.length === 0" class="template-detail-empty">该模板暂无明细</div>
+                  </div>
+                  <div class="template-dialog-footer">
+                    <el-button @click="closeTemplateDialog">取 消</el-button>
+                    <el-button type="primary" :disabled="!selectedTemplate" @click="confirmRefTemplate">引 用</el-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </div>
+    </transition>
+
     <!-- 3、使用组件 -->
     <SelectInventory
       v-if="DialogComponentShow"
@@ -356,6 +442,7 @@
 
 <script>
 import { listApply, getApply, delApply, addApply, updateApply } from "@/api/department/apply";
+import { listApplyTemplate, getApplyTemplate } from "@/api/department/applyTemplate";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
@@ -395,6 +482,14 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      // 引用模板弹窗（制单模板，非打印设置）
+      templateDialogVisible: false,
+      templateNameSearch: '',
+      printTemplateList: [],
+      selectedTemplate: null,
+      templateDetailList: [],
+      /** 引用模板后的列配置（供打印等使用） */
+      columnList: [],
       //是否显示
       action: true,
       // 查询参数
@@ -462,6 +557,68 @@ export default {
     closeDialog() {
       //关闭“弹窗组件”
       this.DialogComponentShow = false
+    },
+    /** 打开引用模板弹窗（制单模板） */
+    handleRefTemplate() {
+      this.templateDialogVisible = true;
+      this.templateNameSearch = '';
+      this.printTemplateList = [];
+      this.selectedTemplate = null;
+      this.templateDetailList = [];
+      this.loadTemplateList();
+    },
+    /** 按模板名称加载制单模板列表 */
+    loadTemplateList() {
+      listApplyTemplate({ templateName: this.templateNameSearch }).then(res => {
+        this.printTemplateList = res.data || [];
+        if (this.printTemplateList.length > 0 && !this.selectedTemplate) {
+          this.onSelectTemplate(this.printTemplateList[0]);
+        } else if (this.printTemplateList.length === 0) {
+          this.selectedTemplate = null;
+          this.templateDetailList = [];
+        }
+      }).catch(() => {
+        this.printTemplateList = [];
+      });
+    },
+    /** 选择左侧模板，加载明细 */
+    onSelectTemplate(item) {
+      this.selectedTemplate = item;
+      getApplyTemplate(item.id).then(res => {
+        const data = res.data || {};
+        this.templateDetailList = data.entryList || [];
+      }).catch(() => {
+        this.templateDetailList = [];
+      });
+    },
+    /** 关闭引用模板弹窗 */
+    closeTemplateDialog() {
+      this.templateDialogVisible = false;
+      this.templateNameSearch = '';
+      this.printTemplateList = [];
+      this.selectedTemplate = null;
+      this.templateDetailList = [];
+    },
+    /** 确认引用模板：将选中制单模板的明细应用到当前申领单 */
+    confirmRefTemplate() {
+      if (!this.selectedTemplate || !this.templateDetailList || this.templateDetailList.length === 0) {
+        this.$message.warning('请选择有明细的制单模板');
+        return;
+      }
+      this.templateDetailList.forEach(entry => {
+        this.basApplyEntryList.push({
+          materialId: entry.materialId,
+          material: entry.material || {},
+          qty: entry.qty || 1,
+          unitPrice: null,
+          price: null,
+          amt: null,
+          remark: null
+        });
+      });
+      this.calculateTotals();
+      this.$message.success('已应用制单模板明细');
+      this.closeTemplateDialog();
     },
     selectData(val) {
       //监听“弹窗组件”返回的数据
@@ -822,6 +979,11 @@ export default {
   padding: 24px;
 }
 
+/* 添加/修改科室申领弹窗：输入框容器距顶与左右各 6px，容器更宽 */
+.local-modal-content .el-form.modal-form-wrapper {
+  padding: 10px 6px 24px 6px;
+}
+
 .modal-form-wrapper {
   display: flex;
   flex-direction: column;
@@ -829,7 +991,12 @@ export default {
   overflow: hidden;
 }
 
-/* 弹窗内表单字段容器 */
+/* 弹窗内表单字段容器：与顶部、上下间距 10px */
+.local-modal-content .form-fields-container.d-apply-form-fields {
+  padding-top: 8px;
+  margin-bottom: 10px;
+}
+
 .local-modal-content .form-fields-container {
   background: #fff;
   padding: 16px 20px;
@@ -837,6 +1004,154 @@ export default {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
   border: 1px solid #EBEEF5;
+  flex-shrink: 0;
+}
+
+/* 科室申领弹窗内输入框/选择框统一加宽 */
+.local-modal-content .d-apply-form-input {
+  width: 180px;
+}
+
+.local-modal-content .d-apply-form-input .el-input__inner {
+  width: 100%;
+}
+
+/* 引用模板弹窗：贴顶、左右无留白、高度加倍 */
+.template-dialog-mask {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0;
+}
+
+.local-modal-content.template-dialog-content {
+  min-height: 100vh !important;
+  height: 100vh !important;
+  max-width: none;
+  width: 100%;
+  max-height: 100vh !important;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.template-dialog-body {
+  padding: 16px 20px 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.template-dialog-tip {
+  color: #606266;
+  font-size: 13px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+/* 上部分：搜索框 */
+.template-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.template-search-input {
+  width: 260px;
+}
+
+/* 下部分：左列表 + 右明细，高度与弹窗加倍匹配 */
+.template-split-layout {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  max-height: 520px;
+  overflow: hidden;
+}
+
+.template-list-box {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #EBEEF5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.template-list-title {
+  padding: 4px 12px;
+  background: #F5F7FA;
+  font-weight: 600;
+  font-size: 13px;
+  color: #303133;
+}
+
+.template-list-inner {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.template-list-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #EBEEF5;
+  font-size: 13px;
+}
+
+.template-list-item:hover {
+  background: #ECF5FF;
+}
+
+.template-list-item.active {
+  background: #409EFF;
+  color: #fff;
+}
+
+.template-list-empty {
+  padding: 24px;
+  text-align: center;
+  color: #909399;
+  font-size: 13px;
+}
+
+.template-detail-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid #EBEEF5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.template-detail-inner {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  max-height: none;
+  padding: 4px 8px;
+}
+
+.template-detail-empty {
+  padding: 24px;
+  text-align: center;
+  color: #909399;
+  font-size: 13px;
+}
+
+.template-dialog-footer {
+  padding: 10px 12px;
+  border-top: 1px solid #EBEEF5;
+  text-align: right;
   flex-shrink: 0;
 }
 
@@ -938,7 +1253,7 @@ export default {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-top: -2px;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   border: 1px solid #EBEEF5;
 }
 
@@ -977,10 +1292,16 @@ export default {
   flex-wrap: nowrap;
 }
 
-/* 按钮行样式 */
+/* 按钮行样式：上移一点，与明细框距离保持 8px */
 .mb8 {
-  margin-top: 4px !important;
+  margin-top: 0 !important;
   margin-bottom: 8px !important;
+}
+
+/* 翻页底部不留空白 */
+.d-apply-page .pagination-bottom-wrap {
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
 /* 确保表格可以水平滚动和垂直滚动 */
