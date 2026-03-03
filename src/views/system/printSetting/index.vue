@@ -89,15 +89,25 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
+    <div class="table-pagination-wrapper">
     <el-table v-loading="loading" :data="printSettingList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" width="60" align="center" />
-      <el-table-column label="模板名称" align="center" prop="templateName" :show-overflow-tooltip="true" />
-      <el-table-column label="入库单类型" align="center" prop="billType" width="120">
+      <el-table-column label="模板名称" align="center" prop="templateName" width="140" show-overflow-tooltip />
+      <el-table-column label="单据类型" align="center" prop="billType" width="120">
         <template slot-scope="scope">
-          <span v-if="scope.row.billType === 101">普通入库</span>
-          <span v-else-if="scope.row.billType === 501">调拨</span>
-          <span v-else>通用</span>
+          <span v-if="scope.row.billType === 101">入库单</span>
+          <span v-else-if="scope.row.billType === 102">退货单</span>
+          <span v-else-if="scope.row.billType === 201">出库单</span>
+          <span v-else-if="scope.row.billType === 202">退库单</span>
+          <span v-else-if="scope.row.billType === 301">盘点单</span>
+          <span v-else-if="scope.row.billType === 111">入库单(高值)</span>
+          <span v-else-if="scope.row.billType === 112">退货单(高值)</span>
+          <span v-else-if="scope.row.billType === 211">出库单(高值)</span>
+          <span v-else-if="scope.row.billType === 212">退库单(高值)</span>
+          <span v-else-if="scope.row.billType === 401">跟台条码</span>
+          <span v-else-if="scope.row.billType === 402">备货条码</span>
+          <span v-else>—</span>
         </template>
       </el-table-column>
       <el-table-column label="页面尺寸" align="center" width="150">
@@ -110,9 +120,9 @@
           <span>{{ scope.row.orientation === 'landscape' ? '横向' : '纵向' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="列间距" align="center" prop="columnSpacing" width="100">
+      <el-table-column label="启用/停用" align="center" prop="status" width="100">
         <template slot-scope="scope">
-          <span>{{ scope.row.columnSpacing }}mm</span>
+          <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
         </template>
       </el-table-column>
       <el-table-column label="是否默认" align="center" prop="isDefault" width="100">
@@ -122,12 +132,13 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status" width="80">
+      <el-table-column label="创建日期" align="center" prop="createTime" width="160" show-overflow-tooltip>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
+          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
+      <el-table-column label="创建人" align="center" prop="createBy" width="100" show-overflow-tooltip />
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right">
         <template slot-scope="scope">
           <el-button
             size="small"
@@ -155,13 +166,16 @@
       </el-table-column>
     </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="pagination-bottom">
+      <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
+    </div>
 
     <!-- 添加或修改打印设置对话框：放在当前框架内，稍微增宽增高 -->
     <!-- 新增/修改打印设置弹窗：固定在内容容器内，不遮挡顶部菜单 -->
@@ -321,6 +335,21 @@ export default {
 .print-setting-page {
   /* 基础内边距，保留上下和右侧，左侧由全局规则强制为 0 */
   padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 84px);
+}
+
+.table-pagination-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 300px;
+}
+
+.table-pagination-wrapper .pagination-bottom {
+  margin-top: auto;
+  padding-bottom: 16px;
 }
 
 .form-fields-container {
