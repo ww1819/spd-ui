@@ -913,7 +913,9 @@ export default {
           totalAmt += item.amt
           totalQty += item.qty
 
-          const prod = map[item.materialId]
+          const prod = map[item.materialId] || {}
+          const fdFactory = prod.fdFactory != null ? prod.fdFactory : null
+          const fdWarehouseCategory = prod.fdWarehouseCategory != null ? prod.fdWarehouseCategory : null
 
           detailList.push({
             batchNumber: item.batchNumber,
@@ -921,12 +923,12 @@ export default {
             qty: item.qty,
             unitPrice: item.unitPrice,
             price: item.unitPrice, // 打印组件需要 price 字段
-            materialCode: prod.code,
-            materialName: prod.name,
-            materialSpeci: prod.speci,
-            periodDate: prod.periodDate,
-            factoryName: prod.fdFactory.factoryName,
-            warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
+            materialCode: (prod && prod.code) || '',
+            materialName: (prod && prod.name) || '',
+            materialSpeci: (prod && prod.speci) || '',
+            periodDate: (prod && prod.periodDate) || '',
+            factoryName: (fdFactory && fdFactory.factoryName) || '',
+            warehouseCategoryName: (fdWarehouseCategory && fdWarehouseCategory.warehouseCategoryName) || '',
           })
 
         })
@@ -936,8 +938,8 @@ export default {
         // 与退货审核页面完全一致的数据结构
         return {
           billNo: row.billNo,
-          supplierName: row.supplier.name,
-          warehouseName: row.warehouse.name,
+          supplierName: (row.supplier && row.supplier.name) || '',
+          warehouseName: (row.warehouse && row.warehouse.name) || '',
           billDate: row.billDate,
           auditDate: row.auditDate,
           totalAmt: totalAmt,

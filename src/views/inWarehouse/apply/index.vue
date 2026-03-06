@@ -1056,19 +1056,24 @@ export default {
           totalAmt += item.amt
           totalQty += item.qty
 
-          const prod = map[item.materialId]
+          const prod = map[item.materialId] || {}
+          const fdFactory = prod.fdFactory != null ? prod.fdFactory : null
+          const fdWarehouseCategory = prod.fdWarehouseCategory != null ? prod.fdWarehouseCategory : null
+          const fdUnit = prod.fdUnit != null ? prod.fdUnit : null
 
           detailList.push({
             batchNumber: item.batchNumber,
             amt: item.amt,
             qty: item.qty,
             unitPrice: item.unitPrice,
-            materialCode: prod.code,
-            materialName: prod.name,
-            materialSpeci: prod.speci,
-            periodDate: prod.periodDate,
-            factoryName: prod.fdFactory.factoryName,
-            warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
+            price: item.unitPrice,
+            materialCode: (prod && prod.code) || '',
+            materialName: (prod && prod.name) || '',
+            materialSpeci: (prod && prod.speci) || '',
+            periodDate: (prod && prod.periodDate) || '',
+            factoryName: (fdFactory && fdFactory.factoryName) || '',
+            warehouseCategoryName: (fdWarehouseCategory && fdWarehouseCategory.warehouseCategoryName) || '',
+            unitName: (fdUnit && fdUnit.unitName) || '',
           })
 
         })
@@ -1077,14 +1082,17 @@ export default {
 
         return {
           billNo: row.billNo,
-          supplierName: row.supplier.name,
-          warehouseName: row.warehouse.name,
+          supplierName: (row.supplier && row.supplier.name) || '',
+          warehouseName: (row.warehouse && row.warehouse.name) || '',
           billDate: row.billDate,
           auditDate: row.auditDate,
           totalAmt: totalAmt,
           totalQty: totalQty,
           totalAmtConverter: totalAmtConverter,
-          detailList: detailList
+          detailList: detailList,
+          fundSourceAccount: (row.fundSourceAccount != null ? row.fundSourceAccount : '') || '',
+          createBy: (row.createBy != null ? row.createBy : '') || '',
+          inboundOperator: (row.creater && row.creater.nickName) || (row.inboundOperator != null ? row.inboundOperator : row.createBy) || '',
         }
       })
     },
