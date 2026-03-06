@@ -91,22 +91,27 @@ Print.prototype = {
   },
 
   writeIframe: function (content) {
-    var w, doc, iframe = document.createElement('iframe'), f = document.body.appendChild(iframe);
+    var _this = this;
+    var iframe = document.createElement('iframe');
+    document.body.appendChild(iframe);
     iframe.id = "myIframe";
-    //iframe.style = "position:absolute;width:0;height:0;top:-10px;left:-10px;";
     iframe.setAttribute('style', 'position:absolute;width:0;height:0;top:-10px;left:-10px;');
-    w = f.contentWindow || f.contentDocument;
-    doc = f.contentDocument || f.contentWindow.document;
-    doc.open();
-    doc.write(content);
-    doc.close();
-    var _this = this
+    var w = iframe.contentWindow || iframe.contentDocument;
+    var doc = iframe.contentDocument || iframe.contentWindow.document;
+
+    // 必须先绑定 onload 再 write/close，否则 doc.close() 同步触发 load 时尚未绑定会错过回调，打印窗口不会弹出
     iframe.onload = function () {
       _this.toPrint(w, _this.options);
       setTimeout(function () {
-        document.body.removeChild(iframe)
-      }, 100)
-    }
+        if (iframe.parentNode) {
+          document.body.removeChild(iframe);
+        }
+      }, 100);
+    };
+
+    doc.open();
+    doc.write(content);
+    doc.close();
   },
 
   toPrint: function (frameWindow, options) {

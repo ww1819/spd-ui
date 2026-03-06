@@ -886,19 +886,21 @@ export default {
           totalAmt += item.amt
           totalQty += item.qty
 
-          const prod = map[item.materialId]
+          const prod = map[item.materialId] || {}
+          const fdFactory = prod.fdFactory != null ? prod.fdFactory : null
+          const fdWarehouseCategory = prod.fdWarehouseCategory != null ? prod.fdWarehouseCategory : null
 
           detailList.push({
             batchNumber: item.batchNumber,
             amt: item.amt,
             qty: item.qty,
             unitPrice: item.unitPrice,
-            materialCode: prod.code,
-            materialName: prod.name,
-            materialSpeci: prod.speci,
-            periodDate: prod.periodDate,
-            factoryName: prod.fdFactory.factoryName,
-            warehouseCategoryName: prod.fdWarehouseCategory.warehouseCategoryName,
+            materialCode: (prod && prod.code) || '',
+            materialName: (prod && prod.name) || '',
+            materialSpeci: (prod && prod.speci) || '',
+            periodDate: (prod && prod.periodDate) || '',
+            factoryName: (fdFactory && fdFactory.factoryName) || '',
+            warehouseCategoryName: (fdWarehouseCategory && fdWarehouseCategory.warehouseCategoryName) || '',
           })
 
         })
@@ -907,8 +909,8 @@ export default {
 
         return {
           billNo: row.billNo,
-          departmentName: row.department.name,
-          warehouseName: row.warehouse.name,
+          departmentName: (row.department && row.department.name) || '',
+          warehouseName: (row.warehouse && row.warehouse.name) || '',
           billDate: row.billDate,
           auditDate: row.auditDate,
           totalAmt: totalAmt,
