@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-tabs v-model="activeName" type="card" @tab-click="handleTabClick">
       <el-tab-pane label="库存明细查询" name="detail"></el-tab-pane>
@@ -29,6 +29,24 @@
                 <el-input
                   v-model="queryParams.batchNo"
                   placeholder="请输入批次号"
+                  clearable
+                  @keyup.enter.native="handleQuery"
+                  style="width: 180px"
+                />
+              </el-form-item>
+              <el-form-item label="主条码" prop="masterBarcode" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.masterBarcode"
+                  placeholder="主条码"
+                  clearable
+                  @keyup.enter.native="handleQuery"
+                  style="width: 180px"
+                />
+              </el-form-item>
+              <el-form-item label="辅条码" prop="secondaryBarcode" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.secondaryBarcode"
+                  placeholder="辅条码"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 180px"
@@ -151,6 +169,8 @@ export default {
         departmentId: null,
         supplierId: null,
         batchNo: null,
+        masterBarcode: null,
+        secondaryBarcode: null,
         materialNo: null,
         materialDate: null,
         warehouseDate: null,
