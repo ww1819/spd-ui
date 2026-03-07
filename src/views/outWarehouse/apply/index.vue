@@ -677,6 +677,7 @@ export default {
         obj.beginTime = item.beginTime;
         obj.endTime = item.endTime;
         obj.supplierId = item.supplierId;
+        obj.supplerId = item.supplerId != null ? item.supplerId : item.supplierId;
         obj.remark = item.remark;
 
         obj.material = item.material;
@@ -873,6 +874,10 @@ export default {
             }
           }
 
+          // 确保明细带出后端需要的 suppler_id（与 supplierId 兼容）
+          this.stkIoBillEntryList.forEach(item => {
+            if (item.supplerId == null && item.supplierId != null) item.supplerId = item.supplierId;
+          });
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           var totalAmt = 0;
           this.stkIoBillEntryList.forEach(item => {
@@ -1077,6 +1082,7 @@ export default {
       obj.endTime = "";
       obj.remark = "";
       obj.supplierId = "";
+      obj.supplerId = "";
 
       this.stkIoBillEntryList.push(obj);
     },
