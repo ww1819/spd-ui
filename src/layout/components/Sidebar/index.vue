@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <div :class="{'has-logo':showLogo}" :style="{ backgroundColor: settings.sideTheme === 'theme-dark' ? variables.menuBackground : variables.menuLightBackground }">
         <logo v-if="showLogo" :collapse="isCollapse" />
         <el-scrollbar :class="settings.sideTheme" wrap-class="scrollbar-wrapper">
@@ -176,21 +176,8 @@ export default {
             }
         },
         // 菜单收起事件（只有用户手动点击收起时才执行）
+        // 允许用户自由收起任何菜单（包括当前激活菜单的父菜单）
         handleMenuClose(index) {
-            // 检查是否是当前激活菜单的父菜单，如果是则不收起
-            const activePath = this.activeMenu;
-            if (this.isParentOfActiveMenu(index, activePath)) {
-                // 如果是当前激活菜单的父菜单，阻止收起
-                this.$nextTick(() => {
-                    if (!this.openedMenus.includes(index)) {
-                        this.openedMenus.push(index);
-                    }
-                    // 强制同步菜单组件状态
-                    this.syncMenuState();
-                });
-                return;
-            }
-            // 否则允许收起，并记录用户手动收起的意图
             const indexPos = this.openedMenus.indexOf(index);
             if (indexPos > -1) {
                 // 先记录用户手动收起的菜单（如果还没有记录）

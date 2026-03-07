@@ -6,9 +6,9 @@
   "license": "MIT",
   "scripts": {
     "dev": "set NODE_OPTIONS=--max-old-space-size=4096 && vue-cli-service serve",
-    "build:prod": "set NODE_OPTIONS=--max-old-space-size=4096 --openssl-legacy-provider && vue-cli-service build",
-    "build:stage": "vue-cli-service build --mode staging",
-    "preview": "node build/index.js --preview",
+    "build:prod": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096 --openssl-legacy-provider\" vue-cli-service build",
+    "build:stage": "cross-env NODE_OPTIONS=--openssl-legacy-provider vue-cli-service build --mode staging",
+    "preview": "cross-env NODE_OPTIONS=--openssl-legacy-provider node build/index.js --preview",
     "lint": "eslint --ext .js,.vue src"
   },
   "husky": {
@@ -72,6 +72,7 @@
     "autoprefixer": "^10.4.18",
     "babel-eslint": "10.1.0",
     "babel-plugin-dynamic-import-node": "2.3.3",
+    "baseline-browser-mapping": "^2.10.0",
     "browserslist": "^4.23.0",
     "caniuse-lite": "^1.0.30001596",
     "chalk": "4.1.0",
