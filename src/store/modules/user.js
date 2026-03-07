@@ -33,14 +33,16 @@ const user = {
   },
 
   actions: {
-    // 登录
+    // 登录（耗材前端传 systemType: 'hc'，后端校验 hc_status/hc_planned_disable_time，停用提示「耗材系统已经被停用」）
     Login({ commit }, userInfo) {
       const username = userInfo.username.trim()
       const password = userInfo.password
       const code = userInfo.code
       const uuid = userInfo.uuid
+      const customerId = userInfo.customerId
+      const systemType = userInfo.systemType != null ? userInfo.systemType : 'hc'
       return new Promise((resolve, reject) => {
-        login(username, password, code, uuid).then(res => {
+        login(username, password, code, uuid, customerId, systemType).then(res => {
           setToken(res.token)
           commit('SET_TOKEN', res.token)
           resolve()

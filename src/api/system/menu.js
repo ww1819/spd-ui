@@ -25,6 +25,14 @@ export function treeselect() {
   })
 }
 
+// 客户菜单分配用菜单树
+export function treeselectForCustomerAssign() {
+  return request({
+    url: '/equipment/system/menu/treeselectForCustomerAssign',
+    method: 'get'
+  })
+}
+
 // 查询仓库下拉树结构
 export function warehouseRole() {
   return request({
