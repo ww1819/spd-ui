@@ -76,3 +76,19 @@ export function saveHcCustomerMenus(customerId, menuIds) {
     data: { menuIds: Array.isArray(menuIds) ? menuIds : [] }
   })
 }
+
+/** 设备功能重置（客户菜单、super 组、super_01 权限重置为系统设置下非平台管理功能） */
+export function resetEquipmentFunctions(customerId) {
+  return request({
+    url: '/material/system/customer/resetEquipment/' + customerId,
+    method: 'put'
+  })
+}
+
+/** 耗材功能重置（耗材客户菜单、super 岗位、super_01 权限重置为系统设置下非平台管理功能） */
+export function resetMaterialFunctions(customerId) {
+  return request({
+    url: '/material/system/customer/resetMaterial/' + customerId,
+    method: 'put'
+  })
+}

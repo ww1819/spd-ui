@@ -46,12 +46,14 @@
       <el-table-column label="创建时间" align="center" width="160">
         <template slot-scope="scope">{{ parseTime(scope.row.createTime) }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="340" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="420" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['hc:system:customer:query']">修改</el-button>
           <el-button size="mini" type="text" icon="el-icon-video-pause" @click="handleChangeStatus(scope.row, '1')" v-hasPermi="['hc:system:customer:query']" v-if="(scope.row.hcStatus || '0') === '0'">停用</el-button>
           <el-button size="mini" type="text" icon="el-icon-video-play" @click="handleChangeStatus(scope.row, '0')" v-hasPermi="['hc:system:customer:query']" v-if="(scope.row.hcStatus || '0') === '1'">启用</el-button>
           <el-button size="mini" type="text" icon="el-icon-s-operation" @click="handleAssignMenu(scope.row)" v-hasPermi="['hc:system:customer:query']">耗材客户权限</el-button>
+          <el-button size="mini" type="text" icon="el-icon-refresh-left" @click="handleResetEquipment(scope.row)" v-hasPermi="['hc:system:customerMenuManage:edit']">设备功能重置</el-button>
+          <el-button size="mini" type="text" icon="el-icon-refresh-right" @click="handleResetMaterial(scope.row)" v-hasPermi="['hc:system:customerMenuManage:edit']">耗材功能重置</el-button>
           <el-button size="mini" type="text" icon="el-icon-document" @click="handleStatusLog(scope.row)" v-hasPermi="['hc:system:customer:query']">启停用记录</el-button>
           <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)" v-hasPermi="['hc:system:customer:list']">删除</el-button>
         </template>
@@ -134,7 +136,7 @@
 
 <script>
 import { addCustomer, delCustomer, getTenantEnumList } from '@/api/system/customer'
-import { listHcCustomers, getHcCustomer, updateHcCustomer, changeHcStatus, getCustomerStatusLogs, getCustomerPeriodLogs, treeselectHcMenu, getHcCustomerMenuIds, saveHcCustomerMenus } from '@/api/material/customer'
+import { listHcCustomers, getHcCustomer, updateHcCustomer, changeHcStatus, getCustomerStatusLogs, getCustomerPeriodLogs, treeselectHcMenu, getHcCustomerMenuIds, saveHcCustomerMenus, resetEquipmentFunctions, resetMaterialFunctions } from '@/api/material/customer'
 
 export default {
   name: 'HcCustomer',
@@ -263,6 +265,14 @@ export default {
       this.periodLogList = []
       getCustomerStatusLogs(row.customerId).then(res => { this.statusLogList = res.data || [] })
       getCustomerPeriodLogs(row.customerId).then(res => { this.periodLogList = res.data || [] })
+    },
+    handleResetEquipment(row) {
+      const name = row.customerName || row.customerId
+      this.$modal.confirm('是否确认将客户“' + name + '”的设备功能重置？将重置客户菜单权限、super 组及 super_01 的菜单权限为系统设置下非平台管理功能；若 super 组或 super_01 不存在则会创建。').then(() => resetEquipmentFunctions(row.customerId)).then(() => { this.$modal.msgSuccess('设备功能重置成功'); this.getList() }).catch(() => {})
+    },
+    handleResetMaterial(row) {
+      const name = row.customerName || row.customerId
+      this.$modal.confirm('是否确认将客户“' + name + '”的耗材功能重置？将重置耗材客户菜单权限、super 岗位及 super_01 的菜单权限为系统设置下非平台管理功能；若 super 岗位或 super_01 不存在则会创建。').then(() => resetMaterialFunctions(row.customerId)).then(() => { this.$modal.msgSuccess('耗材功能重置成功'); this.getList() }).catch(() => {})
     },
     submitMenuForm() {
       const tree = this.$refs.menuTree

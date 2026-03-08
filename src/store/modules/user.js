@@ -8,12 +8,17 @@ const user = {
     userId: '',
     avatar: '',
     roles: [],
-    permissions: []
+    permissions: [],
+    // 租户信息（与设备前端一致）：登录/ getInfo 带回，供请求头 X-Tenant-Id 与租户数据隔离
+    tenant: null
   },
 
   mutations: {
     SET_TOKEN: (state, token) => {
       state.token = token
+    },
+    SET_TENANT: (state, tenant) => {
+      state.tenant = tenant
     },
     SET_NAME: (state, name) => {
       state.name = name
@@ -45,6 +50,11 @@ const user = {
         login(username, password, code, uuid, customerId, systemType).then(res => {
           setToken(res.token)
           commit('SET_TOKEN', res.token)
+          if (res.tenant) {
+            commit('SET_TENANT', res.tenant)
+          } else {
+            commit('SET_TENANT', null)
+          }
           resolve()
         }).catch(error => {
           reject(error)
@@ -67,6 +77,11 @@ const user = {
           commit('SET_NAME', user.userName)
           commit('SET_ID', user.userId)
           commit('SET_AVATAR', avatar)
+          if (res.tenant) {
+            commit('SET_TENANT', res.tenant)
+          } else {
+            commit('SET_TENANT', null)
+          }
           resolve(res)
         }).catch(error => {
           reject(error)
@@ -81,6 +96,7 @@ const user = {
           commit('SET_TOKEN', '')
           commit('SET_ROLES', [])
           commit('SET_PERMISSIONS', [])
+          commit('SET_TENANT', null)
           removeToken()
           resolve()
         }).catch(error => {
@@ -93,6 +109,7 @@ const user = {
     FedLogOut({ commit }) {
       return new Promise(resolve => {
         commit('SET_TOKEN', '')
+        commit('SET_TENANT', null)
         removeToken()
         resolve()
       })
