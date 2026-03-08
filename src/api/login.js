@@ -52,6 +52,18 @@ export function logout() {
   })
 }
 
+// 登录页租户下拉选项（未登录可访问）。耗材传 systemType=hc 仅返回耗材启用租户
+export function getCustomerOptions(systemType) {
+  return request({
+    url: '/getCustomerOptions',
+    headers: {
+      isToken: false
+    },
+    method: 'get',
+    params: systemType ? { systemType } : {}
+  })
+}
+
 // 获取验证码
 export function getCodeImg() {
   return request({

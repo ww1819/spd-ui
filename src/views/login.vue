@@ -1,7 +1,23 @@
-﻿<template>
+<template>
   <div class="login">
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form">
       <h3 class="title"></h3><!-- SPD后台管理系统 -->
+      <el-form-item prop="customerId" label="客户（租户）">
+        <el-select
+          v-model="loginForm.customerId"
+          placeholder="请选择客户（租户）；平台管理员可留空"
+          clearable
+          filterable
+          style="width: 100%"
+        >
+          <el-option
+            v-for="item in customerOptions"
+            :key="item.customerId"
+            :label="item.customerName"
+            :value="item.customerId"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item prop="username">
         <el-input
           v-model="loginForm.username"
@@ -62,7 +78,7 @@
 </template>
 
 <script>
-import { getCodeImg } from "@/api/login";
+import { getCodeImg, getCustomerOptions } from "@/api/login";
 import Cookies from "js-cookie";
 import { encrypt, decrypt } from '@/utils/jsencrypt'
 
@@ -71,7 +87,9 @@ export default {
   data() {
     return {
       codeUrl: "",
+      customerOptions: [],
       loginForm: {
+        customerId: "",
         username: "",
         password: "",
         rememberMe: false,
@@ -105,9 +123,17 @@ export default {
   },
   created() {
     this.getCode();
+    this.getCustomerOptions();
     this.getCookie();
   },
   methods: {
+    getCustomerOptions() {
+      getCustomerOptions("hc").then(res => {
+        this.customerOptions = res.data || [];
+      }).catch(() => {
+        this.customerOptions = [];
+      });
+    },
     getCode() {
       getCodeImg().then(res => {
         this.captchaEnabled = res.captchaEnabled === undefined ? true : res.captchaEnabled;
@@ -120,11 +146,15 @@ export default {
     getCookie() {
       const username = Cookies.get("username");
       const password = Cookies.get("password");
-      const rememberMe = Cookies.get('rememberMe')
+      const rememberMe = Cookies.get('rememberMe');
+      const customerId = Cookies.get("customerId");
       this.loginForm = {
+        customerId: customerId === undefined ? this.loginForm.customerId : customerId,
         username: username === undefined ? this.loginForm.username : username,
         password: password === undefined ? this.loginForm.password : decrypt(password),
-        rememberMe: rememberMe === undefined ? false : Boolean(rememberMe)
+        rememberMe: rememberMe === undefined ? false : Boolean(rememberMe),
+        code: this.loginForm.code,
+        uuid: this.loginForm.uuid
       };
     },
     handleLogin() {
@@ -135,10 +165,16 @@ export default {
             Cookies.set("username", this.loginForm.username, { expires: 30 });
             Cookies.set("password", encrypt(this.loginForm.password), { expires: 30 });
             Cookies.set('rememberMe', this.loginForm.rememberMe, { expires: 30 });
+            if (this.loginForm.customerId) {
+              Cookies.set("customerId", this.loginForm.customerId, { expires: 30 });
+            } else {
+              Cookies.remove("customerId");
+            }
           } else {
             Cookies.remove("username");
             Cookies.remove("password");
             Cookies.remove('rememberMe');
+            Cookies.remove("customerId");
           }
           this.$store.dispatch("Login", this.loginForm).then(() => {
             this.$router.push({ path: this.redirect || "/" }).catch(()=>{});
