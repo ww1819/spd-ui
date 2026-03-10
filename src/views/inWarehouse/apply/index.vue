@@ -12,9 +12,9 @@
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+          <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
             <div class="query-select-wrapper">
-            <SelectSupplier v-model="queryParams.supplierId"/>
+            <SelectSupplier v-model="queryParams.supplerId"/>
             </div>
           </el-form-item>
           <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
@@ -422,7 +422,7 @@
           <el-table-column label="价格" align="center" prop="unitPrice" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
-                <el-input v-model="scope.row.unitPrice" 
+                <el-input v-model="scope.row.unitPrice"
                           type='number'
                           :disabled="true"
                           @input="priceChange(scope.row)"
@@ -805,7 +805,7 @@ export default {
 
         // 从item中提取material对象，如果item本身是material，则直接使用
         const material = item.material || item;
-        
+
         obj.materialId = material.id || item.id;
         obj.qty = "";
         // 设置价格：优先使用item.unitPrice，然后是item.price，最后是material.price
@@ -940,9 +940,9 @@ export default {
         console.log('入库单详情数据:', data);
         console.log('明细列表原始数据:', data.stkIoBillEntryList);
         console.log('明细列表长度:', data.stkIoBillEntryList ? data.stkIoBillEntryList.length : 0);
-        
+
         this.form = data;
-        
+
         // 确保明细数据正确设置，包括 material 对象
         const entryList = (data.stkIoBillEntryList || []).map((item, index) => {
           console.log(`明细项 ${index}:`, item);
@@ -955,18 +955,18 @@ export default {
           }
           return item;
         });
-        
+
         // 使用 Vue.set 确保响应式更新
         this.$set(this, 'stkIoBillEntryList', entryList);
         console.log('处理后的明细列表:', this.stkIoBillEntryList);
         console.log('处理后的明细列表长度:', this.stkIoBillEntryList.length);
-        
+
         this.open = true;
         this.action = false;
         this.form.billStatus = '2';
         this.form.billType = '101';
         this.title = "查看入库";
-        
+
         // 强制更新视图
         this.$nextTick(() => {
           console.log('视图更新后的明细列表:', this.stkIoBillEntryList);
