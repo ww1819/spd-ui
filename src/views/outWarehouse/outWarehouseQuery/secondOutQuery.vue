@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container first-inventory-page">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -244,7 +244,7 @@ export default {
     },
   },
   created() {
-    this.getList();
+    // 汇总表在父组件切换到此 tab 时再加载（见 index.vue handleTabClick），避免与明细表同时请求
   },
   methods: {
     getTotalSummaries(param) {

@@ -503,6 +503,8 @@ export default {
       fixedNumberList: [],
       // 全量定数监测数据（本地缓存，用于前端搜索）
       allFixedNumberList: [],
+      // 当前仓库/科室下，后端已存在的产品档案ID列表（用于新增弹窗过滤）
+      existingMaterialIds: [],
       // 仓库列表数据
       warehouseList: [],
       // 科室列表数据
@@ -599,12 +601,14 @@ export default {
       // 仓库改变时，重新加载数据（仓库定数）
       if (this.queryParams.fixedNumberType === '1') {
         this.getList();
+        this.loadExistingMaterialIds();
       }
     },
     'queryParams.departmentId'(newVal) {
       // 科室改变时，重新加载数据（科室定数）
       if (this.queryParams.fixedNumberType === '2') {
         this.getList();
+        this.loadExistingMaterialIds();
       }
     }
   },
@@ -656,6 +660,42 @@ export default {
     window.removeEventListener('resize', this.setTableHeight);
   },
   methods: {
+    /** 加载当前仓库/科室下已存在的定数产品ID，用于新增时过滤 */
+    loadExistingMaterialIds() {
+      // 仅在选择了具体仓库/科室时加载
+      if (!this.queryParams.fixedNumberType) {
+        this.existingMaterialIds = [];
+        return;
+      }
+      const query = {
+        fixedNumberType: this.queryParams.fixedNumberType,
+        warehouseId: this.queryParams.fixedNumberType === '1' ? this.queryParams.warehouseId : null,
+        departmentId: this.queryParams.fixedNumberType === '2' ? this.queryParams.departmentId : null,
+        pageNum: 1,
+        pageSize: 10000, // 按仓库/科室定数记录通常数量有限，一次取完用于过滤
+      };
+      // 如果还未选择仓库/科室，则不加载
+      if (query.fixedNumberType === '1' && !query.warehouseId) {
+        this.existingMaterialIds = [];
+        return;
+      }
+      if (query.fixedNumberType === '2' && !query.departmentId) {
+        this.existingMaterialIds = [];
+        return;
+      }
+      listFixedNumber(query).then(response => {
+        const rows = (response && response.rows) || [];
+        this.existingMaterialIds = rows
+          .map(item => {
+            if (item.material && item.material.id) return item.material.id;
+            if (item.materialId) return item.materialId;
+            return null;
+          })
+          .filter(id => id);
+      }).catch(() => {
+        this.existingMaterialIds = [];
+      });
+    },
     /** 设置表格高度 */
     setTableHeight() {
       setTimeout(() => {
@@ -1069,8 +1109,23 @@ export default {
       // 统一使用 listMaterial 分页接口，不再使用 listMaterialAll（listAll 会拉全量数据导致卡顿）
       listMaterial(query).then(response => {
         const rows = (response && response.rows) || [];
-        const addedCodes = this.fixedNumberList.map(item => item.code).filter(code => code);
-        this.addMaterialList = rows.filter(material => !addedCodes.includes(material.code));
+        // 已存在于当前定数列表中的物料ID（包括本页及用户已新增但未保存的）
+        const currentIds = this.fixedNumberList
+          .map(item => {
+            if (item.material && item.material.id) return item.material.id;
+            if (item.materialId) return item.materialId;
+            return null;
+          })
+          .filter(id => id);
+        const existingIds = this.existingMaterialIds || [];
+        // 过滤规则：后端已存在的定数产品 + 当前列表中的产品，都不再允许在“新增”弹窗中重复选择
+        this.addMaterialList = rows.filter(material => {
+          const mid = material.id;
+          if (!mid) return true;
+          if (existingIds.includes(mid)) return false;
+          if (currentIds.includes(mid)) return false;
+          return true;
+        });
         // 分页总数以后端返回的 total 为准，保证分页组件正确
         this.addTotal = (response && response.total !== undefined) ? response.total : 0;
         this.addTableLoading = false;

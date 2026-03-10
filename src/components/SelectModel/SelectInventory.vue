@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <transition name="modal-fade">
     <div v-if="show" class="local-modal-mask">
       <transition name="modal-zoom">
@@ -179,6 +179,9 @@ export default {
     DialogComponentShow(newVal) {
       this.show = newVal;
       if (newVal) {
+        // 弹窗每次打开时，都重新查询一次库存，避免用户以为“搜索无效”
+        this.queryParams.pageNum = 1;
+        this.getList();
         this.$nextTick(() => {
           this.setContainerStyle();
           // 当弹窗打开时，如果有已选择的明细，标记已添加的项目
