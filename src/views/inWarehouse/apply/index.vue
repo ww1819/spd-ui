@@ -521,6 +521,7 @@
       :DialogComponentShow="DialogComponentShow"
       :supplierValue="supplierValue"
       :warehouseValue="form.warehouseId"
+      :useStkInventory="true"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>

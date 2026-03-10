@@ -183,8 +183,9 @@ import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import SelectFactory from "@/components/SelectModel/SelectFactory";
-import { listDepotInventory} from "@/api/gz/depotInventory";
-import { listGzDepInventory} from "@/api/gzDepartment/gzDepInventory";
+import { listDepotInventory } from "@/api/gz/depotInventory";
+import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
+import { listInventory } from "@/api/warehouse/inventory";
 import { checkInHospitalCode } from "@/api/gz/order";
 
 export default {
@@ -198,6 +199,10 @@ export default {
     supplierValue: [Number, String], // 供应商ID，用于过滤产品
     gzOrderEntryList: Array,
     useDepInventory: { // 是否使用科室库存（true=科室库存，false=仓库库存）
+      type: Boolean,
+      default: false
+    },
+    useStkInventory: { // 是否使用低值仓库库存（true=低值库存 /warehouse/inventory/list，false=高值备货库存 /gz/depotInventory/list）
       type: Boolean,
       default: false
     }
@@ -435,8 +440,19 @@ export default {
         }
       }
       this.loading = true;
-      // 根据 useDepInventory 决定使用哪个 API
-      const apiCall = this.useDepInventory ? listGzDepInventory(this.queryParams) : listDepotInventory(this.queryParams);
+      // 根据场景决定使用哪个 API：科室库存 -> 高值科室；低值仓库 -> 低值库存；否则 -> 高值备货库存
+      let apiCall;
+      const params = { ...this.queryParams };
+      if (!this.queryParams.filterBySupplier) {
+        params.supplierId = undefined;
+      }
+      if (this.useDepInventory) {
+        apiCall = listGzDepInventory(params);
+      } else if (this.useStkInventory) {
+        apiCall = listInventory(params);
+      } else {
+        apiCall = listDepotInventory(params);
+      }
       apiCall.then(response => {
         let materialList = response.rows || [];
         
