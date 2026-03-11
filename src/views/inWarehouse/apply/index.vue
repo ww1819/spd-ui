@@ -522,6 +522,7 @@
       :supplierValue="supplierValue"
       :warehouseValue="form.warehouseId"
       :useStkInventory="true"
+      :useFixedNumberMaterialArchive="true"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>

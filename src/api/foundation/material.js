@@ -1,11 +1,20 @@
 import request from '@/utils/request'
 
-// 查询耗材产品列表
+// 查询耗材产品列表（GET）
 export function listMaterial(query) {
   return request({
     url: '/foundation/material/list',
     method: 'get',
     params: query
+  })
+}
+
+// 查询耗材产品列表（POST，请求体传参，避免 excludeMaterialIds 等过长导致 400/414）
+export function listMaterialPost(data) {
+  return request({
+    url: '/foundation/material/list',
+    method: 'post',
+    data: data
   })
 }
 

@@ -17,12 +17,14 @@ export function getFixedNumber(id) {
   })
 }
 
-// 新增定数监测
+// 新增定数监测（明细可能很多，必须用 POST body 传参，避免 414 URI 过长）
 export function addFixedNumber(data) {
   return request({
     url: '/monitoring/fixedNumber',
     method: 'post',
-    data: data
+    params: {}, // 明确不往 URL 塞参数，防止被拼成 GET 导致 414
+    data: data,
+    timeout: 60000   // 明细多时适当延长超时
   })
 }
 

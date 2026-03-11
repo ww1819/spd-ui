@@ -187,6 +187,8 @@ import { listDepotInventory } from "@/api/gz/depotInventory";
 import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
 import { listInventory } from "@/api/warehouse/inventory";
 import { checkInHospitalCode } from "@/api/gz/order";
+import { listMaterialPost } from "@/api/foundation/material";
+import { listFixedNumber } from "@/api/monitoring/fixedNumber";
 
 export default {
   name: "SelectMaterialFilter",
@@ -203,6 +205,14 @@ export default {
       default: false
     },
     useStkInventory: { // 是否使用低值仓库库存（true=低值库存 /warehouse/inventory/list，false=高值备货库存 /gz/depotInventory/list）
+      type: Boolean,
+      default: false
+    },
+    filterByFixedNumber: { // 是否只显示定数监测产品（仅定数监测页传 true，入库等页面不传则显示全部库存）
+      type: Boolean,
+      default: false
+    },
+    useFixedNumberMaterialArchive: { // 入库新增明细：列出该仓库下定数检测的产品档案（来自定数数据，非库存接口）
       type: Boolean,
       default: false
     }
@@ -367,78 +377,120 @@ export default {
         this.useFixedNumberMode = false;
       }
     },
-    /** 查询库存信息列表 */
+    /** 查询库存信息列表（有仓库/科室走库存接口，无则走产品档案接口，保证点击搜索会发起请求） */
     getList() {
-      // 如果使用定数监测模式，直接显示定数监测的产品列表
-      if (this.useFixedNumberMode && this.fixedNumberMaterials.length > 0) {
+      const hasWarehouse = !!this.queryParams.warehouseId;
+      const hasDepartment = !!this.queryParams.departmentId;
+      const needDep = this.useDepInventory;
+
+      // 入库新增明细：从后端定数检测数据中筛选该仓库下的产品（走定数监测列表接口）
+      if (this.useFixedNumberMaterialArchive && hasWarehouse) {
         this.loading = true;
-        let filteredMaterials = this.fixedNumberMaterials;
-        
-        // 根据供应商过滤（优先使用 props 传入的 supplierValue）
-        const supplierId = this.supplierValue || this.queryParams.supplierId;
-        if (this.queryParams.filterBySupplier && supplierId) {
-          filteredMaterials = filteredMaterials.filter(item => {
-            return item.material && item.material.supplierId == supplierId;
-          });
-        }
-        
-        // 根据库房分类过滤
-        if (this.queryParams.storeroomId) {
-          filteredMaterials = filteredMaterials.filter(item => {
-            return item.material && item.material.storeroomId == this.queryParams.storeroomId;
-          });
-        }
-        
-        // 根据生产厂家过滤
-        if (this.queryParams.factoryId) {
-          filteredMaterials = filteredMaterials.filter(item => {
-            return item.material && item.material.factoryId == this.queryParams.factoryId;
-          });
-        }
-        
-        // 根据耗材关键词过滤（支持编码、名称、首字母）
+        const params = {
+          fixedNumberType: '1',
+          warehouseId: this.queryParams.warehouseId,
+          pageNum: this.queryParams.pageNum,
+          pageSize: this.queryParams.pageSize
+        };
         if (this.queryParams.materialKeyword) {
-          const keyword = this.queryParams.materialKeyword.toLowerCase().trim();
-          filteredMaterials = filteredMaterials.filter(item => {
-            if (!item.material) return false;
-            const material = item.material;
-            // 检查编码
-            if (material.code && material.code.toLowerCase().includes(keyword)) {
-              return true;
-            }
-            // 检查名称
-            if (material.name && material.name.toLowerCase().includes(keyword)) {
-              return true;
-            }
-            // 检查首字母（名称简码）
-            if (material.referredName && material.referredName.toLowerCase().includes(keyword)) {
-              return true;
-            }
-            return false;
-          });
+          params.materialName = this.queryParams.materialKeyword;
         }
-        
-        // 分页处理
-        const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize;
-        const end = start + this.queryParams.pageSize;
-        this.materialList = filteredMaterials.slice(start, end);
-        this.total = filteredMaterials.length;
-        this.loading = false;
+        if (this.queryParams.storeroomId) {
+          params.storeroomId = this.queryParams.storeroomId;
+        }
+        if (this.queryParams.factoryId) {
+          params.factoryId = this.queryParams.factoryId;
+        }
+        if (this.queryParams.filterBySupplier && (this.supplierValue || this.queryParams.supplierId)) {
+          params.supplierId = this.supplierValue || this.queryParams.supplierId;
+        }
+        listFixedNumber(params).then(response => {
+          const rows = Array.isArray(response.rows)
+            ? response.rows
+            : (response.data && Array.isArray(response.data.rows) ? response.data.rows : []);
+          const totalVal = response.total !== undefined && response.total !== null
+            ? response.total
+            : (response.data && (response.data.total !== undefined && response.data.total !== null) ? response.data.total : rows.length);
+          const materialList = rows.map(row => {
+            const material = {
+              id: row.materialId,
+              code: row.code,
+              name: row.name,
+              speci: row.specification || row.speci,
+              model: row.model,
+              price: row.price,
+              registerNo: row.registerNo,
+              fdUnit: row.unitName != null ? { unitName: row.unitName } : null,
+              fdFactory: row.factoryName != null ? { factoryName: row.factoryName } : null,
+              supplier: row.supplierName != null ? { name: row.supplierName } : null,
+              fdWarehouseCategory: row.warehouseCategoryName != null ? { warehouseCategoryName: row.warehouseCategoryName } : null
+            };
+            return {
+              material,
+              qty: 0,
+              unitPrice: row.price != null ? row.price : 0,
+              amt: 0,
+              materialNo: '',
+              batchNo: '',
+              materialDate: null,
+              endTime: null,
+              inHospitalCode: ''
+            };
+          });
+          this.materialList = materialList.slice();
+          this.total = Number(totalVal) || 0;
+          this.loading = false;
+        }).catch(() => {
+          this.loading = false;
+        });
         return;
       }
-      
-      // 根据 useDepInventory 判断使用哪个查询条件
-      if (this.useDepInventory) {
-        if (!this.queryParams.departmentId) {
-          this.loading = false;
-          return;
+
+      // 未选仓库/科室时：走产品档案列表接口（如入库界面先搜产品再选仓库）
+      if (needDep ? !hasDepartment : !hasWarehouse) {
+        this.loading = true;
+        const query = {};
+        if (this.queryParams.materialKeyword) {
+          query.name = this.queryParams.materialKeyword;
+          query.nameSearch = this.queryParams.materialKeyword;
         }
-      } else {
-        if (!this.queryParams.warehouseId) {
-          this.loading = false;
-          return;
+        if (this.queryParams.storeroomId) query.storeroomId = this.queryParams.storeroomId;
+        if (this.queryParams.factoryId) query.factoryId = this.queryParams.factoryId;
+        if (this.queryParams.filterBySupplier && (this.supplierValue || this.queryParams.supplierId)) {
+          query.supplierId = this.supplierValue || this.queryParams.supplierId;
         }
+        listMaterialPost({
+          pageNum: this.queryParams.pageNum,
+          pageSize: this.queryParams.pageSize,
+          query
+        }).then(response => {
+          // 兼容多种返回格式：直接 rows/total、嵌套在 data 中、或 data 本身为数组
+          const rows = Array.isArray(response.rows)
+            ? response.rows
+            : (response.data && Array.isArray(response.data.rows) ? response.data.rows : Array.isArray(response.data) ? response.data : []);
+          const totalVal = response.total !== undefined && response.total !== null
+            ? response.total
+            : (response.data && (response.data.total !== undefined && response.data.total !== null) ? response.data.total : rows.length);
+          const materialList = rows.map(m => ({
+            material: m && typeof m === 'object' ? m : { id: m },
+            qty: 0,
+            unitPrice: (m && m.price) != null ? m.price : 0,
+            amt: 0,
+            materialNo: '',
+            batchNo: '',
+            materialDate: null,
+            endTime: null,
+            inHospitalCode: ''
+          }));
+          this.materialList = materialList.slice();
+          this.total = Number(totalVal) || 0;
+          this.loading = false;
+        }).catch(() => {
+          this.loading = false;
+        });
+        return;
       }
+
       this.loading = true;
       // 根据场景决定使用哪个 API：科室库存 -> 高值科室；低值仓库 -> 低值库存；否则 -> 高值备货库存
       let apiCall;
@@ -454,35 +506,41 @@ export default {
         apiCall = listDepotInventory(params);
       }
       apiCall.then(response => {
-        let materialList = response.rows || [];
+        // 兼容多种返回格式：直接 rows 或嵌套在 data 中
+        let materialList = Array.isArray(response.rows) ? response.rows : (response.data && Array.isArray(response.data.rows) ? response.data.rows : []);
         
-        // 如果有定数监测产品ID列表，只显示这些产品的库存
-        if (!this.useDepInventory && this.fixedNumberMaterialIds.length > 0) {
+        // 仅当父组件明确要求时（定数监测页）才按定数产品过滤；入库等页面不传 filterByFixedNumber，显示全部库存
+        if (this.filterByFixedNumber && !this.useDepInventory && this.fixedNumberMaterialIds.length > 0) {
           materialList = materialList.filter(item => {
             const materialId = item.material && item.material.id;
             return materialId && this.fixedNumberMaterialIds.includes(materialId);
           });
         }
         
-        // 根据供应商过滤（优先使用 props 传入的 supplierValue）
+        // 根据供应商过滤（优先使用 props 传入的 supplierValue）；库存行可能用 item.supplierId，物料用 item.material.supplierId
         const supplierId = this.supplierValue || this.queryParams.supplierId;
         if (this.queryParams.filterBySupplier && supplierId) {
           materialList = materialList.filter(item => {
-            return item.material && item.material.supplierId == supplierId;
+            const sid = (item.material && item.material.supplierId != null) ? item.material.supplierId : item.supplierId;
+            return sid != null && sid == supplierId;
           });
         }
         
-        // 根据库房分类过滤
+        // 根据库房分类过滤（仅当行/物料有该字段时才过滤，避免因未关联而清空列表）
         if (this.queryParams.storeroomId) {
           materialList = materialList.filter(item => {
-            return item.material && item.material.storeroomId == this.queryParams.storeroomId;
+            const sid = item.material && item.material.storeroomId != null ? item.material.storeroomId : item.storeroomId;
+            if (sid == null) return true;
+            return sid == this.queryParams.storeroomId;
           });
         }
         
         // 根据生产厂家过滤
         if (this.queryParams.factoryId) {
           materialList = materialList.filter(item => {
-            return item.material && item.material.factoryId == this.queryParams.factoryId;
+            const fid = item.material && item.material.factoryId != null ? item.material.factoryId : item.factoryId;
+            if (fid == null) return true;
+            return fid == this.queryParams.factoryId;
           });
         }
         
@@ -508,7 +566,7 @@ export default {
           });
         }
         
-        this.materialList = materialList;
+        this.materialList = materialList.slice();
         this.total = materialList.length;
         this.loading = false;
       }).catch(() => {
