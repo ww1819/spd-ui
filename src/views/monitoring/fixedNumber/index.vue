@@ -660,12 +660,11 @@ export default {
     window.removeEventListener('resize', this.setTableHeight);
   },
   methods: {
-    /** 加载当前仓库/科室下已存在的定数产品ID，用于新增时过滤 */
+    /** 加载当前仓库/科室下已存在的定数产品ID，用于新增时过滤。返回 Promise 便于打开新增弹窗时等待后再查询可选耗材 */
     loadExistingMaterialIds() {
-      // 仅在选择了具体仓库/科室时加载
       if (!this.queryParams.fixedNumberType) {
         this.existingMaterialIds = [];
-        return;
+        return Promise.resolve();
       }
       const query = {
         fixedNumberType: this.queryParams.fixedNumberType,
@@ -674,16 +673,15 @@ export default {
         pageNum: 1,
         pageSize: 10000, // 按仓库/科室定数记录通常数量有限，一次取完用于过滤
       };
-      // 如果还未选择仓库/科室，则不加载
       if (query.fixedNumberType === '1' && !query.warehouseId) {
         this.existingMaterialIds = [];
-        return;
+        return Promise.resolve();
       }
       if (query.fixedNumberType === '2' && !query.departmentId) {
         this.existingMaterialIds = [];
-        return;
+        return Promise.resolve();
       }
-      listFixedNumber(query).then(response => {
+      return listFixedNumber(query).then(response => {
         const rows = (response && response.rows) || [];
         this.existingMaterialIds = rows
           .map(item => {
@@ -1072,21 +1070,23 @@ export default {
         this.$modal.msgSuccess("保存成功");
         // 保存成功后，保存到 localStorage
         this.saveToLocalStorage();
-        // 保持列表显示，不清空
-        // 暂时禁用自动检查入库记录，避免频繁调用导致异常
-        // 入库记录检查将在删除时进行
+        // 刷新列表和汇总数
+        this.getList();
+        this.loadExistingMaterialIds();
       }).catch(error => {
         console.error('保存定数监测失败:', error);
         this.$modal.msgError("保存失败");
       });
     },
-    /** 新增按钮操作 */
+    /** 新增按钮操作：打开弹窗时先刷新“当前仓库/科室已有”的物料ID，再查询可选耗材（过滤掉已有 + 前端已添加未保存的） */
     handleAdd() {
       this.addDialogVisible = true;
       this.resetAddQuery();
-      this.handleAddQuery();
+      this.loadExistingMaterialIds().then(() => {
+        this.handleAddQuery();
+      });
     },
-    /** 新增弹窗搜索（使用分页接口，避免一次加载所有产品档案导致卡顿） */
+    /** 新增弹窗搜索：排除“后端已有 + 前端未保存”的物料ID后，由后端分页返回 */
     handleAddQuery() {
       this.addTableLoading = true;
       const query = {
@@ -1106,27 +1106,21 @@ export default {
       if (this.queryParams.fixedNumberType === '1' && this.queryParams.warehouseId) {
         query.warehouseId = this.queryParams.warehouseId;
       }
-      // 统一使用 listMaterial 分页接口，不再使用 listMaterialAll（listAll 会拉全量数据导致卡顿）
+      // 合并“后端仓库/科室已有”与“前端已添加未保存”的物料ID，传给后端做排除后再分页
+      const currentIds = (this.fixedNumberList || [])
+        .map(item => {
+          if (item.material && item.material.id) return item.material.id;
+          if (item.materialId) return item.materialId;
+          return null;
+        })
+        .filter(id => id);
+      const existingIds = this.existingMaterialIds || [];
+      const excludeIds = [...new Set([...existingIds, ...currentIds])].filter(Boolean);
+      if (excludeIds.length > 0) {
+        query.excludeMaterialIds = excludeIds.join(',');
+      }
       listMaterial(query).then(response => {
-        const rows = (response && response.rows) || [];
-        // 已存在于当前定数列表中的物料ID（包括本页及用户已新增但未保存的）
-        const currentIds = this.fixedNumberList
-          .map(item => {
-            if (item.material && item.material.id) return item.material.id;
-            if (item.materialId) return item.materialId;
-            return null;
-          })
-          .filter(id => id);
-        const existingIds = this.existingMaterialIds || [];
-        // 过滤规则：后端已存在的定数产品 + 当前列表中的产品，都不再允许在“新增”弹窗中重复选择
-        this.addMaterialList = rows.filter(material => {
-          const mid = material.id;
-          if (!mid) return true;
-          if (existingIds.includes(mid)) return false;
-          if (currentIds.includes(mid)) return false;
-          return true;
-        });
-        // 分页总数以后端返回的 total 为准，保证分页组件正确
+        this.addMaterialList = (response && response.rows) || [];
         this.addTotal = (response && response.total !== undefined) ? response.total : 0;
         this.addTableLoading = false;
       }).catch(() => {
