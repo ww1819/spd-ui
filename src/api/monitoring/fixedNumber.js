@@ -9,6 +9,15 @@ export function listFixedNumber(query) {
   })
 }
 
+// 科室申购新增明细专用：查询仓库的定数检测数据（不依赖产品档案 list 权限）
+export function listFixedNumberForPurchase(query) {
+  return request({
+    url: '/monitoring/fixedNumber/listForPurchase',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询定数监测详细
 export function getFixedNumber(id) {
   return request({

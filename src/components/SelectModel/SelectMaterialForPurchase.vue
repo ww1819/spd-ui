@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <transition name="modal-fade">
     <div v-if="show" class="local-modal-mask">
       <transition name="modal-zoom">
@@ -124,6 +124,7 @@
 
 <script>
 import { listMaterial } from "@/api/foundation/material";
+import { listFixedNumberForPurchase } from "@/api/monitoring/fixedNumber";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 
 export default {
@@ -234,36 +235,35 @@ export default {
         this.fixedNumberMaterialIds = [];
       }
     },
-    /** 查询耗材信息列表 */
+    /** 查询耗材信息列表（有仓库时走科室申购专用定数接口，否则走产品档案接口） */
     getList() {
       this.loading = true;
-      // 如果使用定数监测过滤，需要获取所有数据
-      const queryParams = { ...this.queryParams };
-      if (this.fixedNumberMaterialIds.length > 0) {
-        // 获取所有数据，不分页
-        queryParams.pageNum = 1;
-        queryParams.pageSize = 9999;
+      if (this.warehouseValue) {
+        listFixedNumberForPurchase({
+          warehouseId: this.warehouseValue,
+          pageNum: this.queryParams.pageNum,
+          pageSize: this.queryParams.pageSize,
+          materialName: this.queryParams.name || this.queryParams.code || undefined
+        }).then(response => {
+          const rows = response.rows || [];
+          this.total = response.total != null ? response.total : rows.length;
+          this.allFilteredMaterials = rows;
+          this.materialList = rows.slice();
+          this.loading = false;
+        }).catch(() => {
+          this.loading = false;
+        });
+        return;
       }
-      
-      listMaterial(queryParams).then(response => {
+      listMaterial(this.queryParams).then(response => {
         let materialList = response.rows || [];
-        
-        // 如果有定数监测产品ID列表，只显示这些产品
-        if (this.fixedNumberMaterialIds.length > 0) {
-          materialList = materialList.filter(item => {
-            return item.id && this.fixedNumberMaterialIds.includes(item.id);
-          });
-        }
-        
-        // 保存所有过滤后的数据
         this.allFilteredMaterials = materialList;
         this.total = materialList.length;
-        
-        // 客户端分页
         const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize;
         const end = start + this.queryParams.pageSize;
         this.materialList = materialList.slice(start, end);
-        
+        this.loading = false;
+      }).catch(() => {
         this.loading = false;
       });
     },

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
       <el-row class="query-row-left">
@@ -666,41 +666,56 @@ export default {
       this.auditForm.auditOpinion = '同意';
       this.auditDialogVisible = true;
     },
+    /** 校验计划明细是否全部指定供应商，返回 Promise，不通过时 reject */
+    validatePlanEntriesSupplier(planId) {
+      return getPurchasePlan(planId).then(response => {
+        const list = response.data.purchasePlanEntryList || [];
+        const noSupplier = list.filter(e => e.materialId && (e.supplierId == null || e.supplierId === ''));
+        if (noSupplier.length > 0) {
+          return Promise.reject(new Error(response.data.planNo + '：存在 ' + noSupplier.length + ' 条明细未指定供应商，请先为每条明细指定供应商后再审核。'));
+        }
+        return Promise.resolve();
+      });
+    },
     /** 提交审核 */
     submitAudit() {
       if (!this.currentAuditRow) {
         return;
       }
-      // 获取当前登录用户的姓名（优先使用nickName，否则使用userName）
       const currentUser = this.$store.state.user;
       const auditBy = currentUser.nickName || currentUser.userName || currentUser.userId;
       const auditOpinion = this.auditForm.auditOpinion || '';
 
       if (this.currentAuditRow.isBatch) {
-        // 批量审核
-        const auditPromises = this.ids.map(id => auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion}));
-        
-        Promise.all(auditPromises).then(() => {
+        // 批量审核：先校验每个计划的明细是否都指定了供应商
+        const validatePromises = this.ids.map(id => this.validatePlanEntriesSupplier(id));
+        Promise.all(validatePromises).then(() => {
+          const auditPromises = this.ids.map(id => auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion}));
+          return Promise.all(auditPromises);
+        }).then(() => {
           this.auditDialogVisible = false;
           this.getList();
           this.$modal.msgSuccess("批量审核成功！共审核 " + this.ids.length + " 个计划");
           this.currentAuditRow = null;
           this.auditForm.planNo = '';
           this.auditForm.auditOpinion = '';
-        }).catch(() => {
-          this.$modal.msgError("批量审核失败！");
+        }).catch(err => {
+          this.$modal.msgError(err && err.message ? err.message : "批量审核失败！");
         });
       } else {
-        // 单个审核
         const id = this.currentAuditRow.id;
-        auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion}).then(() => {
+        this.validatePlanEntriesSupplier(id).then(() => {
+          return auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion});
+        }).then(() => {
           this.auditDialogVisible = false;
           this.getList();
           this.$modal.msgSuccess("审核成功！");
           this.currentAuditRow = null;
           this.auditForm.planNo = '';
           this.auditForm.auditOpinion = '';
-        }).catch(() => {});
+        }).catch(err => {
+          this.$modal.msgError(err && err.message ? err.message : "审核失败！");
+        });
       }
     },
     /** 导出按钮操作 */

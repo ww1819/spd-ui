@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container first-inventory-page">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -17,6 +17,15 @@
               <div class="query-select-wrapper">
                 <SelectMaterial v-model="queryParams.materialId" />
               </div>
+            </el-form-item>
+            <el-form-item label="产品名称" prop="materialNameLike" class="query-item-inline">
+              <el-input v-model="queryParams.materialNameLike" placeholder="名称/编码/拼音简码" clearable style="width: 160px" />
+            </el-form-item>
+            <el-form-item label="规格" prop="materialSpeciLike" class="query-item-inline">
+              <el-input v-model="queryParams.materialSpeciLike" placeholder="规格模糊" clearable style="width: 140px" />
+            </el-form-item>
+            <el-form-item label="型号" prop="materialModelLike" class="query-item-inline">
+              <el-input v-model="queryParams.materialModelLike" placeholder="型号模糊" clearable style="width: 140px" />
             </el-form-item>
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
@@ -268,6 +277,9 @@ export default {
         billStatus: null,
         userId: null,
         billType: null,
+        materialNameLike: null,
+        materialSpeciLike: null,
+        materialModelLike: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },

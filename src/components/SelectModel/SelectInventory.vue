@@ -40,8 +40,33 @@
 
             <el-row :gutter="20">
               <el-col :span="6">
-                <el-form-item label="耗材" prop="materialId" label-width="100px">
-                  <SelectMaterial v-model="queryParams.materialId" />
+                <el-form-item label="产品名称" prop="materialName" label-width="100px">
+                  <el-input
+                    v-model="queryParams.materialName"
+                    placeholder="可输入部分品名、拼音简码或耗材编码"
+                    clearable
+                    @keyup.enter.native="handleQuery"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="规格" prop="materialSpeci" label-width="100px">
+                  <el-input
+                    v-model="queryParams.materialSpeci"
+                    placeholder="请输入规格，支持模糊搜索"
+                    clearable
+                    @keyup.enter.native="handleQuery"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="型号" prop="materialModel" label-width="100px">
+                  <el-input
+                    v-model="queryParams.materialModel"
+                    placeholder="请输入型号，支持模糊搜索"
+                    clearable
+                    @keyup.enter.native="handleQuery"
+                  />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -62,7 +87,7 @@
 <!--          <el-table-column label="耗材" align="center" prop="material.name" width="120" show-overflow-tooltip resizable/>-->
           <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.model" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="库存数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable/>
           <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable/>
@@ -109,14 +134,13 @@
 
 <script>
 import { listInventory } from "@/api/warehouse/inventory";
-import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 
 export default {
   name: "SelectInventory",
   dicts:['way_status'],
-  components: {SelectMaterial,SelectWarehouse,SelectSupplier},
+  components: {SelectWarehouse,SelectSupplier},
   props: ['DialogComponentShow','warehouseValue','supplierValue','selectedDetails'], //接受父组件传递过来的数据
   data() {
     return {
@@ -148,6 +172,9 @@ export default {
         pageSize: 10,
         warehouseId: null,
         materialId: null,
+        materialName: null,
+        materialSpeci: null,
+        materialModel: null,
         supplierId: null,
         batchNo: null,
       },
