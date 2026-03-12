@@ -528,20 +528,12 @@ export default {
       const params = { ...this.queryParams };
       params.billType = 1;
       listApply(params).then(response => {
-        // 前端二次过滤：确保只显示SL开头的单号，排除ZK开头的转科申请
-        if (response.rows && response.rows.length > 0) {
-          this.applyList = response.rows.filter(item => {
-            const billNo = item.applyBillNo || '';
-            // 只保留SL开头的申领单，排除ZK开头的转科申请
-            return billNo.toUpperCase().startsWith('SL') && (item.billType === 1 || item.billType == null);
-          });
-          this.total = this.applyList.length;
-        } else {
-          this.applyList = [];
-          this.total = 0;
-        }
+        this.applyList = response.rows || [];
+        this.total = response.total != null ? response.total : 0;
         this.loading = false;
       }).catch(() => {
+        this.applyList = [];
+        this.total = 0;
         this.loading = false;
       });
     },
@@ -646,10 +638,13 @@ export default {
     reset() {
       this.form = {
         id: null,
+        applyBillNo: null,
         applyBillDate: null,
         warehouseId: null,
+        departmentId: null,
         userId: null,
         applyBillStatus: null,
+        billType: 1,
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -750,11 +745,10 @@ export default {
     },
     /** 查看按钮操作 */
     handleView(row){
-
-      const id = row.id
+      const id = row.id;
       getApply(id).then(response => {
         this.form = response.data;
-        this.basApplyEntryList = response.data.basApplyEntryList;
+        this.basApplyEntryList = response.data.basApplyEntryList || [];
         this.open = true;
         this.calculateTotals();
         this.action = false;
@@ -786,7 +780,7 @@ export default {
       const id = row.id || this.ids
       getApply(id).then(response => {
         this.form = response.data;
-        this.basApplyEntryList = response.data.basApplyEntryList;
+        this.basApplyEntryList = response.data.basApplyEntryList || [];
         this.open = true;
         this.calculateTotals();
         this.action = true;
@@ -804,10 +798,22 @@ export default {
       
       this.$refs["form"].validate(valid => {
         if (valid) {
+          const validEntries = this.basApplyEntryList.filter(item => item.materialId);
+          if (validEntries.length === 0) {
+            this.$modal.msgError("请至少添加一条有效明细（选择耗材）");
+            return;
+          }
+          const invalidQty = this.basApplyEntryList.filter(item =>
+            item.materialId && (item.qty == null || item.qty === '' || Number(item.qty) <= 0)
+          );
+          if (invalidQty.length > 0) {
+            this.$modal.msgError("存在明细数量为空或0，请填写有效数量后再保存。");
+            return;
+          }
           this.form.basApplyEntryList = this.basApplyEntryList;
           var totalAmt = 0;
           this.basApplyEntryList.forEach(item => {
-            if(item.amt){
+            if (item.amt) {
               totalAmt += parseFloat(item.amt);
             }
           });
@@ -846,9 +852,8 @@ export default {
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      const ids = row.id || this.ids;
-      const billNo = row.applyBillNo || '';
-      this.$modal.confirm('你好！是否确认删除申领单，单号"' + billNo + '"的数据项？').then(function() {
+      const ids = row.id != null ? row.id : this.ids;
+      this.$modal.confirm('是否确认删除所选科室申领数据？').then(() => {
         return delApply(ids);
       }).then(() => {
         this.getList();

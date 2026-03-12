@@ -60,3 +60,21 @@ export function exportPurchasePlan(query) {
     params: query
   })
 }
+
+// 根据采购计划明细ID查询关联的申购明细（科室申购单单号、申购科室、申购数量、制单人、制单时间、审核人、审核时间）
+export function getApplyDetails(entryId) {
+  return request({
+    url: '/caigou/jihua/applyDetails',
+    method: 'get',
+    params: { entryId }
+  })
+}
+
+// 根据采购计划ID查询关联的申购单号列表（表头引用申购单号弹窗用）
+export function getApplyBillNoList(planId) {
+  return request({
+    url: '/caigou/jihua/applyBillNoList',
+    method: 'get',
+    params: { planId }
+  })
+}

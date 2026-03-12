@@ -677,6 +677,17 @@ export default {
         return Promise.resolve();
       });
     },
+    /** 校验计划明细数量均大于0，返回 Promise，不通过时 reject */
+    validatePlanEntriesQty(planId) {
+      return getPurchasePlan(planId).then(response => {
+        const list = response.data.purchasePlanEntryList || [];
+        const invalidQty = list.filter(e => e.materialId && (e.qty == null || e.qty === '' || Number(e.qty) <= 0));
+        if (invalidQty.length > 0) {
+          return Promise.reject(new Error(response.data.planNo + '：存在明细数量为空或0，不允许审核。'));
+        }
+        return Promise.resolve();
+      });
+    },
     /** 提交审核 */
     submitAudit() {
       if (!this.currentAuditRow) {
@@ -687,9 +698,10 @@ export default {
       const auditOpinion = this.auditForm.auditOpinion || '';
 
       if (this.currentAuditRow.isBatch) {
-        // 批量审核：先校验每个计划的明细是否都指定了供应商
-        const validatePromises = this.ids.map(id => this.validatePlanEntriesSupplier(id));
-        Promise.all(validatePromises).then(() => {
+        // 批量审核：先校验每个计划的明细供应商与数量
+        const validateSupplier = this.ids.map(id => this.validatePlanEntriesSupplier(id));
+        const validateQty = this.ids.map(id => this.validatePlanEntriesQty(id));
+        Promise.all([...validateSupplier, ...validateQty]).then(() => {
           const auditPromises = this.ids.map(id => auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion}));
           return Promise.all(auditPromises);
         }).then(() => {
@@ -704,7 +716,7 @@ export default {
         });
       } else {
         const id = this.currentAuditRow.id;
-        this.validatePlanEntriesSupplier(id).then(() => {
+        Promise.all([this.validatePlanEntriesSupplier(id), this.validatePlanEntriesQty(id)]).then(() => {
           return auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion});
         }).then(() => {
           this.auditDialogVisible = false;

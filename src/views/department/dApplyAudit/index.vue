@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -535,6 +535,12 @@ export default {
     handleAuditSubmit() {
       if (!this.form.id) {
         this.$modal.msgError("请先选择要审核的申领单");
+        return;
+      }
+      const list = this.basApplyEntryList || [];
+      const invalidQty = list.filter(e => e.materialId && (e.qty == null || e.qty === '' || Number(e.qty) <= 0));
+      if (invalidQty.length > 0) {
+        this.$modal.msgError("存在明细数量为空或0，不允许审核。请先修正数量后再审核。");
         return;
       }
       const userId = this.$store.state.user.userId;

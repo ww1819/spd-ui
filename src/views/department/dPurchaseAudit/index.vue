@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -532,6 +532,12 @@ export default {
         this.$modal.msgError("请先选择要审核的申购单");
         return;
       }
+      const list = this.depPurchaseApplyEntryList || [];
+      const invalidQty = list.filter(e => e.materialId && (e.qty == null || e.qty === '' || Number(e.qty) <= 0));
+      if (invalidQty.length > 0) {
+        this.$modal.msgError("存在明细数量为空或0，不允许审核。请先修正数量后再审核。");
+        return;
+      }
       const userId = this.$store.state.user.userId;
       auditPurchase({
         id: String(this.form.id),
@@ -577,15 +583,26 @@ export default {
       }
       const userId = this.$store.state.user.userId;
       this.$modal.confirm(`确认审核选中的 ${pendingList.length} 条申购单吗？`).then(() => {
-        const requests = pendingList.map(row =>
-          auditPurchase({
-            id: String(row.id),
-            auditBy: userId
+        const validatePromises = pendingList.map(row =>
+          getPurchaseAudit(row.id).then(resp => {
+            const list = resp.data.depPurchaseApplyEntryList || [];
+            const invalid = list.filter(e => e.materialId && (e.qty == null || e.qty === '' || Number(e.qty) <= 0));
+            if (invalid.length > 0) {
+              return Promise.reject(new Error((resp.data.purchaseBillNo || row.id) + '：存在明细数量为空或0，不允许审核。'));
+            }
+            return Promise.resolve();
           })
         );
-        Promise.all(requests).then(() => {
+        Promise.all(validatePromises).then(() => {
+          const requests = pendingList.map(row =>
+            auditPurchase({ id: String(row.id), auditBy: userId })
+          );
+          return Promise.all(requests);
+        }).then(() => {
           this.$modal.msgSuccess("审核成功");
           this.getList();
+        }).catch(err => {
+          this.$modal.msgError(err && err.message ? err.message : "审核失败");
         });
       }).catch(() => {});
     },

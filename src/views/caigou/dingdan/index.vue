@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
 
@@ -151,8 +151,15 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="260" fixed="right">
         <template slot-scope="scope">
+          <el-button
+            v-if="scope.row.planId"
+            size="small"
+            type="text"
+            icon="el-icon-document"
+            @click="handleViewPlan(scope.row)"
+          >查看计划</el-button>
           <el-button
             size="small"
             type="text"
@@ -329,6 +336,17 @@
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
             </template>
           </el-table-column>
+          <el-table-column v-if="!action" label="操作" align="center" width="120" fixed="right">
+            <template slot-scope="scope">
+              <el-button
+                v-if="scope.row.planEntryId"
+                size="mini"
+                type="text"
+                icon="el-icon-tickets"
+                @click="handleViewApplyDetails(scope.row)"
+              >查看申购明细</el-button>
+            </template>
+          </el-table-column>
         </el-table>
       </el-form>
             <div v-show="action" class="modal-footer">
@@ -339,6 +357,44 @@
         </transition>
       </div>
     </transition>
+
+    <!-- 计划单查看弹窗 -->
+    <el-dialog title="采购计划" :visible.sync="planViewDialogVisible" width="560px" append-to-body>
+      <el-descriptions v-if="planViewData" :column="2" border size="small">
+        <el-descriptions-item label="计划单号">{{ planViewData.planNo || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="计划状态">
+          <dict-tag v-if="planViewData.planStatus" :options="dict.type.biz_status" :value="planViewData.planStatus"/>
+          <span v-else>--</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="计划日期">{{ planViewData.planDate | parseTime('{y}-{m}-{d}') || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="总金额">{{ planViewData.totalAmount | formatCurrency || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="仓库" :span="2">{{ planViewData.warehouse && planViewData.warehouse.name ? planViewData.warehouse.name : '--' }}</el-descriptions-item>
+      </el-descriptions>
+      <span slot="footer" class="dialog-footer">
+        <el-button type="primary" size="small" @click="openJihuaPage">前往采购计划</el-button>
+        <el-button size="small" @click="planViewDialogVisible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 科室申购单明细弹窗 -->
+    <el-dialog title="科室申购单明细" :visible.sync="applyDetailsDialogVisible" width="800px" append-to-body>
+      <el-table :data="applyDetailsList" border size="small" max-height="360">
+        <el-table-column label="申购单单号" prop="applyBillNo" min-width="140" show-overflow-tooltip/>
+        <el-table-column label="申购科室" prop="departmentName" min-width="100" show-overflow-tooltip/>
+        <el-table-column label="申购数量" prop="qty" width="100" align="right"/>
+        <el-table-column label="制单人" prop="createByName" width="90" show-overflow-tooltip/>
+        <el-table-column label="制单时间" prop="createTime" width="160">
+          <template slot-scope="scope">{{ scope.row.createTime | parseTime('{y}-{m}-{d} {h}:{i}:{s}') || '--' }}</template>
+        </el-table-column>
+        <el-table-column label="审核人" prop="auditByName" width="90" show-overflow-tooltip/>
+        <el-table-column label="审核时间" prop="auditTime" width="160">
+          <template slot-scope="scope">{{ scope.row.auditTime | parseTime('{y}-{m}-{d} {h}:{i}:{s}') || '--' }}</template>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button size="small" @click="applyDetailsDialogVisible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
 
     <!-- 3、使用组件 -->
     <SelectMMaterialFilter
@@ -354,6 +410,7 @@
 
 <script>
 import { listDingdan, getDingdan, delDingdan, addDingdan, updateDingdan } from "@/api/caigou/dingdan";
+import { getCaigoujihua, getJihuaApplyDetails } from "@/api/caigou/jihua";
 import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -425,6 +482,12 @@ export default {
       },
       // 表单参数
       form: {},
+      // 计划查看弹窗
+      planViewDialogVisible: false,
+      planViewData: null,
+      // 申购明细弹窗
+      applyDetailsDialogVisible: false,
+      applyDetailsList: [],
       // 表单校验
       rules: {
         supplierId: [
@@ -836,6 +899,31 @@ export default {
       this.download('caigou/dingdan/export', {
         ...this.queryParams
       }, `purchase_order_${new Date().getTime()}.xlsx`)
+    },
+    /** 查看计划（订单表头） */
+    handleViewPlan(row) {
+      if (!row.planId) return;
+      getCaigoujihua(row.planId).then(res => {
+        this.planViewData = res.data;
+        this.planViewDialogVisible = true;
+      }).catch(() => {
+        this.$modal.msgError('获取计划信息失败');
+      });
+    },
+    /** 前往采购计划页（新标签打开） */
+    openJihuaPage() {
+      const routeData = this.$router.resolve({ path: '/caigou/jihua' });
+      window.open(routeData.href, '_blank');
+    },
+    /** 查看申购明细（订单明细） */
+    handleViewApplyDetails(row) {
+      if (!row.planEntryId) return;
+      getJihuaApplyDetails(row.planEntryId).then(res => {
+        this.applyDetailsList = res.data || [];
+        this.applyDetailsDialogVisible = true;
+      }).catch(() => {
+        this.$modal.msgError('获取申购明细失败');
+      });
     }
   }
 };

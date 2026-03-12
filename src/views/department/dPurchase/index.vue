@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -298,7 +298,7 @@
                     <el-button @click="cancel">取消</el-button>
                   </el-col>
                   <el-col :span="1.5">
-                    <el-button type="primary" @click="submitForm">确认</el-button>
+                    <el-button type="primary" @click="submitForm">保存</el-button>
                   </el-col>
                 </div>
               </el-row>
@@ -568,11 +568,11 @@ export default {
       const id = row.id
       getPurchase(id).then(response => {
         this.form = response.data;
-        this.depPurchaseApplyEntryList = response.data.depPurchaseApplyEntryList;
+        this.depPurchaseApplyEntryList = response.data.depPurchaseApplyEntryList || [];
         this.open = true;
         this.action = false;
 
-        if(response.data.purchaseBillStatus == 1){
+        if (response.data.purchaseBillStatus == 1) {
           this.form.purchaseBillStatus = '1';
         }else if(response.data.purchaseBillStatus == 2){
           this.form.purchaseBillStatus = '2';
@@ -623,12 +623,12 @@ export default {
             this.form.userName = currentUser.nickName || currentUser.name || currentUser.userName || '';
           }
         }
-        this.depPurchaseApplyEntryList = response.data.depPurchaseApplyEntryList;
+        this.depPurchaseApplyEntryList = response.data.depPurchaseApplyEntryList || [];
         // 设置紧急程度文本显示
         this.setUrgencyLevelText(response.data.urgencyLevel);
         // 确保紧急程度下拉框使用字符串值，避免显示纯数字
         this.form.urgencyLevel = response.data.urgencyLevel != null ? String(response.data.urgencyLevel) : '';
-        
+
         this.open = true;
         this.action = true;
         this.form.purchaseBillStatus = '1';
@@ -639,6 +639,18 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          const validEntries = this.depPurchaseApplyEntryList.filter(item => item.materialId);
+          if (validEntries.length === 0) {
+            this.$modal.msgError("请至少添加一条有效明细（选择耗材）");
+            return;
+          }
+          const invalidQty = this.depPurchaseApplyEntryList.filter(item =>
+            item.materialId && (item.qty == null || item.qty === '' || Number(item.qty) <= 0)
+          );
+          if (invalidQty.length > 0) {
+            this.$modal.msgError("存在明细数量为空或0，请填写有效数量后再保存。");
+            return;
+          }
           this.form.depPurchaseApplyEntryList = this.depPurchaseApplyEntryList;
           if (this.form.id != null) {
             updatePurchase(this.form).then(response => {
@@ -663,8 +675,8 @@ export default {
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      const ids = row.id || this.ids;
-      this.$modal.confirm('是否确认删除科室申购编号为"' + ids + '"的数据项？').then(function() {
+      const ids = row.id != null ? row.id : this.ids;
+      this.$modal.confirm('是否确认删除所选科室申购数据？').then(() => {
         return delPurchase(ids);
       }).then(() => {
         this.getList();
@@ -757,8 +769,8 @@ export default {
       row.materialName = material.name;
       row.materialSpec = material.speci || '';
       // 单位：支持多种字段路径
-      row.unit = (material.fdUnit && material.fdUnit.unitName) || 
-                 (material.unit && (material.unit.unitName || material.unit.name)) || 
+      row.unit = (material.fdUnit && material.fdUnit.unitName) ||
+                 (material.unit && (material.unit.unitName || material.unit.name)) ||
                  '';
       // 单价：优先使用price，其次使用prince
       row.unitPrice = material.price || material.prince || '';
@@ -766,14 +778,14 @@ export default {
       row.supplierName = material.supplier ? material.supplier.name : '';
       row.model = material.model || '';
       // 生产厂家：支持多种字段路径
-      row.producer = (material.fdFactory && material.fdFactory.factoryName) || 
-                     material.producer || 
+      row.producer = (material.fdFactory && material.fdFactory.factoryName) ||
+                     material.producer ||
                      '';
       row.qty = row.qty || '';
       row.amt = row.amt || '';
       row.reason = row.reason || '';
       row.remark = row.remark || '';
-      
+
       // 如果有数量，自动计算金额
       if (row.qty && row.unitPrice) {
         this.qtyChange(row);
