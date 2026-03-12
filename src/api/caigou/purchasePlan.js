@@ -61,6 +61,15 @@ export function exportPurchasePlan(query) {
   })
 }
 
+// 导出采购记录（年份月份耗材采购记录，列：物资名称、物资规格、数量、单位、供货单位、收货人、收货日期）
+export function exportPurchaseRecord(params) {
+  return request({
+    url: '/caigou/jihua/exportPurchaseRecord',
+    method: 'post',
+    params: params
+  })
+}
+
 // 根据采购计划明细ID查询关联的申购明细（科室申购单单号、申购科室、申购数量、制单人、制单时间、审核人、审核时间）
 export function getApplyDetails(entryId) {
   return request({
@@ -74,6 +83,15 @@ export function getApplyDetails(entryId) {
 export function getApplyBillNoList(planId) {
   return request({
     url: '/caigou/jihua/applyBillNoList',
+    method: 'get',
+    params: { planId }
+  })
+}
+
+// 根据采购计划ID查询关联的申购单表头列表（科室申购单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间）
+export function getApplyBillHeaderList(planId) {
+  return request({
+    url: '/caigou/jihua/applyBillHeaderList',
     method: 'get',
     params: { planId }
   })

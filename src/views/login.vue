@@ -2,10 +2,10 @@
   <div class="login">
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form">
       <h3 class="title"></h3><!-- SPD后台管理系统 -->
-      <el-form-item prop="customerId" label="客户（租户）">
+      <el-form-item prop="customerId" label="客户">
         <el-select
           v-model="loginForm.customerId"
-          placeholder="请选择客户（租户）；平台管理员可留空"
+          placeholder="请选择客户；平台管理员可留空"
           clearable
           filterable
           style="width: 100%"

@@ -363,7 +363,7 @@
       <el-descriptions v-if="planViewData" :column="2" border size="small">
         <el-descriptions-item label="计划单号">{{ planViewData.planNo || '--' }}</el-descriptions-item>
         <el-descriptions-item label="计划状态">
-          <dict-tag v-if="planViewData.planStatus" :options="dict.type.biz_status" :value="planViewData.planStatus"/>
+          <dict-tag v-if="planViewData.planStatus" :options="dict.type.plan_status" :value="planViewData.planStatus"/>
           <span v-else>--</span>
         </el-descriptions-item>
         <el-descriptions-item label="计划日期">{{ planViewData.planDate | parseTime('{y}-{m}-{d}') || '--' }}</el-descriptions-item>
@@ -422,7 +422,7 @@ import SelectMMaterialFilter from '@/components/SelectModel/SelectMMaterialFilte
 
 export default {
   name: "PurchaseOrder",
-  dicts: ['biz_status','bill_type'],
+  dicts: ['biz_status','plan_status','bill_type'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMMaterialFilter},
   data() {
     return {

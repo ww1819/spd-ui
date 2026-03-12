@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="report-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
 
@@ -140,7 +140,7 @@
       <el-table-column label="制单人" align="center" prop="createBy" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="计划状态" align="center" prop="planStatus" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.planStatus"/>
+          <dict-tag :options="dict.type.plan_status" :value="scope.row.planStatus"/>
         </template>
       </el-table-column>
     </el-table>
@@ -163,7 +163,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 
 export default {
   name: "PlanDetailReport",
-  dicts: ['biz_status'],
+  dicts: ['biz_status','plan_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse},
   data() {
     return {

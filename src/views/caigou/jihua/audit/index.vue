@@ -25,7 +25,7 @@
       </el-row>
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="制单日期" style="display: flex; align-items: center;">
+          <el-form-item label="制单时间" style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -49,7 +49,7 @@
           <el-form-item label="单据状态" prop="planStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.planStatus" placeholder="全部"
                        clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.biz_status"
+              <el-option v-for="dict in dict.type.plan_status"
                          :key="dict.value"
                          :label="dict.label"
                          :value="dict.value"
@@ -81,6 +81,15 @@
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-document"
+          size="small"
+          @click="handleExportPurchaseRecord"
+        >导出采购记录</el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -90,6 +99,7 @@
     </el-row>
 
     <el-table v-loading="loading" :data="warehouseList"
+              row-key="id"
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" 
@@ -118,13 +128,13 @@
       </el-table-column>
       <el-table-column label="单据状态" align="center" prop="planStatus" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.planStatus"/>
+          <dict-tag :options="dict.type.plan_status" :value="scope.row.planStatus"/>
         </template>
       </el-table-column>
 
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -146,9 +156,9 @@
           {{ getCreatorName(scope.row) }}
         </template>
       </el-table-column>
-      <el-table-column label="制单日期" align="center" prop="planDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单时间" align="center" prop="planDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.planDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ scope.row.createTime ? parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') : (scope.row.planDate ? parseTime(scope.row.planDate, '{y}-{m}-{d} {h}:{i}:{s}') : '--') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
@@ -233,16 +243,9 @@
                 <el-col :span="4">
                   <el-form-item prop="planDate">
                     <template slot="label">
-                      <span style="white-space: nowrap;">制单日期</span>
+                      <span style="white-space: nowrap;">制单时间</span>
                     </template>
-                    <el-date-picker clearable
-                                    v-model="form.planDate"
-                                    type="date"
-                                    :disabled="true"
-                                    value-format="yyyy-MM-dd"
-                                    placeholder="请选择制单日期"
-                                    style="width: 100%">
-                    </el-date-picker>
+                    <el-input :value="form.createTime ? parseTime(form.createTime, '{y}-{m}-{d} {h}:{i}:{s}') : (form.planDate ? parseTime(form.planDate, '{y}-{m}-{d} {h}:{i}:{s}') : '')" :disabled="true" placeholder="制单时间" style="width: 100%" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
@@ -267,6 +270,26 @@
                 <el-col :span="4">
                   <el-form-item label="总金额" prop="totalAmount">
                     <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+
+              <el-row :gutter="8">
+                <el-col :span="8">
+                  <el-form-item label="计划来源" prop="planSource">
+                    <el-input :value="planSourceDisplay" disabled placeholder="由明细聚合" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="计划明细生成方式" prop="planEntryMode">
+                    <el-input :value="planEntryModeDisplay" disabled style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="引用申购单号" prop="referenceBillNo">
+                    <el-button type="primary" link @click="handleShowApplyBillNoList">
+                      {{ (form.referenceBillNo && form.referenceBillNo.trim()) ? '查看引用申购单号' : '无' }}
+                    </el-button>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -316,6 +339,26 @@
               <span>{{ scope.row.amt }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="供应商" align="center" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.supplier && scope.row.supplier.name) || scope.row.supplierName || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="申购单号" align="center" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.applyBillNos || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="申请科室" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.applyDepartment && scope.row.applyDepartment.name) || scope.row.applyDepartmentName || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="计划来源" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.planSource || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
@@ -327,6 +370,12 @@
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable />
+          <el-table-column label="操作" align="center" width="120" fixed="right">
+            <template slot-scope="scope">
+              <el-button v-if="scope.row.id" type="text" size="small" @click="handleViewApplyDetails(scope.row)">查看申购明细</el-button>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
                 </el-table>
               </div>
             </el-form>
@@ -338,12 +387,46 @@
       </div>
     </transition>
 
+    <!-- 引用申购单号列表弹窗 -->
+    <el-dialog title="引用申购单号" :visible.sync="applyBillNoDialogVisible" width="500px" append-to-body>
+      <el-table :data="applyBillNoList" border max-height="400">
+        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column label="申购单号" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="applyBillNoDialogVisible = false">关 闭</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- 查看申购明细弹窗 -->
+    <el-dialog title="申购明细" :visible.sync="applyDetailDialogVisible" width="900px" append-to-body>
+      <el-table :data="applyDetailList" border max-height="400">
+        <el-table-column label="科室申购单单号" prop="applyBillNo" width="140" show-overflow-tooltip />
+        <el-table-column label="申购科室" prop="departmentName" width="120" show-overflow-tooltip />
+        <el-table-column label="申购数量" prop="qty" width="100" align="right">
+          <template slot-scope="scope">
+            <span>{{ scope.row.qty != null ? Number(scope.row.qty) : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="制单人" prop="createByName" width="100" show-overflow-tooltip />
+        <el-table-column label="制单时间" prop="createTime" width="160" show-overflow-tooltip />
+        <el-table-column label="审核人" prop="auditByName" width="100" show-overflow-tooltip />
+        <el-table-column label="审核时间" prop="auditTime" width="160" show-overflow-tooltip />
+      </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="applyDetailDialogVisible = false">关 闭</el-button>
+      </div>
+    </el-dialog>
 
   </div>
 </template>
 
 <script>
-import { listPurchasePlan, getPurchasePlan, auditPurchasePlan } from "@/api/caigou/purchasePlan";
+import { listPurchasePlan, getPurchasePlan, auditPurchasePlan, getApplyBillNoList, getApplyDetails } from "@/api/caigou/purchasePlan";
 import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -351,7 +434,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 
 export default {
   name: "PurchasePlanAudit",
-  dicts: ['biz_status','bill_type','way_status'],
+  dicts: ['biz_status','plan_status','bill_type','way_status'],
   components: {SelectSupplier,SelectWarehouse,SelectUser},
   data() {
     return {
@@ -421,12 +504,16 @@ export default {
           { required: true, message: "供应商不能为空", trigger: "blur" }
         ],
         planDate: [
-          { required: true, message: "制单日期不能为空", trigger: "blur" }
+          { required: true, message: "制单时间不能为空", trigger: "blur" }
         ],
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
         ],
-      }
+      },
+      applyBillNoList: [],
+      applyBillNoDialogVisible: false,
+      applyDetailList: [],
+      applyDetailDialogVisible: false
     };
   },
   created() {
@@ -452,6 +539,17 @@ export default {
         return user ? user.nickName || user.userName : '';
       }
       return '';
+    },
+    planSourceDisplay() {
+      const list = this.stkIoBillEntryList || [];
+      const set = new Set();
+      list.forEach(r => {
+        if (r.planSource && String(r.planSource).trim()) set.add(r.planSource);
+      });
+      return [...set].join('，') || '';
+    },
+    planEntryModeDisplay() {
+      return (this.form.planEntryMode === '2') ? '按申购单明细拆分' : '按产品档案汇总';
     }
   },
   methods: {
@@ -602,19 +700,50 @@ export default {
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      this.ids = (selection || []).map(item => item.id != null ? item.id : item.planId).filter(id => id != null && id !== '')
+      this.single = this.ids.length !== 1
+      this.multiple = this.ids.length === 0
     },
-    /** 查看按钮操作 */
+    /** 查看按钮操作（与采购计划处单据查看一致） */
     handleView(row){
-      const id = row.id
+      const id = row.id;
       getPurchasePlan(id).then(response => {
         this.form = response.data;
-        this.stkIoBillEntryList = response.data.purchasePlanEntryList;
+        this.stkIoBillEntryList = response.data.purchasePlanEntryList || [];
+        this.fillPlanSourceForEntries();
         this.open = true;
         this.action = false;
         this.title = "查看计划";
+      });
+    },
+    /** 根据明细数据填充计划来源，用于展示 */
+    fillPlanSourceForEntries() {
+      (this.stkIoBillEntryList || []).forEach(row => {
+        if (!row.planSource) {
+          row.planSource = (row.applyDepartmentId != null || (row.applyBillNos && String(row.applyBillNos).trim())) ? '引用申购单' : '手工新增';
+        }
+      });
+    },
+    /** 查看引用申购单号列表 */
+    handleShowApplyBillNoList() {
+      if (!this.form.id) return;
+      getApplyBillNoList(this.form.id).then(response => {
+        const list = (response && response.data) ? (Array.isArray(response.data) ? response.data : (response.data.data || [])) : [];
+        this.applyBillNoList = list.length > 0 ? list : (this.form.referenceBillNo ? (this.form.referenceBillNo + '').split(/[,，]/).map(s => (s || '').trim()).filter(Boolean) : []);
+        this.applyBillNoDialogVisible = true;
+      }).catch(() => {
+        this.$modal.msgError("获取引用申购单号失败");
+      });
+    },
+    /** 查看申购明细（计划明细行） */
+    handleViewApplyDetails(row) {
+      if (!row.id) return;
+      getApplyDetails(row.id).then(response => {
+        const data = response && response.data;
+        this.applyDetailList = (Array.isArray(data) ? data : (data && data.data) || []) || [];
+        this.applyDetailDialogVisible = true;
+      }).catch(() => {
+        this.$modal.msgError("获取申购明细失败");
       });
     },
     /** 审核按钮操作 */
@@ -735,6 +864,18 @@ export default {
       this.download('caigou/jihua/export', {
         ...this.queryParams
       }, `purchase_plan_${new Date().getTime()}.xlsx`)
+    },
+    /** 导出采购记录：按选中的计划单汇总，生成「年份月份耗材采购记录」Excel，首行为标题 */
+    handleExportPurchaseRecord() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning('请先选择要导出的采购计划')
+        return
+      }
+      const now = new Date()
+      const y = now.getFullYear()
+      const m = now.getMonth() + 1
+      const fileName = `${y}年${m < 10 ? '0' + m : m}月耗材采购记录.xlsx`
+      this.download('caigou/jihua/exportPurchaseRecord', { ids: this.ids.join(',') }, fileName)
     },
     /** 获取用户列表 */
     getUserList() {
