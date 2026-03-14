@@ -53,10 +53,10 @@
           </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="planStatus" class="query-item-status-aligned">
+          <el-form-item label="采购计划状态" prop="planStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.planStatus" placeholder="全部"
                        clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.biz_status"
+              <el-option v-for="dict in dict.type.plan_status"
                          :key="dict.value"
                          :label="dict.label"
                          :value="dict.value"
