@@ -12,9 +12,9 @@
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+          <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
             <div class="query-select-wrapper">
-              <SelectSupplier v-model="queryParams.supplierId"/>
+              <SelectSupplier v-model="queryParams.supplerId"/>
             </div>
           </el-form-item>
           <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
@@ -431,6 +431,9 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :supplierValue="supplierValue"
+      :warehouseValue="form.warehouseId"
+      :useStkInventory="true"
+      :useFixedNumberMaterialArchive="true"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>

@@ -27,7 +27,12 @@ router.beforeEach((to, from, next) => {
           store.dispatch('GenerateRoutes').then(accessRoutes => {
             // 根据roles权限生成可访问的路由表
             router.addRoutes(accessRoutes) // 动态添加可访问路由表
-            next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+            if (to.meta && to.meta.paused === true) {
+              Message.warning('当前菜单功能已被暂停使用')
+              next({ path: '/', replace: true })
+            } else {
+              next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+            }
           })
         }).catch(err => {
             store.dispatch('LogOut').then(() => {
@@ -36,6 +41,12 @@ router.beforeEach((to, from, next) => {
             })
           })
       } else {
+        if (to.meta && to.meta.paused === true) {
+          Message.warning('当前菜单功能已被暂停使用')
+          NProgress.done()
+          next(false)
+          return
+        }
         next()
       }
     }

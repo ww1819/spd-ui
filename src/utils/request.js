@@ -28,6 +28,12 @@ service.interceptors.request.use(config => {
   const isRepeatSubmit = (config.headers || {}).repeatSubmit === false
   if (getToken() && !isToken) {
     config.headers['Authorization'] = 'Bearer ' + getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
+    // 租户标识（与设备前端一致）：请求头携带，后端做数据隔离与校验
+    const tenant = store.getters.tenant
+    if (tenant && tenant.customerId) {
+      config.headers['X-Tenant-Id'] = tenant.customerId
+      if (tenant.customerCode) config.headers['X-Tenant-Code'] = tenant.customerCode
+    }
   }
   // get请求映射params参数
   if (config.method === 'get' && config.params) {

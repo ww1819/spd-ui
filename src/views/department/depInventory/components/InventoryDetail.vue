@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="query-container">
       <div class="form-fields-container">
@@ -34,6 +34,13 @@
                   <el-option label="全部" value="" />
                   <el-option label="是" value="1" />
                   <el-option label="否" value="0" />
+                </el-select>
+          </el-form-item>
+              <el-form-item label="收货确认状态" prop="receiptConfirmStatus" class="query-item-inline">
+                <el-select v-model="queryParams.receiptConfirmStatus" placeholder="请选择" clearable style="width: 180px">
+                  <el-option label="全部" :value="null" />
+                  <el-option label="未确认" :value="0" />
+                  <el-option label="已确认" :value="1" />
                 </el-select>
           </el-form-item>
         </el-col>
@@ -155,6 +162,13 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="收货确认状态" align="center" prop="receiptConfirmStatus" width="110" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.receiptConfirmStatus === 1">已确认</span>
+          <span v-else-if="scope.row.receiptConfirmStatus === 0">未确认</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
     </el-table>
     </div>
 
@@ -204,7 +218,8 @@ export default {
         batchNo: null,
         materialNo: null,
         materialDate: null,
-        warehouseDate: null
+        warehouseDate: null,
+        receiptConfirmStatus: null
       }
     };
   },

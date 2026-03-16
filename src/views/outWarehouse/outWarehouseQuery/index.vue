@@ -1,11 +1,12 @@
-﻿<template>
+<template>
   <div class="app-container out-warehouse-query-page">
-    <el-tabs v-model="activeName" type="card" class="inventory-tabs-compact">
+    <el-tabs v-model="activeName" type="card" class="inventory-tabs-compact" @tab-click="handleTabClick">
       <el-tab-pane label="出/退库明细表" name="first"></el-tab-pane>
       <el-tab-pane label="出/退库汇总表" name="second"></el-tab-pane>
     </el-tabs>
-    <FirstOutQuery v-if="activeName === 'first'"></FirstOutQuery>
-    <SecondOutQuery v-if="activeName === 'second'"></SecondOutQuery>
+    <!-- 使用 v-show 替代 v-if，切换时只切换显示不销毁组件，避免重复创建和请求 -->
+    <FirstOutQuery v-show="activeName === 'first'" ref="firstQuery"/>
+    <SecondOutQuery v-show="activeName === 'second'" ref="secondQuery"/>
   </div>
 </template>
 
@@ -17,7 +18,7 @@ import SecondOutQuery from "@/views/outWarehouse/outWarehouseQuery/secondOutQuer
 
 export default {
   name: "OutWarehouseQuery",
-  components: {FirstOutQuery,SecondOutQuery},
+  components: {FirstOutQuery, SecondOutQuery},
   data() {
     return {
       activeName: 'first',
@@ -34,6 +35,14 @@ export default {
   },
   beforeDestroy() {
     document.body.classList.remove('inventory-query-fixed');
+  },
+  methods: {
+    /** 切换到汇总表时再加载数据，避免首屏同时请求明细+汇总 */
+    handleTabClick(tab) {
+      if (tab.name === 'second' && this.$refs.secondQuery && typeof this.$refs.secondQuery.getList === 'function') {
+        this.$nextTick(() => this.$refs.secondQuery.getList());
+      }
+    },
   },
 };
 </script>

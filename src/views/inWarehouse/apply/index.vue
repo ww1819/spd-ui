@@ -12,9 +12,9 @@
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+          <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
             <div class="query-select-wrapper">
-            <SelectSupplier v-model="queryParams.supplierId"/>
+            <SelectSupplier v-model="queryParams.supplerId"/>
             </div>
           </el-form-item>
           <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
@@ -324,6 +324,26 @@
           </div>
 
         </el-row>
+        <!-- 扫描条码：扫码枪或键盘输入后回车，自动解析并匹配产品、新增一行明细 -->
+        <el-row v-show="action" :gutter="10" class="mb8 scan-barcode-row">
+          <el-col :span="24">
+            <el-form-item label="扫描条码" label-width="80px" class="scan-barcode-form-item">
+              <el-input
+                ref="scanBarcodeInputRef"
+                v-model="scanBarcodeInput"
+                placeholder="请用扫码枪扫描或键盘输入条码后回车，自动解析主/辅条码并匹配产品档案"
+                clearable
+                size="medium"
+                style="width: 100%; max-width: 900px;"
+                @keyup.enter.native="onScanBarcodeSubmit"
+              >
+                <template slot="prepend">
+                  <i class="el-icon-s-operation"></i> 扫码
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-col>
+        </el-row>
         <div class="table-wrapper">
         <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
                   show-summary :summary-method="getSummaries"
@@ -334,6 +354,19 @@
         >
           <el-table-column type="selection" width="60" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
+          <el-table-column label="主条码" align="center" width="160" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.mainBarcode" placeholder="主条码(udi)"
+                        size="small" clearable
+                        @blur="onMainBarcodeBlur(scope.row)">
+              </el-input>
+            </template>
+          </el-table-column>
+          <el-table-column label="辅条码" align="center" width="160" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.subBarcode" placeholder="辅条码" size="small" clearable />
+            </template>
+          </el-table-column>
           <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
@@ -389,7 +422,7 @@
           <el-table-column label="价格" align="center" prop="unitPrice" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
-                <el-input v-model="scope.row.unitPrice" 
+                <el-input v-model="scope.row.unitPrice"
                           type='number'
                           :disabled="true"
                           @input="priceChange(scope.row)"
@@ -488,6 +521,8 @@
       :DialogComponentShow="DialogComponentShow"
       :supplierValue="supplierValue"
       :warehouseValue="form.warehouseId"
+      :useStkInventory="true"
+      :useFixedNumberMaterialArchive="true"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>
@@ -528,6 +563,7 @@
 
 <script>
 import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse,createRkEntriesByDingdan } from "@/api/warehouse/warehouse";
+import { getMaterialByMainBarcode, jxTm } from "@/api/foundation/material";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -599,6 +635,8 @@ export default {
       stkMaterialList: [],
       // 入库明细表格数据
       stkIoBillEntryList: [],
+      // 扫描条码输入框（添加按钮下、明细上）
+      scanBarcodeInput: "",
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -768,17 +806,20 @@ export default {
 
         // 从item中提取material对象，如果item本身是material，则直接使用
         const material = item.material || item;
-        
+
         obj.materialId = material.id || item.id;
         obj.qty = "";
         // 设置价格：优先使用item.unitPrice，然后是item.price，最后是material.price
         obj.unitPrice = item.unitPrice || item.price || material.price || 0;
         obj.amt = "";
         obj.batchNo = "";
-        obj.batchNumber = "";
-        obj.beginTime = "";
-        obj.endTime = "";
-        obj.remark = "";
+        obj.batchNumber = item.batchNumber || "";
+        obj.beginTime = item.beginTime || "";
+        obj.endTime = item.endTime || "";
+        obj.mainBarcode = item.mainBarcode || "";
+        obj.subBarcode = item.subBarcode || "";
+        obj.barcodeInput = "";
+        obj.remark = item.remark || "";
         // 确保material对象包含所有必要的关联数据
         obj.material = material;
 
@@ -900,9 +941,9 @@ export default {
         console.log('入库单详情数据:', data);
         console.log('明细列表原始数据:', data.stkIoBillEntryList);
         console.log('明细列表长度:', data.stkIoBillEntryList ? data.stkIoBillEntryList.length : 0);
-        
+
         this.form = data;
-        
+
         // 确保明细数据正确设置，包括 material 对象
         const entryList = (data.stkIoBillEntryList || []).map((item, index) => {
           console.log(`明细项 ${index}:`, item);
@@ -915,18 +956,18 @@ export default {
           }
           return item;
         });
-        
+
         // 使用 Vue.set 确保响应式更新
         this.$set(this, 'stkIoBillEntryList', entryList);
         console.log('处理后的明细列表:', this.stkIoBillEntryList);
         console.log('处理后的明细列表长度:', this.stkIoBillEntryList.length);
-        
+
         this.open = true;
         this.action = false;
         this.form.billStatus = '2';
         this.form.billType = '101';
         this.title = "查看入库";
-        
+
         // 强制更新视图
         this.$nextTick(() => {
           console.log('视图更新后的明细列表:', this.stkIoBillEntryList);
@@ -1206,9 +1247,121 @@ export default {
       obj.unitPrice = "";
       obj.amt = "";
       obj.batchNo = "";
+      obj.batchNumber = "";
+      obj.beginTime = "";
+      obj.endTime = "";
+      obj.mainBarcode = "";
+      obj.subBarcode = "";
+      obj.barcodeInput = "";
       obj.remark = "";
 
       this.stkIoBillEntryList.push(obj);
+    },
+    /** 条码录入回车/失焦：解析主辅条码、批号效期，并按主条码(udi_no)匹配产品档案 */
+    onBarcodeInputEnter(row) {
+      const raw = (row.barcodeInput || "").trim();
+      if (!raw) return;
+      try {
+        const res = jxTm(raw);
+        if (res && res.ztm) {
+          row.mainBarcode = res.ztm || "";
+          row.subBarcode = (res.ftm != null ? res.ftm : "") || "";
+          if (res.ph != null) row.batchNumber = res.ph;
+          if (res.yxq) row.endTime = res.yxq;
+          if (res.scrq) row.beginTime = res.scrq;
+        } else {
+          row.mainBarcode = raw;
+        }
+        this.fetchMaterialByMainBarcode(row);
+      } catch (e) {
+        row.mainBarcode = raw;
+        this.fetchMaterialByMainBarcode(row);
+      }
+    },
+    /** 主条码失焦：按主条码(udi_no)匹配产品档案并带出 */
+    onMainBarcodeBlur(row) {
+      const main = (row.mainBarcode || "").trim();
+      if (!main) return;
+      this.fetchMaterialByMainBarcode(row);
+    },
+    /** 根据主条码(udi_no)请求产品档案并回填到当前行 */
+    fetchMaterialByMainBarcode(row) {
+      const main = (row.mainBarcode || "").trim();
+      if (!main) return;
+      getMaterialByMainBarcode(main).then(res => {
+        if (res && res.data) {
+          row.materialId = res.data.id;
+          row.material = res.data;
+          row.unitPrice = res.data.price != null ? res.data.price : "";
+          this.qtyChange(row);
+        } else {
+          this.$message.warning("未找到主条码(udi_no)或编码对应的产品档案");
+        }
+      }).catch(() => {
+        this.$message.warning("未找到主条码(udi_no)或编码对应的产品档案");
+      });
+    },
+    /** 顶部扫描条码：回车后解析主/辅条码，匹配产品档案并新增一行明细 */
+    onScanBarcodeSubmit() {
+      const raw = (this.scanBarcodeInput || "").trim();
+      if (!raw) return;
+      let mainBarcode = raw;
+      let subBarcode = "";
+      let batchNumber = "";
+      let beginTime = "";
+      let endTime = "";
+      try {
+        const res = jxTm(raw);
+        if (res && res.ztm) {
+          mainBarcode = res.ztm || raw;
+          subBarcode = (res.ftm != null ? res.ftm : "") || "";
+          if (res.ph != null) batchNumber = res.ph;
+          if (res.yxq) endTime = res.yxq;
+          if (res.scrq) beginTime = res.scrq;
+        }
+      } catch (e) {
+        // 解析失败时整条作为主条码
+      }
+      const main = mainBarcode.trim();
+      if (!main) {
+        this.scanBarcodeInput = "";
+        return;
+      }
+      getMaterialByMainBarcode(main).then(res => {
+        if (res && res.data) {
+          const mat = res.data;
+          const unitPrice = mat.price != null ? mat.price : "";
+          const qty = 1;
+          const amt = (unitPrice && qty) ? (parseFloat(unitPrice) * qty).toFixed(2) : "";
+          const row = {
+            materialId: mat.id,
+            material: mat,
+            qty: qty,
+            unitPrice: unitPrice,
+            amt: amt,
+            batchNo: "",
+            batchNumber: batchNumber,
+            beginTime: beginTime,
+            endTime: endTime,
+            mainBarcode: mainBarcode,
+            subBarcode: subBarcode,
+            barcodeInput: "",
+            remark: ""
+          };
+          this.stkIoBillEntryList.push(row);
+          this.scanBarcodeInput = "";
+          this.$message.success("已根据条码添加明细，主/辅条码可在表格中修改");
+          this.$nextTick(() => {
+            if (this.$refs.scanBarcodeInputRef) {
+              this.$refs.scanBarcodeInputRef.focus();
+            }
+          });
+        } else {
+          this.$message.warning("未找到主条码(udi_no)或编码对应的产品档案，请检查条码或产品档案中的UDI码");
+        }
+      }).catch(() => {
+        this.$message.warning("未找到主条码(udi_no)或编码对应的产品档案");
+      });
     },
     /** 入库明细删除按钮操作 */
     handleDeleteStkIoBillEntry() {
@@ -1382,6 +1535,14 @@ export default {
 .el-table tr:hover > td {
   background-color: #F5F7FA !important;
   transition: all 0.3s;
+}
+
+/* 扫描条码行：添加按钮下、明细上 */
+.scan-barcode-row .scan-barcode-form-item {
+  margin-bottom: 0;
+}
+.scan-barcode-row .el-form-item__content {
+  line-height: 32px;
 }
 
 /* 按钮样式 */

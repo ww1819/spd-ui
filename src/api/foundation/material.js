@@ -1,11 +1,20 @@
 import request from '@/utils/request'
 
-// 查询耗材产品列表
+// 查询耗材产品列表（GET）
 export function listMaterial(query) {
   return request({
     url: '/foundation/material/list',
     method: 'get',
     params: query
+  })
+}
+
+// 查询耗材产品列表（POST，请求体传参，避免 excludeMaterialIds 等过长导致 400/414）
+export function listMaterialPost(data) {
+  return request({
+    url: '/foundation/material/list',
+    method: 'post',
+    data: data
   })
 }
 
@@ -23,6 +32,15 @@ export function getMaterial(id) {
   return request({
     url: '/foundation/material/' + id,
     method: 'get'
+  })
+}
+
+// 根据主条码(udi_no)或耗材编码查询产品档案（用于入库扫码带出产品）
+export function getMaterialByMainBarcode(mainBarcode) {
+  return request({
+    url: '/foundation/material/getByMainBarcode',
+    method: 'get',
+    params: { mainBarcode }
   })
 }
 

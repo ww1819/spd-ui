@@ -471,9 +471,9 @@
 <script>
 import { pinyin } from "pinyin-pro";
 import { listFixedNumber, addFixedNumber, delFixedNumber } from "@/api/monitoring/fixedNumber";
+import { listMaterialPost } from "@/api/foundation/material";
 import { listWarehouse } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
-import { listMaterial } from "@/api/foundation/material";
 import { listInventory } from "@/api/warehouse/inventory";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -503,6 +503,8 @@ export default {
       fixedNumberList: [],
       // 全量定数监测数据（本地缓存，用于前端搜索）
       allFixedNumberList: [],
+      // 当前仓库/科室下，后端已存在的产品档案ID列表（用于新增弹窗过滤）
+      existingMaterialIds: [],
       // 仓库列表数据
       warehouseList: [],
       // 科室列表数据
@@ -599,12 +601,14 @@ export default {
       // 仓库改变时，重新加载数据（仓库定数）
       if (this.queryParams.fixedNumberType === '1') {
         this.getList();
+        this.loadExistingMaterialIds();
       }
     },
     'queryParams.departmentId'(newVal) {
       // 科室改变时，重新加载数据（科室定数）
       if (this.queryParams.fixedNumberType === '2') {
         this.getList();
+        this.loadExistingMaterialIds();
       }
     }
   },
@@ -656,6 +660,40 @@ export default {
     window.removeEventListener('resize', this.setTableHeight);
   },
   methods: {
+    /** 加载当前仓库/科室下已存在的定数产品ID，用于新增时过滤。返回 Promise 便于打开新增弹窗时等待后再查询可选耗材 */
+    loadExistingMaterialIds() {
+      if (!this.queryParams.fixedNumberType) {
+        this.existingMaterialIds = [];
+        return Promise.resolve();
+      }
+      const query = {
+        fixedNumberType: this.queryParams.fixedNumberType,
+        warehouseId: this.queryParams.fixedNumberType === '1' ? this.queryParams.warehouseId : null,
+        departmentId: this.queryParams.fixedNumberType === '2' ? this.queryParams.departmentId : null,
+        pageNum: 1,
+        pageSize: 10000, // 按仓库/科室定数记录通常数量有限，一次取完用于过滤
+      };
+      if (query.fixedNumberType === '1' && !query.warehouseId) {
+        this.existingMaterialIds = [];
+        return Promise.resolve();
+      }
+      if (query.fixedNumberType === '2' && !query.departmentId) {
+        this.existingMaterialIds = [];
+        return Promise.resolve();
+      }
+      return listFixedNumber(query).then(response => {
+        const rows = (response && response.rows) || [];
+        this.existingMaterialIds = rows
+          .map(item => {
+            if (item.material && item.material.id) return item.material.id;
+            if (item.materialId) return item.materialId;
+            return null;
+          })
+          .filter(id => id);
+      }).catch(() => {
+        this.existingMaterialIds = [];
+      });
+    },
     /** 设置表格高度 */
     setTableHeight() {
       setTimeout(() => {
@@ -1032,26 +1070,26 @@ export default {
         this.$modal.msgSuccess("保存成功");
         // 保存成功后，保存到 localStorage
         this.saveToLocalStorage();
-        // 保持列表显示，不清空
-        // 暂时禁用自动检查入库记录，避免频繁调用导致异常
-        // 入库记录检查将在删除时进行
+        // 刷新列表和汇总数
+        this.getList();
+        this.loadExistingMaterialIds();
       }).catch(error => {
         console.error('保存定数监测失败:', error);
         this.$modal.msgError("保存失败");
       });
     },
-    /** 新增按钮操作 */
+    /** 新增按钮操作：打开弹窗时先刷新“当前仓库/科室已有”的物料ID，再查询可选耗材（过滤掉已有 + 前端已添加未保存的） */
     handleAdd() {
       this.addDialogVisible = true;
       this.resetAddQuery();
-      this.handleAddQuery();
+      this.loadExistingMaterialIds().then(() => {
+        this.handleAddQuery();
+      });
     },
-    /** 新增弹窗搜索（使用分页接口，避免一次加载所有产品档案导致卡顿） */
+    /** 新增弹窗搜索：POST 请求体传参，排除“后端已有 + 前端未保存”的物料ID后分页，避免 400/414 */
     handleAddQuery() {
       this.addTableLoading = true;
       const query = {
-        pageNum: this.addQueryParams.pageNum,
-        pageSize: this.addQueryParams.pageSize,
         materialName: this.addQueryParams.materialName,
         speci: this.addQueryParams.speci,
         supplierId: this.addQueryParams.supplierId
@@ -1066,12 +1104,25 @@ export default {
       if (this.queryParams.fixedNumberType === '1' && this.queryParams.warehouseId) {
         query.warehouseId = this.queryParams.warehouseId;
       }
-      // 统一使用 listMaterial 分页接口，不再使用 listMaterialAll（listAll 会拉全量数据导致卡顿）
-      listMaterial(query).then(response => {
-        const rows = (response && response.rows) || [];
-        const addedCodes = this.fixedNumberList.map(item => item.code).filter(code => code);
-        this.addMaterialList = rows.filter(material => !addedCodes.includes(material.code));
-        // 分页总数以后端返回的 total 为准，保证分页组件正确
+      const currentIds = (this.fixedNumberList || [])
+        .map(item => {
+          if (item.material && item.material.id) return item.material.id;
+          if (item.materialId) return item.materialId;
+          return null;
+        })
+        .filter(id => id);
+      const existingIds = this.existingMaterialIds || [];
+      const excludeIds = [...new Set([...existingIds, ...currentIds])].filter(Boolean);
+      if (excludeIds.length > 0) {
+        query.excludeMaterialIds = excludeIds.join(',');
+      }
+      const postData = {
+        pageNum: this.addQueryParams.pageNum,
+        pageSize: this.addQueryParams.pageSize,
+        query: query
+      };
+      listMaterialPost(postData).then(response => {
+        this.addMaterialList = (response && response.rows) || [];
         this.addTotal = (response && response.total !== undefined) ? response.total : 0;
         this.addTableLoading = false;
       }).catch(() => {
@@ -1094,57 +1145,54 @@ export default {
     handleAddSelectionChange(selection) {
       this.addSelectedMaterials = selection;
     },
-    /** 新增弹窗确定：仅更新前端列表，不立即刷新后端 */
+    /** 新增弹窗确定：将勾选的产品档案直接入库/科，调用后端 INSERT，避免前端状态导致数据丢失 */
     handleAddConfirm() {
       if (this.addSelectedMaterials.length === 0) {
         this.$modal.msgWarning("请至少选择一条数据");
         return;
       }
-      
-      // 将选中的耗材添加到明细表中
-      this.addSelectedMaterials.forEach(material => {
-        // 检查是否已存在（根据编码判断）
-        const exists = this.fixedNumberList.some(item => item.code === material.code);
-        if (!exists) {
-          // 转换为明细表数据格式
-          const newItem = {
-            id: null, // 新增数据，ID为空
-            code: material.code,
-            name: material.name,
-            specification: material.speci || '--',
-            model: material.model || '--', // 型号
-            supplierName: (material.supplier && material.supplier.name) || '--',
-            warehouseName: this.queryParams.fixedNumberType === '1' && this.queryParams.warehouseId ? this.getWarehouseNameById(this.queryParams.warehouseId) : null, // 仓库名称
-            departmentName: this.queryParams.fixedNumberType === '2' && this.queryParams.departmentId ? this.getDepartmentNameById(this.queryParams.departmentId) : null, // 科室名称
-            unitName: (material.fdUnit && material.fdUnit.unitName) || '--', // 单位
-            price: material.price || '--', // 单价
-            upperLimit: null, // 上限
-            lowerLimit: null, // 下限
-            expiryReminder: null, // 有效期提醒
-            monitoring: '2', // 监测，默认为未监控（'2'）
-            location: null, // 货位
-            factoryName: (material.fdFactory && material.fdFactory.factoryName) || null, // 生产厂家
-            registerNo: material.registerNo || null, // 注册证号
-            warehouseCategoryName: (material.fdWarehouseCategory && material.fdWarehouseCategory.warehouseCategoryName) || '--', // 库房分类
-            index: this.fixedNumberList.length + 1, // 序号
-            material: material // 保存完整的耗材对象，以便后续使用
-          };
-          this.fixedNumberList.push(newItem);
-        }
+      if (!this.queryParams.fixedNumberType) {
+        this.$modal.msgWarning("请先选择定数类型");
+        return;
+      }
+      const warehouseId = this.queryParams.fixedNumberType === '1' ? this.queryParams.warehouseId : null;
+      const departmentId = this.queryParams.fixedNumberType === '2' ? this.queryParams.departmentId : null;
+      if (this.queryParams.fixedNumberType === '1' && !warehouseId) {
+        this.$modal.msgWarning("请先选择仓库");
+        return;
+      }
+      if (this.queryParams.fixedNumberType === '2' && !departmentId) {
+        this.$modal.msgWarning("请先选择科室");
+        return;
+      }
+
+      const detailList = this.addSelectedMaterials.map(material => ({
+        materialId: material.id,
+        upperLimit: 0,
+        lowerLimit: 0,
+        expiryReminder: null,
+        monitoring: '2',
+        location: null,
+        locationId: null
+      }));
+
+      const saveData = {
+        fixedNumberType: this.queryParams.fixedNumberType,
+        warehouseId,
+        departmentId,
+        detailList
+      };
+
+      addFixedNumber(saveData).then(() => {
+        this.$modal.msgSuccess("已写入当前" + (this.queryParams.fixedNumberType === '2' ? '科室' : '仓库'));
+        this.addDialogVisible = false;
+        this.addSelectedMaterials = [];
+        this.getList();
+        this.loadExistingMaterialIds();
+      }).catch(err => {
+        console.error('定数监测新增保存失败:', err);
+        this.$modal.msgError("保存失败，请重试");
       });
-      
-      // 更新序号
-      this.fixedNumberList.forEach((item, index) => {
-        item.index = index + 1;
-      });
-      
-      // 更新总数
-      this.total = this.fixedNumberList.length;
-      
-      this.$modal.msgSuccess("新增成功");
-      this.addDialogVisible = false;
-      // 清空弹窗选择
-      this.addSelectedMaterials = [];
     },
     /** 根据仓库ID获取仓库名称 */
     getWarehouseNameById(warehouseId) {

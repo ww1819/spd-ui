@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
       <el-row class="query-row-left">
@@ -392,6 +392,11 @@
             <template slot-scope="scope">
               <span v-if="scope.row.amt">{{ parseFloat(scope.row.amt).toFixed(2) }}</span>
               <span v-else>0.00</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="供应商" align="center" width="200" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <SelectSupplier v-model="scope.row.supplierId" placeholder="请选择供应商" clearable style="width: 100%;" />
             </template>
           </el-table-column>
           <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
@@ -1045,11 +1050,13 @@ export default {
       list.forEach((item) => {
         toAppend.push({
           materialId: item.id,
+          supplierId: item.supplierId || (item.supplier && item.supplier.id) || null,
           qty: "",
           price: item.price,
           amt: "",
           speci: item.speci,
           model: item.model,
+          planSource: "手工制单",
           beginTime: "",
           endTime: "",
           remark: "",
@@ -1290,6 +1297,13 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          // 校验：每条有耗材的明细必须指定供应商
+          const list = this.stkIoBillEntryList || [];
+          const noSupplier = list.filter(e => e.materialId && (e.supplierId == null || e.supplierId === ''));
+          if (noSupplier.length > 0) {
+            this.$modal.msgError("请为每条计划明细指定供应商后再保存。存在 " + noSupplier.length + " 条明细未选择供应商。");
+            return;
+          }
           this.form.purchasePlanEntryList = this.stkIoBillEntryList;
           // 保存时保持原有状态，不自动改变状态
           // 新增时如果没有设置状态，则默认为"未提交"（0）
@@ -1368,6 +1382,7 @@ export default {
     handleAddStkIoBillEntry() {
       let obj = {};
       obj.materialId = "";
+      obj.supplierId = null;
       obj.qty = "";
       obj.price = "";
       obj.amt = "";
@@ -1650,7 +1665,7 @@ export default {
           obj.speci = entry.materialSpec || entry.speci || (entry.material && entry.material.speci) || '';
           obj.model = entry.model || (entry.material && entry.material.model) || '';
           obj.remark = entry.remark || '';
-          // 设置计划来源为来源科室（从当前选中的申购单获取科室名称）
+          obj.supplierId = entry.supplierId || (entry.material && entry.material.supplierId) || (entry.material && entry.material.supplier && entry.material.supplier.id) || null;
           obj.planSource = this.currentPurchaseRow && this.currentPurchaseRow.department && this.currentPurchaseRow.department.name 
             ? this.currentPurchaseRow.department.name 
             : '引用申购单';

@@ -9,6 +9,15 @@ export function listFixedNumber(query) {
   })
 }
 
+// 科室申购新增明细专用：查询仓库的定数检测数据（不依赖产品档案 list 权限）
+export function listFixedNumberForPurchase(query) {
+  return request({
+    url: '/monitoring/fixedNumber/listForPurchase',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询定数监测详细
 export function getFixedNumber(id) {
   return request({
@@ -17,12 +26,14 @@ export function getFixedNumber(id) {
   })
 }
 
-// 新增定数监测
+// 新增定数监测（明细可能很多，必须用 POST body 传参，避免 414 URI 过长）
 export function addFixedNumber(data) {
   return request({
     url: '/monitoring/fixedNumber',
     method: 'post',
-    data: data
+    params: {}, // 明确不往 URL 塞参数，防止被拼成 GET 导致 414
+    data: data,
+    timeout: 60000   // 明细多时适当延长超时
   })
 }
 
