@@ -363,19 +363,28 @@
               <el-button size="small" @click="closeTemplateDialog" class="close-btn">关闭</el-button>
             </div>
             <div class="template-dialog-body">
-              <p class="template-dialog-tip">请选择要引用的制单模板，将把该模板的明细耗材应用到当前申领单。（制单模板需在系统中单独创建，与打印设置无关。）</p>
-              <!-- 上部分：按模板名称搜索 -->
-              <div class="template-search-row">
-                <el-input
-                  v-model="templateNameSearch"
-                  placeholder="按模板名称搜索"
-                  clearable
-                  class="template-search-input"
-                  @keyup.enter.native="loadTemplateList"
-                />
-                <el-button type="primary" size="small" icon="el-icon-search" @click="loadTemplateList">搜索</el-button>
+              <!-- 顶部搜索框：仅搜索条件输入 -->
+              <div class="template-search-box">
+                <div class="template-search-row">
+                  <el-input
+                    v-model="templateNameSearch"
+                    placeholder="按模板名称搜索"
+                    clearable
+                    class="template-search-input"
+                    @keyup.enter.native="loadTemplateList"
+                  />
+                </div>
               </div>
-              <!-- 下部分：左模板名称列表 + 右明细 -->
+              <!-- 中部：新增、删除、搜索、取消、引用按钮（与申领单新增按钮大小一致 medium） -->
+              <div class="template-action-row">
+                <el-button type="primary" size="medium" icon="el-icon-plus" @click="openAddTemplateDialog">新增</el-button>
+                <el-button type="danger" size="medium" icon="el-icon-delete" :disabled="!selectedTemplate || !templateDetailSelection.length" @click="handleDeleteTemplateDetail">删除</el-button>
+                <el-button type="primary" size="medium" icon="el-icon-search" @click="loadTemplateList">搜索</el-button>
+                <el-button size="medium" icon="el-icon-refresh" @click="handleRefreshTemplate">刷 新</el-button>
+                <el-button type="primary" size="medium" :disabled="!selectedTemplate" @click="confirmRefTemplate">引 用</el-button>
+                <el-button type="primary" size="medium" :disabled="!selectedTemplate" @click="handleSaveTemplate">保 存</el-button>
+              </div>
+              <!-- 下部分：左模板名称列表 + 右侧明细框（仅保留列头） -->
               <div class="template-split-layout">
                 <div class="template-list-box">
                   <div class="template-list-title">模板名称</div>
@@ -386,39 +395,93 @@
                       :class="['template-list-item', { active: selectedTemplate && selectedTemplate.id === item.id }]"
                       @click="onSelectTemplate(item)"
                     >
-                      {{ item.templateName }}
+                      <span class="template-list-item-name" @dblclick.stop="openRenameTemplateDialog(item)">{{ item.templateName }}</span>
+                      <el-button type="text" size="mini" icon="el-icon-delete" class="template-list-item-delete" @click.stop="handleDeleteTemplateItem(item)">删除</el-button>
                     </div>
                     <div v-if="!printTemplateList || printTemplateList.length === 0" class="template-list-empty">暂无制单模板</div>
                   </div>
                 </div>
-                <div class="template-detail-box">
-                  <div class="template-list-title">模板明细</div>
-                  <div class="template-detail-inner">
-                    <el-table :data="templateDetailList" border stripe max-height="100%" size="small">
-                      <el-table-column type="index" label="序号" width="50" align="center" />
-                      <el-table-column prop="materialCode" label="耗材编码" min-width="100" show-overflow-tooltip>
-                        <template slot-scope="scope">
-                          {{ scope.row.material && scope.row.material.code ? scope.row.material.code : '—' }}
-                        </template>
-                      </el-table-column>
-                      <el-table-column prop="materialName" label="名称" min-width="120" show-overflow-tooltip>
-                        <template slot-scope="scope">
-                          {{ scope.row.material && scope.row.material.name ? scope.row.material.name : '—' }}
-                        </template>
-                      </el-table-column>
-                      <el-table-column prop="materialSpeci" label="规格" width="100" show-overflow-tooltip>
-                        <template slot-scope="scope">
-                          {{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '—' }}
-                        </template>
-                      </el-table-column>
-                      <el-table-column prop="qty" label="数量" width="80" align="center" />
-                    </el-table>
-                    <div v-if="!selectedTemplate" class="template-detail-empty">请从左侧选择模板</div>
-                    <div v-else-if="!templateDetailList || templateDetailList.length === 0" class="template-detail-empty">该模板暂无明细</div>
+                <!-- 右侧：明细框（表格设 height 固定表头）+ 分页固定在外侧底部 -->
+                <div class="template-detail-table-wrap">
+                  <div ref="templateDetailTableInner" class="template-detail-table-inner">
+                    <el-table ref="templateDetailTable" :data="templateDetailPageList" :height="templateDetailTableHeight" border stripe size="small" show-header @selection-change="handleTemplateDetailSelectionChange">
+                    <el-table-column type="selection" width="50" align="center" />
+                    <el-table-column label="序号" width="50" align="center">
+                      <template slot-scope="scope">
+                        {{ (templateDetailPageNum - 1) * templateDetailPageSize + scope.$index + 1 }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="耗材编码" min-width="100" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.code ? scope.row.material.code : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="耗材名称" min-width="120" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.name ? scope.row.material.name : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="规格" width="100" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="型号" width="100" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.model ? scope.row.material.model : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="单位" width="80" align="center">
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="单价" width="90" align="center" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.price != null ? scope.row.material.price : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="生产厂家" min-width="100" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName ? scope.row.material.fdFactory.factoryName : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="供应商" min-width="100" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name ? scope.row.material.supplier.name : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="注册证号" min-width="100" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.registerNo ? scope.row.material.registerNo : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="注册证有效期" width="110" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.periodDate ? parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="库房分类" width="100" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName ? scope.row.material.fdWarehouseCategory.warehouseCategoryName : '—' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="财务分类" width="100" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{ scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName ? scope.row.material.fdFinanceCategory.financeCategoryName : '—' }}
+                      </template>
+                    </el-table-column>
+                  </el-table>
                   </div>
-                  <div class="template-dialog-footer">
-                    <el-button @click="closeTemplateDialog">取 消</el-button>
-                    <el-button type="primary" :disabled="!selectedTemplate" @click="confirmRefTemplate">引 用</el-button>
+                  <div class="template-detail-pagination">
+                    <pagination
+                      v-show="templateDetailList.length > 0"
+                      :total="templateDetailList.length"
+                      :page.sync="templateDetailPageNum"
+                      :limit.sync="templateDetailPageSize"
+                      :page-sizes="[10, 20, 50]"
+                      @pagination="handleTemplateDetailPagination"
+                    />
                   </div>
                 </div>
               </div>
@@ -428,11 +491,154 @@
       </div>
     </transition>
 
-    <!-- 3、使用组件 -->
+    <!-- 双击模板：修改模板名称小窗（仅改内存，点主弹窗保存按钮才提交） -->
+    <el-dialog title="修改模板名称" :visible.sync="renameTemplateDialogVisible" width="400px" append-to-body :close-on-click-modal="false">
+      <el-form label-width="80px">
+        <el-form-item label="模板名称">
+          <el-input v-model="renameTemplateName" placeholder="请输入模板名称" clearable maxlength="100" show-word-limit />
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="renameTemplateDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="confirmRenameTemplate">确 定</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 未选模板时点新增：维护模板名称小窗，确定后创建空模板并选中 -->
+    <el-dialog title="维护模板名称" :visible.sync="newTemplateNameDialogVisible" width="400px" append-to-body :close-on-click-modal="false">
+      <el-form label-width="80px">
+        <el-form-item label="模板名称">
+          <el-input v-model="newTemplateName" placeholder="请输入模板名称" clearable maxlength="100" show-word-limit />
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="closeNewTemplateNameDialog">取 消</el-button>
+        <el-button type="primary" @click="confirmNewTemplateName">确 定</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 新增制单模板弹窗：样式与添加科室申领一致 -->
+    <transition name="modal-fade">
+      <div v-if="addTemplateDialogVisible" class="local-modal-mask">
+        <transition name="modal-zoom">
+          <div v-if="addTemplateDialogVisible" class="local-modal-content">
+            <div class="modal-header">
+              <div class="modal-title">{{ addTemplateAppendMode ? '往当前模板插入明细' : '新增制单模板' }}</div>
+              <el-button size="small" @click="closeAddTemplateDialog" class="close-btn">关闭</el-button>
+            </div>
+            <el-form ref="addTemplateFormRef" :model="addTemplateForm" :rules="addTemplateRules" label-width="80px" class="modal-form-wrapper add-template-form">
+              <div class="form-fields-container d-apply-form-fields add-template-search-row">
+                <el-row>
+                  <el-col :span="4">
+                    <el-form-item label="供应商名称" prop="supplierId" label-width="100px">
+                      <div class="d-apply-form-input">
+                        <SelectSupplier v-model="addTemplateForm.supplierId" :value2="false"/>
+                      </div>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="耗材名称" prop="materialKeyword" label-width="100px">
+                      <el-input v-model="addTemplateForm.materialKeyword" placeholder="请输入耗材名称或首字母" clearable size="small" class="d-apply-form-input" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="规格搜索" prop="speciSearch" label-width="100px">
+                      <el-input v-model="addTemplateForm.speciSearch" placeholder="请输入规格或首字母" clearable size="small" class="d-apply-form-input" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </div>
+              <el-row :gutter="10" class="mb8">
+                <el-col :span="1.5">
+                  <span>模板明细信息</span>
+                </el-col>
+                <el-col :span="1.5" v-show="false">
+                  <el-button type="primary" icon="el-icon-plus" size="medium" @click="nameBtnForTemplate">添加</el-button>
+                </el-col>
+                <el-col :span="1.5" v-show="false">
+                  <el-button type="danger" icon="el-icon-delete" size="medium" @click="handleDeleteAddTemplateEntry">删除</el-button>
+                </el-col>
+                <el-col :span="1.5" v-show="false">
+                  <el-button size="medium" @click="closeAddTemplateDialog">取 消</el-button>
+                </el-col>
+                <el-col :span="1.5">
+                  <el-button type="primary" icon="el-icon-search" size="medium" @click="handleAddTemplateSearch">搜 索</el-button>
+                </el-col>
+                <el-col :span="1.5">
+                  <el-button type="primary" size="medium" @click="submitAddTemplate">确 认</el-button>
+                </el-col>
+              </el-row>
+              <div class="table-wrapper">
+                <el-table :data="addTemplateDetailPageList" row-key="id" :row-class-name="rowAddTemplateMaterialIndex" @selection-change="handleAddTemplateEntrySelectionChange" ref="addTemplateEntryTable" height="100%" border>
+                  <el-table-column type="selection" width="50" align="center" resizable />
+                  <el-table-column label="序号" align="center" width="60" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      {{ (addTemplateDetailPageNum - 1) * addTemplateDetailPageSize + scope.$index + 1 }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="耗材编码" align="center" prop="code" width="120" show-overflow-tooltip resizable/>
+                  <el-table-column label="名称" align="center" prop="name" width="140" show-overflow-tooltip resizable/>
+                  <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable/>
+                  <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable/>
+                  <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      {{ scope.row.fdUnit && scope.row.fdUnit.unitName ? scope.row.fdUnit.unitName : '—' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="单价" align="center" width="90" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      {{ scope.row.price != null ? scope.row.price : '—' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="生产厂家" align="center" width="120" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      {{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '—' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="供应商" align="center" width="120" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      {{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '—' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="注册证号" align="center" prop="registerNo" width="120" show-overflow-tooltip resizable/>
+                  <el-table-column label="注册号有效期" align="center" width="110" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      {{ scope.row.periodDate ? parseTime(scope.row.periodDate, '{y}-{m}-{d}') : '—' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="库房分类" align="center" width="100" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      {{ scope.row.fdWarehouseCategory && scope.row.fdWarehouseCategory.warehouseCategoryName ? scope.row.fdWarehouseCategory.warehouseCategoryName : '—' }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="财务分类" align="center" width="100" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      {{ scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName ? scope.row.fdFinanceCategory.financeCategoryName : '—' }}
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+              <div class="add-template-pagination-wrap">
+                <pagination
+                  v-show="addTemplateFilteredList.length > 0"
+                  :total="addTemplateFilteredList.length"
+                  :page.sync="addTemplateDetailPageNum"
+                  :limit.sync="addTemplateDetailPageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  @pagination="handleAddTemplateDetailPagination"
+                />
+              </div>
+            </el-form>
+          </div>
+        </transition>
+      </div>
+    </transition>
+
+    <!-- 3、使用组件（科室申领添加明细 / 新增制单模板添加明细 共用） -->
     <SelectInventory
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
-      :warehouseValue="warehouseValue"
+      :warehouseValue="currentSelectWarehouseValue"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectInventory>
@@ -442,21 +648,40 @@
 
 <script>
 import { listApply, getApply, delApply, addApply, updateApply } from "@/api/department/apply";
-import { listApplyTemplate, getApplyTemplate } from "@/api/department/applyTemplate";
+import { listApplyTemplate, getApplyTemplate, addApplyTemplate, updateApplyTemplate, deleteApplyTemplate } from "@/api/department/applyTemplate";
+import { listMaterialAll } from "@/api/foundation/material";
+import { pinyin } from 'pinyin-pro';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
+import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 
 export default {
   name: "dApply",
   dicts: ['biz_status','way_status'],
-  components: {SelectWarehouse,SelectDepartment,SelectUser},
+  components: { SelectWarehouse, SelectDepartment, SelectUser, SelectSupplier },
   data() {
     return {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
       warehouseValue: "",
+      /** 库存选择弹窗：当前用于哪个表单（apply=科室申领明细，template=新增制单模板明细） */
+      selectTarget: 'apply',
+      /** 库存选择弹窗：当前传入的仓库（科室申领用 form.warehouseId，制单模板用 addTemplateForm.warehouseId） */
+      currentSelectWarehouseValue: '',
+      /** 新增制单模板弹窗：搜索条件（首字母+模糊） */
+      addTemplateDialogVisible: false,
+      addTemplateForm: { supplierId: null, materialKeyword: '', speciSearch: '' },
+      /** 耗材基础产品字典（仅在用），加载后前端过滤 */
+      addTemplateMaterialList: [],
+      checkedAddTemplateEntry: [],
+      /** 新增制单模板-明细分页 */
+      addTemplateDetailPageNum: 1,
+      addTemplateDetailPageSize: 10,
+      /** 跨页勾选：已选中的耗材 id 数组（响应式） */
+      addTemplateSelectedIds: [],
+      addTemplateRules: {},
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -488,6 +713,22 @@ export default {
       printTemplateList: [],
       selectedTemplate: null,
       templateDetailList: [],
+      /** 引用模板-明细分页 */
+      templateDetailPageNum: 1,
+      templateDetailPageSize: 10,
+      /** 双击模板：修改名称小窗 */
+      renameTemplateDialogVisible: false,
+      renameTemplateItem: null,
+      renameTemplateName: '',
+      /** 未选模板时新增：维护模板名称小窗 */
+      newTemplateNameDialogVisible: false,
+      newTemplateName: '',
+      /** 新增制单模板弹窗是否为“往当前模板插入明细”模式（仅追加到 templateDetailList，不新建模板） */
+      addTemplateAppendMode: false,
+      /** 引用模板-右侧明细表勾选的行（用于中间删除按钮删除明细） */
+      templateDetailSelection: [],
+      /** 引用模板-右侧明细表高度（用于固定表头，表格内部滚动） */
+      templateDetailTableHeight: 280,
       /** 引用模板后的列配置（供打印等使用） */
       columnList: [],
       //是否显示
@@ -517,8 +758,86 @@ export default {
       }
     };
   },
+  computed: {
+    /** 引用模板-当前页的明细列表（前端分页） */
+    templateDetailPageList() {
+      if (!this.templateDetailList || this.templateDetailList.length === 0) {
+        return [];
+      }
+      const start = (this.templateDetailPageNum - 1) * this.templateDetailPageSize;
+      return this.templateDetailList.slice(start, start + this.templateDetailPageSize);
+    },
+    /** 新增制单模板-耗材字典列表（按供应商/耗材名称/规格搜索过滤，支持首字母+模糊） */
+    addTemplateFilteredList() {
+      let list = this.addTemplateMaterialList || [];
+      const supplierId = this.addTemplateForm.supplierId;
+      const kw = (this.addTemplateForm.materialKeyword || '').trim();
+      const spec = (this.addTemplateForm.speciSearch || '').trim();
+      if (supplierId != null && supplierId !== '') {
+        list = list.filter(row => row.supplierId === supplierId);
+      }
+      if (kw) {
+        const k = kw.toLowerCase();
+        const kFirst = this._getFirstLetters(kw);
+        list = list.filter(row => {
+          const name = (row.name || '').toLowerCase();
+          const code = (row.code || '').toLowerCase();
+          const referred = (row.referredName || '').toLowerCase();
+          const first = this._getFirstLetters((row.name || '') + (row.code || '') + (row.referredName || ''));
+          return name.indexOf(k) !== -1 || code.indexOf(k) !== -1 || referred.indexOf(k) !== -1 ||
+            (kFirst && first && first.toLowerCase().indexOf(kFirst.toLowerCase()) !== -1);
+        });
+      }
+      if (spec) {
+        const s = spec.toLowerCase();
+        const sFirst = this._getFirstLetters(spec);
+        list = list.filter(row => {
+          const speci = (row.speci || '').toLowerCase();
+          const first = this._getFirstLetters(row.speci || '');
+          return speci.indexOf(s) !== -1 || (sFirst && first && first.toLowerCase().indexOf(sFirst.toLowerCase()) !== -1);
+        });
+      }
+      return list;
+    },
+    /** 新增制单模板-当前页明细（分页切片） */
+    addTemplateDetailPageList() {
+      const list = this.addTemplateFilteredList || [];
+      const start = (this.addTemplateDetailPageNum - 1) * this.addTemplateDetailPageSize;
+      return list.slice(start, start + this.addTemplateDetailPageSize);
+    },
+  },
+  watch: {
+    templateDialogVisible(val) {
+      if (val) {
+        this.$nextTick(() => {
+          setTimeout(() => this.calcTemplateDetailTableHeight(), 120);
+        });
+      }
+    },
+    addTemplateDetailPageList: {
+      handler(list) {
+        if (!this.addTemplateDialogVisible || !list || !this.$refs.addTemplateEntryTable) return
+        this.$nextTick(() => {
+          list.forEach(row => {
+            this.$refs.addTemplateEntryTable.toggleRowSelection(row, this.addTemplateSelectedIds.includes(row.id))
+          })
+        })
+      },
+      deep: true
+    },
+  },
   created() {
     this.getList();
+  },
+  mounted() {
+    const that = this;
+    this._templateDetailTableResize = () => {
+      if (that.templateDialogVisible) that.calcTemplateDetailTableHeight();
+    };
+    window.addEventListener('resize', this._templateDetailTableResize);
+  },
+  beforeDestroy() {
+    if (this._templateDetailTableResize) window.removeEventListener('resize', this._templateDetailTableResize);
   },
   methods: {
     /** 查询科室申领列表 */
@@ -550,13 +869,185 @@ export default {
         this.$message({ message: '请先选择仓库', type: 'warning' })
         return
       }
-      //打开“弹窗组件”
+      this.selectTarget = 'apply'
+      this.currentSelectWarehouseValue = this.form.warehouseId
       this.DialogComponentShow = true
-      this.warehouseValue = this.form.warehouseId;
     },
     closeDialog() {
-      //关闭“弹窗组件”
       this.DialogComponentShow = false
+    },
+    /** 打开新增制单模板弹窗：有选中模板则往当前模板插入明细，无选中则先弹维护模板名称小窗 */
+    openAddTemplateDialog() {
+      if (this.selectedTemplate) {
+        this.addTemplateAppendMode = true
+        this.addTemplateForm = { supplierId: null, materialKeyword: '', speciSearch: '' }
+        this.addTemplateMaterialList = []
+        this.checkedAddTemplateEntry = []
+        this.addTemplateDetailPageNum = 1
+        this.addTemplateDetailPageSize = 10
+        this.addTemplateSelectedIds = []
+        this.addTemplateDialogVisible = true
+        listMaterialAll({ isUse: '1' }).then(res => {
+          const rows = Array.isArray(res) ? res : (res && res.data ? res.data : [])
+          this.addTemplateMaterialList = rows
+        }).catch(() => {
+          this.addTemplateMaterialList = []
+        })
+      } else {
+        this.newTemplateName = ''
+        this.newTemplateNameDialogVisible = true
+      }
+    },
+    /** 关闭新增制单模板弹窗 */
+    closeAddTemplateDialog() {
+      this.addTemplateDialogVisible = false
+      this.addTemplateAppendMode = false
+      this.addTemplateForm = { supplierId: null, materialKeyword: '', speciSearch: '' }
+      this.addTemplateMaterialList = []
+      this.checkedAddTemplateEntry = []
+      this.addTemplateSelectedIds = []
+    },
+    /** 新增制单模板-搜索（条件已实时过滤，此处仅将分页重置为第 1 页） */
+    handleAddTemplateSearch() {
+      this.addTemplateDetailPageNum = 1
+    },
+    /** 新增制单模板-明细分页变更 */
+    handleAddTemplateDetailPagination() {},
+    /** 首字母（用于搜索过滤） */
+    _getFirstLetters(str) {
+      if (!str || typeof str !== 'string') return ''
+      try {
+        return pinyin(str, { pattern: 'first', toneType: 'none' }).replace(/\s/g, '') || ''
+      } catch (e) {
+        return ''
+      }
+    },
+    rowAddTemplateMaterialIndex({ row, rowIndex }) {
+      row._index = rowIndex + 1
+    },
+    /** 新增制单模板弹窗内：添加明细（打开库存选择，与科室申领添加一致） */
+    nameBtnForTemplate() {
+      if (!this.addTemplateForm.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
+      this.selectTarget = 'template'
+      this.currentSelectWarehouseValue = this.addTemplateForm.warehouseId
+      this.DialogComponentShow = true
+    },
+    /** 删除新增制单模板明细（多选） */
+    handleDeleteAddTemplateEntry() {
+      const rows = this.checkedAddTemplateEntry
+      if (!rows || rows.length === 0) {
+        this.$modal.msgError('请先选择要删除的明细')
+        return
+      }
+      this.addTemplateEntryList = this.addTemplateEntryList.filter(row => !rows.includes(row))
+    },
+    handleAddTemplateEntrySelectionChange(rows) {
+      this.checkedAddTemplateEntry = rows
+      const pageList = this.addTemplateDetailPageList || []
+      const pageIds = new Set(pageList.map(r => r.id))
+      this.addTemplateSelectedIds = this.addTemplateSelectedIds.filter(id => !pageIds.has(id))
+      rows.forEach(row => this.addTemplateSelectedIds.push(row.id))
+    },
+    rowAddTemplateEntryIndex({ row, rowIndex }) {
+      row.index = rowIndex + 1
+    },
+    /** 删除新增制单模板单行明细 */
+    handleDeleteAddTemplateDetailRow(index) {
+      this.addTemplateEntryList.splice(index, 1)
+    },
+    /** 确认：往当前模板插入明细（追加模式）或 保存为新制单模板（支持跨页勾选） */
+    submitAddTemplate() {
+      const ids = this.addTemplateSelectedIds
+      const list = (this.addTemplateFilteredList || []).filter(row => ids.includes(row.id))
+      if (list.length === 0) {
+        this.$message.warning('请至少勾选一条耗材明细')
+        return
+      }
+      if (this.addTemplateAppendMode && this.selectedTemplate) {
+        const existingMaterialIds = new Set((this.templateDetailList || []).map(e => e.materialId))
+        const duplicates = list.filter(row => existingMaterialIds.has(row.id))
+        if (duplicates.length > 0) {
+          const name = (duplicates[0].name || duplicates[0].code || '该耗材')
+          this.$message.warning('【' + name + '】该产品已经存在模板中了，请勿重复维护！')
+          return
+        }
+        const newEntries = list.map(row => ({
+          materialId: row.id,
+          material: row,
+          qty: 1
+        }))
+        this.templateDetailList = (this.templateDetailList || []).concat(newEntries)
+        this.$message.success('已插入明细，请点击保存按钮保存模板')
+        this.closeAddTemplateDialog()
+        return
+      }
+      const templateName = '制单模板_' + this.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}')
+      const payload = {
+        templateName,
+        warehouseId: null,
+        remark: '',
+        entryList: list.map(row => ({
+          materialId: row.id,
+          material: row,
+          qty: 1
+        }))
+      }
+      addApplyTemplate(payload).then(() => {
+        this.$message.success('保存成功')
+        this.closeAddTemplateDialog()
+        if (this.templateDialogVisible) this.loadTemplateList()
+      }).catch(() => {
+        this.$message.error('保存失败')
+      })
+    },
+    /** 双击模板：打开修改名称小窗 */
+    openRenameTemplateDialog(item) {
+      if (!item) return
+      this.renameTemplateItem = item
+      this.renameTemplateName = item.templateName || ''
+      this.renameTemplateDialogVisible = true
+    },
+    /** 确定修改模板名称（仅更新内存，主弹窗点保存才提交） */
+    confirmRenameTemplate() {
+      const name = (this.renameTemplateName || '').trim()
+      if (!name) {
+        this.$message.warning('请输入模板名称')
+        return
+      }
+      if (!this.renameTemplateItem) {
+        this.renameTemplateDialogVisible = false
+        return
+      }
+      const id = this.renameTemplateItem.id
+      const idx = this.printTemplateList.findIndex(t => t.id === id)
+      if (idx >= 0) this.$set(this.printTemplateList[idx], 'templateName', name)
+      if (this.selectedTemplate && this.selectedTemplate.id === id) this.selectedTemplate.templateName = name
+      this.renameTemplateDialogVisible = false
+      this.renameTemplateItem = null
+      this.$message.success('名称已更新，请点击保存按钮保存')
+    },
+    /** 关闭维护模板名称小窗（新建模板用） */
+    closeNewTemplateNameDialog() {
+      this.newTemplateNameDialogVisible = false
+      this.newTemplateName = ''
+    },
+    /** 确定维护模板名称：创建空模板并选中，随后可点新增插入明细 */
+    confirmNewTemplateName() {
+      const name = (this.newTemplateName || '').trim()
+      if (!name) {
+        this.$message.warning('请输入模板名称')
+        return
+      }
+      addApplyTemplate({ templateName: name, warehouseId: null, remark: '', entryList: [] }).then(() => {
+        this.$message.success('模板已创建，可点击新增插入明细后再保存')
+        this.closeNewTemplateNameDialog()
+        this.loadTemplateList()
+      }).catch(() => {
+        this.$message.error('创建失败')
+      })
     },
     /** 打开引用模板弹窗（制单模板） */
     handleRefTemplate() {
@@ -567,10 +1058,13 @@ export default {
       this.templateDetailList = [];
       this.loadTemplateList();
     },
-    /** 按模板名称加载制单模板列表 */
-    loadTemplateList() {
+    /** 按模板名称加载制单模板列表；refresh 为 true 时不自动选中第一项（用于点击刷新按钮） */
+    loadTemplateList(refresh) {
       listApplyTemplate({ templateName: this.templateNameSearch }).then(res => {
         this.printTemplateList = res.data || [];
+        if (refresh) {
+          return;
+        }
         if (this.printTemplateList.length > 0 && !this.selectedTemplate) {
           this.onSelectTemplate(this.printTemplateList[0]);
         } else if (this.printTemplateList.length === 0) {
@@ -584,11 +1078,23 @@ export default {
     /** 选择左侧模板，加载明细 */
     onSelectTemplate(item) {
       this.selectedTemplate = item;
+      this.templateDetailPageNum = 1;
+      this.templateDetailSelection = [];
       getApplyTemplate(item.id).then(res => {
         const data = res.data || {};
         this.templateDetailList = data.entryList || [];
+        this.$nextTick(() => this.calcTemplateDetailTableHeight());
       }).catch(() => {
         this.templateDetailList = [];
+      });
+    },
+    /** 计算引用模板右侧明细表高度（固定表头用） */
+    calcTemplateDetailTableHeight() {
+      this.$nextTick(() => {
+        const el = this.$refs.templateDetailTableInner;
+        if (el && el.clientHeight) {
+          this.templateDetailTableHeight = el.clientHeight;
+        }
       });
     },
     /** 关闭引用模板弹窗 */
@@ -598,6 +1104,12 @@ export default {
       this.printTemplateList = [];
       this.selectedTemplate = null;
       this.templateDetailList = [];
+      this.templateDetailPageNum = 1;
+      this.templateDetailPageSize = 10;
+    },
+    /** 引用模板-明细分页变更（前端分页，无需请求） */
+    handleTemplateDetailPagination() {
+      // 页码/每页条数由 .sync 更新，templateDetailPageList 计算属性自动响应
     },
     /** 确认引用模板：将选中制单模板的明细应用到当前申领单 */
     confirmRefTemplate() {
@@ -620,14 +1132,102 @@ export default {
       this.$message.success('已应用制单模板明细');
       this.closeTemplateDialog();
     },
+    /** 右侧明细表勾选变更 */
+    handleTemplateDetailSelectionChange(val) {
+      this.templateDetailSelection = val || [];
+    },
+    /** 删除当前模板中勾选的明细行（不删整模板） */
+    handleDeleteTemplateDetail() {
+      if (!this.selectedTemplate) {
+        this.$message.warning('请先选择模板');
+        return;
+      }
+      const rows = this.templateDetailSelection;
+      if (!rows || rows.length === 0) {
+        this.$message.warning('请先在右侧明细中勾选要删除的行');
+        return;
+      }
+      const set = new Set(rows)
+      this.templateDetailList = this.templateDetailList.filter(entry => !set.has(entry))
+      this.templateDetailSelection = []
+      this.$nextTick(() => {
+        if (this.$refs.templateDetailTable) this.$refs.templateDetailTable.clearSelection()
+      })
+      this.$message.success('已移除选中的明细，请点击保存按钮保存模板')
+    },
+    /** 刷新：重新加载模板列表并取消选中，不自动选中任一模板 */
+    handleRefreshTemplate() {
+      this.selectedTemplate = null
+      this.templateDetailList = []
+      this.templateDetailPageNum = 1
+      this.templateDetailSelection = []
+      this.loadTemplateList(true)
+      this.$nextTick(() => {
+        if (this.$refs.templateDetailTable) this.$refs.templateDetailTable.clearSelection()
+      })
+      this.$message.success('已刷新，请重新选择模板')
+    },
+    /** 删除模板名称列表中的某一项（该模板） */
+    handleDeleteTemplateItem(item) {
+      if (!item || !item.id) return;
+      this.$confirm('确定删除该制单模板吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        return deleteApplyTemplate(item.id);
+      }).then(() => {
+        this.$message.success('删除成功');
+        if (this.selectedTemplate && this.selectedTemplate.id === item.id) {
+          this.selectedTemplate = null;
+          this.templateDetailList = [];
+          this.templateDetailPageNum = 1;
+        }
+        this.loadTemplateList();
+      }).catch(() => {});
+    },
+    /** 保存当前选中的制单模板（更新模板及明细） */
+    handleSaveTemplate() {
+      if (!this.selectedTemplate || !this.selectedTemplate.id) {
+        this.$message.warning('请先选择要保存的模板');
+        return;
+      }
+      const entryList = (this.templateDetailList || []).map((e, i) => ({
+        materialId: e.materialId,
+        qty: e.qty != null ? e.qty : 1,
+        sortOrder: i + 1
+      }));
+      const payload = {
+        id: this.selectedTemplate.id,
+        templateName: this.selectedTemplate.templateName,
+        warehouseId: this.selectedTemplate.warehouseId,
+        remark: this.selectedTemplate.remark,
+        entryList
+      };
+      updateApplyTemplate(payload).then(() => {
+        this.$message.success('保存成功');
+        getApplyTemplate(this.selectedTemplate.id).then(res => {
+          this.templateDetailList = (res.data && res.data.entryList) ? res.data.entryList : [];
+          this.templateDetailPageNum = 1;
+        });
+      }).catch(() => {});
+    },
     selectData(val) {
-      //监听“弹窗组件”返回的数据
-      this.selectRow = val;
-
-      this.selectRow.forEach((item, index) => {
-        this.basApplyEntryList.splice(this.basApplyEntryList.length, 0, JSON.parse(JSON.stringify(item)));
-      });
-      this.calculateTotals();
+      this.selectRow = val
+      if (this.selectTarget === 'template') {
+        val.forEach(item => {
+          this.addTemplateEntryList.push({
+            materialId: item.materialId,
+            material: item.material || {},
+            qty: item.qty || 1
+          })
+        })
+      } else {
+        val.forEach(item => {
+          this.basApplyEntryList.splice(this.basApplyEntryList.length, 0, JSON.parse(JSON.stringify(item)))
+        })
+        this.calculateTotals()
+      }
     },
     //当天日期
     getBillDate(){
@@ -1016,6 +1616,22 @@ export default {
   width: 100%;
 }
 
+/* 新增制单模板/往当前模板插入明细：搜索框降低高度 */
+.add-template-form .add-template-search-row {
+  margin-bottom: 6px;
+}
+.add-template-form .add-template-search-row .el-form-item {
+  margin-bottom: 8px;
+}
+.add-template-form .add-template-search-row .el-input__inner {
+  height: 28px;
+  line-height: 28px;
+}
+.add-template-form .add-template-search-row .d-apply-form-input .el-input__inner {
+  height: 28px;
+  line-height: 28px;
+}
+
 /* 引用模板弹窗：贴顶、左右无留白、高度加倍 */
 .template-dialog-mask {
   display: flex;
@@ -1037,7 +1653,7 @@ export default {
 }
 
 .template-dialog-body {
-  padding: 16px 20px 20px;
+  padding: 16px 20px 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1045,19 +1661,22 @@ export default {
   min-height: 0;
 }
 
-.template-dialog-tip {
-  color: #606266;
-  font-size: 13px;
+/* 顶部搜索框容器：与库存明细等页面的查询条件框风格一致 */
+.template-search-box {
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #EBEEF5;
   margin-bottom: 12px;
   flex-shrink: 0;
 }
 
-/* 上部分：搜索框 */
 .template-search-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 0;
   flex-shrink: 0;
 }
 
@@ -1065,7 +1684,16 @@ export default {
   width: 260px;
 }
 
-/* 下部分：左列表 + 右明细，高度与弹窗加倍匹配 */
+/* 中部：搜索、取消、引用按钮行（位于搜索框与模板列表之间） */
+.template-action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+/* 下部分：仅模板名称列表，高度与弹窗匹配 */
 .template-split-layout {
   display: flex;
   gap: 16px;
@@ -1076,7 +1704,7 @@ export default {
 }
 
 .template-list-box {
-  width: 220px;
+  width: 300px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -1105,6 +1733,31 @@ export default {
   cursor: pointer;
   border-bottom: 1px solid #EBEEF5;
   font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.template-list-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.template-list-item-delete {
+  flex-shrink: 0;
+  padding: 0 4px;
+  color: #F56C6C;
+}
+.template-list-item-delete:hover {
+  color: #f78989;
+}
+.template-list-item.active .template-list-item-delete {
+  color: rgba(255,255,255,0.9);
+}
+.template-list-item.active .template-list-item-delete:hover {
+  color: #fff;
 }
 
 .template-list-item:hover {
@@ -1123,14 +1776,32 @@ export default {
   font-size: 13px;
 }
 
-.template-detail-box {
+/* 右侧：明细框（仅表格区域可滚动）+ 分页固定在外侧底部 */
+.template-detail-table-wrap {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  border: 1px solid #EBEEF5;
-  border-radius: 4px;
+}
+
+.template-detail-table-inner {
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
+}
+
+.template-detail-table-inner .el-table {
+  width: 100%;
+}
+
+.template-detail-pagination {
+  flex-shrink: 0;
+  padding: 10px 0 0;
+  margin-bottom: 0;
+  min-height: 36px;
+  border-top: 1px solid #EBEEF5;
+  background: #fff;
 }
 
 .template-detail-inner {
@@ -1186,6 +1857,11 @@ export default {
 ::v-deep .local-modal-content .table-wrapper .el-table .cell {
   white-space: nowrap !important;
   overflow: hidden !important;
+}
+
+.add-template-pagination-wrap {
+  flex-shrink: 0;
+  padding: 8px 0 0;
 }
 
 /* 弹窗动画效果 */

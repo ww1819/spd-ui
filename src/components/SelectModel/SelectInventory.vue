@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <transition name="modal-fade">
     <div v-if="show" class="local-modal-mask">
       <transition name="modal-zoom">
@@ -8,9 +8,9 @@
         <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
       </div>
       <div class="modal-body">
-        <!-- 查询条件容器框 -->
-        <div ref="formFieldsContainer" class="form-fields-container" style="background: #fff !important; padding: 16px 20px !important; border-radius: 8px !important; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important; margin-bottom: 16px !important; border: 1px solid #EBEEF5 !important; width: 100% !important; box-sizing: border-box !important; display: block !important;">
-          <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+        <!-- 查询条件容器框（与添加科室申领弹窗一致） -->
+        <div ref="formFieldsContainer" class="form-fields-container inventory-query-fields">
+          <el-form :model="queryParams" ref="queryForm" :inline="true" size="small" v-show="showSearch" label-width="68px">
             <el-row :gutter="20">
 
               <el-col :span="6">
@@ -21,7 +21,7 @@
 
               <el-col :span="6">
                 <el-form-item label="供应商" prop="supplierId" label-width="100px">
-                  <SelectSupplier v-model="queryParams.supplierId" :value2="isShow"/>
+                  <SelectSupplier v-model="queryParams.supplierId" :value2="false"/>
                 </el-form-item>
               </el-col>
 
@@ -48,15 +48,25 @@
           </el-form>
         </div>
 
-        <!-- 搜索、重置、取消和确认按钮放在查询条件框和明细表格之间 -->
-        <div class="action-buttons-wrapper">
-          <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-          <el-button icon="el-icon-refresh" size="small" @click="resetQuery" style="margin-left: 10px;">重置</el-button>
-          <el-button size="small" @click="handleClose" style="margin-left: 10px;">取 消</el-button>
-          <el-button type="primary" size="small" @click="checkBtn" style="margin-left: 10px;">确 定</el-button>
-        </div>
+        <!-- 操作按钮行（与添加科室申领弹窗的 mb8 一致） -->
+        <el-row :gutter="10" class="mb8 action-buttons-row">
+          <el-col :span="1.5">
+            <el-button type="primary" icon="el-icon-search" size="medium" @click="handleQuery">搜索</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button icon="el-icon-refresh" size="medium" @click="resetQuery">重置</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button size="medium" @click="handleClose">取 消</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button type="primary" size="medium" @click="checkBtn">确 定</el-button>
+          </el-col>
+        </el-row>
 
-        <el-table ref="singleTable" :data="inventoryList" :row-class-name="inventoryIndex" @selection-change="handleSelectionChange" height="calc(45vh)" border>
+        <!-- 表格区域（与添加科室申领弹窗的 table-wrapper 一致） -->
+        <div class="table-wrapper">
+        <el-table ref="singleTable" :data="inventoryList" :row-class-name="inventoryIndex" @selection-change="handleSelectionChange" height="100%" border>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
 <!--          <el-table-column label="耗材" align="center" prop="material.name" width="120" show-overflow-tooltip resizable/>-->
@@ -92,14 +102,17 @@
             </template>
           </el-table-column>
         </el-table>
+        </div>
 
-        <pagination
-          v-show="total>0"
-          :total="total"
-          :page.sync="queryParams.pageNum"
-          :limit.sync="queryParams.pageSize"
-          @pagination="getList"
-        />
+        <div class="pagination-bottom-wrap">
+          <pagination
+            v-show="total>0"
+            :total="total"
+            :page.sync="queryParams.pageNum"
+            :limit.sync="queryParams.pageSize"
+            @pagination="getList"
+          />
+        </div>
       </div>
         </div>
       </transition>
@@ -204,82 +217,9 @@ export default {
     // this.getList();
   },
   methods: {
-    /** 动态设置容器样式 */
+    /** 动态设置容器样式（与添加科室申领弹窗一致，由 CSS 类控制样式） */
     setContainerStyle() {
-      console.log('开始查找容器元素', {
-        show: this.show,
-        DialogComponentShow: this.DialogComponentShow,
-        $el: this.$el,
-        refs: Object.keys(this.$refs)
-      });
-
-      // 多次尝试，确保元素已渲染
-      const trySetStyle = (attempt = 0) => {
-        if (attempt > 20) {
-          console.error('多次尝试后仍找不到 .form-fields-container 元素', {
-            $el: this.$el,
-            $elHTML: this.$el ? this.$el.outerHTML.substring(0, 500) : null,
-            show: this.show,
-            showSearch: this.showSearch,
-            DialogComponentShow: this.DialogComponentShow,
-            refs: Object.keys(this.$refs),
-            allElements: this.$el ? Array.from(this.$el.querySelectorAll('*')).map(el => el.className).filter(Boolean) : []
-          });
-          return;
-        }
-
-        // 使用 ref 直接引用元素
-        if (this.$refs.formFieldsContainer) {
-          const container = this.$refs.formFieldsContainer;
-          container.style.cssText = `
-            background: #fff !important;
-            padding: 16px 20px !important;
-            border-radius: 8px !important;
-            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important;
-            margin-bottom: 16px !important;
-            border: 1px solid #EBEEF5 !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            display: block !important;
-            min-height: 100px !important;
-            position: relative !important;
-            z-index: 10 !important;
-          `;
-          console.log('✅ 容器样式已通过 ref 设置', container, container.getBoundingClientRect());
-          return;
-        }
-
-        // 如果 ref 不存在，尝试使用 querySelector 查找
-        const container = this.$el && this.$el.querySelector('.form-fields-container');
-        if (container) {
-          container.style.cssText = `
-            background: #fff !important;
-            padding: 16px 20px !important;
-            border-radius: 8px !important;
-            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important;
-            margin-bottom: 16px !important;
-            border: 1px solid #EBEEF5 !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            display: block !important;
-            min-height: 100px !important;
-            position: relative !important;
-            z-index: 10 !important;
-          `;
-          console.log('✅ 容器样式已通过 querySelector 设置', container, container.getBoundingClientRect());
-          return;
-        }
-
-        // 如果还没找到，延迟后重试
-        if (attempt < 5) {
-          console.log(`尝试 ${attempt + 1}/20: 未找到容器，继续重试...`);
-        }
-        setTimeout(() => {
-          trySetStyle(attempt + 1);
-        }, 50);
-      };
-
-      trySetStyle();
+      this.$nextTick(() => {});
     },
     /** 查询库存信息列表 */
     getList() {
@@ -415,24 +355,73 @@ export default {
   background: rgba(0, 0, 0, 0.1);
 }
 
+/* 与添加科室申领弹窗一致：内容区白色背景，内边距与 flex 布局 */
 .modal-body {
   flex: 1;
-  overflow-y: auto;
-  padding: 20px 24px;
-  background: #f5f7fa;
+  overflow: hidden;
+  padding: 10px 6px 24px 6px;
+  background: #fff;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
-/* 确保容器在modal-body内正确显示 */
-.modal-body .form-fields-container {
+/* 查询条件容器：降低高度（内边距与表单项间距收紧） */
+.modal-body .form-fields-container.inventory-query-fields {
   margin-left: 0;
   margin-right: 0;
+  margin-bottom: 8px;
+  padding: 10px 16px !important;
+  min-height: 0 !important;
   width: 100%;
   max-width: 100%;
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+}
+
+/* 搜索框内表单项间距减小，整体高度降低 */
+::v-deep .modal-body .form-fields-container.inventory-query-fields .el-form-item {
+  margin-bottom: 8px;
+}
+::v-deep .modal-body .form-fields-container.inventory-query-fields .el-form-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 操作按钮行：上边距 -8px，下边距 8px */
+.modal-body .mb8.action-buttons-row {
+  flex-shrink: 0;
+  margin-top: -8px;
+  margin-bottom: 8px;
+}
+
+/* 表格区域（与添加科室申领弹窗 .table-wrapper 一致） */
+.local-modal-content .table-wrapper {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  height: 0;
+}
+
+.local-modal-content .table-wrapper .el-table {
+  height: 100% !important;
+  margin-bottom: 0 !important;
+}
+
+::v-deep .local-modal-content .table-wrapper .el-table__body-wrapper {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  max-height: calc(100vh - 420px) !important;
+}
+
+::v-deep .local-modal-content .table-wrapper .el-table .el-table__cell {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+
+::v-deep .local-modal-content .table-wrapper .el-table .cell {
+  white-space: nowrap !important;
+  overflow: hidden !important;
 }
 
 
@@ -507,13 +496,15 @@ export default {
   min-height: 100px !important;
 }
 
-/* 操作按钮容器样式 */
-.action-buttons-wrapper {
-  text-align: left;
-  margin: 16px 0;
-  padding: 0 4px;
-  display: block;
-  width: 100%;
+/* 分页上移，紧贴表格，确保可见且与表格间距小 */
+.pagination-bottom-wrap {
+  flex-shrink: 0;
+  padding: 0;
+  margin-top: -6px;
+  margin-bottom: 0;
+}
+::v-deep .pagination-bottom-wrap .pagination-container {
+  padding: 8px 0 4px 0;
 }
 
 /* 搜索表单样式 - 确保在容器内透明 */
