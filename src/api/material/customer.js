@@ -77,7 +77,7 @@ export function saveHcCustomerMenus(customerId, menuIds) {
   })
 }
 
-/** 设备功能重置（客户菜单、super 组、super_01 权限重置为系统设置下非平台管理功能） */
+/** 设备功能重置（将默认对客户开放的权限开放给客户、super 组、super_01） */
 export function resetEquipmentFunctions(customerId) {
   return request({
     url: '/material/system/customer/resetEquipment/' + customerId,
