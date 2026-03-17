@@ -31,6 +31,7 @@
                 <el-option label="全部" :value="null" />
                 <el-option label="未审核" :value="1" />
                 <el-option label="已审核" :value="2" />
+                <el-option label="已驳回" :value="3" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -117,7 +118,8 @@
       <el-table-column label="制单人" align="center" prop="createrNmae" width="100" show-overflow-tooltip resizable />
       <el-table-column label="申请状态" align="center" prop="applyBillStatus" width="100" show-overflow-tooltip resizable >
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.applyBillStatus"/>
+          <el-tag v-if="getApplyStatusValue(scope.row) === 3 || getApplyStatusValue(scope.row) === '3'" type="danger" size="small">已驳回</el-tag>
+          <dict-tag v-else :options="dict.type.biz_status" :value="scope.row.applyBillStatus"/>
         </template>
       </el-table-column>
       <el-table-column label="审核人" align="center" prop="auditPersonName" width="100" show-overflow-tooltip resizable />
@@ -148,7 +150,7 @@
               icon="el-icon-check"
               @click="handleAudit(scope.row)"
               v-hasPermi="['department:dApplyAudit:audit']"
-              v-if="scope.row.applyBillStatus == 1"
+              v-if="canShowAuditReject(scope.row)"
               style="padding: 0 5px; margin: 0; color: #67C23A;"
             >审核</el-button>
             <el-button
@@ -157,7 +159,7 @@
               icon="el-icon-close"
               @click="handleReject(scope.row)"
               v-hasPermi="['department:dApplyAudit:reject']"
-              v-if="scope.row.applyBillStatus == 1"
+              v-if="canShowAuditReject(scope.row)"
               style="padding: 0 5px; margin: 0; color: #F56C6C;"
             >驳回</el-button>
           </span>
@@ -192,7 +194,8 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="申领状态" prop="billStatus" label-width="100px">
-                    <el-select v-model="form.applyBillStatus" placeholder="请选择申领状态"
+                    <span v-if="form.applyBillStatus === 3 || form.applyBillStatus === '3'" class="status-text status-rejected">已驳回</span>
+                    <el-select v-else v-model="form.applyBillStatus" placeholder="请选择申领状态"
                                :disabled="true"
                                clearable style="width: 150px">
                       <el-option v-for="dict in dict.type.biz_status"
@@ -240,17 +243,13 @@
                     <el-input v-model="form.remark" placeholder="请输入备注" style="width: 150px" :disabled="true" />
                   </el-form-item>
                 </el-col>
-              </el-row>
-              <!-- 审核操作区域 -->
-              <el-row v-if="form.applyBillStatus == 1">
-                <el-col :span="12">
+                <!-- 驳回原因：与备注同一行，仅未审核且未驳回时显示可编辑 -->
+                <el-col :span="4" v-if="isDetailUnAuditAndNotRejected">
                   <el-form-item label="驳回原因" prop="rejectReason" label-width="100px">
-                    <el-input 
-                      v-model="form.rejectReason" 
-                      type="textarea" 
-                      :rows="3"
-                      placeholder="请输入驳回原因（驳回时必填）" 
-                      style="width: 100%" 
+                    <el-input
+                      v-model="form.rejectReason"
+                      placeholder="请输入驳回原因"
+                      style="width: 150px"
                     />
                   </el-form-item>
                 </el-col>
@@ -259,8 +258,16 @@
 
 <!--        <el-divider content-position="center">科室申领明细信息</el-divider>-->
               <el-row :gutter="10" class="mb8">
-                <el-col :span="1.5">
-                  <span>科室申领明细信息</span>
+                <el-col :span="24">
+                  <div class="detail-header-row">
+                    <span class="detail-header-title">科室申领明细信息</span>
+                    <el-button
+                      v-if="isDetailUnAuditAndNotRejected"
+                      type="primary"
+                      size="medium"
+                      @click="handleAuditSubmit"
+                    >审 核</el-button>
+                  </div>
                 </el-col>
               </el-row>
               <div class="table-wrapper">
@@ -302,17 +309,40 @@
                 </el-table-column>
               </el-table>
               </div>
-              <!-- 审核操作按钮 -->
-              <div class="modal-footer" v-if="form.applyBillStatus == 1">
+              <!-- 审核操作按钮（底部仅在审核模式下显示取消、驳回；审核按钮已移动到“科室申领明细信息”标题后面） -->
+              <div class="modal-footer" v-if="dialogMode === 'audit' && isDetailUnAuditAndNotRejected">
                 <el-button @click="cancel">取 消</el-button>
                 <el-button type="danger" @click="handleRejectSubmit">驳 回</el-button>
-                <el-button type="primary" @click="handleAuditSubmit">审 核</el-button>
               </div>
             </el-form>
           </div>
         </transition>
       </div>
     </transition>
+
+    <!-- 驳回原因小窗（列表页点击“驳回”时弹出） -->
+    <el-dialog
+      title="驳回原因"
+      :visible.sync="rejectDialogVisible"
+      width="480px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="80px">
+        <el-form-item label="驳回原因">
+          <el-input
+            v-model="rejectDialogReason"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入驳回原因"
+          />
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="rejectDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="confirmRejectDialog">确 定</el-button>
+      </span>
+    </el-dialog>
 
 
   </div>
@@ -354,6 +384,12 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      // 审核弹窗模式：'view' 查看，'audit' 审核
+      dialogMode: 'view',
+      /** 列表页驳回原因小窗 */
+      rejectDialogVisible: false,
+      rejectDialogReason: '',
+      rejectDialogRow: null,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -379,15 +415,32 @@ export default {
       }
     };
   },
+  computed: {
+    /** 详情弹窗内：仅未审核且未驳回时显示审核按钮、驳回原因输入、底部取消/驳回 */
+    isDetailUnAuditAndNotRejected() {
+      if (this.form.applyBillStatus != 1) return false;
+      if (this.form.rejectReason != null && String(this.form.rejectReason).trim() !== '') return false;
+      return true;
+    }
+  },
   created() {
     this.getList();
   },
   methods: {
+    /** 申请状态显示值：已驳回(3) 或 未审核但有驳回原因 视为已驳回 */
+    getApplyStatusValue(row) {
+      if (!row) return null;
+      if (row.applyBillStatus === 3) return 3;
+      if (row.applyBillStatus === 1 && row.rejectReason && String(row.rejectReason).trim()) {
+        return 3;
+      }
+      return row.applyBillStatus;
+    },
     /** 查询申领单列表（支持全部、未审核、已审核） */
     getList() {
       this.loading = true;
       // 确保只查询申领单类型（billType=1），排除转科申请（billType=3）
-      // applyBillStatus根据用户选择：null=全部，1=未审核，2=已审核
+      // applyBillStatus根据用户选择：null=全部，1=未审核，2=已审核，3=已驳回
       const params = { ...this.queryParams };
       params.billType = 1;
       // 如果applyBillStatus为null，则不传该参数，查询全部状态
@@ -507,6 +560,7 @@ export default {
     },
     /** 查看按钮操作 */
     handleView(row){
+      this.dialogMode = 'view';
       const id = row.id
       getApplyAudit(id).then(response => {
         this.form = response.data;
@@ -514,22 +568,33 @@ export default {
         this.open = true;
         this.calculateTotals();
 
-        if(response.data.applyBillStatus == 1){
-          this.form.applyBillStatus = '1';
-        }else{
-          this.form.applyBillStatus = '2';
-        }
+        // 保持与后端一致的状态值（1=未审核，2=已审核，3=已驳回）
+        this.form.applyBillStatus = response.data.applyBillStatus;
 
         this.title = "申领单审核";
       });
     },
     /** 审核按钮操作（表格中） */
     handleAudit(row) {
+      this.dialogMode = 'audit';
       this.handleView(row);
     },
-    /** 驳回按钮操作（表格中） */
+    /** 仅未审核且未驳回的单据显示审核、驳回按钮 */
+    canShowAuditReject(row) {
+      if (!row) return false;
+      if (row.applyBillStatus !== 1) return false;
+      if (row.rejectReason && String(row.rejectReason).trim()) return false;
+      return true;
+    },
+    /** 驳回按钮操作（表格中）：直接弹出驳回原因小窗 */
     handleReject(row) {
-      this.handleView(row);
+      if (!row || !row.id) {
+        this.$modal.msgError("数据异常，无法驳回");
+        return;
+      }
+      this.rejectDialogRow = row;
+      this.rejectDialogReason = '';
+      this.rejectDialogVisible = true;
     },
     /** 审核提交 */
     handleAuditSubmit() {
@@ -553,7 +618,7 @@ export default {
         this.getList();
       });
     },
-    /** 驳回提交 */
+    /** 驳回提交（大弹窗内按钮，兼容保留） */
     handleRejectSubmit() {
       if (!this.form.id) {
         this.$modal.msgError("请先选择要驳回的申领单");
@@ -571,6 +636,31 @@ export default {
       }).then(() => {
         this.$modal.msgSuccess("驳回成功");
         this.open = false;
+        this.getList();
+      });
+    },
+    /** 列表页驳回小窗确认 */
+    confirmRejectDialog() {
+      const row = this.rejectDialogRow;
+      if (!row || !row.id) {
+        this.$modal.msgError("数据异常，无法驳回");
+        return;
+      }
+      const reason = (this.rejectDialogReason || '').trim();
+      if (!reason) {
+        this.$modal.msgError("请填写驳回原因");
+        return;
+      }
+      const userId = this.$store.state.user.userId;
+      rejectApply({
+        id: String(row.id),
+        rejectReason: reason,
+        auditBy: userId
+      }).then(() => {
+        this.$modal.msgSuccess("驳回成功");
+        this.rejectDialogVisible = false;
+        this.rejectDialogRow = null;
+        this.rejectDialogReason = '';
         this.getList();
       });
     },
@@ -803,6 +893,21 @@ export default {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
   border: 1px solid #EBEEF5;
+}
+
+.detail-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-header-title {
+  font-weight: 500;
+}
+
+.status-text.status-rejected {
+  color: #f56c6c;
+  font-size: 14px;
 }
 
 .query-select-wrapper {
