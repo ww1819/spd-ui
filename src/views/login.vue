@@ -5,7 +5,7 @@
       <el-form-item prop="customerId" label="客户">
         <el-select
           v-model="loginForm.customerId"
-          placeholder="请选择客户；平台管理员可留空"
+          placeholder="请选择组织机构；平台管理员可留空"
           clearable
           filterable
           style="width: 100%"
