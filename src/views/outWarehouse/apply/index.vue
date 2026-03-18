@@ -165,7 +165,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -176,6 +176,14 @@
               v-if="scope.row.billStatus == 2"
               style="padding: 0 5px; margin: 0;"
             >打印</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-download"
+              @click="handleExportRowPickList(scope.row)"
+              v-hasPermi="['outWarehouse:apply:export']"
+              style="padding: 0 5px; margin: 0;"
+            >导出</el-button>
             <el-button
               size="small"
               type="text"
@@ -272,6 +280,16 @@
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <span>出库明细信息</span>
+          </el-col>
+          <el-col :span="1.5" v-if="form.id">
+            <el-button
+              type="warning"
+              plain
+              icon="el-icon-download"
+              size="small"
+              @click="handleExportDetailPickList"
+              v-hasPermi="['outWarehouse:apply:export']"
+            >导出拣货单</el-button>
           </el-col>
 
           <div v-show="action">
@@ -1103,11 +1121,42 @@ export default {
     handleStkIoBillEntrySelectionChange(selection) {
       this.checkedStkIoBillEntry = selection.map(item => item.index)
     },
-    /** 导出按钮操作 */
+    /** 导出按钮操作：按单据隔离（单据号、科室名称 + 明细） */
     handleExport() {
-      this.download('warehouse/warehouse/export', {
-        ...this.queryParams
-      }, `warehouse_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams, billType: this.queryParams.billType || '201' }
+      if (this.ids && this.ids.length > 0) {
+        params.exportBillIds = this.ids.join(',')
+      }
+      this.download('warehouse/outWarehouse/exportGroupedByBill', params, `出库单导出_${new Date().getTime()}.xlsx`)
+    },
+    /** 列表行：导出该单拣货单 */
+    handleExportRowPickList(row) {
+      if (!row || !row.id) {
+        return
+      }
+      const params = {
+        billType: '201',
+        exportBillIds: String(row.id),
+        beginDate: this.queryParams.beginDate,
+        endDate: this.queryParams.endDate
+      }
+      const name = (row.billNo || row.id) + '_拣货单'
+      this.download('warehouse/outWarehouse/exportGroupedByBill', params, `${name}_${new Date().getTime()}.xlsx`)
+    },
+    /** 明细区：导出当前单据拣货单 */
+    handleExportDetailPickList() {
+      if (!this.form || !this.form.id) {
+        this.$modal.msgWarning('请先保存单据后再导出')
+        return
+      }
+      const params = {
+        billType: '201',
+        exportBillIds: String(this.form.id),
+        beginDate: this.queryParams.beginDate,
+        endDate: this.queryParams.endDate
+      }
+      const name = (this.form.billNo || this.form.id) + '_拣货单'
+      this.download('warehouse/outWarehouse/exportGroupedByBill', params, `${name}_${new Date().getTime()}.xlsx`)
     }
   }
 };
