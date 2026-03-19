@@ -171,7 +171,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -181,6 +181,14 @@
               @click="handleView(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >查看</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-download"
+              @click="handleExportRowDetail(scope.row)"
+              v-hasPermi="['department:purchaseAudit:export']"
+              style="padding: 0 5px; margin: 0;"
+            >导出明细</el-button>
           </span>
         </template>
       </el-table-column>
@@ -637,13 +645,28 @@ export default {
         this.urgencyLevelText = '--';
       }
     },
-    /** 导出按钮操作 */
+    /** 单据列表行：导出该单明细 */
+    handleExportRowDetail(row) {
+      if (!row || !row.id) {
+        return
+      }
+      this.download('department/purchase/export', {
+        ...this.queryParams,
+        exportBillIds: String(row.id)
+      }, `purchaseAudit_${row.purchaseBillNo || row.id}_${new Date().getTime()}.xlsx`)
+    },
+    /** 导出按钮操作（导出勾选单据明细） */
     handleExport() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning('请先勾选要导出的单据')
+        return
+      }
       const params = { ...this.queryParams };
       // 如果purchaseBillStatus为null，则不传该参数，导出全部状态
       if (params.purchaseBillStatus === null || params.purchaseBillStatus === '') {
         delete params.purchaseBillStatus;
       }
+      params.exportBillIds = this.ids.join(',')
       this.download('department/purchase/export', {
         ...params
       }, `purchaseAudit_${new Date().getTime()}.xlsx`)

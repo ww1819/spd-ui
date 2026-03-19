@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
@@ -163,7 +163,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -174,6 +174,24 @@
               v-if="getBillStatus(scope.row) == 2"
               style="padding: 0 5px; margin: 0;"
             >查看</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-download"
+              @click="handleExportRowDetail(scope.row)"
+              v-if="currentBillType !== '2'"
+              v-hasPermi="['department:dApply:export']"
+              style="padding: 0 5px; margin: 0;"
+            >导出明细</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-download"
+              @click="handleExportRowDetail(scope.row)"
+              v-else
+              v-hasPermi="['department:purchase:export']"
+              style="padding: 0 5px; margin: 0;"
+            >导出明细</el-button>
             <el-button
               size="small"
               type="text"
@@ -1056,11 +1074,29 @@ export default {
     handleBasApplyEntrySelectionChange(selection) {
       this.checkedBasApplyEntry = selection.map(item => item.index)
     },
-    /** 导出按钮操作 */
+    /** 单据列表行：导出该单明细 */
+    handleExportRowDetail(row) {
+      if (!row || !row.id) {
+        return
+      }
+      const exportUrl = this.currentBillType === '2' ? 'department/purchase/export' : 'department/apply/export'
+      const billNo = this.getBillNo(row) || row.id
+      this.download(exportUrl, {
+        ...this.queryParams,
+        exportBillIds: String(row.id)
+      }, `${this.currentBillType === '2' ? 'purchase' : 'apply'}_${billNo}_${new Date().getTime()}.xlsx`)
+    },
+    /** 导出按钮操作（导出勾选单据明细） */
     handleExport() {
-      this.download('department/apply/export', {
-        ...this.queryParams
-      }, `apply_${new Date().getTime()}.xlsx`)
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning('请先勾选要导出的单据')
+        return
+      }
+      const exportUrl = this.currentBillType === '2' ? 'department/purchase/export' : 'department/apply/export'
+      this.download(exportUrl, {
+        ...this.queryParams,
+        exportBillIds: this.ids.join(',')
+      }, `${this.currentBillType === '2' ? 'purchase' : 'apply'}_${new Date().getTime()}.xlsx`)
     },
     /** 获取单据类型名称 */
     getBillTypeName(billType) {

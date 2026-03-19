@@ -134,7 +134,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="310" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -144,6 +144,14 @@
               @click="handleView(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >查看</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-download"
+              @click="handleExportRowDetail(scope.row)"
+              v-hasPermi="['department:dApplyAudit:export']"
+              style="padding: 0 5px; margin: 0;"
+            >导出明细</el-button>
             <el-button
               size="small"
               type="text"
@@ -671,14 +679,29 @@ export default {
     rowApplyIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
-    /** 导出按钮操作 */
+    /** 单据列表行：导出该单明细 */
+    handleExportRowDetail(row) {
+      if (!row || !row.id) {
+        return
+      }
+      this.download('department/apply/export', {
+        ...this.queryParams,
+        exportBillIds: String(row.id)
+      }, `applyAudit_${row.applyBillNo || row.id}_${new Date().getTime()}.xlsx`)
+    },
+    /** 导出按钮操作（导出勾选单据明细） */
     handleExport() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning('请先勾选要导出的单据')
+        return
+      }
       const params = { ...this.queryParams };
       params.billType = 1; // 只导出申领单类型
       // 如果applyBillStatus为null，则不传该参数，导出全部状态
       if (params.applyBillStatus === null || params.applyBillStatus === '') {
         delete params.applyBillStatus;
       }
+      params.exportBillIds = this.ids.join(',')
       this.download('department/apply/export', {
         ...params
       }, `applyAudit_${new Date().getTime()}.xlsx`)
