@@ -60,3 +60,35 @@ export function updateSupplierReferred(ids) {
     data: { ids }
   })
 }
+
+/** 供应商变更记录 */
+export function listSupplierChangeLog(supplierId) {
+  return request({
+    url: '/foundation/supplier/changeLog/' + supplierId,
+    method: 'get'
+  })
+}
+
+/** 供应商导入：仅校验 */
+export function validateSupplierImport(file, updateSupport) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/supplier/importValidate?updateSupport=' + !!updateSupport,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+/** 供应商导入：confirm=true 落库 */
+export function importSupplierData(file, updateSupport, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/supplier/importData?updateSupport=' + !!updateSupport + '&confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}

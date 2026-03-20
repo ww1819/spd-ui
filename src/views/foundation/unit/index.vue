@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
       <el-row :gutter="20">
@@ -60,6 +60,8 @@
       <el-table-column label="序号" align="center" prop="index" width="50"/>
       <el-table-column label="单位编码" align="center" prop="unitCode" width="120"/>
       <el-table-column label="单位名称" align="center" prop="unitName" width="180"/>
+      <el-table-column label="租户ID" align="center" prop="tenantId" width="130" show-overflow-tooltip />
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
       <el-table-column label="创建日期" align="center" prop="createTime" width="100">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
@@ -118,12 +120,24 @@
           </el-row>
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="是否">
+              <el-form-item label="启用">
                 <el-switch
                   v-model="form.delFlag"
                   :active-value="0"
                   :inactive-value="1"
                 ></el-switch>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="租户ID(客户)">
+                <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -138,10 +152,14 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 import { listUnit, getUnit, delUnit, addUnit, updateUnit } from "@/api/foundation/unit";
 
 export default {
   name: "Unit",
+  computed: {
+    ...mapGetters(["customerId"]),
+  },
   data() {
     return {
       // 遮罩层
@@ -203,7 +221,9 @@ export default {
         unitId: null,
         unitCode: null,
         unitName: null,
-        delFlag: 0, // 默认启用
+        delFlag: 0,
+        tenantId: null,
+        remark: null,
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -230,6 +250,7 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
+      this.form.tenantId = this.customerId || null;
       this.open = true;
       this.title = "添加单位明细";
     },

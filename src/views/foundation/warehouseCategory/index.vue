@@ -118,6 +118,7 @@
           <el-table-column label="序号" align="center" prop="index" width="50"/>
           <el-table-column label="分类编码" align="center" prop="warehouseCategoryCode" width="120"/>
           <el-table-column label="分类名称" align="center" prop="warehouseCategoryName" width="180"/>
+          <el-table-column label="简码" align="center" prop="referredName" width="100" show-overflow-tooltip/>
           <el-table-column label="上级分类" align="center" width="150">
             <template slot-scope="scope">
               <span v-if="scope.row.parentId && scope.row.parentId !== 0">{{ getParentCategoryName(scope.row.parentId) }}</span>
@@ -128,7 +129,9 @@
               <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="是否" align="center" width="100">
+          <el-table-column label="租户ID" align="center" prop="tenantId" width="120" show-overflow-tooltip/>
+          <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip/>
+          <el-table-column label="启用" align="center" width="100">
             <template slot-scope="scope">
               <el-switch
                 v-model="scope.row.delFlag"
@@ -200,6 +203,25 @@
               </el-form-item>
             </el-col>
           </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="名称简码" prop="referredName">
+                <el-input v-model="form.referredName" placeholder="可点「更新简码」自动生成" clearable style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="租户ID(客户)" prop="tenantId">
+                <el-input v-model="form.tenantId" placeholder="保存时默认当前客户" disabled style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-form>
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
           <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -212,9 +234,16 @@
 
 <script>
 import { listWarehouseCategory, getWarehouseCategory, delWarehouseCategory, addWarehouseCategory, updateWarehouseCategory, treeselect, updateWarehouseCategoryReferred } from "@/api/foundation/warehouseCategory";
+import { mapGetters } from "vuex";
 
 export default {
   name: "WarehouseCategory",
+  computed: {
+    ...mapGetters(['customerId']),
+    isDisabled() {
+      return this.form.warehouseCategoryId != null;
+    }
+  },
   data() {
     return {
       // 树形数据
@@ -367,6 +396,9 @@ export default {
         parentId: 0,
         warehouseCategoryCode: null,
         warehouseCategoryName: null,
+        referredName: null,
+        remark: null,
+        tenantId: null,
         delFlag: null,
         createBy: null,
         createTime: null,
@@ -394,6 +426,7 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
+      this.form.tenantId = this.customerId || null;
       this.loadTreeData();
       this.open = true;
       this.title = "添加库房分类";

@@ -118,12 +118,16 @@
           <el-table-column label="序号" align="center" prop="index" width="50"/>
           <el-table-column label="财务类别编码" align="center" prop="financeCategoryCode" width="120"/>
           <el-table-column label="财务类别名称" align="center" prop="financeCategoryName" width="180"/>
-          <el-table-column label="财务类别简码" align="center" prop="referredCode" width="120"/>
+          <el-table-column label="简码" align="center" prop="referredName" width="100" show-overflow-tooltip/>
+          <el-table-column label="地址" align="center" prop="financeCategoryAddress" min-width="120" show-overflow-tooltip/>
+          <el-table-column label="联系方式" align="center" prop="financeCategoryContact" width="120" show-overflow-tooltip/>
           <el-table-column label="使用状态" align="center" prop="isUse" width="100">
             <template slot-scope="scope">
               <dict-tag :options="dict.type.is_use_status" :value="scope.row.isUse"/>
             </template>
           </el-table-column>
+          <el-table-column label="租户ID" align="center" prop="tenantId" width="110" show-overflow-tooltip/>
+          <el-table-column label="备注" align="center" prop="remark" min-width="100" show-overflow-tooltip/>
           <el-table-column label="创建日期" align="center" prop="createTime" width="100">
             <template slot-scope="scope">
               <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
@@ -162,21 +166,21 @@
         <div v-if="open" class="local-modal-mask">
           <div class="local-modal-content">
             <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+            <el-form ref="form" :model="form" :rules="rules" label-width="110px">
               <el-row :gutter="20">
                 <el-col :span="6">
-                  <el-form-item label="财务类别编码" prop="code">
-                    <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入财务类别编码" />
+                  <el-form-item label="财务类别编码" prop="financeCategoryCode">
+                    <el-input v-model="form.financeCategoryCode" :disabled="isDisabled" placeholder="请输入编码" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="6">
-                  <el-form-item label="财务类别名称" prop="name">
-                    <el-input v-model="form.name" @input="nameChange" placeholder="请输入财务类别名称" />
+                  <el-form-item label="财务类别名称" prop="financeCategoryName">
+                    <el-input v-model="form.financeCategoryName" placeholder="请输入名称" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="6">
-                  <el-form-item label="财务类别简码" prop="referredCode">
-                    <el-input v-model="form.referredCode" :disabled="true" placeholder="请输入财务类别简码" />
+                  <el-form-item label="名称简码" prop="referredName">
+                    <el-input v-model="form.referredName" placeholder="可点「更新简码」生成" clearable />
                   </el-form-item>
                 </el-col>
                 <el-col :span="6">
@@ -189,6 +193,30 @@
                         :value="dict.value"
                       ></el-option>
                     </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="地址" prop="financeCategoryAddress">
+                    <el-input v-model="form.financeCategoryAddress" placeholder="地址" clearable />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="联系方式" prop="financeCategoryContact">
+                    <el-input v-model="form.financeCategoryContact" placeholder="联系方式" clearable />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="租户ID(客户)" prop="tenantId">
+                    <el-input v-model="form.tenantId" disabled placeholder="保存时默认当前客户" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="备注" prop="remark">
+                    <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -206,10 +234,17 @@
 
 <script>
 import { listFinanceCategory, getFinanceCategory, delFinanceCategory, addFinanceCategory, updateFinanceCategory, updateFinanceCategoryReferred } from "@/api/foundation/financeCategory";
+import { mapGetters } from "vuex";
 
 export default {
   name: "FinanceCategory",
   dicts: ['is_use_status'],
+  computed: {
+    ...mapGetters(['customerId']),
+    isDisabled() {
+      return this.form.financeCategoryId != null;
+    }
+  },
   data() {
     return {
       // 树形数据配置
@@ -244,8 +279,7 @@ export default {
         financeCategoryName: [
           { required: true, message: "财务分类名称不能为空", trigger: "blur" }
         ]
-      },
-      isDisabled: false
+      }
     };
   },
   created() {
@@ -290,6 +324,8 @@ export default {
     // 新增/修改操作
     handleAdd() {
       this.reset();
+      this.form.tenantId = this.customerId || null;
+      this.form.isUse = '1';
       this.open = true;
       this.title = "添加财务分类";
     },
@@ -345,8 +381,12 @@ export default {
         financeCategoryId: null,
         financeCategoryCode: null,
         financeCategoryName: null,
+        referredName: null,
         financeCategoryAddress: null,
-        financeCategoryContact: null
+        financeCategoryContact: null,
+        isUse: '1',
+        remark: null,
+        tenantId: null
       };
       this.resetForm("form");
     },
@@ -368,9 +408,6 @@ export default {
         this.$modal.msgSuccess("更新简码成功");
         this.getList();
       }).catch(() => {});
-    },
-    nameChange() {
-      this.isDisabled = true;
     }
   }
 };
@@ -408,7 +445,7 @@ export default {
   background-color: #fff;
   padding: 24px;
   border-radius: 6px;
-  min-width: 600px;
+  min-width: 880px;
   max-width: 90vw;
   max-height: 90vh;
   overflow: auto;

@@ -108,6 +108,8 @@
           <el-table-column label="货位编码" align="center" prop="locationCode" width="120"/>
           <el-table-column label="货位名称" align="center" prop="locationName" width="180"/>
           <el-table-column label="仓库" align="center" prop="warehouseName" width="150"/>
+          <el-table-column label="租户ID" align="center" prop="tenantId" width="120" show-overflow-tooltip />
+          <el-table-column label="备注" align="center" prop="remark" min-width="100" show-overflow-tooltip />
           <el-table-column label="上级货位" align="center" width="150">
             <template slot-scope="scope">
               <span v-if="scope.row.parentId && scope.row.parentId !== 0">{{ getParentLocationName(scope.row.parentId) }}</span>
@@ -118,7 +120,7 @@
               <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="是否" align="center" width="100">
+          <el-table-column label="启用" align="center" width="100">
             <template slot-scope="scope">
               <el-switch
                 v-model="scope.row.delFlag"
@@ -195,6 +197,18 @@
               </el-form-item>
             </el-col>
           </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="租户ID(客户)">
+                <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选" />
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-form>
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
           <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -208,6 +222,7 @@
 <script>
 import { listLocation, getLocation, delLocation, addLocation, updateLocation, treeselect } from "@/api/foundation/location";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
+import { mapGetters } from "vuex";
 
 export default {
   name: "Location",
@@ -265,6 +280,7 @@ export default {
     };
   },
   computed: {
+    ...mapGetters(['customerId']),
     isDisabled() {
       return this.form.locationId != null;
     }
@@ -373,6 +389,8 @@ export default {
         locationName: null,
         warehouseId: null,
         delFlag: null,
+        tenantId: null,
+        remark: null,
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -399,6 +417,7 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
+      this.form.tenantId = this.customerId || null;
       this.loadTreeData();
       this.open = true;
       this.title = "添加货位";

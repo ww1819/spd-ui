@@ -595,7 +595,9 @@ export default {
         userName: undefined,
         phonenumber: undefined,
         status: undefined,
-        deptId: undefined
+        deptId: undefined,
+        /** 耗材工作组筛选（sys_user_post.post_id），勿与 deptId 混用 */
+        sysPostId: undefined
       },
       // 列信息
       columns: [
@@ -950,15 +952,17 @@ export default {
         this.workgroupList = response.rows || [];
       });
     },
-    // 工作组行点击事件
+    // 工作组行点击事件（耗材：按 sys_user_post 筛选，不能用 deptId）
     handleWorkgroupRowClick(row) {
       this.currentWorkgroupId = row.postId;
-      this.queryParams.deptId = row.postId;
+      this.queryParams.sysPostId = row.postId;
+      this.queryParams.deptId = undefined;
       this.handleQuery();
     },
-    // 工作组表头点击事件 - 显示所有用户
+    // 工作组表头点击事件 - 显示租户下全部用户
     handleWorkgroupHeaderClick() {
       this.currentWorkgroupId = undefined;
+      this.queryParams.sysPostId = undefined;
       this.queryParams.deptId = undefined;
       this.handleQuery();
     },
@@ -1036,6 +1040,7 @@ export default {
       this.dateRange = [];
       this.resetForm("queryForm");
       this.queryParams.deptId = undefined;
+      this.queryParams.sysPostId = undefined;
       this.currentWorkgroupId = undefined;
       this.handleQuery();
     },
