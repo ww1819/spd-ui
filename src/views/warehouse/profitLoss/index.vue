@@ -360,7 +360,9 @@ export default {
       }).catch(() => {})
     },
     handleAudit(row) {
-      this.$modal.confirm('是否确认审核该盈亏单？审核后将根据盈亏数量调整库存并生成流水。').then(() => {
+      this.$modal.confirm(
+        '是否确认审核该盈亏单？审核后：盘亏会调整库存并生成流水；盘盈将生成待入账/仅追溯用记录，不直接更新库存与结算流水。'
+      ).then(() => {
         return auditProfitLoss(row.id)
       }).then(() => {
         this.getList()

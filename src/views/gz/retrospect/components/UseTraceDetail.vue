@@ -39,7 +39,7 @@
       </el-table-column>
       <el-table-column label="数量" align="center" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.quantity">{{ scope.row.quantity }}</span>
+          <span v-if="scope.row.quantity !== null && scope.row.quantity !== undefined">{{ scope.row.quantity }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -51,8 +51,20 @@
       </el-table-column>
       <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.quantity && scope.row.chargePrice">{{ (parseFloat(scope.row.quantity) * parseFloat(scope.row.chargePrice)).toFixed(2) }}</span>
+          <span v-if="scope.row.quantity !== null && scope.row.quantity !== undefined && scope.row.chargePrice !== null && scope.row.chargePrice !== undefined">
+            {{ (parseFloat(scope.row.quantity) * parseFloat(scope.row.chargePrice)).toFixed(2) }}
+          </span>
           <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="仓库来源" align="center" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.warehouseName || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="批次字典" align="center" width="220" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.batchSource || '--' }} / {{ scope.row.originBusinessType || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="生产日期" align="center" width="120" show-overflow-tooltip resizable>
