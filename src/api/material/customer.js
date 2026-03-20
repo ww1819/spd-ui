@@ -92,3 +92,21 @@ export function resetMaterialFunctions(customerId) {
     method: 'put'
   })
 }
+
+/** 平台级全库初始化（body.confirmToken 须为后端约定常量） */
+export function initFullDatabase(confirmToken) {
+  return request({
+    url: '/material/system/customer/initFullDatabase',
+    method: 'post',
+    data: { confirmToken }
+  })
+}
+
+/** 按租户物理删除耗材侧数据（body.confirm 须为 PURGE_HC） */
+export function purgeConsumablesData(customerId) {
+  return request({
+    url: '/material/system/customer/' + customerId + '/purgeConsumablesData',
+    method: 'post',
+    data: { confirm: 'PURGE_HC' }
+  })
+}

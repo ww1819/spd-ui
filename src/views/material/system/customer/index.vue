@@ -27,6 +27,9 @@
       <el-col :span="1.5">
         <el-button type="danger" plain icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['hc:system:customer:list']">删除</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="danger" plain icon="el-icon-warning-outline" size="small" @click="openFullInitDialog" v-hasPermi="['hc:system:customer:initDb']">全库初始化</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
     <el-table v-loading="loading" :data="customerList" @selection-change="handleSelectionChange">
@@ -46,7 +49,7 @@
       <el-table-column label="创建时间" align="center" width="160">
         <template slot-scope="scope">{{ parseTime(scope.row.createTime) }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="420" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="520" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['hc:system:customer:query']">修改</el-button>
           <el-button size="mini" type="text" icon="el-icon-video-pause" @click="handleChangeStatus(scope.row, '1')" v-hasPermi="['hc:system:customer:query']" v-if="(scope.row.hcStatus || '0') === '0'">停用</el-button>
@@ -56,6 +59,7 @@
           <el-button size="mini" type="text" icon="el-icon-refresh-right" @click="handleResetMaterial(scope.row)" v-hasPermi="['hc:system:customerMenuManage:edit']">耗材功能重置</el-button>
           <el-button size="mini" type="text" icon="el-icon-document" @click="handleStatusLog(scope.row)" v-hasPermi="['hc:system:customer:query']">启停用记录</el-button>
           <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)" v-hasPermi="['hc:system:customer:list']">删除</el-button>
+          <el-button size="mini" type="text" class="text-danger" icon="el-icon-remove-outline" @click="handlePurgeHc(scope.row)" v-hasPermi="['hc:system:customer:purgeHc']">清理耗材数据</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -114,6 +118,15 @@
       </el-tabs>
       <div slot="footer" class="dialog-footer"><el-button @click="openLog = false">关 闭</el-button></div>
     </el-dialog>
+    <el-dialog title="全库初始化（高危）" :visible.sync="openFullInit" width="520px" append-to-body @close="fullInitTokenInput = ''">
+      <el-alert type="error" :closable="false" show-icon title="将清空所有租户与业务数据，仅保留 admin 与平台菜单/字典等。执行前请务必备份数据库。" style="margin-bottom: 12px" />
+      <p style="color:#606266;font-size:13px;margin-bottom:8px">请在下方输入确认口令（区分大小写）：</p>
+      <el-input v-model="fullInitTokenInput" placeholder="CONFIRM_PURGE_ALL_TENANT_DATA" clearable />
+      <div slot="footer" class="dialog-footer">
+        <el-button type="danger" :disabled="fullInitTokenInput !== FULL_INIT_TOKEN" @click="submitFullInit">确认执行</el-button>
+        <el-button @click="openFullInit = false">取 消</el-button>
+      </div>
+    </el-dialog>
     <el-dialog title="耗材客户权限" :visible.sync="openMenu" width="480px" append-to-body>
       <el-form label-width="80px">
         <el-form-item label="客户名称"><el-input v-model="menuForm.customerName" disabled /></el-form-item>
@@ -136,7 +149,7 @@
 
 <script>
 import { addCustomer, delCustomer, getTenantEnumList } from '@/api/system/customer'
-import { listHcCustomers, getHcCustomer, updateHcCustomer, changeHcStatus, getCustomerStatusLogs, getCustomerPeriodLogs, treeselectHcMenu, getHcCustomerMenuIds, saveHcCustomerMenus, resetEquipmentFunctions, resetMaterialFunctions } from '@/api/material/customer'
+import { listHcCustomers, getHcCustomer, updateHcCustomer, changeHcStatus, getCustomerStatusLogs, getCustomerPeriodLogs, treeselectHcMenu, getHcCustomerMenuIds, saveHcCustomerMenus, resetEquipmentFunctions, resetMaterialFunctions, initFullDatabase, purgeConsumablesData } from '@/api/material/customer'
 
 export default {
   name: 'HcCustomer',
@@ -167,6 +180,9 @@ export default {
       menuNodeAll: false,
       menuCheckStrictly: true,
       menuForm: { customerId: '', customerName: '' },
+      openFullInit: false,
+      fullInitTokenInput: '',
+      FULL_INIT_TOKEN: 'CONFIRM_PURGE_ALL_TENANT_DATA',
       queryParams: { pageNum: 1, pageSize: 10, customerName: undefined, customerCode: undefined, hcStatus: undefined },
       tenantEnumList: [],
       form: {},
@@ -274,6 +290,28 @@ export default {
       const name = row.customerName || row.customerId
       this.$modal.confirm('是否确认将客户“' + name + '”的耗材功能重置？将重置耗材客户菜单权限、super 岗位及 super_01 的菜单权限为系统设置下非平台管理功能；若 super 岗位或 super_01 不存在则会创建。').then(() => resetMaterialFunctions(row.customerId)).then(() => { this.$modal.msgSuccess('耗材功能重置成功'); this.getList() }).catch(() => {})
     },
+    openFullInitDialog() {
+      this.fullInitTokenInput = ''
+      this.openFullInit = true
+    },
+    submitFullInit() {
+      if (this.fullInitTokenInput !== this.FULL_INIT_TOKEN) {
+        this.$modal.msgError('口令不正确')
+        return
+      }
+      initFullDatabase(this.fullInitTokenInput).then(res => {
+        this.$modal.msgSuccess((res && res.msg) || '已提交全库初始化')
+        this.openFullInit = false
+        this.fullInitTokenInput = ''
+      }).catch(() => {})
+    },
+    handlePurgeHc(row) {
+      const name = row.customerName || row.customerId
+      this.$modal.confirm('确认物理删除租户「' + name + '」下全部耗材业务数据（含该租户用户，不删除客户主档）？此操作不可恢复。').then(() => purgeConsumablesData(row.customerId)).then(res => {
+        this.$modal.msgSuccess((res && res.msg) || '清理完成')
+        this.getList()
+      }).catch(() => {})
+    },
     submitMenuForm() {
       const tree = this.$refs.menuTree
       const checkedKeys = tree.getCheckedKeys()
@@ -287,4 +325,5 @@ export default {
 
 <style scoped>
 .log-dialog-header { margin-bottom: 12px; font-weight: 600; color: #303133; }
+.text-danger { color: #f56c6c; }
 </style>

@@ -57,10 +57,10 @@
 
         <el-row :gutter="16" class="query-row-third">
           <el-col :span="24">
-            <el-form-item label="批号" prop="materialNo" class="query-item-inline">
+            <el-form-item label="生产批号" prop="batchNumber" class="query-item-inline">
               <el-input
-                v-model="queryParams.materialNo"
-                placeholder="请输入批号"
+                v-model="queryParams.batchNumber"
+                placeholder="生产批号(batch_number)"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"
@@ -159,8 +159,11 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable/>
-      <el-table-column label="批号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="入库批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable/>
+      <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="主条码" align="center" prop="mainBarcode" width="140" show-overflow-tooltip resizable/>
+      <el-table-column label="辅条码" align="center" prop="subBarcode" width="140" show-overflow-tooltip resizable/>
       <el-table-column label="生产日期" align="center" prop="beginTime" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
@@ -290,6 +293,7 @@ export default {
         supplierId: null,
         beginDate: null,
         endDate: null,
+        batchNumber: null,
         materialNo: null,
         isBilling: null,
         warehouseCategoryId: null
@@ -342,7 +346,13 @@ export default {
     sortByMaterialName(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.name) || ''); },
     sortBySpeci(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.speci) || ''); },
     sortByModel(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.model) || ''); },
-    sortByFactory(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.fdFactory && r.material.fdFactory.factoryName) || ''); },
+    sortByFactory(a, b) { return this.sortByStr(a, b, r => this.factoryDisplay(r) || ''); },
+    /** 生产厂家：库存行 factory_id 与耗材档案厂家合并展示 */
+    factoryDisplay(row) {
+      const m = row && row.material;
+      const fromMat = m && m.fdFactory && m.fdFactory.factoryName;
+      return fromMat || '--';
+    },
     sortByWarehouse(a, b) { return this.sortByStr(a, b, r => (r.warehouse && r.warehouse.name) || ''); },
     sortBySupplier(a, b) { return this.sortByStr(a, b, r => (r.supplier && r.supplier.name) || ''); },
     sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
@@ -400,6 +410,7 @@ export default {
         supplierId: null,
         beginDate: null,
         endDate: null,
+        batchNumber: null,
         materialNo: null,
         isBilling: null,
         warehouseCategoryId: null
@@ -420,6 +431,7 @@ export default {
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
       this.queryParams.isBilling = null;
+      this.queryParams.batchNumber = null;
       this.handleQuery();
     },
     // 多选框选中数据
