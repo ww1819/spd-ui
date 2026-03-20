@@ -18,11 +18,12 @@ export function listUserAll(query) {
   })
 }
 
-// 查询用户详细
+// 查询用户详细（systemType=hc：耗材端读 sys_user_menu / sys_user_department / sys_user_warehouse）
 export function getUser(userId) {
   return request({
     url: '/system/user/' + parseStrEmpty(userId),
-    method: 'get'
+    method: 'get',
+    params: { systemType: 'hc' }
   })
 }
 

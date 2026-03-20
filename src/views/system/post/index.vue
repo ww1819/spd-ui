@@ -273,8 +273,7 @@
 </template>
 
 <script>
-import { listPost, getPost, delPost, addPost, updatePost } from "@/api/system/post";
-import { treeselect as menuTreeselect } from "@/api/system/menu";
+import { listPost, getPost, delPost, addPost, updatePost, roleMenuTreeselectPost } from "@/api/system/post";
 import { deptTreeSelect, listUserAll, getUser, updateUser } from "@/api/system/user";
 import { getOptionselect as getWarehouseOptionselect } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
@@ -827,10 +826,15 @@ export default {
         this.$modal.msgError("加载授权数据失败");
       });
     },
-    /** 获取菜单树 */
+    /** 获取菜单树：仅展示本客户 hc_customer_menu 中已开通的菜单，勾选来自岗位 sys_post_menu */
     getMenuTree() {
-      return menuTreeselect().then(response => {
-        this.menuOptions = response.data || [];
+      const postId = this.authForm.postId;
+      if (!postId) {
+        this.menuOptions = [];
+        return Promise.resolve();
+      }
+      return roleMenuTreeselectPost(postId).then(response => {
+        this.menuOptions = response.menus || [];
         return response;
       });
     },

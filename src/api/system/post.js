@@ -42,3 +42,20 @@ export function delPost(postId) {
     method: 'delete'
   })
 }
+
+/** 耗材岗位：客户已开通菜单树（hc_customer_menu），用于新增授权 */
+export function menuTreeselect(tenantId) {
+  return request({
+    url: '/system/post/menuTreeselect',
+    method: 'get',
+    params: { tenantId }
+  })
+}
+
+/** 耗材岗位：菜单树 + 已勾选菜单 ID（sys_post_menu） */
+export function roleMenuTreeselectPost(postId) {
+  return request({
+    url: '/system/post/roleMenuTreeselect/' + postId,
+    method: 'get'
+  })
+}
