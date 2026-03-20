@@ -521,7 +521,7 @@ export default {
           stockQty: item.qty, // 盘点数量，默认等于库存数量
           amt: item.amt,
           batchNo: item.batchNo,
-          batchNumber: item.materialNo || '',
+          batchNumber: item.batchNumber || item.materialNo || '',
           beginTime: beginTime ? (typeof beginTime === 'string' ? beginTime : this.parseTime(beginTime, '{y}-{m}-{d}')) : '',
           endTime: endTime ? (typeof endTime === 'string' ? endTime : this.parseTime(endTime, '{y}-{m}-{d}')) : '',
           remark: ''

@@ -691,7 +691,7 @@ export default {
         obj.qty = item.qty;
         obj.amt = item.amt;
         obj.batchNo = item.batchNo;
-        obj.batchNumber = item.materialNo;
+        obj.batchNumber = item.batchNumber || item.materialNo || "";
         obj.beginTime = item.beginTime;
         obj.endTime = item.endTime;
         obj.supplierId = item.supplierId;

@@ -82,12 +82,12 @@
       </el-table-column>
       <el-table-column label="批号" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.batchNo || '--' }}</span>
+          <span>{{ scope.row.batchNumber || scope.row.materialNo || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="批次号" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.batchNumber || scope.row.materialNo || '--' }}</span>
+          <span>{{ scope.row.batchNo || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable>
@@ -249,6 +249,9 @@ export default {
       // 设置查询条件
       queryParams.traceNo = this.queryParams.traceNo || null;
       queryParams.orderStatus = this.queryParams.orderStatus || 2;
+      // 批次/批号：用于按 batch_no / batch_number（系统追溯批次 vs 生产批号）过滤
+      queryParams.batchNo = this.queryParams.batchNo || null;
+      queryParams.materialNo = this.queryParams.materialNo || null;
       if (this.queryParams.startDate) {
         queryParams.startDate = this.queryParams.startDate;
       }
