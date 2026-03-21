@@ -107,6 +107,7 @@
           <el-table-column type="index" label="行号" width="55" align="center" />
           <el-table-column label="耗材编码" prop="data.materialCode" min-width="90" show-overflow-tooltip />
           <el-table-column label="耗材名称" prop="data.materialName" min-width="90" show-overflow-tooltip />
+          <el-table-column label="HIS产品档案id" prop="data.thirdPartyMaterialId" width="120" show-overflow-tooltip />
           <el-table-column label="规格" prop="data.speci" width="90" show-overflow-tooltip />
           <el-table-column label="型号" prop="data.model" width="90" show-overflow-tooltip />
           <el-table-column label="注册证号" prop="data.registerNo" width="100" show-overflow-tooltip />
@@ -118,11 +119,13 @@
           <el-table-column label="单价" prop="data.unitPrice" width="80" align="right" />
           <el-table-column label="数量" prop="data.qty" width="70" align="right" />
           <el-table-column label="批号" prop="data.batchNumber" width="90" show-overflow-tooltip />
-          <el-table-column label="效期" prop="data.endTime" width="90" />
+          <el-table-column label="生产日期" prop="data.beginDateRaw" width="100" show-overflow-tooltip />
+          <el-table-column label="效期" prop="data.endDateRaw" width="100" show-overflow-tooltip />
           <el-table-column label="生产厂家" prop="data.factoryName" width="90" show-overflow-tooltip />
+          <el-table-column label="HIS生产厂家id" prop="data.hisFactoryId" width="110" show-overflow-tooltip />
           <el-table-column label="供应商" prop="data.supplierName" width="90" show-overflow-tooltip />
-          <el-table-column label="第三方库存明细ID" prop="data.thirdPartyDetailId" width="110" show-overflow-tooltip />
-          <el-table-column label="第三方产品档案ID" prop="data.thirdPartyMaterialId" width="110" show-overflow-tooltip />
+          <el-table-column label="HIS供应商id" prop="data.hisSupplierId" width="110" show-overflow-tooltip />
+          <el-table-column label="第三方库存明细ID(his_id)" prop="data.hisId" width="140" show-overflow-tooltip />
           <el-table-column label="校验" width="120">
             <template slot-scope="scope">
               <span v-if="scope.row.error" style="color: #f56c6c;">{{ scope.row.error }}</span>
@@ -168,7 +171,9 @@
         <el-table-column label="金额" align="right" prop="amt" width="90">
           <template slot-scope="scope">{{ formatNum(scope.row.amt) }}</template>
         </el-table-column>
+        <el-table-column label="生产日期" align="center" prop="beginTime" width="100" />
         <el-table-column label="效期" align="center" prop="endTime" width="100" />
+        <el-table-column label="库存明细his_id" align="center" prop="hisId" min-width="120" show-overflow-tooltip />
       </el-table>
       <div slot="footer" class="dialog-footer">
         <el-button @click="detail.visible = false">关 闭</el-button>
@@ -229,7 +234,7 @@ export default {
       if (val == null || val === '') return '--'
       const n = Number(val)
       if (isNaN(n)) return '--'
-      return n % 1 === 0 ? String(n) : Number(n).toFixed(2)
+      return Number(n).toFixed(6)
     },
     tableRowIndex({ row, rowIndex }) {
       const pageNum = Math.max(1, parseInt(this.queryParams.pageNum, 10))

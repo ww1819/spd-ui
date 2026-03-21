@@ -168,7 +168,7 @@
       <el-table-column label="科室名称" align="center" prop="name" min-width="200" show-overflow-tooltip />
       <el-table-column label="简码" align="center" prop="referredName" width="120" show-overflow-tooltip />
       <el-table-column label="备注" align="center" prop="deptRemark" min-width="140" show-overflow-tooltip />
-      <el-table-column label="HIS科室ID" align="center" prop="thirdPartyDeptId" width="140" show-overflow-tooltip />
+      <el-table-column label="HIS科室ID" align="center" prop="hisId" width="140" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right">
         <template slot-scope="scope">
           <el-button
@@ -231,9 +231,9 @@
               </el-form-item>
             </el-col>
             <el-col :span="6">
-              <el-form-item label="HIS科室ID" prop="thirdPartyDeptId">
+              <el-form-item label="HIS科室ID" prop="hisId">
                 <el-input
-                  v-model="form.thirdPartyDeptId"
+                  v-model="form.hisId"
                   :disabled="!!form.id || !departImportRequiresHisDeptId"
                   :placeholder="hisThirdPartyPlaceholder"
                 />
@@ -372,7 +372,7 @@ export default {
       if (this.departImportRequiresHisDeptId) {
         return "必填：第三方系统科室ID（与 HIS 一致）";
       }
-      return "本租户手工新增不维护此项";
+      return "本组织机构手工新增不维护此项";
     },
   },
   data() {
@@ -439,7 +439,7 @@ export default {
         name: [
           { required: true, message: "科室名称不能为空", trigger: "blur" }
         ],
-        thirdPartyDeptId: [
+        hisId: [
           {
             validator: (rule, value, callback) => {
               if (!this.form.id && this.departImportRequiresHisDeptId) {
@@ -587,7 +587,7 @@ export default {
         name: null,
         referredName: null,
         deptRemark: null,
-        thirdPartyDeptId: null,
+        hisId: null,
         parentId: null,
         createBy: null,
         createTime: null,

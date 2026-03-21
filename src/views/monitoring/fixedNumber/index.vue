@@ -787,6 +787,18 @@ export default {
       const id = type === '1' ? this.queryParams.warehouseId : this.queryParams.departmentId;
       return `fixedNumber_${type}_${id || 'default'}`;
     },
+    /** 解析 axios / 业务码错误，便于弹窗展示（避免只显示字符串 error） */
+    formatRequestError(err) {
+      if (err == null) return '';
+      if (typeof err === 'string') return err;
+      if (err.response && err.response.data) {
+        const d = err.response.data;
+        if (typeof d === 'string') return d;
+        if (d.msg) return d.msg;
+      }
+      if (err.message) return err.message;
+      return '';
+    },
     /** 保存到 localStorage */
     saveToLocalStorage() {
       const key = this.getStorageKey();
@@ -1113,7 +1125,7 @@ export default {
         this.loadExistingMaterialIds();
       }).catch(error => {
         console.error('保存定数监测失败:', error);
-        this.$modal.msgError("保存失败");
+        this.$modal.msgError(this.formatRequestError(error) || '保存失败');
       });
     },
     /** 新增按钮操作：打开弹窗时先刷新“当前仓库/科室已有”的物料ID，再查询可选耗材（过滤掉已有 + 前端已添加未保存的） */
@@ -1205,7 +1217,7 @@ export default {
       }
 
       const detailList = this.addSelectedMaterials.map(material => ({
-        materialId: material.id,
+        materialId: material.materialId != null ? material.materialId : material.id,
         upperLimit: 0,
         lowerLimit: 0,
         expiryReminder: null,

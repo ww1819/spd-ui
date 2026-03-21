@@ -27,6 +27,14 @@ export function getUser(userId) {
   })
 }
 
+/** 耗材租户用户授权：菜单树=客户已开通功能，checkedKeys=sys_user_menu */
+export function roleMenuTreeselectUser(userId) {
+  return request({
+    url: '/system/user/roleMenuTreeselect/' + parseStrEmpty(userId),
+    method: 'get'
+  })
+}
+
 // 新增用户
 export function addUser(data) {
   return request({

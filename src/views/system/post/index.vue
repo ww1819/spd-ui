@@ -826,7 +826,7 @@ export default {
         this.$modal.msgError("加载授权数据失败");
       });
     },
-    /** 获取菜单树：仅展示本客户 hc_customer_menu 中已开通的菜单，勾选来自岗位 sys_post_menu */
+    /** 获取菜单树：展示本客户 hc_customer_menu 已开通的全部功能；勾选来自 sys_post_menu（接口 checkedKeys） */
     getMenuTree() {
       const postId = this.authForm.postId;
       if (!postId) {
@@ -835,6 +835,10 @@ export default {
       }
       return roleMenuTreeselectPost(postId).then(response => {
         this.menuOptions = response.menus || [];
+        if (response.checkedKeys != null) {
+          const keys = response.checkedKeys.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+          this.authForm.menuIds = keys;
+        }
         return response;
       });
     },

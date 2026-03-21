@@ -533,9 +533,9 @@ export default {
         return "保存后不可修改";
       }
       if (this.supplierImportRequiresHisId) {
-        return "必填：HIS 供应商标识，租户内唯一";
+        return "必填：HIS 供应商标识，组织机构内唯一";
       }
-      return "非衡水医院租户无需填写（后台不保存）";
+      return "非衡水医院无需填写（后台不保存）";
     },
   },
     data() {

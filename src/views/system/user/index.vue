@@ -515,7 +515,7 @@
 </template>
 
 <script>
-import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred } from "@/api/system/user";
+import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser } from "@/api/system/user";
 import { workgroupTreeSelect } from "@/api/system/workgroup";
 import { listPost } from "@/api/system/post";
 import { getConfigKey, listConfig } from "@/api/system/config";
@@ -820,6 +820,16 @@ export default {
           departmentIds: response.departmentIds || [],
           warehouseIds: response.warehouseIds || []
         };
+        const cid = response.data && response.data.customerId;
+        // 租户用户：树展示本客户 hc_customer_menu 已开通的全部功能，勾选来自接口 checkedKeys
+        if (cid) {
+          return roleMenuTreeselectUser(userId).then(res => {
+            this.menuOptions = res.menus || [];
+            const ck = res.checkedKeys != null ? res.checkedKeys : [];
+            this.authForm.menuIds = ck.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            return res;
+          });
+        }
         return this.getMenuTree();
       }).then(() => {
         this.$nextTick(() => {

@@ -33,7 +33,9 @@ export function addFixedNumber(data) {
     method: 'post',
     params: {}, // 明确不往 URL 塞参数，防止被拼成 GET 导致 414
     data: data,
-    timeout: 60000   // 明细多时适当延长超时
+    timeout: 60000, // 明细多时适当延长超时
+    // 明细批量保存易触发「1s 内重复提交」误判；403 等由页面统一弹窗，避免与全局 Notification 重复
+    headers: { repeatSubmit: false, hideError: true }
   })
 }
 

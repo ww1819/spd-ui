@@ -343,7 +343,7 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { listFactory, getFactory, delFactory, addFactory, updateFactory, updateFactoryReferred, validateFactoryImportAdd, validateFactoryImportUpdate, importFactoryAddData, importFactoryUpdateData, listFactoryChangeLog } from "@/api/foundation/factory";
+import { listFactory, listFactoryAll, getFactory, delFactory, addFactory, updateFactory, updateFactoryReferred, validateFactoryImportAdd, validateFactoryImportUpdate, importFactoryAddData, importFactoryUpdateData, listFactoryChangeLog } from "@/api/foundation/factory";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import {pinyin} from "pinyin-pro";
 
@@ -401,6 +401,13 @@ export default {
         factoryName: "",
         rows: []
       },
+      /** 导入解析结果预览（模板 el-dialog 依赖，必须在 data 中声明，否则渲染报错整页空白） */
+      importPreview: {
+        visible: false,
+        title: "导入解析结果",
+        rows: [],
+        columns: []
+      },
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -448,20 +455,31 @@ export default {
     this.getAllFactoryList();
   },
   methods: {
-    /** 获取所有厂家列表（用于左侧列表） */
+    /** 获取所有厂家列表（用于左侧列表，与 listAll 一致，避免分页/权限与 list 不一致导致空白） */
     getAllFactoryList() {
-      listFactory({ pageNum: 1, pageSize: 10000 }).then(response => {
-        this.allFactoryList = response.rows || [];
-      });
+      listFactoryAll({})
+        .then((response) => {
+          this.allFactoryList = Array.isArray(response) ? response : (response && response.rows) || [];
+        })
+        .catch(() => {
+          this.allFactoryList = [];
+        });
     },
     /** 查询厂家维护列表 */
     getList() {
       this.loading = true;
-      listFactory(this.queryParams).then(response => {
-        this.factoryList = response.rows;
-        this.total = response.total;
-        this.loading = false;
-      });
+      listFactory(this.queryParams)
+        .then((response) => {
+          this.factoryList = (response && response.rows) || [];
+          this.total = (response && response.total) || 0;
+        })
+        .catch(() => {
+          this.factoryList = [];
+          this.total = 0;
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
     /** 厂家列表项点击 */
     handleFactoryClick(factory) {

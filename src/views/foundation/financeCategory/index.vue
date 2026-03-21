@@ -270,8 +270,11 @@
               style="margin-bottom:12px;"
               title="衡水市第三人民医院：Excel 新增行须填「HIS系统ID」且租户内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
             />
-            <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-              <strong>增量导入</strong>：按财务分类编码匹配租户下数据；可勾选「更新已存在」后<strong>仅更新分类名称与简码</strong>。先整单校验并确认后写入。
+            <p v-if="upload.mode === 'add'" style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+              <strong>新增导入</strong>：与库房分类一致，按<strong>财务分类编码</strong>匹配租户数据；仅允许新增（库中已存在相同编码则整单校验不通过）。先校验并确认后写入。
+            </p>
+            <p v-else style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+              <strong>更新导入</strong>：与库房分类一致，Excel 须含<strong>财务分类ID、财务分类名称</strong>；仅更新名称与拼音简码，不改编码与 HIS ID。先校验并确认后写入。
             </p>
             <el-upload
               ref="upload"
@@ -287,8 +290,8 @@
               <i class="el-icon-upload"></i>
               <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
               <div class="el-upload__tip text-center" slot="tip">
-                <div class="el-upload__tip" slot="tip">
-                  <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
+                <div v-if="upload.mode === 'update'" class="el-upload__tip">
+                  <el-checkbox v-model="upload.updateSupport" disabled /> 当前为更新导入（按主键 ID）
                 </div>
                 <span>仅允许 xls、xlsx。</span>
                 <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importFinanceTemplate">下载模板</el-link>
@@ -417,16 +420,23 @@ export default {
     // 获取数据列表
     getList() {
       this.loading = true;
-      listFinanceCategory(this.queryParams).then(response => {
-        this.financeCategoryList = response.rows;
-        this.total = response.total;
-        this.treeData = [{
-          financeCategoryId: 'root',
-          financeCategoryName: '全部分类',
-          children: this.financeCategoryList
-        }];
-        this.loading = false;
-      });
+      listFinanceCategory(this.queryParams)
+        .then(response => {
+          this.financeCategoryList = (response && response.rows) || [];
+          this.total = (response && response.total) || 0;
+          this.treeData = [{
+            financeCategoryId: 'root',
+            financeCategoryName: '全部分类',
+            children: this.financeCategoryList
+          }];
+        })
+        .catch(() => {
+          this.financeCategoryList = [];
+          this.total = 0;
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
     // 树节点点击事件
     handleNodeClick(data) {

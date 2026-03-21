@@ -69,6 +69,7 @@
           size="small"
           @click="handleBatchAudit"
           :disabled="multiple"
+          v-hasPermi="['caigou:dingdan:audit']"
         >审核</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -78,6 +79,7 @@
           icon="el-icon-download"
           size="small"
           @click="handleExport"
+          v-hasPermi="['caigou:dingdan:export']"
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">
