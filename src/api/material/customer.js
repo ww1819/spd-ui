@@ -17,7 +17,7 @@ export function getHcCustomer(customerId) {
   })
 }
 
-/** 耗材侧客户更新（仅客户名称、备注、耗材状态、耗材计划停用时间） */
+/** 耗材侧客户更新（客户名称、备注、耗材状态、耗材/设备系统计划停用时间） */
 export function updateHcCustomer(data) {
   return request({
     url: '/material/system/customer',
@@ -108,5 +108,14 @@ export function purgeConsumablesData(customerId) {
     url: '/material/system/customer/' + customerId + '/purgeConsumablesData',
     method: 'post',
     data: { confirm: 'PURGE_HC' }
+  })
+}
+
+/** 按租户物理删除设备侧数据（body.confirm 须为 PURGE_EQ，走 equipment Controller） */
+export function purgeEquipmentData(customerId) {
+  return request({
+    url: '/equipment/system/customer/' + customerId + '/purgeEquipmentData',
+    method: 'post',
+    data: { confirm: 'PURGE_EQ' }
   })
 }
