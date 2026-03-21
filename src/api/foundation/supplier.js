@@ -92,3 +92,50 @@ export function importSupplierData(file, updateSupport, confirm) {
     headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
   })
 }
+
+
+export function validateSupplierImportAdd(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/supplier/importAddValidate',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+export function importSupplierAddData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/supplier/importAddData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+export function validateSupplierImportUpdate(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/supplier/importUpdateValidate',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+export function importSupplierUpdateData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/supplier/importUpdateData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function downloadSupplierImportAddTemplate(){return request({url:'/foundation/supplier/importAddTemplate',method:'post',responseType:'blob'})}
+export function downloadSupplierImportUpdateTemplate(){return request({url:'/foundation/supplier/importUpdateTemplate',method:'post',responseType:'blob'})}

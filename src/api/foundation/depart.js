@@ -108,3 +108,47 @@ export function importDepartData(file, updateSupport, confirm) {
     headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
   })
 }
+
+
+export function validateDepartImportAdd(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/depart/importAddValidate',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function importDepartAddData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/depart/importAddData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function validateDepartImportUpdate(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/depart/importUpdateValidate',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function importDepartUpdateData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/depart/importUpdateData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function downloadDepartImportAddTemplate(){return request({url:'/foundation/depart/importAddTemplate',method:'post',responseType:'blob'})}
+export function downloadDepartImportUpdateTemplate(){return request({url:'/foundation/depart/importUpdateTemplate',method:'post',responseType:'blob'})}

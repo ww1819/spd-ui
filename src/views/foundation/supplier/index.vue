@@ -152,15 +152,25 @@
           v-hasPermi="['foundation:supplier:export']"
         >导出</el-button>
       </el-col>
-      <el-col :span="1.5">
+      <el-col :span="1.8">
         <el-button
           type="info"
           plain
           icon="el-icon-upload2"
           size="small"
-          @click="handleImport"
+          @click="handleImport('add')"
           v-hasPermi="['foundation:supplier:import']"
-        >导入</el-button>
+        >新增导入</el-button>
+      </el-col>
+      <el-col :span="1.8">
+        <el-button
+          type="info"
+          plain
+          icon="el-icon-refresh-right"
+          size="small"
+          @click="handleImport('update')"
+          v-hasPermi="['foundation:supplier:import']"
+        >更新导入</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -450,7 +460,7 @@
           <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
           <div class="el-upload__tip text-center" slot="tip">
             <div class="el-upload__tip" slot="tip">
-              <el-checkbox v-model="upload.updateSupport" /> 是否更新已存在的供应商（按供应商编码匹配）
+            <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
             </div>
             <span>仅允许 xls、xlsx。</span>
             <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importSupplierTemplate">下载模板</el-link>
@@ -462,6 +472,32 @@
         </div>
       </div>
     </div>
+
+    <el-dialog
+      :title="importPreview.title"
+      :visible.sync="importPreview.visible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      @close="importPreview.rows = []; importPreview.columns = []"
+    >
+      <div style="margin-bottom:10px;">
+        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportSupplierImportPreview">导出解析结果</el-button>
+      </div>
+      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
+        <el-table-column
+          v-for="col in importPreview.columns"
+          :key="col"
+          :prop="col"
+          :label="col"
+          min-width="120"
+          show-overflow-tooltip
+        />
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="importPreview.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
 
     <div v-if="changeLog.open" class="local-modal-mask">
       <div class="local-modal-content" style="width: 720px; min-width: 400px; min-height: auto; max-width: 92vw;">
@@ -483,7 +519,8 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { listSupplier, getSupplier, delSupplier, addSupplier, updateSupplier, updateSupplierReferred, validateSupplierImport, importSupplierData, listSupplierChangeLog } from "@/api/foundation/supplier";
+import { listSupplier, getSupplier, delSupplier, addSupplier, updateSupplier, updateSupplierReferred, validateSupplierImportAdd, validateSupplierImportUpdate, importSupplierAddData, importSupplierUpdateData, listSupplierChangeLog } from "@/api/foundation/supplier";
+import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import {pinyin} from "pinyin-pro";
 
 export default {
@@ -537,7 +574,14 @@ export default {
         title: "",
         isUploading: false,
         updateSupport: false,
-        pendingFile: null
+        pendingFile: null,
+        mode: "add"
+      },
+      importPreview: {
+        visible: false,
+        title: "导入解析结果",
+        rows: [],
+        columns: []
       },
       changeLog: {
         open: false,
@@ -849,8 +893,10 @@ export default {
         this.getList();
       }).catch(() => {});
     },
-    handleImport() {
-      this.upload.title = "供应商导入";
+    handleImport(mode) {
+      this.upload.mode = mode === "update" ? "update" : "add";
+      this.upload.updateSupport = this.upload.mode === "update";
+      this.upload.title = this.upload.mode === "update" ? "供应商更新导入" : "供应商新增导入";
       this.upload.pendingFile = null;
       this.upload.open = true;
       this.$nextTick(() => {
@@ -870,7 +916,8 @@ export default {
       this.upload.pendingFile = null;
     },
     importSupplierTemplate() {
-      this.download("foundation/supplier/importTemplate", {}, `fd_supplier_template_${new Date().getTime()}.xlsx`);
+      const api = this.upload.mode === "update" ? "foundation/supplier/importUpdateTemplate" : "foundation/supplier/importAddTemplate";
+      this.download(api, {}, `fd_supplier_template_${new Date().getTime()}.xlsx`);
     },
     openChangeLog(row) {
       if (!row || !row.id) return;
@@ -885,6 +932,22 @@ export default {
         this.changeLog.loading = false;
       });
     },
+    showImportPreviewFromPayload(payload, title) {
+      const rows = (payload && payload.previewRows) || [];
+      this.importPreview.title = title || "导入解析结果";
+      this.importPreview.rows = rows;
+      this.importPreview.columns = rows.length ? Object.keys(rows[0]) : [];
+      this.importPreview.visible = true;
+    },
+    async exportSupplierImportPreview() {
+      try {
+        const name = (this.upload.mode === "update" ? "supplier_update" : "supplier_add") + "_preview_" + new Date().getTime() + ".xlsx";
+        await exportPreviewRowsToXlsx(this.importPreview.rows, name);
+        this.$modal.msgSuccess("已导出");
+      } catch (e) {
+        this.$modal.msgError(e.message || "导出失败");
+      }
+    },
     async submitSupplierImportFlow() {
       const f = this.upload.pendingFile;
       if (!f) {
@@ -893,20 +956,26 @@ export default {
       }
       this.upload.isUploading = true;
       try {
-        const res = await validateSupplierImport(f, this.upload.updateSupport);
-        const d = res.data;
-        if (!d || !d.valid) {
-          const errs = (d && d.errors && d.errors.length) ? d.errors.join("<br/>") : (res.msg || "校验失败");
+        const isUpdate = this.upload.mode === "update";
+        const res = isUpdate ? await validateSupplierImportUpdate(f) : await validateSupplierImportAdd(f);
+        const d = res.data || {};
+        this.showImportPreviewFromPayload(d, isUpdate ? "供应商更新导入 — 解析结果" : "供应商新增导入 — 解析结果");
+        if (!d.valid) {
+          const errs = (d.errors && d.errors.length) ? d.errors.join("<br/>") : (res.msg || "校验失败");
           this.$alert("<div style='overflow:auto;max-height:60vh'>" + errs + "</div>", "校验未通过", { dangerouslyUseHTMLString: true });
           return;
         }
         const tc = d.totalRows != null ? d.totalRows : 0;
         const ic = d.insertCount != null ? d.insertCount : 0;
         const uc = d.updateCount != null ? d.updateCount : 0;
-        await this.$modal.confirm(
-          "校验已通过。共 " + tc + " 行数据，预计新增 " + ic + " 条、更新 " + uc + " 条。确认后写入数据库，是否继续？"
-        );
-        const res2 = await importSupplierData(f, this.upload.updateSupport, true);
+        let confirmText = "校验已通过。共 " + tc + " 行数据，确认后写入数据库，是否继续？";
+        if (!isUpdate) {
+          confirmText = "校验已通过。共 " + tc + " 行数据，预计新增 " + ic + " 条、更新 " + uc + " 条。确认后写入数据库，是否继续？";
+        }
+        await this.$modal.confirm(confirmText);
+        const res2 = isUpdate ? await importSupplierUpdateData(f, true) : await importSupplierAddData(f, true);
+        const d2 = res2.data || {};
+        this.showImportPreviewFromPayload(d2, isUpdate ? "供应商更新导入 — 导入结果" : "供应商新增导入 — 导入结果");
         this.$alert("<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'>" + res2.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
         this.closeSupplierImport();
         this.getList();

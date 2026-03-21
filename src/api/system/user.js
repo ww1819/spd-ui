@@ -151,3 +151,7 @@ export function deptTreeSelect() {
     method: 'get'
   })
 }
+
+
+export function importUserAddData(formData){return request({url:'/system/user/importAddData',method:'post',data:formData,headers:{'Content-Type':'multipart/form-data',repeatSubmit:false}})}
+export function importUserUpdateData(formData){return request({url:'/system/user/importUpdateData',method:'post',data:formData,headers:{'Content-Type':'multipart/form-data',repeatSubmit:false}})}
