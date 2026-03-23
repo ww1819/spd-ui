@@ -77,7 +77,7 @@
 
     <div class="detail-container">
       <el-row :gutter="10" style="height: 100%;">
-        <el-col :span="10" style="height: 100%;">
+        <el-col :span="14" style="height: 100%;">
           <div class="detail-box">
             <div class="detail-title">明细框</div>
             <el-table v-loading="loading" :data="groupRows" height="46vh" border>
@@ -96,13 +96,13 @@
             </el-table>
           </div>
         </el-col>
-        <el-col :span="7" style="height: 100%;">
-          <div class="detail-box">
+        <el-col :span="10" style="height: 100%;">
+          <div class="detail-box pie-box-shift-right">
             <div class="detail-title">饼状图</div>
             <div ref="pieChart" class="pie-chart"></div>
           </div>
         </el-col>
-        <el-col :span="7" style="height: 100%;">
+        <el-col v-if="false" :span="7" style="height: 100%;">
           <div class="detail-box">
             <div class="detail-title">柱状图</div>
             <div ref="barChart" class="bar-chart"></div>
@@ -391,6 +391,10 @@ export default {
 .detail-title {
   font-weight: 500;
   margin-bottom: 8px;
+}
+
+.pie-box-shift-right {
+  padding-left: 18px;
 }
 
 .bar-chart,
