@@ -39,6 +39,10 @@ Print.prototype = {
     str += "<style>html,body,div{height: auto!important;}</style>";
 
     str = str.replace('size: A5', `size: ${pageSize}`);
+    // 自定义纸张（如三等分 210mm×99mm）：注入 @page，避免仅依赖页面内 style 的替换
+    if (pageSize && String(pageSize).indexOf('mm') !== -1) {
+      str += "<style>@page { size: " + pageSize + " !important; }</style>";
+    }
 
     return str;
   },
@@ -85,8 +89,10 @@ Print.prototype = {
 
     let content = this.dom.outerHTML;
     if (content.indexOf('hidden="hidden"') > -1) {
-      content = content.replace('hidden="hidden"', '');
+      content = content.replace(/hidden="hidden"/g, '');
     }
+    // 布尔属性 hidden 或多余空格
+    content = content.replace(/\s+hidden(?:="hidden")?(?=\s|>)/gi, '');
     return content;
   },
 
@@ -99,19 +105,26 @@ Print.prototype = {
     var w = iframe.contentWindow || iframe.contentDocument;
     var doc = iframe.contentDocument || iframe.contentWindow.document;
 
-    // 必须先绑定 onload 再 write/close，否则 doc.close() 同步触发 load 时尚未绑定会错过回调，打印窗口不会弹出
-    iframe.onload = function () {
+    var printDone = false;
+    function finishAndPrint() {
+      if (printDone) return;
+      printDone = true;
+      iframe.onload = null;
       _this.toPrint(w, _this.options);
       setTimeout(function () {
         if (iframe.parentNode) {
           document.body.removeChild(iframe);
         }
       }, 100);
+    }
+    // 必须先绑定 onload 再 write/close；部分环境下 load 不触发，需定时兜底否则打印对话框永不出现
+    iframe.onload = function () {
+      finishAndPrint();
     };
-
     doc.open();
     doc.write(content);
     doc.close();
+    setTimeout(finishAndPrint, 200);
   },
 
   toPrint: function (frameWindow, options) {

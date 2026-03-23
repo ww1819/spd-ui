@@ -803,12 +803,18 @@ export default {
         this.getOutWarehouseDetail(row).then(res => {
           // 设置打印数据
           this.printRowData = res
-          // 等待组件渲染后调用 start()
+          // v-if 子组件需多等一轮 tick，否则 ref 未挂载会导致不弹窗
           this.$nextTick(() => {
-            if (this.$refs['receiptOrderPrintRefAuto']) {
-              // start() 方法会直接触发浏览器打印对话框
-              this.$refs['receiptOrderPrintRefAuto'].start()
-            }
+            this.$nextTick(() => {
+              const ref = this.$refs['receiptOrderPrintRefAuto']
+              if (ref && typeof ref.start === 'function') {
+                ref.start()
+              } else {
+                setTimeout(() => {
+                  this.$refs['receiptOrderPrintRefAuto']?.start?.()
+                }, 100)
+              }
+            })
           })
         })
         return
@@ -879,25 +885,34 @@ export default {
     getOutWarehouseDetail(row) {
       //查询详情
       return getOutWarehouse(row.id).then(response => {
-        const details = response.data.stkIoBillEntryList
-        const materiaDetails = response.data.materialList
+        const data = response.data
+        const details = data.stkIoBillEntryList
+        const materiaDetails = data.materialList
         const map = {};
 
         (materiaDetails || []).forEach(it => {
+          if (it == null || it.id == null) return
           map[it.id] = it
         })
 
         let detailList = [], totalAmt = 0, totalQty = 0
 
-        details && details.forEach(item => {
-          totalAmt += item.amt
-          totalQty += item.qty
+        ;(details || []).forEach(item => {
+          if (item == null) return
+          totalAmt += Number(item.amt) || 0
+          totalQty += Number(item.qty) || 0
 
-          const prod = map[item.materialId] || {}
+          // 产品档案优先：materialList 与明细行上的 material 合并，档案字段覆盖
+          const emb = item.material || {}
+          const arch = map[item.materialId] || {}
+          const prod = Object.assign({}, emb, arch)
           const fdFactory = prod.fdFactory != null ? prod.fdFactory : null
           const fdWarehouseCategory = prod.fdWarehouseCategory != null ? prod.fdWarehouseCategory : null
           const fdUnit = prod.fdUnit != null ? prod.fdUnit : null
 
+          const nameFromSnap = item.materialName != null && String(item.materialName).trim() !== ''
+          const specFromSnap = item.materialSpeci != null && String(item.materialSpeci).trim() !== ''
+          const modelFromSnap = item.materialModel != null && String(item.materialModel).trim() !== ''
           detailList.push({
             batchNumber: item.batchNumber,
             amt: item.amt,
@@ -905,8 +920,9 @@ export default {
             unitPrice: item.unitPrice,
             price: item.unitPrice,
             materialCode: (prod && prod.code) || '',
-            materialName: (prod && prod.name) || '',
-            materialSpeci: (prod && prod.speci) || '',
+            materialName: nameFromSnap ? item.materialName : ((prod && prod.name) || ''),
+            materialSpeci: specFromSnap ? item.materialSpeci : ((prod && prod.speci) || ''),
+            materialModel: modelFromSnap ? item.materialModel : ((prod && prod.model) || ''),
             periodDate: (prod && prod.periodDate) || '',
             factoryName: (fdFactory && fdFactory.factoryName) || '',
             warehouseCategoryName: (fdWarehouseCategory && fdWarehouseCategory.warehouseCategoryName) || '',
@@ -921,18 +937,18 @@ export default {
         let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
 
         return {
-          billNo: row.billNo,
-          departmentName: (row.department && row.department.name) || '',
-          warehouseName: (row.warehouse && row.warehouse.name) || '',
-          billDate: row.billDate,
-          auditDate: row.auditDate,
+          billNo: data.billNo || row.billNo,
+          departmentName: (data.department && data.department.name) || (row.department && row.department.name) || '',
+          warehouseName: (data.warehouse && data.warehouse.name) || (row.warehouse && row.warehouse.name) || '',
+          billDate: data.billDate || row.billDate,
+          auditDate: data.auditDate || row.auditDate,
           totalAmt: totalAmt,
           totalQty: totalQty,
           totalAmtConverter: totalAmtConverter,
           detailList: detailList,
-          fundSource: (row.fundSource != null ? row.fundSource : '') || '',
-          createBy: (row.createBy != null ? row.createBy : '') || '',
-          outboundOperator: (row.creater && row.creater.nickName) || (row.outboundOperator != null ? row.outboundOperator : row.createBy) || '',
+          fundSource: (data.fundSource != null ? data.fundSource : row.fundSource) || '',
+          createBy: (data.createBy != null ? data.createBy : row.createBy) || '',
+          outboundOperator: (data.creater && data.creater.nickName) || (row.creater && row.creater.nickName) || (data.outboundOperator != null ? data.outboundOperator : row.outboundOperator) || (data.createBy != null ? data.createBy : row.createBy) || '',
         }
       })
     },
