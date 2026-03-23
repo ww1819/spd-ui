@@ -151,7 +151,7 @@
             <el-button
               size="small"
               type="text"
-              @click="handlePrint(scope.row,true)"
+              @click="handlePrint(scope.row)"
               v-if="scope.row.billStatus == 2"
               style="padding: 0 5px; margin: 0;"
             >打印</el-button>
@@ -366,15 +366,44 @@
         </transition>
       </div>
     </transition>
-    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width ">
+    <el-dialog
+      :visible.sync="modalObj.show"
+      :width="modalObj.width"
+      custom-class="out-warehouse-print-dialog"
+      append-to-body
+    >
+      <template slot="title">
+        <div class="print-dialog-title-row">
+          <span class="print-dialog-title-text">{{ modalObj.title }}</span>
+          <div v-if="showPrintOrientation" class="print-orientation-in-title">
+            <span class="print-orientation-label">打印方向</span>
+            <el-radio-group v-model="modalObj.form.printOrientation" size="small">
+              <el-radio label="landscape">横向</el-radio>
+              <el-radio label="portrait">纵向</el-radio>
+            </el-radio-group>
+          </div>
+        </div>
+      </template>
       <template v-if=" modalObj.component === 'print-type' ">
         <el-radio-group v-model=" modalObj.form.value ">
           <!--          <el-radio :label=" 1 ">lodop打印</el-radio>-->
           <el-radio :label=" 2 ">浏览器打印</el-radio>
         </el-radio-group>
+        <div style="margin-top: 10px;">
+          <span style="margin-right: 10px;">纸张</span>
+          <el-radio-group v-model="modalObj.form.paperType" size="small">
+            <el-radio label="a4">A4</el-radio>
+            <el-radio label="third-split">三等分纸</el-radio>
+          </el-radio-group>
+        </div>
       </template>
-      <template v-if=" modalObj.form.value === 2 || modalObj.component === 'window-print-preview' ">
-        <refund-depot-order-print :row=" modalObj.form.row " ref="receiptRefundDepotOrderPrintRef"></refund-depot-order-print>
+      <template v-if="showPrintContent">
+        <refund-depot-order-print
+          :row=" modalObj.form.row "
+          :print-orientation="modalObj.form.printOrientation || 'portrait'"
+          :paper-type="modalObj.form.paperType || 'a4'"
+          ref="receiptRefundDepotOrderPrintRef"
+        ></refund-depot-order-print>
       </template>
       <template slot="footer" class="dialog-footer">
         <el-button @click=" modalObj.cancel ">取消</el-button>
@@ -383,7 +412,13 @@
     </el-dialog>
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
-      <refund-depot-order-print v-if="printRowData" :row="printRowData" ref="receiptRefundDepotOrderPrintRefAuto"></refund-depot-order-print>
+      <refund-depot-order-print
+        v-if="printRowData"
+        :row="printRowData"
+        print-orientation="portrait"
+        paper-type="a4"
+        ref="receiptRefundDepotOrderPrintRefAuto"
+      ></refund-depot-order-print>
     </div>
 
     <!-- 3、使用组件 -->
@@ -428,7 +463,9 @@ export default {
         component: null,
         form: {
           value: null,
-          row: null
+          row: null,
+          paperType: 'a4',
+          printOrientation: 'portrait'
         },
         ok: () => {
         },
@@ -493,6 +530,19 @@ export default {
         ],
       }
     };
+  },
+  computed: {
+    showPrintOrientation() {
+      const m = this.modalObj
+      if (!m || !m.form) return false
+      return m.component === 'window-print-preview'
+        || (m.component === 'print-type' && Number(m.form.value) === 2)
+    },
+    showPrintContent() {
+      const m = this.modalObj
+      if (!m || !m.form) return false
+      return Number(m.form.value) === 2 || m.component === 'window-print-preview'
+    }
   },
   created() {
     this.getList();
@@ -785,51 +835,24 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
-      // 如果传入 print 参数为 true，直接执行打印
-      if (print === true) {
-        // 直接获取数据并触发打印
-        this.getRefundGoodsDetail(row).then(res => {
-          // 设置打印数据
-          this.printRowData = res
-          // 等待组件渲染后调用 start()
-          this.$nextTick(() => {
-            if (this.$refs['receiptRefundDepotOrderPrintRefAuto']) {
-              // start() 方法会直接触发浏览器打印对话框
-              this.$refs['receiptRefundDepotOrderPrintRefAuto'].start()
-            }
-          })
-        })
-        return
-      }
-      // 否则显示选择打印方式的对话框
-      this.modalObj = {
-        show: true,
-        title: '选择打印方式',
-        width: '520px',
-        component: 'print-type',
-        form: {
-          value: 1,
-          row
-        },
-        ok: () => {
-          this.modalObj.show = false
-          if (this.modalObj.form.value === 1) {
-            this.doPrintOut(row, false)
-          } else {
-            this.windowPrintOut(row, print)
-          }
-        },
-        cancel: () => {
-          this.modalObj.show = false
-        }
-      }
+      // 审核页点击打印：直接打开浏览器打印预览
+      this.windowPrintOut(row, true, 'portrait', 'a4')
     },
-    windowPrintOut(row, print) {
+    windowPrintOut(row, print, printOrientation, paperType) {
+      const orient = printOrientation || 'portrait'
+      const pType = paperType || 'a4'
       this.getRefundGoodsDetail(row).then(res => {
         if (print) {
-          this.modalObj.form.row = res
+          this.printRowData = res
           this.$nextTick(() => {
-            this.$refs['receiptRefundDepotOrderPrintRef'].start()
+            const ref = this.$refs['receiptRefundDepotOrderPrintRefAuto']
+            if (ref && typeof ref.start === 'function') {
+              ref.start()
+            } else {
+              setTimeout(() => {
+                this.$refs['receiptRefundDepotOrderPrintRefAuto']?.start?.()
+              }, 100)
+            }
           })
           return
         }
@@ -840,9 +863,11 @@ export default {
             width: '800px',
             component: 'window-print-preview',
             form: {
-              value: 1,
-              row,
-              print
+              value: 2,
+              row: res,
+              print,
+              printOrientation: orient,
+              paperType: pType
             },
             ok: () => {
               this.modalObj.show = false
@@ -1397,5 +1422,33 @@ export default {
   font-weight: 600 !important;
   font-size: 15px !important;
   font-family: 'Roboto', sans-serif !important;
+}
+
+/* 打印弹窗标题右侧方向控制 */
+.out-warehouse-print-dialog .print-dialog-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding-right: 36px;
+  box-sizing: border-box;
+}
+.out-warehouse-print-dialog .print-dialog-title-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.out-warehouse-print-dialog .print-orientation-in-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: normal;
+  font-size: 14px;
+}
+.out-warehouse-print-dialog .print-orientation-label {
+  color: #606266;
 }
 </style>

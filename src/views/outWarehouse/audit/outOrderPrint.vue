@@ -9,7 +9,7 @@
       v-for="copyIndex in renderCopies"
       :key="copyIndex"
       class="print-copy-block"
-      :class="{ 'is-a4-copy': isA4Paper }"
+      :class="{ 'is-third-split-copy': isThirdSplitPaper }"
     >
       <table class="detail-table" :style="tableStyle">
         <colgroup>
@@ -136,8 +136,11 @@ export default {
     isA4Paper() {
       return this.paperType === 'a4'
     },
+    isThirdSplitPaper() {
+      return this.paperType === 'third-split'
+    },
     renderCopies() {
-      return this.isA4Paper ? 3 : 1
+      return 1
     },
     /** 纸张尺寸：A4 模式整页；三等分模式 99mm 高条带 */
     pageSizeForPrint() {
@@ -300,7 +303,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   break-inside avoid
   page-break-inside avoid
 
-.print-copy-block.is-a4-copy
+.print-copy-block.is-third-split-copy
   height 99mm
   overflow hidden
 
@@ -469,7 +472,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     box-sizing border-box
     padding 0 0 4mm 0
 
-  .print-copy-block.is-a4-copy
+  .print-copy-block.is-third-split-copy
     height 99mm !important
     overflow hidden !important
 

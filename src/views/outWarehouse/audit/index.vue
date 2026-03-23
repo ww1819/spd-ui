@@ -154,7 +154,7 @@
             <el-button
               size="small"
               type="text"
-              @click="handlePrint(scope.row,true)"
+              @click="handlePrint(scope.row)"
               v-if="scope.row.billStatus == 2"
               style="padding: 0 5px; margin: 0;"
             >打印</el-button>
@@ -399,11 +399,19 @@
           <!--          <el-radio :label=" 1 ">lodop打印</el-radio>-->
           <el-radio :label="2">浏览器打印</el-radio>
         </el-radio-group>
+        <div style="margin-top: 10px;">
+          <span style="margin-right: 10px;">纸张</span>
+          <el-radio-group v-model="modalObj.form.paperType" size="small">
+            <el-radio label="a4">A4</el-radio>
+            <el-radio label="third-split">三等分纸</el-radio>
+          </el-radio-group>
+        </div>
       </div>
       <div v-if="showPrintContent">
         <out-order-print
           :row="modalObj.form.row"
-          :print-orientation="modalObj.form.printOrientation || 'landscape'"
+          :print-orientation="modalObj.form.printOrientation || 'portrait'"
+          :paper-type="modalObj.form.paperType || 'a4'"
           ref="receiptOrderPrintRef"
         ></out-order-print>
       </div>
@@ -414,7 +422,13 @@
     </el-dialog>
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
-      <out-order-print v-if="printRowData" :row="printRowData" ref="receiptOrderPrintRefAuto"></out-order-print>
+      <out-order-print
+        v-if="printRowData"
+        :row="printRowData"
+        print-orientation="portrait"
+        paper-type="a4"
+        ref="receiptOrderPrintRefAuto"
+      ></out-order-print>
     </div>
 
     <!-- 3、使用组件 -->
@@ -458,7 +472,9 @@ export default {
         component: null,
         form: {
           value: null,
-          row: null
+          row: null,
+          printOrientation: 'portrait',
+          paperType: 'a4'
         },
         ok: () => {
         },
@@ -827,62 +843,24 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
-      // 如果传入 print 参数为 true，直接执行打印
-      if (print === true) {
-        // 直接获取数据并触发打印
-        this.getOutWarehouseDetail(row).then(res => {
-          // 设置打印数据
-          this.printRowData = res
-          // v-if 子组件需多等一轮 tick，否则 ref 未挂载会导致不弹窗
-          this.$nextTick(() => {
-            this.$nextTick(() => {
-              const ref = this.$refs['receiptOrderPrintRefAuto']
-              if (ref && typeof ref.start === 'function') {
-                ref.start()
-              } else {
-                setTimeout(() => {
-                  this.$refs['receiptOrderPrintRefAuto']?.start?.()
-                }, 100)
-              }
-            })
-          })
-        })
-        return
-      }
-      // 否则显示选择打印方式的对话框
-      this.modalObj = {
-        show: true,
-        title: '选择打印方式',
-        width: '520px',
-        component: 'print-type',
-        form: {
-          value: 1,
-          row,
-          printOrientation: 'landscape'
-        },
-        ok: () => {
-          const orient = (this.modalObj.form && this.modalObj.form.printOrientation) || 'landscape'
-          this.modalObj.show = false
-          if (this.modalObj.form.value === 1) {
-            this.doPrintOut(row, false)
-          } else {
-            this.windowPrintOut(row, print, orient)
-          }
-        },
-        cancel: () => {
-          this.modalObj.show = false
-        }
-      }
+      // 审核页点击打印：直接打开浏览器打印预览
+      this.windowPrintOut(row, true, 'portrait', 'a4')
     },
-    windowPrintOut(row, print, printOrientation) {
-      const orient = printOrientation || 'landscape'
+    windowPrintOut(row, print, printOrientation, paperType) {
+      const orient = printOrientation || 'portrait'
+      const pType = paperType || 'a4'
       this.getOutWarehouseDetail(row).then(res => {
         if (print) {
-          if (!this.modalObj.form) this.modalObj.form = {}
-          this.modalObj.form.row = res
-          this.modalObj.form.printOrientation = orient
+          this.printRowData = res
           this.$nextTick(() => {
-            this.$refs['receiptOrderPrintRef'].start()
+            const ref = this.$refs['receiptOrderPrintRefAuto']
+            if (ref && typeof ref.start === 'function') {
+              ref.start()
+            } else {
+              setTimeout(() => {
+                this.$refs['receiptOrderPrintRefAuto']?.start?.()
+              }, 100)
+            }
           })
           return
         }
@@ -893,10 +871,11 @@ export default {
             width: '960px',
             component: 'window-print-preview',
             form: {
-              value: 1,
+              value: 2,
               row: res,
               print,
-              printOrientation: orient
+              printOrientation: orient,
+              paperType: pType
             },
             ok: () => {
               this.modalObj.show = false

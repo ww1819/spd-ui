@@ -1,67 +1,71 @@
-﻿<template>
-  <div class="refund-depot-order-print" ref="receiptRefundDepotOrderPrintRef" hidden="hidden">
-<!--    <div class="title" style="padding-top: 15px">入库单</div>-->
-    <div style="font-size: 22px;text-align: center;">
-      <span v-if="hospitalName">{{ hospitalName }}</span>科室退库单
-    </div>
-    <div class="summary">
-      <div class="col1" style="width:45%">单号: {{ row.billNo }}</div>
-      <div class="col1" style="width:30%">仓库: {{ row.warehouseName }}</div>
-      <div class="col1" style="width:25%">科室: {{ row.departmentName }}</div>
+<template>
+  <div class="refund-depot-order-print print-root-offscreen" ref="receiptRefundDepotOrderPrintRef" :class="rootOrientationClass">
+    <div
+      v-for="copyIndex in renderCopies"
+      :key="copyIndex"
+      class="print-copy-block"
+      :class="{ 'is-third-split-copy': isThirdSplitPaper }"
+    >
+      <div class="doc-title">{{ displayHospitalName }}科室退库单</div>
 
-      <div class="col1" style="width:45%">申请时间: {{ row.billDate }}</div>
-      <div class="col1" style="width:30%">审核时间: {{ row.auditDate }}</div>
-      <div class="col1" style="width:25%">单位: 元</div>
-    </div>
-    <table class="common-table">
-      <tr>
-        <th>耗材编码</th>
-        <th>耗材名称</th>
-        <th>规格</th>
-<!--        <th>单位</th>-->
-        <th>单价</th>
-        <th>数量</th>
-        <th>金额</th>
-        <th>批号</th>
-        <th>有效期</th>
-        <th>厂家</th>
-        <th>耗材分类</th>
-      </tr>
-      <tr v-for="item in row.detailList">
-        <td>{{ item.materialCode || '' }}</td>
-        <td>{{ item.materialName || '' }}</td>
-        <td>{{ item.materialSpeci || '' }}</td>
-<!--        <td>{{ item.planQuantity }}</td>-->
-        <td>{{ item.price || '' }}</td>
-        <td>{{ item.qty || '' }}</td>
-        <td>{{ item.amt || '' }}</td>
-        <td>{{ item.batchNumber || '' }}</td>
-        <td>{{ item.periodDate || '' }}</td>
-        <td>{{ item.factoryName || '' }}</td>
-        <td>{{ item.warehouseCategoryName || '' }}</td>
-      </tr>
-      <tr>
-        <td>本页小计：</td>
-        <td colspan="3"></td>
-        <td >{{ row.totalQty }}</td>
-        <td >{{ row.totalAmt }}</td>
-        <td colspan="4"></td>
-      </tr>
-      <tr>
-        <td colspan="4" style="text-align: left;">合计金额：（大写）：{{ row.totalAmtConverter }}</td>
-        <td colspan="2">（小写）：</td>
-        <td colspan="4">{{ row.totalAmt }}</td>
-      </tr>
-    </table>
-    <div class="foot" style="padding-top: 15px">
-      <div class="content">
-        <div class="col2" style="width:45%">制单人: </div>
-        <div class="col2" style="width:30%">复核人: </div>
-        <div class="col2" style="width:25%">验收人: </div>
+      <div class="summary">
+        <div class="summary-item summary-left">科室: {{ row.departmentName || '' }}</div>
+        <div class="summary-item summary-center">单据号: {{ row.billNo || '' }}</div>
+        <div class="summary-item summary-right">退库日期: {{ formatDateTime(row.auditDate || row.billDate) }}</div>
+        <div class="summary-item summary-left">仓库: {{ row.warehouseName || '' }}</div>
+        <div class="summary-item summary-center">申请时间: {{ formatDateTime(row.billDate) }}</div>
+        <div class="summary-item summary-right">单位: 元</div>
+      </div>
+
+      <table class="common-table">
+        <colgroup>
+          <col class="col-name" />
+          <col class="col-spec" />
+          <col class="col-batch" />
+          <col class="col-qty" />
+          <col class="col-price" />
+          <col class="col-amt" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>消耗品名称</th>
+            <th>规格型号</th>
+            <th>批号</th>
+            <th>数量</th>
+            <th>退库单价</th>
+            <th>金额</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(item, idx) in (row.detailList || [])" :key="idx">
+            <td>{{ item.materialName || '' }}</td>
+            <td>{{ item.materialSpeci || '' }}</td>
+            <td>{{ item.batchNumber || '' }}</td>
+            <td class="num-cell">{{ formatQty(item.qty) }}</td>
+            <td class="num-cell">{{ formatPrice(item.price) }}</td>
+            <td class="num-cell">{{ formatAmt(item.amt) }}</td>
+          </tr>
+          <tr class="total-row">
+            <td colspan="3" class="total-label">合计:</td>
+            <td class="num-cell">{{ formatQty(row.totalQty) }}</td>
+            <td></td>
+            <td class="num-cell">{{ formatAmt(row.totalAmt) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="amount-line">
+        <span>合计金额（大写）: {{ row.totalAmtConverter || '' }}</span>
+        <span>（小写）: {{ formatAmt(row.totalAmt) }}</span>
+      </div>
+
+      <div class="sign-block">
+        <span>退库操作员</span>
+        <span>退款人员</span>
+        <span>打印日期 {{ formatDateOnly(row.printDate || new Date()) }}</span>
       </div>
     </div>
   </div>
-
 </template>
 
 <script>
@@ -69,19 +73,94 @@ import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 
 export default {
   mixins: [hospitalNameMixin],
-  props: ['row'],
+  props: {
+    row: {
+      type: Object,
+      default: () => ({})
+    },
+    printOrientation: {
+      type: String,
+      default: 'landscape'
+    },
+    paperType: {
+      type: String,
+      default: 'third-split'
+    }
+  },
+  computed: {
+    // 默认样式按衡水市第三人民医院版式渲染
+    displayHospitalName() {
+      return this.hospitalName || '衡水市第三人民医院'
+    },
+    effectiveOrientation() {
+      return this.printOrientation === 'portrait' ? 'portrait' : 'landscape'
+    },
+    rootOrientationClass() {
+      return this.effectiveOrientation === 'portrait' ? 'page-slip-portrait' : 'page-slip-landscape'
+    },
+    isA4Paper() {
+      return this.paperType === 'a4'
+    },
+    isThirdSplitPaper() {
+      return this.paperType === 'third-split'
+    },
+    renderCopies() {
+      return 1
+    },
+    pageSizeForPrint() {
+      if (this.isA4Paper) {
+        return this.effectiveOrientation === 'portrait' ? '210mm 297mm' : '297mm 210mm'
+      }
+      return this.effectiveOrientation === 'portrait' ? '210mm 99mm' : '297mm 99mm'
+    }
+  },
   methods: {
+    formatDateTime(v) {
+      if (!v) return ''
+      const d = new Date(v)
+      if (isNaN(d.getTime())) return v
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      const h = String(d.getHours()).padStart(2, '0')
+      const mm = String(d.getMinutes()).padStart(2, '0')
+      return `${y}${m}${day}${h}:${mm}`
+    },
+    formatDateOnly(v) {
+      if (!v) return ''
+      const d = new Date(v)
+      if (isNaN(d.getTime())) return v
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
+    },
+    formatQty(v) {
+      if (v == null || v === '') return ''
+      const n = Number(v)
+      return isNaN(n) ? v : n.toFixed(2)
+    },
+    formatPrice(v) {
+      if (v == null || v === '') return ''
+      const n = Number(v)
+      return isNaN(n) ? v : n.toFixed(4)
+    },
+    formatAmt(v) {
+      if (v == null || v === '') return ''
+      const n = Number(v)
+      return isNaN(n) ? v : n.toFixed(2)
+    },
     start() {
       // 确保医院名称已加载完成后再打印
       this.ensureHospitalNameLoaded().then(() => {
         // 等待Vue更新DOM
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundDepotOrderPrintRef, {}, 'A4')
+          this.$print(this.$refs.receiptRefundDepotOrderPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
         })
       }).catch(() => {
         // 即使加载失败也继续打印
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundDepotOrderPrintRef, {}, 'A4')
+          this.$print(this.$refs.receiptRefundDepotOrderPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
         })
       })
     }
@@ -91,63 +170,134 @@ export default {
 
 
 <style lang="stylus" media="print">
-@page {
-  size: auto;
-  margin: 0;
-}
+@page
+  size auto
+  margin 10mm
 
-@media print {
-  * {
-    color: #000 !important;
-  }
+@media print
+  *
+    color #000 !important
 
-  table {
-    width 100%
-    table-layout: fixed;
-    border-collapse: collapse;
-    border-spacing: 0;
-    text-align: center;
-  }
+  .refund-depot-order-print
+    width 100% !important
+    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-size 12px
 
-  table, tbody, thead {
-    width: 100% !important;
-  }
-
-  .refund-depot-order-print {
-    width: 100% !important;
-    font-size: 14px;
-  }
-
-  table, table tr th, table tr td {
-    border: 0.05rem solid #000;
-    font-size: 12px;
-  }
-
-}
+  .common-table th
+    background #fff !important
+    -webkit-print-color-adjust exact
+    print-color-adjust exact
 
 .refund-depot-order-print
-  padding 12px
-  line-height 1.6
+  padding 6px 8px
+  line-height 1.35
+  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
+  font-size 12px
+  break-inside avoid
+  page-break-inside avoid
 
-  .summary
-    display flex
-    flex-wrap wrap
+.print-copy-block
+  min-height 99mm
+  box-sizing border-box
+  display flex
+  flex-direction column
+  justify-content space-between
+  break-inside avoid
+  page-break-inside avoid
 
-    //.col1
-    //  width 33%
+.print-copy-block.is-third-split-copy
+  height 99mm
+  overflow hidden
 
-  .title
-    font-size 22px
-    text-align center
+.doc-title
+  text-align center
+  font-size 22px
+  margin-bottom 6px
+  font-weight bold
 
-  .common-table
-    td, th
-      border-color black
+.summary
+  display flex
+  flex-wrap wrap
+  margin-bottom 6px
 
-  .content
-    display flex
-    flex-wrap wrap
+.summary-item
+  box-sizing border-box
+  font-size 12px
+  padding 1px 0
+  white-space nowrap
+  overflow hidden
+  text-overflow ellipsis
 
-    //.col2
-    //  width 33%
+.summary-left
+  width 34%
+
+.summary-center
+  width 31%
+
+.summary-right
+  width 35%
+  text-align right
+
+.common-table
+  width 100%
+  table-layout fixed
+  border-collapse collapse
+  border-spacing 0
+
+.common-table .col-name
+  width 28%
+
+.common-table .col-spec
+  width 20%
+
+.common-table .col-batch
+  width 15%
+
+.common-table .col-qty
+  width 11%
+
+.common-table .col-price
+  width 13%
+
+.common-table .col-amt
+  width 13%
+
+.common-table th,
+.common-table td
+  border 1px solid #000
+  padding 2px 4px
+  font-size 12px
+
+.common-table th
+  text-align center
+  font-weight bold
+
+.common-table td:nth-child(1),
+.common-table td:nth-child(2),
+.common-table td:nth-child(3)
+  text-align left
+  white-space nowrap
+  overflow hidden
+  text-overflow ellipsis
+
+.num-cell
+  text-align right
+
+.total-row td
+  font-weight normal
+
+.total-label
+  text-align left
+
+.amount-line
+  display flex
+  justify-content space-between
+  margin-top 4px
+  font-size 12px
+
+.sign-block
+  display flex
+  justify-content space-between
+  margin-top 14px
+  font-size 12px
 </style>

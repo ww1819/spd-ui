@@ -2,7 +2,6 @@
   <div
     class="order-print receipt-print"
     ref="receiptOrderPrintRef"
-    hidden="hidden"
     :style="printStyle"
   >
     <!-- 标题：医院名称 + 物资入库单 -->
@@ -11,7 +10,7 @@
     </div>
 
     <!-- 基本信息区：单据号、供货商、入库日期、资金来源账户 -->
-    <div class="info-block">
+    <div class="info-block" :style="tableStyle">
       <div class="info-row">
         <span class="info-label">单据号</span>
         <span class="info-value">{{ row.billNo || '' }}</span>
@@ -28,6 +27,15 @@
 
     <!-- 耗材明细表：消耗品名称、规格、单位、数量、采购价、采购金额、产地 -->
     <table class="detail-table" :style="tableStyle">
+      <colgroup>
+        <col style="width: 24%;" />
+        <col style="width: 16%;" />
+        <col style="width: 6%;" />
+        <col style="width: 10%;" />
+        <col style="width: 14%;" />
+        <col style="width: 14%;" />
+        <col style="width: 16%;" />
+      </colgroup>
       <thead>
         <tr>
           <th>消耗品名称</th>
@@ -53,13 +61,13 @@
     </table>
 
     <!-- 合计：左侧“合计: 贰仟柒佰元”，右侧数字与采购金额列对齐 -->
-    <div class="total-row">
+    <div class="total-row" :style="tableStyle">
       <span class="total-left">合计: {{ row.totalAmtConverter || '' }}</span>
-      <span class="total-num">{{ row.totalAmt != null ? row.totalAmt : '' }}</span>
+      <span class="total-num">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</span>
     </div>
 
     <!-- 签字区：采购、保管、入库操作员 -->
-    <div class="sign-block">
+    <div class="sign-block" :style="tableStyle">
       <span class="sign-item">采购</span>
       <span class="sign-item">保管</span>
       <span class="sign-item">入库操作员 {{ row.inboundOperator || row.createBy || '' }}</span>
@@ -73,7 +81,14 @@ import { getDefaultTemplate } from '@/api/system/printSetting'
 
 export default {
   mixins: [hospitalNameMixin],
-  props: ['row', 'billType'],
+  props: {
+    row: Object,
+    billType: [String, Number],
+    printOrientation: {
+      type: String,
+      default: ''
+    }
+  },
   data() {
     return {
       printSetting: {
@@ -88,17 +103,26 @@ export default {
     }
   },
   computed: {
+    effectiveOrientation() {
+      const p = this.printOrientation
+      if (p === 'landscape' || p === 'portrait') return p
+      const o = this.printSetting && this.printSetting.orientation
+      if (o === 'landscape' || o === 'portrait') return o
+      return 'portrait'
+    },
     printStyle() {
       const m = this.printSetting
       const margin = `${m.marginTop || 0}mm ${m.marginRight || 0}mm ${m.marginBottom || 0}mm ${m.marginLeft || 0}mm`
       return {
         padding: margin,
-        fontSize: (m.fontSize || 14) + 'px'
+        fontSize: (m.fontSize || 14) + 'px',
+        fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif'
       }
     },
     tableStyle() {
       return {
-        fontSize: (this.printSetting.tableFontSize || 12) + 'px'
+        fontSize: (this.printSetting.tableFontSize || 12) + 'px',
+        fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif'
       }
     }
   },
@@ -131,7 +155,7 @@ export default {
     formatAmt(v) {
       if (v == null || v === '') return ''
       const n = Number(v)
-      return isNaN(n) ? v : String(Math.round(n))
+      return isNaN(n) ? v : n.toFixed(4)
     },
     loadPrintSetting() {
       const billType = this.billType || (this.row && this.row.billType) || 101
@@ -153,7 +177,7 @@ export default {
         this.$nextTick(() => {
           const el = this.$refs.receiptOrderPrintRef || this.$el
           if (!el) return
-          const pageSize = this.printSetting.orientation === 'landscape' ? 'A4 landscape' : 'A4'
+          const pageSize = this.effectiveOrientation === 'landscape' ? 'A4 landscape' : 'A4'
           if (typeof this.$print === 'function') {
             this.$print(el, {}, pageSize)
           } else {
@@ -179,21 +203,22 @@ export default {
   line-height 1.5
   max-width 800px
   margin 0 auto
+  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .doc-title
   font-size 22px
-  font-weight bold
+  font-weight normal
   text-align center
-  margin-bottom 16px
+  margin-bottom 6px
 
 .info-block
-  margin-bottom 12px
+  margin-bottom 6px
 
 .info-row
   display flex
   align-items center
   flex-wrap wrap
-  margin-bottom 6px
+  margin-bottom 2px
 
 .info-label
   min-width 90px
@@ -224,12 +249,26 @@ export default {
   text-align center
 
 .detail-table th
-  font-weight bold
+  font-weight normal
   background #f5f5f5
 
 .detail-table td
-  word-break break-all
+  word-break normal
   overflow hidden
+
+/* 名称、规格、单位、产地：内容左对齐且不换行 */
+.detail-table td:nth-child(1),
+.detail-table td:nth-child(2),
+.detail-table td:nth-child(3),
+.detail-table td:nth-child(7)
+  text-align left
+  white-space nowrap
+
+/* 数量、采购价、采购金额：内容右对齐 */
+.detail-table td:nth-child(4),
+.detail-table td:nth-child(5),
+.detail-table td:nth-child(6)
+  text-align right
 
 .total-row
   display flex
@@ -266,9 +305,11 @@ export default {
     width 100% !important
     max-width none
     font-size 14px
+    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
 
   .doc-title
     font-size 22px
+    font-weight normal !important
 
   .detail-table
     width 100% !important
@@ -279,11 +320,30 @@ export default {
   .detail-table td
     border 1px solid #000
     overflow hidden
-    word-wrap break-word
-    word-break break-all
+    word-wrap normal
+    word-break normal
+
+  .detail-table th
+    font-weight normal !important
 
   .detail-table th
     background #f5f5f5 !important
     -webkit-print-color-adjust exact
     print-color-adjust exact
+
+  /* 列名统一居中 */
+  .detail-table th
+    text-align center !important
+
+  .detail-table td:nth-child(1),
+  .detail-table td:nth-child(2),
+  .detail-table td:nth-child(3),
+  .detail-table td:nth-child(7)
+    text-align left !important
+    white-space nowrap !important
+
+  .detail-table td:nth-child(4),
+  .detail-table td:nth-child(5),
+  .detail-table td:nth-child(6)
+    text-align right !important
 </style>

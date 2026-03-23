@@ -1,63 +1,72 @@
-﻿<template>
-  <div class="refund-goods-print" ref="receiptRefundGoodsPrintRef" hidden="hidden">
-<!--    <div class="title" style="padding-top: 15px">入库单</div>-->
-    <div style="font-size: 22px;text-align: center;">
-      <span v-if="hospitalName">{{ hospitalName }}</span>采购退货单
-    </div>
-    <div class="summary">
-      <div class="col1" style="width:45%">单号: {{ row.billNo }}</div>
-      <div class="col1" style="width:30%">仓库: {{ row.warehouseName }}</div>
-      <div class="col1" style="width:25%">供应商: {{ row.supplierName }}</div>
-
-      <div class="col1" style="width:45%">申请时间: {{ row.billDate }}</div>
-      <div class="col1" style="width:30%">审核时间: {{ row.auditDate }}</div>
-      <div class="col1" style="width:25%">单位: 元</div>
-    </div>
-    <table class="common-table">
-      <tr>
-        <th>耗材编码</th>
-        <th>耗材名称</th>
-        <th>规格</th>
-<!--        <th>单位</th>-->
-        <th>单价</th>
-        <th>数量</th>
-        <th>金额</th>
-        <th>批号</th>
-        <th>有效期</th>
-        <th>厂家</th>
-        <th>耗材分类</th>
-      </tr>
-      <tr v-for="item in row.detailList">
-        <td>{{ item.materialCode || '' }}</td>
-        <td>{{ item.materialName || '' }}</td>
-        <td>{{ item.materialSpeci || '' }}</td>
-<!--        <td>{{ item.planQuantity }}</td>-->
-        <td>{{ formatAmount(item.price) }}</td>
-        <td>{{ item.qty || '' }}</td>
-        <td>{{ formatAmount(item.amt) }}</td>
-        <td>{{ item.batchNumber || '' }}</td>
-        <td>{{ item.periodDate || '' }}</td>
-        <td>{{ item.factoryName || '' }}</td>
-        <td>{{ item.warehouseCategoryName || '' }}</td>
-      </tr>
-      <tr>
-        <td>本页小计：</td>
-        <td colspan="3"></td>
-        <td >{{ row.totalQty }}</td>
-        <td >{{ formatAmount(row.totalAmt) }}</td>
-        <td colspan="4"></td>
-      </tr>
-      <tr>
-        <td colspan="4" style="text-align: left;">合计金额：（大写）：{{ row.totalAmtConverter }}</td>
-        <td colspan="2">（小写）：</td>
-        <td colspan="4">{{ formatAmount(row.totalAmt) }}</td>
-      </tr>
-    </table>
-    <div class="foot" style="padding-top: 15px">
-      <div class="content">
-        <div class="col2" style="width:45%">制单人: </div>
-        <div class="col2" style="width:30%">复核人: </div>
-        <div class="col2" style="width:25%">验收人: </div>
+<template>
+  <div class="refund-goods-print" ref="receiptRefundGoodsPrintRef">
+    <div
+      v-for="copyIndex in renderCopies"
+      :key="copyIndex"
+      class="print-copy-block"
+      :class="{ 'is-third-split-copy': isThirdSplitPaper }"
+    >
+      <div class="doc-title">
+        <span v-if="hospitalName">{{ hospitalName }}</span>采购退货单
+      </div>
+      <div class="summary">
+        <div class="summary-item">单号: {{ row.billNo || '' }}</div>
+        <div class="summary-item">仓库: {{ row.warehouseName || '' }}</div>
+        <div class="summary-item">供应商: {{ row.supplierName || '' }}</div>
+        <div class="summary-item">申请时间: {{ row.billDate || '' }}</div>
+        <div class="summary-item">审核时间: {{ row.auditDate || '' }}</div>
+        <div class="summary-item summary-right">单位: 元</div>
+      </div>
+      <table class="common-table">
+        <colgroup>
+          <col class="col-name" />
+          <col class="col-unit" />
+          <col class="col-spec" />
+          <col class="col-qty" />
+          <col class="col-price" />
+          <col class="col-amt" />
+          <col class="col-batch" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>单位</th>
+            <th>规格</th>
+            <th>数量</th>
+            <th>退货价</th>
+            <th>退货金额</th>
+            <th>批号</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(item, idx) in (row.detailList || [])" :key="idx">
+            <td>{{ item.materialName || '' }}</td>
+            <td>{{ item.unitName || '' }}</td>
+            <td>{{ item.materialSpeci || '' }}</td>
+            <td class="num-cell">{{ formatQty(item.qty) }}</td>
+            <td class="num-cell">{{ formatPrice(item.price) }}</td>
+            <td class="num-cell">{{ formatPrice(item.amt) }}</td>
+            <td>{{ item.batchNumber || '' }}</td>
+          </tr>
+          <tr class="subtotal-row">
+            <td class="left-cell">合计:</td>
+            <td></td>
+            <td></td>
+            <td class="num-cell">{{ formatQty(row.totalQty) }}</td>
+            <td></td>
+            <td class="num-cell">{{ formatPrice(row.totalAmt) }}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="amount-row">
+        <span>合计金额（大写）: {{ row.totalAmtConverter || '' }}</span>
+        <span>（小写）: {{ formatPrice(row.totalAmt) }}</span>
+      </div>
+      <div class="foot">
+        <span>操作员</span>
+        <span>合计:</span>
+        <span>{{ formatPrice(row.totalAmt) }}</span>
       </div>
     </div>
   </div>
@@ -69,23 +78,56 @@ import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 
 export default {
   mixins: [hospitalNameMixin],
-  props: ['row'],
+  props: {
+    row: {
+      type: Object,
+      default: () => ({})
+    },
+    printOrientation: {
+      type: String,
+      default: 'landscape'
+    },
+    paperType: {
+      type: String,
+      default: 'third-split'
+    }
+  },
+  computed: {
+    effectiveOrientation() {
+      return this.printOrientation === 'portrait' ? 'portrait' : 'landscape'
+    },
+    isA4Paper() {
+      return this.paperType === 'a4'
+    },
+    isThirdSplitPaper() {
+      return this.paperType === 'third-split'
+    },
+    renderCopies() {
+      return 1
+    },
+    pageSizeForPrint() {
+      if (this.isA4Paper) {
+        return this.effectiveOrientation === 'portrait' ? '210mm 297mm' : '297mm 210mm'
+      }
+      return this.effectiveOrientation === 'portrait' ? '210mm 99mm' : '297mm 99mm'
+    }
+  },
   methods: {
     start() {
       // 确保医院名称已加载完成后再打印
       this.ensureHospitalNameLoaded().then(() => {
         // 等待Vue更新DOM
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundGoodsPrintRef, {}, 'A4')
+          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
         })
       }).catch(() => {
         // 即使加载失败也继续打印
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundGoodsPrintRef, {}, 'A4')
+          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
         })
       })
     },
-    formatAmount(value) {
+    formatQty(value) {
       if (value === null || value === undefined || value === '') {
         return ''
       }
@@ -94,6 +136,16 @@ export default {
         return ''
       }
       return num.toFixed(2)
+    },
+    formatPrice(value) {
+      if (value === null || value === undefined || value === '') {
+        return ''
+      }
+      const num = parseFloat(value)
+      if (isNaN(num)) {
+        return ''
+      }
+      return num.toFixed(4)
     }
   }
 }
@@ -101,63 +153,134 @@ export default {
 
 
 <style lang="stylus" media="print">
-@page {
-  size: auto;
-  margin: 0;
-}
-
-@media print {
-  * {
-    color: #000 !important;
-  }
-
-  table {
-    width 100%
-    table-layout: fixed;
-    border-collapse: collapse;
-    border-spacing: 0;
-    text-align: center;
-  }
-
-  table, tbody, thead {
-    width: 100% !important;
-  }
-
-  .refund-goods-print {
-    width: 100% !important;
-    font-size: 14px;
-  }
-
-  table, table tr th, table tr td {
-    border: 0.05rem solid #000;
-    font-size: 12px;
-  }
-
-}
-
 .refund-goods-print
-  padding 12px
-  line-height 1.6
+  padding 8px
+  line-height 1.35
+  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
+  font-size 12px
 
-  .summary
-    display flex
-    flex-wrap wrap
+.print-copy-block
+  min-height 99mm
+  box-sizing border-box
+  display flex
+  flex-direction column
+  justify-content space-between
+  break-inside avoid
+  page-break-inside avoid
 
-    //.col1
-    //  width 33%
+.print-copy-block.is-third-split-copy
+  height 99mm
+  overflow hidden
 
-  .title
-    font-size 22px
-    text-align center
+.doc-title
+  font-size 22px
+  text-align center
+  margin-bottom 6px
 
-  .common-table
-    td, th
-      border-color black
+.summary
+  display flex
+  flex-wrap wrap
+  margin-bottom 6px
 
-  .content
-    display flex
-    flex-wrap wrap
+.summary-item
+  width 33.33%
+  white-space nowrap
 
-    //.col2
-    //  width 33%
+.summary-right
+  text-align right
+
+.common-table
+  width 100%
+  table-layout fixed
+  border-collapse collapse
+  border-spacing 0
+
+.common-table .col-name
+  width 24%
+
+.common-table .col-unit
+  width 6%
+
+.common-table .col-spec
+  width 16%
+
+.common-table .col-qty
+  width 12%
+
+.common-table .col-price
+  width 15%
+
+.common-table .col-amt
+  width 15%
+
+.common-table .col-batch
+  width 12%
+
+.common-table th,
+.common-table td
+  border 1px solid #000
+  padding 2px 4px
+  font-size 12px
+  white-space nowrap
+  overflow hidden
+
+.common-table th
+  text-align center
+  font-weight normal
+
+.common-table td:nth-child(1),
+.common-table td:nth-child(2),
+.common-table td:nth-child(3),
+.common-table td:nth-child(7)
+  text-align left
+
+.num-cell
+  text-align right
+
+.left-cell
+  text-align left
+
+.amount-row
+  display flex
+  justify-content space-between
+  margin-top 4px
+  white-space nowrap
+
+.foot
+  display flex
+  justify-content space-between
+  margin-top 12px
+  white-space nowrap
+
+@page
+  size auto
+  margin 0
+
+@media print
+  *
+    color #000 !important
+
+  .refund-goods-print
+    width 100% !important
+    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+
+  .common-table th,
+  .common-table td
+    border 1px solid #000
+    white-space nowrap !important
+    word-break normal !important
+
+  .common-table th
+    text-align center !important
+
+  .common-table td:nth-child(1),
+  .common-table td:nth-child(2),
+  .common-table td:nth-child(3),
+  .common-table td:nth-child(7)
+    text-align left !important
+
+  .common-table td:nth-child(4),
+  .common-table td:nth-child(5),
+  .common-table td:nth-child(6)
+    text-align right !important
 </style>
