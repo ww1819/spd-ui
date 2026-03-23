@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container hospital-scan-page">
     <div class="page-layout">
       <!-- 左侧搜索和列表区域 -->
@@ -7,35 +7,34 @@
           <div slot="header" class="card-header">
             <span>搜索条件</span>
       </div>
-          <el-form :model="queryParams" ref="queryForm" size="small" label-width="80px">
-            <el-form-item label="住院号">
+          <el-form :model="queryParams" ref="queryForm" size="small" label-width="80px" class="query-form">
+            <el-form-item>
               <div style="display: flex; align-items: center; gap: 8px;">
               <el-input 
                   v-model="queryParams.hospitalNumber"
-                  placeholder="请输入住院号"
+                  placeholder="住院号"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 60%"
                 />
-                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery" style="width: 35%">
+                <el-button type="primary" size="small" @click="handleQuery" style="width: 35%">
                   搜索
                 </el-button>
               </div>
             </el-form-item>
-            <el-form-item label="审核状态">
-              <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable style="width: 60%">
-                <el-option label="全部" value="" />
+            <el-form-item>
+              <el-select v-model="queryParams.auditStatus" placeholder="审核状态" clearable style="width: 60%">
                 <el-option label="未审核" value="1" />
                 <el-option label="已审核" value="2" />
               </el-select>
             </el-form-item>
-            <el-form-item label="执行科室">
+            <el-form-item>
               <SelectDepartment v-model="queryParams.execDeptId" style="width: 60%" />
             </el-form-item>
-            <el-form-item label="申请科室">
+            <el-form-item>
               <SelectDepartment v-model="queryParams.applyDeptId" style="width: 60%" />
             </el-form-item>
-            <el-form-item label="日期">
+            <el-form-item>
               <div style="display: flex; align-items: center; width: 100%; gap: 4px; justify-content: flex-start;">
                 <el-date-picker
                   v-model="queryParams.beginDate"
@@ -67,6 +66,7 @@
             :data="orderList"
             v-loading="loading"
             border
+            stripe
             height="calc(100vh - 380px)"
             highlight-current-row
             @current-change="handleRowClick"
@@ -78,7 +78,6 @@
                   v-if="scope.row.orderStatus === 1"
                   type="text"
                   size="small"
-                  icon="el-icon-delete"
                   style="color: #f56c6c;"
                   @click="handleDeleteOrder(scope.row)"
                 >
@@ -88,7 +87,6 @@
                   v-if="scope.row.orderStatus === 2"
                   type="text"
                   size="small"
-                  icon="el-icon-refresh-left"
                   style="color: #409eff;"
                   @click="handleUnauditOrder(scope.row)"
                 >

@@ -1,23 +1,23 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="工作组编码" prop="postCode">
+    <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
+      <el-form-item prop="postCode">
         <el-input
           v-model="queryParams.postCode"
-          placeholder="请输入工作组编码"
+          placeholder="工作组编码"
           clearable
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="工作组名称" prop="postName">
+      <el-form-item prop="postName">
         <el-input
           v-model="queryParams.postName"
-          placeholder="请输入工作组名称"
+          placeholder="工作组名称"
           clearable
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="状态" prop="status">
+      <el-form-item prop="status">
         <el-select v-model="queryParams.status" placeholder="工作组状态" clearable>
           <el-option
             v-for="dict in dict.type.sys_normal_disable"
@@ -28,8 +28,8 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+        <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -37,8 +37,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="small"
           @click="handleAdd"
           v-hasPermi="['system:post:add']"
@@ -46,9 +44,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
+          type="primary"
           size="small"
           :disabled="single"
           @click="handleUpdate"
@@ -57,9 +53,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
+          type="primary"
           size="small"
           :disabled="multiple"
           @click="handleDelete"
@@ -68,9 +62,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
           v-hasPermi="['system:post:export']"
@@ -78,9 +70,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-refresh"
+          type="primary"
           size="small"
           @click="handleSyncWarehouse"
           v-hasPermi="['system:post:sync']"
@@ -88,9 +78,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-refresh"
+          type="primary"
           size="small"
           @click="handleSyncDepartment"
           v-hasPermi="['system:post:sync']"
@@ -98,9 +86,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-refresh"
+          type="primary"
           size="small"
           @click="handleSyncMenu"
           v-hasPermi="['system:post:sync']"
@@ -109,7 +95,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="postList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="postList" stripe @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column type="index" label="序号" align="center" width="80" :index="indexMethod" />
       <el-table-column label="编码" align="center" prop="postCode" />
@@ -130,21 +116,18 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:post:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:post:remove']"
           >删除</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-s-check"
             @click="handleAuth(scope.row)"
             v-hasPermi="['system:post:edit']"
           >授权</el-button>
@@ -164,10 +147,10 @@
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="工作组名称" prop="postName">
-          <el-input v-model="form.postName" placeholder="请输入工作组名称" />
+          <el-input v-model="form.postName" placeholder="工作组名称" />
         </el-form-item>
         <el-form-item label="工作组编码" prop="postCode">
-          <el-input v-model="form.postCode" placeholder="请输入编码名称" />
+          <el-input v-model="form.postCode" placeholder="编码名称" />
         </el-form-item>
         <el-form-item label="工作组排序" prop="postSort">
           <el-input-number v-model="form.postSort" controls-position="right" :min="0" />
@@ -182,7 +165,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+          <el-input v-model="form.remark" type="textarea" placeholder="内容" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">

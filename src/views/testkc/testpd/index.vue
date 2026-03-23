@@ -16,10 +16,10 @@
             </el-select>
           </el-form-item>
           <el-form-item label="耗材名称：">
-            <el-input v-model="searchForm.name" placeholder="请输入耗材名称"></el-input>
+            <el-input v-model="searchForm.name" placeholder="耗材名称"></el-input>
           </el-form-item>
           <el-form-item label="耗材代号：">
-            <el-input v-model="searchForm.code" placeholder="请输入耗材代号"></el-input>
+            <el-input v-model="searchForm.code" placeholder="耗材代号"></el-input>
           </el-form-item>
           <el-form-item label="供应商：">
             <el-select v-model="searchForm.supplier" placeholder="请选择供应商">

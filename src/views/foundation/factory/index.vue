@@ -24,13 +24,13 @@
       <el-col :span="18">
     <!-- 查询条件容器 -->
     <div class="query-container" v-show="showSearch">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="68px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="20">
           <el-col :span="6">
-            <el-form-item label="厂家编码" prop="factoryCode" label-width="100px">
+            <el-form-item prop="factoryCode">
               <el-input
                 v-model="queryParams.factoryCode"
-                placeholder="请输入厂家编码"
+                placeholder="厂家编码"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -38,10 +38,10 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="厂家名称" prop="factoryName" label-width="100px">
+            <el-form-item prop="factoryName">
               <el-input
                 v-model="queryParams.factoryName"
-                placeholder="请输入厂家名称"
+                placeholder="厂家名称"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -55,20 +55,14 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="small"
+          type="primary" size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:factory:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:factory:edit']"
@@ -76,10 +70,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:factory:remove']"
@@ -87,10 +78,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-refresh"
-          size="small"
+          type="primary" size="small"
           :disabled="multiple"
           @click="handleUpdateReferred"
           v-hasPermi="['foundation:factory:updateReferred']"
@@ -98,10 +86,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
+          type="primary" size="small"
           @click="handleExport"
           v-hasPermi="['foundation:factory:export']"
         >导出</el-button>
@@ -109,7 +94,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleQuery"
         >搜索</el-button>
@@ -117,7 +101,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="factoryList" :row-class-name="factoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%">
+    <el-table v-loading="loading" :data="factoryList" :row-class-name="factoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip />
       <el-table-column label="厂家编码" align="center" prop="factoryCode" width="150" show-overflow-tooltip />
@@ -139,14 +123,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:factory:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:factory:remove']"
           >删除</el-button>
@@ -175,22 +157,22 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="厂家编码" prop="factoryCode">
-                <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="请输入厂家编码" />
+                <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="厂家编码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="厂家名称" prop="factoryName">
-                <el-input v-model="form.factoryName" @input="factoryNameChange" placeholder="请输入厂家名称" />
+                <el-input v-model="form.factoryName" @input="factoryNameChange" placeholder="厂家名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="厂家简码" prop="factoryReferredCode">
-                <el-input v-model="form.factoryReferredCode" :disabled="true" placeholder="请输入厂家名称" />
+                <el-input v-model="form.factoryReferredCode" :disabled="true" placeholder="厂家名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="使用状态" prop="factoryStatus">
-                <el-select v-model="form.factoryStatus" placeholder="请选择使用状态" style="width: 100%">
+                <el-select v-model="form.factoryStatus" placeholder="使用状态" style="width: 100%">
                   <el-option
                     v-for="dict in dict.type.is_use_status"
                     :key="dict.value"
@@ -205,17 +187,17 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="厂家联系方式" prop="factoryContact">
-                <el-input v-model="form.factoryContact" placeholder="请输入厂家联系方式" />
+                <el-input v-model="form.factoryContact" placeholder="厂家联系方式" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="厂家地址" prop="factoryAddress">
-                <el-input v-model="form.factoryAddress" type="textarea" placeholder="请输入厂家地址" />
+                <el-input v-model="form.factoryAddress" type="textarea" placeholder="厂家地址" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="备注" prop="remark">
-                <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
+                <el-input v-model="form.remark" type="textarea" placeholder="备注" />
               </el-form-item>
             </el-col>
           </el-row>

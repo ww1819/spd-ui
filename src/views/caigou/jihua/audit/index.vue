@@ -1,22 +1,22 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
       <el-row class="query-row-left">
         <el-col :span="24">
-          <el-form-item label="计划单号" prop="planNo" class="query-item-inline">
+          <el-form-item prop="planNo" class="query-item-inline">
             <el-input v-model="queryParams.planNo"
-                      placeholder="请输入计划单号"
+                      placeholder="计划单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+          <el-form-item prop="supplierId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectSupplier v-model="queryParams.supplierId"/>
             </div>
           </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+          <el-form-item prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectWarehouse v-model="queryParams.warehouseId"/>
             </div>
@@ -25,7 +25,7 @@
       </el-row>
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="制单日期" style="display: flex; align-items: center;">
+          <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -46,8 +46,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="planStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.planStatus" placeholder="全部"
+          <el-form-item prop="planStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.planStatus" placeholder="单据状态"
                        clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -63,9 +63,7 @@
     <el-row :gutter="10" class="mb8" style="padding-top: 10px">
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-check"
+          type="primary"
           size="small"
           @click="handleBatchAudit"
           :disabled="multiple"
@@ -73,18 +71,16 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -94,7 +90,7 @@
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" 
               height="58vh" 
-              border
+              stripe border
               style="width: 100%">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
@@ -157,13 +153,11 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-view"
             @click="handleView(scope.row)"
           >查看</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-check"
             @click="handleAudit(scope.row)"
             v-if="scope.row.planStatus == '1' || scope.row.planStatus == 1"
           >审核</el-button>
@@ -196,7 +190,7 @@
           <el-input
             v-model="auditForm.auditOpinion"
             type="textarea"
-            placeholder="请输入审核意见"
+            placeholder="审核意见"
             :rows="4"
             maxlength="500"
             show-word-limit
@@ -266,7 +260,7 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="总金额" prop="totalAmount">
-                    <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
+                    <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
                   </el-form-item>
                 </el-col>
               </el-row>

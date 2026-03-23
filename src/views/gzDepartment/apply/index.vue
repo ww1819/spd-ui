@@ -1,12 +1,12 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-form-item label="申领单号" prop="applyBillNo" label-width="100px">
+          <el-form-item prop="applyBillNo" label-width="100px">
             <el-input
               v-model="queryParams.applyBillNo"
-              placeholder="请输入申领单号"
+              placeholder="申领单号"
               clearable
               @keyup.enter.native="handleQuery"
             />
@@ -14,26 +14,26 @@
         </el-col>
 
         <el-col :span="6">
-          <el-form-item label="申请日期" prop="applyBillDate" label-width="100px">
+          <el-form-item prop="applyBillDate" label-width="100px">
             <el-date-picker clearable
                             v-model="queryParams.applyBillDate"
                             type="date"
                             value-format="yyyy-MM-dd"
-                            placeholder="请选择申请日期">
+                            placeholder="申请日期">
             </el-date-picker>
           </el-form-item>
         </el-col>
 
         <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId" label-width="100px">
+          <el-form-item prop="warehouseId" label-width="100px">
             <SelectWarehouse v-model="queryParams.warehouseId"/>
           </el-form-item>
         </el-col>
 
         <el-col :span="6" label-width="100px">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+            <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -43,8 +43,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="small"
           @click="handleAdd"
           v-hasPermi="['gzDepartment:apply:add']"
@@ -52,9 +50,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
           v-hasPermi="['gzDepartment:apply:export']"
@@ -63,7 +59,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="applyList" @selection-change="handleSelectionChange" height="54vh" border>
+    <el-table v-loading="loading" :data="applyList" @selection-change="handleSelectionChange" height="54vh" border stripe>
       <el-table-column label="申领单号" align="center" prop="applyBillNo" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -89,14 +85,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['gzDepartment:apply:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['gzDepartment:apply:remove']"
           >删除</el-button>
@@ -191,7 +185,7 @@
 
           <el-table-column label="数量" prop="qty" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
+              <el-input clearable v-model="scope.row.qty" placeholder="数量"
                         onkeyup="value=value.replace(/\D/g,'')"
                         onafterpaste="value=value.replace(/\D/g,'')"
                         @blur="form.result=$event.target.value"
@@ -201,31 +195,31 @@
           </el-table-column>
           <el-table-column label="单价" prop="unitPrice" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number' @input="priceChange(scope.row)" placeholder="请输入单价" />
+              <el-input v-model="scope.row.unitPrice" type='number' @input="priceChange(scope.row)" placeholder="单价" />
             </template>
           </el-table-column>
 
           <el-table-column label="金额" prop="amt" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
             </template>
           </el-table-column>
 
           <el-table-column label="批次号" prop="batchNo" width="450" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" label-width="200px" placeholder="请输入批次号" />
+              <el-input v-model="scope.row.batchNo" :disabled="true" label-width="200px" placeholder="批次号" />
             </template>
           </el-table-column>
 
 
           <el-table-column label="批号" prop="batchNumer" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumer" placeholder="请输入批号" />
+              <el-input v-model="scope.row.batchNumer" placeholder="批号" />
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
         </el-table>

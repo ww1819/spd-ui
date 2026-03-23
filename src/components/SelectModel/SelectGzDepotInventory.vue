@@ -8,7 +8,7 @@
             <el-button @click="handleClose" class="close-btn">关闭</el-button>
           </div>
           <div class="modal-body">
-            <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+            <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
         <el-row :gutter="20">
 
           <el-col :span="6">
@@ -21,7 +21,7 @@
             <el-form-item label="院内码" prop="inHospitalCode" label-width="100px">
               <el-input
                 v-model="queryParams.inHospitalCode"
-                placeholder="请输入院内码（支持模糊搜索）"
+                placeholder="院内码（支持模糊搜索）"
                 clearable
                 @keyup.enter.native="handleQuery"
               />
@@ -47,7 +47,7 @@
             <el-form-item label="入库批次号" prop="batchNo" label-width="100px">
               <el-input
                 v-model="queryParams.batchNo"
-                placeholder="请输入入库批次号"
+                placeholder="入库批次号"
                 clearable
                 @keyup.enter.native="handleQuery"
               />

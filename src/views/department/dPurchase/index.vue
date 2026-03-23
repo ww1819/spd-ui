@@ -1,31 +1,31 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="申购单号" prop="purchaseBillNo" class="query-item-inline">
+            <el-form-item prop="purchaseBillNo" class="query-item-inline">
               <el-input
                 v-model="queryParams.purchaseBillNo"
-                placeholder="请输入申购单号"
+                placeholder="申购单号"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+            <el-form-item prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId"/>
               </div>
             </el-form-item>
-            <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+            <el-form-item prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
             </el-form-item>
-            <el-form-item label="单据状态" prop="purchaseBillStatus" class="query-item-inline">
-              <el-select v-model="queryParams.purchaseBillStatus" placeholder="全部"
+            <el-form-item prop="purchaseBillStatus" class="query-item-inline">
+              <el-select v-model="queryParams.purchaseBillStatus" placeholder="单据状态"
                          :disabled="false"
                          clearable
                          style="width: 180px">
@@ -41,7 +41,7 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="12">
-            <el-form-item label="制单日期" style="display: flex; align-items: center;">
+            <el-form-item style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -69,8 +69,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="medium"
           @click="handleAdd"
           v-hasPermi="['department:purchase:add']"
@@ -78,9 +76,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['department:purchase:export']"
@@ -89,14 +85,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -104,7 +99,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="purchaseList" :row-class-name="rowPurchaseIndex" @selection-change="handleSelectionChange" height="54vh" border>
+    <el-table v-loading="loading" :data="purchaseList" :row-class-name="rowPurchaseIndex" @selection-change="handleSelectionChange" height="54vh" border stripe>
       <el-table-column type="selection" width="60" align="center" resizable />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="申购单号" align="center" prop="purchaseBillNo" width="180" show-overflow-tooltip resizable>
@@ -151,7 +146,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-view"
               @click="handleView(scope.row)"
               v-if="scope.row.purchaseBillStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -159,7 +153,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['department:purchase:edit']"
               v-if="scope.row.purchaseBillStatus != 2"
@@ -168,7 +161,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['department:purchase:remove']"
               v-if="scope.row.purchaseBillStatus != 2"
@@ -334,7 +326,7 @@
                 </el-table-column>
                 <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input v-model="scope.row.qty" placeholder="请输入数量"
+                    <el-input v-model="scope.row.qty" placeholder="数量"
                               @input="qtyChange(scope.row)"
                     />
                   </template>
@@ -362,7 +354,7 @@
                 </el-table-column>
                 <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+                    <el-input v-model="scope.row.remark" placeholder="备注" />
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" align="center" width="100" fixed="right">

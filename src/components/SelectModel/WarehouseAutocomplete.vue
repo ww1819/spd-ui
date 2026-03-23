@@ -2,7 +2,7 @@
   <el-autocomplete
     v-model="warehouseName"
     :fetch-suggestions="querySearchAsync"
-    placeholder="请输入内容"
+    placeholder="内容"
     :trigger-on-focus="false"
   ></el-autocomplete>
 </template>

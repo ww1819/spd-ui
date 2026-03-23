@@ -1,26 +1,26 @@
 <template>
   <div class="app-container">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="单号" prop="consumeBillNo" class="query-item-inline">
+            <el-form-item prop="consumeBillNo" class="query-item-inline">
               <el-input
                 v-model="queryParams.consumeBillNo"
-                placeholder="请输入单号"
+                placeholder="单号"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+            <el-form-item prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
             </el-form-item>
-            <el-form-item label="单据状态" prop="consumeBillStatus" class="query-item-inline">
-              <el-select v-model="queryParams.consumeBillStatus" placeholder="全部"
+            <el-form-item prop="consumeBillStatus" class="query-item-inline">
+              <el-select v-model="queryParams.consumeBillStatus" placeholder="单据状态"
                          :disabled="false"
                          clearable
                          style="width: 180px">
@@ -36,7 +36,7 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="12">
-            <el-form-item label="日期" style="display: flex; align-items: center;">
+            <el-form-item style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -64,8 +64,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="medium"
           @click="handleAdd"
           v-hasPermi="['department:batchConsume:add']"
@@ -73,9 +71,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['department:batchConsume:export']"
@@ -84,15 +80,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          icon="el-icon-check"
+          type="primary"
           size="medium"
           :disabled="multiple"
           @click="handleBatchAudit"
@@ -101,7 +95,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -186,7 +180,7 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="备注" prop="remark" label-width="100px">
-                    <el-input v-model="form.remark" placeholder="请输入备注" style="width: 150px" />
+                    <el-input v-model="form.remark" placeholder="备注" style="width: 150px" />
                   </el-form-item>
                 </el-col>
               </el-row>

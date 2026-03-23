@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-card class="box-card">
       <div slot="header" class="clearfix">
@@ -6,11 +6,11 @@
       </div>
       
       <!-- 查询条件 -->
-      <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="100px">
+      <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" class="query-form">
         <el-form-item label="科室ID" prop="ksNo">
           <el-input
             v-model="queryParams.ksNo"
-            placeholder="请输入科室ID"
+            placeholder="科室ID"
             clearable
             size="small"
             style="width: 200px"

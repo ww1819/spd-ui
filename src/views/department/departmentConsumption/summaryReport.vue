@@ -1,40 +1,40 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="query-container">
       <div class="form-fields-container">
-        <el-form :model="searchForm" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+        <el-form :model="searchForm" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+              <el-form-item prop="departmentId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectDepartment v-model="searchForm.departmentId" />
                 </div>
               </el-form-item>
-              <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+              <el-form-item prop="materialId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectMaterial v-model="searchForm.materialId" />
                 </div>
               </el-form-item>
-              <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
-                <el-input v-model="searchForm.materialName" placeholder="请输入耗材名称" clearable style="width: 180px" />
+              <el-form-item prop="materialName" class="query-item-inline">
+                <el-input v-model="searchForm.materialName" placeholder="耗材名称" clearable style="width: 180px" />
               </el-form-item>
-              <el-form-item label="规格" prop="specification" class="query-item-inline">
-                <el-input v-model="searchForm.specification" placeholder="请输入规格" clearable style="width: 180px" />
+              <el-form-item prop="specification" class="query-item-inline">
+                <el-input v-model="searchForm.specification" placeholder="规格" clearable style="width: 180px" />
               </el-form-item>
-              <el-form-item label="型号" prop="model" class="query-item-inline">
-                <el-input v-model="searchForm.model" placeholder="请输入型号" clearable style="width: 180px" />
+              <el-form-item prop="model" class="query-item-inline">
+                <el-input v-model="searchForm.model" placeholder="型号" clearable style="width: 180px" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item label="HIS收费编码" prop="hisChargeCode" class="query-item-inline">
-                <el-input v-model="searchForm.hisChargeCode" placeholder="请输入HIS收费编码" clearable style="width: 180px" />
+              <el-form-item prop="hisChargeCode" class="query-item-inline">
+                <el-input v-model="searchForm.hisChargeCode" placeholder="HIS收费编码" clearable style="width: 180px" />
               </el-form-item>
-              <el-form-item label="患者住院号/门诊号" prop="patientId" class="query-item-inline">
-                <el-input v-model="searchForm.patientId" placeholder="请输入患者住院号/门诊号" clearable style="width: 180px" />
+              <el-form-item prop="patientId" class="query-item-inline">
+                <el-input v-model="searchForm.patientId" placeholder="患者住院号/门诊号" clearable style="width: 180px" />
               </el-form-item>
-              <el-form-item label="日期范围" prop="dateRange" class="query-item-inline">
+              <el-form-item prop="dateRange" class="query-item-inline">
                 <el-date-picker
                   v-model="searchForm.dateRange"
                   type="daterange"
@@ -56,14 +56,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleSearch"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="small"
           @click="resetSearch"
         >重置</el-button>
@@ -78,6 +77,7 @@
         :row-class-name="tableDataIndex"
         height="54vh"
         border
+        stripe
         show-summary
         :summary-method="getSummaries"
       >

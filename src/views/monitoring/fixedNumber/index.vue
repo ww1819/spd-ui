@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container fixed-number-page">
     <el-row :gutter="20">
       <!-- 左侧：仓库列表面板 -->
@@ -99,7 +99,7 @@
               </el-form-item>
               <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
                 <el-input v-model="queryParams.materialName"
-                          placeholder="请输入耗材名称"
+                          placeholder="耗材名称"
                           clearable
                           style="width: 300px"
                           @keyup.enter.native="handleQuery"
@@ -107,7 +107,7 @@
               </el-form-item>
               <el-form-item label="规格型号" prop="speci" class="query-item-inline">
                 <el-input v-model="queryParams.speci"
-                          placeholder="请输入规格型号"
+                          placeholder="规格型号"
                           clearable
                           style="width: 300px"
                           @keyup.enter.native="handleQuery"
@@ -115,7 +115,7 @@
               </el-form-item>
               <el-form-item label="实际数量" prop="actualQuantity" class="query-item-inline" v-show="false">
                 <el-input v-model="queryParams.actualQuantity"
-                          placeholder="请输入实际数量"
+                          placeholder="实际数量"
                           clearable
                           style="width: 180px"
                           @keyup.enter.native="handleQuery"
@@ -338,7 +338,7 @@
                       <el-form-item label="耗材名称" prop="materialName">
                         <el-input
                           v-model="addQueryParams.materialName"
-                          placeholder="请输入耗材名称"
+                          placeholder="耗材名称"
                           clearable
                           @keyup.enter.native="handleAddQuery"
                         />
@@ -348,7 +348,7 @@
                       <el-form-item label="规格型号" prop="speci">
                         <el-input
                           v-model="addQueryParams.speci"
-                          placeholder="请输入规格型号"
+                          placeholder="规格型号"
                           clearable
                           @keyup.enter.native="handleAddQuery"
                         />

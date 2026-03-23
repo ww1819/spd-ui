@@ -23,13 +23,13 @@
       <el-col :span="18">
     <!-- 查询条件容器 -->
     <div class="query-container" v-show="showSearch">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="68px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="20">
           <el-col :span="6">
-            <el-form-item label="科室编码" prop="code" label-width="100px">
+            <el-form-item prop="code">
               <el-input
                 v-model="queryParams.code"
-                placeholder="请输入科室编码"
+                placeholder="科室编码"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -37,10 +37,10 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="科室名称" prop="name" label-width="100px">
+            <el-form-item prop="name">
               <el-input
                 v-model="queryParams.name"
-                placeholder="请输入科室名称"
+                placeholder="科室名称"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -54,20 +54,14 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="small"
+          type="primary" size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:depart:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:depart:edit']"
@@ -75,10 +69,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:depart:remove']"
@@ -86,10 +77,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-refresh"
-          size="small"
+          type="primary" size="small"
           :disabled="multiple"
           @click="handleUpdateReferred"
           v-hasPermi="['foundation:depart:updateReferred']"
@@ -97,10 +85,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
+          type="primary" size="small"
           @click="handleExport"
           v-hasPermi="['foundation:depart:export']"
         >导出</el-button>
@@ -108,7 +93,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleQuery"
         >搜索</el-button>
@@ -116,7 +100,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="departList" :row-class-name="departIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%">
+    <el-table v-loading="loading" :data="departList" :row-class-name="departIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip />
       <el-table-column label="科室编码" align="center" prop="code" width="150" show-overflow-tooltip />
@@ -126,14 +110,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:depart:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:depart:remove']"
           >删除</el-button>
@@ -162,12 +144,12 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="科室编码" prop="code">
-                <el-input v-model="form.code" placeholder="请输入科室编码" />
+                <el-input v-model="form.code" placeholder="科室编码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="科室名称" prop="name">
-                <el-input v-model="form.name" placeholder="请输入科室名称" />
+                <el-input v-model="form.name" placeholder="科室名称" />
               </el-form-item>
             </el-col>
           </el-row>

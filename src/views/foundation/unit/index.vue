@@ -1,22 +1,22 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-form-item label="单位编码" prop="unitCode">
+          <el-form-item prop="unitCode">
             <el-input
               v-model="queryParams.unitCode"
-              placeholder="请输入单位编码"
+              placeholder="单位编码"
               clearable
               @keyup.enter.native="handleQuery"
             />
           </el-form-item>
         </el-col>
         <el-col :span="6">
-          <el-form-item label="单位名称" prop="unitName">
+          <el-form-item prop="unitName">
             <el-input
               v-model="queryParams.unitName"
-              placeholder="请输入单位名称"
+              placeholder="单位名称"
               clearable
               @keyup.enter.native="handleQuery"
             />
@@ -24,8 +24,8 @@
         </el-col>
         <el-col :span="6">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+            <el-button size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -34,20 +34,14 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="small"
+          type="primary" size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:unit:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
+          type="primary" size="small"
           @click="handleExport"
           v-hasPermi="['foundation:unit:export']"
         >导出</el-button>
@@ -55,7 +49,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="unitList" :row-class-name="unitIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+    <el-table v-loading="loading" :data="unitList" :row-class-name="unitIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="50"/>
       <el-table-column label="单位编码" align="center" prop="unitCode" width="120"/>
@@ -76,14 +70,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:unit:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:unit:remove']"
           >删除</el-button>
@@ -112,7 +104,7 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="单位名称" prop="unitName">
-                <el-input v-model="form.unitName" placeholder="请输入单位名称" style="width: 100%" />
+                <el-input v-model="form.unitName" placeholder="单位名称" style="width: 100%" />
               </el-form-item>
             </el-col>
           </el-row>

@@ -1,12 +1,12 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
       <el-row :gutter="20">
         <el-col :span="6">
           <el-form-item label="业务单号" prop="stockNo" label-width="100px">
             <el-input v-model="queryParams.stockNo"
-                      placeholder="请输入业务单号"
+                      placeholder="业务单号"
                       clearable
                       @keyup.enter.native="handleQuery"
             />
@@ -64,7 +64,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="inList" @selection-change="handleSelectionChange" height="54vh" border>
+    <el-table v-loading="loading" :data="inList" @selection-change="handleSelectionChange" height="54vh" border stripe>
       <el-table-column label="业务单号" align="center" prop="stockNo" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -228,7 +228,7 @@
 
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
+              <el-input clearable v-model="scope.row.qty" placeholder="数量"
                         onkeyup="value=value.replace(/\D/g,'')"
                         onafterpaste="value=value.replace(/\D/g,'')"
                         @blur="form.result=$event.target.value"
@@ -239,25 +239,25 @@
 
           <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.price" type='number' @input="priceChange(scope.row)" placeholder="请输入价格" />
+              <el-input v-model="scope.row.price" type='number' @input="priceChange(scope.row)" placeholder="价格" />
             </template>
           </el-table-column>
 
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
             </template>
           </el-table-column>
 
           <el-table-column label="批次号" prop="batchNo" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" label-width="200px" placeholder="请输入批次号" />
+              <el-input v-model="scope.row.batchNo" :disabled="true" label-width="200px" placeholder="批次号" />
             </template>
           </el-table-column>
 
           <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="请输入批号" />
+              <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="批号" />
             </template>
           </el-table-column>
           <el-table-column label="生产日期" prop="beginTime" width="240" show-overflow-tooltip resizable>
@@ -282,7 +282,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
         </el-table>

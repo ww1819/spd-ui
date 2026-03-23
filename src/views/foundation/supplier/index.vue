@@ -23,13 +23,13 @@
       <el-col :span="18">
     <!-- 查询条件容器 -->
     <div class="query-container" v-show="showSearch">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="68px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="20">
           <el-col :span="6">
-            <el-form-item label="供应商编码" prop="code" label-width="100px">
+            <el-form-item prop="code">
               <el-input
                 v-model="queryParams.code"
-                placeholder="请输入供应商编码"
+                placeholder="供应商编码"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -37,10 +37,10 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="供应商名称" prop="name" label-width="100px">
+            <el-form-item prop="name">
               <el-input
                 v-model="queryParams.name"
-                placeholder="请输入供应商名称"
+                placeholder="供应商名称"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -55,8 +55,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:supplier:add']"
@@ -64,9 +62,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
+          type="primary"
           size="small"
           :disabled="single"
           @click="handleUpdate"
@@ -75,9 +71,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
+          type="primary"
           size="small"
           :disabled="single"
           @click="handleDelete"
@@ -87,8 +81,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-refresh"
           size="small"
           :disabled="multiple"
           @click="handleUpdateReferred"
@@ -97,9 +89,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
           v-hasPermi="['foundation:supplier:export']"
@@ -108,7 +98,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleQuery"
         >搜索</el-button>
@@ -116,7 +105,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="supplierList" :row-class-name="supplierIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%">
+    <el-table v-loading="loading" :data="supplierList" :row-class-name="supplierIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip />
       <el-table-column label="供应商编码" align="center" prop="code" width="150" show-overflow-tooltip />
@@ -131,14 +120,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:supplier:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:supplier:remove']"
           >删除</el-button>
@@ -167,22 +154,22 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="供应商编码" prop="code">
-                <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入供应商编码" />
+                <el-input v-model="form.code" :disabled="isDisabled" placeholder="供应商编码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="供应商名称" prop="name">
-                <el-input v-model="form.name" placeholder="请输入供应商名称" />
+                <el-input v-model="form.name" placeholder="供应商名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="公司简称" prop="companyReferred">
-                <el-input v-model="form.companyReferred" placeholder="请输入公司简称" />
+                <el-input v-model="form.companyReferred" placeholder="公司简称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="法人" prop="legalPerson">
-                <el-input v-model="form.legalPerson" placeholder="请输入法人" />
+                <el-input v-model="form.legalPerson" placeholder="法人" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -190,22 +177,22 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="证件号" prop="certNumber">
-                <el-input v-model="form.certNumber" placeholder="请输入证件号" />
+                <el-input v-model="form.certNumber" placeholder="证件号" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="地址" prop="address">
-                <el-input v-model="form.address" placeholder="请输入地址" />
+                <el-input v-model="form.address" placeholder="地址" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="注册资金" prop="regMoney">
-                <el-input v-model="form.regMoney" placeholder="请输入注册资金" />
+                <el-input v-model="form.regMoney" placeholder="注册资金" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="银行账号" prop="bankAccount">
-                <el-input v-model="form.bankAccount" placeholder="请输入银行账号" />
+                <el-input v-model="form.bankAccount" placeholder="银行账号" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -213,22 +200,22 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="联系人" prop="contacts">
-                <el-input v-model="form.contacts" placeholder="请输入联系人" />
+                <el-input v-model="form.contacts" placeholder="联系人" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="联系电话" prop="contactsPhone">
-                <el-input v-model="form.contactsPhone" placeholder="请输入联系电话" />
+                <el-input v-model="form.contactsPhone" placeholder="联系电话" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="网址" prop="website">
-                <el-input v-model="form.website" placeholder="请输入网址" />
+                <el-input v-model="form.website" placeholder="网址" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="邮编" prop="zipCode">
-                <el-input v-model="form.zipCode" placeholder="请输入邮编" />
+                <el-input v-model="form.zipCode" placeholder="邮编" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -236,22 +223,22 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="邮箱" prop="email">
-                <el-input v-model="form.email" placeholder="请输入邮箱" />
+                <el-input v-model="form.email" placeholder="邮箱" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="传真" prop="fax">
-                <el-input v-model="form.fax" placeholder="请输入传真" />
+                <el-input v-model="form.fax" placeholder="传真" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="公司负责人" prop="companyPerson">
-                <el-input v-model="form.companyPerson" placeholder="请输入公司负责人" />
+                <el-input v-model="form.companyPerson" placeholder="公司负责人" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="税号" prop="taxNumber">
-                <el-input v-model="form.taxNumber" placeholder="请输入税号" />
+                <el-input v-model="form.taxNumber" placeholder="税号" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -259,12 +246,12 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="电话" prop="phone">
-                <el-input v-model="form.phone" placeholder="请输入电话" />
+                <el-input v-model="form.phone" placeholder="电话" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="经营范围" prop="supplierRange">
-                <el-input v-model="form.supplierRange" placeholder="请输入经营范围" />
+                <el-input v-model="form.supplierRange" placeholder="经营范围" />
               </el-form-item>
             </el-col>
           </el-row>

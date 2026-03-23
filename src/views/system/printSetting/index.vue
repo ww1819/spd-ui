@@ -3,24 +3,24 @@
     <!-- 顶部搜索容器 -->
     <div class="form-fields-container">
       <el-form
+        class="query-form"
         :model="queryParams"
         ref="queryForm"
         size="small"
         :inline="true"
         v-show="showSearch"
-        label-width="100px"
       >
-        <el-form-item label="模板名称" prop="templateName">
+        <el-form-item prop="templateName">
           <el-input
             v-model="queryParams.templateName"
-            placeholder="请输入模板名称"
+            placeholder="模板名称"
             clearable
             style="width: 240px"
             @keyup.enter.native="handleQuery"
           />
         </el-form-item>
-        <el-form-item label="单据类型" prop="billType">
-          <el-select v-model="queryParams.billType" placeholder="请选择单据类型" clearable style="width: 240px">
+        <el-form-item prop="billType">
+          <el-select v-model="queryParams.billType" placeholder="单据类型" clearable style="width: 240px">
             <el-option label="入库单" :value="101" />
             <el-option label="退货单" :value="102" />
             <el-option label="出库单" :value="201" />
@@ -42,8 +42,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="medium"
           @click="handleAdd"
           v-hasPermi="['system:printSetting:add']"
@@ -51,9 +49,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
+          type="primary"
           size="medium"
           :disabled="single"
           @click="handleUpdate"
@@ -62,9 +58,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
+          type="primary"
           size="medium"
           :disabled="multiple"
           @click="handleDelete"
@@ -74,14 +68,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -90,7 +83,7 @@
     </el-row>
 
     <div class="table-pagination-wrapper">
-    <el-table v-loading="loading" :data="printSettingList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="printSettingList" stripe @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" width="60" align="center" />
       <el-table-column label="模板名称" align="center" prop="templateName" width="140" show-overflow-tooltip />
@@ -143,14 +136,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:printSetting:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-star-on"
             @click="handleSetDefault(scope.row)"
             v-hasPermi="['system:printSetting:edit']"
             v-if="scope.row.isDefault !== 1"
@@ -158,7 +149,6 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:printSetting:remove']"
           >删除</el-button>

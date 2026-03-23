@@ -23,13 +23,13 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="20">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row :gutter="20">
             <el-col :span="10">
-              <el-form-item label="分类编码" prop="warehouseCategoryCode">
+              <el-form-item prop="warehouseCategoryCode">
                 <el-input
                   v-model="queryParams.warehouseCategoryCode"
-                  placeholder="请输入分类编码"
+                  placeholder="分类编码"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 100%"
@@ -37,10 +37,10 @@
               </el-form-item>
             </el-col>
             <el-col :span="10">
-              <el-form-item label="分类名称" prop="warehouseCategoryName">
+              <el-form-item prop="warehouseCategoryName">
                 <el-input
                   v-model="queryParams.warehouseCategoryName"
-                  placeholder="请输入分类名称"
+                  placeholder="分类名称"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 100%"
@@ -49,8 +49,8 @@
             </el-col>
             <el-col :span="4">
               <el-form-item>
-                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-                <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+                <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+                <el-button size="small" @click="resetQuery">重置</el-button>
               </el-form-item>
             </el-col>
           </el-row>
@@ -59,20 +59,14 @@
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <el-button
-              type="primary"
-              plain
-              icon="el-icon-plus"
-              size="small"
+              type="primary" size="small"
               @click="handleAdd"
               v-hasPermi="['foundation:warehouseCategory:add']"
             >新增</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="success"
-              plain
-              icon="el-icon-edit"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:warehouseCategory:edit']"
@@ -80,10 +74,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="danger"
-              plain
-              icon="el-icon-delete"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:warehouseCategory:remove']"
@@ -91,10 +82,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="primary"
-              plain
-              icon="el-icon-refresh"
-              size="small"
+              type="primary" size="small"
               :disabled="multiple"
               @click="handleUpdateReferred"
               v-hasPermi="['foundation:warehouseCategory:updateReferred']"
@@ -102,10 +90,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="warning"
-              plain
-              icon="el-icon-download"
-              size="small"
+              type="primary" size="small"
               @click="handleExport"
               v-hasPermi="['foundation:warehouseCategory:export']"
             >导出</el-button>
@@ -113,7 +98,7 @@
           <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
-        <el-table v-loading="loading" :data="warehouseCategoryList" :row-class-name="warehouseCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+        <el-table v-loading="loading" :data="warehouseCategoryList" :row-class-name="warehouseCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50"/>
           <el-table-column label="分类编码" align="center" prop="warehouseCategoryCode" width="120"/>
@@ -143,14 +128,12 @@
               <el-button
                 size="small"
                 type="text"
-                icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
                 v-hasPermi="['foundation:warehouseCategory:edit']"
               >修改</el-button>
               <el-button
                 size="small"
                 type="text"
-                icon="el-icon-delete"
                 @click="handleDelete(scope.row)"
                 v-hasPermi="['foundation:warehouseCategory:remove']"
               >删除</el-button>
@@ -176,19 +159,19 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="分类编码" prop="warehouseCategoryCode">
-                <el-input v-model="form.warehouseCategoryCode" :disabled="isDisabled" placeholder="请输入分类编码" style="width: 100%" />
+                <el-input v-model="form.warehouseCategoryCode" :disabled="isDisabled" placeholder="分类编码" style="width: 100%" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="分类名称" prop="warehouseCategoryName">
-                <el-input v-model="form.warehouseCategoryName" placeholder="请输入分类名称" style="width: 100%" />
+                <el-input v-model="form.warehouseCategoryName" placeholder="分类名称" style="width: 100%" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="选择上级分类" prop="parentId">
-                <el-select v-model="form.parentId" placeholder="请选择上级分类" clearable style="width: 100%">
+                <el-select v-model="form.parentId" placeholder="上级分类" clearable style="width: 100%">
                   <el-option
                     v-for="item in parentOptions"
                     :key="item.warehouseCategoryId"

@@ -5,9 +5,9 @@
   margin-bottom: 20px;
   
   th {
-    background-color: #F5F7FA !important;
+    background-color: #e7ebf2 !important;
     color: #606266;
-    font-weight: 500;
+    font-weight: 600;
     height: 50px;
     padding: 8px 0;
     border-bottom: 1px solid #EBEEF5;
@@ -23,6 +23,11 @@
     background-color: #F5F7FA !important;
     transition: all 0.3s;
   }
+}
+
+/* 表格隔行底色 */
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background-color: #f7f9fc;
 }
 
 /* 局部弹窗样式 */

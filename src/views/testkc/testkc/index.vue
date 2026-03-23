@@ -18,12 +18,12 @@
               </el-col>
               <el-col :span="4.8">
                 <el-form-item label="耗材名称：" class="compact-item">
-                  <el-input v-model="searchForm.name" placeholder="请输入耗材名称"></el-input>
+                  <el-input v-model="searchForm.name" placeholder="耗材名称"></el-input>
                 </el-form-item>
               </el-col>
               <el-col :span="4.8">
                 <el-form-item label="耗材代号：" class="compact-item">
-                  <el-input v-model="searchForm.code" placeholder="请输入耗材代号"></el-input>
+                  <el-input v-model="searchForm.code" placeholder="耗材代号"></el-input>
                 </el-form-item>
               </el-col>
               <el-col :span="4.8">

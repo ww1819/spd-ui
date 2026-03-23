@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-tabs v-model="activeName" type="card" @tab-click="handleTabClick">
       <el-tab-pane label="库存明细查询" name="detail"></el-tab-pane>
@@ -7,29 +7,29 @@
 
     <div class="query-container">
       <div class="form-fields-container">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+              <el-form-item prop="warehouseId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值" />
                 </div>
               </el-form-item>
-              <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+              <el-form-item prop="supplierId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectSupplier v-model="queryParams.supplierId" />
                 </div>
               </el-form-item>
-              <el-form-item label="入库单号" prop="orderNo" class="query-item-inline">
+              <el-form-item prop="orderNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.orderNo"
-                  placeholder="请输入入库单号"
+                  placeholder="入库单号"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+              <el-form-item prop="materialId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <MaterialAutocomplete v-model="queryParams.materialName"/>
                 </div>
@@ -41,7 +41,7 @@
               <el-form-item label="院内码" prop="inHospitalCode" class="query-item-inline">
                 <el-input
                   v-model="queryParams.inHospitalCode"
-                  placeholder="请输入院内码"
+                  placeholder="院内码"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 180px"
@@ -75,20 +75,18 @@
     <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <el-button
-          type="warning"
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['gz:depotInventory:export']"
         >导出</el-button>
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>

@@ -1,12 +1,12 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
       <el-row class="query-row-left">
         <el-col :span="24">
           <el-form-item label="结算单号" prop="billNo" class="query-item-inline">
             <el-input v-model="queryParams.billNo"
-                      placeholder="请输入结算单号"
+                      placeholder="结算单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
@@ -105,7 +105,7 @@
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
               :row-class-name="warehouseListIndex"
-              @selection-change="handleSelectionChange" height="58vh" border>
+              @selection-change="handleSelectionChange" height="58vh" border stripe>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="结算单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
@@ -205,7 +205,7 @@
           </el-col>
           <el-col :span="4" v-show="false">
             <el-form-item label="发票号" prop="invoiceNumber">
-              <el-input v-model="form.invoiceNumber" placeholder="请输入发票号" />
+              <el-input v-model="form.invoiceNumber" placeholder="发票号" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -255,22 +255,22 @@
           </el-col>
           <el-col :span="4" v-show="false">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
+              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4" v-show="false">
             <el-form-item label="配送员" prop="delPerson">
-              <el-input v-model="form.delPerson" placeholder="请输入配送员" />
+              <el-input v-model="form.delPerson" placeholder="配送员" />
             </el-form-item>
           </el-col>
           <el-col :span="4" v-show="false">
             <el-form-item label="联系电话" prop="telephone">
-              <el-input v-model="form.telephone" placeholder="请输入联系电话" />
+              <el-input v-model="form.telephone" placeholder="联系电话" />
             </el-form-item>
           </el-col>
           <el-col :span="4" v-show="false">
             <el-form-item label="发票金额" prop="invoiceAmount">
-              <el-input v-model="form.invoiceAmount" placeholder="请输入发票金额" />
+              <el-input v-model="form.invoiceAmount" placeholder="发票金额" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -283,7 +283,7 @@
                               type="date"
                               value-format="yyyy-MM-dd"
                               style="width: 100%"
-                              placeholder="请输入发票时间">
+                              placeholder="发票时间">
               </el-date-picker>
             </el-form-item>
           </el-col>
@@ -367,11 +367,11 @@
             <template slot-scope="scope">
               <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
               <!--                        @input="qtyChange(scope.row)"-->
-              <!--                        placeholder="请输入数量" />-->
+              <!--                        placeholder="数量" />-->
               <el-input
                 clearable
                 v-model="scope.row.qty"
-                placeholder="请输入数量"
+                placeholder="数量"
                 onkeyup="value=value.replace(/\D/g,'')"
                 onafterpaste="value=value.replace(/\D/g,'')"
                 @blur="form.result=$event.target.value"
@@ -385,17 +385,17 @@
                         type='number'
                         :disabled="true"
                         @input="priceChange(scope.row)"
-                        placeholder="请输入价格" />
+                        placeholder="价格" />
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber"  placeholder="请输入批号" />
+              <el-input v-model="scope.row.batchNumber"  placeholder="批号" />
             </template>
           </el-table-column>
           <el-table-column label="有效期" prop="endTime" width="180" show-overflow-tooltip resizable>
@@ -422,7 +422,7 @@
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
+              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" />
             </template>
           </el-table-column>
           <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable>
@@ -459,7 +459,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
         </el-table>
@@ -500,7 +500,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="发票号" prop="invoiceNumber">
-              <el-input v-model="viewForm.invoiceNumber" :disabled="true" placeholder="请输入发票号" />
+              <el-input v-model="viewForm.invoiceNumber" :disabled="true" placeholder="发票号" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -518,22 +518,22 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="viewForm.totalAmount" :disabled="true" placeholder="请输入总金额" />
+              <el-input v-model="viewForm.totalAmount" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="配送员" prop="delPerson">
-              <el-input v-model="viewForm.delPerson" :disabled="true" placeholder="请输入配送员" />
+              <el-input v-model="viewForm.delPerson" :disabled="true" placeholder="配送员" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="联系电话" prop="telephone">
-              <el-input v-model="viewForm.telephone" :disabled="true" placeholder="请输入联系电话" />
+              <el-input v-model="viewForm.telephone" :disabled="true" placeholder="联系电话" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="发票金额" prop="invoiceAmount">
-              <el-input v-model="viewForm.invoiceAmount" :disabled="true" placeholder="请输入发票金额" />
+              <el-input v-model="viewForm.invoiceAmount" :disabled="true" placeholder="发票金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -544,7 +544,7 @@
                               value-format="yyyy-MM-dd"
                               :disabled="true"
                               style="width: 100%"
-                              placeholder="请输入发票时间">
+                              placeholder="发票时间">
               </el-date-picker>
             </el-form-item>
           </el-col>

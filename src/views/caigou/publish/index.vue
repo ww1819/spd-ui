@@ -1,12 +1,12 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-form-item label="订单单号" prop="orderNo" label-width="100px">
+          <el-form-item prop="orderNo">
             <el-input v-model="queryParams.orderNo"
-                      placeholder="请输入订单单号"
+                      placeholder="订单单号"
                       clearable
                       @keyup.enter.native="handleQuery"
             />
@@ -14,20 +14,20 @@
         </el-col>
 
         <el-col :span="6">
-          <el-form-item label="供应商" prop="supplierId" label-width="100px">
+          <el-form-item prop="supplierId">
             <SelectSupplier v-model="queryParams.supplierId"/>
           </el-form-item>
         </el-col>
 
         <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId" label-width="100px">
+          <el-form-item prop="warehouseId">
             <SelectWarehouse v-model="queryParams.warehouseId"/>
           </el-form-item>
         </el-col>
 
         <el-col :span="6">
-          <el-form-item label="单据状态" prop="orderStatus" label-width="100px">
-            <el-select v-model="queryParams.orderStatus" placeholder="请选择单据状态" clearable style="width: 150px">
+          <el-form-item prop="orderStatus">
+            <el-select v-model="queryParams.orderStatus" placeholder="单据状态" clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
                          :label="dict.label"
@@ -40,7 +40,7 @@
 
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-form-item label="制单日期" prop="beginDate" label-width="100px">
+          <el-form-item prop="beginDate">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -67,29 +67,25 @@
     <el-row :gutter="10" class="mb8" style="padding-top: 10px">
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
           v-hasPermi="['caigou:publish:export']"
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-check"
+          type="primary"
           size="small"
-          @click="handleBatchAudit"
+          @click="handleBatchPublish"
           :disabled="multiple"
-        >审核</el-button>
+        >发布</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -98,7 +94,7 @@
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
               height="54vh"
-              border>
+              stripe border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -157,7 +153,6 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-view"
             @click="handleView(scope.row)"
           >查看</el-button>
         </template>
@@ -224,7 +219,7 @@
 
           <el-col :span="4">
             <el-form-item label="联系电话" prop="contactPhone" label-width="100px">
-              <el-input v-model="form.contactPhone" :disabled="true" placeholder="请输入联系电话" />
+              <el-input v-model="form.contactPhone" :disabled="true" placeholder="联系电话" />
             </el-form-item>
           </el-col>
 
@@ -240,7 +235,7 @@
 
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount" label-width="100px">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
+              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -275,22 +270,22 @@
           </el-table-column>
           <el-table-column label="数量" prop="orderQty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.orderQty" :disabled="true" placeholder="请输入数量" />
+              <el-input v-model="scope.row.orderQty" :disabled="true" placeholder="数量" />
             </template>
           </el-table-column>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" :disabled="true" placeholder="请输入价格" />
+              <el-input v-model="scope.row.unitPrice" :disabled="true" placeholder="价格" />
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="totalAmount" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.totalAmount" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.totalAmount" :disabled="true" placeholder="金额" />
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" :disabled="true" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" :disabled="true" placeholder="备注" />
             </template>
           </el-table-column>
         </el-table>
@@ -307,7 +302,7 @@
 </template>
 
 <script>
-import { listDingdan, getDingdan, auditDingdan } from "@/api/caigou/dingdan";
+import { listDingdan, getDingdan, publishDingdan } from "@/api/caigou/dingdan";
 import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier.vue';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial.vue';
@@ -509,55 +504,32 @@ export default {
         this.title = "查看订单";
       });
     },
-    /** 审核按钮操作 */
-    handleAudit(row) {
-      const id = row.id || this.ids
-      const auditBy = this.$store.state.user.userId;
-
-      this.$modal.confirm('确定要审核订单编号为"' + row.orderNo + '"的数据项？').then(function() {
-        return auditDingdan({id:id, auditBy:auditBy, auditOpinion:''});
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("审核成功！");
-      }).catch(() => {});
-    },
-    /** 批量审核按钮操作 */
-    handleBatchAudit() {
+    /** 批量发布按钮操作 */
+    handleBatchPublish() {
       if (this.ids.length === 0) {
-        this.$modal.msgError("请先选择要审核的订单！");
+        this.$modal.msgError("请先选择要发布的订单！");
         return;
       }
 
-      // 检查选中的订单是否都是待审核状态
+      // 检查选中的订单是否都是已审核状态（状态为2）
       const selectedOrders = this.orderList.filter(item => this.ids.includes(item.id));
-      const nonPendingOrders = selectedOrders.filter(item => item.orderStatus !== '0' && item.orderStatus !== 0);
+      const invalidOrders = selectedOrders.filter(item => item.orderStatus !== '2' && item.orderStatus !== 2);
 
-      // 调试信息
-      console.log('选中的订单:', selectedOrders);
-      console.log('非待审核状态的订单:', nonPendingOrders);
-      selectedOrders.forEach(order => {
-        console.log(`订单 ${order.orderNo} 状态: ${order.orderStatus} (类型: ${typeof order.orderStatus})`);
-      });
-
-      if (nonPendingOrders.length > 0) {
-        const statusInfo = nonPendingOrders.map(order => `${order.orderNo}(状态:${order.orderStatus})`).join(', ');
-        this.$modal.msgError(`只能审核待审核状态的订单！以下订单状态不正确：${statusInfo}`);
+      if (invalidOrders.length > 0) {
+        const statusInfo = invalidOrders.map(order => `${order.orderNo}(状态:${order.orderStatus})`).join(', ');
+        this.$modal.msgError(`只能发布已审核状态的订单！以下订单状态不正确：${statusInfo}`);
         return;
       }
 
-      const auditBy = this.$store.state.user.userId;
       const orderNos = selectedOrders.map(item => item.orderNo).join('、');
 
-      this.$modal.confirm('确定要审核选中的 ' + this.ids.length + ' 个订单吗？\n订单编号：' + orderNos).then(() => {
-        // 批量审核
-        const auditPromises = this.ids.map(id => auditDingdan({id: id, auditBy: auditBy, auditOpinion: ''}));
-
-        Promise.all(auditPromises).then(() => {
+      this.$modal.confirm('确定要发布选中的 ' + this.ids.length + ' 个订单吗？\n订单编号：' + orderNos).then(() => {
+        return publishDingdan(this.ids);
+      }).then(() => {
           this.getList();
-          this.$modal.msgSuccess("批量审核成功！共审核 " + this.ids.length + " 个订单");
-        }).catch(() => {
-          this.$modal.msgError("批量审核失败！");
-        });
+          this.$modal.msgSuccess("发布成功！共发布 " + this.ids.length + " 个订单");
+      }).catch(() => {
+        // 取消或失败都不处理
       }).catch(() => {});
     },
     /** 订单明细序号 */

@@ -1,23 +1,23 @@
 <template>
   <div class="app-container refund-goods-audit-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
-          <el-form-item label="退货单号" prop="billNo" class="query-item-inline">
+          <el-form-item prop="billNo" class="query-item-inline">
             <el-input v-model="queryParams.billNo"
-                      placeholder="请输入退货单号"
+                      placeholder="退货单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+          <el-form-item prop="materialId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectMaterial v-model="queryParams.materialId" />
             </div>
           </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+          <el-form-item prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
             </div>
@@ -27,7 +27,7 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="制单日期" style="display: flex; align-items: center;">
+          <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -48,8 +48,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.billStatus" placeholder="全部"
+          <el-form-item prop="billStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                        clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -67,22 +67,20 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          icon="el-icon-check"
+          type="primary"
           size="medium"
           :disabled="multiple"
           @click="handleBatchAudit"
@@ -94,7 +92,7 @@
 
     <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
-              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable />
       <el-table-column label="退货单号" align="center" prop="billNo" width="150" show-overflow-tooltip resizable>
@@ -154,7 +152,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-printer"
               @click="handlePrint(scope.row,true)"
               v-if="scope.row.billStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -162,7 +159,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['inWarehouse:refundGoodsApply:edit']"
               v-if="scope.row.billStatus != 2"
@@ -171,7 +167,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['inWarehouse:refundGoodsApply:remove']"
               v-if="scope.row.billStatus != 2"
@@ -218,7 +213,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="发票号" prop="invoiceNumber">
-              <el-input v-model="form.invoiceNumber" :disabled="true" placeholder="请输入发票号" />
+              <el-input v-model="form.invoiceNumber" :disabled="true" placeholder="发票号" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -236,22 +231,22 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
+              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="配送员" prop="delPerson">
-              <el-input v-model="form.delPerson" :disabled="true" placeholder="请输入配送员" />
+              <el-input v-model="form.delPerson" :disabled="true" placeholder="配送员" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="联系电话" prop="telephone">
-              <el-input v-model="form.telephone" :disabled="true" placeholder="请输入联系电话" />
+              <el-input v-model="form.telephone" :disabled="true" placeholder="联系电话" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="发票金额" prop="invoiceAmount">
-              <el-input v-model="form.invoiceAmount" :disabled="true" placeholder="请输入发票金额" />
+              <el-input v-model="form.invoiceAmount" :disabled="true" placeholder="发票金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -262,7 +257,7 @@
                               value-format="yyyy-MM-dd"
                               :disabled="true"
                               style="width: 100%"
-                              placeholder="请输入发票时间">
+                              placeholder="发票时间">
               </el-date-picker>
             </el-form-item>
           </el-col>
@@ -330,12 +325,12 @@
             <template slot-scope="scope">
               <el-input v-model="scope.row.unitPrice" type='number'
                         :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="请输入价格" />
+                        @input="priceChange(scope.row)" placeholder="价格" />
             </template>
           </el-table-column>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
+              <el-input clearable v-model="scope.row.qty" placeholder="数量"
                         onkeyup="value=value.replace(/\D/g,'')"
                         onafterpaste="value=value.replace(/\D/g,'')"
                         @blur="form.result=$event.target.value"
@@ -345,17 +340,17 @@
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
+              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" />
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" :disabled="true" placeholder="请输入批号" />
+              <el-input v-model="scope.row.batchNumber" :disabled="true" placeholder="批号" />
             </template>
           </el-table-column>
           <el-table-column label="生产日期" prop="beginTime" width="180" show-overflow-tooltip resizable>
@@ -382,7 +377,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" :disabled="true" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" :disabled="true" placeholder="备注" />
             </template>
           </el-table-column>
           <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>

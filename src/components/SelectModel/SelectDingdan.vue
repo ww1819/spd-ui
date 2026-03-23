@@ -8,13 +8,13 @@
           <el-button icon="el-icon-close" size="small" circle @click="show = false" class="close-btn"></el-button>
         </div>
         <div class="modal-body">
-          <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+          <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
             <el-row :gutter="20">
               <el-col :span="6">
                 <el-form-item label="采购订单号" prop="orderNo" label-width="100px">
                   <el-input
                     v-model="queryParams.orderNo"
-                    placeholder="请输入采购订单号"
+                    placeholder="采购订单号"
                     clearable
                     @keyup.enter.native="handleQuery"
                   />

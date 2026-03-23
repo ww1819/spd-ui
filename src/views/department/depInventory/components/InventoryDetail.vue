@@ -1,21 +1,21 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="query-container">
       <div class="form-fields-container">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+              <el-form-item prop="warehouseId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectWarehouse v-model="queryParams.warehouseId" />
                 </div>
           </el-form-item>
-              <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+              <el-form-item prop="supplierId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectSupplier v-model="queryParams.supplierId" />
                 </div>
           </el-form-item>
-              <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+              <el-form-item prop="materialId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectMaterial v-model="queryParams.materialId" />
                 </div>
@@ -24,14 +24,13 @@
       </el-row>
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+              <el-form-item prop="departmentId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectDepartment v-model="queryParams.departmentId" />
                 </div>
           </el-form-item>
-              <el-form-item label="计费" prop="isBilling" class="query-item-inline">
-                <el-select v-model="queryParams.isBilling" placeholder="请选择计费" clearable style="width: 180px">
-                  <el-option label="全部" value="" />
+              <el-form-item prop="isBilling" class="query-item-inline">
+                <el-select v-model="queryParams.isBilling" placeholder="计费" clearable style="width: 180px">
                   <el-option label="是" value="1" />
                   <el-option label="否" value="0" />
                 </el-select>
@@ -45,8 +44,7 @@
     <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: 0px; margin-bottom: 16px;">
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
         >导出</el-button>
@@ -54,14 +52,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleQuery"
         >搜索</el-button>
         </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="small"
           @click="resetQuery"
         >重置</el-button>
@@ -74,7 +71,7 @@
               :row-class-name="inventoryListIndex"
               show-summary :summary-method="getSummaries" 
               height="51vh"
-              border>
+              border stripe>
       <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
       <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="耗材" align="center" prop="material.name" width="160" show-overflow-tooltip resizable />

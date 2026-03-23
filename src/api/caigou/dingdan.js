@@ -51,3 +51,12 @@ export function auditDingdan(data) {
     data: data
   })
 }
+
+// 发布采购订单（推送到SCM）
+export function publishDingdan(ids) {
+  return request({
+    url: '/spd/order/publish',
+    method: 'post',
+    data: { ids: ids }
+  })
+}

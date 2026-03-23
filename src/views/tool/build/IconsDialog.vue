@@ -14,7 +14,7 @@
           v-model="key"
           size="small"
           :style="{width: '260px'}"
-          placeholder="请输入图标名称"
+          placeholder="图标名称"
           prefix-icon="el-icon-search"
           clearable
         />
