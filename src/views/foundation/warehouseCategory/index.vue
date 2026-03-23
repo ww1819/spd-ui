@@ -23,13 +23,13 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="20">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row :gutter="20">
             <el-col :span="10">
-              <el-form-item label="分类编码" prop="warehouseCategoryCode">
+              <el-form-item prop="warehouseCategoryCode">
                 <el-input
                   v-model="queryParams.warehouseCategoryCode"
-                  placeholder="请输入分类编码"
+                  placeholder="分类编码"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 100%"
@@ -37,10 +37,10 @@
               </el-form-item>
             </el-col>
             <el-col :span="10">
-              <el-form-item label="分类名称" prop="warehouseCategoryName">
+              <el-form-item prop="warehouseCategoryName">
                 <el-input
                   v-model="queryParams.warehouseCategoryName"
-                  placeholder="请输入分类名称"
+                  placeholder="分类名称"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 100%"
@@ -49,8 +49,8 @@
             </el-col>
             <el-col :span="4">
               <el-form-item>
-                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-                <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+                <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+                <el-button size="small" @click="resetQuery">重置</el-button>
               </el-form-item>
             </el-col>
           </el-row>
@@ -59,20 +59,14 @@
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <el-button
-              type="primary"
-              plain
-              icon="el-icon-plus"
-              size="small"
+              type="primary" size="small"
               @click="handleAdd"
               v-hasPermi="['foundation:warehouseCategory:add']"
             >新增</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="success"
-              plain
-              icon="el-icon-edit"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:warehouseCategory:edit']"
@@ -80,10 +74,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="danger"
-              plain
-              icon="el-icon-delete"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:warehouseCategory:remove']"
@@ -91,10 +82,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="primary"
-              plain
-              icon="el-icon-refresh"
-              size="small"
+              type="primary" size="small"
               :disabled="multiple"
               @click="handleUpdateReferred"
               v-hasPermi="['foundation:warehouseCategory:updateReferred']"
@@ -102,22 +90,41 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="warning"
-              plain
-              icon="el-icon-download"
-              size="small"
+              type="primary" size="small"
               @click="handleExport"
               v-hasPermi="['foundation:warehouseCategory:export']"
             >导出</el-button>
           </el-col>
+          <el-col :span="1.5">
+            <el-button
+              type="info"
+              plain
+              icon="el-icon-upload2"
+              size="small"
+              @click="handleImport('add')"
+              v-hasPermi="['foundation:warehouseCategory:import']"
+            >新增导入</el-button>
+          </el-col>
+          <el-col :span="1.8">
+            <el-button
+              type="info"
+              plain
+              icon="el-icon-refresh-right"
+              size="small"
+              @click="handleImport('update')"
+              v-hasPermi="['foundation:warehouseCategory:import']"
+            >更新导入</el-button>
+          </el-col>
           <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
-        <el-table v-loading="loading" :data="warehouseCategoryList" :row-class-name="warehouseCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+        <el-table v-loading="loading" :data="warehouseCategoryList" :row-class-name="warehouseCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50"/>
           <el-table-column label="分类编码" align="center" prop="warehouseCategoryCode" width="120"/>
           <el-table-column label="分类名称" align="center" prop="warehouseCategoryName" width="180"/>
+          <el-table-column label="HIS系统ID" align="center" prop="hisId" width="120" show-overflow-tooltip/>
+          <el-table-column label="简码" align="center" prop="referredName" width="100" show-overflow-tooltip/>
           <el-table-column label="上级分类" align="center" width="150">
             <template slot-scope="scope">
               <span v-if="scope.row.parentId && scope.row.parentId !== 0">{{ getParentCategoryName(scope.row.parentId) }}</span>
@@ -128,7 +135,9 @@
               <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="是否" align="center" width="100">
+          <el-table-column label="租户ID" align="center" prop="tenantId" width="120" show-overflow-tooltip/>
+          <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip/>
+          <el-table-column label="启用" align="center" width="100">
             <template slot-scope="scope">
               <el-switch
                 v-model="scope.row.delFlag"
@@ -143,14 +152,12 @@
               <el-button
                 size="small"
                 type="text"
-                icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
                 v-hasPermi="['foundation:warehouseCategory:edit']"
               >修改</el-button>
               <el-button
                 size="small"
                 type="text"
-                icon="el-icon-delete"
                 @click="handleDelete(scope.row)"
                 v-hasPermi="['foundation:warehouseCategory:remove']"
               >删除</el-button>
@@ -176,19 +183,19 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="分类编码" prop="warehouseCategoryCode">
-                <el-input v-model="form.warehouseCategoryCode" :disabled="isDisabled" placeholder="请输入分类编码" style="width: 100%" />
+                <el-input v-model="form.warehouseCategoryCode" :disabled="isDisabled" placeholder="分类编码" style="width: 100%" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="分类名称" prop="warehouseCategoryName">
-                <el-input v-model="form.warehouseCategoryName" placeholder="请输入分类名称" style="width: 100%" />
+                <el-input v-model="form.warehouseCategoryName" placeholder="分类名称" style="width: 100%" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="选择上级分类" prop="parentId">
-                <el-select v-model="form.parentId" placeholder="请选择上级分类" clearable style="width: 100%">
+                <el-select v-model="form.parentId" placeholder="上级分类" clearable style="width: 100%">
                   <el-option
                     v-for="item in parentOptions"
                     :key="item.warehouseCategoryId"
@@ -200,6 +207,36 @@
               </el-form-item>
             </el-col>
           </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="名称简码" prop="referredName">
+                <el-input v-model="form.referredName" placeholder="可点「更新简码」自动生成" clearable style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="HIS系统ID" prop="hisId">
+                <el-input
+                  v-model="form.hisId"
+                  :disabled="!!form.warehouseCategoryId"
+                  :placeholder="form.warehouseCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水租户新增必填' : '非衡水租户无需填写')"
+                  clearable
+                  style="width: 100%"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="租户ID(客户)" prop="tenantId">
+                <el-input v-model="form.tenantId" placeholder="保存时默认当前客户" disabled style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-form>
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
           <el-button type="primary" @click="submitForm">确 定</el-button>
@@ -207,14 +244,90 @@
         </div>
       </div>
     </div>
+
+    <div v-if="upload.open" class="local-modal-mask">
+      <div class="local-modal-content" style="width: 520px; min-width: 400px; min-height: auto;">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
+        <el-alert
+          v-if="factoryImportRequiresHisId"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom:12px;"
+          title="衡水市第三人民医院：Excel 新增行须填「HIS系统ID」且租户内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
+        />
+        <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+          <strong>增量导入</strong>：按库房分类编码匹配租户下数据；可勾选「更新已存在」后<strong>仅更新分类名称与简码</strong>。先整单校验并确认后写入。
+        </p>
+        <el-upload
+          ref="upload"
+          :limit="1"
+          accept=".xlsx, .xls"
+          :disabled="upload.isUploading"
+          :http-request="noopWarehouseUpload"
+          :on-change="handleWarehouseImportFileChange"
+          :on-remove="handleWarehouseImportFileRemove"
+          :auto-upload="false"
+          drag
+        >
+          <i class="el-icon-upload"></i>
+          <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
+          <div class="el-upload__tip text-center" slot="tip">
+            <div class="el-upload__tip" slot="tip">
+              <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
+            </div>
+            <span>仅允许 xls、xlsx。</span>
+            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importWarehouseTemplate">下载模板</el-link>
+          </div>
+        </el-upload>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button type="primary" :loading="upload.isUploading" @click="submitWarehouseImportFlow">校验并导入</el-button>
+          <el-button @click="closeWarehouseImport">取 消</el-button>
+        </div>
+      </div>
+    </div>
+
+    <el-dialog
+      :title="importPreview.title"
+      :visible.sync="importPreview.visible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      @close="importPreview.rows = []; importPreview.columns = []"
+    >
+      <div style="margin-bottom:10px;">
+        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportWarehouseImportPreview">导出解析结果</el-button>
+      </div>
+      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
+        <el-table-column
+          v-for="col in importPreview.columns"
+          :key="col"
+          :prop="col"
+          :label="col"
+          min-width="120"
+          show-overflow-tooltip
+        />
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="importPreview.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listWarehouseCategory, getWarehouseCategory, delWarehouseCategory, addWarehouseCategory, updateWarehouseCategory, treeselect, updateWarehouseCategoryReferred } from "@/api/foundation/warehouseCategory";
+import { listWarehouseCategory, getWarehouseCategory, delWarehouseCategory, addWarehouseCategory, updateWarehouseCategory, treeselect, updateWarehouseCategoryReferred, validateWarehouseCategoryImportAdd, validateWarehouseCategoryImportUpdate, importWarehouseCategoryAddData, importWarehouseCategoryUpdateData } from "@/api/foundation/warehouseCategory";
+import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
+import { mapGetters } from "vuex";
 
 export default {
   name: "WarehouseCategory",
+  computed: {
+    ...mapGetters(['customerId', 'factoryImportRequiresHisId']),
+    isDisabled() {
+      return this.form.warehouseCategoryId != null;
+    }
+  },
   data() {
     return {
       // 树形数据
@@ -241,6 +354,20 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      upload: {
+        open: false,
+        title: "",
+        isUploading: false,
+        updateSupport: false,
+        pendingFile: null,
+        mode: 'add'
+      },
+      importPreview: {
+        visible: false,
+        title: "导入解析结果",
+        rows: [],
+        columns: []
+      },
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -262,6 +389,20 @@ export default {
         warehouseCategoryName: [
           { required: true, message: "库房分类名称不能为空", trigger: "blur" }
         ],
+        hisId: [
+          {
+            validator: (rule, value, callback) => {
+              if (!this.form.warehouseCategoryId && this.factoryImportRequiresHisId) {
+                if (value === undefined || value === null || String(value).trim() === "") {
+                  callback(new Error("衡水市第三人民医院新增时必须填写HIS系统ID"));
+                  return;
+                }
+              }
+              callback();
+            },
+            trigger: "blur"
+          }
+        ]
       }
     };
   },
@@ -367,11 +508,15 @@ export default {
         parentId: 0,
         warehouseCategoryCode: null,
         warehouseCategoryName: null,
+        referredName: null,
+        remark: null,
+        tenantId: null,
         delFlag: null,
         createBy: null,
         createTime: null,
         updateBy: null,
-        updateTime: null
+        updateTime: null,
+        hisId: null
       };
       this.resetForm("form");
     },
@@ -394,6 +539,7 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
+      this.form.tenantId = this.customerId || null;
       this.loadTreeData();
       this.open = true;
       this.title = "添加库房分类";
@@ -476,6 +622,87 @@ export default {
         this.$modal.msgSuccess("更新简码成功");
         this.getList();
       }).catch(() => {});
+    },
+    handleImport(mode) {
+      this.upload.mode = mode === "update" ? "update" : "add";
+      this.upload.updateSupport = this.upload.mode === "update";
+      this.upload.title = this.upload.mode === "update" ? "库房分类更新导入" : "库房分类新增导入";
+      this.upload.pendingFile = null;
+      this.upload.open = true;
+      this.$nextTick(() => {
+        if (this.$refs.upload) this.$refs.upload.clearFiles();
+      });
+    },
+    closeWarehouseImport() {
+      this.upload.open = false;
+      this.upload.pendingFile = null;
+      if (this.$refs.upload) this.$refs.upload.clearFiles();
+    },
+    noopWarehouseUpload() {},
+    handleWarehouseImportFileChange(file) {
+      this.upload.pendingFile = file && file.raw ? file.raw : null;
+    },
+    handleWarehouseImportFileRemove() {
+      this.upload.pendingFile = null;
+    },
+    importWarehouseTemplate() {
+      const api = this.upload.mode === "update" ? "foundation/warehouseCategory/importUpdateTemplate" : "foundation/warehouseCategory/importAddTemplate";
+      this.download(api, {}, `fd_warehouse_category_template_${new Date().getTime()}.xlsx`);
+    },
+    showImportPreviewFromPayload(payload, title) {
+      const rows = (payload && payload.previewRows) || [];
+      this.importPreview.title = title || "导入解析结果";
+      this.importPreview.rows = rows;
+      this.importPreview.columns = rows.length ? Object.keys(rows[0]) : [];
+      this.importPreview.visible = true;
+    },
+    async exportWarehouseImportPreview() {
+      try {
+        const name = (this.upload.mode === "update" ? "warehouse_category_update" : "warehouse_category_add") + "_preview_" + new Date().getTime() + ".xlsx";
+        await exportPreviewRowsToXlsx(this.importPreview.rows, name);
+        this.$modal.msgSuccess("已导出");
+      } catch (e) {
+        this.$modal.msgError(e.message || "导出失败");
+      }
+    },
+    async submitWarehouseImportFlow() {
+      const f = this.upload.pendingFile;
+      if (!f) {
+        this.$modal.msgWarning("请先选择 Excel 文件");
+        return;
+      }
+      this.upload.isUploading = true;
+      try {
+        const isUpdate = this.upload.mode === "update";
+        const res = isUpdate ? await validateWarehouseCategoryImportUpdate(f) : await validateWarehouseCategoryImportAdd(f);
+        const d = res.data || {};
+        this.showImportPreviewFromPayload(d, isUpdate ? "库房分类更新导入 — 解析结果" : "库房分类新增导入 — 解析结果");
+        if (!d.valid) {
+          const errs = (d.errors && d.errors.length) ? d.errors.join("<br/>") : (res.msg || "校验失败");
+          this.$alert("<div style='overflow:auto;max-height:60vh'>" + errs + "</div>", "校验未通过", { dangerouslyUseHTMLString: true });
+          return;
+        }
+        const tc = d.totalRows != null ? d.totalRows : 0;
+        const ic = d.insertCount != null ? d.insertCount : 0;
+        const uc = d.updateCount != null ? d.updateCount : 0;
+        let confirmText = "校验已通过。共 " + tc + " 行数据，确认后写入数据库，是否继续？";
+        if (!isUpdate) {
+          confirmText = "校验已通过。共 " + tc + " 行数据，预计新增 " + ic + " 条、更新 " + uc + " 条。确认后写入数据库，是否继续？";
+        }
+        await this.$modal.confirm(confirmText);
+        const res2 = isUpdate ? await importWarehouseCategoryUpdateData(f, true) : await importWarehouseCategoryAddData(f, true);
+        const d2 = res2.data || {};
+        this.showImportPreviewFromPayload(d2, isUpdate ? "库房分类更新导入 — 导入结果" : "库房分类新增导入 — 导入结果");
+        this.$alert("<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'>" + res2.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
+        this.closeWarehouseImport();
+        this.getList();
+      } catch (e) {
+        if (e !== "cancel" && e !== "close") {
+          /* request 已提示 */
+        }
+      } finally {
+        this.upload.isUploading = false;
+      }
     }
   }
 };

@@ -17,6 +17,23 @@ export function getMenu(menuId) {
   })
 }
 
+// 批量默认开放：菜单树（勾选=是）
+export function getDefaultOpenMenuTree() {
+  return request({
+    url: '/system/menu/defaultOpen/tree',
+    method: 'get'
+  })
+}
+
+// 批量默认开放：保存
+export function batchSetDefaultOpenToCustomer(menuIds) {
+  return request({
+    url: '/system/menu/defaultOpen/batch',
+    method: 'put',
+    data: menuIds
+  })
+}
+
 // 查询菜单下拉树结构
 export function treeselect() {
   return request({

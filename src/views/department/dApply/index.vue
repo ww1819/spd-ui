@@ -1,31 +1,31 @@
 <template>
   <div class="app-container d-apply-page">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="单号" prop="applyBillNo" class="query-item-inline">
+            <el-form-item prop="applyBillNo" class="query-item-inline">
               <el-input
                 v-model="queryParams.applyBillNo"
-                placeholder="请输入单号"
+                placeholder="单号"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+            <el-form-item prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId"/>
               </div>
             </el-form-item>
-            <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+            <el-form-item prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
             </el-form-item>
-            <el-form-item label="单据状态" prop="applyBillStatus" class="query-item-inline">
-              <el-select v-model="queryParams.applyBillStatus" placeholder="全部"
+            <el-form-item prop="applyBillStatus" class="query-item-inline">
+              <el-select v-model="queryParams.applyBillStatus" placeholder="单据状态"
                          :disabled="false"
                          clearable
                          style="width: 180px">
@@ -41,7 +41,7 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="12">
-            <el-form-item label="日期" style="display: flex; align-items: center;">
+            <el-form-item style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -69,8 +69,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="medium"
           @click="handleAdd"
           v-hasPermi="['department:dApply:add']"
@@ -78,9 +76,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['department:dApply:export']"
@@ -89,14 +85,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -104,7 +99,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="64vh" border>
+    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="64vh" border stripe>
       <el-table-column type="selection" width="60" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="单号" align="center" prop="applyBillNo" width="180" show-overflow-tooltip resizable >
@@ -145,13 +140,12 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
               size="small"
               type="text"
-              icon="el-icon-view"
               @click="handleView(scope.row)"
               v-if="scope.row.applyBillStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -159,7 +153,14 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
+              icon="el-icon-download"
+              @click="handleExportRowDetail(scope.row)"
+              v-hasPermi="['department:dApply:export']"
+              style="padding: 0 5px; margin: 0;"
+            >导出明细</el-button>
+            <el-button
+              size="small"
+              type="text"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['department:dApply:edit']"
               v-if="scope.row.applyBillStatus != 2"
@@ -168,7 +169,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['department:dApply:remove']"
               v-if="scope.row.applyBillStatus != 2"
@@ -259,7 +259,7 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="备注" prop="remark" label-width="100px">
-                    <el-input v-model="form.remark" placeholder="请输入备注" class="d-apply-form-input" />
+                    <el-input v-model="form.remark" placeholder="备注" class="d-apply-form-input" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -305,7 +305,7 @@
                 </el-table-column>
                 <el-table-column label="数量" prop="qty" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
+                    <el-input clearable v-model="scope.row.qty" placeholder="数量"
                               onkeyup="value=value.replace(/\D/g,'')"
                               onafterpaste="value=value.replace(/\D/g,'')"
                               @blur="form.result=$event.target.value"
@@ -331,7 +331,7 @@
 
                 <el-table-column label="备注" prop="remark" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+                    <el-input v-model="scope.row.remark" placeholder="备注" />
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" align="center" width="100" fixed="right">
@@ -847,20 +847,12 @@ export default {
       const params = { ...this.queryParams };
       params.billType = 1;
       listApply(params).then(response => {
-        // 前端二次过滤：确保只显示SL开头的单号，排除ZK开头的转科申请
-        if (response.rows && response.rows.length > 0) {
-          this.applyList = response.rows.filter(item => {
-            const billNo = item.applyBillNo || '';
-            // 只保留SL开头的申领单，排除ZK开头的转科申请
-            return billNo.toUpperCase().startsWith('SL') && (item.billType === 1 || item.billType == null);
-          });
-          this.total = this.applyList.length;
-        } else {
-          this.applyList = [];
-          this.total = 0;
-        }
+        this.applyList = response.rows || [];
+        this.total = response.total != null ? response.total : 0;
         this.loading = false;
       }).catch(() => {
+        this.applyList = [];
+        this.total = 0;
         this.loading = false;
       });
     },
@@ -1246,10 +1238,13 @@ export default {
     reset() {
       this.form = {
         id: null,
+        applyBillNo: null,
         applyBillDate: null,
         warehouseId: null,
+        departmentId: null,
         userId: null,
         applyBillStatus: null,
+        billType: 1,
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -1350,11 +1345,10 @@ export default {
     },
     /** 查看按钮操作 */
     handleView(row){
-
-      const id = row.id
+      const id = row.id;
       getApply(id).then(response => {
         this.form = response.data;
-        this.basApplyEntryList = response.data.basApplyEntryList;
+        this.basApplyEntryList = response.data.basApplyEntryList || [];
         this.open = true;
         this.calculateTotals();
         this.action = false;
@@ -1386,7 +1380,7 @@ export default {
       const id = row.id || this.ids
       getApply(id).then(response => {
         this.form = response.data;
-        this.basApplyEntryList = response.data.basApplyEntryList;
+        this.basApplyEntryList = response.data.basApplyEntryList || [];
         this.open = true;
         this.calculateTotals();
         this.action = true;
@@ -1404,10 +1398,22 @@ export default {
       
       this.$refs["form"].validate(valid => {
         if (valid) {
+          const validEntries = this.basApplyEntryList.filter(item => item.materialId);
+          if (validEntries.length === 0) {
+            this.$modal.msgError("请至少添加一条有效明细（选择耗材）");
+            return;
+          }
+          const invalidQty = this.basApplyEntryList.filter(item =>
+            item.materialId && (item.qty == null || item.qty === '' || Number(item.qty) <= 0)
+          );
+          if (invalidQty.length > 0) {
+            this.$modal.msgError("存在明细数量为空或0，请填写有效数量后再保存。");
+            return;
+          }
           this.form.basApplyEntryList = this.basApplyEntryList;
           var totalAmt = 0;
           this.basApplyEntryList.forEach(item => {
-            if(item.amt){
+            if (item.amt) {
               totalAmt += parseFloat(item.amt);
             }
           });
@@ -1446,9 +1452,8 @@ export default {
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      const ids = row.id || this.ids;
-      const billNo = row.applyBillNo || '';
-      this.$modal.confirm('你好！是否确认删除申领单，单号"' + billNo + '"的数据项？').then(function() {
+      const ids = row.id != null ? row.id : this.ids;
+      this.$modal.confirm('是否确认删除所选科室申领数据？').then(() => {
         return delApply(ids);
       }).then(() => {
         this.getList();
@@ -1497,10 +1502,25 @@ export default {
     handleBasApplyEntrySelectionChange(selection) {
       this.checkedBasApplyEntry = selection.map(item => item.index)
     },
-    /** 导出按钮操作 */
-    handleExport() {
+    /** 单据列表行：导出该单明细 */
+    handleExportRowDetail(row) {
+      if (!row || !row.id) {
+        return
+      }
       this.download('department/apply/export', {
-        ...this.queryParams
+        ...this.queryParams,
+        exportBillIds: String(row.id)
+      }, `apply_${row.applyBillNo || row.id}_${new Date().getTime()}.xlsx`)
+    },
+    /** 导出按钮操作（导出勾选单据明细） */
+    handleExport() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning('请先勾选要导出的单据')
+        return
+      }
+      this.download('department/apply/export', {
+        ...this.queryParams,
+        exportBillIds: this.ids.join(',')
       }, `apply_${new Date().getTime()}.xlsx`)
     }
   }

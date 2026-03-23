@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-row :gutter="20">
       <!-- 左侧68分类树 -->
@@ -28,13 +28,13 @@
       <el-col :span="20">
         <!-- 查询条件容器 -->
         <div class="query-container">
-          <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+          <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
             <el-row class="query-row-first">
               <el-col :span="24">
-                <el-form-item label="档案名称" prop="name" class="query-item-inline">
+                <el-form-item prop="name" class="query-item-inline">
                   <el-input
                     v-model="queryParams.name"
-                    placeholder="请输入档案名称"
+                    placeholder="档案名称"
                     clearable
                     @keyup.enter.native="handleQuery"
                     style="width: 180px"
@@ -45,7 +45,7 @@
 
             <el-row class="query-row-second">
               <el-col :span="24" style="display: flex; flex-wrap: nowrap; align-items: center;">
-                <el-form-item label="创建日期" class="query-item-inline" style="margin-right: 16px;">
+                <el-form-item class="query-item-inline" style="margin-right: 16px;">
                   <el-date-picker
                     v-model="queryParams.beginDate"
                     type="date"
@@ -65,8 +65,8 @@
                   />
                 </el-form-item>
 
-                <el-form-item label="状态" prop="isUse" class="query-item-inline" style="margin-right: 16px;">
-                  <el-select v-model="queryParams.isUse" placeholder="请选择" style="width: 100px">
+                <el-form-item prop="isUse" class="query-item-inline" style="margin-right: 16px;">
+                  <el-select v-model="queryParams.isUse" placeholder="状态" style="width: 100px" clearable>
                     <el-option
                       v-for="dict in dict.type.is_use_status"
                       :key="dict.value"
@@ -84,20 +84,14 @@
         <el-row :gutter="10" class="mb8" style="padding-top: 10px">
           <el-col :span="1.5">
             <el-button
-              type="primary"
-              plain
-              icon="el-icon-plus"
-              size="small"
+              type="primary" size="small"
               @click="handleAdd"
               v-hasPermi="['foundation:equipmentDict:add']"
             >新增</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="success"
-              plain
-              icon="el-icon-edit"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:equipmentDict:edit']"
@@ -105,10 +99,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="danger"
-              plain
-              icon="el-icon-delete"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:equipmentDict:remove']"
@@ -116,10 +107,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="warning"
-              plain
-              icon="el-icon-download"
-              size="small"
+              type="primary" size="small"
               @click="handleExport"
               v-hasPermi="['foundation:equipmentDict:export']"
             >导出</el-button>
@@ -127,23 +115,19 @@
           <el-col :span="1.5">
             <el-button
               type="primary"
-              icon="el-icon-search"
               size="small"
               @click="handleQuery"
             >搜索</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button
-              icon="el-icon-refresh"
               size="small"
               @click="resetQuery"
             >重置</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="info"
-              icon="el-icon-upload2"
-              size="small"
+              type="primary" size="small"
               @click="handleImport"
               v-hasPermi="['foundation:equipmentDict:import']"
             >导入</el-button>
@@ -151,7 +135,7 @@
           <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
-    <el-table v-loading="loading" :data="equipmentDictList" :row-class-name="equipmentDictIndex" @selection-change="handleSelectionChange" height="58vh" border>
+    <el-table v-loading="loading" :data="equipmentDictList" :row-class-name="equipmentDictIndex" @selection-change="handleSelectionChange" height="58vh" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column type="index" label="序号" align="center" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -175,14 +159,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:equipmentDict:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:equipmentDict:remove']"
           >删除</el-button>
@@ -223,14 +205,14 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="档案名称：" prop="name">
-                    <el-input v-model="form.name" @input="nameChange" placeholder="请输入档案名称" />
+                    <el-input v-model="form.name" @input="nameChange" placeholder="档案名称" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="所属分类：" prop="category68Id">
                     <el-select 
                       v-model="form.category68Id" 
-                      placeholder="请选择所属分类" 
+                      placeholder="所属分类" 
                       style="width: 100%"
                       filterable
                       clearable
@@ -258,7 +240,7 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="财务分类：" prop="isWay">
-                    <el-select v-model="form.isWay" placeholder="请选择财务分类" style="width: 100%">
+                    <el-select v-model="form.isWay" placeholder="财务分类" style="width: 100%">
                       <el-option
                         v-for="dict in dict.type.way_status"
                         :key="dict.value"
@@ -270,12 +252,12 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="折旧年限：" prop="depreciationYears">
-                    <el-input-number v-model="form.depreciationYears" placeholder="请输入折旧年限" :min="0" :precision="0" style="width: 100%" />
+                    <el-input-number v-model="form.depreciationYears" placeholder="折旧年限" :min="0" :precision="0" style="width: 100%" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="使用年限：" prop="useYears">
-                    <el-input-number v-model="form.useYears" placeholder="请输入使用年限" :min="0" :precision="0" style="width: 100%" />
+                    <el-input-number v-model="form.useYears" placeholder="使用年限" :min="0" :precision="0" style="width: 100%" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -310,9 +292,9 @@
                 </div>
               </el-upload>
               <div v-if="form.imageUrl" style="margin-top: 20px;">
-                <el-button type="primary" icon="el-icon-view" @click="previewImage">查看图片</el-button>
-                <el-button type="success" icon="el-icon-check" @click="saveImage">保存</el-button>
-                <el-button type="danger" icon="el-icon-delete" @click="removeImage">删除图片</el-button>
+                <el-button type="primary" @click="previewImage">查看图片</el-button>
+                <el-button type="primary" @click="saveImage">保存</el-button>
+                <el-button type="primary" @click="removeImage">删除图片</el-button>
               </div>
             </div>
           </div>

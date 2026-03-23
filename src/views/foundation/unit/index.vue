@@ -1,22 +1,22 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-form-item label="单位编码" prop="unitCode">
+          <el-form-item prop="unitCode">
             <el-input
               v-model="queryParams.unitCode"
-              placeholder="请输入单位编码"
+              placeholder="单位编码"
               clearable
               @keyup.enter.native="handleQuery"
             />
           </el-form-item>
         </el-col>
         <el-col :span="6">
-          <el-form-item label="单位名称" prop="unitName">
+          <el-form-item prop="unitName">
             <el-input
               v-model="queryParams.unitName"
-              placeholder="请输入单位名称"
+              placeholder="单位名称"
               clearable
               @keyup.enter.native="handleQuery"
             />
@@ -24,8 +24,8 @@
         </el-col>
         <el-col :span="6">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+            <el-button size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -34,20 +34,14 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="small"
+          type="primary" size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:unit:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
+          type="primary" size="small"
           @click="handleExport"
           v-hasPermi="['foundation:unit:export']"
         >导出</el-button>
@@ -55,11 +49,13 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="unitList" :row-class-name="unitIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+    <el-table v-loading="loading" :data="unitList" :row-class-name="unitIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="50"/>
       <el-table-column label="单位编码" align="center" prop="unitCode" width="120"/>
       <el-table-column label="单位名称" align="center" prop="unitName" width="180"/>
+      <el-table-column label="租户ID" align="center" prop="tenantId" width="130" show-overflow-tooltip />
+      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
       <el-table-column label="创建日期" align="center" prop="createTime" width="100">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
@@ -76,14 +72,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:unit:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:unit:remove']"
           >删除</el-button>
@@ -112,18 +106,30 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="单位名称" prop="unitName">
-                <el-input v-model="form.unitName" placeholder="请输入单位名称" style="width: 100%" />
+                <el-input v-model="form.unitName" placeholder="单位名称" style="width: 100%" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="是否">
+              <el-form-item label="启用">
                 <el-switch
                   v-model="form.delFlag"
                   :active-value="0"
                   :inactive-value="1"
                 ></el-switch>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="租户ID(客户)">
+                <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -138,10 +144,14 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 import { listUnit, getUnit, delUnit, addUnit, updateUnit } from "@/api/foundation/unit";
 
 export default {
   name: "Unit",
+  computed: {
+    ...mapGetters(["customerId"]),
+  },
   data() {
     return {
       // 遮罩层
@@ -203,7 +213,9 @@ export default {
         unitId: null,
         unitCode: null,
         unitName: null,
-        delFlag: 0, // 默认启用
+        delFlag: 0,
+        tenantId: null,
+        remark: null,
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -230,6 +242,7 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
+      this.form.tenantId = this.customerId || null;
       this.open = true;
       this.title = "添加单位明细";
     },

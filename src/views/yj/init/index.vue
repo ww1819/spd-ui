@@ -1,18 +1,18 @@
-﻿<template>
+<template>
   <div class="inventory-management">
     <!-- 搜索框 -->
-    <el-form :inline="true" :model="searchForm" class="search-form">
-      <el-form-item label="机构单位：">
-        <el-select v-model="searchForm.orgUnit" placeholder="请选择机构单位">
+    <el-form :inline="true" :model="searchForm" class="query-form search-form">
+      <el-form-item>
+        <el-select v-model="searchForm.orgUnit" placeholder="机构单位">
           <el-option label="巴中市中心医院" value="巴中市中心医院"></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="仓库：">
-        <el-select v-model="searchForm.warehouse" placeholder="请选择仓库">
+      <el-form-item>
+        <el-select v-model="searchForm.warehouse" placeholder="仓库">
           <el-option label="南坝中心库房" value="南坝中心库房"></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="周期：">
+      <el-form-item>
         <el-date-picker
           v-model="searchForm.period"
           type="daterange"
@@ -29,13 +29,13 @@
 
     <!-- 功能按钮 -->
     <div class="function-buttons">
-      <el-button type="primary" icon="el-icon-refresh-right" @click="onInitialize">初始化</el-button>
-      <el-button type="primary" icon="el-icon-check" @click="onMonthEndProcessing">月结处理</el-button>
-      <el-button type="danger" icon="el-icon-delete" @click="onClearMonthEnd">清除月结</el-button>
+      <el-button type="primary" @click="onInitialize">初始化</el-button>
+      <el-button type="primary" @click="onMonthEndProcessing">月结处理</el-button>
+      <el-button type="primary" @click="onClearMonthEnd">清除月结</el-button>
     </div>
 
     <!-- 表格 -->
-    <el-table :data="tableData" border style="width: 100%">
+    <el-table :data="tableData" border stripe style="width: 100%">
       <el-table-column prop="category" label="分类" align="center"></el-table-column>
       <el-table-column prop="initialAmount" label="期初金额" align="center"></el-table-column>
       <el-table-column prop="inAmount" label="进项金额" align="center"></el-table-column>

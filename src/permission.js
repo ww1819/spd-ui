@@ -33,13 +33,22 @@ router.beforeEach((to, from, next) => {
             } else {
               next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
             }
-          })
-        }).catch(err => {
+          }).catch(err => {
+            isRelogin.show = false
+            const msg = (err && (err.message || err.msg)) || err || '获取菜单失败'
+            Message.error(typeof msg === 'string' ? msg : '获取菜单失败')
             store.dispatch('LogOut').then(() => {
-              Message.error(err)
-              next({ path: '/' })
+              next(`/login?redirect=${to.fullPath}`)
             })
           })
+        }).catch(err => {
+          isRelogin.show = false
+          const msg = (err && (err.message || err.msg)) || err || '获取用户信息失败'
+          Message.error(typeof msg === 'string' ? msg : '获取用户信息失败')
+          store.dispatch('LogOut').then(() => {
+            next(`/login?redirect=${to.fullPath}`)
+          })
+        })
       } else {
         if (to.meta && to.meta.paused === true) {
           Message.warning('当前菜单功能已被暂停使用')

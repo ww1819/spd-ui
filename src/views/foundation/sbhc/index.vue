@@ -1,22 +1,22 @@
-﻿<template>
+<template>
     <div class="inspection-platform">
       <!-- 顶部搜索栏 -->
       <div class="search-bar">
-        <el-form inline>
-          <el-form-item label="检验平台：">
-            <el-input v-model="searchForm.platform" placeholder="请输入检验平台名称/编码..." clearable></el-input>
-          </el-form-item>
-          <el-form-item label="仪器：">
-            <el-input v-model="searchForm.instrument" placeholder="请输入仪器名称" clearable></el-input>
-          </el-form-item>
-          <el-form-item label="耗材：">
-            <el-input v-model="searchForm.consumable" placeholder="请输入耗材名称/编码..." clearable></el-input>
+        <el-form inline class="query-form">
+          <el-form-item>
+            <el-input v-model="searchForm.platform" placeholder="检验平台名称/编码..." clearable></el-input>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" @click="handleSearch">查询</el-button>
+            <el-input v-model="searchForm.instrument" placeholder="仪器名称" clearable></el-input>
           </el-form-item>
           <el-form-item>
-            <el-button icon="el-icon-refresh" @click="handleReset">重置</el-button>
+            <el-input v-model="searchForm.consumable" placeholder="耗材名称/编码..." clearable></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleSearch">查询</el-button>
+          </el-form-item>
+          <el-form-item>
+            <el-button @click="handleReset">重置</el-button>
           </el-form-item>
         </el-form>
       </div>
@@ -32,6 +32,7 @@
             style="width: 100%" 
             :header-cell-style="{background:'#f5f7fa',color:'#606266'}"
             highlight-current-row
+            stripe
             @current-change="handlePlatformSelect"
             @row-click="handlePlatformSelect">
             <el-table-column type="index" label="序" width="50"></el-table-column>
@@ -49,6 +50,7 @@
             style="width: 100%" 
             :header-cell-style="{background:'#f5f7fa',color:'#606266'}"
             highlight-current-row
+            stripe
             @current-change="handleInstrumentSelect"
             @row-click="handleInstrumentSelect">
             <el-table-column type="index" label="序" width="50"></el-table-column>
@@ -65,6 +67,7 @@
             border 
             style="width: 100%" 
             :header-cell-style="{background:'#f5f7fa',color:'#606266'}"
+            stripe
             @selection-change="handleConsumableSelect"
             @row-click="(row, column, event) => toggleRowSelection(row, 'instrumentConsumableTable')"
             ref="instrumentConsumableTable">
@@ -81,9 +84,9 @@
           <div class="list-header">
             <el-input v-model="consumableSearch" placeholder="耗材名称、编码" clearable></el-input>
             <div class="button-group">
-              <el-button icon="el-icon-arrow-left" circle @click="handleMoveLeft"></el-button>
-              <el-button icon="el-icon-arrow-right" circle @click="handleMoveRight"></el-button>
-              <el-button type="primary" icon="el-icon-check" @click="handleSave">保存</el-button>
+              <el-button circle @click="handleMoveLeft"></el-button>
+              <el-button circle @click="handleMoveRight"></el-button>
+              <el-button type="primary" @click="handleSave">保存</el-button>
             </div>
           </div>
           <el-table 
@@ -91,6 +94,7 @@
             border 
             style="width: 100%" 
             :header-cell-style="{background:'#f5f7fa',color:'#606266'}"
+            stripe
             @selection-change="handleConsumableSelect"
             @row-click="(row, column, event) => toggleRowSelection(row,'consumableTable')"
             ref="consumableTable">

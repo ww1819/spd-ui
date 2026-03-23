@@ -1,12 +1,12 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
       <el-row class="query-row-left">
         <el-col :span="24">
           <el-form-item label="调拨单号" prop="billNo" class="query-item-inline">
             <el-input v-model="queryParams.billNo"
-                      placeholder="请输入调拨单号"
+                      placeholder="调拨单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
@@ -88,7 +88,7 @@
     <el-table v-loading="loading" :data="transferList"
               :row-class-name="transferListIndex"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="58vh" border>
+              @selection-change="handleSelectionChange" height="58vh" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="调拨单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable >
@@ -231,7 +231,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" :disabled="true" placeholder="请输入备注" />
+              <el-input v-model="form.remark" :disabled="true" placeholder="备注" />
             </el-form-item>
           </el-col>
         </el-row>

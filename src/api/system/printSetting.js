@@ -17,11 +17,16 @@ export function getPrintSetting(id) {
   })
 }
 
-// 根据入库单类型获取默认模板
-export function getDefaultTemplate(billType) {
+// 根据单据类型获取生效默认模板（后端：先租户专属再全库默认）；可选 tenantId 覆盖
+export function getDefaultTemplate(billType, tenantId) {
+  const params = {}
+  if (tenantId) {
+    params.tenantId = tenantId
+  }
   return request({
-    url: '/system/printSetting/getDefault/' + (billType || 'null'),
-    method: 'get'
+    url: '/system/printSetting/getDefault/' + (billType === null || billType === undefined ? 'null' : billType),
+    method: 'get',
+    params: Object.keys(params).length ? params : undefined
   })
 }
 

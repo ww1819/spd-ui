@@ -6,7 +6,7 @@
         <el-button type="text" @click="handleClose" class="close-btn" style="font-size:14px;padding:0;color:#909399;">关闭</el-button>
       </div>
       <div class="modal-body">
-        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="库房分类" prop="storeroomId" label-width="100px">
@@ -24,7 +24,7 @@
             <el-form-item label="耗材" prop="name" label-width="100px">
               <el-input 
                 v-model="queryParams.name" 
-                placeholder="请输入耗材编码、名称或首字母" 
+                placeholder="耗材编码、名称或首字母" 
                 clearable 
                 @keyup.enter.native="handleQuery"
               />

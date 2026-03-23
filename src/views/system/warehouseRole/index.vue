@@ -1,25 +1,25 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
-      <el-form-item label="角色名称" prop="roleName">
+    <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
+      <el-form-item prop="roleName">
         <el-input
           v-model="queryParams.roleName"
-          placeholder="请输入角色名称"
+          placeholder="角色名称"
           clearable
           style="width: 240px"
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="权限字符" prop="roleKey">
+      <el-form-item prop="roleKey">
         <el-input
           v-model="queryParams.roleKey"
-          placeholder="请输入权限字符"
+          placeholder="权限字符"
           clearable
           style="width: 240px"
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="状态" prop="status">
+      <el-form-item prop="status">
         <el-select
           v-model="queryParams.status"
           placeholder="角色状态"
@@ -34,7 +34,7 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="创建时间">
+      <el-form-item>
         <el-date-picker
           v-model="dateRange"
           style="width: 240px"
@@ -46,8 +46,8 @@
         ></el-date-picker>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+        <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -55,8 +55,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="small"
           @click="handleAdd"
           v-hasPermi="['system:role:add']"
@@ -64,9 +62,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
+          type="primary"
           size="small"
           :disabled="single"
           @click="handleUpdate"
@@ -75,9 +71,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
+          type="primary"
           size="small"
           :disabled="multiple"
           @click="handleDelete"
@@ -86,9 +80,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
           v-hasPermi="['system:role:export']"
@@ -97,7 +89,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="roleList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="roleList" stripe @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="角色编号" prop="roleId" width="120" />
       <el-table-column label="角色名称" prop="roleName" :show-overflow-tooltip="true" width="150" />
@@ -123,19 +115,17 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:role:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:role:remove']"
           >删除</el-button>
           <el-dropdown size="small" @command="(command) => handleCommand(command, scope.row)" v-hasPermi="['system:role:edit']">
-            <el-button size="small" type="text" icon="el-icon-d-arrow-right">更多</el-button>
+            <el-button size="small" type="text">更多</el-button>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item command="handleDataScope" icon="el-icon-circle-check"
                 v-hasPermi="['system:role:edit']">数据权限</el-dropdown-item>
@@ -159,7 +149,7 @@
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="角色名称" prop="roleName">
-          <el-input v-model="form.roleName" placeholder="请输入角色名称" />
+          <el-input v-model="form.roleName" placeholder="角色名称" />
         </el-form-item>
         <el-form-item prop="roleKey">
           <span slot="label">
@@ -168,7 +158,7 @@
             </el-tooltip>
             权限字符
           </span>
-          <el-input v-model="form.roleKey" placeholder="请输入权限字符" />
+          <el-input v-model="form.roleKey" placeholder="权限字符" />
         </el-form-item>
         <el-form-item label="角色顺序" prop="roleSort">
           <el-input-number v-model="form.roleSort" controls-position="right" :min="0" />
@@ -198,7 +188,7 @@
           ></el-tree>
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入内容"></el-input>
+          <el-input v-model="form.remark" type="textarea" placeholder="内容"></el-input>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">

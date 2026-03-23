@@ -1,18 +1,18 @@
 <template>
   <div class="app-container stocktaking-apply-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="业务单号" prop="stockNo" class="query-item-inline">
+            <el-form-item prop="stockNo" class="query-item-inline">
               <el-input v-model="queryParams.stockNo"
-                        placeholder="请输入业务单号"
+                        placeholder="业务单号"
                         clearable
                         style="width: 180px"
                         @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+            <el-form-item prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
@@ -22,7 +22,7 @@
 
       <el-row :gutter="16" class="query-row-second">
           <el-col :span="12">
-            <el-form-item label="制单日期" style="display: flex; align-items: center;">
+            <el-form-item style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -50,8 +50,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="medium"
           @click="handleAdd"
           v-hasPermi="['department:stocktaking:add']"
@@ -59,9 +57,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['department:stocktaking:export']"
@@ -70,14 +66,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -85,7 +80,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="stocktakingList" class="table-compact" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
+    <el-table v-loading="loading" :data="stocktakingList" class="table-compact" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="盘点单号" align="center" prop="stockNo" width="180" show-overflow-tooltip resizable>
@@ -125,14 +120,12 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-download"
               @click="handleExportRow(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >导出</el-button>
             <el-button
               size="small"
               type="text"
-              icon="el-icon-printer"
               @click="handlePrint(scope.row,true)"
               v-if="scope.row.stockStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -140,7 +133,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['department:stocktaking:edit']"
               v-if="scope.row.stockStatus != 2"
@@ -149,7 +141,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['department:stocktaking:remove']"
               v-if="scope.row.stockStatus != 2"
@@ -280,13 +271,13 @@
 
           <el-table-column label="盘点数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.stockQty" type='number' @input="stockQtyChange(scope.row)" placeholder="请输入盘点数量" />
+              <el-input v-model="scope.row.stockQty" type='number' @input="stockQtyChange(scope.row)" placeholder="盘点数量" />
             </template>
           </el-table-column>
 
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
             </template>
           </el-table-column>
           <el-table-column label="盈亏数量" align="center" width="120" show-overflow-tooltip resizable>
@@ -301,13 +292,13 @@
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
+              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" />
             </template>
           </el-table-column>
 
           <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" placeholder="请输入批号" />
+              <el-input v-model="scope.row.batchNumber" placeholder="批号" />
             </template>
           </el-table-column>
           <el-table-column label="生产日期" prop="beginTime" width="240" show-overflow-tooltip resizable>
@@ -344,7 +335,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="400" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
         </el-table>
@@ -521,7 +512,7 @@ export default {
           stockQty: item.qty, // 盘点数量，默认等于库存数量
           amt: item.amt,
           batchNo: item.batchNo,
-          batchNumber: item.materialNo || '',
+          batchNumber: item.batchNumber || item.materialNo || '',
           beginTime: beginTime ? (typeof beginTime === 'string' ? beginTime : this.parseTime(beginTime, '{y}-{m}-{d}')) : '',
           endTime: endTime ? (typeof endTime === 'string' ? endTime : this.parseTime(endTime, '{y}-{m}-{d}')) : '',
           remark: ''

@@ -1,13 +1,13 @@
 <template>
   <div class="app-container">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
         <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item label="业务单号" prop="stockNo" class="query-item-inline">
               <el-input v-model="queryParams.stockNo"
-                        placeholder="请输入业务单号"
+                        placeholder="业务单号"
                         clearable
                         style="width: 180px"
                         @keyup.enter.native="handleQuery"
@@ -97,7 +97,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="inList" :row-class-name="inListIndex" @selection-change="handleSelectionChange" height="54vh" border>
+    <el-table v-loading="loading" :data="inList" :row-class-name="inListIndex" @selection-change="handleSelectionChange" height="54vh" border stripe>
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="业务单号" align="center" prop="stockNo" width="180" show-overflow-tooltip resizable >
@@ -316,7 +316,7 @@
           </el-table-column>
           <el-table-column label="盘点数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.stockQty" placeholder="请输入盘点数量"
+              <el-input clearable v-model="scope.row.stockQty" placeholder="盘点数量"
                         onkeyup="value=value.replace(/\D/g,'')"
                         onafterpaste="value=value.replace(/\D/g,'')"
                         @blur="form.result=$event.target.value"
@@ -361,7 +361,7 @@
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="请输入批号" />
+              <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="批号" />
             </template>
           </el-table-column>
           <el-table-column label="生产厂家" align="center" width="180" show-overflow-tooltip resizable>
@@ -386,7 +386,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
           <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
@@ -553,7 +553,7 @@ export default {
         obj.profitAmount = 0;
         obj.amt = item.amt;
         obj.batchNo = item.batchNo;
-        obj.batchNumber = item.materialNo;
+        obj.batchNumber = item.batchNumber || item.materialNo || '';
         obj.beginTime = item.beginTime;
         obj.endTime = item.endTime;
         obj.remark = item.remark;
@@ -908,7 +908,7 @@ export default {
             obj.profitAmount = 0;
             obj.amt = parseFloat(item.amt) || (obj.qty * obj.price);
             obj.batchNo = item.batchNo || '';
-            obj.batchNumber = item.materialNo || '';
+            obj.batchNumber = item.batchNumber || item.materialNo || '';
             obj.beginTime = item.beginTime || item.materialDate || '';
             obj.endTime = item.endTime || '';
             obj.remark = item.remark || '';

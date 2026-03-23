@@ -1,23 +1,23 @@
 <template>
   <div class="app-container outWarehouse-apply-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
-          <el-form-item label="出库单号" prop="billNo" class="query-item-inline">
+          <el-form-item prop="billNo" class="query-item-inline">
             <el-input v-model="queryParams.billNo"
-                      placeholder="请输入出库单号"
+                      placeholder="出库单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+          <el-form-item prop="departmentId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectDepartment v-model="queryParams.departmentId" />
             </div>
           </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+          <el-form-item prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
             </div>
@@ -27,7 +27,7 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="制单日期" style="display: flex; align-items: center;">
+          <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -48,8 +48,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.billStatus" placeholder="全部"
+          <el-form-item prop="billStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                        clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -68,8 +68,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="medium"
           @click="handleAdd"
           v-hasPermi="['outWarehouse:apply:add']"
@@ -77,9 +75,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['outWarehouse:apply:export']"
@@ -88,14 +84,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -106,7 +101,7 @@
     <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="出库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
@@ -165,13 +160,12 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
               size="small"
               type="text"
-              icon="el-icon-printer"
               @click="handlePrint(scope.row,true)"
               v-if="scope.row.billStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -179,7 +173,15 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
+              icon="el-icon-download"
+              @click="handleExportRowPickList(scope.row)"
+              v-hasPermi="['outWarehouse:apply:export']"
+              style="padding: 0 5px; margin: 0;"
+            >导出</el-button>
+            <el-button
+              size="small"
+              type="text"
+              
               @click="handleUpdate(scope.row)"
               v-hasPermi="['outWarehouse:apply:edit']"
               v-if="scope.row.billStatus != 2"
@@ -188,7 +190,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['outWarehouse:apply:remove']"
               v-if="scope.row.billStatus != 2"
@@ -258,7 +259,7 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
+              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -272,6 +273,16 @@
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <span>出库明细信息</span>
+          </el-col>
+          <el-col :span="1.5" v-if="form.id">
+            <el-button
+              type="warning"
+              plain
+              icon="el-icon-download"
+              size="small"
+              @click="handleExportDetailPickList"
+              v-hasPermi="['outWarehouse:apply:export']"
+            >导出拣货单</el-button>
           </el-col>
 
           <div v-show="action">
@@ -316,12 +327,12 @@
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.unitPrice" type='number' :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="请输入单价" />
+                        @input="priceChange(scope.row)" placeholder="单价" />
             </template>
           </el-table-column>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
+              <el-input clearable v-model="scope.row.qty" placeholder="数量"
                         onkeyup="value=value.replace(/\D/g,'')"
                         onafterpaste="value=value.replace(/\D/g,'')"
                         @blur="form.result=$event.target.value"
@@ -331,17 +342,17 @@
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
+              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" />
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" :disabled="true" placeholder="请输入批号" />
+              <el-input v-model="scope.row.batchNumber" :disabled="true" placeholder="批号" />
             </template>
           </el-table-column>
           <el-table-column label="生产日期" prop="beginTime" width="180" show-overflow-tooltip resizable>
@@ -373,7 +384,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
           <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
@@ -424,15 +435,44 @@
 
     </SelectRkApply>
 
-    <el-dialog :visible.sync="modalObj.show" :title="modalObj.title" :width="modalObj.width">
-      <template v-if="modalObj.component === 'print-type'">
+    <el-dialog
+      :visible.sync="modalObj.show"
+      :width="modalObj.width"
+      custom-class="out-warehouse-print-dialog"
+      append-to-body
+    >
+      <template slot="title">
+        <div class="print-dialog-title-row">
+          <span class="print-dialog-title-text">{{ modalObj.title }}</span>
+          <div v-if="showPrintOrientation" class="print-orientation-in-title">
+            <span class="print-orientation-label">打印方向</span>
+            <el-radio-group v-model="modalObj.form.printOrientation" size="small">
+              <el-radio label="landscape">横向</el-radio>
+              <el-radio label="portrait">纵向</el-radio>
+            </el-radio-group>
+          </div>
+        </div>
+      </template>
+      <div v-if="modalObj.component === 'print-type'">
         <el-radio-group v-model="modalObj.form.value">
           <el-radio :label="2">浏览器打印</el-radio>
         </el-radio-group>
-      </template>
-      <template v-if="modalObj.form.value === 2 || modalObj.component === 'window-print-preview'">
-        <out-order-print :row="modalObj.form.row" ref="receiptOrderPrintRef"></out-order-print>
-      </template>
+        <div style="margin-top: 10px;">
+          <span style="margin-right: 10px;">纸张</span>
+          <el-radio-group v-model="modalObj.form.paperType" size="small">
+            <el-radio label="third-split">三等分纸</el-radio>
+            <el-radio label="a4">A4（单页三联）</el-radio>
+          </el-radio-group>
+        </div>
+      </div>
+      <div v-if="showPrintContent">
+        <out-order-print
+          :row="modalObj.form.row"
+          :print-orientation="modalObj.form.printOrientation || 'landscape'"
+          :paper-type="modalObj.form.paperType || 'third-split'"
+          ref="receiptOrderPrintRef"
+        ></out-order-print>
+      </div>
       <template slot="footer" class="dialog-footer">
         <el-button @click="modalObj.cancel">取消</el-button>
         <el-button @click="modalObj.ok" type="primary">确认</el-button>
@@ -440,7 +480,13 @@
     </el-dialog>
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
-      <out-order-print v-if="printRowData" :row="printRowData" ref="receiptOrderPrintRefAuto"></out-order-print>
+      <out-order-print
+        v-if="printRowData"
+        :row="printRowData"
+        paper-type="third-split"
+        print-orientation="landscape"
+        ref="receiptOrderPrintRefAuto"
+      ></out-order-print>
     </div>
   </div>
 </template>
@@ -489,7 +535,9 @@ export default {
         component: null,
         form: {
           value: null,
-          row: null
+          row: null,
+          printOrientation: 'landscape',
+          paperType: 'third-split'
         },
         ok: () => {
         },
@@ -546,6 +594,19 @@ export default {
         ],
       }
     };
+  },
+  computed: {
+    showPrintOrientation() {
+      const m = this.modalObj
+      if (!m || !m.form) return false
+      return m.component === 'window-print-preview'
+        || (m.component === 'print-type' && Number(m.form.value) === 2)
+    },
+    showPrintContent() {
+      const m = this.modalObj
+      if (!m || !m.form) return false
+      return Number(m.form.value) === 2 || m.component === 'window-print-preview'
+    }
   },
   created() {
     this.getList();
@@ -673,7 +734,7 @@ export default {
         obj.qty = item.qty;
         obj.amt = item.amt;
         obj.batchNo = item.batchNo;
-        obj.batchNumber = item.materialNo;
+        obj.batchNumber = item.batchNumber || item.materialNo || "";
         obj.beginTime = item.beginTime;
         obj.endTime = item.endTime;
         obj.supplierId = item.supplierId;
@@ -928,12 +989,17 @@ export default {
         this.getOutWarehouseDetail(row).then(res => {
           // 设置打印数据
           this.printRowData = res
-          // 等待组件渲染后调用 start()
           this.$nextTick(() => {
-            if (this.$refs['receiptOrderPrintRefAuto']) {
-              // start() 方法会直接触发浏览器打印对话框
-              this.$refs['receiptOrderPrintRefAuto'].start()
-            }
+            this.$nextTick(() => {
+              const ref = this.$refs['receiptOrderPrintRefAuto']
+              if (ref && typeof ref.start === 'function') {
+                ref.start()
+              } else {
+                setTimeout(() => {
+                  this.$refs['receiptOrderPrintRefAuto']?.start?.()
+                }, 100)
+              }
+            })
           })
         })
         return
@@ -946,14 +1012,18 @@ export default {
         component: 'print-type',
         form: {
           value: 2,
-          row
+          row,
+          printOrientation: 'landscape',
+          paperType: 'third-split'
         },
         ok: () => {
+          const orient = (this.modalObj.form && this.modalObj.form.printOrientation) || 'landscape'
+          const paperType = (this.modalObj.form && this.modalObj.form.paperType) || 'third-split'
           this.modalObj.show = false
           if (this.modalObj.form.value === 1) {
             this.doPrintOut(row, false)
           } else {
-            this.windowPrintOut(row, print)
+            this.windowPrintOut(row, print, orient, paperType)
           }
         },
         cancel: () => {
@@ -961,10 +1031,15 @@ export default {
         }
       }
     },
-    windowPrintOut(row, print) {
+    windowPrintOut(row, print, printOrientation, paperType) {
+      const orient = printOrientation || 'landscape'
+      const pType = paperType || 'third-split'
       this.getOutWarehouseDetail(row).then(res => {
         if (print) {
+          if (!this.modalObj.form) this.modalObj.form = {}
           this.modalObj.form.row = res
+          this.modalObj.form.printOrientation = orient
+          this.modalObj.form.paperType = pType
           this.$nextTick(() => {
             this.$refs['receiptOrderPrintRef'].start()
           })
@@ -974,12 +1049,14 @@ export default {
           this.modalObj = {
             show: true,
             title: '浏览器打印预览',
-            width: '800px',
+            width: '960px',
             component: 'window-print-preview',
             form: {
               value: 2,
               row: res,
-              print
+              print,
+              printOrientation: orient,
+              paperType: pType
             },
             ok: () => {
               this.modalObj.show = false
@@ -1004,25 +1081,33 @@ export default {
     getOutWarehouseDetail(row) {
       //查询详情
       return getOutWarehouse(row.id).then(response => {
-        const details = response.data.stkIoBillEntryList
-        const materiaDetails = response.data.materialList
+        const data = response.data
+        const details = data.stkIoBillEntryList
+        const materiaDetails = data.materialList
         const map = {};
 
         (materiaDetails || []).forEach(it => {
+          if (it == null || it.id == null) return
           map[it.id] = it
         })
 
         let detailList = [], totalAmt = 0, totalQty = 0
 
-        details && details.forEach(item => {
-          totalAmt += item.amt
-          totalQty += item.qty
+        ;(details || []).forEach(item => {
+          if (item == null) return
+          totalAmt += Number(item.amt) || 0
+          totalQty += Number(item.qty) || 0
 
-          const prod = map[item.materialId] || {}
+          const emb = item.material || {}
+          const arch = map[item.materialId] || {}
+          const prod = Object.assign({}, emb, arch)
           const fdFactory = prod.fdFactory != null ? prod.fdFactory : null
           const fdWarehouseCategory = prod.fdWarehouseCategory != null ? prod.fdWarehouseCategory : null
           const fdUnit = prod.fdUnit != null ? prod.fdUnit : null
 
+          const nameFromSnap = item.materialName != null && String(item.materialName).trim() !== ''
+          const specFromSnap = item.materialSpeci != null && String(item.materialSpeci).trim() !== ''
+          const modelFromSnap = item.materialModel != null && String(item.materialModel).trim() !== ''
           detailList.push({
             batchNumber: item.batchNumber,
             amt: item.amt,
@@ -1030,8 +1115,9 @@ export default {
             price: item.unitPrice,
             unitPrice: item.unitPrice,
             materialCode: (prod && prod.code) || '',
-            materialName: (prod && prod.name) || '',
-            materialSpeci: (prod && prod.speci) || '',
+            materialName: nameFromSnap ? item.materialName : ((prod && prod.name) || ''),
+            materialSpeci: specFromSnap ? item.materialSpeci : ((prod && prod.speci) || ''),
+            materialModel: modelFromSnap ? item.materialModel : ((prod && prod.model) || ''),
             periodDate: (prod && prod.periodDate) || '',
             factoryName: (fdFactory && fdFactory.factoryName) || '',
             warehouseCategoryName: (fdWarehouseCategory && fdWarehouseCategory.warehouseCategoryName) || '',
@@ -1046,18 +1132,18 @@ export default {
         let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
 
         return {
-          billNo: row.billNo,
-          departmentName: (row.department && row.department.name) || '',
-          warehouseName: (row.warehouse && row.warehouse.name) || '',
-          billDate: row.billDate,
-          auditDate: row.auditDate,
+          billNo: data.billNo || row.billNo,
+          departmentName: (data.department && data.department.name) || (row.department && row.department.name) || '',
+          warehouseName: (data.warehouse && data.warehouse.name) || (row.warehouse && row.warehouse.name) || '',
+          billDate: data.billDate || row.billDate,
+          auditDate: data.auditDate || row.auditDate,
           totalAmt: totalAmt,
           totalQty: totalQty,
           totalAmtConverter: totalAmtConverter,
           detailList: detailList,
-          fundSource: (row.fundSource != null ? row.fundSource : '') || '',
-          createBy: (row.createBy != null ? row.createBy : '') || '',
-          outboundOperator: (row.creater && row.creater.nickName) || (row.outboundOperator != null ? row.outboundOperator : row.createBy) || '',
+          fundSource: (data.fundSource != null ? data.fundSource : row.fundSource) || '',
+          createBy: (data.createBy != null ? data.createBy : row.createBy) || '',
+          outboundOperator: (data.creater && data.creater.nickName) || (row.creater && row.creater.nickName) || (data.outboundOperator != null ? data.outboundOperator : row.outboundOperator) || (data.createBy != null ? data.createBy : row.createBy) || '',
         }
       })
     },
@@ -1103,11 +1189,42 @@ export default {
     handleStkIoBillEntrySelectionChange(selection) {
       this.checkedStkIoBillEntry = selection.map(item => item.index)
     },
-    /** 导出按钮操作 */
+    /** 导出按钮操作：按单据隔离（单据号、科室名称 + 明细） */
     handleExport() {
-      this.download('warehouse/warehouse/export', {
-        ...this.queryParams
-      }, `warehouse_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams, billType: this.queryParams.billType || '201' }
+      if (this.ids && this.ids.length > 0) {
+        params.exportBillIds = this.ids.join(',')
+      }
+      this.download('warehouse/outWarehouse/exportGroupedByBill', params, `出库单导出_${new Date().getTime()}.xlsx`)
+    },
+    /** 列表行：导出该单拣货单 */
+    handleExportRowPickList(row) {
+      if (!row || !row.id) {
+        return
+      }
+      const params = {
+        billType: '201',
+        exportBillIds: String(row.id),
+        beginDate: this.queryParams.beginDate,
+        endDate: this.queryParams.endDate
+      }
+      const name = (row.billNo || row.id) + '_拣货单'
+      this.download('warehouse/outWarehouse/exportGroupedByBill', params, `${name}_${new Date().getTime()}.xlsx`)
+    },
+    /** 明细区：导出当前单据拣货单 */
+    handleExportDetailPickList() {
+      if (!this.form || !this.form.id) {
+        this.$modal.msgWarning('请先保存单据后再导出')
+        return
+      }
+      const params = {
+        billType: '201',
+        exportBillIds: String(this.form.id),
+        beginDate: this.queryParams.beginDate,
+        endDate: this.queryParams.endDate
+      }
+      const name = (this.form.billNo || this.form.id) + '_拣货单'
+      this.download('warehouse/outWarehouse/exportGroupedByBill', params, `${name}_${new Date().getTime()}.xlsx`)
     }
   }
 };
@@ -1518,9 +1635,63 @@ export default {
 ::v-deep .local-modal-content {
   min-height: 95vh !important;
 }
+
+.print-dialog-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding-right: 36px;
+  box-sizing: border-box;
+}
+.print-dialog-title-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.print-orientation-in-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: normal;
+  font-size: 14px;
+}
+.print-orientation-label {
+  color: #606266;
+}
 </style>
 
 <style>
+.out-warehouse-print-dialog .print-dialog-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding-right: 36px;
+  box-sizing: border-box;
+}
+.out-warehouse-print-dialog .print-dialog-title-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.out-warehouse-print-dialog .print-orientation-in-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: normal;
+  font-size: 14px;
+}
+.out-warehouse-print-dialog .print-orientation-label {
+  color: #606266;
+}
+
 /* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
 .app-container.outWarehouse-apply-page {
   padding-left: 8px !important;

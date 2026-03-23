@@ -23,13 +23,13 @@
       <el-col :span="18">
     <!-- 查询条件容器 -->
     <div class="query-container" v-show="showSearch">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="68px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="20">
           <el-col :span="6">
-            <el-form-item label="供应商编码" prop="code" label-width="100px">
+            <el-form-item prop="code">
               <el-input
                 v-model="queryParams.code"
-                placeholder="请输入供应商编码"
+                placeholder="供应商编码"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -37,10 +37,104 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="供应商名称" prop="name" label-width="100px">
+            <el-form-item prop="name">
               <el-input
                 v-model="queryParams.name"
-                placeholder="请输入供应商名称"
+                placeholder="供应商名称" 
+                clearable
+                @keyup.enter.native="handleQuery"
+                style="width: 150px"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="名称简码" prop="referredCode" label-width="100px">
+              <el-input
+                v-model="queryParams.referredCode"
+                placeholder="简码"
+                clearable
+                @keyup.enter.native="handleQuery"
+                style="width: 150px"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="税号" prop="taxNumber" label-width="100px">
+              <el-input
+                v-model="queryParams.taxNumber"
+                placeholder="税号"
+                clearable
+                @keyup.enter.native="handleQuery"
+                style="width: 150px"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="6">
+            <el-form-item label="状态" prop="supplierStatus" label-width="100px">
+              <el-select v-model="queryParams.supplierStatus" placeholder="全部" clearable style="width: 150px">
+                <el-option
+                  v-for="d in dict.type.is_use_status"
+                  :key="d.value"
+                  :label="d.label"
+                  :value="d.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="供应商类型" prop="supplierType" label-width="100px">
+              <el-input
+                v-model="queryParams.supplierType"
+                placeholder="类型关键字"
+                clearable
+                @keyup.enter.native="handleQuery"
+                style="width: 150px"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="名称简码" prop="referredCode" label-width="100px">
+              <el-input
+                v-model="queryParams.referredCode"
+                placeholder="简码"
+                clearable
+                @keyup.enter.native="handleQuery"
+                style="width: 150px"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="税号" prop="taxNumber" label-width="100px">
+              <el-input
+                v-model="queryParams.taxNumber"
+                placeholder="税号"
+                clearable
+                @keyup.enter.native="handleQuery"
+                style="width: 150px"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="6">
+            <el-form-item label="状态" prop="supplierStatus" label-width="100px">
+              <el-select v-model="queryParams.supplierStatus" placeholder="全部" clearable style="width: 150px">
+                <el-option
+                  v-for="d in dict.type.is_use_status"
+                  :key="d.value"
+                  :label="d.label"
+                  :value="d.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="供应商类型" prop="supplierType" label-width="100px">
+              <el-input
+                v-model="queryParams.supplierType"
+                placeholder="类型关键字"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -55,8 +149,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:supplier:add']"
@@ -64,9 +156,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
+          type="primary"
           size="small"
           :disabled="single"
           @click="handleUpdate"
@@ -75,9 +165,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
+          type="primary"
           size="small"
           :disabled="single"
           @click="handleDelete"
@@ -87,8 +175,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-refresh"
           size="small"
           :disabled="multiple"
           @click="handleUpdateReferred"
@@ -97,18 +183,35 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
           v-hasPermi="['foundation:supplier:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.8">
+        <el-button
+          type="info"
+          plain
+          icon="el-icon-upload2"
+          size="small"
+          @click="handleImport('add')"
+          v-hasPermi="['foundation:supplier:import']"
+        >新增导入</el-button>
+      </el-col>
+      <el-col :span="1.8">
+        <el-button
+          type="info"
+          plain
+          icon="el-icon-refresh-right"
+          size="small"
+          @click="handleImport('update')"
+          v-hasPermi="['foundation:supplier:import']"
+        >更新导入</el-button>
+      </el-col>
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleQuery"
         >搜索</el-button>
@@ -116,29 +219,45 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="supplierList" :row-class-name="supplierIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%">
+    <el-table v-loading="loading" :data="supplierList" :row-class-name="supplierIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip />
       <el-table-column label="供应商编码" align="center" prop="code" width="150" show-overflow-tooltip />
+      <el-table-column label="HIS供应商ID" align="center" prop="hisId" width="120" show-overflow-tooltip />
       <el-table-column label="供应商名称" align="center" prop="name" min-width="200" show-overflow-tooltip />
+      <el-table-column label="名称简码" align="center" prop="referredCode" width="100" show-overflow-tooltip />
+      <el-table-column label="税号" align="center" prop="taxNumber" width="140" show-overflow-tooltip />
+      <el-table-column label="资质有效期" align="center" prop="validTime" width="120" show-overflow-tooltip />
+      <el-table-column label="状态" align="center" prop="supplierStatus" width="90">
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.is_use_status" :value="scope.row.supplierStatus" />
+        </template>
+      </el-table-column>
+      <el-table-column label="供应商类型" align="center" prop="supplierType" min-width="120" show-overflow-tooltip />
       <el-table-column label="公司简称" align="center" prop="companyReferred" width="150" show-overflow-tooltip />
       <el-table-column label="法人" align="center" prop="legalPerson" width="120" show-overflow-tooltip />
       <el-table-column label="联系人" align="center" prop="contacts" width="120" show-overflow-tooltip />
       <el-table-column label="地址" align="center" prop="address" min-width="200" show-overflow-tooltip />
       <el-table-column label="联系电话" align="center" prop="contactsPhone" width="150" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
         <template slot-scope="scope">
+          
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
+            icon="el-icon-document"
+            @click="openChangeLog(scope.row)"
+            v-hasPermi="['foundation:supplier:list']"
+          >变更记录</el-button>
+          <el-button
+            size="small"
+            type="text"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:supplier:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:supplier:remove']"
           >删除</el-button>
@@ -167,22 +286,100 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="供应商编码" prop="code">
-                <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入供应商编码" />
+                <el-input v-model="form.code" :disabled="isDisabled" placeholder="供应商编码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="供应商名称" prop="name">
-                <el-input v-model="form.name" placeholder="请输入供应商名称" />
+                <el-input v-model="form.name" placeholder="请输入供应商名称" @input="supplierNameChange" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="名称简码" prop="referredCode">
+                <el-input v-model="form.referredCode" placeholder="可随名称自动生成" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="公司简称" prop="companyReferred">
-                <el-input v-model="form.companyReferred" placeholder="请输入公司简称" />
+                <el-input v-model="form.companyReferred" placeholder="公司简称" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-row>
+            <el-col :span="12">
+              <el-form-item label="HIS供应商ID" prop="hisId">
+                <el-input
+                  v-model="form.hisId"
+                  :disabled="!!form.id || !supplierImportRequiresHisId"
+                  :placeholder="hisIdPlaceholder"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-row>
+            <el-col :span="6">
+              <el-form-item label="法人" prop="legalPerson">
+                <el-input v-model="form.legalPerson" placeholder="法人" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
-              <el-form-item label="法人" prop="legalPerson">
-                <el-input v-model="form.legalPerson" placeholder="请输入法人" />
+              <el-form-item label="税号" prop="taxNumber">
+                <el-input v-model="form.taxNumber" placeholder="请输入税号" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="资质有效期" prop="validTime">
+                <el-date-picker
+                  v-model="form.validTime"
+                  type="date"
+                  placeholder="选择日期"
+                  value-format="yyyy-MM-dd"
+                  style="width: 100%"
+                  clearable
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="状态" prop="supplierStatus">
+                <el-select v-model="form.supplierStatus" placeholder="状态" clearable style="width: 100%">
+                  <el-option
+                    v-for="d in dict.type.is_use_status"
+                    :key="d.value"
+                    :label="d.label"
+                    :value="d.value"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="税号" prop="taxNumber">
+                <el-input v-model="form.taxNumber" placeholder="请输入税号" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="资质有效期" prop="validTime">
+                <el-date-picker
+                  v-model="form.validTime"
+                  type="date"
+                  placeholder="选择日期"
+                  value-format="yyyy-MM-dd"
+                  style="width: 100%"
+                  clearable
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="状态" prop="supplierStatus">
+                <el-select v-model="form.supplierStatus" placeholder="状态" clearable style="width: 100%">
+                  <el-option
+                    v-for="d in dict.type.is_use_status"
+                    :key="d.value"
+                    :label="d.label"
+                    :value="d.value"
+                  />
+                </el-select>
               </el-form-item>
             </el-col>
           </el-row>
@@ -190,22 +387,22 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="证件号" prop="certNumber">
-                <el-input v-model="form.certNumber" placeholder="请输入证件号" />
+                <el-input v-model="form.certNumber" placeholder="证件号" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="地址" prop="address">
-                <el-input v-model="form.address" placeholder="请输入地址" />
+                <el-input v-model="form.address" placeholder="地址" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="注册资金" prop="regMoney">
-                <el-input v-model="form.regMoney" placeholder="请输入注册资金" />
+                <el-input v-model="form.regMoney" placeholder="注册资金" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="银行账号" prop="bankAccount">
-                <el-input v-model="form.bankAccount" placeholder="请输入银行账号" />
+                <el-input v-model="form.bankAccount" placeholder="银行账号" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -213,22 +410,22 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="联系人" prop="contacts">
-                <el-input v-model="form.contacts" placeholder="请输入联系人" />
+                <el-input v-model="form.contacts" placeholder="联系人" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="联系电话" prop="contactsPhone">
-                <el-input v-model="form.contactsPhone" placeholder="请输入联系电话" />
+                <el-input v-model="form.contactsPhone" placeholder="联系电话" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="网址" prop="website">
-                <el-input v-model="form.website" placeholder="请输入网址" />
+                <el-input v-model="form.website" placeholder="网址" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="邮编" prop="zipCode">
-                <el-input v-model="form.zipCode" placeholder="请输入邮编" />
+                <el-input v-model="form.zipCode" placeholder="邮编" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -236,20 +433,20 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="邮箱" prop="email">
-                <el-input v-model="form.email" placeholder="请输入邮箱" />
+                <el-input v-model="form.email" placeholder="邮箱" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="传真" prop="fax">
-                <el-input v-model="form.fax" placeholder="请输入传真" />
+                <el-input v-model="form.fax" placeholder="传真" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="公司负责人" prop="companyPerson">
-                <el-input v-model="form.companyPerson" placeholder="请输入公司负责人" />
+                <el-input v-model="form.companyPerson" placeholder="公司负责人" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="6"> 
               <el-form-item label="税号" prop="taxNumber">
                 <el-input v-model="form.taxNumber" placeholder="请输入税号" />
               </el-form-item>
@@ -259,12 +456,20 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="电话" prop="phone">
-                <el-input v-model="form.phone" placeholder="请输入电话" />
+                <el-input v-model="form.phone" placeholder="电话" />
               </el-form-item>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="18">
               <el-form-item label="经营范围" prop="supplierRange">
-                <el-input v-model="form.supplierRange" placeholder="请输入经营范围" />
+                <el-input v-model="form.supplierRange" type="textarea" :rows="2" placeholder="请输入经营范围" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-row>
+            <el-col :span="24">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注（对应表 remark）" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -275,8 +480,8 @@
               <div class="supplier-type-container">
                 <el-form-item label="供应商类型：" prop="supplierType" label-width="100px">
                   <div class="supplier-type-buttons">
-                    <span 
-                      v-for="type in supplierTypeOptions" 
+                    <span
+                      v-for="type in supplierTypeOptions"
                       :key="type.value"
                       :class="['supplier-type-btn', { 'active': form.supplierTypeList && form.supplierTypeList.includes(type.value) }]"
                       @click="toggleSupplierType(type.value)">
@@ -294,16 +499,114 @@
         </div>
       </div>
     </div>
+
+    <div v-if="upload.open" class="local-modal-mask">
+      <div class="local-modal-content" style="width: 520px; min-width: 400px; min-height: auto;">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
+        <el-alert
+          v-if="supplierImportRequiresHisId"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom:12px;"
+          title="衡水市第三人民医院：Excel 新增行须填「HIS供应商ID」且唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
+        />
+        <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+          <strong>增量导入</strong>：按供应商编码匹配租户下数据；可勾选「更新已存在」后<strong>仅更新供应商名称与名称简码</strong>。先整单校验并确认后写入。
+        </p>
+        <el-upload
+          ref="upload"
+          :limit="1"
+          accept=".xlsx, .xls"
+          :disabled="upload.isUploading"
+          :http-request="noopSupplierUpload"
+          :on-change="handleSupplierImportFileChange"
+          :on-remove="handleSupplierImportFileRemove"
+          :auto-upload="false"
+          drag
+        >
+          <i class="el-icon-upload"></i>
+          <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
+          <div class="el-upload__tip text-center" slot="tip">
+            <div class="el-upload__tip" slot="tip">
+            <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
+            </div>
+            <span>仅允许 xls、xlsx。</span>
+            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importSupplierTemplate">下载模板</el-link>
+          </div>
+        </el-upload>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button type="primary" :loading="upload.isUploading" @click="submitSupplierImportFlow">校验并导入</el-button>
+          <el-button @click="closeSupplierImport">取 消</el-button>
+        </div>
+      </div>
+    </div>
+
+    <el-dialog
+      :title="importPreview.title"
+      :visible.sync="importPreview.visible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      @close="importPreview.rows = []; importPreview.columns = []"
+    >
+      <div style="margin-bottom:10px;">
+        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportSupplierImportPreview">导出解析结果</el-button>
+      </div>
+      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
+        <el-table-column
+          v-for="col in importPreview.columns"
+          :key="col"
+          :prop="col"
+          :label="col"
+          min-width="120"
+          show-overflow-tooltip
+        />
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="importPreview.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
+
+    <div v-if="changeLog.open" class="local-modal-mask">
+      <div class="local-modal-content" style="width: 720px; min-width: 400px; min-height: auto; max-width: 92vw;">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">供应商变更记录 — {{ changeLog.supplierName }}</div>
+        <el-table v-loading="changeLog.loading" :data="changeLog.rows" max-height="420" size="small">
+          <el-table-column label="时间" prop="changeTime" width="160" />
+          <el-table-column label="操作人" prop="operator" width="100" show-overflow-tooltip />
+          <el-table-column label="字段" prop="fieldLabel" width="100" show-overflow-tooltip />
+          <el-table-column label="原值" prop="oldValue" min-width="120" show-overflow-tooltip />
+          <el-table-column label="新值" prop="newValue" min-width="120" show-overflow-tooltip />
+        </el-table>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button @click="changeLog.open = false">关 闭</el-button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { listSupplier, getSupplier, delSupplier, addSupplier, updateSupplier, updateSupplierReferred } from "@/api/foundation/supplier";
+import { mapGetters } from "vuex";
+import { listSupplier, getSupplier, delSupplier, addSupplier, updateSupplier, updateSupplierReferred, validateSupplierImportAdd, validateSupplierImportUpdate, importSupplierAddData, importSupplierUpdateData, listSupplierChangeLog } from "@/api/foundation/supplier";
+import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import {pinyin} from "pinyin-pro";
 
 export default {
   name: "Supplier",
   dicts: ['is_use_status'],
+  computed: {
+    ...mapGetters(["supplierImportRequiresHisId"]),
+    hisIdPlaceholder() {
+      if (this.form && this.form.id) {
+        return "保存后不可修改";
+      }
+      if (this.supplierImportRequiresHisId) {
+        return "必填：HIS 供应商标识，组织机构内唯一";
+      }
+      return "非衡水医院无需填写（后台不保存）";
+    },
+  },
     data() {
     return {
       // 遮罩层
@@ -335,12 +638,36 @@ export default {
         { label: '设备', value: '设备' },
         { label: '配件', value: '配件' }
       ],
+      upload: {
+        open: false,
+        title: "",
+        isUploading: false,
+        updateSupport: false,
+        pendingFile: null,
+        mode: "add"
+      },
+      importPreview: {
+        visible: false,
+        title: "导入解析结果",
+        rows: [],
+        columns: []
+      },
+      changeLog: {
+        open: false,
+        loading: false,
+        supplierName: "",
+        rows: []
+      },
       // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         code: null,
         name: null,
+        referredCode: null,
+        taxNumber: null,
+        supplierStatus: null,
+        supplierType: null,
       },
       // 表单参数
       form: {},
@@ -355,6 +682,20 @@ export default {
         referredCode: [
           { required: true, message: "名称简码不能为空", trigger: "blur" }
         ],
+        hisId: [
+          {
+            validator: (rule, value, callback) => {
+              if (!this.form.id && this.supplierImportRequiresHisId) {
+                if (value === undefined || value === null || String(value).trim() === "") {
+                  callback(new Error("衡水市第三人民医院新增时必须填写HIS供应商ID"));
+                  return;
+                }
+              }
+              callback();
+            },
+            trigger: "blur"
+          }
+        ]
       }
     };
   },
@@ -424,6 +765,7 @@ export default {
         supplierStatus: null,
         supplierType: null,
         supplierTypeList: [],
+        hisId: null,
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -439,24 +781,24 @@ export default {
       }
       const index = this.form.supplierTypeList.indexOf(type);
       if (index > -1) {
-        // 如果已选中，则取消选择
         this.form.supplierTypeList.splice(index, 1);
       } else {
-        // 如果未选中，则添加
         this.form.supplierTypeList.push(type);
       }
-      // 同步更新 supplierType 字段（用于向后兼容，用逗号分隔）
       this.$set(this.form, 'supplierType', this.form.supplierTypeList.join(','));
-      console.log('切换供应商类型后 - supplierTypeList:', this.form.supplierTypeList);
-      console.log('切换供应商类型后 - supplierType:', this.form.supplierType);
     },
-    supplierNameChange(val){
+    supplierNameChange(val) {
+      if (val === undefined || val === null || String(val).trim() === '') {
+        this.form.referredCode = '';
+        return;
+      }
       const pinYinCode = pinyin(val, {
         pattern: 'first',
         toneType: 'none',
         type: 'array',
-      }).join('').toUpperCase();
-
+      })
+        .join('')
+        .toUpperCase();
       this.form.referredCode = pinYinCode;
     },
     /** 搜索按钮操作 */
@@ -467,6 +809,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.selectedSupplierId = null;
       this.handleQuery();
     },
     // 多选框选中数据
@@ -488,7 +831,11 @@ export default {
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
-      const id = row.id || this.ids
+      const rawId = row && row.id != null ? row.id : this.ids;
+      const id = Array.isArray(rawId) ? (rawId.length > 0 ? rawId[0] : null) : rawId;
+      if (id == null) {
+        return;
+      }
       getSupplier(id).then(response => {
         // 先重置表单
         this.reset();
@@ -518,11 +865,6 @@ export default {
             this.$set(this.form, 'supplierType', '');
           }
         }
-        console.log('后端返回的完整response:', response);
-        console.log('后端返回的responseData:', responseData);
-        console.log('后端返回的supplierType:', backendSupplierType);
-        console.log('form中的supplierType:', this.form.supplierType);
-        console.log('转换后的supplierTypeList:', this.form.supplierTypeList);
         this.open = true;
         this.isDisabled = true;
         this.title = "修改供应商";
@@ -530,60 +872,57 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
+      if (this.form.name && (!this.form.referredCode || String(this.form.referredCode).trim() === '')) {
+        this.supplierNameChange(this.form.name);
+      }
       this.$refs["form"].validate(valid => {
         if (valid) {
-          // 确保 supplierTypeList 存在
           if (!this.form.supplierTypeList || !Array.isArray(this.form.supplierTypeList)) {
             this.$set(this.form, 'supplierTypeList', []);
           }
-          // 将数组转换为逗号分隔的字符串
           const supplierTypeStr = this.form.supplierTypeList.join(',');
           this.$set(this.form, 'supplierType', supplierTypeStr);
-          // 准备提交数据，确保 supplierType 字段存在且不为空
-          const submitData = { 
+          const submitData = {
             ...this.form,
-            supplierType: supplierTypeStr || ''
+            supplierType: supplierTypeStr || '',
           };
-          // 确保 supplierType 字段被正确提交
-          console.log('提交前的 supplierTypeList:', this.form.supplierTypeList);
-          console.log('提交前的 supplierType:', this.form.supplierType);
-          console.log('提交的数据 supplierType:', submitData.supplierType);
-          console.log('提交的完整数据:', JSON.stringify(submitData, null, 2));
+          delete submitData.supplierTypeList;
           if (this.form.id != null) {
             updateSupplier(submitData).then(response => {
-              console.log('更新成功，返回数据:', response);
-              console.log('返回数据中的supplierType:', response.data?.supplierType || response.supplierType);
               this.$modal.msgSuccess("修改成功");
+              this.open = false;
               this.getList();
               this.getAllSupplierList();
-              // 保存成功后，如果返回的数据中没有supplierType，使用提交的数据
-              // 因为后端可能不返回完整数据，我们需要确保本地数据保持正确
               if (!response.data?.supplierType && !response.supplierType && submitData.supplierType) {
                 this.$set(this.form, 'supplierType', submitData.supplierType);
                 if (submitData.supplierType) {
-                  this.$set(this.form, 'supplierTypeList', submitData.supplierType.split(',').filter(item => item.trim()));
+                  this.$set(
+                    this.form,
+                    'supplierTypeList',
+                    submitData.supplierType.split(',').filter(item => item.trim())
+                  );
                 }
               }
             }).catch(error => {
-              console.error('更新失败:', error);
               this.$modal.msgError("修改失败：" + (error.msg || error.message || '未知错误'));
             });
           } else {
             addSupplier(submitData).then(response => {
-              console.log('新增成功，返回数据:', response);
-              console.log('返回数据中的supplierType:', response.data?.supplierType || response.supplierType);
               this.$modal.msgSuccess("新增成功");
+              this.open = false;
               this.getList();
               this.getAllSupplierList();
-              // 保存成功后，如果返回的数据中没有supplierType，使用提交的数据
               if (!response.data?.supplierType && !response.supplierType && submitData.supplierType) {
                 this.$set(this.form, 'supplierType', submitData.supplierType);
                 if (submitData.supplierType) {
-                  this.$set(this.form, 'supplierTypeList', submitData.supplierType.split(',').filter(item => item.trim()));
+                  this.$set(
+                    this.form,
+                    'supplierTypeList',
+                    submitData.supplierType.split(',').filter(item => item.trim())
+                  );
                 }
               }
             }).catch(error => {
-              console.error('新增失败:', error);
               this.$modal.msgError("新增失败：" + (error.msg || error.message || '未知错误'));
             });
           }
@@ -622,6 +961,101 @@ export default {
         this.$modal.msgSuccess("更新简码成功");
         this.getList();
       }).catch(() => {});
+    },
+    handleImport(mode) {
+      this.upload.mode = mode === "update" ? "update" : "add";
+      this.upload.updateSupport = this.upload.mode === "update";
+      this.upload.title = this.upload.mode === "update" ? "供应商更新导入" : "供应商新增导入";
+      this.upload.pendingFile = null;
+      this.upload.open = true;
+      this.$nextTick(() => {
+        if (this.$refs.upload) this.$refs.upload.clearFiles();
+      });
+    },
+    closeSupplierImport() {
+      this.upload.open = false;
+      this.upload.pendingFile = null;
+      if (this.$refs.upload) this.$refs.upload.clearFiles();
+    },
+    noopSupplierUpload() {},
+    handleSupplierImportFileChange(file) {
+      this.upload.pendingFile = file && file.raw ? file.raw : null;
+    },
+    handleSupplierImportFileRemove() {
+      this.upload.pendingFile = null;
+    },
+    importSupplierTemplate() {
+      const api = this.upload.mode === "update" ? "foundation/supplier/importUpdateTemplate" : "foundation/supplier/importAddTemplate";
+      this.download(api, {}, `fd_supplier_template_${new Date().getTime()}.xlsx`);
+    },
+    openChangeLog(row) {
+      if (!row || !row.id) return;
+      this.changeLog.open = true;
+      this.changeLog.supplierName = row.name || "";
+      this.changeLog.rows = [];
+      this.changeLog.loading = true;
+      listSupplierChangeLog(row.id).then(res => {
+        this.changeLog.rows = res.data || [];
+        this.changeLog.loading = false;
+      }).catch(() => {
+        this.changeLog.loading = false;
+      });
+    },
+    showImportPreviewFromPayload(payload, title) {
+      const rows = (payload && payload.previewRows) || [];
+      this.importPreview.title = title || "导入解析结果";
+      this.importPreview.rows = rows;
+      this.importPreview.columns = rows.length ? Object.keys(rows[0]) : [];
+      this.importPreview.visible = true;
+    },
+    async exportSupplierImportPreview() {
+      try {
+        const name = (this.upload.mode === "update" ? "supplier_update" : "supplier_add") + "_preview_" + new Date().getTime() + ".xlsx";
+        await exportPreviewRowsToXlsx(this.importPreview.rows, name);
+        this.$modal.msgSuccess("已导出");
+      } catch (e) {
+        this.$modal.msgError(e.message || "导出失败");
+      }
+    },
+    async submitSupplierImportFlow() {
+      const f = this.upload.pendingFile;
+      if (!f) {
+        this.$modal.msgWarning("请先选择 Excel 文件");
+        return;
+      }
+      this.upload.isUploading = true;
+      try {
+        const isUpdate = this.upload.mode === "update";
+        const res = isUpdate ? await validateSupplierImportUpdate(f) : await validateSupplierImportAdd(f);
+        const d = res.data || {};
+        this.showImportPreviewFromPayload(d, isUpdate ? "供应商更新导入 — 解析结果" : "供应商新增导入 — 解析结果");
+        if (!d.valid) {
+          const errs = (d.errors && d.errors.length) ? d.errors.join("<br/>") : (res.msg || "校验失败");
+          this.$alert("<div style='overflow:auto;max-height:60vh'>" + errs + "</div>", "校验未通过", { dangerouslyUseHTMLString: true });
+          return;
+        }
+        const tc = d.totalRows != null ? d.totalRows : 0;
+        const ic = d.insertCount != null ? d.insertCount : 0;
+        const uc = d.updateCount != null ? d.updateCount : 0;
+        let confirmText = "校验已通过。共 " + tc + " 行数据，确认后写入数据库，是否继续？";
+        if (!isUpdate) {
+          confirmText = "校验已通过。共 " + tc + " 行数据，预计新增 " + ic + " 条、更新 " + uc + " 条。确认后写入数据库，是否继续？";
+        }
+        await this.$modal.confirm(confirmText);
+        const res2 = isUpdate ? await importSupplierUpdateData(f, true) : await importSupplierAddData(f, true);
+        const d2 = res2.data || {};
+        this.showImportPreviewFromPayload(d2, isUpdate ? "供应商更新导入 — 导入结果" : "供应商新增导入 — 导入结果");
+        this.$alert("<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'>" + res2.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
+        this.closeSupplierImport();
+        this.getList();
+        this.getAllSupplierList();
+      } catch (e) {
+        if (e !== "cancel" && e !== "close") {
+          /* request 已提示 */
+        }
+      } finally {
+        this.upload.isUploading = false;
+      }
     }
   }
 };

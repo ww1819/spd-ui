@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
         <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
@@ -72,7 +72,7 @@
 
     <div class="table-container">
     <el-table v-loading="loading" :data="inventoryList"
-              show-summary :summary-method="getTotalSummaries" height="55vh" border>
+              show-summary :summary-method="getTotalSummaries" height="55vh" border stripe>
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}

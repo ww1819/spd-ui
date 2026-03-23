@@ -35,10 +35,11 @@ export function updatePurchase(data) {
   })
 }
 
-// 删除科室申购
+// 删除科室申购（id 可为单个 id 或逗号分隔的多个 id，如 "1,2,3"）
 export function delPurchase(id) {
+  const ids = Array.isArray(id) ? id.join(',') : id;
   return request({
-    url: '/department/purchase/' + id,
+    url: '/department/purchase/' + ids,
     method: 'delete'
   })
 }

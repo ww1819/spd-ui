@@ -1,25 +1,25 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="登录地址" prop="ipaddr">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+      <el-form-item prop="ipaddr">
         <el-input
           v-model="queryParams.ipaddr"
-          placeholder="请输入登录地址"
+          placeholder="登录地址"
           clearable
           style="width: 240px;"
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="用户名称" prop="userName">
+      <el-form-item prop="userName">
         <el-input
           v-model="queryParams.userName"
-          placeholder="请输入用户名称"
+          placeholder="用户名称"
           clearable
           style="width: 240px;"
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="状态" prop="status">
+      <el-form-item prop="status">
         <el-select
           v-model="queryParams.status"
           placeholder="登录状态"
@@ -34,7 +34,7 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="登录时间">
+      <el-form-item>
         <el-date-picker
           v-model="dateRange"
           style="width: 240px"
@@ -47,18 +47,15 @@
         ></el-date-picker>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+        <el-button size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="small"
+          type="primary" size="small"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['monitor:logininfor:remove']"
@@ -66,20 +63,14 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="small"
+          type="primary" size="small"
           @click="handleClean"
           v-hasPermi="['monitor:logininfor:remove']"
         >清空</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-unlock"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleUnlock"
           v-hasPermi="['monitor:logininfor:unlock']"
@@ -87,10 +78,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
+          type="primary" size="small"
           @click="handleExport"
           v-hasPermi="['monitor:logininfor:export']"
         >导出</el-button>
@@ -98,7 +86,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table ref="tables" v-loading="loading" :data="list" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
+    <el-table ref="tables" v-loading="loading" :data="list" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="访问编号" align="center" prop="infoId" />
       <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" sortable="custom" :sort-orders="['descending', 'ascending']" />

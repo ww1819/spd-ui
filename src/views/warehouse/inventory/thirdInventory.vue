@@ -1,12 +1,12 @@
 <template>
   <div class="app-container third-inventory-page">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
         <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item label="单号" prop="billNo" class="query-item-inline">
               <el-input v-model="queryParams.billNo"
-                        placeholder="请输入单号"
+                        placeholder="单号"
                         clearable
                         style="width: 180px"
                         @keyup.enter.native="handleQuery"
@@ -287,12 +287,6 @@ export default {
         this.total = response.total;
         this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0, subTotalAmt: 0, subTotalQty: 0 };
         this.loading = false;
-        // 调试：检查第一条数据的price字段
-        if (this.inventoryList && this.inventoryList.length > 0) {
-          console.log('第一条数据:', this.inventoryList[0]);
-          console.log('price字段:', this.inventoryList[0].price);
-          console.log('unitPrice字段:', this.inventoryList[0].unitPrice);
-        }
       });
     },
     getStatDate(){

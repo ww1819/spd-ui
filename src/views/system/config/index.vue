@@ -1,25 +1,32 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="参数名称" prop="configName">
+    <el-form
+      class="query-form"
+      :model="queryParams"
+      ref="queryForm"
+      size="small"
+      :inline="true"
+      v-show="showSearch"
+    >
+      <el-form-item prop="configName">
         <el-input
           v-model="queryParams.configName"
-          placeholder="请输入参数名称"
+          placeholder="参数名称"
           clearable
           style="width: 240px"
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="参数键名" prop="configKey">
+      <el-form-item prop="configKey">
         <el-input
           v-model="queryParams.configKey"
-          placeholder="请输入参数键名"
+          placeholder="参数键名"
           clearable
           style="width: 240px"
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="系统内置" prop="configType">
+      <el-form-item prop="configType">
         <el-select v-model="queryParams.configType" placeholder="系统内置" clearable>
           <el-option
             v-for="dict in dict.type.sys_yes_no"
@@ -29,7 +36,7 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="创建时间">
+      <el-form-item>
         <el-date-picker
           v-model="dateRange"
           style="width: 240px"
@@ -41,8 +48,8 @@
         ></el-date-picker>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+        <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -50,8 +57,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="small"
           @click="handleAdd"
           v-hasPermi="['system:config:add']"
@@ -59,9 +64,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
+          type="primary"
           size="small"
           :disabled="single"
           @click="handleUpdate"
@@ -70,9 +73,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
+          type="primary"
           size="small"
           :disabled="multiple"
           @click="handleDelete"
@@ -81,9 +82,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
           v-hasPermi="['system:config:export']"
@@ -91,9 +90,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-refresh"
+          type="primary"
           size="small"
           @click="handleRefreshCache"
           v-hasPermi="['system:config:remove']"
@@ -102,7 +99,12 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="configList" @selection-change="handleSelectionChange">
+    <el-table
+      v-loading="loading"
+      :data="configList"
+      stripe
+      @selection-change="handleSelectionChange"
+    >
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="参数主键" align="center" prop="configId" />
       <el-table-column label="参数名称" align="center" prop="configName" :show-overflow-tooltip="true" />
@@ -124,14 +126,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:config:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:config:remove']"
           >删除</el-button>
@@ -157,7 +157,22 @@
           <el-input v-model="form.configKey" placeholder="请输入参数键名" />
         </el-form-item>
         <el-form-item label="参数键值" prop="configValue">
-          <el-input v-model="form.configValue" placeholder="请输入参数键值" />
+          <el-select
+            v-if="form.configKey === 'hc.login.defaultCustomerId'"
+            v-model="form.configValue"
+            placeholder="请选择耗材登录默认客户（组织机构）"
+            clearable
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="item in customerHcOptions"
+              :key="item.customerId"
+              :label="(item.customerName || '') + (item.customerCode ? '（' + item.customerCode + '）' : '')"
+              :value="item.customerId"
+            />
+          </el-select>
+          <el-input v-else v-model="form.configValue" placeholder="请输入参数键值" />
         </el-form-item>
         <el-form-item label="系统内置" prop="configType">
           <el-radio-group v-model="form.configType">
@@ -182,12 +197,15 @@
 
 <script>
 import { listConfig, getConfig, delConfig, addConfig, updateConfig, refreshCache } from "@/api/system/config";
+import { getCustomerOptions } from "@/api/login";
 
 export default {
   name: "Config",
   dicts: ['sys_yes_no'],
   data() {
     return {
+      /** 参数 hc.login.defaultCustomerId 下拉：耗材启用客户 */
+      customerHcOptions: [],
       // 遮罩层
       loading: true,
       // 选中数组
@@ -227,15 +245,36 @@ export default {
           { required: true, message: "参数键名不能为空", trigger: "blur" }
         ],
         configValue: [
-          { required: true, message: "参数键值不能为空", trigger: "blur" }
+          {
+            validator: (rule, value, callback) => {
+              if (this.form.configKey === "hc.login.defaultCustomerId") {
+                callback();
+                return;
+              }
+              if (value === undefined || value === null || String(value).trim() === "") {
+                callback(new Error("参数键值不能为空"));
+              } else {
+                callback();
+              }
+            },
+            trigger: "blur"
+          }
         ]
       }
     };
   },
   created() {
     this.getList();
+    this.loadHcCustomerOptions();
   },
   methods: {
+    loadHcCustomerOptions() {
+      getCustomerOptions("hc").then(res => {
+        this.customerHcOptions = res.data || [];
+      }).catch(() => {
+        this.customerHcOptions = [];
+      });
+    },
     /** 查询参数列表 */
     getList() {
       this.loading = true;

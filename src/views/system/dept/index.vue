@@ -1,15 +1,15 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
-      <el-form-item label="部门名称" prop="deptName">
+    <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
+      <el-form-item prop="deptName">
         <el-input
           v-model="queryParams.deptName"
-          placeholder="请输入部门名称"
+          placeholder="部门名称"
           clearable
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="状态" prop="status">
+      <el-form-item prop="status">
         <el-select v-model="queryParams.status" placeholder="部门状态" clearable>
           <el-option
             v-for="dict in dict.type.sys_normal_disable"
@@ -20,8 +20,8 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+        <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
@@ -29,8 +29,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="small"
           @click="handleAdd"
           v-hasPermi="['system:dept:add']"
@@ -38,9 +36,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-sort"
+          type="primary"
           size="small"
           @click="toggleExpandAll"
         >展开/折叠</el-button>
@@ -52,6 +48,7 @@
       v-if="refreshTable"
       v-loading="loading"
       :data="deptList"
+      stripe
       row-key="deptId"
       :default-expand-all="isExpandAll"
       :tree-props="{children: 'children', hasChildren: 'hasChildren'}"
@@ -73,14 +70,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:dept:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-plus"
             @click="handleAdd(scope.row)"
             v-hasPermi="['system:dept:add']"
           >新增</el-button>
@@ -88,7 +83,6 @@
             v-if="scope.row.parentId != 0"
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:dept:remove']"
           >删除</el-button>
@@ -109,7 +103,7 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="部门名称" prop="deptName">
-              <el-input v-model="form.deptName" placeholder="请输入部门名称" />
+              <el-input v-model="form.deptName" placeholder="部门名称" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -121,19 +115,19 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="负责人" prop="leader">
-              <el-input v-model="form.leader" placeholder="请输入负责人" maxlength="20" />
+              <el-input v-model="form.leader" placeholder="负责人" maxlength="20" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="联系电话" prop="phone">
-              <el-input v-model="form.phone" placeholder="请输入联系电话" maxlength="11" />
+              <el-input v-model="form.phone" placeholder="联系电话" maxlength="11" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row>
           <el-col :span="12">
             <el-form-item label="邮箱" prop="email">
-              <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
+              <el-input v-model="form.email" placeholder="邮箱" maxlength="50" />
             </el-form-item>
           </el-col>
           <el-col :span="12">

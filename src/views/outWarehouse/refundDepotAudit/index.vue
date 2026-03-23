@@ -1,23 +1,23 @@
 <template>
   <div class="app-container refund-depot-audit-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
-          <el-form-item label="退库单号" prop="billNo" class="query-item-inline">
+          <el-form-item prop="billNo" class="query-item-inline">
             <el-input v-model="queryParams.billNo"
-                      placeholder="请输入退库单号"
+                      placeholder="退库单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+          <el-form-item prop="departmentId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectDepartment v-model="queryParams.departmentId" />
             </div>
           </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+          <el-form-item prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
             </div>
@@ -27,7 +27,7 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="退库日期" style="display: flex; align-items: center;">
+          <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -48,8 +48,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.billStatus" placeholder="全部"
+          <el-form-item prop="billStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                        clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -68,22 +68,20 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          icon="el-icon-check"
+          type="primary"
           size="medium"
           :disabled="multiple"
           @click="handleBatchAudit"
@@ -96,7 +94,7 @@
     <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
       <el-table-column type="selection" width="55" align="center" fixed="left" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="退库单号" align="center" prop="billNo" width="150" show-overflow-tooltip resizable >
@@ -153,15 +151,13 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-printer"
-              @click="handlePrint(scope.row,true)"
+              @click="handlePrint(scope.row)"
               v-if="scope.row.billStatus == 2"
               style="padding: 0 5px; margin: 0;"
             >打印</el-button>
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['outWarehouse:refundDepotApply:edit']"
               v-if="scope.row.billStatus != 2"
@@ -170,7 +166,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['outWarehouse:refundDepotApply:remove']"
               v-if="scope.row.billStatus != 2"
@@ -231,7 +226,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
+              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -303,7 +298,7 @@
           </el-table-column>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.qty" :disabled="true" placeholder="请输入数量"
+              <el-input clearable v-model="scope.row.qty" :disabled="true" placeholder="数量"
                         onkeyup="value=value.replace(/\D/g,'')"
                         onafterpaste="value=value.replace(/\D/g,'')"
                         @blur="form.result=$event.target.value"
@@ -313,12 +308,12 @@
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
+              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" />
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
@@ -351,7 +346,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" :disabled="true" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" :disabled="true" placeholder="备注" />
             </template>
           </el-table-column>
           <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
@@ -371,15 +366,44 @@
         </transition>
       </div>
     </transition>
-    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width ">
+    <el-dialog
+      :visible.sync="modalObj.show"
+      :width="modalObj.width"
+      custom-class="out-warehouse-print-dialog"
+      append-to-body
+    >
+      <template slot="title">
+        <div class="print-dialog-title-row">
+          <span class="print-dialog-title-text">{{ modalObj.title }}</span>
+          <div v-if="showPrintOrientation" class="print-orientation-in-title">
+            <span class="print-orientation-label">打印方向</span>
+            <el-radio-group v-model="modalObj.form.printOrientation" size="small">
+              <el-radio label="landscape">横向</el-radio>
+              <el-radio label="portrait">纵向</el-radio>
+            </el-radio-group>
+          </div>
+        </div>
+      </template>
       <template v-if=" modalObj.component === 'print-type' ">
         <el-radio-group v-model=" modalObj.form.value ">
           <!--          <el-radio :label=" 1 ">lodop打印</el-radio>-->
           <el-radio :label=" 2 ">浏览器打印</el-radio>
         </el-radio-group>
+        <div style="margin-top: 10px;">
+          <span style="margin-right: 10px;">纸张</span>
+          <el-radio-group v-model="modalObj.form.paperType" size="small">
+            <el-radio label="a4">A4</el-radio>
+            <el-radio label="third-split">三等分纸</el-radio>
+          </el-radio-group>
+        </div>
       </template>
-      <template v-if=" modalObj.form.value === 2 || modalObj.component === 'window-print-preview' ">
-        <refund-depot-order-print :row=" modalObj.form.row " ref="receiptRefundDepotOrderPrintRef"></refund-depot-order-print>
+      <template v-if="showPrintContent">
+        <refund-depot-order-print
+          :row=" modalObj.form.row "
+          :print-orientation="modalObj.form.printOrientation || 'portrait'"
+          :paper-type="modalObj.form.paperType || 'a4'"
+          ref="receiptRefundDepotOrderPrintRef"
+        ></refund-depot-order-print>
       </template>
       <template slot="footer" class="dialog-footer">
         <el-button @click=" modalObj.cancel ">取消</el-button>
@@ -388,7 +412,13 @@
     </el-dialog>
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
-      <refund-depot-order-print v-if="printRowData" :row="printRowData" ref="receiptRefundDepotOrderPrintRefAuto"></refund-depot-order-print>
+      <refund-depot-order-print
+        v-if="printRowData"
+        :row="printRowData"
+        print-orientation="portrait"
+        paper-type="a4"
+        ref="receiptRefundDepotOrderPrintRefAuto"
+      ></refund-depot-order-print>
     </div>
 
     <!-- 3、使用组件 -->
@@ -433,7 +463,9 @@ export default {
         component: null,
         form: {
           value: null,
-          row: null
+          row: null,
+          paperType: 'a4',
+          printOrientation: 'portrait'
         },
         ok: () => {
         },
@@ -498,6 +530,19 @@ export default {
         ],
       }
     };
+  },
+  computed: {
+    showPrintOrientation() {
+      const m = this.modalObj
+      if (!m || !m.form) return false
+      return m.component === 'window-print-preview'
+        || (m.component === 'print-type' && Number(m.form.value) === 2)
+    },
+    showPrintContent() {
+      const m = this.modalObj
+      if (!m || !m.form) return false
+      return Number(m.form.value) === 2 || m.component === 'window-print-preview'
+    }
   },
   created() {
     this.getList();
@@ -596,7 +641,7 @@ export default {
         obj.unitPrice = item.unitPrice;
         obj.amt = item.amt;
         obj.batchNo = item.batchNo;
-        obj.batchNumber = item.materialNo;
+        obj.batchNumber = item.batchNumber || item.materialNo || "";
         obj.beginTime = item.beginTime;
         obj.endTime = item.endTime;
         obj.remark = item.remark;
@@ -790,51 +835,24 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
-      // 如果传入 print 参数为 true，直接执行打印
-      if (print === true) {
-        // 直接获取数据并触发打印
-        this.getRefundGoodsDetail(row).then(res => {
-          // 设置打印数据
-          this.printRowData = res
-          // 等待组件渲染后调用 start()
-          this.$nextTick(() => {
-            if (this.$refs['receiptRefundDepotOrderPrintRefAuto']) {
-              // start() 方法会直接触发浏览器打印对话框
-              this.$refs['receiptRefundDepotOrderPrintRefAuto'].start()
-            }
-          })
-        })
-        return
-      }
-      // 否则显示选择打印方式的对话框
-      this.modalObj = {
-        show: true,
-        title: '选择打印方式',
-        width: '520px',
-        component: 'print-type',
-        form: {
-          value: 1,
-          row
-        },
-        ok: () => {
-          this.modalObj.show = false
-          if (this.modalObj.form.value === 1) {
-            this.doPrintOut(row, false)
-          } else {
-            this.windowPrintOut(row, print)
-          }
-        },
-        cancel: () => {
-          this.modalObj.show = false
-        }
-      }
+      // 审核页点击打印：直接打开浏览器打印预览
+      this.windowPrintOut(row, true, 'portrait', 'a4')
     },
-    windowPrintOut(row, print) {
+    windowPrintOut(row, print, printOrientation, paperType) {
+      const orient = printOrientation || 'portrait'
+      const pType = paperType || 'a4'
       this.getRefundGoodsDetail(row).then(res => {
         if (print) {
-          this.modalObj.form.row = res
+          this.printRowData = res
           this.$nextTick(() => {
-            this.$refs['receiptRefundDepotOrderPrintRef'].start()
+            const ref = this.$refs['receiptRefundDepotOrderPrintRefAuto']
+            if (ref && typeof ref.start === 'function') {
+              ref.start()
+            } else {
+              setTimeout(() => {
+                this.$refs['receiptRefundDepotOrderPrintRefAuto']?.start?.()
+              }, 100)
+            }
           })
           return
         }
@@ -845,9 +863,11 @@ export default {
             width: '800px',
             component: 'window-print-preview',
             form: {
-              value: 1,
-              row,
-              print
+              value: 2,
+              row: res,
+              print,
+              printOrientation: orient,
+              paperType: pType
             },
             ok: () => {
               this.modalObj.show = false
@@ -1402,5 +1422,33 @@ export default {
   font-weight: 600 !important;
   font-size: 15px !important;
   font-family: 'Roboto', sans-serif !important;
+}
+
+/* 打印弹窗标题右侧方向控制 */
+.out-warehouse-print-dialog .print-dialog-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding-right: 36px;
+  box-sizing: border-box;
+}
+.out-warehouse-print-dialog .print-dialog-title-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.out-warehouse-print-dialog .print-orientation-in-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: normal;
+  font-size: 14px;
+}
+.out-warehouse-print-dialog .print-orientation-label {
+  color: #606266;
 }
 </style>

@@ -3,19 +3,28 @@
     <!-- 顶部搜索容器 -->
     <div class="form-fields-container">
       <el-form
+        class="query-form"
         :model="queryParams"
         ref="queryForm"
         size="small"
         :inline="true"
         v-show="showSearch"
-        label-width="100px"
       >
-        <el-form-item label="模板名称" prop="templateName">
+        <el-form-item prop="templateName">
           <el-input
             v-model="queryParams.templateName"
-            placeholder="请输入模板名称"
+            placeholder="模板名称"
             clearable
             style="width: 240px"
+            @keyup.enter.native="handleQuery"
+          />
+        </el-form-item>
+        <el-form-item label="租户ID" prop="tenantId">
+          <el-input
+            v-model="queryParams.tenantId"
+            placeholder="全库默认留空"
+            clearable
+            style="width: 200px"
             @keyup.enter.native="handleQuery"
           />
         </el-form-item>
@@ -42,8 +51,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="medium"
           @click="handleAdd"
           v-hasPermi="['system:printSetting:add']"
@@ -51,9 +58,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
+          type="primary"
           size="medium"
           :disabled="single"
           @click="handleUpdate"
@@ -62,9 +67,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
+          type="primary"
           size="medium"
           :disabled="multiple"
           @click="handleDelete"
@@ -74,14 +77,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -90,10 +92,15 @@
     </el-row>
 
     <div class="table-pagination-wrapper">
-    <el-table v-loading="loading" :data="printSettingList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="printSettingList" stripe @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" width="60" align="center" />
       <el-table-column label="模板名称" align="center" prop="templateName" width="140" show-overflow-tooltip />
+      <el-table-column label="适用租户" align="center" prop="tenantId" width="150" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ scope.row.tenantId || '全库默认' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="单据类型" align="center" prop="billType" width="120">
         <template slot-scope="scope">
           <span v-if="scope.row.billType === 101">入库单</span>
@@ -143,14 +150,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:printSetting:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-star-on"
             @click="handleSetDefault(scope.row)"
             v-hasPermi="['system:printSetting:edit']"
             v-if="scope.row.isDefault !== 1"
@@ -158,7 +163,6 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:printSetting:remove']"
           >删除</el-button>
@@ -232,6 +236,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         templateName: undefined,
+        tenantId: undefined,
         billType: undefined
       },
       // 表单参数
@@ -306,7 +311,7 @@ export default {
     /** 设置默认模板 */
     handleSetDefault(row) {
       this.$modal.confirm('是否确认将"' + row.templateName + '"设置为默认模板？').then(() => {
-        return setDefaultTemplate({ id: row.id, billType: row.billType });
+        return setDefaultTemplate({ id: row.id, billType: row.billType, tenantId: row.tenantId });
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("设置成功");

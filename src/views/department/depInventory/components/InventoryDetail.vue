@@ -2,20 +2,20 @@
   <div class="app-container">
     <div class="query-container">
       <div class="form-fields-container">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+              <el-form-item prop="warehouseId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectWarehouse v-model="queryParams.warehouseId" />
                 </div>
           </el-form-item>
-              <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+              <el-form-item prop="supplierId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectSupplier v-model="queryParams.supplierId" />
                 </div>
           </el-form-item>
-              <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+              <el-form-item prop="materialId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectMaterial v-model="queryParams.materialId" />
                 </div>
@@ -24,14 +24,13 @@
       </el-row>
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+              <el-form-item prop="departmentId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectDepartment v-model="queryParams.departmentId" />
                 </div>
           </el-form-item>
-              <el-form-item label="计费" prop="isBilling" class="query-item-inline">
-                <el-select v-model="queryParams.isBilling" placeholder="请选择计费" clearable style="width: 180px">
-                  <el-option label="全部" value="" />
+              <el-form-item prop="isBilling" class="query-item-inline">
+                <el-select v-model="queryParams.isBilling" placeholder="计费" clearable style="width: 180px">
                   <el-option label="是" value="1" />
                   <el-option label="否" value="0" />
                 </el-select>
@@ -43,6 +42,9 @@
                   <el-option label="已确认" :value="1" />
                 </el-select>
           </el-form-item>
+              <el-form-item label="生产批号" prop="batchNumber" class="query-item-inline">
+                <el-input v-model="queryParams.batchNumber" placeholder="生产批号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
+          </el-form-item>
         </el-col>
       </el-row>
         </el-form>
@@ -52,8 +54,7 @@
     <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: 0px; margin-bottom: 16px;">
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
         >导出</el-button>
@@ -61,14 +62,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleQuery"
         >搜索</el-button>
         </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="small"
           @click="resetQuery"
         >重置</el-button>
@@ -81,11 +81,16 @@
               :row-class-name="inventoryListIndex"
               show-summary :summary-method="getSummaries" 
               height="51vh"
-              border>
+              border stripe>
       <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
       <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="耗材" align="center" prop="material.name" width="160" show-overflow-tooltip resizable />
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="归属仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="型号" align="center" prop="material.model" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
@@ -111,7 +116,8 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="批号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="生产日期" align="center" prop="beginDate" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.beginDate">{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>
@@ -149,8 +155,18 @@
         </template>
       </el-table-column>
       <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="150" show-overflow-tooltip resizable/>
-      <el-table-column label="供应商" align="center" prop="material.supplier.name" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="生产厂家" align="center" width="150" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ depFactoryName(scope.row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.supplier && scope.row.supplier.name) || (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="主条码" align="center" prop="mainBarcode" width="140" show-overflow-tooltip resizable/>
+      <el-table-column label="辅条码" align="center" prop="subBarcode" width="140" show-overflow-tooltip resizable/>
       <el-table-column label="出库日期" align="center" prop="materialDate" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
@@ -216,6 +232,7 @@ export default {
         unitPrice: null,
         amt: null,
         batchNo: null,
+        batchNumber: null,
         materialNo: null,
         materialDate: null,
         warehouseDate: null,
@@ -297,6 +314,14 @@ export default {
       this.download('department/depInventory/export', {
         ...this.queryParams
       }, `department_inventory_${new Date().getTime()}.xlsx`)
+    },
+    /** 生产厂家：科室库存行 fdFactory（COALESCE）优先 */
+    depFactoryName(row) {
+      if (!row) return '--';
+      if (row.fdFactory && row.fdFactory.factoryName) return row.fdFactory.factoryName;
+      const m = row.material;
+      if (m && m.fdFactory && m.fdFactory.factoryName) return m.fdFactory.factoryName;
+      return '--';
     }
   }
 };

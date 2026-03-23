@@ -10,7 +10,7 @@
         <el-form-item label="科室名称" prop="ksName">
           <el-input
             v-model="queryParams.ksName"
-            placeholder="请输入科室名称"
+            placeholder="科室名称"
             clearable
             size="small"
             style="width: 200px"
@@ -19,7 +19,7 @@
         <el-form-item label="耗材名称" prop="hcName">
           <el-input
             v-model="queryParams.hcName"
-            placeholder="请输入耗材名称"
+            placeholder="耗材名称"
             clearable
             size="small"
             style="width: 200px"
@@ -28,7 +28,7 @@
         <el-form-item label="耗材编码" prop="hcCode">
           <el-input
             v-model="queryParams.hcCode"
-            placeholder="请输入耗材编码"
+            placeholder="耗材编码"
             clearable
             size="small"
             style="width: 200px"

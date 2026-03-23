@@ -60,3 +60,79 @@ export function updateFactoryReferred(ids) {
     data: { ids }
   })
 }
+
+/** 生产厂家变更记录 */
+export function listFactoryChangeLog(factoryId) {
+  return request({
+    url: '/foundation/factory/changeLog/' + factoryId,
+    method: 'get'
+  })
+}
+
+/** 生产厂家导入：仅校验 */
+export function validateFactoryImport(file, updateSupport) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/factory/importValidate?updateSupport=' + !!updateSupport,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+/** 生产厂家导入：confirm=true 落库 */
+export function importFactoryData(file, updateSupport, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/factory/importData?updateSupport=' + !!updateSupport + '&confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+
+export function validateFactoryImportAdd(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/factory/importAddValidate',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function importFactoryAddData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/factory/importAddData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function validateFactoryImportUpdate(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/factory/importUpdateValidate',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function importFactoryUpdateData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/factory/importUpdateData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function downloadFactoryImportAddTemplate(){return request({url:'/foundation/factory/importAddTemplate',method:'post',responseType:'blob'})}
+export function downloadFactoryImportUpdateTemplate(){return request({url:'/foundation/factory/importUpdateTemplate',method:'post',responseType:'blob'})}

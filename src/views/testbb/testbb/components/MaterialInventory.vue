@@ -3,7 +3,7 @@
     <div class="search-bar">
       <el-form :inline="true" :model="searchForm" class="demo-form-inline">
         <el-form-item label="关键字">
-          <el-input v-model="searchForm.keyword" placeholder="请输入转材名称、批号等" />
+          <el-input v-model="searchForm.keyword" placeholder="转材名称、批号等" />
         </el-form-item>
         <el-form-item label="供应商">
           <el-select v-model="searchForm.supplier" placeholder="全部">

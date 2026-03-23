@@ -1,12 +1,12 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
       <el-row class="query-row-left">
         <el-col :span="24">
           <el-form-item label="调拨单号" prop="transferOrderCode" class="query-item-inline">
             <el-input v-model="queryParams.transferOrderCode"
-                      placeholder="请输入调拨单号"
+                      placeholder="调拨单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="getTransferList"
@@ -102,7 +102,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getTransferList"></right-toolbar>
     </el-row>
 
-    <el-table :data="tableData" v-loading="loading" :row-class-name="rowTransferIndex" @selection-change="handleSelectionChange" height="58vh" border>
+    <el-table :data="tableData" v-loading="loading" :row-class-name="rowTransferIndex" @selection-change="handleSelectionChange" height="58vh" border stripe>
         <el-table-column type="selection" width="55" align="center" fixed="left" />
         <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
         <el-table-column label="调拨单号" align="center" prop="transferOrderCode" width="180" show-overflow-tooltip resizable>
@@ -261,7 +261,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="备注" prop="remark" label-width="100px">
-                      <el-input v-model="transferForm.remark" placeholder="请输入备注" style="width: 150px" :disabled="dialogType === 'view'" />
+                      <el-input v-model="transferForm.remark" placeholder="备注" style="width: 150px" :disabled="dialogType === 'view'" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -313,7 +313,7 @@
                 </el-table-column>
                 <el-table-column label="调拨数量" prop="transferQuantity" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input clearable v-model="scope.row.transferQuantity" placeholder="请输入数量"
+                    <el-input clearable v-model="scope.row.transferQuantity" placeholder="数量"
                               onkeyup="value=value.replace(/\D/g,'')"
                               onafterpaste="value=value.replace(/\D/g,'')"
                               @input="qtyChange(scope.row)"

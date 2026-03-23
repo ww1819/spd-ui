@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div v-show="show" class="local-modal-mask">
     <div class="local-modal-content">
       <div class="modal-header">
@@ -6,7 +6,7 @@
         <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
       </div>
       <div class="modal-body">
-        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
         <el-row :gutter="20">
 
           <el-col :span="6">

@@ -41,23 +41,23 @@
           <!-- 搜索框容器 -->
           <div class="query-container" style="margin-bottom: 0px;">
             <div class="form-fields-container">
-              <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="80px">
+              <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
                 <el-row class="query-row-first">
                   <el-col :span="24">
-                    <el-form-item label="耗材编码" prop="code" class="query-item-inline">
+                    <el-form-item prop="code" class="query-item-inline">
                       <el-input
                         v-model="queryParams.code"
-                        placeholder="请输入耗材编码"
+                        placeholder="耗材编码"
                         clearable
                         @keyup.enter.native="handleQuery"
                         style="width: 200px"
                       />
                     </el-form-item>
 
-                    <el-form-item label="规格" prop="speci" class="query-item-inline">
+                    <el-form-item prop="speci" class="query-item-inline">
                       <el-input
                         v-model="queryParams.speci"
-                        placeholder="请输入规格"
+                        placeholder="规格"
                         clearable
                         @keyup.enter.native="handleQuery"
                         style="width: 200px"
@@ -74,7 +74,6 @@
             <el-col :span="1.5">
               <el-button
                 type="primary"
-                icon="el-icon-search"
                 size="medium"
                 @click="handleQuery"
               >搜索</el-button>
@@ -83,7 +82,7 @@
 
           <!-- 明细表格 -->
           <div class="table-container" style="margin-top: -30px;">
-            <el-table v-loading="loading" :data="materialCompareList" border height="calc(100vh - 340px)" :cell-style="{whiteSpace: 'nowrap'}">
+            <el-table v-loading="loading" :data="materialCompareList" border height="calc(100vh - 340px)" :cell-style="{whiteSpace: 'nowrap'}" stripe>
               <el-table-column type="selection" width="55" align="center" fixed="left" />
               <el-table-column type="index" label="序号" align="center" width="80" />
               <el-table-column label="耗材编码" align="center" prop="code" width="120" show-overflow-tooltip />
@@ -117,13 +116,11 @@
                   <el-button
                     size="small"
                     type="text"
-                    icon="el-icon-edit"
                     @click="handleHis(scope.row)"
                   >HIS</el-button>
                   <el-button
                     size="small"
                     type="text"
-                    icon="el-icon-delete"
                     @click="handleHrp(scope.row)"
                   >HRP</el-button>
                 </template>
@@ -163,7 +160,7 @@
               <el-form-item label="名称" prop="name" class="query-item-inline">
                 <el-input
                   v-model="hisQueryParams.name"
-                  placeholder="请输入名称"
+                  placeholder="名称"
                   clearable
                   @keyup.enter.native="handleHisQuery"
                   style="width: 200px"
@@ -173,7 +170,7 @@
               <el-form-item label="规格" prop="speci" class="query-item-inline">
                 <el-input
                   v-model="hisQueryParams.speci"
-                  placeholder="请输入规格"
+                  placeholder="规格"
                   clearable
                   @keyup.enter.native="handleHisQuery"
                   style="width: 200px"
@@ -188,9 +185,7 @@
       <el-row :gutter="10" class="mb8" style="margin-top: 8px; margin-bottom: 16px; padding: 0 20px;">
         <el-col :span="1.5">
           <el-button
-            type="primary"
-            icon="el-icon-search"
-            size="medium"
+            type="primary" size="medium"
             @click="handleHisQuery"
           >搜索</el-button>
         </el-col>
@@ -242,7 +237,7 @@
               <el-form-item label="名称" prop="name" class="query-item-inline">
                 <el-input
                   v-model="hrpQueryParams.name"
-                  placeholder="请输入名称"
+                  placeholder="名称"
                   clearable
                   @keyup.enter.native="handleHrpQuery"
                   style="width: 200px"
@@ -252,7 +247,7 @@
               <el-form-item label="规格" prop="speci" class="query-item-inline">
                 <el-input
                   v-model="hrpQueryParams.speci"
-                  placeholder="请输入规格"
+                  placeholder="规格"
                   clearable
                   @keyup.enter.native="handleHrpQuery"
                   style="width: 200px"
@@ -267,9 +262,7 @@
       <el-row :gutter="10" class="mb8" style="margin-top: 8px; margin-bottom: 16px; padding: 0 20px;">
         <el-col :span="1.5">
           <el-button
-            type="primary"
-            icon="el-icon-search"
-            size="medium"
+            type="primary" size="medium"
             @click="handleHrpQuery"
           >搜索</el-button>
         </el-col>

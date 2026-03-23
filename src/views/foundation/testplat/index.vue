@@ -1,33 +1,33 @@
-﻿<template>
+<template>
     <div class="inspection-platform">
       <!-- 顶部搜索栏 -->
       <div class="search-bar">
-        <el-form inline>
-          <el-form-item label="关键字：">
-            <el-input v-model="searchForm.keyword" placeholder="请输入检验平台名称、编码..." clearable></el-input>
-          </el-form-item>
-          <el-form-item label="仪器：">
-            <el-input v-model="searchForm.instrument" placeholder="请输入仪器名称" clearable></el-input>
-          </el-form-item>
-          <el-form-item label="项目：">
-            <el-input v-model="searchForm.project" placeholder="请输入项目编码、名称..." clearable></el-input>
+        <el-form inline class="query-form">
+          <el-form-item>
+            <el-input v-model="searchForm.keyword" placeholder="检验平台名称、编码..." clearable></el-input>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" @click="handleSearch">查询</el-button>
+            <el-input v-model="searchForm.instrument" placeholder="仪器名称" clearable></el-input>
           </el-form-item>
           <el-form-item>
-            <el-button icon="el-icon-refresh" @click="handleReset">重置</el-button>
+            <el-input v-model="searchForm.project" placeholder="项目编码、名称..." clearable></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleSearch">查询</el-button>
+          </el-form-item>
+          <el-form-item>
+            <el-button @click="handleReset">重置</el-button>
           </el-form-item>
         </el-form>
       </div>
   
       <!-- 功能按钮 -->
       <div class="function-buttons">
-        <el-button type="primary" icon="el-icon-plus" @click="handleAdd">新增</el-button>
-        <el-button type="primary" icon="el-icon-edit" @click="handleEdit">修改</el-button>
-        <el-button type="primary" icon="el-icon-download" @click="handleExport">导出</el-button>
-        <el-button type="primary" icon="el-icon-upload2" @click="handleImport">导入</el-button>
-        <el-button type="primary" icon="el-icon-download" @click="handleTemplateDownload">下载模板</el-button>
+        <el-button type="primary" @click="handleAdd">新增</el-button>
+        <el-button type="primary" @click="handleEdit">修改</el-button>
+        <el-button type="primary" @click="handleExport">导出</el-button>
+        <el-button type="primary" @click="handleImport">导入</el-button>
+        <el-button type="primary" @click="handleTemplateDownload">下载模板</el-button>
       </div>
   
       <!-- 主内容区域 -->
@@ -39,13 +39,14 @@
             border 
             style="width: 100%" 
             :header-cell-style="{background:'#f5f7fa',color:'#606266'}"
-            height="calc(100vh - 330px)">
+            height="calc(100vh - 330px)"
+            stripe>
             <el-table-column type="selection" width="55" align="center"></el-table-column>
             <el-table-column type="index" label="序" width="50" align="center"></el-table-column>
             <el-table-column prop="name" label="检验平台名称" width="180" align="center"></el-table-column>
             <el-table-column prop="status" label="状态" width="100" align="center">
               <template #default="scope">
-                <el-tag type="success" size="small">{{ scope.row.status }}</el-tag>
+                <el-tag type="primary" size="small">{{ scope.row.status }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="rank" label="排序号" width="100" align="center" sortable></el-table-column>
@@ -55,13 +56,11 @@
                 <el-button
                   size="small"
                   type="text"
-                  icon="el-icon-edit"
                   @click="handleEdit(scope.row)"
                 >修改</el-button>
                 <el-button
                   size="small"
                   type="text"
-                  icon="el-icon-delete"
                   @click="handleDelete(scope.row)"
                 >删除</el-button>
               </template>
@@ -76,7 +75,8 @@
             border 
             style="width: 100%" 
             :header-cell-style="{background:'#f5f7fa',color:'#606266'}"
-            height="calc(100vh - 330px)">
+            height="calc(100vh - 330px)"
+            stripe>
             <el-table-column type="index" label="序" width="50" align="center"></el-table-column>
             <el-table-column prop="name" label="设备名称" width="180" align="center"></el-table-column>
             <el-table-column prop="lab" label="使用实验室" width="180" align="center"></el-table-column>
@@ -86,13 +86,11 @@
                 <el-button
                   size="small"
                   type="text"
-                  icon="el-icon-edit"
                   @click="handleEditEquipment(scope.row)"
                 >修改</el-button>
                 <el-button
                   size="small"
                   type="text"
-                  icon="el-icon-delete"
                   @click="handleDeleteEquipment(scope.row)"
                 >删除</el-button>
               </template>
@@ -110,12 +108,12 @@
               </el-select>
             </div>
             <div class="header-right">
-              <el-button icon="el-icon-arrow-left" circle @click="handleMoveLeft"></el-button>
-              <el-button icon="el-icon-arrow-right" circle @click="handleMoveRight"></el-button>
-              <el-button type="primary" icon="el-icon-check" @click="handleSave">保存</el-button>
+              <el-button circle @click="handleMoveLeft"></el-button>
+              <el-button circle @click="handleMoveRight"></el-button>
+              <el-button type="primary" @click="handleSave">保存</el-button>
             </div>
           </div>
-          <el-table :data="selectedEquipmentData" border style="width: 100%" :header-cell-style="{background:'#f5f7fa',color:'#606266'}">
+          <el-table :data="selectedEquipmentData" border style="width: 100%" :header-cell-style="{background:'#f5f7fa',color:'#606266'}" stripe>
             <el-table-column type="index" label="序" width="50"></el-table-column>
             <el-table-column prop="name" label="设备名称"></el-table-column>
             <el-table-column prop="lab" label="使用实验室"></el-table-column>
@@ -132,22 +130,22 @@
             <el-row :gutter="20">
               <el-col :span="6">
                 <el-form-item label="平台名称" prop="name">
-                  <el-input v-model="form.name" placeholder="请输入平台名称" />
+                  <el-input v-model="form.name" placeholder="平台名称" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="平台编码" prop="code">
-                  <el-input v-model="form.code" placeholder="请输入平台编码" />
+                  <el-input v-model="form.code" placeholder="平台编码" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="排序号" prop="rank">
-                  <el-input v-model="form.rank" placeholder="请输入排序号" />
+                  <el-input v-model="form.rank" placeholder="排序号" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="状态" prop="status">
-                  <el-select v-model="form.status" placeholder="请选择状态" style="width: 100%">
+                  <el-select v-model="form.status" placeholder="状态" style="width: 100%">
                     <el-option label="有效" value="有效"></el-option>
                     <el-option label="无效" value="无效"></el-option>
                   </el-select>

@@ -1,22 +1,22 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-form-item label="分类编码" prop="materialCategoryCode">
+          <el-form-item prop="materialCategoryCode">
             <el-input
               v-model="queryParams.materialCategoryCode"
-              placeholder="请输入分类编码"
+              placeholder="分类编码"
               clearable
               @keyup.enter.native="handleQuery"
             />
           </el-form-item>
         </el-col>
         <el-col :span="6">
-          <el-form-item label="分类名称" prop="materialCategoryName">
+          <el-form-item prop="materialCategoryName">
             <el-input
               v-model="queryParams.materialCategoryName"
-              placeholder="请输入分类名称"
+              placeholder="分类名称"
               clearable
               @keyup.enter.native="handleQuery"
             />
@@ -24,8 +24,8 @@
         </el-col>
         <el-col :span="6">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+            <el-button size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
       </el-row>
@@ -34,20 +34,14 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="small"
+          type="primary" size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:materialCategory:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:materialCategory:edit']"
@@ -55,10 +49,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:materialCategory:remove']"
@@ -66,10 +57,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
+          type="primary" size="small"
           @click="handleExport"
           v-hasPermi="['foundation:materialCategory:export']"
         >导出</el-button>
@@ -77,7 +65,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="materialCategoryList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+    <el-table v-loading="loading" :data="materialCategoryList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="编号" align="center" prop="materialCategoryId" width="50"/>
       <el-table-column label="分类编码" align="center" prop="materialCategoryCode" width="120"/>
@@ -94,14 +82,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:materialCategory:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:materialCategory:remove']"
           >删除</el-button>
@@ -125,22 +111,22 @@
           <el-row :gutter="20">
             <el-col :span="6">
               <el-form-item label="分类编码" prop="materialCategoryCode">
-                <el-input v-model="form.materialCategoryCode" :disabled="isDisabled" placeholder="请输入分类编码" />
+                <el-input v-model="form.materialCategoryCode" :disabled="isDisabled" placeholder="分类编码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="分类名称" prop="materialCategoryName">
-                <el-input v-model="form.materialCategoryName" placeholder="请输入分类名称" />
+                <el-input v-model="form.materialCategoryName" placeholder="分类名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="分类地址" prop="materialCategoryAddress">
-                <el-input v-model="form.materialCategoryAddress" type="textarea" placeholder="请输入分类地址" />
+                <el-input v-model="form.materialCategoryAddress" type="textarea" placeholder="分类地址" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="联系方式" prop="materialCategoryContact">
-                <el-input v-model="form.materialCategoryContact" placeholder="请输入联系方式" />
+                <el-input v-model="form.materialCategoryContact" placeholder="联系方式" />
               </el-form-item>
             </el-col>
           </el-row>

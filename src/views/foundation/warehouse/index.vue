@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container warehouse-container">
     <el-row :gutter="20">
       <!-- 左侧仓库列表 -->
@@ -23,13 +23,13 @@
       <el-col :span="18">
     <!-- 查询条件容器 -->
     <div class="query-container" v-show="showSearch">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="68px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="20">
           <el-col :span="6">
-            <el-form-item label="仓库编码" prop="code" label-width="100px">
+            <el-form-item prop="code">
               <el-input
                 v-model="queryParams.code"
-                placeholder="请输入仓库编码"
+                placeholder="仓库编码"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -37,10 +37,10 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="仓库名称" prop="name" label-width="100px">
+            <el-form-item prop="name">
               <el-input
                 v-model="queryParams.name"
-                placeholder="请输入仓库名称"
+                placeholder="仓库名称"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -54,20 +54,14 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="small"
+          type="primary" size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:warehouse:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:warehouse:edit']"
@@ -75,10 +69,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:warehouse:remove']"
@@ -86,10 +77,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
+          type="primary" size="small"
           @click="handleExport"
           v-hasPermi="['foundation:warehouse:export']"
         >导出</el-button>
@@ -97,7 +85,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleQuery"
         >搜索</el-button>
@@ -105,7 +92,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList" :row-class-name="warehouseIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%">
+    <el-table v-loading="loading" :data="warehouseList" :row-class-name="warehouseIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip />
       <el-table-column label="仓库编码" align="center" prop="code" width="120" show-overflow-tooltip />
@@ -129,14 +116,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:warehouse:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:warehouse:remove']"
           >删除</el-button>
@@ -165,22 +150,22 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="仓库编码" prop="code">
-                <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入仓库编码" />
+                <el-input v-model="form.code" :disabled="isDisabled" placeholder="仓库编码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="仓库名称" prop="name">
-                <el-input v-model="form.name" placeholder="请输入仓库名称" />
+                <el-input v-model="form.name" placeholder="仓库名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="负责人" prop="warehousePerson">
-                <el-input v-model="form.warehousePerson" placeholder="请输入负责人" />
+                <el-input v-model="form.warehousePerson" placeholder="负责人" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="电话" prop="warehousePhone">
-                <el-input v-model="form.warehousePhone" placeholder="请输入电话" />
+                <el-input v-model="form.warehousePhone" placeholder="电话" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -188,7 +173,7 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="状态" prop="warehouseStatus">
-                <el-select v-model="form.warehouseStatus" placeholder="请选择状态" style="width: 100%">
+                <el-select v-model="form.warehouseStatus" placeholder="状态" style="width: 100%">
                   <el-option
                     v-for="dict in dict.type.is_use_status"
                     :key="dict.value"
@@ -200,7 +185,7 @@
             </el-col>
             <el-col :span="6">
               <el-form-item label="仓库类型" prop="warehouseType">
-                <el-select v-model="form.warehouseType" placeholder="请选择仓库类型" style="width: 100%">
+                <el-select v-model="form.warehouseType" placeholder="仓库类型" style="width: 100%">
                   <el-option label="高值" value="高值"></el-option>
                   <el-option label="低值" value="低值"></el-option>
                   <el-option label="试剂" value="试剂"></el-option>
@@ -210,7 +195,7 @@
             </el-col>
             <el-col :span="6">
               <el-form-item label="结算类型" prop="settlementType">
-                <el-select v-model="form.settlementType" placeholder="请选择结算类型" style="width: 100%">
+                <el-select v-model="form.settlementType" placeholder="结算类型" style="width: 100%">
                   <el-option label="入库结算" value="1"></el-option>
                   <el-option label="出库结算" value="2"></el-option>
                   <el-option label="消耗结算" value="3"></el-option>
@@ -219,7 +204,7 @@
             </el-col>
             <el-col :span="6">
               <el-form-item label="备注" prop="remark">
-                <el-input v-model="form.remark" placeholder="请输入备注" />
+                <el-input v-model="form.remark" placeholder="备注" />
               </el-form-item>
             </el-col>
           </el-row>

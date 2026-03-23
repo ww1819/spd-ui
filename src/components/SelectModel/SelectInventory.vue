@@ -8,9 +8,9 @@
         <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
       </div>
       <div class="modal-body">
-        <!-- 查询条件容器框（与添加科室申领弹窗一致） -->
-        <div ref="formFieldsContainer" class="form-fields-container inventory-query-fields">
-          <el-form :model="queryParams" ref="queryForm" :inline="true" size="small" v-show="showSearch" label-width="68px">
+        <!-- 查询条件容器框 -->
+        <div ref="formFieldsContainer" class="form-fields-container" style="background: #fff !important; padding: 16px 20px !important; border-radius: 8px !important; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important; margin-bottom: 16px !important; border: 1px solid #EBEEF5 !important; width: 100% !important; box-sizing: border-box !important; display: block !important;">
+          <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
             <el-row :gutter="20">
 
               <el-col :span="6">
@@ -29,7 +29,7 @@
                 <el-form-item label="入库批次号" prop="batchNo" label-width="100px">
                   <el-input
                     v-model="queryParams.batchNo"
-                    placeholder="请输入入库批次号"
+                    placeholder="入库批次号"
                     clearable
                     @keyup.enter.native="handleQuery"
                   />
@@ -102,7 +102,10 @@
           <el-table-column label="库存数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable/>
           <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable/>
           <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="批号" align="center" prop="materialNo" width="200" show-overflow-tooltip resizable/>
+          <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
+          <el-table-column label="主条码" align="center" prop="mainBarcode" width="140" show-overflow-tooltip resizable/>
+          <el-table-column label="辅条码" align="center" prop="subBarcode" width="140" show-overflow-tooltip resizable/>
           <el-table-column label="有效期" align="center" prop="endTime" width="140" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
@@ -114,7 +117,11 @@
             </template>
           </el-table-column>
           <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable/>
-          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable/>
           <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>

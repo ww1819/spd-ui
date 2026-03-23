@@ -1,28 +1,27 @@
 <template>
   <div class="app-container">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="业务单号" prop="stockNo" class="query-item-inline">
+            <el-form-item prop="stockNo" class="query-item-inline">
               <el-input v-model="queryParams.stockNo"
-                        placeholder="请输入业务单号"
+                        placeholder="业务单号"
                         clearable
                         style="width: 180px"
                         @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+            <el-form-item prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
             </el-form-item>
-            <el-form-item label="状态" prop="stockStatus" class="query-item-inline">
-              <el-select v-model="queryParams.stockStatus" placeholder="全部"
+            <el-form-item prop="stockStatus" class="query-item-inline">
+              <el-select v-model="queryParams.stockStatus" placeholder="单据状态"
                          clearable
                          style="width: 180px">
-                <el-option label="全部" :value="null" />
                 <el-option label="未审核" :value="1" />
                 <el-option label="已审核" :value="2" />
               </el-select>
@@ -32,7 +31,7 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="12">
-            <el-form-item label="制单日期" style="display: flex; align-items: center;">
+            <el-form-item style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -60,9 +59,7 @@
     <el-row :gutter="10" class="mb8" style="padding-top: 10px">
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
           v-hasPermi="['department:stocktakingAudit:export']"
@@ -71,7 +68,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-check"
           size="small"
           @click="handleBatchAudit"
           v-hasPermi="['department:stocktakingAudit:audit']"
@@ -79,8 +75,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          icon="el-icon-close"
+          type="primary"
           size="small"
           @click="handleBatchReject"
           v-hasPermi="['department:stocktakingAudit:reject']"
@@ -89,14 +84,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="small"
           @click="resetQuery"
         >重置</el-button>
@@ -104,7 +98,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="stocktakingList" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="58vh" border>
+    <el-table v-loading="loading" :data="stocktakingList" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="58vh" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="盘点单号" align="center" prop="stockNo" width="180" show-overflow-tooltip resizable>
@@ -139,14 +133,12 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-view"
               @click="handleView(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >查看</el-button>
             <el-button
               size="small"
               type="text"
-              icon="el-icon-check"
               @click="handleAudit(scope.row)"
               v-hasPermi="['department:stocktakingAudit:audit']"
               v-if="scope.row.stockStatus == 1"
@@ -155,7 +147,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-close"
               @click="handleReject(scope.row)"
               v-hasPermi="['department:stocktakingAudit:reject']"
               v-if="scope.row.stockStatus == 1"
@@ -229,7 +220,7 @@
                         v-model="form.rejectReason" 
                         type="textarea" 
                         :rows="3"
-                        placeholder="请输入驳回原因（驳回时必填）" 
+                        placeholder="驳回原因（驳回时必填）" 
                         style="width: 100%" 
                       />
                     </el-form-item>

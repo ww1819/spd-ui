@@ -1,13 +1,13 @@
 <template>
   <div class="app-container">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
         <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item label="单号" prop="billNo" class="query-item-inline">
               <el-input
                 v-model="queryParams.billNo"
-                placeholder="请输入单号"
+                placeholder="单号"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"
@@ -60,7 +60,7 @@
             <el-form-item label="批号" prop="materialNo" class="query-item-inline">
               <el-input
                 v-model="queryParams.materialNo"
-                placeholder="请输入批号"
+                placeholder="批号"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"
@@ -114,7 +114,7 @@
     <el-table v-loading="loading" :data="inventoryList"
               show-summary :summary-method="getTotalSummaries"
               height="55vh"
-              border>
+              border stripe>
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}

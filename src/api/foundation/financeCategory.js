@@ -60,3 +60,71 @@ export function updateFinanceCategoryReferred(ids) {
     data: { ids }
   })
 }
+
+/** 财务分类导入：仅校验 */
+export function validateFinanceCategoryImport(file, updateSupport) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/financeCategory/importValidate?updateSupport=' + !!updateSupport,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+/** 财务分类导入：confirm=true 落库 */
+export function importFinanceCategoryData(file, updateSupport, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/financeCategory/importData?updateSupport=' + !!updateSupport + '&confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+
+export function validateFinanceCategoryImportAdd(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/financeCategory/importAddValidate',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function importFinanceCategoryAddData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/financeCategory/importAddData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function validateFinanceCategoryImportUpdate(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/financeCategory/importUpdateValidate',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function importFinanceCategoryUpdateData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/financeCategory/importUpdateData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function downloadFinanceCategoryImportAddTemplate(){return request({url:'/foundation/financeCategory/importAddTemplate',method:'post',responseType:'blob'})}
+export function downloadFinanceCategoryImportUpdateTemplate(){return request({url:'/foundation/financeCategory/importUpdateTemplate',method:'post',responseType:'blob'})}

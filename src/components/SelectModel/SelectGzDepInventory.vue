@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="app-container">
     <el-dialog title="高值科室库存明细" :visible.sync="show" append-to-body width="1600px" :before-close="handleClose">
-      <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+      <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
         <el-row :gutter="20">
 
           <el-col :span="6">
@@ -20,7 +20,7 @@
             <el-form-item label="批次号" prop="batchNo" label-width="100px">
               <el-input
                 v-model="queryParams.batchNo"
-                placeholder="请输入批次号"
+                placeholder="批次号"
                 clearable
                 @keyup.enter.native="handleQuery"
               />

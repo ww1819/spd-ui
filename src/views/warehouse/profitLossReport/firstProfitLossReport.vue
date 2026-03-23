@@ -1,13 +1,13 @@
 <template>
   <div class="app-container first-profit-loss-report-page">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
         <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item label="盈亏单号" prop="billNo" class="query-item-inline">
               <el-input
                 v-model="queryParams.billNo"
-                placeholder="请输入盈亏单号"
+                placeholder="盈亏单号"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"
@@ -16,7 +16,7 @@
             <el-form-item label="盘点单号" prop="stocktakingNo" class="query-item-inline">
               <el-input
                 v-model="queryParams.stocktakingNo"
-                placeholder="请输入盘点单号"
+                placeholder="盘点单号"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"

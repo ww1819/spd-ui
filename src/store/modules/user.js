@@ -68,11 +68,14 @@ const user = {
         getInfo().then(res => {
           const user = res.user
           const avatar = (user.avatar == "" || user.avatar == null) ? require("@/assets/images/profile.jpg") : process.env.VUE_APP_BASE_API + user.avatar;
-          if (res.roles && res.roles.length > 0) { // 验证返回的roles是否是一个非空数组
+          if (res.roles && res.roles.length > 0) {
             commit('SET_ROLES', res.roles)
-            commit('SET_PERMISSIONS', res.permissions)
           } else {
             commit('SET_ROLES', ['ROLE_DEFAULT'])
+          }
+          // 权限与角色解耦：租户/无角色用户按钮权限来自后端 sys_user_menu（须始终写入 store，否则 v-hasPermi 全 false）
+          if (res.permissions != null) {
+            commit('SET_PERMISSIONS', Array.isArray(res.permissions) ? res.permissions : [...res.permissions])
           }
           commit('SET_NAME', user.userName)
           commit('SET_ID', user.userId)

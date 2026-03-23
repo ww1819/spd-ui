@@ -2,10 +2,10 @@
   <div class="login">
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form">
       <h3 class="title"></h3><!-- SPD后台管理系统 -->
-      <el-form-item prop="customerId" label="客户（租户）">
+      <el-form-item prop="customerId" label="组织机构">
         <el-select
           v-model="loginForm.customerId"
-          placeholder="请选择客户（租户）；平台管理员可留空"
+          placeholder="请选择组织机构；平台管理员可留空"
           clearable
           filterable
           style="width: 100%"
@@ -123,13 +123,20 @@ export default {
   },
   created() {
     this.getCode();
-    this.getCustomerOptions();
     this.getCookie();
+    this.getCustomerOptions();
   },
   methods: {
     getCustomerOptions() {
       getCustomerOptions("hc").then(res => {
         this.customerOptions = res.data || [];
+        const def = res.defaultCustomerId;
+        if (def && (!this.loginForm.customerId || String(this.loginForm.customerId).trim() === "")) {
+          const hit = (this.customerOptions || []).some(c => c.customerId === def);
+          if (hit) {
+            this.loginForm.customerId = def;
+          }
+        }
       }).catch(() => {
         this.customerOptions = [];
       });

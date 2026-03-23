@@ -2,17 +2,17 @@
   <div class="app-container material-page-container">
     <div class="query-container">
       <div class="form-fields-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
       <el-row class="query-row-first">
         <el-col :span="24">
-          <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+          <el-form-item prop="supplierId" class="query-item-inline">
                 <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
               <SelectSupplier v-model="queryParams.supplierId"/>
             </div>
           </el-form-item>
 
-          <el-form-item label="耗材名称" prop="name" class="query-item-inline">
+          <el-form-item prop="name" class="query-item-inline">
             <el-input
               v-model="queryParams.name"
                   placeholder="支持名称/编码/首字母搜索"
@@ -22,37 +22,37 @@
             />
           </el-form-item>
 
-          <el-form-item label="UDI码" prop="udiNo" class="query-item-inline">
+          <el-form-item prop="udiNo" class="query-item-inline">
             <el-input
               v-model="queryParams.udiNo"
-              placeholder="请输入UDI码（支持模糊查询）"
+              placeholder="UDI码（支持模糊查询）"
               clearable
               @keyup.enter.native="handleQuery"
                   style="width: 150px"
             />
           </el-form-item>
 
-          <el-form-item label="注册证号" prop="registerNo" class="query-item-inline">
+          <el-form-item prop="registerNo" class="query-item-inline">
             <el-input
               v-model="queryParams.registerNo"
-              placeholder="请输入注册证号"
+              placeholder="注册证号"
               clearable
               @keyup.enter.native="handleQuery"
               style="width: 150px"
             />
           </el-form-item>
 
-          <el-form-item label="阳采编码" prop="sunshineCode" class="query-item-inline">
+          <el-form-item prop="sunshineCode" class="query-item-inline">
             <el-input
               v-model="queryParams.sunshineCode"
-              placeholder="请输入阳采编码"
+              placeholder="阳采编码"
               clearable
               @keyup.enter.native="handleQuery"
               style="width: 150px"
             />
           </el-form-item>
 
-          <el-form-item label="生产厂家" prop="factoryId" class="query-item-inline">
+          <el-form-item prop="factoryId" class="query-item-inline">
             <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
               <SelectFactory v-model="queryParams.factoryId"/>
             </div>
@@ -62,7 +62,7 @@
 
       <el-row class="query-row-third">
         <el-col :span="24">
-              <el-form-item label="日期" class="query-item-inline query-item-date">
+              <el-form-item class="query-item-inline query-item-date">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -82,19 +82,19 @@
             />
           </el-form-item>
 
-              <el-form-item label="库房分类" prop="storeroomId" class="query-item-inline">
+              <el-form-item prop="storeroomId" class="query-item-inline">
                 <div class="query-select-wrapper query-select-wrapper-small" style="width: 100px !important;">
                   <SelectWarehouseCategory v-model="queryParams.storeroomId" style="width: 100%"/>
                 </div>
               </el-form-item>
 
-              <el-form-item label="财务分类" prop="financeCategoryId" class="query-item-inline">
+              <el-form-item prop="financeCategoryId" class="query-item-inline">
                 <div class="query-select-wrapper query-select-wrapper-small" style="width: 100px !important;">
                   <SelectFinanceCategory v-model="queryParams.financeCategoryId" style="width: 100%"/>
                 </div>
               </el-form-item>
 
-              <el-form-item label="货位" prop="locationId" class="query-item-inline">
+              <el-form-item prop="locationId" class="query-item-inline">
                 <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
                   <SelectLocation v-model="queryParams.locationId"/>
                 </div>
@@ -104,9 +104,8 @@
 
           <el-row class="query-row-fourth">
             <el-col :span="24">
-          <el-form-item label="启停用状态" prop="isUse" class="query-item-inline">
-            <el-select v-model="queryParams.isUse" placeholder="请选择" style="width: 110px">
-              <el-option label="全部" value=""></el-option>
+          <el-form-item prop="isUse" class="query-item-inline">
+            <el-select v-model="queryParams.isUse" placeholder="启停用状态" style="width: 110px" clearable>
               <el-option
                 v-for="dict in dict.type.is_use_status"
                 :key="dict.value"
@@ -116,9 +115,8 @@
             </el-select>
           </el-form-item>
 
-              <el-form-item label="高值" prop="isGz" class="query-item-inline query-item-compact">
-            <el-select v-model="queryParams.isGz" placeholder="请选择" style="width: 100px">
-              <el-option label="全部" value=""></el-option>
+              <el-form-item prop="isGz" class="query-item-inline query-item-compact">
+            <el-select v-model="queryParams.isGz" placeholder="高值" style="width: 100px" clearable>
               <el-option
                 v-for="dict in dict.type.is_yes_no"
                 :key="dict.value"
@@ -128,9 +126,8 @@
             </el-select>
           </el-form-item>
 
-              <el-form-item label="跟台" prop="isFollow" class="query-item-inline query-item-compact">
-            <el-select v-model="queryParams.isFollow" placeholder="请选择" style="width: 100px">
-              <el-option label="全部" value=""></el-option>
+              <el-form-item prop="isFollow" class="query-item-inline query-item-compact">
+            <el-select v-model="queryParams.isFollow" placeholder="跟台" style="width: 100px" clearable>
               <el-option
                 v-for="dict in dict.type.is_yes_no"
                 :key="dict.value"
@@ -140,9 +137,8 @@
             </el-select>
           </el-form-item>
 
-              <el-form-item label="计费" prop="isBilling" class="query-item-inline query-item-compact">
-                <el-select v-model="queryParams.isBilling" placeholder="请选择" style="width: 100px">
-                  <el-option label="全部" value=""></el-option>
+              <el-form-item prop="isBilling" class="query-item-inline query-item-compact">
+                <el-select v-model="queryParams.isBilling" placeholder="计费" style="width: 100px" clearable>
                   <el-option
                     v-for="dict in dict.type.is_yes_no"
                     :key="dict.value"
@@ -160,20 +156,14 @@
     <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -8px">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="medium"
+          type="primary" size="medium"
           @click="handleAdd"
           v-hasPermi="['foundation:material:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="medium"
+          type="primary" size="medium"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:material:edit']"
@@ -181,10 +171,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="medium"
+          type="primary" size="medium"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:material:remove']"
@@ -192,10 +179,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-refresh"
-          size="medium"
+          type="primary" size="medium"
           :disabled="multiple"
           @click="handleUpdateReferred"
           v-hasPermi="['foundation:material:updateReferred']"
@@ -203,10 +187,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="medium"
+          type="primary" size="medium"
           @click="handleExport"
           v-hasPermi="['foundation:material:export']"
         >导出</el-button>
@@ -214,17 +195,26 @@
       <el-col :span="1.5">
         <el-button
           type="info"
+          plain
           icon="el-icon-upload2"
-          size="medium"
-          @click="handleImport"
+          size="medium" 
+          @click="handleMaterialImport('add')" 
           v-hasPermi="['foundation:material:import']"
-        >导入</el-button>
+          >新增导入</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          icon="el-icon-upload"
+          type="info"
+          plain
+          icon="el-icon-upload2"
           size="medium"
+          @click="handleMaterialImport('update')"
+          v-hasPermi="['foundation:material:import']"
+        >更新导入</el-button>
+      </el-col> 
+      <el-col :span="1.5">
+        <el-button
+          type="primary" size="medium"
           :disabled="!queryParams.supplierId"
           @click="handlePushArchive"
           v-hasPermi="['foundation:material:push']"
@@ -233,7 +223,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
@@ -241,7 +230,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="materialList" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="60vh" border>
+    <el-table v-loading="loading" :data="materialList" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="60vh" border stripe>
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <el-table-column type="index" label="序号" align="center" width="80" key="index" v-if="columns[0].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -299,14 +288,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:material:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:material:remove']"
           >删除</el-button>
@@ -340,7 +327,7 @@
                 <el-input
                   v-model="form.code"
                   :disabled="isDisabled || form.id != null"
-                  placeholder="请输入耗材编码（留空自动生成6位数字，手工输入可为任意长度）"
+                  placeholder="耗材编码（留空自动生成6位数字，手工输入可为任意长度）"
                   @blur="validateCode"
                   @input="handleCodeInput"
                 />
@@ -348,12 +335,12 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="耗材名称：" prop="name">
-                <el-input v-model="form.name" @input="nameChange" placeholder="请输入耗材名称" />
+                <el-input v-model="form.name" @input="nameChange" placeholder="耗材名称" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="名称简码：" prop="referredName">
-                <el-input v-model="form.referredName" :disabled="true" placeholder="请输入名称简码" />
+                <el-input v-model="form.referredName" :disabled="true" placeholder="名称简码" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -368,7 +355,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="规格：" prop="speci">
-                    <el-input v-model="form.speci" placeholder="请输入规格" />
+                    <el-input v-model="form.speci" placeholder="规格" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -377,7 +364,7 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="型号：" prop="model">
-                    <el-input v-model="form.model" placeholder="请输入型号" />
+                    <el-input v-model="form.model" placeholder="型号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -386,8 +373,8 @@
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="价格：" prop="price">
-                    <el-input v-model="form.price" placeholder="请输入价格" />
+                  <el-form-item label="单价：" prop="price">
+                    <el-input v-model="form.price" placeholder="请输入单价" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
@@ -402,7 +389,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="产地：" prop="producer">
-                    <el-input v-model="form.producer" placeholder="请输入产地" />
+                    <el-input v-model="form.producer" placeholder="产地" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -411,17 +398,17 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="通用名称：" prop="useName">
-                    <el-input v-model="form.useName" placeholder="请输入通用名称" />
+                    <el-input v-model="form.useName" placeholder="通用名称" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="注册证名称：" prop="registerName">
-                    <el-input v-model="form.registerName" placeholder="请输入注册证名称" />
+                    <el-input v-model="form.registerName" placeholder="注册证名称" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="注册证件号：" prop="registerNo">
-                    <el-input v-model="form.registerNo" placeholder="请输入注册证件号" />
+                    <el-input v-model="form.registerNo" placeholder="注册证件号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -458,37 +445,37 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="医保编码：" prop="medicalNo">
-                <el-input v-model="form.medicalNo" placeholder="请输入医保编码" />
+                <el-input v-model="form.medicalNo" placeholder="医保编码" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="医保名称：" prop="medicalName">
-                    <el-input v-model="form.medicalName" placeholder="请输入医保名称" />
+                    <el-input v-model="form.medicalName" placeholder="医保名称" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="销售价：" prop="salePrice">
-                    <el-input v-model="form.salePrice" placeholder="请输入销售价" />
+                    <el-input v-model="form.salePrice" placeholder="销售价" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="中标价格：" prop="successfulPrice">
-                    <el-input v-model="form.successfulPrice" placeholder="请输入中标价格" />
+                    <el-input v-model="form.successfulPrice" placeholder="中标价格" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="中标号：" prop="successfulNo">
-                    <el-input v-model="form.successfulNo" placeholder="请输入中标号" />
+                    <el-input v-model="form.successfulNo" placeholder="中标号" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="招标类别：" prop="successfulType">
-                    <el-input v-model="form.successfulType" placeholder="请输入招标类别" />
+                    <el-input v-model="form.successfulType" placeholder="招标类别" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="入选原因：" prop="selectionReason">
-                    <el-input v-model="form.selectionReason" type="textarea" :rows="2" placeholder="请输入入选原因" />
+                    <el-input v-model="form.selectionReason" type="textarea" :rows="2" placeholder="入选原因" />
                   </el-form-item>
                 </el-col>
           </el-row>
@@ -497,7 +484,7 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="包装规格：" prop="packageSpeci">
-                    <el-input v-model="form.packageSpeci" placeholder="请输入包装规格" />
+                    <el-input v-model="form.packageSpeci" placeholder="包装规格" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -514,22 +501,22 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="品牌：" prop="brand">
-                    <el-input v-model="form.brand" placeholder="请输入品牌" />
+                    <el-input v-model="form.brand" placeholder="品牌" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="用途：" prop="useto">
-                    <el-input v-model="form.useto" placeholder="请输入用途" />
+                    <el-input v-model="form.useto" placeholder="用途" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="材质：" prop="quality">
-                    <el-input v-model="form.quality" placeholder="请输入材质" />
+                    <el-input v-model="form.quality" placeholder="材质" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="功能：" prop="function">
-                    <el-input v-model="form.function" placeholder="请输入功能" />
+                    <el-input v-model="form.function" placeholder="功能" />
                   </el-form-item>
                 </el-col>
           </el-row>
@@ -538,12 +525,12 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="UDI码：" prop="udiNo">
-                <el-input v-model="form.udiNo" placeholder="请输入UDI码" />
+                <el-input v-model="form.udiNo" placeholder="UDI码" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="阳光平台编码：" prop="sunshineCode">
-                <el-input v-model="form.sunshineCode" placeholder="请输入阳光平台编码" />
+                <el-input v-model="form.sunshineCode" placeholder="阳光平台编码" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -600,22 +587,22 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="贯标码：" prop="countryNo">
-                    <el-input v-model="form.countryNo" placeholder="请输入贯标码" />
+                    <el-input v-model="form.countryNo" placeholder="贯标码" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="许可证编号：" prop="permitNo">
-                    <el-input v-model="form.permitNo" placeholder="请输入许可证编号" />
+                    <el-input v-model="form.permitNo" placeholder="许可证编号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="商品说明：" prop="description">
-                    <el-input v-model="form.description" placeholder="请输入商品说明" />
+                    <el-input v-model="form.description" placeholder="商品说明" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="备注：" prop="countryName">
-                <el-input v-model="form.countryName" placeholder="请输入备注" />
+                <el-input v-model="form.countryName" placeholder="备注" />
                   </el-form-item>
                 </el-col>
           </el-row>
@@ -737,29 +724,29 @@
                   <el-row :gutter="20">
                 <el-col :span="4">
                       <el-form-item label="收费编码：" prop="hisChargeCode">
-                        <el-input v-model="form.hisChargeCode" placeholder="请输入收费编码" />
+                        <el-input v-model="form.hisChargeCode" placeholder="收费编码" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                       <el-form-item label="收费规格：" prop="hisChargeSpeci">
-                        <el-input v-model="form.hisChargeSpeci" placeholder="请输入收费规格" />
+                        <el-input v-model="form.hisChargeSpeci" placeholder="收费规格" />
                       </el-form-item>
                     </el-col>
                     <el-col :span="4">
                       <el-form-item label="收费型号：" prop="hisChargeModel">
-                        <el-input v-model="form.hisChargeModel" placeholder="请输入收费型号" />
+                        <el-input v-model="form.hisChargeModel" placeholder="收费型号" />
                       </el-form-item>
                     </el-col>
                     <el-col :span="4">
                       <el-form-item label="收费单价：" prop="hisChargePrice">
-                        <el-input v-model="form.hisChargePrice" placeholder="请输入收费单价" />
+                        <el-input v-model="form.hisChargePrice" placeholder="收费单价" />
               </el-form-item>
                     </el-col>
                   </el-row>
                   <el-row :gutter="20">
                     <el-col :span="4">
                       <el-form-item label="收费名称：" prop="hisChargeName">
-                        <el-input v-model="form.hisChargeName" placeholder="请输入收费名称" />
+                        <el-input v-model="form.hisChargeName" placeholder="收费名称" />
                       </el-form-item>
                     </el-col>
                   </el-row>
@@ -779,110 +766,110 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                       <el-form-item label="平台id：" prop="sunshinePlatformId">
-                        <el-input v-model="form.sunshinePlatformId" placeholder="请输入平台id" />
+                        <el-input v-model="form.sunshinePlatformId" placeholder="平台id" />
                   </el-form-item>
                 </el-col>
                   </el-row>
                   <el-row :gutter="20">
                 <el-col :span="4">
                       <el-form-item label="名称：" prop="sunshineName">
-                        <el-input v-model="form.sunshineName" placeholder="请输入名称" />
+                        <el-input v-model="form.sunshineName" placeholder="名称" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                       <el-form-item label="配送协议编号：" prop="sunshineDeliveryAgreementNo">
-                        <el-input v-model="form.sunshineDeliveryAgreementNo" placeholder="请输入配送协议编号" />
+                        <el-input v-model="form.sunshineDeliveryAgreementNo" placeholder="配送协议编号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                       <el-form-item label="配送企业编号：" prop="sunshineDeliveryEnterpriseNo">
-                        <el-input v-model="form.sunshineDeliveryEnterpriseNo" placeholder="请输入配送企业编号" />
+                        <el-input v-model="form.sunshineDeliveryEnterpriseNo" placeholder="配送企业编号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                       <el-form-item label="配送企业：" prop="sunshineDeliveryEnterprise">
-                        <el-input v-model="form.sunshineDeliveryEnterprise" placeholder="请输入配送企业" />
+                        <el-input v-model="form.sunshineDeliveryEnterprise" placeholder="配送企业" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                       <el-form-item label="包装规格：" prop="sunshinePackagingSpec">
-                        <el-input v-model="form.sunshinePackagingSpec" placeholder="请输入包装规格" />
+                        <el-input v-model="form.sunshinePackagingSpec" placeholder="包装规格" />
                       </el-form-item>
                     </el-col>
                     <el-col :span="4">
                       <el-form-item label="规格：" prop="sunshineSpec">
-                        <el-input v-model="form.sunshineSpec" placeholder="请输入规格" />
+                        <el-input v-model="form.sunshineSpec" placeholder="规格" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="20">
                 <el-col :span="4">
                       <el-form-item label="单位：" prop="sunshineUnit">
-                        <el-input v-model="form.sunshineUnit" placeholder="请输入单位" />
+                        <el-input v-model="form.sunshineUnit" placeholder="单位" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                       <el-form-item label="型号：" prop="sunshineModel">
-                        <el-input v-model="form.sunshineModel" placeholder="请输入型号" />
+                        <el-input v-model="form.sunshineModel" placeholder="型号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                       <el-form-item label="单价：" prop="sunshinePrice">
-                        <el-input v-model="form.sunshinePrice" placeholder="请输入单价" />
+                        <el-input v-model="form.sunshinePrice" placeholder="单价" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                       <el-form-item label="厂家编号：" prop="sunshineFactoryNo">
-                        <el-input v-model="form.sunshineFactoryNo" placeholder="请输入厂家编号" />
+                        <el-input v-model="form.sunshineFactoryNo" placeholder="厂家编号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                       <el-form-item label="厂家：" prop="sunshineFactory">
-                        <el-input v-model="form.sunshineFactory" placeholder="请输入厂家" />
+                        <el-input v-model="form.sunshineFactory" placeholder="厂家" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                       <el-form-item label="耗材分类代码：" prop="sunshineCategoryCode">
-                        <el-input v-model="form.sunshineCategoryCode" placeholder="请输入耗材分类代码" />
+                        <el-input v-model="form.sunshineCategoryCode" placeholder="耗材分类代码" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="20">
                 <el-col :span="4">
                       <el-form-item label="交易产品代码：" prop="sunshineProductCode">
-                        <el-input v-model="form.sunshineProductCode" placeholder="请输入交易产品代码" />
+                        <el-input v-model="form.sunshineProductCode" placeholder="交易产品代码" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                       <el-form-item label="采购类别：" prop="sunshinePurchaseCategory">
-                        <el-input v-model="form.sunshinePurchaseCategory" placeholder="请输入采购类别" />
+                        <el-input v-model="form.sunshinePurchaseCategory" placeholder="采购类别" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                       <el-form-item label="一级目录：" prop="sunshineFirstLevel">
-                        <el-input v-model="form.sunshineFirstLevel" placeholder="请输入一级目录" />
+                        <el-input v-model="form.sunshineFirstLevel" placeholder="一级目录" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                       <el-form-item label="二级目录：" prop="sunshineSecondLevel">
-                        <el-input v-model="form.sunshineSecondLevel" placeholder="请输入二级目录" />
+                        <el-input v-model="form.sunshineSecondLevel" placeholder="二级目录" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                       <el-form-item label="三级目录：" prop="sunshineThirdLevel">
-                        <el-input v-model="form.sunshineThirdLevel" placeholder="请输入三级目录" />
+                        <el-input v-model="form.sunshineThirdLevel" placeholder="三级目录" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                       <el-form-item label="来源：" prop="sunshineSource">
-                        <el-input v-model="form.sunshineSource" placeholder="请输入来源" />
+                        <el-input v-model="form.sunshineSource" placeholder="来源" />
               </el-form-item>
             </el-col>
                   </el-row>
                   <el-row :gutter="20">
                     <el-col :span="4">
                       <el-form-item label="系数：" prop="sunshineCoefficient">
-                        <el-input v-model="form.sunshineCoefficient" placeholder="请输入系数" />
+                        <el-input v-model="form.sunshineCoefficient" placeholder="系数" />
                       </el-form-item>
                     </el-col>
                   </el-row>
@@ -902,29 +889,29 @@
                   <el-row :gutter="20">
                     <el-col :span="4">
                       <el-form-item label="HRP编码：" prop="hrpCode">
-                        <el-input v-model="form.hrpCode" placeholder="请输入HRP编码" />
+                        <el-input v-model="form.hrpCode" placeholder="HRP编码" />
                       </el-form-item>
                     </el-col>
                     <el-col :span="4">
                       <el-form-item label="HRP规格：" prop="hrpSpeci">
-                        <el-input v-model="form.hrpSpeci" placeholder="请输入HRP规格" />
+                        <el-input v-model="form.hrpSpeci" placeholder="HRP规格" />
                       </el-form-item>
                     </el-col>
                     <el-col :span="4">
                       <el-form-item label="HRP序号：" prop="hrpSeq">
-                        <el-input v-model="form.hrpSeq" placeholder="请输入HRP序号" />
+                        <el-input v-model="form.hrpSeq" placeholder="HRP序号" />
                       </el-form-item>
                     </el-col>
                     <el-col :span="4">
                       <el-form-item label="HRP单位：" prop="hrpUnit">
-                        <el-input v-model="form.hrpUnit" placeholder="请输入HRP单位" />
+                        <el-input v-model="form.hrpUnit" placeholder="HRP单位" />
                       </el-form-item>
                     </el-col>
                   </el-row>
                   <el-row :gutter="20">
                     <el-col :span="4">
                       <el-form-item label="HRP单价：" prop="hrpPrice">
-                        <el-input v-model="form.hrpPrice" placeholder="请输入HRP单价" />
+                        <el-input v-model="form.hrpPrice" placeholder="HRP单价" />
                       </el-form-item>
                     </el-col>
                   </el-row>
@@ -975,9 +962,9 @@
                 </div>
               </el-upload>
               <div v-if="form.imageUrl" style="margin-top: 20px;">
-                <el-button type="primary" icon="el-icon-view" @click="previewImage">查看图片</el-button>
-                <el-button type="success" icon="el-icon-check" @click="saveImage">保存</el-button>
-                <el-button type="danger" icon="el-icon-delete" @click="removeImage">删除图片</el-button>
+                <el-button type="primary" @click="previewImage">查看图片</el-button>
+                <el-button type="primary" @click="saveImage">保存</el-button>
+                <el-button type="primary" @click="removeImage">删除图片</el-button>
               </div>
             </div>
           </div>
@@ -1062,58 +1049,85 @@
       </div>
     </el-dialog>
 
-    <!-- 耗材导入对话框 -->
+    <!-- 耗材档案：新增/更新导入 -->
     <div v-if="upload.open" class="local-modal-mask">
-      <div class="local-modal-content" style="width: 500px;">
+      <div class="local-modal-content" style="width: 560px; min-width: 400px; min-height: auto;">
         <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
-      <el-upload
-        ref="upload"
-        :limit="1"
-        accept=".xlsx, .xls"
-        :headers="upload.headers"
-        :action="upload.url + '?updateSupport=' + upload.updateSupport"
-        :disabled="upload.isUploading"
-        :on-progress="handleFileUploadProgress"
-        :on-success="handleFileSuccess"
-        :on-change="handleFileChange"
-        :auto-upload="false"
-        drag
-      >
-        <i class="el-icon-upload"></i>
-        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        <div class="el-upload__tip text-center" slot="tip">
-          <div class="el-upload__tip" slot="tip">
-            <el-checkbox v-model="upload.updateSupport" /> 是否更新已经存在的耗材数据
+        <el-alert
+          v-if="upload.mode === 'add'"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom:12px;"
+          title="新增导入：HIS系统ID 在组织机构内已存在则整单拒绝；请填写 HIS生产厂家ID 或 SPD生产厂家ID；HIS财务分类ID 用于匹配 SPD 财务分类。"
+        />
+        <el-alert
+          v-if="upload.mode === 'update'"
+          type="info"
+          :closable="false"
+          show-icon
+          style="margin-bottom:12px;"
+          title="更新导入：SPD系统主键须存在且属于本组织机构；仅更新名称、规格、型号、单位、单价、医保代码。"
+        />
+        <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+          先整单校验，通过后确认写入。解析结果可预览并导出以便排查。
+        </p>
+        <el-upload
+          ref="materialImportUpload"
+          :limit="1"
+          accept=".xlsx, .xls"
+          :disabled="upload.isUploading"
+          :http-request="noopMaterialImportUpload"
+          :on-change="handleMaterialImportFileChange"
+          :on-remove="handleMaterialImportFileRemove"
+          :auto-upload="false"
+          drag
+        >
+          <i class="el-icon-upload"></i>
+          <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
+          <div class="el-upload__tip text-center" slot="tip">
+            <span>仅允许 xls、xlsx。</span>
+            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="downloadMaterialImportTemplate">下载模板</el-link>
           </div>
-          <span>仅允许导入xls、xlsx格式文件。</span>
-          <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
-        </div>
-      </el-upload>
-        <div v-if="parseResult.show" style="margin-top:16px;padding:12px;background-color:#f5f7fa;border-radius:4px;max-height:200px;overflow-y:auto;">
-          <div v-if="parseResult.success" style="color:#67c23a;">
-            <i class="el-icon-success"></i> {{ parseResult.message }}
-          </div>
-          <div v-else style="color:#f56c6c;">
-            <i class="el-icon-error"></i> {{ parseResult.message }}
-            <div v-if="parseResult.errors && parseResult.errors.length > 0" style="margin-top:8px;font-size:12px;">
-              <div v-for="(error, index) in parseResult.errors" :key="index" style="margin-top:4px;">
-                {{ error }}
-              </div>
-            </div>
-          </div>
-        </div>
+        </el-upload>
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-        <el-button type="warning" @click="parseExcelFile" :disabled="!uploadFile || upload.isUploading">解 析</el-button>
-        <el-button type="primary" @click="submitFileForm" :disabled="upload.isUploading">确 定</el-button>
-        <el-button @click="upload.open = false">取 消</el-button>
+          <el-button type="primary" :loading="upload.isUploading" @click="submitMaterialImportFlow">校验并导入</el-button>
+          <el-button @click="closeMaterialImport">取 消</el-button>
         </div>
       </div>
     </div>
+
+    <el-dialog
+      :title="importPreview.title"
+      :visible.sync="importPreview.visible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      @close="importPreview.rows = []; importPreview.columns = []"
+    >
+      <div style="margin-bottom:10px;">
+        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportMaterialImportPreview">导出解析结果</el-button>
+      </div>
+      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
+        <el-table-column
+          v-for="col in importPreview.columns"
+          :key="col"
+          :prop="col"
+          :label="col"
+          min-width="120"
+          show-overflow-tooltip
+        />
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="importPreview.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline } from "@/api/foundation/material";
+import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData } from "@/api/foundation/material";
+import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectFactory from '@/components/SelectModel/SelectFactory';
 import SelectFinanceCategory from "@/components/SelectModel/SelectFinanceCategory";
@@ -1207,25 +1221,17 @@ export default {
         { key: 21, label: `创建日期`, visible: true },
         { key: 22, label: `品牌`, visible: false }
       ],
-      // 表单校验
+      // 表单校验：仅耗材名称必填；单价若填写则校验为数字
       rules: {
         code: [
-          { required: true, message: "耗材编码不能为空", trigger: "blur" },
           { validator: (rule, value, callback) => {
-            if (!value) {
+            if (!value || !String(value).trim()) {
               callback();
               return;
             }
-
-            // 只验证编码不能为空，不限制长度和格式
-            // 手工输入的编码可以是任意长度和格式
-            // 自动生成的编码仍然是6位数字
-
-            // 检查编码是否已存在（排除当前编辑的记录）
             listMaterial({ code: value, pageNum: 1, pageSize: 1 }).then(response => {
               if (response.rows && response.rows.length > 0) {
                 const existingMaterial = response.rows[0];
-                // 如果是新增模式，或者存在其他记录的编码，则报错
                 if (!this.form.id || existingMaterial.id !== this.form.id) {
                   callback(new Error('该耗材编码已存在，请使用其他编码'));
                 } else {
@@ -1242,51 +1248,33 @@ export default {
         name: [
           { required: true, message: "耗材名称不能为空", trigger: "blur" }
         ],
-        supplierId: [
-          { required: true, message: "供应商不能为空", trigger: "blur" }
-        ],
-        speci: [
-          { required: true, message: "规格不能为空", trigger: "blur" }
-        ],
-        model: [
-          { required: true, message: "型号不能为空", trigger: "blur" }
-        ],
         price: [
-          { required: true, message: "价格不能为空", trigger: "blur" }
-        ],
-        referredName: [
-          { required: true, message: "名称简码不能为空", trigger: "blur" }
-        ],
-        factoryId: [
-          { required: true, message: "生产厂家不能为空", trigger: "blur" }
-        ],
-        unitId: [
-          { required: true, message: "单位不能为空", trigger: "blur" }
-        ],
+          { validator: (rule, value, callback) => {
+            if (value === '' || value === null || value === undefined) {
+              callback();
+              return;
+            }
+            const n = Number(value);
+            if (Number.isNaN(n)) {
+              callback(new Error('单价请输入有效数字'));
+            } else {
+              callback();
+            }
+          }, trigger: "blur" }
+        ]
       },
-      // 用户导入参数
       upload: {
-        // 是否显示弹出层（用户导入）
         open: false,
-        // 弹出层标题（用户导入）
         title: "",
-        // 是否禁用上传
         isUploading: false,
-        // 是否更新已经存在的用户数据
-        updateSupport: 0,
-        // 设置上传的请求头部
-        headers: { Authorization: "Bearer " + getToken() },
-        // 上传的地址
-        url: process.env.VUE_APP_BASE_API + "/foundation/material/importData"
+        mode: "add",
+        pendingFile: null
       },
-      // 上传的文件
-      uploadFile: null,
-      // 解析结果
-      parseResult: {
-        show: false,
-        success: false,
-        message: '',
-        errors: []
+      importPreview: {
+        visible: false,
+        title: "导入解析结果",
+        rows: [],
+        columns: []
       },
       // 图片上传配置
       imageUploadUrl: process.env.VUE_APP_BASE_API + "/common/upload",
@@ -1372,7 +1360,8 @@ export default {
         sunshineSecondLevel: null,
         sunshineThirdLevel: null,
         sunshineSource: null,
-        sunshineCoefficient: null
+        sunshineCoefficient: null,
+        selectionReason: null
       };
       this.originalIsUse = null;
       this.statusLogList = [];
@@ -1471,250 +1460,80 @@ export default {
       this.queryParams.isBilling = '';
       this.handleQuery();
     },
-    /** 导入按钮操作 */
-    handleImport() {
-      this.upload.title = "耗材导入";
+    handleMaterialImport(mode) {
+      this.upload.mode = mode === "update" ? "update" : "add";
+      this.upload.title = this.upload.mode === "update" ? "耗材档案更新导入" : "耗材档案新增导入";
+      this.upload.pendingFile = null;
       this.upload.open = true;
-      this.uploadFile = null;
-      this.parseResult = {
-        show: false,
-        success: false,
-        message: '',
-        errors: []
-      };
+      this.$nextTick(() => {
+        if (this.$refs.materialImportUpload) this.$refs.materialImportUpload.clearFiles();
+      });
     },
-    /** 下载模板操作 */
-    importTemplate() {
-      this.download('foundation/material/importTemplate', {
-      }, `耗材产品档案基础字典导入.xlsx`)
+    closeMaterialImport() {
+      this.upload.open = false;
+      this.upload.pendingFile = null;
+      if (this.$refs.materialImportUpload) this.$refs.materialImportUpload.clearFiles();
     },
-    // 文件选择变化处理
-    handleFileChange(file, fileList) {
-      if (fileList && fileList.length > 0) {
-        // 保存文件对象，优先使用raw，如果没有则使用file本身
-        this.uploadFile = file.raw || file;
-        // 重置解析结果
-        this.parseResult = {
-          show: false,
-          success: false,
-          message: '',
-          errors: []
-        };
-      } else {
-        this.uploadFile = null;
+    noopMaterialImportUpload() {},
+    handleMaterialImportFileChange(file) {
+      this.upload.pendingFile = file && file.raw ? file.raw : null;
+    },
+    handleMaterialImportFileRemove() {
+      this.upload.pendingFile = null;
+    },
+    downloadMaterialImportTemplate() {
+      const api = this.upload.mode === "update" ? "foundation/material/importUpdateTemplate" : "foundation/material/importAddTemplate";
+      const name = this.upload.mode === "update" ? "耗材档案更新导入模板.xlsx" : "耗材档案新增导入模板.xlsx";
+      this.download(api, {}, name);
+    },
+    showMaterialImportPreviewFromPayload(payload, title) {
+      const rows = (payload && payload.previewRows) || [];
+      this.importPreview.title = title || "导入解析结果";
+      this.importPreview.rows = rows;
+      this.importPreview.columns = rows.length ? Object.keys(rows[0]) : [];
+      this.importPreview.visible = true;
+    },
+    async exportMaterialImportPreview() {
+      try {
+        const name = (this.upload.mode === "update" ? "material_update" : "material_add") + "_preview_" + new Date().getTime() + ".xlsx";
+        await exportPreviewRowsToXlsx(this.importPreview.rows, name);
+        this.$modal.msgSuccess("已导出");
+      } catch (e) {
+        this.$modal.msgError(e.message || "导出失败");
       }
     },
-    // 文件上传中处理
-    handleFileUploadProgress(event, file, fileList) {
-      this.upload.isUploading = true;
-    },
-    // 文件上传成功处理
-    handleFileSuccess(response, file, fileList) {
-      this.upload.open = false;
-      this.upload.isUploading = false;
-      this.uploadFile = null;
-      this.parseResult.show = false;
-      this.$refs.upload.clearFiles();
-      this.$alert("<div style='overflow: auto;overflow-x: hidden;max-height: 70vh;padding: 10px 20px 0;'>" + response.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
-      this.getList();
-    },
-    // 提交上传文件
-    submitFileForm() {
-      this.$refs.upload.submit();
-    },
-    // 解析Excel文件
-    parseExcelFile() {
-      console.log('parseExcelFile called, uploadFile:', this.uploadFile);
-      if (!this.uploadFile) {
-        this.$modal.msgWarning("请先选择要解析的文件");
+    async submitMaterialImportFlow() {
+      const f = this.upload.pendingFile;
+      if (!f) {
+        this.$modal.msgWarning("请先选择 Excel 文件");
         return;
       }
-
-      // 显示解析中状态
-      this.parseResult = {
-        show: true,
-        success: false,
-        message: '正在解析文件，请稍候...',
-        errors: []
-      };
-
-      // 动态加载xlsx库
-      if (typeof window.XLSX === 'undefined') {
-        // 检查是否已经有脚本标签
-        let existingScript = document.querySelector('script[src*="xlsx"]');
-        if (existingScript && existingScript.getAttribute('data-loaded') !== 'true') {
-          // 如果脚本已存在但未加载完成，等待加载
-          existingScript.addEventListener('load', () => {
-            existingScript.setAttribute('data-loaded', 'true');
-            this.doParseExcel();
-          });
+      this.upload.isUploading = true;
+      try {
+        const isUpdate = this.upload.mode === "update";
+        const res = isUpdate ? await validateMaterialImportUpdate(f) : await validateMaterialImportAdd(f);
+        const d = res.data || {};
+        this.showMaterialImportPreviewFromPayload(d, isUpdate ? "耗材档案更新导入 — 解析结果" : "耗材档案新增导入 — 解析结果");
+        if (!d.valid) {
+          const errs = (d.errors && d.errors.length) ? d.errors.join("<br/>") : (res.msg || "校验失败");
+          this.$alert("<div style='overflow:auto;max-height:60vh'>" + errs + "</div>", "校验未通过", { dangerouslyUseHTMLString: true });
           return;
         }
-
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-        script.onload = () => {
-          script.setAttribute('data-loaded', 'true');
-          this.doParseExcel();
-        };
-        script.onerror = () => {
-          this.parseResult = {
-            show: true,
-            success: false,
-            message: '加载Excel解析库失败，请检查网络连接',
-            errors: []
-          };
-          this.$modal.msgError("加载Excel解析库失败，请检查网络连接");
-        };
-        document.head.appendChild(script);
-      } else {
-        this.doParseExcel();
-      }
-    },
-    // 执行Excel解析
-    doParseExcel() {
-      console.log('doParseExcel called');
-      const file = this.uploadFile;
-      if (!file) {
-        this.parseResult = {
-          show: true,
-          success: false,
-          message: '文件不存在，请重新选择文件',
-          errors: []
-        };
-        return;
-      }
-
-      if (typeof window.XLSX === 'undefined') {
-        this.parseResult = {
-          show: true,
-          success: false,
-          message: 'Excel解析库未加载，请刷新页面重试',
-          errors: []
-        };
-        return;
-      }
-
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        try {
-          console.log('FileReader onload, file size:', e.target.result.byteLength);
-          const data = new Uint8Array(e.target.result);
-          const workbook = window.XLSX.read(data, { type: 'array' });
-          console.log('Workbook loaded, sheets:', workbook.SheetNames);
-
-          if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-            this.parseResult = {
-              show: true,
-              success: false,
-              message: 'Excel文件格式不正确，无法读取工作表',
-              errors: []
-            };
-            return;
-          }
-
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-
-          // 转换为JSON数组
-          const jsonData = window.XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-
-          if (jsonData.length < 2) {
-            this.parseResult = {
-              show: true,
-              success: false,
-              message: 'Excel文件数据为空，至少需要表头和数据行',
-              errors: []
-            };
-            return;
-          }
-
-          // 获取表头（第一行），去掉星号
-          const headers = jsonData[0].map(h => {
-            if (!h) return '';
-            const headerStr = String(h).trim();
-            return headerStr.replace(/\*$/, '');
-          });
-
-          // 必填字段映射（Excel列名 -> 字段名）
-          const requiredFields = {
-            '耗材编码': 'code',
-            '耗材名称': 'name'
-            // '供应商': 'supplierId',
-            // '规格': 'speci',
-            // '型号': 'model',
-            // '价格': 'price',
-            // '生产厂家': 'factoryId',
-            // '库房分类': 'storeroomId',
-            // '财务分类': 'financeCategoryId',
-            // '单位': 'unitId'
-          };
-
-          // 验证每行数据
-          const errors = [];
-          for (let i = 1; i < jsonData.length; i++) {
-            const row = jsonData[i];
-            if (!row || row.length === 0) {
-              continue; // 跳过空数组
-            }
-            const rowNum = i + 1; // Excel行号（从2开始，因为有表头）
-
-            // 检查是否为空行
-            const isEmptyRow = row.every(cell => !cell || String(cell).trim() === '');
-            if (isEmptyRow) {
-              continue; // 跳过空行
-            }
-
-            // 检查每个必填字段
-            for (let j = 0; j < headers.length; j++) {
-              const header = headers[j];
-              const fieldName = requiredFields[header];
-
-              if (fieldName) {
-                const cellValue = row[j];
-                if (!cellValue || String(cellValue).trim() === '') {
-                  errors.push(`第${rowNum}行，${header}字段未填写`);
-                }
-              }
-            }
-          }
-
-          if (errors.length === 0) {
-            this.parseResult = {
-              show: true,
-              success: true,
-              message: `解析成功！共${jsonData.length - 1}行数据，所有必填字段均已填写。`,
-              errors: []
-            };
-          } else {
-            this.parseResult = {
-              show: true,
-              success: false,
-              message: `解析完成，发现${errors.length}个必填字段未填写：`,
-              errors: errors.slice(0, 50) // 最多显示50个错误
-            };
-          }
-        } catch (error) {
-          this.parseResult = {
-            show: true,
-            success: false,
-            message: `解析失败：${error.message}`,
-            errors: []
-          };
+        const tc = d.totalRows != null ? d.totalRows : 0;
+        await this.$modal.confirm("校验已通过。共 " + tc + " 行数据，确认后写入数据库，是否继续？");
+        const res2 = isUpdate ? await importMaterialUpdateData(f, true) : await importMaterialAddData(f, true);
+        const d2 = res2.data || {};
+        this.showMaterialImportPreviewFromPayload(d2, isUpdate ? "耗材档案更新导入 — 导入结果" : "耗材档案新增导入 — 导入结果");
+        this.$alert("<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'>" + res2.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
+        this.closeMaterialImport();
+        this.getList();
+      } catch (e) {
+        if (e !== "cancel" && e !== "close") {
+          /* request 已提示 */
         }
-      };
-
-      reader.onerror = () => {
-        this.parseResult = {
-          show: true,
-          success: false,
-          message: '文件读取失败，请重试',
-          errors: []
-        };
-      };
-
-      reader.readAsArrayBuffer(file);
+      } finally {
+        this.upload.isUploading = false;
+      }
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -2351,6 +2170,8 @@ export default {
 
 /* 页面左右仅留 8px，使顶部搜索容器更宽；底部少留白 */
 .material-page-container.app-container {
+  position: relative;
+  min-height: calc(100vh - 84px);
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 8px !important;

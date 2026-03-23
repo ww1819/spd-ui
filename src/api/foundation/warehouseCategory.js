@@ -68,3 +68,71 @@ export function updateWarehouseCategoryReferred(ids) {
     data: { ids }
   })
 }
+
+/** 库房分类导入：仅校验 */
+export function validateWarehouseCategoryImport(file, updateSupport) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/warehouseCategory/importValidate?updateSupport=' + !!updateSupport,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+/** 库房分类导入：confirm=true 落库 */
+export function importWarehouseCategoryData(file, updateSupport, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/warehouseCategory/importData?updateSupport=' + !!updateSupport + '&confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+
+export function validateWarehouseCategoryImportAdd(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/warehouseCategory/importAddValidate',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function importWarehouseCategoryAddData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/warehouseCategory/importAddData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function validateWarehouseCategoryImportUpdate(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/warehouseCategory/importUpdateValidate',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function importWarehouseCategoryUpdateData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/warehouseCategory/importUpdateData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+export function downloadWarehouseCategoryImportAddTemplate(){return request({url:'/foundation/warehouseCategory/importAddTemplate',method:'post',responseType:'blob'})}
+export function downloadWarehouseCategoryImportUpdateTemplate(){return request({url:'/foundation/warehouseCategory/importUpdateTemplate',method:'post',responseType:'blob'})}

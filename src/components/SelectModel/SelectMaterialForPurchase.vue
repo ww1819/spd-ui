@@ -9,13 +9,13 @@
           </div>
           <div class="modal-body">
             <div class="form-fields-container">
-              <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+              <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
                 <el-row :gutter="20">
                   <el-col :span="6">
                     <el-form-item label="耗材编码" prop="code" label-width="100px">
                       <el-input
                         v-model="queryParams.code"
-                        placeholder="请输入耗材编码"
+                        placeholder="耗材编码"
                         clearable
                         @keyup.enter.native="handleQuery"
                       />
@@ -32,7 +32,7 @@
                     <el-form-item label="品牌" prop="brand" label-width="100px">
                       <el-input
                         v-model="queryParams.brand"
-                        placeholder="请输入品牌"
+                        placeholder="品牌"
                         clearable
                         @keyup.enter.native="handleQuery"
                       />
@@ -44,7 +44,7 @@
                     <el-form-item label="耗材名称" prop="name" label-width="100px">
                       <el-input
                         v-model="queryParams.name"
-                        placeholder="请输入耗材名称"
+                        placeholder="耗材名称"
                         clearable
                         @keyup.enter.native="handleQuery"
                       />

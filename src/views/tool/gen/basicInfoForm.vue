@@ -3,22 +3,22 @@
     <el-row>
       <el-col :span="12">
         <el-form-item label="表名称" prop="tableName">
-          <el-input placeholder="请输入仓库名称" v-model="info.tableName" />
+          <el-input placeholder="仓库名称" v-model="info.tableName" />
         </el-form-item>
       </el-col>
       <el-col :span="12">
         <el-form-item label="表描述" prop="tableComment">
-          <el-input placeholder="请输入" v-model="info.tableComment" />
+          <el-input placeholder="" v-model="info.tableComment" />
         </el-form-item>
       </el-col>
       <el-col :span="12">
         <el-form-item label="实体类名称" prop="className">
-          <el-input placeholder="请输入" v-model="info.className" />
+          <el-input placeholder="" v-model="info.className" />
         </el-form-item>
       </el-col>
       <el-col :span="12">
         <el-form-item label="作者" prop="functionAuthor">
-          <el-input placeholder="请输入" v-model="info.functionAuthor" />
+          <el-input placeholder="" v-model="info.functionAuthor" />
         </el-form-item>
       </el-col>
       <el-col :span="24">

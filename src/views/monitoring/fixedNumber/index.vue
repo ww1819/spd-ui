@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container fixed-number-page">
     <el-row :gutter="20">
       <!-- 左侧：仓库列表面板 -->
@@ -99,7 +99,7 @@
               </el-form-item>
               <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
                 <el-input v-model="queryParams.materialName"
-                          placeholder="请输入耗材名称"
+                          placeholder="耗材名称"
                           clearable
                           style="width: 300px"
                           @keyup.enter.native="handleQuery"
@@ -107,7 +107,7 @@
               </el-form-item>
               <el-form-item label="规格型号" prop="speci" class="query-item-inline">
                 <el-input v-model="queryParams.speci"
-                          placeholder="请输入规格型号"
+                          placeholder="规格型号"
                           clearable
                           style="width: 300px"
                           @keyup.enter.native="handleQuery"
@@ -115,7 +115,7 @@
               </el-form-item>
               <el-form-item label="实际数量" prop="actualQuantity" class="query-item-inline" v-show="false">
                 <el-input v-model="queryParams.actualQuantity"
-                          placeholder="请输入实际数量"
+                          placeholder="实际数量"
                           clearable
                           style="width: 180px"
                           @keyup.enter.native="handleQuery"
@@ -232,10 +232,17 @@
           ></el-input-number>
         </template>
       </el-table-column>
-      <el-table-column label="有效期提醒" align="center" prop="expiryReminder" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="有效期提醒(天)" align="center" prop="expiryReminder" width="140" resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.expiryReminder">{{ scope.row.expiryReminder }}</span>
-          <span v-else>--</span>
+          <el-input-number
+            v-model="scope.row.expiryReminder"
+            :min="0"
+            :precision="0"
+            size="small"
+            style="width: 100%;"
+            controls-position="right"
+            @change="handleFieldChange(scope.row)"
+          />
         </template>
       </el-table-column>
       <el-table-column label="监测" align="center" prop="monitoring" width="100" show-overflow-tooltip resizable>
@@ -248,10 +255,34 @@
           ></el-switch>
         </template>
       </el-table-column>
-      <el-table-column label="货位" align="center" prop="location" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="货位" align="center" prop="location" width="168" resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.location">{{ scope.row.location }}</span>
-          <span v-else>--</span>
+          <template v-if="queryParams.fixedNumberType === '1' && queryParams.warehouseId">
+            <el-select
+              :value="scope.row.locationId"
+              filterable
+              clearable
+              placeholder="选择货位"
+              size="small"
+              style="width: 100%;"
+              @change="(v) => onFixedNumberLocationChange(scope.row, v)"
+            >
+              <el-option
+                v-for="opt in fixedNumberLocationOptions"
+                :key="opt.locationId"
+                :label="opt.locationName"
+                :value="opt.locationId"
+              />
+            </el-select>
+          </template>
+          <el-input
+            v-else
+            v-model="scope.row.location"
+            size="small"
+            placeholder="货位"
+            clearable
+            @change="handleFieldChange(scope.row)"
+          />
         </template>
       </el-table-column>
       <el-table-column :label="queryParams.fixedNumberType === '2' ? '科室' : '仓库'" align="center" width="150" show-overflow-tooltip resizable>
@@ -283,6 +314,18 @@
         <template slot-scope="scope">
           <span v-if="scope.row.warehouseCategoryName">{{ scope.row.warehouseCategoryName }}</span>
           <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="租户ID" align="center" prop="tenantId" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="备注" align="center" prop="remark" min-width="140" resizable>
+        <template slot-scope="scope">
+          <el-input
+            v-model="scope.row.remark"
+            size="small"
+            placeholder="备注"
+            clearable
+            @change="handleFieldChange(scope.row)"
+          />
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
@@ -338,7 +381,7 @@
                       <el-form-item label="耗材名称" prop="materialName">
                         <el-input
                           v-model="addQueryParams.materialName"
-                          placeholder="请输入耗材名称"
+                          placeholder="耗材名称"
                           clearable
                           @keyup.enter.native="handleAddQuery"
                         />
@@ -348,7 +391,7 @@
                       <el-form-item label="规格型号" prop="speci">
                         <el-input
                           v-model="addQueryParams.speci"
-                          placeholder="请输入规格型号"
+                          placeholder="规格型号"
                           clearable
                           @keyup.enter.native="handleAddQuery"
                         />
@@ -472,6 +515,7 @@
 import { pinyin } from "pinyin-pro";
 import { listFixedNumber, addFixedNumber, delFixedNumber } from "@/api/monitoring/fixedNumber";
 import { listMaterialPost } from "@/api/foundation/material";
+import { listLocationAll } from "@/api/foundation/location";
 import { listWarehouse } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
 import { listInventory } from "@/api/warehouse/inventory";
@@ -546,7 +590,9 @@ export default {
       // 表单参数
       form: {},
       // 表单校验
-      rules: {}
+      rules: {},
+      // 当前仓库下的货位下拉（仓库定数维护用）
+      fixedNumberLocationOptions: []
     };
   },
   computed: {
@@ -580,40 +626,33 @@ export default {
   },
   watch: {
     'queryParams.fixedNumberType'(newVal, oldVal) {
-      // 当定数类型改变时，清空选择并清空明细列表
       this.queryParams.warehouseId = null;
       this.queryParams.departmentId = null;
       this.queryParams.pageNum = 1;
       this.fixedNumberList = [];
       this.allFixedNumberList = [];
       this.total = 0;
+      this.fixedNumberLocationOptions = [];
 
       if (newVal === '1' || !newVal) {
-        // 仓库定数监测，加载仓库列表
         this.getWarehouseList();
       } else if (newVal === '2') {
-        // 科室定数监测，加载科室列表
         this.getDepartmentList();
       }
-      // 不立即查询，等待用户选择具体仓库/科室后再查询，避免无谓请求
     },
     'queryParams.warehouseId'(newVal) {
-      // 仓库改变时，重新加载数据（仓库定数）
       if (this.queryParams.fixedNumberType === '1') {
+        this.loadFixedNumberLocations();
         this.getList();
         this.loadExistingMaterialIds();
       }
     },
     'queryParams.departmentId'(newVal) {
-      // 科室改变时，重新加载数据（科室定数）
       if (this.queryParams.fixedNumberType === '2') {
         this.getList();
         this.loadExistingMaterialIds();
       }
-    }
-  },
-  watch: {
-    // 监听数据变化，重新设置表格高度
+    },
     fixedNumberList: {
       handler() {
         this.$nextTick(() => {
@@ -624,10 +663,8 @@ export default {
       },
       deep: true
     },
-    // 监听loading变化
     loading(newVal) {
       if (!newVal) {
-        // 数据加载完成后设置表格高度
         this.$nextTick(() => {
           setTimeout(() => {
             this.setTableHeight();
@@ -749,6 +786,18 @@ export default {
       const type = this.queryParams.fixedNumberType || '1';
       const id = type === '1' ? this.queryParams.warehouseId : this.queryParams.departmentId;
       return `fixedNumber_${type}_${id || 'default'}`;
+    },
+    /** 解析 axios / 业务码错误，便于弹窗展示（避免只显示字符串 error） */
+    formatRequestError(err) {
+      if (err == null) return '';
+      if (typeof err === 'string') return err;
+      if (err.response && err.response.data) {
+        const d = err.response.data;
+        if (typeof d === 'string') return d;
+        if (d.msg) return d.msg;
+      }
+      if (err.message) return err.message;
+      return '';
     },
     /** 保存到 localStorage */
     saveToLocalStorage() {
@@ -1060,7 +1109,8 @@ export default {
             expiryReminder: item.expiryReminder,
             monitoring: item.monitoring,
             location: item.location,
-            locationId: item.locationId || null
+            locationId: item.locationId || null,
+            remark: item.remark
           };
         })
       };
@@ -1075,7 +1125,7 @@ export default {
         this.loadExistingMaterialIds();
       }).catch(error => {
         console.error('保存定数监测失败:', error);
-        this.$modal.msgError("保存失败");
+        this.$modal.msgError(this.formatRequestError(error) || '保存失败');
       });
     },
     /** 新增按钮操作：打开弹窗时先刷新“当前仓库/科室已有”的物料ID，再查询可选耗材（过滤掉已有 + 前端已添加未保存的） */
@@ -1167,13 +1217,14 @@ export default {
       }
 
       const detailList = this.addSelectedMaterials.map(material => ({
-        materialId: material.id,
+        materialId: material.materialId != null ? material.materialId : material.id,
         upperLimit: 0,
         lowerLimit: 0,
         expiryReminder: null,
         monitoring: '2',
         location: null,
-        locationId: null
+        locationId: null,
+        remark: null
       }));
 
       const saveData = {
@@ -1193,6 +1244,28 @@ export default {
         console.error('定数监测新增保存失败:', err);
         this.$modal.msgError("保存失败，请重试");
       });
+    },
+    /** 按当前选中仓库加载货位（与货位档案一致，支持 warehouseId 过滤） */
+    loadFixedNumberLocations() {
+      this.fixedNumberLocationOptions = [];
+      if (this.queryParams.fixedNumberType !== '1' || !this.queryParams.warehouseId) {
+        return;
+      }
+      listLocationAll({ warehouseId: this.queryParams.warehouseId }).then(response => {
+        this.fixedNumberLocationOptions = response || [];
+      }).catch(() => {
+        this.fixedNumberLocationOptions = [];
+      });
+    },
+    onFixedNumberLocationChange(row, locationId) {
+      row.locationId = locationId != null && locationId !== '' ? locationId : null;
+      if (row.locationId == null) {
+        row.location = null;
+      } else {
+        const opt = this.fixedNumberLocationOptions.find(o => o.locationId === locationId);
+        row.location = opt ? opt.locationName : row.location;
+      }
+      this.handleFieldChange(row);
     },
     /** 根据仓库ID获取仓库名称 */
     getWarehouseNameById(warehouseId) {

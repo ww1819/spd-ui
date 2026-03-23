@@ -1,12 +1,12 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="单据类型" prop="billType" class="query-item-inline">
-              <el-select v-model="queryParams.billType" placeholder="请选择单据类型"
+            <el-form-item prop="billType" class="query-item-inline">
+              <el-select v-model="queryParams.billType" placeholder="单据类型"
                          :disabled="true"
                          clearable
                          style="width: 180px">
@@ -15,37 +15,37 @@
                 <el-option label="转科申请单" value="3" />
               </el-select>
             </el-form-item>
-            <el-form-item label="单号" prop="applyBillNo" class="query-item-inline">
+            <el-form-item prop="applyBillNo" class="query-item-inline">
               <el-input
                 v-model="queryParams.applyBillNo"
-                placeholder="请输入单号"
+                placeholder="单号"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item v-if="currentBillType !== '3'" label="仓库" prop="warehouseId" class="query-item-inline">
+            <el-form-item v-if="currentBillType !== '3'" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId"/>
               </div>
             </el-form-item>
-            <el-form-item v-if="currentBillType !== '3'" label="科室" prop="departmentId" class="query-item-inline">
+            <el-form-item v-if="currentBillType !== '3'" prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
             </el-form-item>
-            <el-form-item v-if="currentBillType === '3'" label="调出科室" prop="warehouseId" class="query-item-inline">
+            <el-form-item v-if="currentBillType === '3'" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.warehouseId"/>
               </div>
             </el-form-item>
-            <el-form-item v-if="currentBillType === '3'" label="调入科室" prop="departmentId" class="query-item-inline">
+            <el-form-item v-if="currentBillType === '3'" prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
             </el-form-item>
-            <el-form-item label="单据状态" prop="applyBillStatus" class="query-item-inline">
-              <el-select v-model="queryParams.applyBillStatus" placeholder="全部"
+            <el-form-item prop="applyBillStatus" class="query-item-inline">
+              <el-select v-model="queryParams.applyBillStatus" placeholder="单据状态"
                          :disabled="false"
                          clearable
                          style="width: 180px">
@@ -61,7 +61,7 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="12">
-            <el-form-item label="日期" style="display: flex; align-items: center;">
+            <el-form-item style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -96,14 +96,13 @@
       <el-col :span="1.5" style="margin-left: -10px;">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -111,7 +110,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-check"
           size="medium"
           @click="handleBatchAudit"
           v-hasPermi="['department:dApply:audit']"
@@ -120,7 +118,7 @@
       </el-col>
     </el-row>
 
-    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange"  height="56vh" border>
+    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange"  height="56vh" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="单号" align="center" width="180" show-overflow-tooltip resizable >
@@ -163,13 +161,12 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
               size="small"
               type="text"
-              icon="el-icon-view"
               @click="handleView(scope.row)"
               v-if="getBillStatus(scope.row) == 2"
               style="padding: 0 5px; margin: 0;"
@@ -177,7 +174,15 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
+              icon="el-icon-download"
+              @click="handleExportRowDetail(scope.row)"
+              v-if="currentBillType !== '2'"
+              v-hasPermi="['department:dApply:export']"
+              style="padding: 0 5px; margin: 0;"
+            >导出明细</el-button>
+            <el-button
+              size="small"
+              type="text"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['department:dApply:edit']"
               v-if="getBillStatus(scope.row) != 2"
@@ -186,7 +191,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['department:dApply:remove']"
               v-if="getBillStatus(scope.row) != 2"
@@ -325,7 +329,7 @@
           </el-table-column>
           <el-table-column label="数量" prop="qty" width="90" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
+              <el-input clearable v-model="scope.row.qty" placeholder="数量"
                         onkeyup="value=value.replace(/\D/g,'')"
                         onafterpaste="value=value.replace(/\D/g,'')"
                         @blur="form.result=$event.target.value"
@@ -374,7 +378,7 @@
 
           <el-table-column label="备注" prop="remark" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
           <el-table-column label="操作" align="center" width="100" fixed="right">
@@ -1056,11 +1060,29 @@ export default {
     handleBasApplyEntrySelectionChange(selection) {
       this.checkedBasApplyEntry = selection.map(item => item.index)
     },
-    /** 导出按钮操作 */
+    /** 单据列表行：导出该单明细 */
+    handleExportRowDetail(row) {
+      if (!row || !row.id) {
+        return
+      }
+      const exportUrl = this.currentBillType === '2' ? 'department/purchase/export' : 'department/apply/export'
+      const billNo = this.getBillNo(row) || row.id
+      this.download(exportUrl, {
+        ...this.queryParams,
+        exportBillIds: String(row.id)
+      }, `${this.currentBillType === '2' ? 'purchase' : 'apply'}_${billNo}_${new Date().getTime()}.xlsx`)
+    },
+    /** 导出按钮操作（导出勾选单据明细） */
     handleExport() {
-      this.download('department/apply/export', {
-        ...this.queryParams
-      }, `apply_${new Date().getTime()}.xlsx`)
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning('请先勾选要导出的单据')
+        return
+      }
+      const exportUrl = this.currentBillType === '2' ? 'department/purchase/export' : 'department/apply/export'
+      this.download(exportUrl, {
+        ...this.queryParams,
+        exportBillIds: this.ids.join(',')
+      }, `${this.currentBillType === '2' ? 'purchase' : 'apply'}_${new Date().getTime()}.xlsx`)
     },
     /** 获取单据类型名称 */
     getBillTypeName(billType) {

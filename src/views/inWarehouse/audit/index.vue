@@ -1,12 +1,12 @@
 <template>
   <div class="app-container inWarehouse-audit-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-compact">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
-          <el-form-item label="入库单号" prop="billNo" class="query-item-inline">
+          <el-form-item prop="billNo" class="query-item-inline">
             <el-input v-model="queryParams.billNo"
-                      placeholder="请输入入库单号"
+                      placeholder="入库单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
@@ -17,7 +17,7 @@
               <SelectSupplier v-model="queryParams.supplerId"/>
             </div>
           </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+          <el-form-item prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
             </div>
@@ -27,7 +27,7 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="制单日期" style="display: flex; align-items: center;">
+          <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -48,8 +48,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.billStatus" placeholder="全部"
+          <el-form-item prop="billStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                        clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -68,15 +68,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          icon="el-icon-check"
+          type="primary"
           size="medium"
           :disabled="multiple"
           @click="handleBatchAudit"
@@ -88,7 +86,7 @@
 
     <el-table v-loading="loading" :data="warehouseList" class="table-compact"
               :row-class-name="warehouseListIndex"
-              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border>
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
       <el-table-column type="selection" width="55" align="center" fixed="left" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable sortable />
       <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
@@ -167,13 +165,12 @@
           <el-button
             size="small"
             type="text"
-            @click="handlePrint(scope.row,true)"
+            @click="handlePrint(scope.row)"
             v-if="scope.row.billStatus == 2"
           >打印</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-if="scope.row.billStatus != 2"
             v-hasPermi="['inWarehouse:apply:edit']"
@@ -216,7 +213,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="发票号" prop="invoiceNumber">
-              <el-input v-model="form.invoiceNumber" :disabled="true" placeholder="请输入发票号" />
+              <el-input v-model="form.invoiceNumber" :disabled="true" placeholder="发票号" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -234,22 +231,22 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
+              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="配送员" prop="delPerson">
-              <el-input v-model="form.delPerson" :disabled="true" placeholder="请输入配送员" />
+              <el-input v-model="form.delPerson" :disabled="true" placeholder="配送员" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="联系电话" prop="telephone">
-              <el-input v-model="form.telephone" :disabled="true" placeholder="请输入联系电话" />
+              <el-input v-model="form.telephone" :disabled="true" placeholder="联系电话" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="发票金额" prop="invoiceAmount">
-              <el-input v-model="form.invoiceAmount" :disabled="true" placeholder="请输入发票金额" />
+              <el-input v-model="form.invoiceAmount" :disabled="true" placeholder="发票金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -260,7 +257,7 @@
                               value-format="yyyy-MM-dd"
                               :disabled="true"
                               style="width: 100%"
-                              placeholder="请输入发票时间">
+                              placeholder="发票时间">
               </el-date-picker>
             </el-form-item>
           </el-col>
@@ -327,11 +324,11 @@
             <template slot-scope="scope">
               <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
               <!--                        @input="qtyChange(scope.row)"-->
-              <!--                        placeholder="请输入数量" />-->
+              <!--                        placeholder="数量" />-->
               <el-input
                 clearable
                 v-model="scope.row.qty"
-                placeholder="请输入数量"
+                placeholder="数量"
                 onkeyup="value=value.replace(/\D/g,'')"
                 onafterpaste="value=value.replace(/\D/g,'')"
                 @blur="form.result=$event.target.value"
@@ -343,7 +340,7 @@
             <template slot-scope="scope">
               <el-input v-model="scope.row.unitPrice" type='number'
                         :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="请输入价格" />
+                        @input="priceChange(scope.row)" placeholder="价格" />
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
@@ -353,7 +350,7 @@
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber"  placeholder="请输入批号" />
+              <el-input v-model="scope.row.batchNumber"  placeholder="批号" />
             </template>
           </el-table-column>
           <el-table-column label="有效期" prop="endTime" width="180" show-overflow-tooltip resizable>
@@ -395,7 +392,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
         </el-table>
@@ -406,15 +403,36 @@
       </div>
     </transition>
 
-    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width ">
+    <el-dialog
+      :visible.sync="modalObj.show"
+      :width="modalObj.width"
+      custom-class="out-warehouse-print-dialog"
+      append-to-body
+    >
+      <template slot="title">
+        <div class="print-dialog-title-row">
+          <span class="print-dialog-title-text">{{ modalObj.title }}</span>
+          <div v-if="showPrintOrientation" class="print-orientation-in-title">
+            <span class="print-orientation-label">打印方向</span>
+            <el-radio-group v-model="modalObj.form.printOrientation" size="small">
+              <el-radio label="landscape">横向</el-radio>
+              <el-radio label="portrait">纵向</el-radio>
+            </el-radio-group>
+          </div>
+        </div>
+      </template>
       <template v-if=" modalObj.component === 'print-type' ">
         <el-radio-group v-model=" modalObj.form.value ">
 <!--          <el-radio :label=" 1 ">lodop打印</el-radio>-->
           <el-radio :label=" 2 ">浏览器打印</el-radio>
         </el-radio-group>
       </template>
-      <template v-if=" modalObj.form.value === 2 || modalObj.component === 'window-print-preview' ">
-        <order-print :row=" modalObj.form.row " ref="receiptOrderPrintRef"></order-print>
+      <template v-if="showPrintContent">
+        <order-print
+          :row=" modalObj.form.row "
+          :print-orientation="modalObj.form.printOrientation || 'landscape'"
+          ref="receiptOrderPrintRef"
+        ></order-print>
       </template>
       <template slot="footer" class="dialog-footer">
         <el-button @click=" modalObj.cancel ">取消</el-button>
@@ -423,7 +441,12 @@
     </el-dialog>
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
-      <order-print v-if="printRowData" :row="printRowData" ref="receiptOrderPrintRefAuto"></order-print>
+      <order-print
+        v-if="printRowData"
+        :row="printRowData"
+        print-orientation="landscape"
+        ref="receiptOrderPrintRefAuto"
+      ></order-print>
     </div>
 
     <!-- 3、使用组件 -->
@@ -472,7 +495,8 @@ export default {
         component: null,
         form: {
           value: null,
-          row: null
+          row: null,
+          printOrientation: 'portrait'
         },
         ok: () => {
         },
@@ -538,6 +562,19 @@ export default {
         ],
       }
     };
+  },
+  computed: {
+    showPrintOrientation() {
+      const m = this.modalObj
+      if (!m || !m.form) return false
+      return m.component === 'window-print-preview'
+        || (m.component === 'print-type' && Number(m.form.value) === 2)
+    },
+    showPrintContent() {
+      const m = this.modalObj
+      if (!m || !m.form) return false
+      return Number(m.form.value) === 2 || m.component === 'window-print-preview'
+    }
   },
   created() {
     this.getList();
@@ -870,51 +907,23 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
-      // 如果传入 print 参数为 true，直接执行打印
-      if (print === true) {
-        // 直接获取数据并触发打印
-        this.getInWarehouseDetail(row).then(res => {
-          // 设置打印数据
-          this.printRowData = res
-          // 等待组件渲染后调用 start()
-          this.$nextTick(() => {
-            if (this.$refs['receiptOrderPrintRefAuto']) {
-              // start() 方法会直接触发浏览器打印对话框
-              this.$refs['receiptOrderPrintRefAuto'].start()
-            }
-          })
-        })
-        return
-      }
-      // 否则显示选择打印方式的对话框
-      this.modalObj = {
-        show: true,
-        title: '选择打印方式',
-        width: '520px',
-        component: 'print-type',
-        form: {
-          value: 1,
-          row
-        },
-        ok: () => {
-          this.modalObj.show = false
-          if (this.modalObj.form.value === 1) {
-            this.doPrintOut(row, false)
-          } else {
-            this.windowPrintOut(row, print)
-          }
-        },
-        cancel: () => {
-          this.modalObj.show = false
-        }
-      }
+      // 审核页点击打印：直接打开浏览器打印预览
+      this.windowPrintOut(row, true, 'portrait')
     },
-    windowPrintOut(row, print) {
+    windowPrintOut(row, print, printOrientation) {
+      const orient = printOrientation || 'portrait'
       this.getInWarehouseDetail(row).then(res => {
         if (print) {
-          this.modalObj.form.row = res
+          this.printRowData = res
           this.$nextTick(() => {
-            this.$refs['receiptOrderPrintRef'].start()
+            const ref = this.$refs['receiptOrderPrintRefAuto']
+            if (ref && typeof ref.start === 'function') {
+              ref.start()
+            } else {
+              setTimeout(() => {
+                this.$refs['receiptOrderPrintRefAuto']?.start?.()
+              }, 100)
+            }
           })
           return
         }
@@ -925,9 +934,10 @@ export default {
             width: '800px',
             component: 'window-print-preview',
             form: {
-              value: 1,
-              row,
-              print
+              value: 2,
+              row: res,
+              print,
+              printOrientation: orient
             },
             ok: () => {
               this.modalObj.show = false
@@ -1442,5 +1452,35 @@ export default {
 /* 单据状态列表头不换行 */
 .app-container > .el-table thead th:nth-child(9) .cell {
   white-space: nowrap !important;
+}
+</style>
+
+<style>
+/* 打印弹窗 append-to-body，标题行样式需非 scoped */
+.out-warehouse-print-dialog .print-dialog-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding-right: 36px;
+  box-sizing: border-box;
+}
+.out-warehouse-print-dialog .print-dialog-title-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.out-warehouse-print-dialog .print-orientation-in-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: normal;
+  font-size: 14px;
+}
+.out-warehouse-print-dialog .print-orientation-label {
+  color: #606266;
 }
 </style>

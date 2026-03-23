@@ -29,9 +29,9 @@ const permission = {
     },
   },
   actions: {
-    // 生成路由
+    // 生成路由（getRouters 失败时必须 reject，否则路由守卫 next 不会被调用，会卡在登录后进不去首页）
     GenerateRoutes({ commit }) {
-      return new Promise(resolve => {
+      return new Promise((resolve, reject) => {
         // 向后端请求路由数据
         getRouters().then(res => {
           const sdata = JSON.parse(JSON.stringify(res.data))
@@ -46,7 +46,7 @@ const permission = {
           commit('SET_DEFAULT_ROUTES', sidebarRoutes)
           commit('SET_TOPBAR_ROUTES', sidebarRoutes)
           resolve(rewriteRoutes)
-        })
+        }).catch(err => reject(err))
       })
     }
   }
@@ -59,7 +59,13 @@ function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false) {
     if (!route.uniqueId) {
       route.uniqueId = `route_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`
     }
-    
+    // vue-router 要求 route 必须有 path，后端可能返回空或 null
+    if (route.path == null || String(route.path).trim() === '') {
+      route.path = `/_${route.uniqueId}`
+    } else {
+      route.path = String(route.path).trim()
+    }
+
     if (type && route.children) {
       route.children = filterChildren(route.children)
     }
@@ -92,7 +98,11 @@ function filterChildren(childrenMap, lastRouter = false) {
     if (!el.uniqueId) {
       el.uniqueId = `child_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`
     }
-    
+    if (el.path == null || String(el.path).trim() === '') {
+      el.path = `/_${el.uniqueId}`
+    } else {
+      el.path = String(el.path).trim()
+    }
     if (el.children && el.children.length) {
       if (el.component === 'ParentView' && !lastRouter) {
         el.children.forEach((c, cIndex) => {
@@ -100,7 +110,8 @@ function filterChildren(childrenMap, lastRouter = false) {
           if (!c.uniqueId) {
             c.uniqueId = `nested_${Date.now()}_${cIndex}_${Math.random().toString(36).substr(2, 9)}`
           }
-          c.path = el.path + '/' + c.path
+          const cPath = (c.path != null && String(c.path).trim() !== '') ? String(c.path).trim() : `/_${c.uniqueId || cIndex}`
+          c.path = (el.path || '') + '/' + cPath
           if (c.children && c.children.length) {
             children = children.concat(filterChildren(c.children, c))
             return
@@ -111,7 +122,8 @@ function filterChildren(childrenMap, lastRouter = false) {
       }
     }
     if (lastRouter) {
-      el.path = lastRouter.path + '/' + el.path
+      const basePath = (lastRouter.path != null && lastRouter.path !== '') ? lastRouter.path : '/'
+      el.path = basePath + '/' + (el.path != null && el.path !== '' ? el.path : el.uniqueId)
     }
     children = children.concat(el)
   })

@@ -3,7 +3,7 @@
              filterable
              :filter-method="filterMethod"
              clearable
-             placeholder="请输入科室名称或首字母搜索"
+             placeholder="科室名称或首字母搜索"
              :disabled="value2"
   >
     <el-option

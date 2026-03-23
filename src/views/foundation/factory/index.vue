@@ -24,13 +24,13 @@
       <el-col :span="18">
     <!-- 查询条件容器 -->
     <div class="query-container" v-show="showSearch">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="68px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="20">
           <el-col :span="6">
-            <el-form-item label="厂家编码" prop="factoryCode" label-width="100px">
+            <el-form-item prop="factoryCode">
               <el-input
                 v-model="queryParams.factoryCode"
-                placeholder="请输入厂家编码"
+                placeholder="厂家编码"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -38,10 +38,10 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="厂家名称" prop="factoryName" label-width="100px">
+            <el-form-item prop="factoryName">
               <el-input
                 v-model="queryParams.factoryName"
-                placeholder="请输入厂家名称"
+                placeholder="厂家名称"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -55,20 +55,14 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="small"
+          type="primary" size="small"
           @click="handleAdd"
           v-hasPermi="['foundation:factory:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:factory:edit']"
@@ -76,10 +70,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="small"
+          type="primary" size="small"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:factory:remove']"
@@ -87,10 +78,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-refresh"
-          size="small"
+          type="primary" size="small"
           :disabled="multiple"
           @click="handleUpdateReferred"
           v-hasPermi="['foundation:factory:updateReferred']"
@@ -98,18 +86,34 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
+          type="primary" size="small"
           @click="handleExport"
           v-hasPermi="['foundation:factory:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.8">
+        <el-button
+          type="info"
+          plain
+          icon="el-icon-upload2"
+          size="small"
+          @click="handleImport('add')"
+          v-hasPermi="['foundation:factory:import']"
+        >新增导入</el-button>
+      </el-col>
+      <el-col :span="1.8">
+        <el-button
+          type="info"
+          plain
+          icon="el-icon-refresh-right"
+          size="small"
+          @click="handleImport('update')"
+          v-hasPermi="['foundation:factory:import']"
+        >更新导入</el-button>
+      </el-col>
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleQuery"
         >搜索</el-button>
@@ -117,10 +121,11 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="factoryList" :row-class-name="factoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%">
+    <el-table v-loading="loading" :data="factoryList" :row-class-name="factoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip />
       <el-table-column label="厂家编码" align="center" prop="factoryCode" width="150" show-overflow-tooltip />
+      <el-table-column label="HIS生产厂家ID" align="center" prop="hisId" width="120" show-overflow-tooltip />
       <el-table-column label="厂家名称" align="center" prop="factoryName" min-width="250" show-overflow-tooltip />
       <el-table-column label="厂家地址" align="center" prop="factoryAddress" min-width="300" show-overflow-tooltip />
       <el-table-column label="厂家联系方式" align="center" prop="factoryContact" width="150" show-overflow-tooltip />
@@ -134,19 +139,25 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
         <template slot-scope="scope">
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
+            icon="el-icon-document"
+            @click="openChangeLog(scope.row)"
+            v-hasPermi="['foundation:factory:list']"
+          >变更记录</el-button>
+          <el-button
+            size="small"
+            type="text"
+           
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:factory:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['foundation:factory:remove']"
           >删除</el-button>
@@ -175,22 +186,22 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="厂家编码" prop="factoryCode">
-                <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="请输入厂家编码" />
+                <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="厂家编码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="厂家名称" prop="factoryName">
-                <el-input v-model="form.factoryName" @input="factoryNameChange" placeholder="请输入厂家名称" />
+                <el-input v-model="form.factoryName" @input="factoryNameChange" placeholder="厂家名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="厂家简码" prop="factoryReferredCode">
-                <el-input v-model="form.factoryReferredCode" :disabled="true" placeholder="请输入厂家名称" />
+                <el-input v-model="form.factoryReferredCode" :disabled="true" placeholder="厂家名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="使用状态" prop="factoryStatus">
-                <el-select v-model="form.factoryStatus" placeholder="请选择使用状态" style="width: 100%">
+                <el-select v-model="form.factoryStatus" placeholder="使用状态" style="width: 100%">
                   <el-option
                     v-for="dict in dict.type.is_use_status"
                     :key="dict.value"
@@ -205,17 +216,17 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="厂家联系方式" prop="factoryContact">
-                <el-input v-model="form.factoryContact" placeholder="请输入厂家联系方式" />
+                <el-input v-model="form.factoryContact" placeholder="厂家联系方式" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="厂家地址" prop="factoryAddress">
-                <el-input v-model="form.factoryAddress" type="textarea" placeholder="请输入厂家地址" />
+                <el-input v-model="form.factoryAddress" type="textarea" placeholder="厂家地址" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="备注" prop="remark">
-                <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
+                <el-input v-model="form.remark" type="textarea" placeholder="备注" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -226,16 +237,114 @@
         </div>
       </div>
     </div>
+
+    <div v-if="upload.open" class="local-modal-mask">
+      <div class="local-modal-content" style="width: 520px; min-width: 400px; min-height: auto;">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
+        <el-alert
+          v-if="factoryImportRequiresHisId"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom:12px;"
+          title="衡水市第三人民医院：Excel 新增行须填「HIS生产厂家ID」且租户内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
+        />
+        <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+          <strong>增量导入</strong>：按厂家编码匹配租户下数据；可勾选「更新已存在」后<strong>仅更新厂家名称与厂家简码</strong>。先整单校验并确认后写入。
+        </p>
+        <el-upload
+          ref="upload"
+          :limit="1"
+          accept=".xlsx, .xls"
+          :disabled="upload.isUploading"
+          :http-request="noopFactoryUpload"
+          :on-change="handleFactoryImportFileChange"
+          :on-remove="handleFactoryImportFileRemove"
+          :auto-upload="false"
+          drag
+        >
+          <i class="el-icon-upload"></i>
+          <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
+          <div class="el-upload__tip text-center" slot="tip">
+            <div class="el-upload__tip" slot="tip">
+            <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
+            </div>
+            <span>仅允许 xls、xlsx。</span>
+            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importFactoryTemplate">下载模板</el-link>
+          </div>
+        </el-upload>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button type="primary" :loading="upload.isUploading" @click="submitFactoryImportFlow">校验并导入</el-button>
+          <el-button @click="closeFactoryImport">取 消</el-button>
+        </div>
+      </div>
+    </div>
+
+    <el-dialog
+      :title="importPreview.title"
+      :visible.sync="importPreview.visible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      @close="importPreview.rows = []; importPreview.columns = []"
+    >
+      <div style="margin-bottom:10px;">
+        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportFactoryImportPreview">导出解析结果</el-button>
+      </div>
+      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
+        <el-table-column
+          v-for="col in importPreview.columns"
+          :key="col"
+          :prop="col"
+          :label="col"
+          min-width="120"
+          show-overflow-tooltip
+        />
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="importPreview.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
+
+    <div v-if="changeLog.open" class="local-modal-mask">
+      <div class="local-modal-content" style="width: 720px; min-width: 400px; min-height: auto; max-width: 92vw;">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">生产厂家变更记录 — {{ changeLog.factoryName }}</div>
+        <el-table v-loading="changeLog.loading" :data="changeLog.rows" max-height="420" size="small">
+          <el-table-column label="时间" prop="changeTime" width="160" />
+          <el-table-column label="操作人" prop="operator" width="100" show-overflow-tooltip />
+          <el-table-column label="字段" prop="fieldLabel" width="100" show-overflow-tooltip />
+          <el-table-column label="原值" prop="oldValue" min-width="120" show-overflow-tooltip />
+          <el-table-column label="新值" prop="newValue" min-width="120" show-overflow-tooltip />
+        </el-table>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button @click="changeLog.open = false">关 闭</el-button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { listFactory, getFactory, delFactory, addFactory, updateFactory, updateFactoryReferred } from "@/api/foundation/factory";
+import { mapGetters } from "vuex";
+import { listFactory, listFactoryAll, getFactory, delFactory, addFactory, updateFactory, updateFactoryReferred, validateFactoryImportAdd, validateFactoryImportUpdate, importFactoryAddData, importFactoryUpdateData, listFactoryChangeLog } from "@/api/foundation/factory";
+import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import {pinyin} from "pinyin-pro";
 
 export default {
   name: "Factory",
   dicts: ['is_use_status'],
+  computed: {
+    ...mapGetters(["factoryImportRequiresHisId"]),
+    hisIdPlaceholder() {
+      if (this.form && this.form.factoryId) {
+        return "保存后不可修改";
+      }
+      if (this.factoryImportRequiresHisId) {
+        return "必填：HIS 生产厂家标识，租户内唯一";
+      }
+      return "非衡水医院租户无需填写（后台不保存）";
+    },
+  },
   data() {
     return {
       // 遮罩层
@@ -261,6 +370,27 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      upload: {
+        open: false,
+        title: "",
+        isUploading: false,
+        updateSupport: false,
+        pendingFile: null,
+        mode: 'add'
+      },
+      changeLog: {
+        open: false,
+        loading: false,
+        factoryName: "",
+        rows: []
+      },
+      /** 导入解析结果预览（模板 el-dialog 依赖，必须在 data 中声明，否则渲染报错整页空白） */
+      importPreview: {
+        visible: false,
+        title: "导入解析结果",
+        rows: [],
+        columns: []
+      },
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -286,6 +416,20 @@ export default {
         factoryContact: [
           { required: true, message: "厂家联系方式不能为空", trigger: "blur" }
         ],
+        hisId: [
+          {
+            validator: (rule, value, callback) => {
+              if (!this.form.factoryId && this.factoryImportRequiresHisId) {
+                if (value === undefined || value === null || String(value).trim() === "") {
+                  callback(new Error("衡水市第三人民医院新增时必须填写HIS生产厂家ID"));
+                  return;
+                }
+              }
+              callback();
+            },
+            trigger: "blur"
+          }
+        ]
       }
     };
   },
@@ -294,20 +438,31 @@ export default {
     this.getAllFactoryList();
   },
   methods: {
-    /** 获取所有厂家列表（用于左侧列表） */
+    /** 获取所有厂家列表（用于左侧列表，与 listAll 一致，避免分页/权限与 list 不一致导致空白） */
     getAllFactoryList() {
-      listFactory({ pageNum: 1, pageSize: 10000 }).then(response => {
-        this.allFactoryList = response.rows || [];
-      });
+      listFactoryAll({})
+        .then((response) => {
+          this.allFactoryList = Array.isArray(response) ? response : (response && response.rows) || [];
+        })
+        .catch(() => {
+          this.allFactoryList = [];
+        });
     },
     /** 查询厂家维护列表 */
     getList() {
       this.loading = true;
-      listFactory(this.queryParams).then(response => {
-        this.factoryList = response.rows;
-        this.total = response.total;
-        this.loading = false;
-      });
+      listFactory(this.queryParams)
+        .then((response) => {
+          this.factoryList = (response && response.rows) || [];
+          this.total = (response && response.total) || 0;
+        })
+        .catch(() => {
+          this.factoryList = [];
+          this.total = 0;
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
     /** 厂家列表项点击 */
     handleFactoryClick(factory) {
@@ -342,6 +497,7 @@ export default {
         updateTime: null,
         factoryReferredCode: null,
         factoryStatus: null,
+        hisId: null,
         remark: null,
       };
       this.resetForm("form");
@@ -445,6 +601,101 @@ export default {
         this.$modal.msgSuccess("更新简码成功");
         this.getList();
       }).catch(() => {});
+    },
+    handleImport(mode) {
+      this.upload.mode = mode === "update" ? "update" : "add";
+      this.upload.updateSupport = this.upload.mode === "update";
+      this.upload.title = this.upload.mode === "update" ? "生产厂家更新导入" : "生产厂家新增导入";
+      this.upload.pendingFile = null;
+      this.upload.open = true;
+      this.$nextTick(() => {
+        if (this.$refs.upload) this.$refs.upload.clearFiles();
+      });
+    },
+    closeFactoryImport() {
+      this.upload.open = false;
+      this.upload.pendingFile = null;
+      if (this.$refs.upload) this.$refs.upload.clearFiles();
+    },
+    noopFactoryUpload() {},
+    handleFactoryImportFileChange(file) {
+      this.upload.pendingFile = file && file.raw ? file.raw : null;
+    },
+    handleFactoryImportFileRemove() {
+      this.upload.pendingFile = null;
+    },
+    importFactoryTemplate() {
+      const api = this.upload.mode === "update" ? "foundation/factory/importUpdateTemplate" : "foundation/factory/importAddTemplate";
+      this.download(api, {}, `fd_factory_template_${new Date().getTime()}.xlsx`);
+    },
+    openChangeLog(row) {
+      if (!row || !row.factoryId) return;
+      this.changeLog.open = true;
+      this.changeLog.factoryName = row.factoryName || "";
+      this.changeLog.rows = [];
+      this.changeLog.loading = true;
+      listFactoryChangeLog(row.factoryId).then(res => {
+        this.changeLog.rows = res.data || [];
+        this.changeLog.loading = false;
+      }).catch(() => {
+        this.changeLog.loading = false;
+      });
+    },
+    showImportPreviewFromPayload(payload, title) {
+      const rows = (payload && payload.previewRows) || [];
+      this.importPreview.title = title || "导入解析结果";
+      this.importPreview.rows = rows;
+      this.importPreview.columns = rows.length ? Object.keys(rows[0]) : [];
+      this.importPreview.visible = true;
+    },
+    async exportFactoryImportPreview() {
+      try {
+        const name = (this.upload.mode === "update" ? "factory_update" : "factory_add") + "_preview_" + new Date().getTime() + ".xlsx";
+        await exportPreviewRowsToXlsx(this.importPreview.rows, name);
+        this.$modal.msgSuccess("已导出");
+      } catch (e) {
+        this.$modal.msgError(e.message || "导出失败");
+      }
+    },
+    async submitFactoryImportFlow() {
+      const f = this.upload.pendingFile;
+      if (!f) {
+        this.$modal.msgWarning("请先选择 Excel 文件");
+        return;
+      }
+      this.upload.isUploading = true;
+      try {
+        const isUpdate = this.upload.mode === "update";
+        const res = isUpdate ? await validateFactoryImportUpdate(f) : await validateFactoryImportAdd(f);
+        const d = res.data || {};
+        this.showImportPreviewFromPayload(d, isUpdate ? "生产厂家更新导入 — 解析结果" : "生产厂家新增导入 — 解析结果");
+        if (!d.valid) {
+          const errs = (d.errors && d.errors.length) ? d.errors.join("<br/>") : (res.msg || "校验失败");
+          this.$alert("<div style='overflow:auto;max-height:60vh'>" + errs + "</div>", "校验未通过", { dangerouslyUseHTMLString: true });
+          return;
+        }
+        const tc = d.totalRows != null ? d.totalRows : 0;
+        const ic = d.insertCount != null ? d.insertCount : 0;
+        const uc = d.updateCount != null ? d.updateCount : 0;
+        let confirmText = "校验已通过。共 " + tc + " 行数据，确认后写入数据库，是否继续？";
+        if (!isUpdate) {
+          confirmText = "校验已通过。共 " + tc + " 行数据，预计新增 " + ic + " 条、更新 " + uc + " 条。确认后写入数据库，是否继续？";
+        }
+        await this.$modal.confirm(confirmText);
+        const res2 = isUpdate ? await importFactoryUpdateData(f, true) : await importFactoryAddData(f, true);
+        const d2 = res2.data || {};
+        this.showImportPreviewFromPayload(d2, isUpdate ? "生产厂家更新导入 — 导入结果" : "生产厂家新增导入 — 导入结果");
+        this.$alert("<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'>" + res2.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
+        this.closeFactoryImport();
+        this.getList();
+        this.getAllFactoryList();
+      } catch (e) {
+        if (e !== "cancel" && e !== "close") {
+          /* request 已提示 */
+        }
+      } finally {
+        this.upload.isUploading = false;
+      }
     }
   }
 };

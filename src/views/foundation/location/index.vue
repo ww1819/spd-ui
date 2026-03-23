@@ -23,13 +23,13 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="20">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row :gutter="20">
             <el-col :span="8">
-              <el-form-item label="货位编码" prop="locationCode">
+              <el-form-item prop="locationCode">
                 <el-input
                   v-model="queryParams.locationCode"
-                  placeholder="请输入货位编码"
+                  placeholder="货位编码"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 100%"
@@ -37,10 +37,10 @@
               </el-form-item>
             </el-col>
             <el-col :span="8">
-              <el-form-item label="货位名称" prop="locationName">
+              <el-form-item prop="locationName">
                 <el-input
                   v-model="queryParams.locationName"
-                  placeholder="请输入货位名称"
+                  placeholder="货位名称"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 100%"
@@ -49,8 +49,8 @@
             </el-col>
             <el-col :span="8">
               <el-form-item>
-                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-                <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+                <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+                <el-button size="small" @click="resetQuery">重置</el-button>
               </el-form-item>
             </el-col>
           </el-row>
@@ -59,20 +59,14 @@
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <el-button
-              type="primary"
-              plain
-              icon="el-icon-plus"
-              size="small"
+              type="primary" size="small"
               @click="handleAdd"
               v-hasPermi="['foundation:location:add']"
             >新增</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="success"
-              plain
-              icon="el-icon-edit"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:location:edit']"
@@ -80,10 +74,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="danger"
-              plain
-              icon="el-icon-delete"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:location:remove']"
@@ -91,10 +82,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="warning"
-              plain
-              icon="el-icon-download"
-              size="small"
+              type="primary" size="small"
               @click="handleExport"
               v-hasPermi="['foundation:location:export']"
             >导出</el-button>
@@ -102,12 +90,14 @@
           <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
-        <el-table v-loading="loading" :data="locationList" :row-class-name="locationIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+        <el-table v-loading="loading" :data="locationList" :row-class-name="locationIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50"/>
           <el-table-column label="货位编码" align="center" prop="locationCode" width="120"/>
           <el-table-column label="货位名称" align="center" prop="locationName" width="180"/>
           <el-table-column label="仓库" align="center" prop="warehouseName" width="150"/>
+          <el-table-column label="租户ID" align="center" prop="tenantId" width="120" show-overflow-tooltip />
+          <el-table-column label="备注" align="center" prop="remark" min-width="100" show-overflow-tooltip />
           <el-table-column label="上级货位" align="center" width="150">
             <template slot-scope="scope">
               <span v-if="scope.row.parentId && scope.row.parentId !== 0">{{ getParentLocationName(scope.row.parentId) }}</span>
@@ -118,7 +108,7 @@
               <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="是否" align="center" width="100">
+          <el-table-column label="启用" align="center" width="100">
             <template slot-scope="scope">
               <el-switch
                 v-model="scope.row.delFlag"
@@ -133,14 +123,12 @@
               <el-button
                 size="small"
                 type="text"
-                icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
                 v-hasPermi="['foundation:location:edit']"
               >修改</el-button>
               <el-button
                 size="small"
                 type="text"
-                icon="el-icon-delete"
                 @click="handleDelete(scope.row)"
                 v-hasPermi="['foundation:location:remove']"
               >删除</el-button>
@@ -166,24 +154,24 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="货位编码" prop="locationCode">
-                <el-input v-model="form.locationCode" :disabled="isDisabled" placeholder="请输入货位编码" style="width: 100%" />
+                <el-input v-model="form.locationCode" :disabled="isDisabled" placeholder="货位编码" style="width: 100%" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="货位名称" prop="locationName">
-                <el-input v-model="form.locationName" placeholder="请输入货位名称" style="width: 100%" />
+                <el-input v-model="form.locationName" placeholder="货位名称" style="width: 100%" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="选择仓库" prop="warehouseId">
-                <SelectWarehouse v-model="form.warehouseId" placeholder="请选择仓库" style="width: 100%" />
+                <SelectWarehouse v-model="form.warehouseId" placeholder="仓库" style="width: 100%" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="选择上级货位" prop="parentId">
-                <el-select v-model="form.parentId" placeholder="请选择上级货位" clearable style="width: 100%">
+                <el-select v-model="form.parentId" placeholder="上级货位" clearable style="width: 100%">
                   <el-option
                     v-for="item in parentOptions"
                     :key="item.locationId"
@@ -192,6 +180,18 @@
                     :disabled="form.locationId && item.locationId === form.locationId"
                   ></el-option>
                 </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="租户ID(客户)">
+                <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -208,6 +208,7 @@
 <script>
 import { listLocation, getLocation, delLocation, addLocation, updateLocation, treeselect } from "@/api/foundation/location";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
+import { mapGetters } from "vuex";
 
 export default {
   name: "Location",
@@ -265,6 +266,7 @@ export default {
     };
   },
   computed: {
+    ...mapGetters(['customerId']),
     isDisabled() {
       return this.form.locationId != null;
     }
@@ -373,6 +375,8 @@ export default {
         locationName: null,
         warehouseId: null,
         delFlag: null,
+        tenantId: null,
+        remark: null,
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -399,6 +403,7 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
+      this.form.tenantId = this.customerId || null;
       this.loadTreeData();
       this.open = true;
       this.title = "添加货位";
