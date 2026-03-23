@@ -1,18 +1,18 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
       <el-row class="query-row-left">
         <el-col :span="24">
-          <el-form-item label="退货单号" prop="goodsNo" class="query-item-inline">
+          <el-form-item prop="goodsNo" class="query-item-inline">
             <el-input v-model="queryParams.goodsNo"
-                      placeholder="请输入退货单号"
+                      placeholder="退货单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+          <el-form-item prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值"/>
             </div>
@@ -22,7 +22,7 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="制单日期" style="display: flex; align-items: center;">
+          <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.goodsDate"
               type="date"
@@ -34,8 +34,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="goodsStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.goodsStatus" placeholder="全部"
+          <el-form-item prop="goodsStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.goodsStatus" placeholder="单据状态"
                        clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -54,8 +54,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="medium"
           @click="handleAdd"
           v-hasPermi="['gzOrder:goodsApply:add']"
@@ -63,9 +61,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['gzOrder:goodsApply:export']"
@@ -74,22 +70,20 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          icon="el-icon-check"
+          type="primary"
           size="medium"
           :disabled="single"
           @click="handleAudit"
@@ -101,7 +95,7 @@
 
     <el-table v-loading="loading" :data="goodsList"
               :row-class-name="goodsListIndex"
-              @selection-change="handleSelectionChange" height="58vh" border>
+              @selection-change="handleSelectionChange" height="58vh" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="退货单号" align="center" prop="goodsNo" width="180" show-overflow-tooltip resizable>
@@ -142,7 +136,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-printer"
               @click="handlePrint(scope.row,true)"
               v-if="scope.row.goodsStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -150,7 +143,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['gzOrder:goodsApply:edit']"
               v-if="scope.row.goodsStatus != 2"
@@ -159,7 +151,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['gzOrder:goodsApply:remove']"
               v-if="scope.row.goodsStatus != 2"
@@ -367,7 +358,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
         </el-table>

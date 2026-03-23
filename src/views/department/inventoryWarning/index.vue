@@ -25,15 +25,15 @@
       <el-col :span="19">
         <!-- 查询条件容器 -->
         <div class="query-container" v-show="showSearch">
-          <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="80px">
+          <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
             <el-row class="query-row-left">
               <el-col :span="24">
-                <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+                <el-form-item prop="supplierId" class="query-item-inline">
                   <div class="query-select-wrapper">
                     <SelectSupplier v-model="queryParams.supplierId" />
                   </div>
                 </el-form-item>
-                <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+                <el-form-item prop="departmentId" class="query-item-inline">
                   <div class="query-select-wrapper">
                     <SelectDepartment v-model="queryParams.departmentId" />
                   </div>
@@ -42,10 +42,10 @@
             </el-row>
             <el-row class="query-row-second">
               <el-col :span="24">
-                <el-form-item label="产品名称" prop="materialName" class="query-item-inline">
+                <el-form-item prop="materialName" class="query-item-inline">
                   <el-input
                     v-model="queryParams.materialName"
-                    placeholder="请输入产品名称"
+                    placeholder="产品名称"
                     clearable
                     style="width: 180px"
                     @keyup.enter.native="handleQuery"
@@ -60,8 +60,6 @@
           <el-col :span="1.5">
             <el-button
               type="primary"
-              plain
-              icon="el-icon-plus"
               size="medium"
               :disabled="!selectedDepartmentId"
               @click="handleAdd"
@@ -81,7 +79,7 @@
 
         <!-- 明细表格 -->
         <div class="table-container">
-          <el-table v-loading="loading" :data="warningList" :row-class-name="warningIndex" height="calc(100vh - 400px)" border>
+          <el-table v-loading="loading" :data="warningList" :row-class-name="warningIndex" height="calc(100vh - 400px)" border stripe>
             <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip />
             <el-table-column label="编码" align="center" width="120" show-overflow-tooltip>
               <template slot-scope="scope">
@@ -140,14 +138,12 @@
                 <el-button
                   size="small"
                   type="text"
-                  icon="el-icon-edit"
                   @click="handleUpdate(scope.row)"
                   v-hasPermi="['department:inventoryWarning:edit']"
                 >修改</el-button>
                 <el-button
                   size="small"
                   type="text"
-                  icon="el-icon-delete"
                   @click="handleDelete(scope.row)"
                   v-hasPermi="['department:inventoryWarning:remove']"
                 >删除</el-button>
@@ -190,7 +186,7 @@
                 <el-form-item label="产品名称" prop="materialName">
                   <el-input
                     v-model="dialogQueryParams.materialName"
-                    placeholder="请输入产品名称"
+                    placeholder="产品名称"
                     clearable
                     style="width: 180px"
                     @keyup.enter.native="handleDialogQuery"

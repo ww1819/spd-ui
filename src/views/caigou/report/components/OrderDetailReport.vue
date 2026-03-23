@@ -1,12 +1,12 @@
-﻿<template>
+<template>
   <div class="report-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
       <el-row class="query-row-left">
         <el-col :span="24">
           <el-form-item label="订单单号" prop="orderNo" class="query-item-inline">
             <el-input v-model="queryParams.orderNo"
-                      placeholder="请输入订单单号"
+                      placeholder="订单单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"

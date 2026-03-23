@@ -1,23 +1,23 @@
-﻿<template>
+<template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
       <el-row class="query-row-left">
         <el-col :span="24">
-          <el-form-item label="跟台单号" prop="orderNo" class="query-item-inline">
+          <el-form-item prop="orderNo" class="query-item-inline">
             <el-input v-model="queryParams.orderNo"
-                      placeholder="请输入跟台单号"
+                      placeholder="跟台单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
+          <el-form-item prop="supplerId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectSupplier v-model="queryParams.supplerId"/>
             </div>
           </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+          <el-form-item prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值"/>
             </div>
@@ -27,7 +27,7 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="制单日期" style="display: flex; align-items: center;">
+          <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -48,10 +48,9 @@
           </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="orderStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.orderStatus" placeholder="全部"
+          <el-form-item prop="orderStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.orderStatus" placeholder="单据状态"
                        clearable style="width: 150px">
-              <el-option label="全部" value="" />
               <el-option label="未审核" value="1" />
               <el-option label="已审核" value="2" />
             </el-select>
@@ -65,14 +64,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="small"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="small"
           @click="resetQuery"
         >重置</el-button>
@@ -80,8 +78,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="small"
           @click="handleAdd"
           v-hasPermi="['gzOrder:follow:add']"
@@ -89,9 +85,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
           v-hasPermi="['gzOrder:follow:export']"
@@ -99,9 +93,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-check"
+          type="primary"
           size="small"
           :disabled="multiple"
           @click="handleAudit"
@@ -113,7 +105,7 @@
 
     <el-table v-loading="loading" :data="orderList"
               :row-class-name="orderListIndex"
-              @selection-change="handleSelectionChange" height="58vh" border>
+              @selection-change="handleSelectionChange" height="58vh" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="跟台单号" align="center" prop="orderNo" width="180" show-overflow-tooltip resizable>
@@ -143,13 +135,11 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-view"
               @click="handleView(scope.row)"
             >查看</el-button>
             <el-button
               size="small"
               type="text"
-              icon="el-icon-printer"
               @click="handlePrintBarcode(scope.row)"
             >打印条码</el-button>
           </template>
@@ -157,14 +147,12 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['gzOrder:follow:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['gzOrder:follow:remove']"
           >删除</el-button>
@@ -284,7 +272,7 @@
                   </el-table-column>
                   <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      <el-input clearable v-model="scope.row.qty" placeholder="请输入数量"
+                      <el-input clearable v-model="scope.row.qty" placeholder="数量"
                                 onkeyup="value=value.replace(/\D/g,'')"
                                 onafterpaste="value=value.replace(/\D/g,'')"
                                 @blur="form.result=$event.target.value"
@@ -304,7 +292,7 @@
                   </el-table-column>
                   <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      <el-input v-model="scope.row.batchNumber" placeholder="请输入批号" />
+                      <el-input v-model="scope.row.batchNumber" placeholder="批号" />
                     </template>
                   </el-table-column>
                   <el-table-column label="生产日期" prop="beginTime" width="180" show-overflow-tooltip resizable>
@@ -331,22 +319,22 @@
                   </el-table-column>
                   <el-table-column label="UDI码" prop="masterBarcode" width="240" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      <el-input v-model="scope.row.masterBarcode" :disabled="true" placeholder="请输入UDI码" />
+                      <el-input v-model="scope.row.masterBarcode" :disabled="true" placeholder="UDI码" />
                     </template>
                   </el-table-column>
                   <el-table-column label="辅条码" prop="secondaryBarcode" width="240" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      <el-input v-model="scope.row.secondaryBarcode" :disabled="true" placeholder="请输入辅条码" />
+                      <el-input v-model="scope.row.secondaryBarcode" :disabled="true" placeholder="辅条码" />
                     </template>
                   </el-table-column>
                   <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="请输入批次号" />
+                      <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" />
                     </template>
                   </el-table-column>
                   <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+                      <el-input v-model="scope.row.remark" placeholder="备注" />
                     </template>
                   </el-table-column>
                 </el-table>

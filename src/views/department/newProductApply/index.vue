@@ -1,25 +1,25 @@
 <template>
   <div class="app-container">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="申购单号" prop="applyNo" class="query-item-inline">
+            <el-form-item prop="applyNo" class="query-item-inline">
               <el-input v-model="queryParams.applyNo"
-                        placeholder="请输入申购单号"
+                        placeholder="申购单号"
                         clearable
                         style="width: 180px"
                         @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+            <el-form-item prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
             </el-form-item>
-            <el-form-item label="单据状态" prop="applyStatus" class="query-item-inline">
-              <el-select v-model="queryParams.applyStatus" placeholder="全部"
+            <el-form-item prop="applyStatus" class="query-item-inline">
+              <el-select v-model="queryParams.applyStatus" placeholder="单据状态"
                          clearable style="width: 180px">
                 <el-option v-for="dict in filteredBizStatus"
                            :key="dict.value"
@@ -33,7 +33,7 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="12">
-            <el-form-item label="制单日期" style="display: flex; align-items: center;">
+            <el-form-item style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -61,8 +61,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="medium"
           @click="handleAdd"
           v-hasPermi="['department:newProductApply:add']"
@@ -70,9 +68,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['department:newProductApply:export']"
@@ -81,14 +77,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -98,7 +93,7 @@
 
     <el-table v-loading="loading" :data="applyList"
               :row-class-name="applyListIndex"
-              @selection-change="handleSelectionChange" height="54vh" border>
+              @selection-change="handleSelectionChange" height="54vh" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="申购单号" align="center" prop="applyNo" width="180" show-overflow-tooltip resizable>
@@ -220,7 +215,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="申请理由及效益分析" prop="reasonAndBenefit" label-width="100px">
-                      <el-input v-model="form.reasonAndBenefit" placeholder="请输入申请理由及效益分析" style="width: 150px" />
+                      <el-input v-model="form.reasonAndBenefit" placeholder="申请理由及效益分析" style="width: 150px" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -228,7 +223,7 @@
                 <el-row>
                   <el-col :span="4">
                     <el-form-item label="分析评估" prop="remark" label-width="100px">
-                      <el-input v-model="form.remark" placeholder="请输入分析评估" style="width: 150px" />
+                      <el-input v-model="form.remark" placeholder="分析评估" style="width: 150px" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -257,7 +252,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="平台价格" prop="platformPrice" label-width="100px">
-                      <el-input v-model.number="form.platformPrice" type="number" placeholder="请输入平台价格" :disabled="!action" style="width: 150px" />
+                      <el-input v-model.number="form.platformPrice" type="number" placeholder="平台价格" :disabled="!action" style="width: 150px" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -281,44 +276,44 @@
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
           <el-table-column label="耗材名称" prop="materialName" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.materialName" placeholder="请输入耗材名称" />
+              <el-input clearable v-model="scope.row.materialName" placeholder="耗材名称" />
             </template>
           </el-table-column>
           <el-table-column label="规格" prop="speci" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.speci" placeholder="请输入规格" />
+              <el-input clearable v-model="scope.row.speci" placeholder="规格" />
             </template>
           </el-table-column>
           <el-table-column label="型号" prop="model" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.model" placeholder="请输入型号" />
+              <el-input clearable v-model="scope.row.model" placeholder="型号" />
             </template>
           </el-table-column>
           <el-table-column label="单位" prop="unitName" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.unitName" placeholder="请输入单位" />
+              <el-input clearable v-model="scope.row.unitName" placeholder="单位" />
             </template>
           </el-table-column>
           <el-table-column label="单价" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.price" placeholder="请输入单价"
+              <el-input clearable v-model="scope.row.price" placeholder="单价"
                         @input="priceChange(scope.row)"
               />
             </template>
           </el-table-column>
           <el-table-column label="品牌要求" prop="brandRequirement" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.brandRequirement" placeholder="请输入品牌要求" />
+              <el-input clearable v-model="scope.row.brandRequirement" placeholder="品牌要求" />
             </template>
           </el-table-column>
           <el-table-column label="生产厂家" prop="factoryName" width="160" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.factoryName" placeholder="请输入生产厂家" />
+              <el-input clearable v-model="scope.row.factoryName" placeholder="生产厂家" />
             </template>
           </el-table-column>
           <el-table-column label="特殊说明" prop="specialNote" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.specialNote" placeholder="请输入特殊说明" />
+              <el-input clearable v-model="scope.row.specialNote" placeholder="特殊说明" />
             </template>
           </el-table-column>
           <el-table-column label="病案费用类别" prop="caseFeeCategory" width="200" show-overflow-tooltip resizable>
@@ -347,17 +342,17 @@
                   <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable/>
                   <el-table-column label="我院同类产品" prop="similarProduct" width="200" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      <el-input clearable v-model="scope.row.similarProduct" placeholder="请输入我院同类产品" />
+                      <el-input clearable v-model="scope.row.similarProduct" placeholder="我院同类产品" />
                     </template>
                   </el-table-column>
                   <el-table-column label="规格" prop="speci" width="200" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      <el-input clearable v-model="scope.row.speci" placeholder="请输入规格" />
+                      <el-input clearable v-model="scope.row.speci" placeholder="规格" />
                     </template>
                   </el-table-column>
                   <el-table-column label="型号" prop="model" width="200" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      <el-input clearable v-model="scope.row.model" placeholder="请输入型号" />
+                      <el-input clearable v-model="scope.row.model" placeholder="型号" />
                     </template>
                   </el-table-column>
                 </el-table>

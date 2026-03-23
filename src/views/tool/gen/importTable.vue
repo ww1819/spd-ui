@@ -5,7 +5,7 @@
       <el-form-item label="表名称" prop="tableName">
         <el-input
           v-model="queryParams.tableName"
-          placeholder="请输入表名称"
+          placeholder="表名称"
           clearable
           @keyup.enter.native="handleQuery"
         />
@@ -13,7 +13,7 @@
       <el-form-item label="表描述" prop="tableComment">
         <el-input
           v-model="queryParams.tableComment"
-          placeholder="请输入表描述"
+          placeholder="表描述"
           clearable
           @keyup.enter.native="handleQuery"
         />

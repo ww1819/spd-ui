@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-tabs v-model="activeName" type="card" @tab-click="handleTabClick">
       <el-tab-pane label="使用追溯明细表" name="detail"></el-tab-pane>
@@ -9,43 +9,43 @@
 
     <div class="query-container">
       <div class="form-fields-container">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item label="追溯单号" prop="traceNo" class="query-item-inline">
+              <el-form-item prop="traceNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.traceNo"
-                  placeholder="请输入追溯单号"
+                  placeholder="追溯单号"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="库存数量" prop="qty" class="query-item-inline">
+              <el-form-item prop="qty" class="query-item-inline">
                 <el-input
                   v-model="queryParams.qty"
-                  placeholder="请输入库存数量"
+                  placeholder="库存数量"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+              <el-form-item prop="materialId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <MaterialAutocomplete v-model="queryParams.materialName"/>
                 </div>
               </el-form-item>
-              <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+              <el-form-item prop="warehouseId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值" />
                 </div>
               </el-form-item>
-              <el-form-item label="入库日期" prop="warehouseDate" class="query-item-inline">
+              <el-form-item prop="warehouseDate" class="query-item-inline">
                 <el-date-picker
                   v-model="queryParams.warehouseDate"
                   type="date"
                   value-format="yyyy-MM-dd"
-                  placeholder="请选择入库日期"
+                  placeholder="入库日期"
                   clearable
                   style="width: 180px"
                 />
@@ -54,47 +54,47 @@
           </el-row>
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item label="单价" prop="unitPrice" class="query-item-inline">
+              <el-form-item prop="unitPrice" class="query-item-inline">
                 <el-input
                   v-model="queryParams.unitPrice"
-                  placeholder="请输入单价"
+                  placeholder="单价"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="批次号" prop="batchNo" class="query-item-inline">
+              <el-form-item prop="batchNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.batchNo"
-                  placeholder="请输入批次号"
+                  placeholder="批次号"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="批号" prop="materialNo" class="query-item-inline">
+              <el-form-item prop="materialNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.materialNo"
-                  placeholder="请输入批号"
+                  placeholder="批号"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="耗材日期" prop="materialDate" class="query-item-inline">
+              <el-form-item prop="materialDate" class="query-item-inline">
                 <el-date-picker
                   v-model="queryParams.materialDate"
                   type="date"
                   value-format="yyyy-MM-dd"
-                  placeholder="请选择耗材日期"
+                  placeholder="耗材日期"
                   clearable
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="状态" prop="orderStatus" class="query-item-inline">
+              <el-form-item prop="orderStatus" class="query-item-inline">
                 <el-select
                   v-model="queryParams.orderStatus"
-                  placeholder="请选择状态"
+                  placeholder="状态"
                   clearable
                   style="width: 180px"
                 >
@@ -111,20 +111,18 @@
     <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <el-button
-          type="warning"
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['gz:retrospect:export']"
         >导出</el-button>
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>

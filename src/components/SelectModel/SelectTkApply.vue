@@ -8,14 +8,14 @@
         <el-button icon="el-icon-close" size="small" circle @click="handleClose" class="close-btn"></el-button>
       </div>
       <div class="modal-body">
-        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
         <el-row :gutter="20">
 
           <el-col :span="6">
             <el-form-item label="科室退库单单号" prop="billNo" label-width="100px">
               <el-input
                 v-model="queryParams.billNo"
-                placeholder="请输入科室退库单单号"
+                placeholder="科室退库单单号"
                 clearable
                 @keyup.enter.native="handleQuery"
               />

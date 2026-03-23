@@ -9,7 +9,7 @@
       </div>
       <div class="modal-body">
       <div class="query-fields-container">
-        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
+        <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
           <el-row :gutter="20">
             <el-col :span="6">
               <el-form-item label="科室" prop="departmentId" label-width="100px">
@@ -28,7 +28,7 @@
               <el-form-item label="批次号" prop="batchNo" label-width="100px">
                 <el-input
                   v-model="queryParams.batchNo"
-                  placeholder="请输入批次号"
+                  placeholder="批次号"
                   clearable
                   @keyup.enter.native="handleQuery"
                 />

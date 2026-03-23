@@ -1,28 +1,27 @@
-﻿<template>
+<template>
     <div class="procurement-management" style="position: relative;">
       <!-- 搜索框 -->
-      <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="仓库：">
+      <el-form :inline="true" :model="searchForm" class="query-form search-form">
+        <el-form-item>
           <SelectWarehouse v-model="searchForm.warehouseId" style="width: 180px;" />
         </el-form-item>
-        <el-form-item label="供应商：">
+        <el-form-item>
           <SelectSupplier v-model="searchForm.supplierId" style="width: 180px;" />
         </el-form-item>
-        <el-form-item label="单号：">
-          <el-input v-model="searchForm.billNo" placeholder="请输入单号" clearable style="width: 180px;"></el-input>
+        <el-form-item>
+          <el-input v-model="searchForm.billNo" placeholder="单号" clearable style="width: 180px;"></el-input>
         </el-form-item>
-        <el-form-item label="类型：">
-          <el-select v-model="searchForm.type" placeholder="请选择类型" clearable style="width: 180px;">
-            <el-option label="全部" value=""></el-option>
+        <el-form-item>
+          <el-select v-model="searchForm.type" placeholder="类型" clearable style="width: 180px;">
           </el-select>
         </el-form-item>
-        <el-form-item label="发票号：">
-          <el-input v-model="searchForm.invoiceNumber" placeholder="请输入发票号" clearable style="width: 180px;"></el-input>
+        <el-form-item>
+          <el-input v-model="searchForm.invoiceNumber" placeholder="发票号" clearable style="width: 180px;"></el-input>
         </el-form-item>
-        <el-form-item label="制单人：">
-          <el-input v-model="searchForm.createrName" placeholder="请输入制单人" clearable style="width: 180px;"></el-input>
+        <el-form-item>
+          <el-input v-model="searchForm.createrName" placeholder="制单人" clearable style="width: 180px;"></el-input>
         </el-form-item>
-        <el-form-item label="日期：">
+        <el-form-item>
           <el-date-picker
             v-model="searchForm.beginDate"
             type="date"
@@ -32,7 +31,7 @@
             style="width: 180px;"
           ></el-date-picker>
         </el-form-item>
-        <el-form-item label="止：">
+        <el-form-item>
           <el-date-picker
             v-model="searchForm.endDate"
             type="date"
@@ -42,8 +41,8 @@
             style="width: 180px;"
           ></el-date-picker>
         </el-form-item>
-        <el-form-item label="复核状态：">
-          <el-select v-model="searchForm.reviewStatus" placeholder="请选择复核状态" clearable style="width: 180px;">
+        <el-form-item>
+          <el-select v-model="searchForm.reviewStatus" placeholder="复核状态" clearable style="width: 180px;">
             <el-option label="已复核" value="已复核"></el-option>
             <el-option label="未复核" value="未复核"></el-option>
           </el-select>
@@ -52,11 +51,11 @@
   
       <!-- 功能按钮 -->
       <div class="function-buttons">
-        <el-button type="danger" icon="el-icon-plus" @click="onInvoiceSupplement" :disabled="selectedRows.length === 0">发票补录</el-button>
-        <el-button type="primary" icon="el-icon-check" @click="onReviewEntry">复核入库</el-button>
-        <el-button icon="el-icon-upload2" @click="onUploadPlatform">上传供应链平台</el-button>
-        <el-button icon="el-icon-download" @click="onExport">导出</el-button>
-        <el-button type="primary" icon="el-icon-search" @click="onSearch">搜索</el-button>
+        <el-button type="primary" @click="onInvoiceSupplement" :disabled="selectedRows.length === 0">发票补录</el-button>
+        <el-button type="primary" @click="onReviewEntry">复核入库</el-button>
+        <el-button type="primary" @click="onUploadPlatform">上传供应链平台</el-button>
+        <el-button type="primary" @click="onExport">导出</el-button>
+        <el-button type="primary" @click="onSearch">搜索</el-button>
       </div>
   
       <!-- 表格 -->
@@ -64,6 +63,7 @@
         <el-table 
           :data="tableData" 
           border 
+          stripe
           style="width: 100%" 
           height="58vh"
           v-loading="loading"
@@ -321,10 +321,10 @@
             <el-input v-model="invoiceForm.billNo" :disabled="true" />
           </el-form-item>
           <el-form-item label="发票号" prop="invoiceNumber">
-            <el-input v-model="invoiceForm.invoiceNumber" placeholder="请输入发票号" />
+            <el-input v-model="invoiceForm.invoiceNumber" placeholder="发票号" />
           </el-form-item>
           <el-form-item label="发票金额" prop="invoiceAmount">
-            <el-input v-model="invoiceForm.invoiceAmount" placeholder="请输入发票金额" type="number" />
+            <el-input v-model="invoiceForm.invoiceAmount" placeholder="发票金额" type="number" />
           </el-form-item>
           <el-form-item label="发票日期" prop="invoiceTime">
             <el-date-picker

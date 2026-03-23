@@ -23,23 +23,23 @@
       <!-- 右侧内容区域 -->
       <el-col :span="20">
         <!-- 搜索表单 -->
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row :gutter="20">
             <el-col :span="6">
-              <el-form-item label="财务分类编码" prop="financeCategoryCode" label-width="100px">
+              <el-form-item prop="financeCategoryCode">
                 <el-input
                   v-model="queryParams.financeCategoryCode"
-                  placeholder="请输入财务分类编码"
+                  placeholder="财务分类编码"
                   clearable
                   @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
             </el-col>
             <el-col :span="6">
-              <el-form-item label="财务分类名称" prop="financeCategoryName" label-width="100px">
+              <el-form-item prop="financeCategoryName">
                 <el-input
                   v-model="queryParams.financeCategoryName"
-                  placeholder="请输入财务分类名称"
+                  placeholder="财务分类名称"
                   clearable
                   @keyup.enter.native="handleQuery"
                 />
@@ -47,8 +47,8 @@
             </el-col>
             <el-col :span="6">
               <el-form-item>
-                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-                <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+                <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+                <el-button size="small" @click="resetQuery">重置</el-button>
               </el-form-item>
             </el-col>
           </el-row>
@@ -58,20 +58,14 @@
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <el-button
-              type="primary"
-              plain
-              icon="el-icon-plus"
-              size="small"
+              type="primary" size="small"
               @click="handleAdd"
               v-hasPermi="['foundation:financeCategory:add']"
             >新增</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="success"
-              plain
-              icon="el-icon-edit"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:financeCategory:edit']"
@@ -79,10 +73,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="danger"
-              plain
-              icon="el-icon-delete"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:financeCategory:remove']"
@@ -90,10 +81,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="primary"
-              plain
-              icon="el-icon-refresh"
-              size="small"
+              type="primary" size="small"
               :disabled="multiple"
               @click="handleUpdateReferred"
               v-hasPermi="['foundation:financeCategory:updateReferred']"
@@ -101,10 +89,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="warning"
-              plain
-              icon="el-icon-download"
-              size="small"
+              type="primary" size="small"
               @click="handleExport"
               v-hasPermi="['foundation:financeCategory:export']"
             >导出</el-button>
@@ -133,7 +118,7 @@
         </el-row>
 
         <!-- 数据表格 -->
-        <el-table v-loading="loading" :data="financeCategoryList" :row-class-name="financeCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 280px)">
+        <el-table v-loading="loading" :data="financeCategoryList" :row-class-name="financeCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 280px)" stripe>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="50"/>
           <el-table-column label="财务类别编码" align="center" prop="financeCategoryCode" width="120"/>
@@ -159,14 +144,12 @@
               <el-button
                 size="small"
                 type="text"
-                icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
                 v-hasPermi="['foundation:financeCategory:edit']"
               >修改</el-button>
               <el-button
                 size="small"
                 type="text"
-                icon="el-icon-delete"
                 @click="handleDelete(scope.row)"
                 v-hasPermi="['foundation:financeCategory:remove']"
               >删除</el-button>
@@ -206,7 +189,7 @@
                 </el-col>
                 <el-col :span="6">
                   <el-form-item label="使用状态" prop="isUse">
-                    <el-select v-model="form.isUse" placeholder="请选择使用状态" style="width: 100%">
+                    <el-select v-model="form.isUse" placeholder="使用状态" style="width: 100%">
                       <el-option
                         v-for="dict in dict.type.is_use_status"
                         :key="dict.value"

@@ -1,8 +1,8 @@
-﻿<template>
+<template>
   <div class="app-container">
     <div class="query-container">
       <div class="form-fields-container">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row class="query-row-left">
             <el-col :span="24">
               <el-form-item label="耗材" prop="materialId" class="query-item-inline">

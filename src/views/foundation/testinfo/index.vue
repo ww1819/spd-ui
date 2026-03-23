@@ -1,12 +1,12 @@
-﻿<template>
+<template>
     <div class="app-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
         <el-row :gutter="20">
           <el-col :span="6">
-            <el-form-item label="耗材名称" prop="name">
+            <el-form-item prop="name">
               <el-input
                 v-model="queryParams.name"
-                placeholder="请输入耗材名称"
+                placeholder="耗材名称"
                 clearable
                 @keyup.enter.native="handleQuery"
               />
@@ -14,7 +14,7 @@
           </el-col>
 
           <el-col :span="6">
-            <el-form-item label="供应商" prop="supplierId">
+            <el-form-item prop="supplierId">
               <SelectSupplier v-model="queryParams.supplierId"/>
             </el-form-item>
           </el-col>
@@ -28,7 +28,7 @@
                               v-model="queryParams.beginDate"
                               type="date"
                               value-format="yyyy-MM-dd"
-                              placeholder="请选择起始日期"
+                              placeholder="起始日期"
                               style="width: 140px"
               >
               </el-date-picker>
@@ -37,7 +37,7 @@
                               v-model="queryParams.endDate"
                               type="date"
                               value-format="yyyy-MM-dd"
-                              placeholder="请选择截止日期"
+                              placeholder="截止日期"
                               style="width: 140px"
               >
               </el-date-picker>
@@ -45,8 +45,8 @@
           </el-col>
 
           <el-col :span="6">
-            <el-form-item label="是否高值" prop="isGz">
-              <el-select v-model="queryParams.isGz" placeholder="请选择">
+            <el-form-item prop="isGz">
+              <el-select v-model="queryParams.isGz" placeholder="是否高值" clearable>
                 <el-option
                   v-for="dict in dict.type.is_yes_no"
                   :key="dict.value"
@@ -59,15 +59,13 @@
 
           <el-col :span="6">
             <el-form-item>
-              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+              <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
               <el-button
-                type="info"
-                icon="el-icon-upload2"
-                size="small"
+                type="primary" size="small"
                 @click="handleImport"
                 v-hasPermi="['foundation:material:import']"
               >导入</el-button>
-              <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+              <el-button size="small" @click="resetQuery">重置</el-button>
             </el-form-item>
           </el-col>
         </el-row>
@@ -75,20 +73,14 @@
       <el-row :gutter="10" class="mb8">
         <el-col :span="1.5">
           <el-button
-            type="primary"
-            plain
-            icon="el-icon-plus"
-            size="small"
+            type="primary" size="small"
             @click="handleAdd"
             v-hasPermi="['foundation:material:add']"
           >新增</el-button>
         </el-col>
         <el-col :span="1.5">
           <el-button
-            type="success"
-            plain
-            icon="el-icon-edit"
-            size="small"
+            type="primary" size="small"
             :disabled="single"
             @click="handleUpdate"
             v-hasPermi="['foundation:material:edit']"
@@ -96,10 +88,7 @@
         </el-col>
         <el-col :span="1.5">
           <el-button
-            type="danger"
-            plain
-            icon="el-icon-delete"
-            size="small"
+            type="primary" size="small"
             :disabled="single"
             @click="handleDelete"
             v-hasPermi="['foundation:material:remove']"
@@ -107,10 +96,7 @@
         </el-col>
         <el-col :span="1.5">
           <el-button
-            type="warning"
-            plain
-            icon="el-icon-download"
-            size="small"
+            type="primary" size="small"
             @click="handleExport"
             v-hasPermi="['foundation:material:export']"
           >导出</el-button>
@@ -118,7 +104,7 @@
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </el-row>
 
-      <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange">
+      <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange" stripe>
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="编号" align="center" prop="id" width="50"/>
         <el-table-column label="耗材编码" align="center" prop="code" width="80"/>
@@ -143,14 +129,12 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['foundation:material:edit']"
             >修改</el-button>
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['foundation:material:remove']"
             >删除</el-button>
@@ -171,17 +155,17 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="耗材编码" prop="code" label-width="100px">
-                <el-input v-model="form.code" :disabled="isDisabled" placeholder="请输入耗材编码" />
+                <el-input v-model="form.code" :disabled="isDisabled" placeholder="耗材编码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="耗材名称" prop="name" label-width="100px">
-                <el-input v-model="form.name" @input="nameChange" placeholder="请输入耗材名称" />
+                <el-input v-model="form.name" @input="nameChange" placeholder="耗材名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="名称简码" prop="referredName" label-width="100px">
-                <el-input v-model="form.referredName" :disabled="true" placeholder="请输入名称简码" />
+                <el-input v-model="form.referredName" :disabled="true" placeholder="名称简码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
@@ -194,25 +178,25 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="规格" prop="speci" label-width="100px">
-                <el-input v-model="form.speci" placeholder="请输入规格" />
+                <el-input v-model="form.speci" placeholder="规格" />
               </el-form-item>
             </el-col>
 
             <el-col :span="6">
               <el-form-item label="型号" prop="model" label-width="100px">
-                <el-input v-model="form.model" placeholder="请输入型号" />
+                <el-input v-model="form.model" placeholder="型号" />
               </el-form-item>
             </el-col>
 
             <el-col :span="6">
               <el-form-item label="价格" prop="price" label-width="100px">
-                <el-input v-model="form.price" placeholder="请输入价格" />
+                <el-input v-model="form.price" placeholder="价格" />
               </el-form-item>
             </el-col>
 
             <el-col :span="6">
               <el-form-item label="通用名称" prop="useName" label-width="100px">
-                <el-input v-model="form.useName" placeholder="请输入通用名称" />
+                <el-input v-model="form.useName" placeholder="通用名称" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -244,22 +228,22 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="注册证名称" prop="registerName" label-width="100px">
-                <el-input v-model="form.registerName" placeholder="请输入注册证名称" />
+                <el-input v-model="form.registerName" placeholder="注册证名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="注册证件号" prop="registerNo" label-width="100px">
-                <el-input v-model="form.registerNo" placeholder="请输入注册证件号" />
+                <el-input v-model="form.registerNo" placeholder="注册证件号" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="医保名称" prop="medicalName" label-width="100px">
-                <el-input v-model="form.medicalName" placeholder="请输入医保名称" />
+                <el-input v-model="form.medicalName" placeholder="医保名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="医保编码" prop="medicalNo" label-width="100px">
-                <el-input v-model="form.medicalNo" placeholder="请输入医保编码" />
+                <el-input v-model="form.medicalNo" placeholder="医保编码" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -279,18 +263,18 @@
 
             <el-col :span="6">
               <el-form-item label="招标类别" prop="successfulType" label-width="100px">
-                <el-input v-model="form.successfulType" placeholder="请输入招标类别" />
+                <el-input v-model="form.successfulType" placeholder="招标类别" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="中标号" prop="successfulNo" label-width="100px">
-                <el-input v-model="form.successfulNo" placeholder="请输入中标号" />
+                <el-input v-model="form.successfulNo" placeholder="中标号" />
               </el-form-item>
             </el-col>
 
             <el-col :span="6">
               <el-form-item label="中标价格" prop="successfulPrice" label-width="100px">
-                <el-input v-model="form.successfulPrice" placeholder="请输入中标价格" />
+                <el-input v-model="form.successfulPrice" placeholder="中标价格" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -298,19 +282,19 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="销售价" prop="salePrice" label-width="100px">
-                <el-input v-model="form.salePrice" placeholder="请输入销售价" />
+                <el-input v-model="form.salePrice" placeholder="销售价" />
               </el-form-item>
             </el-col>
 
             <el-col :span="6">
               <el-form-item label="包装规格" prop="packageSpeci" label-width="100px">
-                <el-input v-model="form.packageSpeci" placeholder="请输入包装规格" />
+                <el-input v-model="form.packageSpeci" placeholder="包装规格" />
               </el-form-item>
             </el-col>
 
             <el-col :span="6">
               <el-form-item label=" 产地" prop="producer" label-width="100px">
-                <el-input v-model="form.producer" placeholder="请输入 产地" />
+                <el-input v-model="form.producer" placeholder=" 产地" />
               </el-form-item>
             </el-col>
 
@@ -384,24 +368,24 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="品牌" prop="brand" label-width="100px">
-                <el-input v-model="form.brand" placeholder="请输入品牌" />
+                <el-input v-model="form.brand" placeholder="品牌" />
               </el-form-item>
             </el-col>
 
             <el-col :span="6">
               <el-form-item label="用途" prop="useto" label-width="100px">
-                <el-input v-model="form.useto" placeholder="请输入用途" />
+                <el-input v-model="form.useto" placeholder="用途" />
               </el-form-item>
             </el-col>
 
             <el-col :span="6">
               <el-form-item label="材质" prop="quality" label-width="100px">
-                <el-input v-model="form.quality" placeholder="请输入材质" />
+                <el-input v-model="form.quality" placeholder="材质" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="功能" prop="function" label-width="100px">
-                <el-input v-model="form.function" placeholder="请输入功能" />
+                <el-input v-model="form.function" placeholder="功能" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -422,19 +406,19 @@
 
             <el-col :span="6">
               <el-form-item label="UDI码" prop="udiNo" label-width="100px">
-                <el-input v-model="form.udiNo" placeholder="请输入UDI码" />
+                <el-input v-model="form.udiNo" placeholder="UDI码" />
               </el-form-item>
             </el-col>
 
             <el-col :span="6">
               <el-form-item label="许可证编号" prop="permitNo" label-width="100px">
-                <el-input v-model="form.permitNo" placeholder="请输入许可证编号" />
+                <el-input v-model="form.permitNo" placeholder="许可证编号" />
               </el-form-item>
             </el-col>
 
             <el-col :span="6">
               <el-form-item label="国家编码" prop="countryNo" label-width="100px">
-                <el-input v-model="form.countryNo" placeholder="请输入国家编码" />
+                <el-input v-model="form.countryNo" placeholder="国家编码" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -442,12 +426,12 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="国家医保名称" prop="countryName" label-width="100px">
-                <el-input v-model="form.countryName" placeholder="请输入国家医保名称" />
+                <el-input v-model="form.countryName" placeholder="国家医保名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
               <el-form-item label="商品说明" prop="description" label-width="100px">
-                <el-input v-model="form.description" placeholder="请输入商品说明" />
+                <el-input v-model="form.description" placeholder="商品说明" />
               </el-form-item>
             </el-col>
 

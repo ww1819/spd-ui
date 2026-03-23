@@ -8,9 +8,9 @@
         <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
       </div>
       <div class="modal-body">
-        <!-- 查询条件容器框（与添加科室申领弹窗一致） -->
-        <div ref="formFieldsContainer" class="form-fields-container inventory-query-fields">
-          <el-form :model="queryParams" ref="queryForm" :inline="true" size="small" v-show="showSearch" label-width="68px">
+        <!-- 查询条件容器框 -->
+        <div ref="formFieldsContainer" class="form-fields-container" style="background: #fff !important; padding: 16px 20px !important; border-radius: 8px !important; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05) !important; margin-bottom: 16px !important; border: 1px solid #EBEEF5 !important; width: 100% !important; box-sizing: border-box !important; display: block !important;">
+          <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
             <el-row :gutter="20">
 
               <el-col :span="6">
@@ -29,7 +29,7 @@
                 <el-form-item label="入库批次号" prop="batchNo" label-width="100px">
                   <el-input
                     v-model="queryParams.batchNo"
-                    placeholder="请输入入库批次号"
+                    placeholder="入库批次号"
                     clearable
                     @keyup.enter.native="handleQuery"
                   />

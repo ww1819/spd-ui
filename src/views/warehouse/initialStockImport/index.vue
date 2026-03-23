@@ -1,8 +1,8 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
       <el-form-item label="期初单号" prop="billNo">
-        <el-input v-model="queryParams.billNo" placeholder="请输入期初单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
+        <el-input v-model="queryParams.billNo" placeholder="期初单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item label="仓库" prop="warehouseId">
         <SelectWarehouse v-model="queryParams.warehouseId" />
@@ -39,7 +39,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="dataList" :row-class-name="tableRowIndex" height="54vh" border>
+    <el-table v-loading="loading" :data="dataList" :row-class-name="tableRowIndex" height="54vh" border stripe>
       <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip />
       <el-table-column label="期初单号" align="center" prop="billNo" min-width="160" show-overflow-tooltip>
         <template slot-scope="scope">

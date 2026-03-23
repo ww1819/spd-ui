@@ -23,13 +23,13 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="18">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="100px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row :gutter="20">
             <el-col :span="10">
-              <el-form-item label="标准分类代码" prop="category68Code">
+              <el-form-item prop="category68Code">
                 <el-input
                   v-model="queryParams.category68Code"
-                  placeholder="请输入标准分类代码"
+                  placeholder="标准分类代码"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 100%"
@@ -37,10 +37,10 @@
               </el-form-item>
             </el-col>
             <el-col :span="10">
-              <el-form-item label="分类名称" prop="category68Name">
+              <el-form-item prop="category68Name">
                 <el-input
                   v-model="queryParams.category68Name"
-                  placeholder="请输入分类名称"
+                  placeholder="分类名称"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 100%"
@@ -53,20 +53,14 @@
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <el-button
-              type="primary"
-              plain
-              icon="el-icon-plus"
-              size="small"
+              type="primary" size="small"
               @click="handleAdd"
               v-hasPermi="['foundation:category68:add']"
             >新增</el-button>
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="success"
-              plain
-              icon="el-icon-edit"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:category68:edit']"
@@ -74,10 +68,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="danger"
-              plain
-              icon="el-icon-delete"
-              size="small"
+              type="primary" size="small"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:category68:remove']"
@@ -85,24 +76,21 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="warning"
-              plain
-              icon="el-icon-download"
-              size="small"
+              type="primary" size="small"
               @click="handleExport"
               v-hasPermi="['foundation:category68:export']"
             >导出</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+            <el-button size="small" @click="resetQuery">重置</el-button>
           </el-col>
           <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
-        <el-table v-loading="loading" :data="category68List" :row-class-name="category68Index" @selection-change="handleSelectionChange" height="calc(100vh - 330px)">
+        <el-table v-loading="loading" :data="category68List" :row-class-name="category68Index" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="60" min-width="60"/>
           <el-table-column label="标准分类代码" align="center" prop="category68Code" width="140" min-width="140" show-overflow-tooltip/>
@@ -132,14 +120,12 @@
               <el-button
                 size="small"
                 type="text"
-                icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
                 v-hasPermi="['foundation:category68:edit']"
               >修改</el-button>
               <el-button
                 size="small"
                 type="text"
-                icon="el-icon-delete"
                 @click="handleDelete(scope.row)"
                 v-hasPermi="['foundation:category68:remove']"
               >删除</el-button>
@@ -165,19 +151,19 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="标准分类代码" prop="category68Code">
-                <el-input v-model="form.category68Code" :disabled="isDisabled" placeholder="请输入标准分类代码" style="width: 100%" />
+                <el-input v-model="form.category68Code" :disabled="isDisabled" placeholder="标准分类代码" style="width: 100%" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="分类名称" prop="category68Name">
-                <el-input v-model="form.category68Name" placeholder="请输入分类名称" style="width: 100%" />
+                <el-input v-model="form.category68Name" placeholder="分类名称" style="width: 100%" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="选择上级分类" prop="parentId">
-                <el-select v-model="form.parentId" placeholder="请选择上级分类" clearable style="width: 100%">
+                <el-select v-model="form.parentId" placeholder="上级分类" clearable style="width: 100%">
                   <el-option
                     v-for="item in parentOptions"
                     :key="item.category68Id"

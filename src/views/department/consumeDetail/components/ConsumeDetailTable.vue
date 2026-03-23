@@ -1,29 +1,29 @@
 <template>
   <div class="app-container">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="出库单号" prop="billNo" class="query-item-inline">
+            <el-form-item prop="billNo" class="query-item-inline">
               <el-input
                 v-model="queryParams.billNo"
-                placeholder="请输入出库单号"
+                placeholder="出库单号"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item label="耗材" prop="materialName" class="query-item-inline">
+            <el-form-item prop="materialName" class="query-item-inline">
               <div class="query-select-wrapper">
                 <MaterialAutocomplete v-model="queryParams.materialName"/>
               </div>
             </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+            <el-form-item prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']" clearable/>
               </div>
             </el-form-item>
-            <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+            <el-form-item prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" clearable/>
               </div>
@@ -33,7 +33,7 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24">
-            <el-form-item label="业务日期" style="display: flex; align-items: center;">
+            <el-form-item style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -52,10 +52,10 @@
                 style="width: 180px; margin-left: 8px;"
               />
             </el-form-item>
-            <el-form-item label="批号" prop="batchNo" class="query-item-inline">
+            <el-form-item prop="batchNo" class="query-item-inline">
               <el-input
                 v-model="queryParams.batchNo"
-                placeholder="请输入批号"
+                placeholder="批号"
                 clearable
                 style="width: 180px"
                 @keyup.enter.native="handleQuery"
@@ -69,8 +69,7 @@
     <el-row :gutter="10" class="mb8" style="padding-top: 2px; margin-top: -8px">
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
         >导出</el-button>
@@ -78,14 +77,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -98,7 +96,7 @@
               :row-class-name="consumeDetailListIndex"
               show-summary :summary-method="getTotalSummaries"
               height="55vh"
-              border>
+              border stripe>
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}

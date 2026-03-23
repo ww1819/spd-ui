@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-table 
     class="detail-table"
     :data="tableData" 
@@ -27,7 +27,7 @@
           v-if="editable"
           clearable 
           v-model="scope.row.qty" 
-          placeholder="请输入数量"
+          placeholder="数量"
           @input="qtyChange(scope.row)"
         />
         <span v-else>{{ scope.row.qty || '--' }}</span>
@@ -53,7 +53,7 @@
         <el-input 
           v-if="editable"
           v-model="scope.row.remark" 
-          placeholder="请输入备注" 
+          placeholder="备注" 
         />
         <span v-else>{{ scope.row.remark || '--' }}</span>
       </template>

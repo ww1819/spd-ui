@@ -35,28 +35,28 @@
       </el-col>
       <!--用户数据-->
       <el-col :span="19" :xs="24">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form-card">
+        <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
           <el-row>
             <el-col :span="24">
-              <el-form-item label="用户账户" prop="userName" class="query-item-inline">
+              <el-form-item prop="userName" class="query-item-inline">
                 <el-input
                   v-model="queryParams.userName"
-                  placeholder="请输入用户账户"
+                  placeholder="用户账户"
                   clearable
                   style="width: 180px"
                   @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
-              <el-form-item label="手机号码" prop="phonenumber" class="query-item-inline">
+              <el-form-item prop="phonenumber" class="query-item-inline">
                 <el-input
                   v-model="queryParams.phonenumber"
-                  placeholder="请输入手机号码"
+                  placeholder="手机号码"
                   clearable
                   style="width: 180px"
                   @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
-              <el-form-item label="状态" prop="status" class="query-item-inline">
+              <el-form-item prop="status" class="query-item-inline">
                 <el-select
                   v-model="queryParams.status"
                   placeholder="用户状态"
@@ -71,7 +71,7 @@
                   />
                 </el-select>
               </el-form-item>
-              <el-form-item label="创建时间" class="query-item-inline">
+              <el-form-item class="query-item-inline">
                 <el-date-picker
                   v-model="dateRange"
                   style="width: 240px"
@@ -103,7 +103,7 @@
         </el-form>
 
         <div class="table-wrapper">
-          <el-table v-loading="loading" :data="userList" @selection-change="handleSelectionChange" height="24vh" border>
+          <el-table v-loading="loading" :data="userList" stripe @selection-change="handleSelectionChange" height="24vh" border>
           <el-table-column type="selection" width="50" align="center" />
           <el-table-column type="index" label="序号" align="center" width="80" v-if="columns[0].visible" :index="indexMethod" />
           <el-table-column label="用户账户" align="center" key="userName" prop="userName" v-if="columns[1].visible" :show-overflow-tooltip="true" />
@@ -153,7 +153,6 @@
                 <el-button
                   size="small"
                   type="text"
-                  icon="el-icon-s-check"
                   @click="handleAuth(scope.row)"
                   v-hasPermi="['system:user:edit']"
                 >授权</el-button>
@@ -226,7 +225,7 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="用户账户" prop="userName">
-                    <el-input v-model="form.userName" placeholder="请输入用户账户" maxlength="30" :disabled="form.userId != undefined" />
+                    <el-input v-model="form.userName" placeholder="用户账户" maxlength="30" :disabled="form.userId != undefined" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -246,26 +245,26 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="用户密码" prop="password" v-if="form.userId == undefined">
-                    <el-input v-model="form.password" placeholder="请输入用户密码" type="password" maxlength="20" show-password/>
+                    <el-input v-model="form.password" placeholder="用户密码" type="password" maxlength="20" show-password/>
                   </el-form-item>
                 </el-col>
               </el-row>
               <el-row>
                 <el-col :span="4">
                   <el-form-item label="邮箱" prop="email">
-                    <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
+                    <el-input v-model="form.email" placeholder="邮箱" maxlength="50" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="用户姓名" prop="nickName">
-                    <el-input v-model="form.nickName" placeholder="请输入用户姓名" maxlength="30" />
+                    <el-input v-model="form.nickName" placeholder="用户姓名" maxlength="30" />
                   </el-form-item>
                 </el-col>
               </el-row>
               <el-row>
                 <el-col :span="4">
                   <el-form-item label="手机号码" prop="phonenumber">
-                    <el-input v-model="form.phonenumber" placeholder="请输入手机号码" maxlength="11" />
+                    <el-input v-model="form.phonenumber" placeholder="手机号码" maxlength="11" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
@@ -283,7 +282,7 @@
               <el-row>
                 <el-col :span="12">
                   <el-form-item label="备注" prop="remark">
-                    <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
+                    <el-input v-model="form.remark" type="textarea" placeholder="内容" />
                   </el-form-item>
                 </el-col>
               </el-row>

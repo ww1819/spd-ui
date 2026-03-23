@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="print-setting-form">
     <!-- 顶部操作按钮行：在左右两个框外面，单独一行 -->
     <div class="form-toolbar">
@@ -215,7 +215,7 @@
             <el-input v-model="orgName" disabled />
           </el-form-item>
           <el-form-item label="模板名称" prop="templateName">
-            <el-input v-model="form.templateName" placeholder="请输入模板名称" />
+            <el-input v-model="form.templateName" placeholder="模板名称" />
           </el-form-item>
           <el-form-item label="适用租户ID" prop="tenantId">
             <el-input v-model="form.tenantId" clearable placeholder="留空：全库默认；耗材端留空则默认当前登录客户" />
@@ -735,7 +735,7 @@
           </div>
 
       <el-form-item label="备注" prop="remark">
-        <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" />
+        <el-input v-model="form.remark" type="textarea" placeholder="备注" />
       </el-form-item>
         </el-form>
       </div>

@@ -7,28 +7,28 @@
 
     <div class="query-container">
       <div class="form-fields-container">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+              <el-form-item prop="materialId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectMaterial v-model="queryParams.materialId" />
                 </div>
               </el-form-item>
-              <el-form-item label="科室" prop="departmentId" class="query-item-inline">
+              <el-form-item prop="departmentId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectDepartment v-model="queryParams.departmentId" />
                 </div>
               </el-form-item>
-              <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+              <el-form-item prop="supplierId" class="query-item-inline">
                 <div class="query-select-wrapper">
                   <SelectSupplier v-model="queryParams.supplierId" />
                 </div>
               </el-form-item>
-              <el-form-item label="批次号" prop="batchNo" class="query-item-inline">
+              <el-form-item prop="batchNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.batchNo"
-                  placeholder="请输入批次号"
+                  placeholder="批次号"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 180px"
@@ -55,33 +55,33 @@
               <el-form-item label="批号" prop="materialNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.materialNo"
-                  placeholder="请输入批号"
+                  placeholder="批号"
                   clearable
                   @keyup.enter.native="handleQuery"
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="生产日期" prop="materialDate" class="query-item-inline">
+              <el-form-item prop="materialDate" class="query-item-inline">
                 <el-date-picker
                   v-model="queryParams.materialDate"
                   type="date"
                   value-format="yyyy-MM-dd"
-                  placeholder="请选择生产日期"
+                  placeholder="生产日期"
                   clearable
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="入库日期" prop="warehouseDate" class="query-item-inline">
+              <el-form-item prop="warehouseDate" class="query-item-inline">
                 <el-date-picker
                   v-model="queryParams.warehouseDate"
                   type="date"
                   value-format="yyyy-MM-dd"
-                  placeholder="请选择入库日期"
+                  placeholder="入库日期"
                   clearable
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="零库存显示" class="query-item-inline">
+              <el-form-item class="query-item-inline">
                 <el-switch
                   v-model="queryParams.showZeroStock"
                   active-text="显示"
@@ -99,20 +99,18 @@
     <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <el-button
-          type="warning"
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['gzDepartment:gzDepInventory:export']"
         >导出</el-button>
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>

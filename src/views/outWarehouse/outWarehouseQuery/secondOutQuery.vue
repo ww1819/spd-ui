@@ -1,11 +1,11 @@
 <template>
   <div class="app-container first-inventory-page">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
+            <el-form-item prop="materialId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectMaterial v-model="queryParams.materialId" />
               </div>
@@ -29,7 +29,7 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24">
-            <el-form-item label="业务日期" style="display: flex; align-items: center;">
+            <el-form-item style="display: flex; align-items: center;">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -53,7 +53,7 @@
 
         <el-row :gutter="16" class="query-row-third">
           <el-col :span="24">
-            <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
+            <el-form-item prop="supplerId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectSupplier v-model="queryParams.supplerId" />
               </div>
@@ -67,8 +67,7 @@
     <el-row :gutter="10" class="mb8 button-row-inventory">
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
         >导出</el-button>
@@ -76,14 +75,13 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          icon="el-icon-refresh"
+          type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
@@ -93,7 +91,7 @@
 
     <div class="table-container">
     <el-table v-loading="loading" :data="warehouseList"
-              @selection-change="handleSelectionChange" height="57vh" border>
+              @selection-change="handleSelectionChange" height="57vh" border stripe>
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}

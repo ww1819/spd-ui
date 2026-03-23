@@ -6,6 +6,7 @@
     @selection-change="handleSelectionChange" 
     height="54vh" 
     border
+    stripe
   >
     <el-table-column type="selection" width="55" align="center" fixed="left" />
     <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
@@ -48,7 +49,6 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-view"
             @click="handleView(scope.row)"
             v-if="scope.row.consumeBillStatus == 2"
             style="padding: 0 5px; margin: 0;"
@@ -56,7 +56,6 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['department:batchConsume:edit']"
             v-if="scope.row.consumeBillStatus != 2"
@@ -65,7 +64,6 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['department:batchConsume:remove']"
             v-if="scope.row.consumeBillStatus != 2"

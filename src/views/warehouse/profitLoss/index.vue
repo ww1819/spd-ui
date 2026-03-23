@@ -1,14 +1,14 @@
 <template>
   <div class="app-container profit-loss-page">
     <div class="form-fields-container" style="margin-top: 10px;">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
         <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item label="盈亏单号" prop="billNo" class="query-item-inline">
-              <el-input v-model="queryParams.billNo" placeholder="请输入盈亏单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
+              <el-input v-model="queryParams.billNo" placeholder="盈亏单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
             </el-form-item>
             <el-form-item label="盘点单号" prop="stocktakingNo" class="query-item-inline">
-              <el-input v-model="queryParams.stocktakingNo" placeholder="请输入盘点单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
+              <el-input v-model="queryParams.stocktakingNo" placeholder="盘点单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
             </el-form-item>
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
@@ -63,7 +63,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="dataList" :row-class-name="tableRowIndex" height="54vh" border>
+    <el-table v-loading="loading" :data="dataList" :row-class-name="tableRowIndex" height="54vh" border stripe>
       <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip />
       <el-table-column label="盈亏单号" align="center" prop="billNo" min-width="160" show-overflow-tooltip>
         <template slot-scope="scope">

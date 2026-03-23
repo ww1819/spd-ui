@@ -1,22 +1,22 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
       <el-row class="query-row-left">
         <el-col :span="24">
-          <el-form-item label="计划单号" prop="planNo" class="query-item-inline">
+          <el-form-item prop="planNo" class="query-item-inline">
             <el-input v-model="queryParams.planNo"
-                      placeholder="请输入计划单号"
+                      placeholder="计划单号"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+          <el-form-item prop="supplierId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectSupplier v-model="queryParams.supplierId"/>
             </div>
           </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+          <el-form-item prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="设备,高值"/>
             </div>
@@ -25,7 +25,7 @@
       </el-row>
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item label="制单时间" style="display: flex; align-items: center;">
+          <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
@@ -46,8 +46,8 @@
           </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="planStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.planStatus" placeholder="全部"
+          <el-form-item prop="planStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.planStatus" placeholder="单据状态"
                        clearable style="width: 150px">
               <el-option v-for="dict in dict.type.plan_status"
                          :key="dict.value"
@@ -56,16 +56,16 @@
               />
             </el-select>
           </el-form-item>
-          <el-form-item label="金额" prop="totalAmount" class="query-item-inline">
+          <el-form-item prop="totalAmount" class="query-item-inline">
             <el-input v-model="queryParams.totalAmount"
-                      placeholder="请输入金额"
+                      placeholder="金额"
                       clearable
                       style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item label="计划来源" prop="planSource" class="query-item-inline">
-            <el-select v-model="queryParams.planSource" placeholder="全部"
+          <el-form-item prop="planSource" class="query-item-inline">
+            <el-select v-model="queryParams.planSource" placeholder="计划来源"
                        clearable style="width: 150px">
               <el-option label="手工制单" value="手工制单" />
               <el-option label="引用申购单" value="引用申购单" />
@@ -79,8 +79,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="medium"
           @click="handleAdd"
           v-hasPermi="['inWarehouse:apply:add']"
@@ -88,9 +86,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="medium"
           @click="handleExport"
           v-hasPermi="['inWarehouse:apply:export']"
@@ -98,9 +94,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-check"
+          type="primary"
           size="medium"
           :disabled="multiple"
           @click="handleBatchSubmit"
@@ -108,10 +102,10 @@
         >提交</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-search" size="medium" @click="handleQuery">搜索</el-button>
+        <el-button type="primary" size="medium" @click="handleQuery">搜索</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button icon="el-icon-refresh" size="medium" @click="resetQuery">重置</el-button>
+        <el-button type="primary" size="medium" @click="resetQuery">重置</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
@@ -119,7 +113,7 @@
     <el-table v-loading="loading" :data="warehouseList"
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="58vh" border>
+              @selection-change="handleSelectionChange" height="58vh" stripe border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="计划单号" align="center" prop="planNo" width="180" show-overflow-tooltip resizable>
@@ -193,7 +187,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['inWarehouse:apply:edit']"
               v-if="scope.row.planStatus != 2"
@@ -201,7 +194,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['inWarehouse:apply:remove']"
               v-if="scope.row.planStatus != 2"
@@ -209,7 +201,6 @@
             <el-button
               size="small"
               type="text"
-              icon="el-icon-s-operation"
               @click="handleProgress(scope.row)"
             >进度</el-button>
           </div>
@@ -264,7 +255,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="联系电话" prop="telephone">
-                      <el-input v-model="form.telephone" placeholder="请输入联系电话" />
+                      <el-input v-model="form.telephone" placeholder="联系电话" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -278,7 +269,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="总金额" prop="totalAmount">
-                      <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
+                      <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -438,9 +429,15 @@
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
               <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <template slot-scope="scope">
+              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" align="center" width="120" fixed="right">
+            <template slot-scope="scope">
+              <el-button v-if="scope.row.id" type="text" size="small" @click="handleViewApplyDetails(scope.row)">查看申购明细</el-button>
+              <span v-else>--</span>
             </template>
           </el-table-column>
           <el-table-column label="操作" align="center" width="120" fixed="right">
@@ -489,7 +486,7 @@
                     </el-col>
                     <el-col :span="4">
                       <el-form-item label="单号">
-                        <el-input v-model="purchaseQueryParams.purchaseBillNo" placeholder="请输入申购单号" clearable style="width: 100%;" />
+                        <el-input v-model="purchaseQueryParams.purchaseBillNo" placeholder="申购单号" clearable style="width: 100%;" />
                       </el-form-item>
                     </el-col>
                   </el-row>
@@ -711,7 +708,7 @@
             v-model="rejectForm.rejectReason"
             type="textarea"
             :rows="4"
-            placeholder="请输入驳回原因"
+            placeholder="驳回原因"
             maxlength="500"
             show-word-limit
           />

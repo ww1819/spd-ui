@@ -1,12 +1,12 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-form-item label="订单单号" prop="orderNo" label-width="100px">
+          <el-form-item prop="orderNo">
             <el-input v-model="queryParams.orderNo"
-                      placeholder="请输入订单单号"
+                      placeholder="订单单号"
                       clearable
                       @keyup.enter.native="handleQuery"
             />
@@ -14,20 +14,20 @@
         </el-col>
 
         <el-col :span="6">
-          <el-form-item label="供应商" prop="supplierId" label-width="100px">
+          <el-form-item prop="supplierId">
             <SelectSupplier v-model="queryParams.supplierId"/>
           </el-form-item>
         </el-col>
 
         <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId" label-width="100px">
+          <el-form-item prop="warehouseId">
             <SelectWarehouse v-model="queryParams.warehouseId"/>
           </el-form-item>
         </el-col>
 
         <el-col :span="6">
-          <el-form-item label="单据状态" prop="orderStatus" label-width="100px">
-            <el-select v-model="queryParams.orderStatus" placeholder="请选择单据状态" clearable style="width: 150px">
+          <el-form-item prop="orderStatus">
+            <el-select v-model="queryParams.orderStatus" placeholder="单据状态" clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
                          :label="dict.label"
@@ -37,10 +37,10 @@
           </el-form-item>
         </el-col>
 
-        <el-col :span="6" label-width="100px">
+        <el-col :span="6">
           <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+            <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
           </el-form-item>
         </el-col>
 
@@ -54,7 +54,7 @@
                             v-model="queryParams.beginDate"
                             type="date"
                             value-format="yyyy-MM-dd"
-                            placeholder="请选择起始日期"
+                            placeholder="起始日期"
                             style="width: 150px"
             >
             </el-date-picker>
@@ -63,7 +63,7 @@
                             v-model="queryParams.endDate"
                             type="date"
                             value-format="yyyy-MM-dd"
-                            placeholder="请选择截止日期"
+                            placeholder="截止日期"
                             style="width: 150px"
             >
             </el-date-picker>
@@ -77,8 +77,6 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="small"
           @click="handleAdd"
           v-hasPermi="['caigou:dingdan:add']"
@@ -86,9 +84,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
+          type="primary"
           size="small"
           @click="handleExport"
           v-hasPermi="['caigou:dingdan:export']"
@@ -101,7 +97,7 @@
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
               height="54vh"
-              border>
+              stripe border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
       <el-table-column label="订单单号" align="center" prop="orderNo" width="180">
         <template slot-scope="scope">
@@ -163,20 +159,17 @@
           <el-button
             size="small"
             type="text"
-            icon="el-icon-view"
             @click="handleView(scope.row)"
           >查看</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['caigou:dingdan:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
-            icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-if="scope.row.orderStatus == '0' || scope.row.orderStatus == 0"
             v-hasPermi="['caigou:dingdan:remove']"
@@ -246,7 +239,7 @@
 
           <el-col :span="4">
             <el-form-item label="联系电话" prop="contactPhone" label-width="100px">
-              <el-input v-model="form.contactPhone" placeholder="请输入联系电话" />
+              <el-input v-model="form.contactPhone" placeholder="联系电话" />
             </el-form-item>
           </el-col>
 
@@ -262,7 +255,7 @@
 
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount" label-width="100px">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="请输入总金额" />
+              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -314,7 +307,7 @@
                 v-model.number="scope.row.orderQty"
                 type="number"
                 :min="1"
-                placeholder="请输入数量"
+                placeholder="数量"
                 @input="qtyChange(scope.row)"
               />
             </template>
@@ -323,17 +316,17 @@
             <template slot-scope="scope">
               <el-input v-model="scope.row.unitPrice" type='number'
                         :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="请输入价格" />
+                        @input="priceChange(scope.row)" placeholder="价格" />
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="totalAmount" width="120">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.totalAmount" :disabled="true" placeholder="请输入金额" />
+              <el-input v-model="scope.row.totalAmount" :disabled="true" placeholder="金额" />
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200">
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
+              <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
           <el-table-column v-if="!action" label="操作" align="center" width="120" fixed="right">
