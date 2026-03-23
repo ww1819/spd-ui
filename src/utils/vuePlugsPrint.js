@@ -5,8 +5,10 @@ const Print = function (dom, options, pageSize) {
   if (!(this instanceof Print)) return new Print(dom, options, pageSize);
 
   this.options = this.extend({
-    'noPrint': '.no-print'
-  }, options, pageSize);
+    'noPrint': '.no-print',
+    /** 为 false 时不注入通用 @page size，便于业务用命名 @page（如三等分横/纵） */
+    'injectPageSize': true
+  }, options);
 
   if ((typeof dom) === "string") {
     this.dom = document.querySelector(dom);
@@ -40,7 +42,7 @@ Print.prototype = {
 
     str = str.replace('size: A5', `size: ${pageSize}`);
     // 自定义纸张（如三等分 210mm×99mm）：注入 @page，避免仅依赖页面内 style 的替换
-    if (pageSize && String(pageSize).indexOf('mm') !== -1) {
+    if (this.options.injectPageSize !== false && pageSize && String(pageSize).indexOf('mm') !== -1) {
       str += "<style>@page { size: " + pageSize + " !important; }</style>";
     }
 

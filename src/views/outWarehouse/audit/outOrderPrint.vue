@@ -2,6 +2,7 @@
   <div
     class="out-order-print receipt-print print-root-offscreen"
     ref="receiptOrderPrintRef"
+    :class="rootOrientationClass"
     :style="printStyle"
   >
     <table class="detail-table" :style="tableStyle">
@@ -59,14 +60,15 @@
           <td>{{ item.batchNumber || '' }}</td>
           <td>{{ formatValidDate(item.endTime || item.periodDate) }}</td>
         </tr>
+        <!-- 合计：与表同列网，采购价左/采购金额右竖线延伸至本行底横线；金额在采购价、采购金额列下方 -->
+        <tr class="print-total-row">
+          <td colspan="4" class="total-label-cell">合计: {{ row.totalAmtConverter || '' }}</td>
+          <td class="total-under-price"></td>
+          <td class="total-under-amt">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</td>
+          <td colspan="3" class="total-tail-cells"></td>
+        </tr>
       </tbody>
     </table>
-
-    <!-- 合计：仅在文档末尾出现一次，无竖向边框 -->
-    <div class="print-total-final">
-      <span class="total-label">合计: {{ row.totalAmtConverter || '' }}</span>
-      <span class="total-num">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</span>
-    </div>
 
     <!-- 签字页脚：三等分纸+Chrome 下 table tfoot 易丢失，改用打印时 position:fixed 每页底部 -->
     <div class="print-sign-footer-fixed">
@@ -85,12 +87,20 @@ import { getDefaultTemplate } from '@/api/system/printSetting'
 
 export default {
   mixins: [hospitalNameMixin],
-  props: ['row', 'billType'],
+  props: {
+    row: Object,
+    billType: [String, Number],
+    /** 预览/打印方向：landscape 横向 | portrait 纵向；空则读打印模板或默认横向 */
+    printOrientation: {
+      type: String,
+      default: ''
+    }
+  },
   data() {
     return {
       /** 与耗材出库默认模板（bill_type=201）一致：正文略小、表体统一字号 */
       printSetting: {
-        orientation: 'portrait',
+        orientation: 'landscape',
         fontSize: 16,
         tableFontSize: 11,
         marginTop: 0,
@@ -101,13 +111,31 @@ export default {
     }
   },
   computed: {
+    /** 最终打印方向：父组件传入 > 后台模板 > 默认横向 */
+    effectiveOrientation() {
+      const p = this.printOrientation
+      if (p === 'landscape' || p === 'portrait') return p
+      const o = this.printSetting && this.printSetting.orientation
+      if (o === 'landscape' || o === 'portrait') return o
+      return 'landscape'
+    },
+    rootOrientationClass() {
+      return this.effectiveOrientation === 'portrait' ? 'page-slip-portrait' : 'page-slip-landscape'
+    },
+    /** 三等分条：纵向 210×99；横向 297×99（A4 横向三等分条带） */
+    pageSizeForPrint() {
+      return this.effectiveOrientation === 'portrait' ? '210mm 99mm' : '297mm 99mm'
+    },
     printStyle() {
       const m = this.printSetting
       const margin = `${m.marginTop || 0}mm ${m.marginRight || 0}mm ${m.marginBottom || 0}mm ${m.marginLeft || 0}mm`
+      const wide = this.effectiveOrientation === 'landscape'
       return {
         padding: margin,
         fontSize: (m.fontSize || 16) + 'px',
-        fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif'
+        fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif',
+        width: wide ? '297mm' : '210mm',
+        maxWidth: wide ? '297mm' : '210mm'
       }
     },
     tableStyle() {
@@ -197,10 +225,10 @@ export default {
               console.warn('[outOrderPrint] 打印节点未就绪')
               return
             }
-            const pageSize = '210mm 99mm'
+            const pageSize = this.pageSizeForPrint
             try {
               if (typeof this.$print === 'function') {
-                this.$print(el, {}, pageSize)
+                this.$print(el, { injectPageSize: false }, pageSize)
               } else {
                 window.print()
               }
@@ -229,6 +257,10 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   z-index -1
   visibility visible
 
+.out-order-print.page-slip-landscape.print-root-offscreen
+  width 297mm
+  max-width 1100px
+
 .receipt-print
   line-height 1.35
   max-width 900px
@@ -244,8 +276,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .header-cell
   padding 4px 2px 6px
-  border 1px solid #000
-  border-bottom none
+  border none
   vertical-align top
 
 .print-doc-header + tr th
@@ -304,7 +335,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   font-size inherit
 
 .detail-table thead tr.print-doc-header td
-  border-bottom none
+  border none
 
 .detail-table thead tr:not(.print-doc-header) th
   border-top 1px solid #000
@@ -338,24 +369,23 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .detail-table tbody td:nth-child(2)
   word-break break-all
 
-.print-total-final
-  display flex
-  justify-content space-between
-  align-items center
-  width 100%
-  box-sizing border-box
-  padding 4px 4px 2px
-  margin-top 0
-  border-top 1px solid #000
-  border-bottom none
-  border-left none
-  border-right none
+/* 合计行：与采购价(第5列)、采购金额(第6列)同列竖线，底边为合计横线 */
+.detail-table tbody tr.print-total-row td
+  border 1px solid #000
+  padding 4px 4px 6px
   font-size 11px
-  font-family $font-song
+  vertical-align middle
 
-.print-total-final .total-num
+.detail-table tbody tr.print-total-row td.total-label-cell
+  text-align left
+  font-weight normal
+
+.detail-table tbody tr.print-total-row td.total-under-price
   text-align right
-  min-width 120px
+
+.detail-table tbody tr.print-total-row td.total-under-amt
+  text-align right
+  font-weight normal
 
 .sign-block
   display flex
@@ -373,13 +403,24 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 </style>
 
 <style lang="stylus" media="print">
-@page
+/* 命名页：与根节点 page-slip-portrait / page-slip-landscape 对应 */
+@page slipPortrait
   size 210mm 99mm
+  margin 4mm 6mm
+
+@page slipLandscape
+  size 297mm 99mm
   margin 4mm 6mm
 
 @media print
   *
     color #000 !important
+
+  .out-order-print.receipt-print.page-slip-portrait
+    page slipPortrait
+
+  .out-order-print.receipt-print.page-slip-landscape
+    page slipLandscape
 
   .print-root-offscreen
     position relative !important
@@ -406,6 +447,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     border 1px solid #000
     overflow hidden
 
+  .detail-table thead tr.print-doc-header td
+    border none !important
+
   .detail-table tbody td:nth-child(7)
     white-space nowrap !important
 
@@ -414,11 +458,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     -webkit-print-color-adjust exact
     print-color-adjust exact
 
-  .print-total-final
-    border-top 1px solid #000 !important
-    border-left none !important
-    border-right none !important
-    border-bottom none !important
+  .detail-table tbody tr.print-total-row td
+    border 1px solid #000 !important
 
   /* 每页底部签字（Chrome/短纸张下 table tfoot 不可靠） */
   .print-sign-footer-fixed
@@ -429,7 +470,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     right 6mm
     box-sizing border-box
     padding 2px 0 0
-    border-top 1px solid #000
+    border-top none
     background #fff
     font-size 11px
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important

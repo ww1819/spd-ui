@@ -376,19 +376,40 @@
       </div>
     </transition>
 
-    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width ">
-      <template v-if=" modalObj.component === 'print-type' ">
-        <el-radio-group v-model=" modalObj.form.value ">
-<!--          <el-radio :label=" 1 ">lodop打印</el-radio>-->
-          <el-radio :label=" 2 ">浏览器打印</el-radio>
+    <el-dialog
+      :visible.sync="modalObj.show"
+      :width="modalObj.width"
+      custom-class="out-warehouse-print-dialog"
+      append-to-body
+    >
+      <template slot="title">
+        <div class="print-dialog-title-row">
+          <span class="print-dialog-title-text">{{ modalObj.title }}</span>
+          <div v-if="showPrintOrientation" class="print-orientation-in-title">
+            <span class="print-orientation-label">打印方向</span>
+            <el-radio-group v-model="modalObj.form.printOrientation" size="small">
+              <el-radio label="landscape">横向</el-radio>
+              <el-radio label="portrait">纵向</el-radio>
+            </el-radio-group>
+          </div>
+        </div>
+      </template>
+      <div v-if="modalObj.component === 'print-type'">
+        <el-radio-group v-model="modalObj.form.value">
+          <!--          <el-radio :label=" 1 ">lodop打印</el-radio>-->
+          <el-radio :label="2">浏览器打印</el-radio>
         </el-radio-group>
-      </template>
-      <template v-if=" modalObj.form.value === 2 || modalObj.component === 'window-print-preview' ">
-        <out-order-print :row=" modalObj.form.row " ref="receiptOrderPrintRef"></out-order-print>
-      </template>
+      </div>
+      <div v-if="showPrintContent">
+        <out-order-print
+          :row="modalObj.form.row"
+          :print-orientation="modalObj.form.printOrientation || 'landscape'"
+          ref="receiptOrderPrintRef"
+        ></out-order-print>
+      </div>
       <template slot="footer" class="dialog-footer">
-        <el-button @click=" modalObj.cancel ">取消</el-button>
-        <el-button @click=" modalObj.ok " type="primary">确认</el-button>
+        <el-button @click="modalObj.cancel">取消</el-button>
+        <el-button @click="modalObj.ok" type="primary">确认</el-button>
       </template>
     </el-dialog>
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
@@ -499,6 +520,20 @@ export default {
         ],
       }
     };
+  },
+  computed: {
+    /** 预览弹窗或已选「浏览器打印」时显示方向 */
+    showPrintOrientation() {
+      const m = this.modalObj
+      if (!m || !m.form) return false
+      return m.component === 'window-print-preview'
+        || (m.component === 'print-type' && Number(m.form.value) === 2)
+    },
+    showPrintContent() {
+      const m = this.modalObj
+      if (!m || !m.form) return false
+      return Number(m.form.value) === 2 || m.component === 'window-print-preview'
+    }
   },
   created() {
     this.getList();
@@ -822,14 +857,16 @@ export default {
         component: 'print-type',
         form: {
           value: 1,
-          row
+          row,
+          printOrientation: 'landscape'
         },
         ok: () => {
+          const orient = (this.modalObj.form && this.modalObj.form.printOrientation) || 'landscape'
           this.modalObj.show = false
           if (this.modalObj.form.value === 1) {
             this.doPrintOut(row, false)
           } else {
-            this.windowPrintOut(row, print)
+            this.windowPrintOut(row, print, orient)
           }
         },
         cancel: () => {
@@ -837,10 +874,13 @@ export default {
         }
       }
     },
-    windowPrintOut(row, print) {
+    windowPrintOut(row, print, printOrientation) {
+      const orient = printOrientation || 'landscape'
       this.getOutWarehouseDetail(row).then(res => {
         if (print) {
+          if (!this.modalObj.form) this.modalObj.form = {}
           this.modalObj.form.row = res
+          this.modalObj.form.printOrientation = orient
           this.$nextTick(() => {
             this.$refs['receiptOrderPrintRef'].start()
           })
@@ -850,12 +890,13 @@ export default {
           this.modalObj = {
             show: true,
             title: '浏览器打印预览',
-            width: '800px',
+            width: '960px',
             component: 'window-print-preview',
             form: {
               value: 1,
-              row,
-              print
+              row: res,
+              print,
+              printOrientation: orient
             },
             ok: () => {
               this.modalObj.show = false
@@ -1468,9 +1509,65 @@ export default {
 ::v-deep .local-modal-content {
   min-height: 95vh !important;
 }
+
+/* 出库打印弹窗：标题栏内「打印方向」 */
+.print-dialog-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding-right: 36px;
+  box-sizing: border-box;
+}
+.print-dialog-title-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.print-orientation-in-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: normal;
+  font-size: 14px;
+}
+.print-orientation-label {
+  color: #606266;
+}
 </style>
 
 <style>
+/* 打印弹窗 append-to-body，标题行样式需非 scoped */
+.out-warehouse-print-dialog .print-dialog-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding-right: 36px;
+  box-sizing: border-box;
+}
+.out-warehouse-print-dialog .print-dialog-title-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.out-warehouse-print-dialog .print-orientation-in-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: normal;
+  font-size: 14px;
+}
+.out-warehouse-print-dialog .print-orientation-label {
+  color: #606266;
+}
+
 /* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
 .app-container.outWarehouse-audit-page {
   padding-left: 8px !important;
