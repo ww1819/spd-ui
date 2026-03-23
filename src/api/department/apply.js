@@ -35,10 +35,11 @@ export function updateApply(data) {
   })
 }
 
-// 删除科室申领
+// 删除科室申领（id 可为单个 id 或逗号分隔的多个 id，如 "1,2,3"）
 export function delApply(id) {
+  const ids = Array.isArray(id) ? id.join(',') : id;
   return request({
-    url: '/department/apply/' + id,
+    url: '/department/apply/' + ids,
     method: 'delete'
   })
 }

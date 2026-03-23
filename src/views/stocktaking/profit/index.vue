@@ -553,7 +553,7 @@ export default {
         obj.profitAmount = 0;
         obj.amt = item.amt;
         obj.batchNo = item.batchNo;
-        obj.batchNumber = item.materialNo;
+        obj.batchNumber = item.batchNumber || item.materialNo || '';
         obj.beginTime = item.beginTime;
         obj.endTime = item.endTime;
         obj.remark = item.remark;
@@ -908,7 +908,7 @@ export default {
             obj.profitAmount = 0;
             obj.amt = parseFloat(item.amt) || (obj.qty * obj.price);
             obj.batchNo = item.batchNo || '';
-            obj.batchNumber = item.materialNo || '';
+            obj.batchNumber = item.batchNumber || item.materialNo || '';
             obj.beginTime = item.beginTime || item.materialDate || '';
             obj.endTime = item.endTime || '';
             obj.remark = item.remark || '';

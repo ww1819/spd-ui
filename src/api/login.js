@@ -1,12 +1,18 @@
 import request from '@/utils/request'
 
-// 登录方法
-export function login(username, password, code, uuid) {
+// 登录方法（耗材前端传 systemType: 'hc'、customerId 时后端校验耗材状态，停用提示「耗材系统已经被停用」）
+export function login(username, password, code, uuid, customerId, systemType) {
   const data = {
     username,
     password,
     code,
     uuid
+  }
+  if (customerId !== undefined && customerId !== null && customerId !== '') {
+    data.customerId = customerId
+  }
+  if (systemType !== undefined && systemType !== null && systemType !== '') {
+    data.systemType = systemType
   }
   return request({
     url: '/login',
@@ -43,6 +49,18 @@ export function logout() {
   return request({
     url: '/logout',
     method: 'post'
+  })
+}
+
+// 登录页租户下拉选项（未登录可访问）。耗材传 systemType=hc 仅返回耗材启用租户
+export function getCustomerOptions(systemType) {
+  return request({
+    url: '/getCustomerOptions',
+    headers: {
+      isToken: false
+    },
+    method: 'get',
+    params: systemType ? { systemType } : {}
   })
 }
 

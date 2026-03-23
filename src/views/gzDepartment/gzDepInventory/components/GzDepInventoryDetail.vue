@@ -56,6 +56,10 @@
       <el-table-column label="批号" align="center" prop="materialNo" width="150" show-overflow-tooltip resizable/>
       <!-- 13. 院内码 -->
       <el-table-column label="院内码" align="center" prop="inHospitalCode" width="180" show-overflow-tooltip resizable/>
+      <!-- 13a. 主条码 -->
+      <el-table-column label="主条码" align="center" prop="masterBarcode" width="180" show-overflow-tooltip resizable/>
+      <!-- 13b. 辅条码 -->
+      <el-table-column label="辅条码" align="center" prop="secondaryBarcode" width="150" show-overflow-tooltip resizable/>
       <!-- 14. 科室 -->
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
       <!-- 15. 仓库 -->

@@ -394,14 +394,14 @@
                       </el-date-picker>
                     </template>
                   </el-table-column>
-                  <el-table-column label="UDI码" align="center" prop="masterBarcode" width="200" show-overflow-tooltip resizable>
+                  <el-table-column label="主条码" align="center" prop="masterBarcode" width="200" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      {{ scope.row.masterBarcode || scope.row.udiNo || '--' }}
+                      <el-input v-model="scope.row.masterBarcode" placeholder="主条码" clearable style="width:100%" />
                     </template>
                   </el-table-column>
                   <el-table-column label="辅条码" align="center" prop="secondaryBarcode" width="150" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      {{ scope.row.secondaryBarcode || '--' }}
+                      <el-input v-model="scope.row.secondaryBarcode" placeholder="辅条码" clearable style="width:100%" />
                     </template>
                   </el-table-column>
                   <el-table-column label="序列号" align="center" prop="serialNo" width="150" show-overflow-tooltip resizable>

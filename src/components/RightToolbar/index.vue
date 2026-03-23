@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="top-right-btn" :style="style">
     <el-row>
       <el-tooltip class="item" effect="dark" :content="showSearch ? '隐藏搜索' : '显示搜索'" placement="top" v-if="search">
@@ -61,9 +61,13 @@ export default {
     }
   },
   created() {
-    // 显隐列初始默认隐藏列
-    for (let item in this.columns) {
-      if (this.columns[item].visible === false) {
+    // 显隐列初始默认隐藏列（未传 columns 时勿遍历，避免报错导致整页空白）
+    const cols = this.columns;
+    if (!cols || !Array.isArray(cols)) {
+      return;
+    }
+    for (let item in cols) {
+      if (cols[item].visible === false) {
         this.value.push(parseInt(item));
       }
     }

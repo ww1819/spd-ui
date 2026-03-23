@@ -47,8 +47,8 @@ module.exports = {
         onError: (err, req, res) => {
           console.error('代理错误:', err.message);
         },
-        // 代理超时设置
-        timeout: 10000
+        // 代理超时（与 axios 默认 10s 一致；大文件导入/校验需与 material.js 中长超时一致，否则先被代理断开）
+        timeout: 300000
       }
     },
     disableHostCheck: true

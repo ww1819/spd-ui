@@ -34,7 +34,25 @@
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item prop="materialNo" class="query-item-inline">
+              <el-form-item label="主条码" prop="masterBarcode" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.masterBarcode"
+                  placeholder="主条码"
+                  clearable
+                  @keyup.enter.native="handleQuery"
+                  style="width: 180px"
+                />
+              </el-form-item>
+              <el-form-item label="辅条码" prop="secondaryBarcode" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.secondaryBarcode"
+                  placeholder="辅条码"
+                  clearable
+                  @keyup.enter.native="handleQuery"
+                  style="width: 180px"
+                />
+              </el-form-item>
+              <el-form-item label="批号" prop="materialNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.materialNo"
                   placeholder="批号"
@@ -149,6 +167,8 @@ export default {
         departmentId: null,
         supplierId: null,
         batchNo: null,
+        masterBarcode: null,
+        secondaryBarcode: null,
         materialNo: null,
         materialDate: null,
         warehouseDate: null,

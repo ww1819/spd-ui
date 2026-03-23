@@ -232,10 +232,17 @@
           ></el-input-number>
         </template>
       </el-table-column>
-      <el-table-column label="有效期提醒" align="center" prop="expiryReminder" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="有效期提醒(天)" align="center" prop="expiryReminder" width="140" resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.expiryReminder">{{ scope.row.expiryReminder }}</span>
-          <span v-else>--</span>
+          <el-input-number
+            v-model="scope.row.expiryReminder"
+            :min="0"
+            :precision="0"
+            size="small"
+            style="width: 100%;"
+            controls-position="right"
+            @change="handleFieldChange(scope.row)"
+          />
         </template>
       </el-table-column>
       <el-table-column label="监测" align="center" prop="monitoring" width="100" show-overflow-tooltip resizable>
@@ -248,10 +255,34 @@
           ></el-switch>
         </template>
       </el-table-column>
-      <el-table-column label="货位" align="center" prop="location" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="货位" align="center" prop="location" width="168" resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.location">{{ scope.row.location }}</span>
-          <span v-else>--</span>
+          <template v-if="queryParams.fixedNumberType === '1' && queryParams.warehouseId">
+            <el-select
+              :value="scope.row.locationId"
+              filterable
+              clearable
+              placeholder="选择货位"
+              size="small"
+              style="width: 100%;"
+              @change="(v) => onFixedNumberLocationChange(scope.row, v)"
+            >
+              <el-option
+                v-for="opt in fixedNumberLocationOptions"
+                :key="opt.locationId"
+                :label="opt.locationName"
+                :value="opt.locationId"
+              />
+            </el-select>
+          </template>
+          <el-input
+            v-else
+            v-model="scope.row.location"
+            size="small"
+            placeholder="货位"
+            clearable
+            @change="handleFieldChange(scope.row)"
+          />
         </template>
       </el-table-column>
       <el-table-column :label="queryParams.fixedNumberType === '2' ? '科室' : '仓库'" align="center" width="150" show-overflow-tooltip resizable>
@@ -283,6 +314,18 @@
         <template slot-scope="scope">
           <span v-if="scope.row.warehouseCategoryName">{{ scope.row.warehouseCategoryName }}</span>
           <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="租户ID" align="center" prop="tenantId" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="备注" align="center" prop="remark" min-width="140" resizable>
+        <template slot-scope="scope">
+          <el-input
+            v-model="scope.row.remark"
+            size="small"
+            placeholder="备注"
+            clearable
+            @change="handleFieldChange(scope.row)"
+          />
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
@@ -471,9 +514,10 @@
 <script>
 import { pinyin } from "pinyin-pro";
 import { listFixedNumber, addFixedNumber, delFixedNumber } from "@/api/monitoring/fixedNumber";
+import { listMaterialPost } from "@/api/foundation/material";
+import { listLocationAll } from "@/api/foundation/location";
 import { listWarehouse } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
-import { listMaterial } from "@/api/foundation/material";
 import { listInventory } from "@/api/warehouse/inventory";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -503,6 +547,8 @@ export default {
       fixedNumberList: [],
       // 全量定数监测数据（本地缓存，用于前端搜索）
       allFixedNumberList: [],
+      // 当前仓库/科室下，后端已存在的产品档案ID列表（用于新增弹窗过滤）
+      existingMaterialIds: [],
       // 仓库列表数据
       warehouseList: [],
       // 科室列表数据
@@ -544,7 +590,9 @@ export default {
       // 表单参数
       form: {},
       // 表单校验
-      rules: {}
+      rules: {},
+      // 当前仓库下的货位下拉（仓库定数维护用）
+      fixedNumberLocationOptions: []
     };
   },
   computed: {
@@ -578,38 +626,33 @@ export default {
   },
   watch: {
     'queryParams.fixedNumberType'(newVal, oldVal) {
-      // 当定数类型改变时，清空选择并清空明细列表
       this.queryParams.warehouseId = null;
       this.queryParams.departmentId = null;
       this.queryParams.pageNum = 1;
       this.fixedNumberList = [];
       this.allFixedNumberList = [];
       this.total = 0;
+      this.fixedNumberLocationOptions = [];
 
       if (newVal === '1' || !newVal) {
-        // 仓库定数监测，加载仓库列表
         this.getWarehouseList();
       } else if (newVal === '2') {
-        // 科室定数监测，加载科室列表
         this.getDepartmentList();
       }
-      // 不立即查询，等待用户选择具体仓库/科室后再查询，避免无谓请求
     },
     'queryParams.warehouseId'(newVal) {
-      // 仓库改变时，重新加载数据（仓库定数）
       if (this.queryParams.fixedNumberType === '1') {
+        this.loadFixedNumberLocations();
         this.getList();
+        this.loadExistingMaterialIds();
       }
     },
     'queryParams.departmentId'(newVal) {
-      // 科室改变时，重新加载数据（科室定数）
       if (this.queryParams.fixedNumberType === '2') {
         this.getList();
+        this.loadExistingMaterialIds();
       }
-    }
-  },
-  watch: {
-    // 监听数据变化，重新设置表格高度
+    },
     fixedNumberList: {
       handler() {
         this.$nextTick(() => {
@@ -620,10 +663,8 @@ export default {
       },
       deep: true
     },
-    // 监听loading变化
     loading(newVal) {
       if (!newVal) {
-        // 数据加载完成后设置表格高度
         this.$nextTick(() => {
           setTimeout(() => {
             this.setTableHeight();
@@ -656,6 +697,40 @@ export default {
     window.removeEventListener('resize', this.setTableHeight);
   },
   methods: {
+    /** 加载当前仓库/科室下已存在的定数产品ID，用于新增时过滤。返回 Promise 便于打开新增弹窗时等待后再查询可选耗材 */
+    loadExistingMaterialIds() {
+      if (!this.queryParams.fixedNumberType) {
+        this.existingMaterialIds = [];
+        return Promise.resolve();
+      }
+      const query = {
+        fixedNumberType: this.queryParams.fixedNumberType,
+        warehouseId: this.queryParams.fixedNumberType === '1' ? this.queryParams.warehouseId : null,
+        departmentId: this.queryParams.fixedNumberType === '2' ? this.queryParams.departmentId : null,
+        pageNum: 1,
+        pageSize: 10000, // 按仓库/科室定数记录通常数量有限，一次取完用于过滤
+      };
+      if (query.fixedNumberType === '1' && !query.warehouseId) {
+        this.existingMaterialIds = [];
+        return Promise.resolve();
+      }
+      if (query.fixedNumberType === '2' && !query.departmentId) {
+        this.existingMaterialIds = [];
+        return Promise.resolve();
+      }
+      return listFixedNumber(query).then(response => {
+        const rows = (response && response.rows) || [];
+        this.existingMaterialIds = rows
+          .map(item => {
+            if (item.material && item.material.id) return item.material.id;
+            if (item.materialId) return item.materialId;
+            return null;
+          })
+          .filter(id => id);
+      }).catch(() => {
+        this.existingMaterialIds = [];
+      });
+    },
     /** 设置表格高度 */
     setTableHeight() {
       setTimeout(() => {
@@ -711,6 +786,18 @@ export default {
       const type = this.queryParams.fixedNumberType || '1';
       const id = type === '1' ? this.queryParams.warehouseId : this.queryParams.departmentId;
       return `fixedNumber_${type}_${id || 'default'}`;
+    },
+    /** 解析 axios / 业务码错误，便于弹窗展示（避免只显示字符串 error） */
+    formatRequestError(err) {
+      if (err == null) return '';
+      if (typeof err === 'string') return err;
+      if (err.response && err.response.data) {
+        const d = err.response.data;
+        if (typeof d === 'string') return d;
+        if (d.msg) return d.msg;
+      }
+      if (err.message) return err.message;
+      return '';
     },
     /** 保存到 localStorage */
     saveToLocalStorage() {
@@ -1022,7 +1109,8 @@ export default {
             expiryReminder: item.expiryReminder,
             monitoring: item.monitoring,
             location: item.location,
-            locationId: item.locationId || null
+            locationId: item.locationId || null,
+            remark: item.remark
           };
         })
       };
@@ -1032,26 +1120,26 @@ export default {
         this.$modal.msgSuccess("保存成功");
         // 保存成功后，保存到 localStorage
         this.saveToLocalStorage();
-        // 保持列表显示，不清空
-        // 暂时禁用自动检查入库记录，避免频繁调用导致异常
-        // 入库记录检查将在删除时进行
+        // 刷新列表和汇总数
+        this.getList();
+        this.loadExistingMaterialIds();
       }).catch(error => {
         console.error('保存定数监测失败:', error);
-        this.$modal.msgError("保存失败");
+        this.$modal.msgError(this.formatRequestError(error) || '保存失败');
       });
     },
-    /** 新增按钮操作 */
+    /** 新增按钮操作：打开弹窗时先刷新“当前仓库/科室已有”的物料ID，再查询可选耗材（过滤掉已有 + 前端已添加未保存的） */
     handleAdd() {
       this.addDialogVisible = true;
       this.resetAddQuery();
-      this.handleAddQuery();
+      this.loadExistingMaterialIds().then(() => {
+        this.handleAddQuery();
+      });
     },
-    /** 新增弹窗搜索（使用分页接口，避免一次加载所有产品档案导致卡顿） */
+    /** 新增弹窗搜索：POST 请求体传参，排除“后端已有 + 前端未保存”的物料ID后分页，避免 400/414 */
     handleAddQuery() {
       this.addTableLoading = true;
       const query = {
-        pageNum: this.addQueryParams.pageNum,
-        pageSize: this.addQueryParams.pageSize,
         materialName: this.addQueryParams.materialName,
         speci: this.addQueryParams.speci,
         supplierId: this.addQueryParams.supplierId
@@ -1066,12 +1154,25 @@ export default {
       if (this.queryParams.fixedNumberType === '1' && this.queryParams.warehouseId) {
         query.warehouseId = this.queryParams.warehouseId;
       }
-      // 统一使用 listMaterial 分页接口，不再使用 listMaterialAll（listAll 会拉全量数据导致卡顿）
-      listMaterial(query).then(response => {
-        const rows = (response && response.rows) || [];
-        const addedCodes = this.fixedNumberList.map(item => item.code).filter(code => code);
-        this.addMaterialList = rows.filter(material => !addedCodes.includes(material.code));
-        // 分页总数以后端返回的 total 为准，保证分页组件正确
+      const currentIds = (this.fixedNumberList || [])
+        .map(item => {
+          if (item.material && item.material.id) return item.material.id;
+          if (item.materialId) return item.materialId;
+          return null;
+        })
+        .filter(id => id);
+      const existingIds = this.existingMaterialIds || [];
+      const excludeIds = [...new Set([...existingIds, ...currentIds])].filter(Boolean);
+      if (excludeIds.length > 0) {
+        query.excludeMaterialIds = excludeIds.join(',');
+      }
+      const postData = {
+        pageNum: this.addQueryParams.pageNum,
+        pageSize: this.addQueryParams.pageSize,
+        query: query
+      };
+      listMaterialPost(postData).then(response => {
+        this.addMaterialList = (response && response.rows) || [];
         this.addTotal = (response && response.total !== undefined) ? response.total : 0;
         this.addTableLoading = false;
       }).catch(() => {
@@ -1094,57 +1195,77 @@ export default {
     handleAddSelectionChange(selection) {
       this.addSelectedMaterials = selection;
     },
-    /** 新增弹窗确定：仅更新前端列表，不立即刷新后端 */
+    /** 新增弹窗确定：将勾选的产品档案直接入库/科，调用后端 INSERT，避免前端状态导致数据丢失 */
     handleAddConfirm() {
       if (this.addSelectedMaterials.length === 0) {
         this.$modal.msgWarning("请至少选择一条数据");
         return;
       }
-      
-      // 将选中的耗材添加到明细表中
-      this.addSelectedMaterials.forEach(material => {
-        // 检查是否已存在（根据编码判断）
-        const exists = this.fixedNumberList.some(item => item.code === material.code);
-        if (!exists) {
-          // 转换为明细表数据格式
-          const newItem = {
-            id: null, // 新增数据，ID为空
-            code: material.code,
-            name: material.name,
-            specification: material.speci || '--',
-            model: material.model || '--', // 型号
-            supplierName: (material.supplier && material.supplier.name) || '--',
-            warehouseName: this.queryParams.fixedNumberType === '1' && this.queryParams.warehouseId ? this.getWarehouseNameById(this.queryParams.warehouseId) : null, // 仓库名称
-            departmentName: this.queryParams.fixedNumberType === '2' && this.queryParams.departmentId ? this.getDepartmentNameById(this.queryParams.departmentId) : null, // 科室名称
-            unitName: (material.fdUnit && material.fdUnit.unitName) || '--', // 单位
-            price: material.price || '--', // 单价
-            upperLimit: null, // 上限
-            lowerLimit: null, // 下限
-            expiryReminder: null, // 有效期提醒
-            monitoring: '2', // 监测，默认为未监控（'2'）
-            location: null, // 货位
-            factoryName: (material.fdFactory && material.fdFactory.factoryName) || null, // 生产厂家
-            registerNo: material.registerNo || null, // 注册证号
-            warehouseCategoryName: (material.fdWarehouseCategory && material.fdWarehouseCategory.warehouseCategoryName) || '--', // 库房分类
-            index: this.fixedNumberList.length + 1, // 序号
-            material: material // 保存完整的耗材对象，以便后续使用
-          };
-          this.fixedNumberList.push(newItem);
-        }
+      if (!this.queryParams.fixedNumberType) {
+        this.$modal.msgWarning("请先选择定数类型");
+        return;
+      }
+      const warehouseId = this.queryParams.fixedNumberType === '1' ? this.queryParams.warehouseId : null;
+      const departmentId = this.queryParams.fixedNumberType === '2' ? this.queryParams.departmentId : null;
+      if (this.queryParams.fixedNumberType === '1' && !warehouseId) {
+        this.$modal.msgWarning("请先选择仓库");
+        return;
+      }
+      if (this.queryParams.fixedNumberType === '2' && !departmentId) {
+        this.$modal.msgWarning("请先选择科室");
+        return;
+      }
+
+      const detailList = this.addSelectedMaterials.map(material => ({
+        materialId: material.materialId != null ? material.materialId : material.id,
+        upperLimit: 0,
+        lowerLimit: 0,
+        expiryReminder: null,
+        monitoring: '2',
+        location: null,
+        locationId: null,
+        remark: null
+      }));
+
+      const saveData = {
+        fixedNumberType: this.queryParams.fixedNumberType,
+        warehouseId,
+        departmentId,
+        detailList
+      };
+
+      addFixedNumber(saveData).then(() => {
+        this.$modal.msgSuccess("已写入当前" + (this.queryParams.fixedNumberType === '2' ? '科室' : '仓库'));
+        this.addDialogVisible = false;
+        this.addSelectedMaterials = [];
+        this.getList();
+        this.loadExistingMaterialIds();
+      }).catch(err => {
+        console.error('定数监测新增保存失败:', err);
+        this.$modal.msgError("保存失败，请重试");
       });
-      
-      // 更新序号
-      this.fixedNumberList.forEach((item, index) => {
-        item.index = index + 1;
+    },
+    /** 按当前选中仓库加载货位（与货位档案一致，支持 warehouseId 过滤） */
+    loadFixedNumberLocations() {
+      this.fixedNumberLocationOptions = [];
+      if (this.queryParams.fixedNumberType !== '1' || !this.queryParams.warehouseId) {
+        return;
+      }
+      listLocationAll({ warehouseId: this.queryParams.warehouseId }).then(response => {
+        this.fixedNumberLocationOptions = response || [];
+      }).catch(() => {
+        this.fixedNumberLocationOptions = [];
       });
-      
-      // 更新总数
-      this.total = this.fixedNumberList.length;
-      
-      this.$modal.msgSuccess("新增成功");
-      this.addDialogVisible = false;
-      // 清空弹窗选择
-      this.addSelectedMaterials = [];
+    },
+    onFixedNumberLocationChange(row, locationId) {
+      row.locationId = locationId != null && locationId !== '' ? locationId : null;
+      if (row.locationId == null) {
+        row.location = null;
+      } else {
+        const opt = this.fixedNumberLocationOptions.find(o => o.locationId === locationId);
+        row.location = opt ? opt.locationName : row.location;
+      }
+      this.handleFieldChange(row);
     },
     /** 根据仓库ID获取仓库名称 */
     getWarehouseNameById(warehouseId) {

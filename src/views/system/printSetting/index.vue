@@ -19,8 +19,17 @@
             @keyup.enter.native="handleQuery"
           />
         </el-form-item>
-        <el-form-item prop="billType">
-          <el-select v-model="queryParams.billType" placeholder="单据类型" clearable style="width: 240px">
+        <el-form-item label="租户ID" prop="tenantId">
+          <el-input
+            v-model="queryParams.tenantId"
+            placeholder="全库默认留空"
+            clearable
+            style="width: 200px"
+            @keyup.enter.native="handleQuery"
+          />
+        </el-form-item>
+        <el-form-item label="单据类型" prop="billType">
+          <el-select v-model="queryParams.billType" placeholder="请选择单据类型" clearable style="width: 240px">
             <el-option label="入库单" :value="101" />
             <el-option label="退货单" :value="102" />
             <el-option label="出库单" :value="201" />
@@ -87,6 +96,11 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" width="60" align="center" />
       <el-table-column label="模板名称" align="center" prop="templateName" width="140" show-overflow-tooltip />
+      <el-table-column label="适用租户" align="center" prop="tenantId" width="150" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ scope.row.tenantId || '全库默认' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="单据类型" align="center" prop="billType" width="120">
         <template slot-scope="scope">
           <span v-if="scope.row.billType === 101">入库单</span>
@@ -222,6 +236,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         templateName: undefined,
+        tenantId: undefined,
         billType: undefined
       },
       // 表单参数
@@ -296,7 +311,7 @@ export default {
     /** 设置默认模板 */
     handleSetDefault(row) {
       this.$modal.confirm('是否确认将"' + row.templateName + '"设置为默认模板？').then(() => {
-        return setDefaultTemplate({ id: row.id, billType: row.billType });
+        return setDefaultTemplate({ id: row.id, billType: row.billType, tenantId: row.tenantId });
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("设置成功");

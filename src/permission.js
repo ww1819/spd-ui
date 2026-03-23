@@ -27,15 +27,35 @@ router.beforeEach((to, from, next) => {
           store.dispatch('GenerateRoutes').then(accessRoutes => {
             // 根据roles权限生成可访问的路由表
             router.addRoutes(accessRoutes) // 动态添加可访问路由表
-            next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
-          })
-        }).catch(err => {
+            if (to.meta && to.meta.paused === true) {
+              Message.warning('当前菜单功能已被暂停使用')
+              next({ path: '/', replace: true })
+            } else {
+              next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+            }
+          }).catch(err => {
+            isRelogin.show = false
+            const msg = (err && (err.message || err.msg)) || err || '获取菜单失败'
+            Message.error(typeof msg === 'string' ? msg : '获取菜单失败')
             store.dispatch('LogOut').then(() => {
-              Message.error(err)
-              next({ path: '/' })
+              next(`/login?redirect=${to.fullPath}`)
             })
           })
+        }).catch(err => {
+          isRelogin.show = false
+          const msg = (err && (err.message || err.msg)) || err || '获取用户信息失败'
+          Message.error(typeof msg === 'string' ? msg : '获取用户信息失败')
+          store.dispatch('LogOut').then(() => {
+            next(`/login?redirect=${to.fullPath}`)
+          })
+        })
       } else {
+        if (to.meta && to.meta.paused === true) {
+          Message.warning('当前菜单功能已被暂停使用')
+          NProgress.done()
+          next(false)
+          return
+        }
         next()
       }
     }

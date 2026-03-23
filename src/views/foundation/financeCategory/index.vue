@@ -94,6 +94,26 @@
               v-hasPermi="['foundation:financeCategory:export']"
             >导出</el-button>
           </el-col>
+          <el-col :span="1.5">
+            <el-button
+              type="info"
+              plain
+              icon="el-icon-upload2"
+              size="small"
+              @click="handleImport('add')"
+              v-hasPermi="['foundation:financeCategory:import']"
+            >新增导入</el-button>
+          </el-col>
+          <el-col :span="1.8">
+            <el-button
+              type="info"
+              plain
+              icon="el-icon-refresh-right"
+              size="small"
+              @click="handleImport('update')"
+              v-hasPermi="['foundation:financeCategory:import']"
+            >更新导入</el-button>
+          </el-col>
           <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
@@ -103,12 +123,17 @@
           <el-table-column label="序号" align="center" prop="index" width="50"/>
           <el-table-column label="财务类别编码" align="center" prop="financeCategoryCode" width="120"/>
           <el-table-column label="财务类别名称" align="center" prop="financeCategoryName" width="180"/>
-          <el-table-column label="财务类别简码" align="center" prop="referredCode" width="120"/>
+          <el-table-column label="HIS系统ID" align="center" prop="hisId" width="120" show-overflow-tooltip/>
+          <el-table-column label="简码" align="center" prop="referredName" width="100" show-overflow-tooltip/>
+          <el-table-column label="地址" align="center" prop="financeCategoryAddress" min-width="120" show-overflow-tooltip/>
+          <el-table-column label="联系方式" align="center" prop="financeCategoryContact" width="120" show-overflow-tooltip/>
           <el-table-column label="使用状态" align="center" prop="isUse" width="100">
             <template slot-scope="scope">
               <dict-tag :options="dict.type.is_use_status" :value="scope.row.isUse"/>
             </template>
           </el-table-column>
+          <el-table-column label="租户ID" align="center" prop="tenantId" width="110" show-overflow-tooltip/>
+          <el-table-column label="备注" align="center" prop="remark" min-width="100" show-overflow-tooltip/>
           <el-table-column label="创建日期" align="center" prop="createTime" width="100">
             <template slot-scope="scope">
               <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
@@ -145,21 +170,21 @@
         <div v-if="open" class="local-modal-mask">
           <div class="local-modal-content">
             <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+            <el-form ref="form" :model="form" :rules="rules" label-width="110px">
               <el-row :gutter="20">
                 <el-col :span="6">
-                  <el-form-item label="财务类别编码" prop="code">
-                    <el-input v-model="form.code" :disabled="isDisabled" placeholder="财务类别编码" />
+                  <el-form-item label="财务类别编码" prop="financeCategoryCode">
+                    <el-input v-model="form.financeCategoryCode" :disabled="isDisabled" placeholder="请输入编码" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="6">
-                  <el-form-item label="财务类别名称" prop="name">
-                    <el-input v-model="form.name" @input="nameChange" placeholder="财务类别名称" />
+                  <el-form-item label="财务类别名称" prop="financeCategoryName">
+                    <el-input v-model="form.financeCategoryName" placeholder="请输入名称" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="6">
-                  <el-form-item label="财务类别简码" prop="referredCode">
-                    <el-input v-model="form.referredCode" :disabled="true" placeholder="财务类别简码" />
+                  <el-form-item label="名称简码" prop="referredName">
+                    <el-input v-model="form.referredName" placeholder="可点「更新简码」生成" clearable />
                   </el-form-item>
                 </el-col>
                 <el-col :span="6">
@@ -174,6 +199,40 @@
                     </el-select>
                   </el-form-item>
                 </el-col>
+                <el-col :span="6">
+                  <el-form-item label="HIS系统ID" prop="hisId">
+                    <el-input
+                      v-model="form.hisId"
+                      :disabled="!!form.financeCategoryId"
+                      :placeholder="form.financeCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水租户新增必填' : '非衡水租户无需填写')"
+                      clearable
+                    />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="地址" prop="financeCategoryAddress">
+                    <el-input v-model="form.financeCategoryAddress" placeholder="地址" clearable />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="联系方式" prop="financeCategoryContact">
+                    <el-input v-model="form.financeCategoryContact" placeholder="联系方式" clearable />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="租户ID(客户)" prop="tenantId">
+                    <el-input v-model="form.tenantId" disabled placeholder="保存时默认当前客户" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="备注" prop="remark">
+                    <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
+                  </el-form-item>
+                </el-col>
               </el-row>
             </el-form>
             <div class="dialog-footer" style="text-align:right;margin-top:16px;">
@@ -182,17 +241,96 @@
             </div>
           </div>
         </div>
+
+        <div v-if="upload.open" class="local-modal-mask">
+          <div class="local-modal-content" style="width: 520px; min-width: 400px; min-height: auto;">
+            <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
+            <el-alert
+              v-if="factoryImportRequiresHisId"
+              type="warning"
+              :closable="false"
+              show-icon
+              style="margin-bottom:12px;"
+              title="衡水市第三人民医院：Excel 新增行须填「HIS系统ID」且租户内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
+            />
+            <p v-if="upload.mode === 'add'" style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+              <strong>新增导入</strong>：与库房分类一致，按<strong>财务分类编码</strong>匹配租户数据；仅允许新增（库中已存在相同编码则整单校验不通过）。先校验并确认后写入。
+            </p>
+            <p v-else style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+              <strong>更新导入</strong>：与库房分类一致，Excel 须含<strong>财务分类ID、财务分类名称</strong>；仅更新名称与拼音简码，不改编码与 HIS ID。先校验并确认后写入。
+            </p>
+            <el-upload
+              ref="upload"
+              :limit="1"
+              accept=".xlsx, .xls"
+              :disabled="upload.isUploading"
+              :http-request="noopFinanceUpload"
+              :on-change="handleFinanceImportFileChange"
+              :on-remove="handleFinanceImportFileRemove"
+              :auto-upload="false"
+              drag
+            >
+              <i class="el-icon-upload"></i>
+              <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
+              <div class="el-upload__tip text-center" slot="tip">
+                <div v-if="upload.mode === 'update'" class="el-upload__tip">
+                  <el-checkbox v-model="upload.updateSupport" disabled /> 当前为更新导入（按主键 ID）
+                </div>
+                <span>仅允许 xls、xlsx。</span>
+                <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importFinanceTemplate">下载模板</el-link>
+              </div>
+            </el-upload>
+            <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+              <el-button type="primary" :loading="upload.isUploading" @click="submitFinanceImportFlow">校验并导入</el-button>
+              <el-button @click="closeFinanceImport">取 消</el-button>
+            </div>
+          </div>
+        </div>
       </el-col>
     </el-row>
+
+    <el-dialog
+      :title="importPreview.title"
+      :visible.sync="importPreview.visible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      @close="importPreview.rows = []; importPreview.columns = []"
+    >
+      <div style="margin-bottom:10px;">
+        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportFinanceImportPreview">导出解析结果</el-button>
+      </div>
+      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
+        <el-table-column
+          v-for="col in importPreview.columns"
+          :key="col"
+          :prop="col"
+          :label="col"
+          min-width="120"
+          show-overflow-tooltip
+        />
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="importPreview.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listFinanceCategory, getFinanceCategory, delFinanceCategory, addFinanceCategory, updateFinanceCategory, updateFinanceCategoryReferred } from "@/api/foundation/financeCategory";
+import { listFinanceCategory, getFinanceCategory, delFinanceCategory, addFinanceCategory, updateFinanceCategory, updateFinanceCategoryReferred, validateFinanceCategoryImportAdd, validateFinanceCategoryImportUpdate, importFinanceCategoryAddData, importFinanceCategoryUpdateData } from "@/api/foundation/financeCategory";
+import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
+import { mapGetters } from "vuex";
 
 export default {
   name: "FinanceCategory",
   dicts: ['is_use_status'],
+  computed: {
+    ...mapGetters(['customerId', 'factoryImportRequiresHisId']),
+    isDisabled() {
+      return this.form.financeCategoryId != null;
+    }
+  },
   data() {
     return {
       // 树形数据配置
@@ -220,15 +358,42 @@ export default {
       form: {},
       open: false,
       title: "",
+      upload: {
+        open: false,
+        title: "",
+        isUploading: false,
+        updateSupport: false,
+        pendingFile: null,
+        mode: 'add'
+      },
+      importPreview: {
+        visible: false,
+        title: "导入解析结果",
+        rows: [],
+        columns: []
+      },
       rules: {
         financeCategoryCode: [
           { required: true, message: "财务分类编码不能为空", trigger: "blur" }
         ],
         financeCategoryName: [
           { required: true, message: "财务分类名称不能为空", trigger: "blur" }
+        ],
+        hisId: [
+          {
+            validator: (rule, value, callback) => {
+              if (!this.form.financeCategoryId && this.factoryImportRequiresHisId) {
+                if (value === undefined || value === null || String(value).trim() === "") {
+                  callback(new Error("衡水市第三人民医院新增时必须填写HIS系统ID"));
+                  return;
+                }
+              }
+              callback();
+            },
+            trigger: "blur"
+          }
         ]
-      },
-      isDisabled: false
+      }
     };
   },
   created() {
@@ -238,16 +403,23 @@ export default {
     // 获取数据列表
     getList() {
       this.loading = true;
-      listFinanceCategory(this.queryParams).then(response => {
-        this.financeCategoryList = response.rows;
-        this.total = response.total;
-        this.treeData = [{
-          financeCategoryId: 'root',
-          financeCategoryName: '全部分类',
-          children: this.financeCategoryList
-        }];
-        this.loading = false;
-      });
+      listFinanceCategory(this.queryParams)
+        .then(response => {
+          this.financeCategoryList = (response && response.rows) || [];
+          this.total = (response && response.total) || 0;
+          this.treeData = [{
+            financeCategoryId: 'root',
+            financeCategoryName: '全部分类',
+            children: this.financeCategoryList
+          }];
+        })
+        .catch(() => {
+          this.financeCategoryList = [];
+          this.total = 0;
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
     // 树节点点击事件
     handleNodeClick(data) {
@@ -273,6 +445,8 @@ export default {
     // 新增/修改操作
     handleAdd() {
       this.reset();
+      this.form.tenantId = this.customerId || null;
+      this.form.isUse = '1';
       this.open = true;
       this.title = "添加财务分类";
     },
@@ -328,8 +502,13 @@ export default {
         financeCategoryId: null,
         financeCategoryCode: null,
         financeCategoryName: null,
+        referredName: null,
         financeCategoryAddress: null,
-        financeCategoryContact: null
+        financeCategoryContact: null,
+        isUse: '1',
+        remark: null,
+        tenantId: null,
+        hisId: null
       };
       this.resetForm("form");
     },
@@ -352,8 +531,86 @@ export default {
         this.getList();
       }).catch(() => {});
     },
-    nameChange() {
-      this.isDisabled = true;
+    handleImport(mode) {
+      this.upload.mode = mode === "update" ? "update" : "add";
+      this.upload.updateSupport = this.upload.mode === "update";
+      this.upload.title = this.upload.mode === "update" ? "财务分类更新导入" : "财务分类新增导入";
+      this.upload.pendingFile = null;
+      this.upload.open = true;
+      this.$nextTick(() => {
+        if (this.$refs.upload) this.$refs.upload.clearFiles();
+      });
+    },
+    closeFinanceImport() {
+      this.upload.open = false;
+      this.upload.pendingFile = null;
+      if (this.$refs.upload) this.$refs.upload.clearFiles();
+    },
+    noopFinanceUpload() {},
+    handleFinanceImportFileChange(file) {
+      this.upload.pendingFile = file && file.raw ? file.raw : null;
+    },
+    handleFinanceImportFileRemove() {
+      this.upload.pendingFile = null;
+    },
+    importFinanceTemplate() {
+      const api = this.upload.mode === "update" ? "foundation/financeCategory/importUpdateTemplate" : "foundation/financeCategory/importAddTemplate";
+      this.download(api, {}, `fd_finance_category_template_${new Date().getTime()}.xlsx`);
+    },
+    showImportPreviewFromPayload(payload, title) {
+      const rows = (payload && payload.previewRows) || [];
+      this.importPreview.title = title || "导入解析结果";
+      this.importPreview.rows = rows;
+      this.importPreview.columns = rows.length ? Object.keys(rows[0]) : [];
+      this.importPreview.visible = true;
+    },
+    async exportFinanceImportPreview() {
+      try {
+        const name = (this.upload.mode === "update" ? "finance_category_update" : "finance_category_add") + "_preview_" + new Date().getTime() + ".xlsx";
+        await exportPreviewRowsToXlsx(this.importPreview.rows, name);
+        this.$modal.msgSuccess("已导出");
+      } catch (e) {
+        this.$modal.msgError(e.message || "导出失败");
+      }
+    },
+    async submitFinanceImportFlow() {
+      const f = this.upload.pendingFile;
+      if (!f) {
+        this.$modal.msgWarning("请先选择 Excel 文件");
+        return;
+      }
+      this.upload.isUploading = true;
+      try {
+        const isUpdate = this.upload.mode === "update";
+        const res = isUpdate ? await validateFinanceCategoryImportUpdate(f) : await validateFinanceCategoryImportAdd(f);
+        const d = res.data || {};
+        this.showImportPreviewFromPayload(d, isUpdate ? "财务分类更新导入 — 解析结果" : "财务分类新增导入 — 解析结果");
+        if (!d.valid) {
+          const errs = (d.errors && d.errors.length) ? d.errors.join("<br/>") : (res.msg || "校验失败");
+          this.$alert("<div style='overflow:auto;max-height:60vh'>" + errs + "</div>", "校验未通过", { dangerouslyUseHTMLString: true });
+          return;
+        }
+        const tc = d.totalRows != null ? d.totalRows : 0;
+        const ic = d.insertCount != null ? d.insertCount : 0;
+        const uc = d.updateCount != null ? d.updateCount : 0;
+        let confirmText = "校验已通过。共 " + tc + " 行数据，确认后写入数据库，是否继续？";
+        if (!isUpdate) {
+          confirmText = "校验已通过。共 " + tc + " 行数据，预计新增 " + ic + " 条、更新 " + uc + " 条。确认后写入数据库，是否继续？";
+        }
+        await this.$modal.confirm(confirmText);
+        const res2 = isUpdate ? await importFinanceCategoryUpdateData(f, true) : await importFinanceCategoryAddData(f, true);
+        const d2 = res2.data || {};
+        this.showImportPreviewFromPayload(d2, isUpdate ? "财务分类更新导入 — 导入结果" : "财务分类新增导入 — 导入结果");
+        this.$alert("<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'>" + res2.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
+        this.closeFinanceImport();
+        this.getList();
+      } catch (e) {
+        if (e !== "cancel" && e !== "close") {
+          /* request 已提示 */
+        }
+      } finally {
+        this.upload.isUploading = false;
+      }
     }
   }
 };
@@ -391,7 +648,7 @@ export default {
   background-color: #fff;
   padding: 24px;
   border-radius: 6px;
-  min-width: 600px;
+  min-width: 880px;
   max-width: 90vw;
   max-height: 90vh;
   overflow: auto;

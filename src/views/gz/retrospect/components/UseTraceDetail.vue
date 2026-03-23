@@ -39,7 +39,7 @@
       </el-table-column>
       <el-table-column label="数量" align="center" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.quantity">{{ scope.row.quantity }}</span>
+          <span v-if="scope.row.quantity !== null && scope.row.quantity !== undefined">{{ scope.row.quantity }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -51,8 +51,20 @@
       </el-table-column>
       <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.quantity && scope.row.chargePrice">{{ (parseFloat(scope.row.quantity) * parseFloat(scope.row.chargePrice)).toFixed(2) }}</span>
+          <span v-if="scope.row.quantity !== null && scope.row.quantity !== undefined && scope.row.chargePrice !== null && scope.row.chargePrice !== undefined">
+            {{ (parseFloat(scope.row.quantity) * parseFloat(scope.row.chargePrice)).toFixed(2) }}
+          </span>
           <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="仓库来源" align="center" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.warehouseName || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="批次字典" align="center" width="220" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.batchSource || '--' }} / {{ scope.row.originBusinessType || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="生产日期" align="center" width="120" show-overflow-tooltip resizable>
@@ -70,12 +82,12 @@
       </el-table-column>
       <el-table-column label="批号" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.batchNo || '--' }}</span>
+          <span>{{ scope.row.batchNumber || scope.row.materialNo || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="批次号" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.batchNumber || scope.row.materialNo || '--' }}</span>
+          <span>{{ scope.row.batchNo || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable>
@@ -237,6 +249,9 @@ export default {
       // 设置查询条件
       queryParams.traceNo = this.queryParams.traceNo || null;
       queryParams.orderStatus = this.queryParams.orderStatus || 2;
+      // 批次/批号：用于按 batch_no / batch_number（系统追溯批次 vs 生产批号）过滤
+      queryParams.batchNo = this.queryParams.batchNo || null;
+      queryParams.materialNo = this.queryParams.materialNo || null;
       if (this.queryParams.startDate) {
         queryParams.startDate = this.queryParams.startDate;
       }

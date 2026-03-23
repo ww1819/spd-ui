@@ -18,10 +18,19 @@ export function listUserAll(query) {
   })
 }
 
-// 查询用户详细
+// 查询用户详细（systemType=hc：耗材端读 sys_user_menu / sys_user_department / sys_user_warehouse）
 export function getUser(userId) {
   return request({
     url: '/system/user/' + parseStrEmpty(userId),
+    method: 'get',
+    params: { systemType: 'hc' }
+  })
+}
+
+/** 耗材租户用户授权：菜单树=客户已开通功能，checkedKeys=sys_user_menu */
+export function roleMenuTreeselectUser(userId) {
+  return request({
+    url: '/system/user/roleMenuTreeselect/' + parseStrEmpty(userId),
     method: 'get'
   })
 }
@@ -150,3 +159,7 @@ export function deptTreeSelect() {
     method: 'get'
   })
 }
+
+
+export function importUserAddData(formData){return request({url:'/system/user/importAddData',method:'post',data:formData,headers:{'Content-Type':'multipart/form-data',repeatSubmit:false}})}
+export function importUserUpdateData(formData){return request({url:'/system/user/importUpdateData',method:'post',data:formData,headers:{'Content-Type':'multipart/form-data',repeatSubmit:false}})}

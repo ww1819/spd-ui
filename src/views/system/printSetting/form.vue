@@ -217,6 +217,9 @@
           <el-form-item label="模板名称" prop="templateName">
             <el-input v-model="form.templateName" placeholder="模板名称" />
           </el-form-item>
+          <el-form-item label="适用租户ID" prop="tenantId">
+            <el-input v-model="form.tenantId" clearable placeholder="留空：全库默认；耗材端留空则默认当前登录客户" />
+          </el-form-item>
           <el-form-item label="单据类型" prop="billType">
             <el-select v-model="form.billType" placeholder="请选择单据类型" clearable style="width: 100%">
               <el-option label="入库单" :value="101" />
@@ -807,6 +810,7 @@ export default {
       orgName: '',
       form: {
         templateName: '',
+        tenantId: '',
         billType: null,
         pageWidth: 241,
         pageHeight: 140,
@@ -1992,6 +1996,7 @@ export default {
       this.$refs.form.resetFields();
       this.form = {
         templateName: '',
+        tenantId: '',
         billType: null,
         pageWidth: 241,
         pageHeight: 140,
@@ -2107,6 +2112,10 @@ export default {
         status: '0',
         remark: ''
       };
+      const cid = this.$store.getters.customerId;
+      if (cid) {
+        this.form.tenantId = cid;
+      }
       this.columnList = [...this.defaultColumns];
       this.tableHeaderFields = [];
       this.headerMerges = [];

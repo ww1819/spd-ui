@@ -194,11 +194,24 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary" size="medium"
-          @click="handleImport"
+          type="info"
+          plain
+          icon="el-icon-upload2"
+          size="medium" 
+          @click="handleMaterialImport('add')" 
           v-hasPermi="['foundation:material:import']"
-        >导入</el-button>
+          >新增导入</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="info"
+          plain
+          icon="el-icon-upload2"
+          size="medium"
+          @click="handleMaterialImport('update')"
+          v-hasPermi="['foundation:material:import']"
+        >更新导入</el-button>
+      </el-col> 
       <el-col :span="1.5">
         <el-button
           type="primary" size="medium"
@@ -360,8 +373,8 @@
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="价格：" prop="price">
-                    <el-input v-model="form.price" placeholder="价格" />
+                  <el-form-item label="单价：" prop="price">
+                    <el-input v-model="form.price" placeholder="请输入单价" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
@@ -1036,58 +1049,85 @@
       </div>
     </el-dialog>
 
-    <!-- 耗材导入对话框 -->
+    <!-- 耗材档案：新增/更新导入 -->
     <div v-if="upload.open" class="local-modal-mask">
-      <div class="local-modal-content" style="width: 500px;">
+      <div class="local-modal-content" style="width: 560px; min-width: 400px; min-height: auto;">
         <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
-      <el-upload
-        ref="upload"
-        :limit="1"
-        accept=".xlsx, .xls"
-        :headers="upload.headers"
-        :action="upload.url + '?updateSupport=' + upload.updateSupport"
-        :disabled="upload.isUploading"
-        :on-progress="handleFileUploadProgress"
-        :on-success="handleFileSuccess"
-        :on-change="handleFileChange"
-        :auto-upload="false"
-        drag
-      >
-        <i class="el-icon-upload"></i>
-        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        <div class="el-upload__tip text-center" slot="tip">
-          <div class="el-upload__tip" slot="tip">
-            <el-checkbox v-model="upload.updateSupport" /> 是否更新已经存在的耗材数据
+        <el-alert
+          v-if="upload.mode === 'add'"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom:12px;"
+          title="新增导入：HIS系统ID 在组织机构内已存在则整单拒绝；请填写 HIS生产厂家ID 或 SPD生产厂家ID；HIS财务分类ID 用于匹配 SPD 财务分类。"
+        />
+        <el-alert
+          v-if="upload.mode === 'update'"
+          type="info"
+          :closable="false"
+          show-icon
+          style="margin-bottom:12px;"
+          title="更新导入：SPD系统主键须存在且属于本组织机构；仅更新名称、规格、型号、单位、单价、医保代码。"
+        />
+        <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+          先整单校验，通过后确认写入。解析结果可预览并导出以便排查。
+        </p>
+        <el-upload
+          ref="materialImportUpload"
+          :limit="1"
+          accept=".xlsx, .xls"
+          :disabled="upload.isUploading"
+          :http-request="noopMaterialImportUpload"
+          :on-change="handleMaterialImportFileChange"
+          :on-remove="handleMaterialImportFileRemove"
+          :auto-upload="false"
+          drag
+        >
+          <i class="el-icon-upload"></i>
+          <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
+          <div class="el-upload__tip text-center" slot="tip">
+            <span>仅允许 xls、xlsx。</span>
+            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="downloadMaterialImportTemplate">下载模板</el-link>
           </div>
-          <span>仅允许导入xls、xlsx格式文件。</span>
-          <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
-        </div>
-      </el-upload>
-        <div v-if="parseResult.show" style="margin-top:16px;padding:12px;background-color:#f5f7fa;border-radius:4px;max-height:200px;overflow-y:auto;">
-          <div v-if="parseResult.success" style="color:#67c23a;">
-            <i class="el-icon-success"></i> {{ parseResult.message }}
-          </div>
-          <div v-else style="color:#f56c6c;">
-            <i class="el-icon-error"></i> {{ parseResult.message }}
-            <div v-if="parseResult.errors && parseResult.errors.length > 0" style="margin-top:8px;font-size:12px;">
-              <div v-for="(error, index) in parseResult.errors" :key="index" style="margin-top:4px;">
-                {{ error }}
-              </div>
-            </div>
-          </div>
-        </div>
+        </el-upload>
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-        <el-button type="primary" @click="parseExcelFile" :disabled="!uploadFile || upload.isUploading">解 析</el-button>
-        <el-button type="primary" @click="submitFileForm" :disabled="upload.isUploading">确 定</el-button>
-        <el-button @click="upload.open = false">取 消</el-button>
+          <el-button type="primary" :loading="upload.isUploading" @click="submitMaterialImportFlow">校验并导入</el-button>
+          <el-button @click="closeMaterialImport">取 消</el-button>
         </div>
       </div>
     </div>
+
+    <el-dialog
+      :title="importPreview.title"
+      :visible.sync="importPreview.visible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      @close="importPreview.rows = []; importPreview.columns = []"
+    >
+      <div style="margin-bottom:10px;">
+        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportMaterialImportPreview">导出解析结果</el-button>
+      </div>
+      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
+        <el-table-column
+          v-for="col in importPreview.columns"
+          :key="col"
+          :prop="col"
+          :label="col"
+          min-width="120"
+          show-overflow-tooltip
+        />
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="importPreview.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline } from "@/api/foundation/material";
+import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData } from "@/api/foundation/material";
+import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectFactory from '@/components/SelectModel/SelectFactory';
 import SelectFinanceCategory from "@/components/SelectModel/SelectFinanceCategory";
@@ -1181,25 +1221,17 @@ export default {
         { key: 21, label: `创建日期`, visible: true },
         { key: 22, label: `品牌`, visible: false }
       ],
-      // 表单校验
+      // 表单校验：仅耗材名称必填；单价若填写则校验为数字
       rules: {
         code: [
-          { required: true, message: "耗材编码不能为空", trigger: "blur" },
           { validator: (rule, value, callback) => {
-            if (!value) {
+            if (!value || !String(value).trim()) {
               callback();
               return;
             }
-
-            // 只验证编码不能为空，不限制长度和格式
-            // 手工输入的编码可以是任意长度和格式
-            // 自动生成的编码仍然是6位数字
-
-            // 检查编码是否已存在（排除当前编辑的记录）
             listMaterial({ code: value, pageNum: 1, pageSize: 1 }).then(response => {
               if (response.rows && response.rows.length > 0) {
                 const existingMaterial = response.rows[0];
-                // 如果是新增模式，或者存在其他记录的编码，则报错
                 if (!this.form.id || existingMaterial.id !== this.form.id) {
                   callback(new Error('该耗材编码已存在，请使用其他编码'));
                 } else {
@@ -1216,51 +1248,33 @@ export default {
         name: [
           { required: true, message: "耗材名称不能为空", trigger: "blur" }
         ],
-        supplierId: [
-          { required: true, message: "供应商不能为空", trigger: "blur" }
-        ],
-        speci: [
-          { required: true, message: "规格不能为空", trigger: "blur" }
-        ],
-        model: [
-          { required: true, message: "型号不能为空", trigger: "blur" }
-        ],
         price: [
-          { required: true, message: "价格不能为空", trigger: "blur" }
-        ],
-        referredName: [
-          { required: true, message: "名称简码不能为空", trigger: "blur" }
-        ],
-        factoryId: [
-          { required: true, message: "生产厂家不能为空", trigger: "blur" }
-        ],
-        unitId: [
-          { required: true, message: "单位不能为空", trigger: "blur" }
-        ],
+          { validator: (rule, value, callback) => {
+            if (value === '' || value === null || value === undefined) {
+              callback();
+              return;
+            }
+            const n = Number(value);
+            if (Number.isNaN(n)) {
+              callback(new Error('单价请输入有效数字'));
+            } else {
+              callback();
+            }
+          }, trigger: "blur" }
+        ]
       },
-      // 用户导入参数
       upload: {
-        // 是否显示弹出层（用户导入）
         open: false,
-        // 弹出层标题（用户导入）
         title: "",
-        // 是否禁用上传
         isUploading: false,
-        // 是否更新已经存在的用户数据
-        updateSupport: 0,
-        // 设置上传的请求头部
-        headers: { Authorization: "Bearer " + getToken() },
-        // 上传的地址
-        url: process.env.VUE_APP_BASE_API + "/foundation/material/importData"
+        mode: "add",
+        pendingFile: null
       },
-      // 上传的文件
-      uploadFile: null,
-      // 解析结果
-      parseResult: {
-        show: false,
-        success: false,
-        message: '',
-        errors: []
+      importPreview: {
+        visible: false,
+        title: "导入解析结果",
+        rows: [],
+        columns: []
       },
       // 图片上传配置
       imageUploadUrl: process.env.VUE_APP_BASE_API + "/common/upload",
@@ -1346,7 +1360,8 @@ export default {
         sunshineSecondLevel: null,
         sunshineThirdLevel: null,
         sunshineSource: null,
-        sunshineCoefficient: null
+        sunshineCoefficient: null,
+        selectionReason: null
       };
       this.originalIsUse = null;
       this.statusLogList = [];
@@ -1445,250 +1460,80 @@ export default {
       this.queryParams.isBilling = '';
       this.handleQuery();
     },
-    /** 导入按钮操作 */
-    handleImport() {
-      this.upload.title = "耗材导入";
+    handleMaterialImport(mode) {
+      this.upload.mode = mode === "update" ? "update" : "add";
+      this.upload.title = this.upload.mode === "update" ? "耗材档案更新导入" : "耗材档案新增导入";
+      this.upload.pendingFile = null;
       this.upload.open = true;
-      this.uploadFile = null;
-      this.parseResult = {
-        show: false,
-        success: false,
-        message: '',
-        errors: []
-      };
+      this.$nextTick(() => {
+        if (this.$refs.materialImportUpload) this.$refs.materialImportUpload.clearFiles();
+      });
     },
-    /** 下载模板操作 */
-    importTemplate() {
-      this.download('foundation/material/importTemplate', {
-      }, `耗材产品档案基础字典导入.xlsx`)
+    closeMaterialImport() {
+      this.upload.open = false;
+      this.upload.pendingFile = null;
+      if (this.$refs.materialImportUpload) this.$refs.materialImportUpload.clearFiles();
     },
-    // 文件选择变化处理
-    handleFileChange(file, fileList) {
-      if (fileList && fileList.length > 0) {
-        // 保存文件对象，优先使用raw，如果没有则使用file本身
-        this.uploadFile = file.raw || file;
-        // 重置解析结果
-        this.parseResult = {
-          show: false,
-          success: false,
-          message: '',
-          errors: []
-        };
-      } else {
-        this.uploadFile = null;
+    noopMaterialImportUpload() {},
+    handleMaterialImportFileChange(file) {
+      this.upload.pendingFile = file && file.raw ? file.raw : null;
+    },
+    handleMaterialImportFileRemove() {
+      this.upload.pendingFile = null;
+    },
+    downloadMaterialImportTemplate() {
+      const api = this.upload.mode === "update" ? "foundation/material/importUpdateTemplate" : "foundation/material/importAddTemplate";
+      const name = this.upload.mode === "update" ? "耗材档案更新导入模板.xlsx" : "耗材档案新增导入模板.xlsx";
+      this.download(api, {}, name);
+    },
+    showMaterialImportPreviewFromPayload(payload, title) {
+      const rows = (payload && payload.previewRows) || [];
+      this.importPreview.title = title || "导入解析结果";
+      this.importPreview.rows = rows;
+      this.importPreview.columns = rows.length ? Object.keys(rows[0]) : [];
+      this.importPreview.visible = true;
+    },
+    async exportMaterialImportPreview() {
+      try {
+        const name = (this.upload.mode === "update" ? "material_update" : "material_add") + "_preview_" + new Date().getTime() + ".xlsx";
+        await exportPreviewRowsToXlsx(this.importPreview.rows, name);
+        this.$modal.msgSuccess("已导出");
+      } catch (e) {
+        this.$modal.msgError(e.message || "导出失败");
       }
     },
-    // 文件上传中处理
-    handleFileUploadProgress(event, file, fileList) {
-      this.upload.isUploading = true;
-    },
-    // 文件上传成功处理
-    handleFileSuccess(response, file, fileList) {
-      this.upload.open = false;
-      this.upload.isUploading = false;
-      this.uploadFile = null;
-      this.parseResult.show = false;
-      this.$refs.upload.clearFiles();
-      this.$alert("<div style='overflow: auto;overflow-x: hidden;max-height: 70vh;padding: 10px 20px 0;'>" + response.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
-      this.getList();
-    },
-    // 提交上传文件
-    submitFileForm() {
-      this.$refs.upload.submit();
-    },
-    // 解析Excel文件
-    parseExcelFile() {
-      console.log('parseExcelFile called, uploadFile:', this.uploadFile);
-      if (!this.uploadFile) {
-        this.$modal.msgWarning("请先选择要解析的文件");
+    async submitMaterialImportFlow() {
+      const f = this.upload.pendingFile;
+      if (!f) {
+        this.$modal.msgWarning("请先选择 Excel 文件");
         return;
       }
-
-      // 显示解析中状态
-      this.parseResult = {
-        show: true,
-        success: false,
-        message: '正在解析文件，请稍候...',
-        errors: []
-      };
-
-      // 动态加载xlsx库
-      if (typeof window.XLSX === 'undefined') {
-        // 检查是否已经有脚本标签
-        let existingScript = document.querySelector('script[src*="xlsx"]');
-        if (existingScript && existingScript.getAttribute('data-loaded') !== 'true') {
-          // 如果脚本已存在但未加载完成，等待加载
-          existingScript.addEventListener('load', () => {
-            existingScript.setAttribute('data-loaded', 'true');
-            this.doParseExcel();
-          });
+      this.upload.isUploading = true;
+      try {
+        const isUpdate = this.upload.mode === "update";
+        const res = isUpdate ? await validateMaterialImportUpdate(f) : await validateMaterialImportAdd(f);
+        const d = res.data || {};
+        this.showMaterialImportPreviewFromPayload(d, isUpdate ? "耗材档案更新导入 — 解析结果" : "耗材档案新增导入 — 解析结果");
+        if (!d.valid) {
+          const errs = (d.errors && d.errors.length) ? d.errors.join("<br/>") : (res.msg || "校验失败");
+          this.$alert("<div style='overflow:auto;max-height:60vh'>" + errs + "</div>", "校验未通过", { dangerouslyUseHTMLString: true });
           return;
         }
-
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-        script.onload = () => {
-          script.setAttribute('data-loaded', 'true');
-          this.doParseExcel();
-        };
-        script.onerror = () => {
-          this.parseResult = {
-            show: true,
-            success: false,
-            message: '加载Excel解析库失败，请检查网络连接',
-            errors: []
-          };
-          this.$modal.msgError("加载Excel解析库失败，请检查网络连接");
-        };
-        document.head.appendChild(script);
-      } else {
-        this.doParseExcel();
-      }
-    },
-    // 执行Excel解析
-    doParseExcel() {
-      console.log('doParseExcel called');
-      const file = this.uploadFile;
-      if (!file) {
-        this.parseResult = {
-          show: true,
-          success: false,
-          message: '文件不存在，请重新选择文件',
-          errors: []
-        };
-        return;
-      }
-
-      if (typeof window.XLSX === 'undefined') {
-        this.parseResult = {
-          show: true,
-          success: false,
-          message: 'Excel解析库未加载，请刷新页面重试',
-          errors: []
-        };
-        return;
-      }
-
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        try {
-          console.log('FileReader onload, file size:', e.target.result.byteLength);
-          const data = new Uint8Array(e.target.result);
-          const workbook = window.XLSX.read(data, { type: 'array' });
-          console.log('Workbook loaded, sheets:', workbook.SheetNames);
-
-          if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-            this.parseResult = {
-              show: true,
-              success: false,
-              message: 'Excel文件格式不正确，无法读取工作表',
-              errors: []
-            };
-            return;
-          }
-
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-
-          // 转换为JSON数组
-          const jsonData = window.XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-
-          if (jsonData.length < 2) {
-            this.parseResult = {
-              show: true,
-              success: false,
-              message: 'Excel文件数据为空，至少需要表头和数据行',
-              errors: []
-            };
-            return;
-          }
-
-          // 获取表头（第一行），去掉星号
-          const headers = jsonData[0].map(h => {
-            if (!h) return '';
-            const headerStr = String(h).trim();
-            return headerStr.replace(/\*$/, '');
-          });
-
-          // 必填字段映射（Excel列名 -> 字段名）
-          const requiredFields = {
-            '耗材编码': 'code',
-            '耗材名称': 'name'
-            // '供应商': 'supplierId',
-            // '规格': 'speci',
-            // '型号': 'model',
-            // '价格': 'price',
-            // '生产厂家': 'factoryId',
-            // '库房分类': 'storeroomId',
-            // '财务分类': 'financeCategoryId',
-            // '单位': 'unitId'
-          };
-
-          // 验证每行数据
-          const errors = [];
-          for (let i = 1; i < jsonData.length; i++) {
-            const row = jsonData[i];
-            if (!row || row.length === 0) {
-              continue; // 跳过空数组
-            }
-            const rowNum = i + 1; // Excel行号（从2开始，因为有表头）
-
-            // 检查是否为空行
-            const isEmptyRow = row.every(cell => !cell || String(cell).trim() === '');
-            if (isEmptyRow) {
-              continue; // 跳过空行
-            }
-
-            // 检查每个必填字段
-            for (let j = 0; j < headers.length; j++) {
-              const header = headers[j];
-              const fieldName = requiredFields[header];
-
-              if (fieldName) {
-                const cellValue = row[j];
-                if (!cellValue || String(cellValue).trim() === '') {
-                  errors.push(`第${rowNum}行，${header}字段未填写`);
-                }
-              }
-            }
-          }
-
-          if (errors.length === 0) {
-            this.parseResult = {
-              show: true,
-              success: true,
-              message: `解析成功！共${jsonData.length - 1}行数据，所有必填字段均已填写。`,
-              errors: []
-            };
-          } else {
-            this.parseResult = {
-              show: true,
-              success: false,
-              message: `解析完成，发现${errors.length}个必填字段未填写：`,
-              errors: errors.slice(0, 50) // 最多显示50个错误
-            };
-          }
-        } catch (error) {
-          this.parseResult = {
-            show: true,
-            success: false,
-            message: `解析失败：${error.message}`,
-            errors: []
-          };
+        const tc = d.totalRows != null ? d.totalRows : 0;
+        await this.$modal.confirm("校验已通过。共 " + tc + " 行数据，确认后写入数据库，是否继续？");
+        const res2 = isUpdate ? await importMaterialUpdateData(f, true) : await importMaterialAddData(f, true);
+        const d2 = res2.data || {};
+        this.showMaterialImportPreviewFromPayload(d2, isUpdate ? "耗材档案更新导入 — 导入结果" : "耗材档案新增导入 — 导入结果");
+        this.$alert("<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'>" + res2.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
+        this.closeMaterialImport();
+        this.getList();
+      } catch (e) {
+        if (e !== "cancel" && e !== "close") {
+          /* request 已提示 */
         }
-      };
-
-      reader.onerror = () => {
-        this.parseResult = {
-          show: true,
-          success: false,
-          message: '文件读取失败，请重试',
-          errors: []
-        };
-      };
-
-      reader.readAsArrayBuffer(file);
+      } finally {
+        this.upload.isUploading = false;
+      }
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -2325,6 +2170,8 @@ export default {
 
 /* 页面左右仅留 8px，使顶部搜索容器更宽；底部少留白 */
 .material-page-container.app-container {
+  position: relative;
+  min-height: calc(100vh - 84px);
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 8px !important;

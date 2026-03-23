@@ -1,11 +1,23 @@
 import request from '@/utils/request'
 
-// 查询耗材产品列表
+/** 耗材导入（校验/落库）数据量大时耗时较长，需大于默认 10s 与 devServer proxy 超时 */
+const MATERIAL_IMPORT_TIMEOUT_MS = 300000
+
+// 查询耗材产品列表（GET）
 export function listMaterial(query) {
   return request({
     url: '/foundation/material/list',
     method: 'get',
     params: query
+  })
+}
+
+// 查询耗材产品列表（POST，请求体传参，避免 excludeMaterialIds 等过长导致 400/414）
+export function listMaterialPost(data) {
+  return request({
+    url: '/foundation/material/list',
+    method: 'post',
+    data: data
   })
 }
 
@@ -23,6 +35,15 @@ export function getMaterial(id) {
   return request({
     url: '/foundation/material/' + id,
     method: 'get'
+  })
+}
+
+// 根据主条码(udi_no)或耗材编码查询产品档案（用于入库扫码带出产品）
+export function getMaterialByMainBarcode(mainBarcode) {
+  return request({
+    url: '/foundation/material/getByMainBarcode',
+    method: 'get',
+    params: { mainBarcode }
   })
 }
 
@@ -69,6 +90,58 @@ export function updateMaterialReferred(ids) {
     url: '/foundation/material/updateReferred',
     method: 'post',
     data: { ids }
+  })
+}
+
+/** 耗材档案新增导入：校验 */
+export function validateMaterialImportAdd(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/material/importAddValidate',
+    method: 'post',
+    data: formData,
+    timeout: MATERIAL_IMPORT_TIMEOUT_MS,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+/** 耗材档案新增导入：落库 */
+export function importMaterialAddData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/material/importAddData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    timeout: MATERIAL_IMPORT_TIMEOUT_MS,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+/** 耗材档案更新导入：校验 */
+export function validateMaterialImportUpdate(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/material/importUpdateValidate',
+    method: 'post',
+    data: formData,
+    timeout: MATERIAL_IMPORT_TIMEOUT_MS,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
+  })
+}
+
+/** 耗材档案更新导入：落库 */
+export function importMaterialUpdateData(file, confirm) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/foundation/material/importUpdateData?confirm=' + !!confirm,
+    method: 'post',
+    data: formData,
+    timeout: MATERIAL_IMPORT_TIMEOUT_MS,
+    headers: { 'Content-Type': 'multipart/form-data', repeatSubmit: false }
   })
 }
 

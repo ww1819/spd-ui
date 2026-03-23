@@ -10,7 +10,16 @@
                 <SelectMaterial v-model="queryParams.materialId" />
               </div>
             </el-form-item>
-            <el-form-item prop="warehouseId" class="query-item-inline">
+            <el-form-item label="产品名称" prop="materialNameLike" class="query-item-inline">
+              <el-input v-model="queryParams.materialNameLike" placeholder="名称/编码/拼音简码" clearable style="width: 160px" />
+            </el-form-item>
+            <el-form-item label="规格" prop="materialSpeciLike" class="query-item-inline">
+              <el-input v-model="queryParams.materialSpeciLike" placeholder="规格模糊" clearable style="width: 140px" />
+            </el-form-item>
+            <el-form-item label="型号" prop="materialModelLike" class="query-item-inline">
+              <el-input v-model="queryParams.materialModelLike" placeholder="型号模糊" clearable style="width: 140px" />
+            </el-form-item>
+            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
               </div>
@@ -206,6 +215,9 @@ export default {
         billStatus: null,
         userId: null,
         billType: null,
+        materialNameLike: null,
+        materialSpeciLike: null,
+        materialModelLike: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
@@ -242,7 +254,7 @@ export default {
     },
   },
   created() {
-    this.getList();
+    // 汇总表在父组件切换到此 tab 时再加载（见 index.vue handleTabClick），避免与明细表同时请求
   },
   methods: {
     getTotalSummaries(param) {

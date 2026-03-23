@@ -157,7 +157,22 @@
           <el-input v-model="form.configKey" placeholder="请输入参数键名" />
         </el-form-item>
         <el-form-item label="参数键值" prop="configValue">
-          <el-input v-model="form.configValue" placeholder="请输入参数键值" />
+          <el-select
+            v-if="form.configKey === 'hc.login.defaultCustomerId'"
+            v-model="form.configValue"
+            placeholder="请选择耗材登录默认客户（组织机构）"
+            clearable
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="item in customerHcOptions"
+              :key="item.customerId"
+              :label="(item.customerName || '') + (item.customerCode ? '（' + item.customerCode + '）' : '')"
+              :value="item.customerId"
+            />
+          </el-select>
+          <el-input v-else v-model="form.configValue" placeholder="请输入参数键值" />
         </el-form-item>
         <el-form-item label="系统内置" prop="configType">
           <el-radio-group v-model="form.configType">
@@ -182,12 +197,15 @@
 
 <script>
 import { listConfig, getConfig, delConfig, addConfig, updateConfig, refreshCache } from "@/api/system/config";
+import { getCustomerOptions } from "@/api/login";
 
 export default {
   name: "Config",
   dicts: ['sys_yes_no'],
   data() {
     return {
+      /** 参数 hc.login.defaultCustomerId 下拉：耗材启用客户 */
+      customerHcOptions: [],
       // 遮罩层
       loading: true,
       // 选中数组
@@ -227,15 +245,36 @@ export default {
           { required: true, message: "参数键名不能为空", trigger: "blur" }
         ],
         configValue: [
-          { required: true, message: "参数键值不能为空", trigger: "blur" }
+          {
+            validator: (rule, value, callback) => {
+              if (this.form.configKey === "hc.login.defaultCustomerId") {
+                callback();
+                return;
+              }
+              if (value === undefined || value === null || String(value).trim() === "") {
+                callback(new Error("参数键值不能为空"));
+              } else {
+                callback();
+              }
+            },
+            trigger: "blur"
+          }
         ]
       }
     };
   },
   created() {
     this.getList();
+    this.loadHcCustomerOptions();
   },
   methods: {
+    loadHcCustomerOptions() {
+      getCustomerOptions("hc").then(res => {
+        this.customerHcOptions = res.data || [];
+      }).catch(() => {
+        this.customerHcOptions = [];
+      });
+    },
     /** 查询参数列表 */
     getList() {
       this.loading = true;

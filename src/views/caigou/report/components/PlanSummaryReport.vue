@@ -44,6 +44,18 @@
             />
           </el-form-item>
         </el-col>
+        <el-col :span="12" class="query-status-col">
+          <el-form-item label="采购计划状态" prop="planStatus" class="query-item-status-aligned">
+            <el-select v-model="queryParams.planStatus" placeholder="全部"
+                       clearable style="width: 150px">
+              <el-option v-for="dict in dict.type.plan_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
       </el-row>
 
     </el-form>
@@ -130,6 +142,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 
 export default {
   name: "PlanSummaryReport",
+  dicts: ['plan_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse},
   data() {
     return {
@@ -148,6 +161,7 @@ export default {
         supplierId: null,
         warehouseId: null,
         materialId: null,
+        planStatus: null,
         beginDate: null,
         endDate: null,
       }

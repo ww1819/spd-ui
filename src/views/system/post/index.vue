@@ -256,9 +256,8 @@
 </template>
 
 <script>
-import { listPost, getPost, delPost, addPost, updatePost } from "@/api/system/post";
-import { treeselect as menuTreeselect } from "@/api/system/menu";
-import { deptTreeSelect, listUserAll, getUser, updateUser } from "@/api/system/user";
+import { listPost, getPost, delPost, addPost, updatePost, roleMenuTreeselectPost, listPostUserIds } from "@/api/system/post";
+import { deptTreeSelect, getUser, updateUser } from "@/api/system/user";
 import { getOptionselect as getWarehouseOptionselect } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
 import { getToken } from "@/utils/auth";
@@ -566,42 +565,16 @@ export default {
       }
       return false;
     },
-    /** 获取工作组下的所有用户 */
+    /** 获取工作组下的所有用户（与设备端一致：sys_user_post 关联，避免全量用户扫描） */
     getUsersByPostId(postId) {
-      // 确保 postId 是数字类型
       const postIdNum = Number(postId);
-      console.log('查询工作组下的用户 - postId:', postId, '转换为数字:', postIdNum);
-      
-      // 查询该工作组下的所有用户
-      return listUserAll({}).then(response => {
-        const allUsers = response || [];
-        console.log('查询到所有用户数量:', allUsers.length);
-        
-        // 获取该工作组下的用户（通过查询每个用户的postIds）
-        const userPromises = allUsers.map(user => {
-          return getUser(user.userId).then(userResponse => {
-            // 检查用户是否属于该工作组
-            const postIds = userResponse.postIds || [];
-            // 将 postIds 转换为数字数组进行比较
-            const postIdsNum = postIds.map(id => Number(id));
-            console.log('用户', user.userId, '的postIds:', postIds, '转换为数字:', postIdsNum);
-            
-            if (postIdsNum.includes(postIdNum)) {
-              console.log('用户', user.userId, '属于工作组', postIdNum);
-              return userResponse;
-            }
-            return null;
-          }).catch(error => {
-            console.error('获取用户信息失败:', user.userId, error);
-            return null;
-          });
-        });
-        
-        return Promise.all(userPromises).then(userResponses => {
-          const validUsers = userResponses.filter(res => res !== null);
-          console.log('找到属于工作组', postIdNum, '的用户数量:', validUsers.length);
-          return validUsers;
-        });
+      return listPostUserIds(postIdNum).then(res => {
+        const userIds = res.data || [];
+        const idList = Array.isArray(userIds) ? userIds.map(Number).filter(id => !isNaN(id)) : [];
+        if (idList.length === 0) {
+          return Promise.resolve([]);
+        }
+        return Promise.all(idList.map(uid => getUser(uid))).then(responses => responses.filter(r => r != null));
       });
     },
     /** 将菜单权限同步到工作组下的所有用户 */
@@ -615,18 +588,14 @@ export default {
         // 批量更新用户的菜单权限（替换模式：清除原有权限，使用工作组权限）
         const updatePromises = users.map(userResponse => {
           const userData = userResponse.data;
-          
-          // 使用工作组的菜单权限替换用户原有的菜单权限
           const payload = {
             ...userData,
             userId: userData.userId,
-            menuIds: menuIds, // 直接使用工作组的菜单权限，替换用户原有权限
-            // 保留用户原有的其他权限和工作组关联
-            postIds: userResponse.postIds || [], // 保留用户的工作组关联
-            departmentIds: userResponse.departmentIds || [],
-            warehouseIds: userResponse.warehouseIds || []
+            menuIds: menuIds,
+            postIds: userData.postIds || [],
+            departmentIds: userData.departmentIds || [],
+            warehouseIds: userData.warehouseIds || []
           };
-          console.log('同步菜单权限 - userId:', userData.userId, '工作组菜单:', menuIds);
           return updateUser(payload);
         });
         
@@ -654,15 +623,13 @@ export default {
         // 批量更新用户的仓库权限
         const updatePromises = users.map(userResponse => {
           const userData = userResponse.data;
-          // 合并工作组的仓库权限到用户
           const payload = {
             ...userData,
             userId: userData.userId,
-            warehouseIds: warehouseIds, // 使用工作组的仓库权限
-            // 保留用户原有的其他权限和工作组关联
-            postIds: userResponse.postIds || [], // 保留用户的工作组关联
-            menuIds: userResponse.menuIds || [],
-            departmentIds: userResponse.departmentIds || []
+            warehouseIds: warehouseIds,
+            postIds: userData.postIds || [],
+            menuIds: userData.menuIds || [],
+            departmentIds: userData.departmentIds || []
           };
           return updateUser(payload);
         });
@@ -691,15 +658,13 @@ export default {
         // 批量更新用户的科室权限
         const updatePromises = users.map(userResponse => {
           const userData = userResponse.data;
-          // 合并工作组的科室权限到用户
           const payload = {
             ...userData,
             userId: userData.userId,
-            departmentIds: departmentIds, // 使用工作组的科室权限
-            // 保留用户原有的其他权限和工作组关联
-            postIds: userResponse.postIds || [], // 保留用户的工作组关联
-            menuIds: userResponse.menuIds || [],
-            warehouseIds: userResponse.warehouseIds || []
+            departmentIds: departmentIds,
+            postIds: userData.postIds || [],
+            menuIds: userData.menuIds || [],
+            warehouseIds: userData.warehouseIds || []
           };
           return updateUser(payload);
         });
@@ -810,10 +775,19 @@ export default {
         this.$modal.msgError("加载授权数据失败");
       });
     },
-    /** 获取菜单树 */
+    /** 获取菜单树：展示本客户 hc_customer_menu 已开通的全部功能；勾选来自 sys_post_menu（接口 checkedKeys） */
     getMenuTree() {
-      return menuTreeselect().then(response => {
-        this.menuOptions = response.data || [];
+      const postId = this.authForm.postId;
+      if (!postId) {
+        this.menuOptions = [];
+        return Promise.resolve();
+      }
+      return roleMenuTreeselectPost(postId).then(response => {
+        this.menuOptions = response.menus || [];
+        if (response.checkedKeys != null) {
+          const keys = response.checkedKeys.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+          this.authForm.menuIds = keys;
+        }
         return response;
       });
     },

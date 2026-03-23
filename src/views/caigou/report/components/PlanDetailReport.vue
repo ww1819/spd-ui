@@ -53,10 +53,10 @@
           </el-form-item>
         </el-col>
         <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="planStatus" class="query-item-status-aligned">
+          <el-form-item label="采购计划状态" prop="planStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.planStatus" placeholder="全部"
                        clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.biz_status"
+              <el-option v-for="dict in dict.type.plan_status"
                          :key="dict.value"
                          :label="dict.label"
                          :value="dict.value"
@@ -140,7 +140,7 @@
       <el-table-column label="制单人" align="center" prop="createBy" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="计划状态" align="center" prop="planStatus" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.planStatus"/>
+          <dict-tag :options="dict.type.plan_status" :value="scope.row.planStatus"/>
         </template>
       </el-table-column>
     </el-table>
@@ -163,7 +163,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 
 export default {
   name: "PlanDetailReport",
-  dicts: ['biz_status'],
+  dicts: ['biz_status','plan_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse},
   data() {
     return {

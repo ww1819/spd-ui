@@ -87,14 +87,15 @@
           <el-row>
             <el-col :span="24">
               <el-form-item class="query-item-inline">
-                <el-button type="primary" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
-                <el-button type="primary" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']" style="margin-left: 10px;">修改</el-button>
-                <el-button type="primary" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']" style="margin-left: 10px;">删除</el-button>
-                <el-button type="primary" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']" style="margin-left: 10px;">更新简码</el-button>
-                <el-button type="primary" size="small" @click="handleImport" v-hasPermi="['system:user:import']" style="margin-left: 10px;">导入</el-button>
-                <el-button type="primary" size="small" @click="handleExport" v-hasPermi="['system:user:export']" style="margin-left: 10px;">导出</el-button>
-                <el-button type="primary" size="small" @click="handleQuery" style="margin-left: 10px;">搜索</el-button>
-                <el-button type="primary" size="small" @click="resetQuery" style="margin-left: 10px;">重置</el-button>
+                <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
+                <el-button type="success" icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']" style="margin-left: 10px;">修改</el-button>
+                <el-button type="danger" icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']" style="margin-left: 10px;">删除</el-button>
+                <el-button type="primary" icon="el-icon-refresh" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']" style="margin-left: 10px;">更新简码</el-button>
+                <el-button type="info" icon="el-icon-upload2" size="small" @click="handleImport('add')" v-hasPermi="['system:user:import']" style="margin-left: 10px;">新增导入</el-button>
+                <el-button type="info" icon="el-icon-refresh-right" size="small" @click="handleImport('update')" v-hasPermi="['system:user:import']" style="margin-left: 10px;">更新导入</el-button>
+                <el-button type="warning" icon="el-icon-download" size="small" @click="handleExport" v-hasPermi="['system:user:export']" style="margin-left: 10px;">导出</el-button>
+                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery" style="margin-left: 10px;">搜索</el-button>
+                <el-button icon="el-icon-refresh" size="small" @click="resetQuery" style="margin-left: 10px;">重置</el-button>
                 <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns" style="margin-left: 10px;"></right-toolbar>
               </el-form-item>
             </el-col>
@@ -393,7 +394,7 @@
         <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
         <div class="el-upload__tip text-center" slot="tip">
           <div class="el-upload__tip" slot="tip">
-            <el-checkbox v-model="upload.updateSupport" /> 是否更新已经存在的用户数据
+            <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
           </div>
           <span>仅允许导入xls、xlsx格式文件。</span>
           <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
@@ -403,6 +404,32 @@
         <el-button type="primary" @click="submitFileForm">确 定</el-button>
         <el-button @click="upload.open = false">取 消</el-button>
       </div>
+    </el-dialog>
+
+    <el-dialog
+      title="用户更新导入 — 解析结果"
+      :visible.sync="importPreview.visible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      @close="importPreview.rows = []; importPreview.columns = []"
+    >
+      <div style="margin-bottom:10px;">
+        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportUserImportPreview">导出解析结果</el-button>
+      </div>
+      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
+        <el-table-column
+          v-for="col in importPreview.columns"
+          :key="col"
+          :prop="col"
+          :label="col"
+          min-width="120"
+          show-overflow-tooltip
+        />
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="importPreview.visible = false">关 闭</el-button>
+      </span>
     </el-dialog>
 
     <!-- 授权弹窗 -->
@@ -487,12 +514,13 @@
 </template>
 
 <script>
-import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred } from "@/api/system/user";
+import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser } from "@/api/system/user";
 import { workgroupTreeSelect } from "@/api/system/workgroup";
 import { listPost } from "@/api/system/post";
 import { getConfigKey, listConfig } from "@/api/system/config";
 import { treeselect as menuTreeselect } from "@/api/system/menu";
 import { getToken } from "@/utils/auth";
+import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 
@@ -594,7 +622,9 @@ export default {
         userName: undefined,
         phonenumber: undefined,
         status: undefined,
-        deptId: undefined
+        deptId: undefined,
+        /** 耗材工作组筛选（sys_user_post.post_id），勿与 deptId 混用 */
+        sysPostId: undefined
       },
       // 列信息
       columns: [
@@ -644,10 +674,16 @@ export default {
         isUploading: false,
         // 是否更新已经存在的用户数据
         updateSupport: 0,
+        mode: 'add',
         // 设置上传的请求头部
         headers: { Authorization: "Bearer " + getToken() },
         // 上传的地址
-        url: process.env.VUE_APP_BASE_API + "/system/user/importData"
+        url: process.env.VUE_APP_BASE_API + "/system/user/importAddData"
+      },
+      importPreview: {
+        visible: false,
+        rows: [],
+        columns: []
       },
     };
   },
@@ -783,6 +819,16 @@ export default {
           departmentIds: response.departmentIds || [],
           warehouseIds: response.warehouseIds || []
         };
+        const cid = response.data && response.data.customerId;
+        // 租户用户：树展示本客户 hc_customer_menu 已开通的全部功能，勾选来自接口 checkedKeys
+        if (cid) {
+          return roleMenuTreeselectUser(userId).then(res => {
+            this.menuOptions = res.menus || [];
+            const ck = res.checkedKeys != null ? res.checkedKeys : [];
+            this.authForm.menuIds = ck.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            return res;
+          });
+        }
         return this.getMenuTree();
       }).then(() => {
         this.$nextTick(() => {
@@ -949,15 +995,17 @@ export default {
         this.workgroupList = response.rows || [];
       });
     },
-    // 工作组行点击事件
+    // 工作组行点击事件（耗材：按 sys_user_post 筛选，不能用 deptId）
     handleWorkgroupRowClick(row) {
       this.currentWorkgroupId = row.postId;
-      this.queryParams.deptId = row.postId;
+      this.queryParams.sysPostId = row.postId;
+      this.queryParams.deptId = undefined;
       this.handleQuery();
     },
-    // 工作组表头点击事件 - 显示所有用户
+    // 工作组表头点击事件 - 显示租户下全部用户
     handleWorkgroupHeaderClick() {
       this.currentWorkgroupId = undefined;
+      this.queryParams.sysPostId = undefined;
       this.queryParams.deptId = undefined;
       this.handleQuery();
     },
@@ -1035,6 +1083,7 @@ export default {
       this.dateRange = [];
       this.resetForm("queryForm");
       this.queryParams.deptId = undefined;
+      this.queryParams.sysPostId = undefined;
       this.currentWorkgroupId = undefined;
       this.handleQuery();
     },
@@ -1246,13 +1295,17 @@ export default {
       }).catch(() => {});
     },
     /** 导入按钮操作 */
-    handleImport() {
-      this.upload.title = "用户导入";
+    handleImport(mode) {
+      this.upload.mode = mode === "update" ? "update" : "add";
+      this.upload.updateSupport = this.upload.mode === "update" ? 1 : 0;
+      this.upload.url = process.env.VUE_APP_BASE_API + (this.upload.mode === "update" ? "/system/user/importUpdateData" : "/system/user/importAddData");
+      this.upload.title = this.upload.mode === "update" ? "用户更新导入" : "用户新增导入";
       this.upload.open = true;
     },
     /** 下载模板操作 */
     importTemplate() {
-      this.download('system/user/importTemplate', {
+      const api = this.upload.mode === "update" ? 'system/user/importUpdateTemplate' : 'system/user/importAddTemplate';
+      this.download(api, {
       }, `user_template_${new Date().getTime()}.xlsx`)
     },
     // 文件上传中处理
@@ -1264,8 +1317,22 @@ export default {
       this.upload.open = false;
       this.upload.isUploading = false;
       this.$refs.upload.clearFiles();
+      const inner = response.data || {};
+      if (inner.previewRows && inner.previewRows.length) {
+        this.importPreview.rows = inner.previewRows;
+        this.importPreview.columns = Object.keys(inner.previewRows[0] || {});
+        this.importPreview.visible = true;
+      }
       this.$alert("<div style='overflow: auto;overflow-x: hidden;max-height: 70vh;padding: 10px 20px 0;'>" + response.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
       this.getList();
+    },
+    async exportUserImportPreview() {
+      try {
+        await exportPreviewRowsToXlsx(this.importPreview.rows, "user_update_preview_" + new Date().getTime() + ".xlsx");
+        this.$modal.msgSuccess("已导出");
+      } catch (e) {
+        this.$modal.msgError(e.message || "导出失败");
+      }
     },
     // 提交上传文件
     submitFileForm() {

@@ -287,12 +287,6 @@ export default {
         this.total = response.total;
         this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0, subTotalAmt: 0, subTotalQty: 0 };
         this.loading = false;
-        // 调试：检查第一条数据的price字段
-        if (this.inventoryList && this.inventoryList.length > 0) {
-          console.log('第一条数据:', this.inventoryList[0]);
-          console.log('price字段:', this.inventoryList[0].price);
-          console.log('unitPrice字段:', this.inventoryList[0].unitPrice);
-        }
       });
     },
     getStatDate(){
