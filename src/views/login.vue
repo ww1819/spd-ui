@@ -123,13 +123,20 @@ export default {
   },
   created() {
     this.getCode();
-    this.getCustomerOptions();
     this.getCookie();
+    this.getCustomerOptions();
   },
   methods: {
     getCustomerOptions() {
       getCustomerOptions("hc").then(res => {
         this.customerOptions = res.data || [];
+        const def = res.defaultCustomerId;
+        if (def && (!this.loginForm.customerId || String(this.loginForm.customerId).trim() === "")) {
+          const hit = (this.customerOptions || []).some(c => c.customerId === def);
+          if (hit) {
+            this.loginForm.customerId = def;
+          }
+        }
       }).catch(() => {
         this.customerOptions = [];
       });

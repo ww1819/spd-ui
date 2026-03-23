@@ -17,6 +17,14 @@ export function getPost(postId) {
   })
 }
 
+/** 耗材工作组：关联用户 ID 列表（sys_user_post），用于同步仓库/科室/菜单 */
+export function listPostUserIds(postId) {
+  return request({
+    url: '/system/post/' + postId + '/userIds',
+    method: 'get'
+  })
+}
+
 // 新增岗位
 export function addPost(data) {
   return request({
