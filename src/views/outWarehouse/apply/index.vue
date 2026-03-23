@@ -457,11 +457,19 @@
         <el-radio-group v-model="modalObj.form.value">
           <el-radio :label="2">浏览器打印</el-radio>
         </el-radio-group>
+        <div style="margin-top: 10px;">
+          <span style="margin-right: 10px;">纸张</span>
+          <el-radio-group v-model="modalObj.form.paperType" size="small">
+            <el-radio label="third-split">三等分纸</el-radio>
+            <el-radio label="a4">A4（单页三联）</el-radio>
+          </el-radio-group>
+        </div>
       </div>
       <div v-if="showPrintContent">
         <out-order-print
           :row="modalObj.form.row"
           :print-orientation="modalObj.form.printOrientation || 'landscape'"
+          :paper-type="modalObj.form.paperType || 'third-split'"
           ref="receiptOrderPrintRef"
         ></out-order-print>
       </div>
@@ -472,7 +480,13 @@
     </el-dialog>
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
-      <out-order-print v-if="printRowData" :row="printRowData" ref="receiptOrderPrintRefAuto"></out-order-print>
+      <out-order-print
+        v-if="printRowData"
+        :row="printRowData"
+        paper-type="third-split"
+        print-orientation="landscape"
+        ref="receiptOrderPrintRefAuto"
+      ></out-order-print>
     </div>
   </div>
 </template>
@@ -522,7 +536,8 @@ export default {
         form: {
           value: null,
           row: null,
-          printOrientation: 'landscape'
+          printOrientation: 'landscape',
+          paperType: 'third-split'
         },
         ok: () => {
         },
@@ -998,15 +1013,17 @@ export default {
         form: {
           value: 2,
           row,
-          printOrientation: 'landscape'
+          printOrientation: 'landscape',
+          paperType: 'third-split'
         },
         ok: () => {
           const orient = (this.modalObj.form && this.modalObj.form.printOrientation) || 'landscape'
+          const paperType = (this.modalObj.form && this.modalObj.form.paperType) || 'third-split'
           this.modalObj.show = false
           if (this.modalObj.form.value === 1) {
             this.doPrintOut(row, false)
           } else {
-            this.windowPrintOut(row, print, orient)
+            this.windowPrintOut(row, print, orient, paperType)
           }
         },
         cancel: () => {
@@ -1014,13 +1031,15 @@ export default {
         }
       }
     },
-    windowPrintOut(row, print, printOrientation) {
+    windowPrintOut(row, print, printOrientation, paperType) {
       const orient = printOrientation || 'landscape'
+      const pType = paperType || 'third-split'
       this.getOutWarehouseDetail(row).then(res => {
         if (print) {
           if (!this.modalObj.form) this.modalObj.form = {}
           this.modalObj.form.row = res
           this.modalObj.form.printOrientation = orient
+          this.modalObj.form.paperType = pType
           this.$nextTick(() => {
             this.$refs['receiptOrderPrintRef'].start()
           })
@@ -1036,7 +1055,8 @@ export default {
               value: 2,
               row: res,
               print,
-              printOrientation: orient
+              printOrientation: orient,
+              paperType: pType
             },
             ok: () => {
               this.modalObj.show = false

@@ -5,77 +5,83 @@
     :class="rootOrientationClass"
     :style="printStyle"
   >
-    <table class="detail-table" :style="tableStyle">
-      <colgroup>
-        <col class="col-name" />
-        <col class="col-spec" />
-        <col class="col-qty" />
-        <col class="col-unit" />
-        <col class="col-price" />
-        <col class="col-amt" />
-        <col class="col-origin" />
-        <col class="col-batch" />
-        <col class="col-exp" />
-      </colgroup>
-      <!-- 页眉：标题 + 发往科室等（thead 在打印时每页重复） -->
-      <thead>
-        <tr class="print-doc-header">
-          <td colspan="9" class="header-cell">
-            <div class="doc-title">
-              <span v-if="hospitalName">{{ hospitalName }}</span>物资出库单
-            </div>
-            <div class="info-row">
-              <span class="info-label">发往科</span>
-              <span class="info-value">{{ row.departmentName || '' }}</span>
-              <span class="info-label info-gap">单据号</span>
-              <span class="info-value">{{ row.billNo || '' }}</span>
-              <span class="info-label info-gap">出库日期（审核）</span>
-              <span class="info-value">{{ formatOutboundDate(row.auditDate || row.billDate) }}</span>
-              <span class="info-label info-gap">资金来源</span>
-              <span class="info-value">{{ row.fundSource || '' }}</span>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <th>消耗品名称</th>
-          <th>规格型号</th>
-          <th>数量</th>
-          <th>单位</th>
-          <th>采购价</th>
-          <th>采购金额</th>
-          <th>产地</th>
-          <th>批号</th>
-          <th>效期</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(item, idx) in (row.detailList || [])" :key="idx">
-          <td>{{ item.materialName || '' }}</td>
-          <td>{{ formatSpecModel(item) }}</td>
-          <td>{{ formatNum(item.qty) }}</td>
-          <td>{{ item.unitName || '' }}</td>
-          <td>{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
-          <td>{{ formatAmt(item.amt) }}</td>
-          <td>{{ item.factoryName || '' }}</td>
-          <td>{{ item.batchNumber || '' }}</td>
-          <td>{{ formatValidDate(item.endTime || item.periodDate) }}</td>
-        </tr>
-        <!-- 合计：与表同列网，采购价左/采购金额右竖线延伸至本行底横线；金额在采购价、采购金额列下方 -->
-        <tr class="print-total-row">
-          <td colspan="4" class="total-label-cell">合计: {{ row.totalAmtConverter || '' }}</td>
-          <td class="total-under-price"></td>
-          <td class="total-under-amt">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</td>
-          <td colspan="3" class="total-tail-cells"></td>
-        </tr>
-      </tbody>
-    </table>
+    <div
+      v-for="copyIndex in renderCopies"
+      :key="copyIndex"
+      class="print-copy-block"
+      :class="{ 'is-a4-copy': isA4Paper }"
+    >
+      <table class="detail-table" :style="tableStyle">
+        <colgroup>
+          <col class="col-name" />
+          <col class="col-spec" />
+          <col class="col-qty" />
+          <col class="col-unit" />
+          <col class="col-price" />
+          <col class="col-amt" />
+          <col class="col-origin" />
+          <col class="col-batch" />
+          <col class="col-exp" />
+        </colgroup>
+        <!-- 页眉：标题 + 发往科室等（thead 在打印时每页重复） -->
+        <thead>
+          <tr class="print-doc-header">
+            <td colspan="9" class="header-cell">
+              <div class="doc-title">
+                <span v-if="hospitalName">{{ hospitalName }}</span>物资出库单
+              </div>
+              <div class="info-row">
+                <span class="info-label">发往科</span>
+                <span class="info-value">{{ row.departmentName || '' }}</span>
+                <span class="info-label info-gap">单据号</span>
+                <span class="info-value">{{ row.billNo || '' }}</span>
+                <span class="info-label info-gap">出库日期（审核）</span>
+                <span class="info-value">{{ formatOutboundDate(row.auditDate || row.billDate) }}</span>
+                <span class="info-label info-gap">资金来源</span>
+                <span class="info-value">{{ row.fundSource || '' }}</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <th>消耗品名称</th>
+            <th>规格型号</th>
+            <th>数量</th>
+            <th>单位</th>
+            <th>采购价</th>
+            <th>采购金额</th>
+            <th>产地</th>
+            <th>批号</th>
+            <th>效期</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(item, idx) in (row.detailList || [])" :key="idx">
+            <td>{{ item.materialName || '' }}</td>
+            <td>{{ formatSpecModel(item) }}</td>
+            <td>{{ formatNum(item.qty) }}</td>
+            <td>{{ item.unitName || '' }}</td>
+            <td>{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
+            <td>{{ formatAmt(item.amt) }}</td>
+            <td>{{ item.factoryName || '' }}</td>
+            <td>{{ item.batchNumber || '' }}</td>
+            <td>{{ formatValidDate(item.endTime || item.periodDate) }}</td>
+          </tr>
+          <!-- 合计：与表同列网，采购价左/采购金额右竖线延伸至本行底横线；金额在采购价、采购金额列下方 -->
+          <tr class="print-total-row">
+            <td colspan="4" class="total-label-cell">合计: {{ row.totalAmtConverter || '' }}</td>
+            <td class="total-under-price"></td>
+            <td class="total-under-amt">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</td>
+            <td colspan="3" class="total-tail-cells"></td>
+          </tr>
+        </tbody>
+      </table>
 
-    <!-- 签字页脚：三等分纸+Chrome 下 table tfoot 易丢失，改用打印时 position:fixed 每页底部 -->
-    <div class="print-sign-footer-fixed">
-      <div class="sign-block">
-        <span class="sign-item">领用人</span>
-        <span class="sign-item">保管</span>
-        <span class="sign-item">出库操作员 {{ row.outboundOperator || row.createBy || '' }}</span>
+      <div class="print-sign-footer-fixed">
+        <div class="sign-block">
+          <span class="sign-item">领用人</span>
+          <span class="sign-item">保管</span>
+          <span class="sign-item">出库操作员 {{ row.outboundOperator || row.createBy || '' }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -94,6 +100,11 @@ export default {
     printOrientation: {
       type: String,
       default: ''
+    },
+    /** third-split: 三等分纸；a4: A4 单页三联 */
+    paperType: {
+      type: String,
+      default: 'third-split'
     }
   },
   data() {
@@ -122,8 +133,17 @@ export default {
     rootOrientationClass() {
       return this.effectiveOrientation === 'portrait' ? 'page-slip-portrait' : 'page-slip-landscape'
     },
-    /** 三等分条：纵向 210×99；横向 297×99（A4 横向三等分条带） */
+    isA4Paper() {
+      return this.paperType === 'a4'
+    },
+    renderCopies() {
+      return this.isA4Paper ? 3 : 1
+    },
+    /** 纸张尺寸：A4 模式整页；三等分模式 99mm 高条带 */
     pageSizeForPrint() {
+      if (this.isA4Paper) {
+        return this.effectiveOrientation === 'portrait' ? '210mm 297mm' : '297mm 210mm'
+      }
       return this.effectiveOrientation === 'portrait' ? '210mm 99mm' : '297mm 99mm'
     },
     printStyle() {
@@ -266,6 +286,23 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   max-width 900px
   margin 0 auto
   font-family $font-song
+  min-height 99mm
+  box-sizing border-box
+  break-inside avoid
+  page-break-inside avoid
+
+.print-copy-block
+  min-height 99mm
+  box-sizing border-box
+  display flex
+  flex-direction column
+  justify-content space-between
+  break-inside avoid
+  page-break-inside avoid
+
+.print-copy-block.is-a4-copy
+  height 99mm
+  overflow hidden
 
 .doc-title
   font-size 15px
@@ -397,30 +434,20 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .sign-item
   min-width 72px
 
-/* 屏上不占用视口；打印时由 @media print 覆盖为 fixed */
+/* 屏上不占用视口；打印时在复制块内展示 */
 .print-sign-footer-fixed
   display none
 </style>
 
 <style lang="stylus" media="print">
-/* 命名页：与根节点 page-slip-portrait / page-slip-landscape 对应 */
-@page slipPortrait
-  size 210mm 99mm
-  margin 4mm 6mm
-
-@page slipLandscape
-  size 297mm 99mm
+/* 不强制纸张 size：允许用户在浏览器里选择 A4；
+   组件本身按 99mm 高度排版，A4 下可自然一页容纳 3 条 */
+@page
   margin 4mm 6mm
 
 @media print
   *
     color #000 !important
-
-  .out-order-print.receipt-print.page-slip-portrait
-    page slipPortrait
-
-  .out-order-print.receipt-print.page-slip-landscape
-    page slipLandscape
 
   .print-root-offscreen
     position relative !important
@@ -434,7 +461,17 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     width 100% !important
     max-width none
     padding 0
+    min-height auto !important
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+
+  .print-copy-block
+    min-height 99mm !important
+    box-sizing border-box
+    padding 0 0 4mm 0
+
+  .print-copy-block.is-a4-copy
+    height 99mm !important
+    overflow hidden !important
 
   .doc-title
     font-size 15px !important
@@ -461,20 +498,16 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   .detail-table tbody tr.print-total-row td
     border 1px solid #000 !important
 
-  /* 每页底部签字（Chrome/短纸张下 table tfoot 不可靠） */
+  /* 每联底部签字 */
   .print-sign-footer-fixed
     display block !important
-    position fixed
-    bottom 4mm
-    left 6mm
-    right 6mm
+    position static
     box-sizing border-box
     padding 2px 0 0
     border-top none
-    background #fff
+    background transparent
     font-size 11px
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
-    z-index 9999
 
   .print-sign-footer-fixed .sign-block
     padding-right 8%
