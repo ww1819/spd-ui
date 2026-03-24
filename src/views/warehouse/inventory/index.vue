@@ -7,6 +7,7 @@
       <el-tab-pane label="进销存明细表" name="third"></el-tab-pane>
       <el-tab-pane label="库存预警" name="alert"></el-tab-pane>
       <el-tab-pane label="有效期预警表" name="expiry"></el-tab-pane>
+      <el-tab-pane label="库存分布分析表" name="distribution"></el-tab-pane>
 <!--      <el-tab-pane label="历史库存明细" name="fourth"></el-tab-pane>-->
     </el-tabs>
     <FirstInventory v-if="activeName === 'first'"></FirstInventory>
@@ -14,6 +15,7 @@
     <ThirdInventory v-if="activeName === 'third'"></ThirdInventory>
     <InventoryAlert v-if="activeName === 'alert'"></InventoryAlert>
     <ExpiryAlert v-if="activeName === 'expiry'"></ExpiryAlert>
+    <InventoryDistribution v-if="activeName === 'distribution'"></InventoryDistribution>
     <FourthInventory v-if="activeName === 'fourth'"></FourthInventory>
 
   </div>
@@ -25,11 +27,12 @@ import SecondInventory from "@/views/warehouse/inventory/secondInventory.vue";
 import ThirdInventory from "@/views/warehouse/inventory/thirdInventory.vue";
 import InventoryAlert from "@/views/warehouse/inventory/inventoryAlert.vue";
 import ExpiryAlert from "@/views/warehouse/inventory/expiryAlert.vue";
+import InventoryDistribution from "@/views/warehouse/inventory/inventoryDistribution.vue";
 import FourthInventory from "@/views/warehouse/inventory/fourthInventory.vue";
 
 export default {
   name: "Inventory",
-  components: { FirstInventory, SecondInventory, ThirdInventory, InventoryAlert, ExpiryAlert, FourthInventory },
+  components: { FirstInventory, SecondInventory, ThirdInventory, InventoryAlert, ExpiryAlert, InventoryDistribution, FourthInventory },
   data() {
     return {
       activeName: 'first',
