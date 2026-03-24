@@ -285,7 +285,7 @@
           <el-col :span="12">
             <el-form-item prop="isPlatform">
               <span slot="label">
-                <el-tooltip content="是=仅平台管理员可见，租户菜单树中不展示（耗材 is_platform=1）" placement="top">
+                <el-tooltip content="是=仅平台管理员可见，组织机构菜单树中不展示（耗材 is_platform=1）" placement="top">
                   <i class="el-icon-question"></i>
                 </el-tooltip>
                 平台管理
@@ -299,7 +299,7 @@
           <el-col :span="12">
             <el-form-item prop="defaultOpenToCustomer">
               <span slot="label">
-                <el-tooltip content="是=耗材「客户功能重置」时默认写入客户/super/super_01；平台管理菜单不可同时勾选" placement="top">
+                <el-tooltip content="是=耗材「客户功能重置」时默认写入组织机构/super/super_01；平台管理菜单不可同时勾选" placement="top">
                   <i class="el-icon-question"></i>
                 </el-tooltip>
                 默认对客户开放

@@ -132,7 +132,7 @@
               <dict-tag :options="dict.type.is_use_status" :value="scope.row.isUse"/>
             </template>
           </el-table-column>
-          <el-table-column label="租户ID" align="center" prop="tenantId" width="110" show-overflow-tooltip/>
+          <el-table-column label="组织结构ID" align="center" prop="tenantId" width="110" show-overflow-tooltip/>
           <el-table-column label="备注" align="center" prop="remark" min-width="100" show-overflow-tooltip/>
           <el-table-column label="创建日期" align="center" prop="createTime" width="100">
             <template slot-scope="scope">
@@ -204,7 +204,7 @@
                     <el-input
                       v-model="form.hisId"
                       :disabled="!!form.financeCategoryId"
-                      :placeholder="form.financeCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水租户新增必填' : '非衡水租户无需填写')"
+                      :placeholder="form.financeCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水新增必填' : '非衡水无需填写')"
                       clearable
                     />
                   </el-form-item>
@@ -224,8 +224,8 @@
               </el-row>
               <el-row :gutter="20">
                 <el-col :span="12">
-                  <el-form-item label="租户ID(客户)" prop="tenantId">
-                    <el-input v-model="form.tenantId" disabled placeholder="保存时默认当前客户" />
+                  <el-form-item label="组织机构ID" prop="tenantId">
+                    <el-input v-model="form.tenantId" disabled placeholder="保存时默认当前组织机构" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -251,10 +251,10 @@
               :closable="false"
               show-icon
               style="margin-bottom:12px;"
-              title="衡水市第三人民医院：Excel 新增行须填「HIS系统ID」且租户内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
+              title="衡水市第三人民医院：Excel 新增行须填「HIS系统ID」且组织机构内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
             />
             <p v-if="upload.mode === 'add'" style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-              <strong>新增导入</strong>：与库房分类一致，按<strong>财务分类编码</strong>匹配租户数据；仅允许新增（库中已存在相同编码则整单校验不通过）。先校验并确认后写入。
+              <strong>新增导入</strong>：与库房分类一致，按<strong>财务分类编码</strong>匹配组织机构数据；仅允许新增（库中已存在相同编码则整单校验不通过）。先校验并确认后写入。
             </p>
             <p v-else style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
               <strong>更新导入</strong>：与库房分类一致，Excel 须含<strong>财务分类ID、财务分类名称</strong>；仅更新名称与拼音简码，不改编码与 HIS ID。先校验并确认后写入。

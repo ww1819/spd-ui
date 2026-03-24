@@ -54,7 +54,7 @@
       <el-table-column label="序号" align="center" prop="index" width="50"/>
       <el-table-column label="单位编码" align="center" prop="unitCode" width="120"/>
       <el-table-column label="单位名称" align="center" prop="unitName" width="180"/>
-      <el-table-column label="租户ID" align="center" prop="tenantId" width="130" show-overflow-tooltip />
+      <el-table-column label="组织机构ID" align="center" prop="tenantId" width="130" show-overflow-tooltip />
       <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
       <el-table-column label="创建日期" align="center" prop="createTime" width="100">
         <template slot-scope="scope">
@@ -121,7 +121,7 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="租户ID(客户)">
+              <el-form-item label="组织机构ID">
                 <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
               </el-form-item>
             </el-col>

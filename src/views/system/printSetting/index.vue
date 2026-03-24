@@ -19,7 +19,7 @@
             @keyup.enter.native="handleQuery"
           />
         </el-form-item>
-        <el-form-item label="租户ID" prop="tenantId">
+        <el-form-item label="组织机构ID" prop="tenantId">
           <el-input
             v-model="queryParams.tenantId"
             placeholder="全库默认留空"
@@ -96,7 +96,7 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" type="index" width="60" align="center" />
       <el-table-column label="模板名称" align="center" prop="templateName" width="140" show-overflow-tooltip />
-      <el-table-column label="适用租户" align="center" prop="tenantId" width="150" show-overflow-tooltip>
+      <el-table-column label="适用组织机构" align="center" prop="tenantId" width="150" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ scope.row.tenantId || '全库默认' }}</span>
         </template>

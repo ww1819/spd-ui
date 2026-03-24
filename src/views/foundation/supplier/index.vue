@@ -40,7 +40,7 @@
             <el-form-item prop="name">
               <el-input
                 v-model="queryParams.name"
-                placeholder="供应商名称" 
+                placeholder="供应商名称"
                 clearable
                 @keyup.enter.native="handleQuery"
                 style="width: 150px"
@@ -241,7 +241,7 @@
       <el-table-column label="联系电话" align="center" prop="contactsPhone" width="150" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
         <template slot-scope="scope">
-          
+
           <el-button
             size="small"
             type="text"
@@ -446,7 +446,7 @@
                 <el-input v-model="form.companyPerson" placeholder="公司负责人" />
               </el-form-item>
             </el-col>
-            <el-col :span="6"> 
+            <el-col :span="6">
               <el-form-item label="税号" prop="taxNumber">
                 <el-input v-model="form.taxNumber" placeholder="请输入税号" />
               </el-form-item>
@@ -512,7 +512,7 @@
           title="衡水市第三人民医院：Excel 新增行须填「HIS供应商ID」且唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
         />
         <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-          <strong>增量导入</strong>：按供应商编码匹配租户下数据；可勾选「更新已存在」后<strong>仅更新供应商名称与名称简码</strong>。先整单校验并确认后写入。
+          <strong>增量导入</strong>：按供应商编码匹配组织机构下数据；可勾选「更新已存在」后<strong>仅更新供应商名称与名称简码</strong>。先整单校验并确认后写入。
         </p>
         <el-upload
           ref="upload"

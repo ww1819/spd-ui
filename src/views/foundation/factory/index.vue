@@ -151,7 +151,7 @@
           <el-button
             size="small"
             type="text"
-           
+
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:factory:edit']"
           >修改</el-button>
@@ -247,10 +247,10 @@
           :closable="false"
           show-icon
           style="margin-bottom:12px;"
-          title="衡水市第三人民医院：Excel 新增行须填「HIS生产厂家ID」且租户内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
+          title="衡水市第三人民医院：Excel 新增行须填「HIS生产厂家ID」且组织机构内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
         />
         <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-          <strong>增量导入</strong>：按厂家编码匹配租户下数据；可勾选「更新已存在」后<strong>仅更新厂家名称与厂家简码</strong>。先整单校验并确认后写入。
+          <strong>增量导入</strong>：按厂家编码匹配组织机构下数据；可勾选「更新已存在」后<strong>仅更新厂家名称与厂家简码</strong>。先整单校验并确认后写入。
         </p>
         <el-upload
           ref="upload"
@@ -340,9 +340,9 @@ export default {
         return "保存后不可修改";
       }
       if (this.factoryImportRequiresHisId) {
-        return "必填：HIS 生产厂家标识，租户内唯一";
+        return "必填：HIS 生产厂家标识，组织机构内唯一";
       }
-      return "非衡水医院租户无需填写（后台不保存）";
+      return "非衡水医院组织机构无需填写（后台不保存）";
     },
   },
   data() {
