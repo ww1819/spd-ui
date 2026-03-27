@@ -286,7 +286,7 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="供应商编码" prop="code">
-                <el-input v-model="form.code" :disabled="isDisabled" placeholder="供应商编码" />
+                <el-input v-model="form.code" :disabled="isDisabled" placeholder="供应商编码（不填自动生成）" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
@@ -601,10 +601,7 @@ export default {
       if (this.form && this.form.id) {
         return "保存后不可修改";
       }
-      if (this.supplierImportRequiresHisId) {
-        return "必填：HIS 供应商标识，组织机构内唯一";
-      }
-      return "非衡水医院无需填写（后台不保存）";
+      return "选填：HIS 供应商标识（不填不影响保存）";
     },
   },
     data() {
@@ -673,28 +670,8 @@ export default {
       form: {},
       // 表单校验
       rules: {
-        code: [
-          { required: true, message: "供应商编码不能为空", trigger: "blur" }
-        ],
         name: [
           { required: true, message: "供应商名称不能为空", trigger: "blur" }
-        ],
-        referredCode: [
-          { required: true, message: "名称简码不能为空", trigger: "blur" }
-        ],
-        hisId: [
-          {
-            validator: (rule, value, callback) => {
-              if (!this.form.id && this.supplierImportRequiresHisId) {
-                if (value === undefined || value === null || String(value).trim() === "") {
-                  callback(new Error("衡水市第三人民医院新增时必须填写HIS供应商ID"));
-                  return;
-                }
-              }
-              callback();
-            },
-            trigger: "blur"
-          }
         ]
       }
     };

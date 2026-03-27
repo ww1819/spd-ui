@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <transition name="modal-fade">
     <div v-if="show" class="local-modal-mask">
       <transition name="modal-zoom">
@@ -222,8 +222,8 @@ export default {
       this.$emit('closeDialog')
     },
     checkBtn() {
-      //确定按钮
-      if(!this.selectRow) {
+      //确定按钮（selectRow 默认为 []，空数组在 JS 中为真值，需用 length 判断）
+      if (!this.selectRow || !this.selectRow.length) {
         this.$message({ message: '请先选择数据', type: 'warning' })
         return
       }

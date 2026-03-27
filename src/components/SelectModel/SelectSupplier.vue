@@ -1,5 +1,6 @@
-﻿<template>
-  <el-select v-model="supplier" 
+<template>
+  <el-select v-model="supplier"
+             popper-class="select-dropdown--multiline"
              filterable
              remote
              :remote-method="remoteMethod"
@@ -14,12 +15,22 @@
       :key="item.id"
       :label="item.name"
       :value="item.id"
-    ></el-option>
+    >
+      <el-tooltip
+        :content="item.name || ''"
+        placement="top"
+        effect="dark"
+        :open-delay="250"
+        popper-class="select-model-dropdown-tooltip"
+      >
+        <span class="select-option-label-wrap">{{ item.name }}</span>
+      </el-tooltip>
+    </el-option>
   </el-select>
 </template>
 
 <script>
-import { listSupplierAll, listSupplier} from "@/api/foundation/supplier";
+import { listSupplierAll, listSupplier, getSupplier} from "@/api/foundation/supplier";
 import { pinyin } from 'pinyin-pro';
 
 export default {
@@ -49,12 +60,18 @@ export default {
       }
     }
   },
+  watch: {
+    value() {
+      this.ensureSelectedOption();
+    }
+  },
   created() {
     // 使用 remote 时，初始不加载数据，等待用户输入
     // 但需要预加载所有供应商用于首字母搜索
     this.loadAllSuppliers();
     // 初始加载少量数据，确保下拉框可以正常打开和输入
     this.loadInitialData();
+    this.ensureSelectedOption();
   },
   beforeDestroy() {
     // 清理定时器
@@ -63,6 +80,17 @@ export default {
     }
   },
   methods: {
+    ensureSelectedOption() {
+      if (!this.value) return;
+      const exists = this.supplierOptions.some(item => item.id === this.value);
+      if (exists) return;
+      getSupplier(this.value).then(response => {
+        const row = response && response.data ? response.data : null;
+        if (row) {
+          this.supplierOptions = [row, ...this.supplierOptions];
+        }
+      });
+    },
     /** 预加载所有供应商（用于首字母搜索） */
     loadAllSuppliers() {
       listSupplierAll().then(response => {
@@ -167,7 +195,9 @@ export default {
         const queryLower = query.toLowerCase();
         
         // 1. 名称模糊匹配（不区分大小写）
-        if (name.includes(query) || nameUpper.includes(upperQuery)) {
+        const code = item.code || '';
+        const referredCode = item.referredCode || '';
+        if (name.includes(query) || nameUpper.includes(upperQuery) || code.toUpperCase().includes(upperQuery) || referredCode.toUpperCase().includes(upperQuery)) {
           return true;
         }
         

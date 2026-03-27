@@ -1,5 +1,9 @@
 <template>
-  <div class="refund-goods-print" ref="receiptRefundGoodsPrintRef">
+  <div
+    class="refund-goods-print"
+    :class="{ 'is-a4-print': isA4Paper, 'is-third-split-print': isThirdSplitPaper }"
+    ref="receiptRefundGoodsPrintRef"
+  >
     <div
       v-for="copyIndex in renderCopies"
       :key="copyIndex"
@@ -44,7 +48,7 @@
             <td>{{ item.unitName || '' }}</td>
             <td>{{ item.materialSpeci || '' }}</td>
             <td class="num-cell">{{ formatQty(item.qty) }}</td>
-            <td class="num-cell">{{ formatPrice(item.price) }}</td>
+            <td class="num-cell">{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
             <td class="num-cell">{{ formatPrice(item.amt) }}</td>
             <td>{{ item.batchNumber || '' }}</td>
           </tr>
@@ -159,28 +163,37 @@ export default {
   font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   font-size 12px
 
+/* 仅三等分纸固定版心高度；A4 用内容自然高度，避免 min-height+page-break-inside 触发空白第二页 */
 .print-copy-block
-  min-height 99mm
   box-sizing border-box
   display flex
   flex-direction column
-  justify-content space-between
+  justify-content flex-start
+  min-height 0
+  height auto
+
+.print-copy-block.is-third-split-copy
+  min-height 99mm
+  height 99mm
+  overflow hidden
   break-inside avoid
   page-break-inside avoid
 
-.print-copy-block.is-third-split-copy
-  height 99mm
-  overflow hidden
+.is-a4-print .print-copy-block:not(.is-third-split-copy)
+  break-inside auto
+  page-break-inside auto
 
 .doc-title
-  font-size 22px
+  font-size 18px
+  line-height 1.2
   text-align center
-  margin-bottom 6px
+  margin-bottom 2px
 
 .summary
   display flex
   flex-wrap wrap
-  margin-bottom 6px
+  margin-bottom 2px
+  line-height 1.25
 
 .summary-item
   width 33.33%
@@ -216,6 +229,9 @@ export default {
 .common-table .col-batch
   width 12%
 
+.common-table thead tr:first-child th
+  padding-top 1px
+
 .common-table th,
 .common-table td
   border 1px solid #000
@@ -243,13 +259,13 @@ export default {
 .amount-row
   display flex
   justify-content space-between
-  margin-top 4px
+  margin-top 2px
   white-space nowrap
 
 .foot
   display flex
   justify-content space-between
-  margin-top 12px
+  margin-top 6px
   white-space nowrap
 
 @page

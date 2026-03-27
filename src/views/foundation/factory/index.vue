@@ -186,7 +186,7 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="厂家编码" prop="factoryCode">
-                <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="厂家编码" />
+                <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="厂家编码（不填自动生成）" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
@@ -339,10 +339,7 @@ export default {
       if (this.form && this.form.factoryId) {
         return "保存后不可修改";
       }
-      if (this.factoryImportRequiresHisId) {
-        return "必填：HIS 生产厂家标识，组织机构内唯一";
-      }
-      return "非衡水医院组织机构无需填写（后台不保存）";
+      return "选填：HIS 生产厂家标识（不填不影响保存）";
     },
   },
   data() {
@@ -404,31 +401,8 @@ export default {
       form: {},
       // 表单校验
       rules: {
-        factoryCode: [
-          { required: true, message: "厂家编码不能为空", trigger: "blur" }
-        ],
         factoryName: [
           { required: true, message: "厂家名称不能为空", trigger: "blur" }
-        ],
-        factoryAddress: [
-          { required: true, message: "厂家地址不能为空", trigger: "blur" }
-        ],
-        factoryContact: [
-          { required: true, message: "厂家联系方式不能为空", trigger: "blur" }
-        ],
-        hisId: [
-          {
-            validator: (rule, value, callback) => {
-              if (!this.form.factoryId && this.factoryImportRequiresHisId) {
-                if (value === undefined || value === null || String(value).trim() === "") {
-                  callback(new Error("衡水市第三人民医院新增时必须填写HIS生产厂家ID"));
-                  return;
-                }
-              }
-              callback();
-            },
-            trigger: "blur"
-          }
         ]
       }
     };

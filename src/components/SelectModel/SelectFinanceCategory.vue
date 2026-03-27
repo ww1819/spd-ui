@@ -1,5 +1,7 @@
-﻿<template>
-  <el-select v-model="financeCategory" filterable
+<template>
+  <el-select v-model="financeCategory"
+             popper-class="select-dropdown--multiline"
+             filterable
              clearable
              placeholder="请选择财务分类"
              :disabled="value2"
@@ -9,7 +11,17 @@
       :key="item.financeCategoryId"
       :label="item.financeCategoryName"
       :value="item.financeCategoryId"
-    ></el-option>
+    >
+      <el-tooltip
+        :content="item.financeCategoryName || ''"
+        placement="top"
+        effect="dark"
+        :open-delay="250"
+        popper-class="select-model-dropdown-tooltip"
+      >
+        <span class="select-option-label-wrap">{{ item.financeCategoryName }}</span>
+      </el-tooltip>
+    </el-option>
   </el-select>
 </template>
 
