@@ -595,8 +595,8 @@ export default {
         obj.amt = item.amt;
         obj.batchNo = item.batchNo;
         obj.batchNumber = item.batchNumber || item.materialNo || "";
-        obj.beginTime = item.beginTime;
-        obj.endTime = item.endTime;
+        obj.beginTime = item.beginTime || item.beginDate || null;
+        obj.endTime = item.endTime || item.endDate || null;
         obj.remark = item.remark;
         obj.material = item.material;
         this.stkIoBillEntryList.push(obj);

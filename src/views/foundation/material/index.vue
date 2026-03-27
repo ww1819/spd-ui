@@ -1324,6 +1324,11 @@ export default {
               callback();
               return;
             }
+            // 衡水三院新增时编码由后端按规则生成，前端不做唯一性拦截，避免误判
+            if (this.isHsThirdTenant && !this.form.id) {
+              callback();
+              return;
+            }
             listMaterial({ code: value, pageNum: 1, pageSize: 1 }).then(response => {
               if (response.rows && response.rows.length > 0) {
                 const existingMaterial = response.rows[0];
@@ -1346,8 +1351,20 @@ export default {
         storeroomId: [
           {
             validator: (rule, value, callback) => {
-              if (this.isHsThirdTenant && (value === null || value === undefined || value === '')) {
-                callback(new Error('衡水三院新增产品档案必须选择库房分类'));
+              if (this.dialogMode === 'add' && (value === null || value === undefined || value === '')) {
+                callback(new Error('新增产品档案必须选择库房分类'));
+                return;
+              }
+              callback();
+            },
+            trigger: "change"
+          }
+        ],
+        financeCategoryId: [
+          {
+            validator: (rule, value, callback) => {
+              if (this.dialogMode === 'add' && (value === null || value === undefined || value === '')) {
+                callback(new Error('新增产品档案必须选择财务分类'));
                 return;
               }
               callback();
@@ -1961,8 +1978,17 @@ export default {
                 this.getList();
               });
             } else {
+              if (this.isHsThirdTenant) {
+                // 衡水三院新增编码以服务端为准，避免本地生成并发重复
+                this.form.code = '';
+              }
               addMaterial(this.form).then(response => {
-                this.$modal.msgSuccess("新增成功");
+                const finalCode = this.getFinalMaterialCode(response);
+                if (finalCode) {
+                  this.$modal.msgSuccess("新增成功，后端最终生成编码：" + finalCode);
+                } else {
+                  this.$modal.msgSuccess("新增成功");
+                }
                 this.open = false;
                 this.getList();
               });
@@ -1989,6 +2015,14 @@ export default {
         }
       });
       return payload;
+    },
+    getFinalMaterialCode(response) {
+      const data = response && response.data ? response.data : null;
+      if (!data) return '';
+      if (data.code) return String(data.code);
+      if (data.materialCode) return String(data.materialCode);
+      if (data.material && data.material.code) return String(data.material.code);
+      return '';
     },
     openZoomEditor(prop, label) {
       if (!this.isEditMode || !prop) return;

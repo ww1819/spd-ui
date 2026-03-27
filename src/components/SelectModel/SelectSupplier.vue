@@ -5,7 +5,7 @@
              remote
              :remote-method="remoteMethod"
              clearable
-             placeholder="供应商名称或首字母搜索"
+             placeholder="供应商编码/名称/拼音简码搜索"
              :disabled="value2"
              :loading="loading"
              default-first-option
@@ -195,8 +195,8 @@ export default {
         const queryLower = query.toLowerCase();
         
         // 1. 名称模糊匹配（不区分大小写）
-        const code = item.code || '';
-        const referredCode = item.referredCode || '';
+        const code = item.code || item.supplierCode || '';
+        const referredCode = item.referredCode || item.referredName || item.supplierReferredCode || '';
         if (name.includes(query) || nameUpper.includes(upperQuery) || code.toUpperCase().includes(upperQuery) || referredCode.toUpperCase().includes(upperQuery)) {
           return true;
         }

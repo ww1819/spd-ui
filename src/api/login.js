@@ -48,7 +48,10 @@ export function getInfo() {
 export function getCurrentTenant() {
   return request({
     url: '/getCurrentTenant',
-    method: 'get'
+    method: 'get',
+    headers: {
+      skipTenantSync: true
+    }
   })
 }
 

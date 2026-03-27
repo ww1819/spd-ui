@@ -89,8 +89,8 @@ export default {
         
         const name = item.name;
         const nameUpper = name.toUpperCase();
-        const code = (item.code || '').toUpperCase();
-        const referred = (item.referredName || '').toUpperCase();
+        const code = String(item.code || item.departmentCode || '').toUpperCase();
+        const referred = String(item.referredName || item.referredCode || item.departmentReferredCode || '').toUpperCase();
         
         // 1. 名称/编码/简码模糊匹配（不区分大小写）
         if (name.includes(query) || nameUpper.includes(queryUpper) || code.includes(queryUpper) || referred.includes(queryUpper)) {
