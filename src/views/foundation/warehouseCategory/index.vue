@@ -135,7 +135,7 @@
               <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="租户ID" align="center" prop="tenantId" width="120" show-overflow-tooltip/>
+          <el-table-column label="组织机构ID" align="center" prop="tenantId" width="120" show-overflow-tooltip/>
           <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip/>
           <el-table-column label="启用" align="center" width="100">
             <template slot-scope="scope">
@@ -218,15 +218,15 @@
                 <el-input
                   v-model="form.hisId"
                   :disabled="!!form.warehouseCategoryId"
-                  :placeholder="form.warehouseCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水租户新增必填' : '非衡水租户无需填写')"
+                  :placeholder="form.warehouseCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水新增必填' : '非衡水无需填写')"
                   clearable
                   style="width: 100%"
                 />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="租户ID(客户)" prop="tenantId">
-                <el-input v-model="form.tenantId" placeholder="保存时默认当前客户" disabled style="width: 100%" />
+              <el-form-item label="组织机构ID" prop="tenantId">
+                <el-input v-model="form.tenantId" placeholder="保存时默认当前组织机构" disabled style="width: 100%" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -254,10 +254,10 @@
           :closable="false"
           show-icon
           style="margin-bottom:12px;"
-          title="衡水市第三人民医院：Excel 新增行须填「HIS系统ID」且租户内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
+          title="衡水市第三人民医院：Excel 新增行须填「HIS系统ID」且组织机构内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
         />
         <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-          <strong>增量导入</strong>：按库房分类编码匹配租户下数据；可勾选「更新已存在」后<strong>仅更新分类名称与简码</strong>。先整单校验并确认后写入。
+          <strong>增量导入</strong>：按库房分类编码匹配组织机构下数据；可勾选「更新已存在」后<strong>仅更新分类名称与简码</strong>。先整单校验并确认后写入。
         </p>
         <el-upload
           ref="upload"

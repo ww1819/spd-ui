@@ -1,7 +1,9 @@
-﻿<template>
-  <el-select v-model="warehouseCategory" filterable
+<template>
+  <el-select v-model="warehouseCategory"
+             filterable
+             :filter-method="filterMethod"
              clearable
-             placeholder="请选择库房分类"
+             placeholder="编码/名称/简码搜索"
              :disabled="value2"
   >
     <el-option
@@ -15,6 +17,7 @@
 
 <script>
 import { listWarehouseCategoryAll} from "@/api/foundation/warehouseCategory";
+import { pinyin } from "pinyin-pro";
 
 export default {
   props: ['value','value2'],
@@ -22,6 +25,7 @@ export default {
     return {
       // 库房分类选项
       warehouseCategoryOptions: [],
+      allWarehouseCategoryOptions: [],
       // 表单参数
       form: {},
     }
@@ -44,9 +48,31 @@ export default {
     getList() {
       this.loading = true;
       listWarehouseCategoryAll().then(response => {
-        this.warehouseCategoryOptions = response;
+        this.allWarehouseCategoryOptions = response || [];
+        this.warehouseCategoryOptions = this.allWarehouseCategoryOptions;
       });
     },
+    filterMethod(query) {
+      if (!query) {
+        this.warehouseCategoryOptions = this.allWarehouseCategoryOptions;
+        return;
+      }
+      const q = query.trim().toUpperCase();
+      this.warehouseCategoryOptions = this.allWarehouseCategoryOptions.filter(item => {
+        const code = String(item.warehouseCategoryCode || item.code || "").toUpperCase();
+        const name = String(item.warehouseCategoryName || item.name || "").toUpperCase();
+        const referred = String(item.referredName || item.referredCode || item.warehouseCategoryReferredCode || "").toUpperCase();
+        const py = this.getPinyinInitials(item.warehouseCategoryName || item.name || "");
+        return code.includes(q) || name.includes(q) || referred.includes(q) || py.includes(q);
+      });
+    },
+    getPinyinInitials(str) {
+      try {
+        return pinyin(str || "", { pattern: "first", toneType: "none", type: "array" }).join("").toUpperCase();
+      } catch (e) {
+        return "";
+      }
+    }
   }
 }
 </script>

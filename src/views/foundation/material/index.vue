@@ -197,8 +197,8 @@
           type="info"
           plain
           icon="el-icon-upload2"
-          size="medium" 
-          @click="handleMaterialImport('add')" 
+          size="medium"
+          @click="handleMaterialImport('add')"
           v-hasPermi="['foundation:material:import']"
           >新增导入</el-button>
       </el-col>
@@ -211,7 +211,7 @@
           @click="handleMaterialImport('update')"
           v-hasPermi="['foundation:material:import']"
         >更新导入</el-button>
-      </el-col> 
+      </el-col>
       <el-col :span="1.5">
         <el-button
           type="primary" size="medium"
@@ -230,21 +230,66 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="materialList" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="60vh" border stripe>
+      <el-table v-loading="loading" :data="materialList" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="60vh" border stripe>
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <el-table-column type="index" label="序号" align="center" width="80" key="index" v-if="columns[0].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="code" width="100" key="code" v-if="columns[1].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="耗材名称" align="center" prop="name" width="180" key="name" v-if="columns[2].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="规格" align="center" prop="speci" width="120" key="speci" v-if="columns[3].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="型号" align="center" prop="model" width="120" key="model" v-if="columns[4].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="价格" align="center" prop="price" width="100" key="price" v-if="columns[5].visible" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材编码" align="left" prop="code" width="160" key="code" v-if="columns[1].visible" resizable class-name="material-top-cell">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left">{{ scope.row.code }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="耗材名称" align="left" prop="name" width="240" key="name" v-if="columns[2].visible" resizable class-name="material-top-cell">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left">{{ scope.row.name }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="规格" align="left" prop="speci" width="200" key="speci" v-if="columns[3].visible" resizable class-name="material-top-cell">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left">{{ scope.row.speci }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="型号" align="left" prop="model" width="200" key="model" v-if="columns[4].visible" resizable class-name="material-top-cell">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left">{{ scope.row.model }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="医保编码" align="left" prop="medicalNo" width="190" key="medicalNo" v-if="columns[23].visible" resizable class-name="material-top-cell">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left">{{ scope.row.medicalNo }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="注册证号" align="left" prop="registerNo" width="190" key="registerNo" v-if="columns[24].visible" resizable class-name="material-top-cell">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left">{{ scope.row.registerNo }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="财务分类" align="left" prop="fdFinanceCategory.financeCategoryName" width="220" key="financeCategory" v-if="columns[25].visible" resizable class-name="material-top-cell">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left">
+            {{ scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName ? scope.row.fdFinanceCategory.financeCategoryName : '' }}
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="价格" align="right" prop="price" width="130" key="price" v-if="columns[5].visible" resizable class-name="material-price-cell">
+        <template slot-scope="scope">
+          <div class="material-cell-price-right">{{ formatPrice4(scope.row.price) }}</div>
+        </template>
+      </el-table-column>
       <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="150" key="factory" v-if="columns[7].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" key="supplier" v-if="columns[8].visible" show-overflow-tooltip resizable/>
+      <el-table-column label="生产厂家" align="left" prop="fdFactory.factoryName" width="220" key="factory" v-if="columns[7].visible" resizable class-name="material-top-cell">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left">{{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '' }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="供应商" align="left" prop="supplier.name" width="240" key="supplier" v-if="columns[8].visible" resizable class-name="material-top-cell">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '' }}</div>
+        </template>
+      </el-table-column>
       <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" key="warehouseCategory" v-if="columns[9].visible" show-overflow-tooltip resizable/>
       <el-table-column label="储存方式" align="center" prop="isWay" width="100" key="storageMethod" v-if="columns[10].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -283,8 +328,14 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
         <template slot-scope="scope">
+          <el-button
+            size="small"
+            type="text"
+            @click="handleView(scope.row)"
+            v-hasPermi="['foundation:material:query']"
+          >查看详情</el-button>
           <el-button
             size="small"
             type="text"
@@ -319,15 +370,15 @@
         <el-tabs v-model="activeTab" @tab-click="onTabClick">
           <!-- 基本信息 -->
           <el-tab-pane label="基本信息" name="form">
-            <el-form ref="form" :model="form" :rules="rules" label-width="120px">
+            <el-form ref="form" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode">
               <!-- 第一行 -->
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="耗材编码：" prop="code">
                 <el-input
                   v-model="form.code"
-                  :disabled="isDisabled || form.id != null"
-                  placeholder="耗材编码（留空自动生成6位数字，手工输入可为任意长度）"
+                  :disabled="isDisabled || form.id != null || isHsThirdTenant"
+                  :placeholder="isHsThirdTenant ? '耗材编码由系统自动生成' : '耗材编码（留空自动生成6位数字，手工输入可为任意长度）'"
                   @blur="validateCode"
                   @input="handleCodeInput"
                 />
@@ -335,7 +386,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="耗材名称：" prop="name">
-                <el-input v-model="form.name" @input="nameChange" placeholder="耗材名称" />
+                <el-input v-model="form.name" @focus="openZoomEditor('name', '耗材名称')" @input="nameChange" placeholder="耗材名称" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -355,7 +406,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="规格：" prop="speci">
-                    <el-input v-model="form.speci" placeholder="规格" />
+                    <el-input v-model="form.speci" @focus="openZoomEditor('speci', '规格')" placeholder="规格" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -364,7 +415,7 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="型号：" prop="model">
-                    <el-input v-model="form.model" placeholder="型号" />
+                    <el-input v-model="form.model" @focus="openZoomEditor('model', '型号')" placeholder="型号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -379,7 +430,7 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="库房分类：" prop="storeroomId">
-                    <SelectWarehouseCategory v-model="form.storeroomId"/>
+                    <SelectWarehouseCategory v-model="form.storeroomId" @input="onStoreroomChange"/>
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -407,8 +458,8 @@
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="注册证件号：" prop="registerNo">
-                    <el-input v-model="form.registerNo" placeholder="注册证件号" />
+                  <el-form-item label="注册证号：" prop="registerNo">
+                    <el-input v-model="form.registerNo" @focus="openZoomEditor('registerNo', '注册证号')" placeholder="注册证号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -445,7 +496,7 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="医保编码：" prop="medicalNo">
-                <el-input v-model="form.medicalNo" placeholder="医保编码" />
+                <el-input v-model="form.medicalNo" @focus="openZoomEditor('medicalNo', '医保编码')" placeholder="医保编码" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -602,7 +653,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="备注：" prop="countryName">
-                <el-input v-model="form.countryName" placeholder="备注" />
+                <el-input v-model="form.countryName" @focus="openZoomEditor('countryName', '备注')" placeholder="备注" />
                   </el-form-item>
                 </el-col>
           </el-row>
@@ -716,7 +767,7 @@
               <!-- 第九行 - HIS对照框 -->
           <el-row :gutter="20">
             <el-col :span="24">
-              <div class="his-compare-container">
+              <div v-if="!isEditMode" class="his-compare-container">
                 <div class="his-compare-header">
                   <span class="his-compare-title">HIS对照</span>
                 </div>
@@ -947,6 +998,7 @@
                 :before-upload="beforeImageUpload"
                 :auto-upload="true"
                 accept="image/*"
+                :disabled="isViewMode"
               >
                 <div v-if="form.imageUrl" class="material-image-preview-large" slot="trigger">
                   <img :src="form.imageUrl" alt="耗材图片" @click.stop="previewImage" />
@@ -961,17 +1013,20 @@
                   <div style="font-size: 12px; color: #ccc; margin-top: 5px;">支持 JPG、PNG 格式，大小不超过 2MB</div>
                 </div>
               </el-upload>
-              <div v-if="form.imageUrl" style="margin-top: 20px;">
+              <div v-if="form.imageUrl && !isViewMode" style="margin-top: 20px;">
                 <el-button type="primary" @click="previewImage">查看图片</el-button>
                 <el-button type="primary" @click="saveImage">保存</el-button>
                 <el-button type="primary" @click="removeImage">删除图片</el-button>
+              </div>
+              <div v-else-if="form.imageUrl && isViewMode" style="margin-top: 20px;">
+                <el-button type="primary" @click="previewImage">查看图片</el-button>
               </div>
             </div>
           </div>
           </el-tab-pane>
 
-          <!-- 启用停用记录（仅编辑时显示） -->
-          <el-tab-pane v-if="form.id" label="启用停用记录" name="statusLog">
+          <!-- 启用停用记录（查看详情时显示） -->
+          <el-tab-pane v-if="form.id && isViewMode" label="启用停用记录" name="statusLog">
             <div class="log-tab-content">
               <el-table :data="statusLogList" border size="small" max-height="360">
                 <el-table-column label="操作类型" width="90" align="center">
@@ -988,8 +1043,8 @@
               <div v-if="statusLogList.length === 0" class="empty-log-tip">暂无启用停用记录</div>
             </div>
           </el-tab-pane>
-          <!-- 变更记录（仅编辑时显示，左侧时间轴 + 右侧变更记录表） -->
-          <el-tab-pane v-if="form.id" label="变更记录" name="changeLog">
+          <!-- 变更记录（查看详情时显示，左侧时间轴 + 右侧变更记录表） -->
+          <el-tab-pane v-if="form.id && isViewMode" label="变更记录" name="changeLog">
             <div class="log-tab-content change-log-with-timeline">
               <el-row :gutter="16">
                 <el-col :span="10">
@@ -1028,11 +1083,17 @@
               </el-row>
             </div>
           </el-tab-pane>
+          <el-tab-pane v-if="form.id && isViewMode" label="入库记录" name="inboundRecords">
+            <MaterialInboundRecords ref="inboundRecordsRef" :material-id="form.id" />
+          </el-tab-pane>
         </el-tabs>
 
-        <div class="dialog-footer" style="text-align:center;margin-top:16px;">
+        <div class="dialog-footer" style="text-align:center;margin-top:16px;" v-if="!isViewMode">
           <el-button type="primary" size="medium" @click="submitForm">确 定</el-button>
           <el-button size="medium" @click="cancel">取 消</el-button>
+        </div>
+        <div class="dialog-footer" style="text-align:center;margin-top:16px;" v-else>
+          <el-button size="medium" @click="cancel">关 闭</el-button>
         </div>
       </div>
     </div>
@@ -1047,6 +1108,19 @@
       <div style="text-align: center;">
         <img :src="imagePreviewUrl" style="max-width: 100%; max-height: 600px;" alt="预览图片" />
       </div>
+    </el-dialog>
+    <el-dialog :title="zoomEditor.label + ' - 放大编辑'" :visible.sync="zoomEditor.visible" width="760px" append-to-body>
+      <el-input
+        v-model="zoomEditor.value"
+        type="textarea"
+        :rows="10"
+        resize="none"
+        placeholder="请输入内容"
+      />
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="zoomEditor.visible = false">取 消</el-button>
+        <el-button type="primary" @click="applyZoomEditor">确 定</el-button>
+      </span>
     </el-dialog>
 
     <!-- 耗材档案：新增/更新导入 -->
@@ -1128,19 +1202,35 @@
 <script>
 import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData } from "@/api/foundation/material";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
+import { mapGetters } from "vuex";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectFactory from '@/components/SelectModel/SelectFactory';
 import SelectFinanceCategory from "@/components/SelectModel/SelectFinanceCategory";
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import SelectUnit from "@/components/SelectModel/SelectUnit";
 import SelectLocation from "@/components/SelectModel/SelectLocation";
+import MaterialInboundRecords from "@/views/foundation/material/components/MaterialInboundRecords";
+import { getWarehouseCategory } from "@/api/foundation/warehouseCategory";
+import { getFinanceCategory } from "@/api/foundation/financeCategory";
 import { pinyin } from 'pinyin-pro'
 import { getToken } from "@/utils/auth";
 
 export default {
   name: "Material",
   dicts: ['is_use_status', 'is_yes_no','way_status','material_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
-  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectWarehouseCategory,SelectUnit,SelectLocation},
+  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords},
+  computed: {
+    ...mapGetters(['customerId']),
+    isHsThirdTenant() {
+      return this.customerId === 'hengsui-third-001';
+    },
+    isEditMode() {
+      return this.dialogMode === 'edit';
+    },
+    isViewMode() {
+      return this.dialogMode === 'view';
+    }
+  },
   data() {
     return {
       // 遮罩层
@@ -1162,6 +1252,8 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      // 弹窗模式：add/edit/view
+      dialogMode: 'add',
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -1219,13 +1311,21 @@ export default {
         { key: 19, label: `计费`, visible: true },
         { key: 20, label: `服务费`, visible: false },
         { key: 21, label: `创建日期`, visible: true },
-        { key: 22, label: `品牌`, visible: false }
+        { key: 22, label: `品牌`, visible: false },
+        { key: 23, label: `医保编码`, visible: true },
+        { key: 24, label: `注册证号`, visible: true },
+        { key: 25, label: `财务分类`, visible: true }
       ],
       // 表单校验：仅耗材名称必填；单价若填写则校验为数字
       rules: {
         code: [
           { validator: (rule, value, callback) => {
             if (!value || !String(value).trim()) {
+              callback();
+              return;
+            }
+            // 衡水三院新增时编码由后端按规则生成，前端不做唯一性拦截，避免误判
+            if (this.isHsThirdTenant && !this.form.id) {
               callback();
               return;
             }
@@ -1247,6 +1347,30 @@ export default {
         ],
         name: [
           { required: true, message: "耗材名称不能为空", trigger: "blur" }
+        ],
+        storeroomId: [
+          {
+            validator: (rule, value, callback) => {
+              if (this.dialogMode === 'add' && (value === null || value === undefined || value === '')) {
+                callback(new Error('新增产品档案必须选择库房分类'));
+                return;
+              }
+              callback();
+            },
+            trigger: "change"
+          }
+        ],
+        financeCategoryId: [
+          {
+            validator: (rule, value, callback) => {
+              if (this.dialogMode === 'add' && (value === null || value === undefined || value === '')) {
+                callback(new Error('新增产品档案必须选择财务分类'));
+                return;
+              }
+              callback();
+            },
+            trigger: "change"
+          }
         ],
         price: [
           { validator: (rule, value, callback) => {
@@ -1281,6 +1405,12 @@ export default {
       imageUploadHeaders: { Authorization: "Bearer " + getToken() },
       imagePreviewVisible: false,
       imagePreviewUrl: '',
+      zoomEditor: {
+        visible: false,
+        prop: '',
+        label: '',
+        value: ''
+      },
       // 当前激活的标签页：'form' 表单视图，'image' 图片视图
       activeTab: 'form'
     };
@@ -1541,8 +1671,37 @@ export default {
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
-    /** 生成6位数字编码 */
+    /** 按库房分类规则生成编码（衡水三院：GZ/DZ/SJ+5位；其他租户：6位数字） */
     async generateCode() {
+      if (this.isHsThirdTenant) {
+        if (!this.form.storeroomId) {
+          return '';
+        }
+        try {
+          const wcResp = await getWarehouseCategory(this.form.storeroomId);
+          const wc = wcResp && wcResp.data ? wcResp.data : null;
+          const prefix = this.resolveHsPrefixByWarehouseName(wc && wc.warehouseCategoryName ? wc.warehouseCategoryName : '');
+          if (prefix) {
+            const response = await listMaterialAll({});
+            const materialList = response.rows || response.data || [];
+            const reg = new RegExp("^" + prefix + "(\\d{5})$");
+            let max = 0;
+            materialList.forEach(item => {
+              const code = (item && item.code ? String(item.code) : '').toUpperCase();
+              const m = code.match(reg);
+              if (m) {
+                const n = parseInt(m[1], 10);
+                if (!Number.isNaN(n) && n > max) max = n;
+              }
+            });
+            const next = Math.min(max + 1, 99999);
+            return `${prefix}${String(next).padStart(5, '0')}`;
+          }
+        } catch (e) {
+          console.error('按库房分类生成编码失败:', e);
+        }
+      }
+
       // 查询所有耗材编码，找出最大的6位数字编码
       try {
         const response = await listMaterialAll({});
@@ -1568,6 +1727,26 @@ export default {
       // 如果没有现有编码或已达到最大值，从100000开始
       return '100000';
     },
+    resolveHsPrefixByWarehouseName(name) {
+      const n = (name || '').trim();
+      if (n.includes('高值耗材')) return 'GZ';
+      if (n.includes('低值耗材')) return 'DZ';
+      if (n.includes('检验试剂')) return 'SJ';
+      return '';
+    },
+    async onStoreroomChange() {
+      if (!this.isHsThirdTenant || this.form.id) {
+        return;
+      }
+      // 新增场景：衡水三院编码不可编辑，库房分类变化后由系统重新生成
+      this.form.code = await this.generateCode();
+      this.$nextTick(() => {
+        if (this.$refs.form) {
+          this.$refs.form.validateField('storeroomId');
+          this.$refs.form.validateField('code');
+        }
+      });
+    },
     /** 处理编码输入 */
     handleCodeInput(value) {
       // 如果用户清空编码，在blur时自动生成
@@ -1578,6 +1757,9 @@ export default {
     /** 验证编码（blur事件） */
     async validateCode() {
       if (!this.form.code || this.form.code.trim() === '') {
+        if (this.isHsThirdTenant && !this.form.storeroomId) {
+          return;
+        }
         // 如果没有输入编码，自动生成
         this.form.code = await this.generateCode();
         // 触发验证
@@ -1585,14 +1767,45 @@ export default {
           this.$refs.form.validateField('code');
         });
       } else {
+        if (this.isHsThirdTenant && this.form.storeroomId) {
+          try {
+            const wcResp = await getWarehouseCategory(this.form.storeroomId);
+            const wc = wcResp && wcResp.data ? wcResp.data : null;
+            const prefix = this.resolveHsPrefixByWarehouseName(wc && wc.warehouseCategoryName ? wc.warehouseCategoryName : '');
+            if (prefix && !new RegExp("^" + prefix + "\\d{5}$", "i").test(this.form.code.trim())) {
+              this.$modal.msgError(`当前库房分类编码规则为：${prefix}+5位数字（如 ${prefix}00001）`);
+              return;
+            }
+          } catch (e) {
+            console.error('校验库房分类编码规则失败:', e);
+          }
+        }
         // 如果有输入，验证唯一性
         this.$refs.form.validateField('code');
       }
+    },
+    async validateHsHighValueRule() {
+      if (!this.isHsThirdTenant || !this.form.financeCategoryId) {
+        return true;
+      }
+      try {
+        const res = await getFinanceCategory(this.form.financeCategoryId);
+        const fc = res && res.data ? res.data : null;
+        const fcName = (fc && fc.financeCategoryName) ? fc.financeCategoryName : '';
+        if (fcName.includes('高值耗材') && String(this.form.isGz) !== '1') {
+          this.$modal.msgError('财务分类为高值耗材时，必须勾选高值标志');
+          return false;
+        }
+      } catch (e) {
+        console.error('校验高值规则失败:', e);
+      }
+      return true;
     },
     /** 新增按钮操作 */
     async handleAdd() {
       this.reset();
       this.open = true;
+      this.dialogMode = 'add';
       this.isDisabled = false;
       this.title = "添加耗材产品";
       this.form.isGz = '2';
@@ -1604,13 +1817,14 @@ export default {
       this.form.isTemporaryPurchase = '2';
       this.form.isServiceFee = '2';
       this.form.isUse = '1'; // 默认为启用
-      // 自动生成6位数字编码
-      this.form.code = await this.generateCode();
+      // 衡水三院按库房分类生成编码：新增时先等待选择库房分类
+      this.form.code = this.isHsThirdTenant ? '' : await this.generateCode();
       this.activeTab = 'form'; // 默认显示表单视图
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
+      this.dialogMode = 'edit';
       this.isDisabled = true; // 修改模式下，耗材编码不可修改
       const id = row.id || this.ids
       getMaterial(id).then(response => {
@@ -1675,6 +1889,29 @@ export default {
         this.title = "修改耗材产品";
       });
     },
+    /** 查看详情（只读） */
+    handleView(row) {
+      this.reset();
+      this.dialogMode = 'view';
+      this.isDisabled = true;
+      const id = row.id || this.ids;
+      getMaterial(id).then(response => {
+        this.form = response.data;
+        if (this.form.isUse !== null && this.form.isUse !== undefined) this.form.isUse = String(this.form.isUse); else this.form.isUse = '2';
+        if (this.form.isGz !== null && this.form.isGz !== undefined) this.form.isGz = String(this.form.isGz); else this.form.isGz = '2';
+        if (this.form.isBilling !== null && this.form.isBilling !== undefined) this.form.isBilling = String(this.form.isBilling); else this.form.isBilling = '2';
+        if (this.form.isFollow !== null && this.form.isFollow !== undefined) this.form.isFollow = String(this.form.isFollow); else this.form.isFollow = '2';
+        if (this.form.isMonitor !== null && this.form.isMonitor !== undefined) this.form.isMonitor = String(this.form.isMonitor); else this.form.isMonitor = '2';
+        if (this.form.isCentralizedProcurement !== null && this.form.isCentralizedProcurement !== undefined) this.form.isCentralizedProcurement = String(this.form.isCentralizedProcurement); else this.form.isCentralizedProcurement = '2';
+        if (this.form.isSunshineProcurement !== null && this.form.isSunshineProcurement !== undefined) this.form.isSunshineProcurement = String(this.form.isSunshineProcurement); else this.form.isSunshineProcurement = '2';
+        if (this.form.isTemporaryPurchase !== null && this.form.isTemporaryPurchase !== undefined) this.form.isTemporaryPurchase = String(this.form.isTemporaryPurchase); else this.form.isTemporaryPurchase = '2';
+        if (this.form.isServiceFee !== null && this.form.isServiceFee !== undefined) this.form.isServiceFee = String(this.form.isServiceFee); else this.form.isServiceFee = '2';
+        this.originalIsUse = this.form.isUse;
+        this.open = true;
+        this.title = "查看详情";
+        this.activeTab = 'form';
+      });
+    },
     /** 启用/停用开关变更：编辑模式下需填写原因并调用专用接口 */
     onIsUseChange(newVal) {
       if (!this.form.id) return;
@@ -1712,6 +1949,12 @@ export default {
         getMaterialTimeline(this.form.id).then(res => {
           this.timelineList = res.data || [];
         });
+      } else if (tab.name === 'inboundRecords' && this.form.id) {
+        this.$nextTick(() => {
+          if (this.$refs.inboundRecordsRef && this.$refs.inboundRecordsRef.loadData) {
+            this.$refs.inboundRecordsRef.loadData();
+          }
+        });
       }
     },
     /** 提交按钮 */
@@ -1725,22 +1968,77 @@ export default {
       }
       this.$refs["form"].validate(valid => {
         if (valid) {
-          if (this.form.id != null) {
-            updateMaterial(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.originalIsUse = null;
-              this.getList();
-            });
-          } else {
-            addMaterial(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
-          }
+          this.validateHsHighValueRule().then(pass => {
+            if (!pass) return;
+            if (this.form.id != null) {
+              updateMaterial(this.buildUpdatePayload(this.form)).then(response => {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false;
+                this.originalIsUse = null;
+                this.getList();
+              });
+            } else {
+              if (this.isHsThirdTenant) {
+                // 衡水三院新增编码以服务端为准，避免本地生成并发重复
+                this.form.code = '';
+              }
+              addMaterial(this.form).then(response => {
+                const finalCode = this.getFinalMaterialCode(response);
+                if (finalCode) {
+                  this.$modal.msgSuccess("新增成功，后端最终生成编码：" + finalCode);
+                } else {
+                  this.$modal.msgSuccess("新增成功");
+                }
+                this.open = false;
+                this.getList();
+              });
+            }
+          });
         }
       });
+    },
+    buildUpdatePayload(form) {
+      const allowFields = [
+        'id', 'code', 'name', 'referredName', 'supplierId', 'factoryId', 'speci', 'model', 'price', 'producer',
+        'useName', 'registerName', 'registerNo', 'storeroomId', 'financeCategoryId', 'medicalNo', 'medicalName',
+        'salePrice', 'successfulPrice', 'successfulNo', 'successfulType', 'selectionReason', 'packageSpeci',
+        'unitId', 'isUse', 'isGz', 'isFollow', 'isMonitor', 'isCentralizedProcurement', 'isSunshineProcurement',
+        'isTemporaryPurchase', 'isServiceFee', 'isBilling', 'materialLevel', 'registerLevel', 'riskLevel',
+        'firstaidLevel', 'doctorLevel', 'brand', 'useto', 'quality', 'function', 'isWay', 'locationId', 'udiNo',
+        'sunshineCode', 'countryNo', 'permitNo', 'description', 'countryName', 'periodDate', 'imageUrl',
+        'mainBarcode', 'subBarcode', 'defaultWarehouseId'
+      ];
+      const payload = {};
+      allowFields.forEach(k => {
+        if (Object.prototype.hasOwnProperty.call(form, k)) {
+          payload[k] = form[k];
+        }
+      });
+      return payload;
+    },
+    getFinalMaterialCode(response) {
+      const data = response && response.data ? response.data : null;
+      if (!data) return '';
+      if (data.code) return String(data.code);
+      if (data.materialCode) return String(data.materialCode);
+      if (data.material && data.material.code) return String(data.material.code);
+      return '';
+    },
+    openZoomEditor(prop, label) {
+      if (!this.isEditMode || !prop) return;
+      this.zoomEditor.prop = prop;
+      this.zoomEditor.label = label || prop;
+      this.zoomEditor.value = this.form[prop] || '';
+      this.zoomEditor.visible = true;
+    },
+    applyZoomEditor() {
+      if (this.zoomEditor.prop) {
+        this.$set(this.form, this.zoomEditor.prop, this.zoomEditor.value);
+        if (this.zoomEditor.prop === 'name') {
+          this.nameChange(this.zoomEditor.value);
+        }
+      }
+      this.zoomEditor.visible = false;
     },
     /** 删除按钮操作 */
     handleDelete(row) {
@@ -1836,6 +2134,19 @@ export default {
         this.form.imageUrl = null;
         this.$modal.msgSuccess('图片已删除');
       }).catch(() => {});
+    },
+    /**
+     * 单价显示：保留四位小数（前端展示用；后端导出保持原逻辑）
+     */
+    formatPrice4(value) {
+      if (value === null || value === undefined || value === '') {
+        return '';
+      }
+      const n = Number(value);
+      if (Number.isNaN(n)) {
+        return value;
+      }
+      return n.toFixed(4);
     }
   }
 };
@@ -2364,6 +2675,44 @@ export default {
 
 <style>
 /* 非scoped样式，确保弹窗宽度生效 */
+.material-cell-top-left {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.4;
+}
+
+.material-cell-price-right {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-align: right;
+  vertical-align: top;
+  line-height: 1.4;
+}
+
+.material-top-cell {
+  vertical-align: top !important;
+}
+
+.material-price-cell {
+  vertical-align: top !important;
+}
+
+.material-modal-content .el-input__inner,
+.material-modal-content .el-textarea__inner {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.material-modal-content .el-textarea__inner {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 .local-modal-content.material-modal-content {
   width: calc(100vw - 180px) !important;
   min-width: calc(100vw - 180px) !important;

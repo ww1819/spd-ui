@@ -19,9 +19,9 @@
         <div class="template-preview">
           <!-- 顶部水平尺子 -->
           <div class="ruler-horizontal-main">
-            <div 
-              v-for="i in horizontalRuler" 
-              :key="'h-' + i" 
+            <div
+              v-for="i in horizontalRuler"
+              :key="'h-' + i"
               :class="['ruler-mark-horizontal', i % 10 === 0 ? 'major' : 'minor']"
               :style="{ left: getHorizontalPosition(i) + 'px' }"
             >
@@ -31,9 +31,9 @@
           </div>
           <!-- 左侧垂直尺子 -->
           <div class="ruler-vertical-main">
-            <div 
-              v-for="i in verticalRuler" 
-              :key="'v-' + i" 
+            <div
+              v-for="i in verticalRuler"
+              :key="'v-' + i"
               :class="['ruler-mark-vertical', i % 10 === 0 ? 'major' : 'minor']"
               :style="{ top: getVerticalPosition(i) + 'px' }"
             >
@@ -43,9 +43,9 @@
           </div>
           <!-- 预览内容区域 -->
           <div class="preview-container">
-          <div 
+          <div
             ref="previewPaper"
-            class="preview-paper" 
+            class="preview-paper"
             :style="previewStyle"
             @mousedown.stop="onPreviewMouseDown"
           >
@@ -217,7 +217,7 @@
           <el-form-item label="模板名称" prop="templateName">
             <el-input v-model="form.templateName" placeholder="模板名称" />
           </el-form-item>
-          <el-form-item label="适用租户ID" prop="tenantId">
+          <el-form-item label="适用组织机构ID" prop="tenantId">
             <el-input v-model="form.tenantId" clearable placeholder="留空：全库默认；耗材端留空则默认当前登录客户" />
           </el-form-item>
           <el-form-item label="单据类型" prop="billType">
@@ -1001,7 +1001,7 @@ export default {
       const mmToPx = 3.78;
       let previewWidth = width * mmToPx;
       let previewHeight = height * mmToPx;
-      
+
       // 横向时交换宽度和高度
       if (this.form.orientation === 'landscape') {
         [previewWidth, previewHeight] = [previewHeight, previewWidth];
@@ -1011,7 +1011,7 @@ export default {
       const marginLeft = this.form.marginLeft || 0;
       const topPx = 50 + marginTop * mmToPx;
       const leftPx = 50 + marginLeft * mmToPx;
-      
+
       return {
         width: `${previewWidth}px`,
         height: `${previewHeight}px`,
@@ -1337,7 +1337,7 @@ export default {
           if (this.form.showReceiver !== undefined) {
             this.form.showReceiver = this.form.showReceiver === 1;
           }
-          
+
           if (newVal.columnConfig) {
             try {
               const config = JSON.parse(newVal.columnConfig);
@@ -1914,7 +1914,7 @@ export default {
         if (this.form.showReceiver !== undefined) {
           this.form.showReceiver = this.form.showReceiver === 1;
         }
-        
+
         if (data.columnConfig) {
           try {
             const config = JSON.parse(data.columnConfig);
@@ -2453,7 +2453,7 @@ export default {
           formData.showCreator = formData.showCreator ? 1 : 0;
           formData.showAuditor = formData.showAuditor ? 1 : 0;
           formData.showReceiver = formData.showReceiver ? 1 : 0;
-          
+
           if (formData.isDefault === undefined) {
             formData.isDefault = 0;
           }
@@ -2530,7 +2530,7 @@ export default {
 }
 
 .ruler-panel {
-  background-image: 
+  background-image:
     linear-gradient(to right, #e0e0e0 1px, transparent 1px),
     linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
   background-size: 37.8px 37.8px; /* 10mm = 37.8px */

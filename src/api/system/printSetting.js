@@ -26,6 +26,8 @@ export function getDefaultTemplate(billType, tenantId) {
   return request({
     url: '/system/printSetting/getDefault/' + (billType === null || billType === undefined ? 'null' : billType),
     method: 'get',
+    // 打印预览时模板接口在部分环境可能未部署，降级走本地默认样式，不弹全局错误
+    headers: { hideError: true },
     params: Object.keys(params).length ? params : undefined
   })
 }

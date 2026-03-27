@@ -22,7 +22,7 @@
           <div class="warehouse-panel-content">
             <!-- 仓库列表 -->
             <template v-if="queryParams.fixedNumberType === '1' || !queryParams.fixedNumberType">
-              <el-table :data="warehouseList" :key="'warehouse-' + queryParams.fixedNumberType" 
+              <el-table :data="warehouseList" :key="'warehouse-' + queryParams.fixedNumberType"
                         :highlight-current-row="true"
                         @row-click="handleWarehouseRowClick"
                         :row-class-name="getWarehouseRowClassName"
@@ -52,7 +52,7 @@
             </template>
             <!-- 科室列表 -->
             <template v-if="queryParams.fixedNumberType === '2'">
-              <el-table ref="departmentTable" :data="departmentList" :key="'department-table-' + queryParams.fixedNumberType + '-' + departmentList.length" 
+              <el-table ref="departmentTable" :data="departmentList" :key="'department-table-' + queryParams.fixedNumberType + '-' + departmentList.length"
                         :highlight-current-row="true"
                         @row-click="handleDepartmentRowClick"
                         :row-class-name="getDepartmentRowClassName"
@@ -316,7 +316,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="租户ID" align="center" prop="tenantId" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="组织机构ID" align="center" prop="tenantId" width="120" show-overflow-tooltip resizable />
       <el-table-column label="备注" align="center" prop="remark" min-width="140" resizable>
         <template slot-scope="scope">
           <el-input
@@ -685,7 +685,7 @@ export default {
       this.setTableHeight();
       // 监听窗口大小变化
       window.addEventListener('resize', this.setTableHeight);
-      
+
       // 确保在 mounted 时也检查并加载科室列表（参考仓库列表的逻辑）
       if (this.queryParams.fixedNumberType === '2' && this.departmentList.length === 0) {
         this.getDepartmentList();
@@ -739,30 +739,30 @@ export default {
           console.warn('表格容器未找到');
           return;
         }
-        
+
         // 获取容器高度
         const containerHeight = container.offsetHeight;
         // 翻页容器高度是180px，加上margin和padding约32px，总共约172px（减少翻页占用空间）
         const paginationHeight = 172;
         // 表格应该占据的高度 = 容器高度 - 翻页高度
         const tableMaxHeight = containerHeight - paginationHeight;
-        
+
         // 方法1: 通过ref获取
         const tableEl = this.$refs.fixedNumberTable;
         let tableElement = null;
-        
+
         if (tableEl && tableEl.$el) {
           tableElement = tableEl.$el;
         } else {
           // 方法2: 通过DOM查询获取
           tableElement = container.querySelector('.el-table');
         }
-        
+
         if (tableElement) {
           // 设置表格最大高度，确保不覆盖翻页
           tableElement.style.setProperty('max-height', `${tableMaxHeight}px`, 'important');
           tableElement.style.setProperty('height', 'auto', 'important');
-          
+
           // 设置body-wrapper最大高度
           const bodyWrapper = tableElement.querySelector('.el-table__body-wrapper');
           if (bodyWrapper) {
@@ -771,7 +771,7 @@ export default {
             bodyWrapper.style.setProperty('max-height', `${bodyMaxHeight}px`, 'important');
             bodyWrapper.style.setProperty('height', 'auto', 'important');
           }
-          
+
           // 强制触发表格重新计算布局
           if (tableEl && tableEl.doLayout) {
             tableEl.doLayout();
@@ -844,17 +844,17 @@ export default {
         if (!this.fixedNumberList || this.fixedNumberList.length === 0) {
           return;
         }
-        
+
         // 只检查仓库定数监测的入库记录
         if (this.queryParams.fixedNumberType !== '1') {
           return;
         }
-        
+
         const warehouseId = this.queryParams.warehouseId;
         if (!warehouseId) {
           return;
         }
-        
+
         // 批量检查所有产品的入库记录
         const checkPromises = this.fixedNumberList.map(item => {
           const materialId = item.material ? item.material.id : (item.materialId || null);
@@ -864,7 +864,7 @@ export default {
               hasRecord: false
             });
           }
-          
+
           return listInventory({
             materialId: materialId,
             warehouseId: warehouseId,
@@ -884,12 +884,12 @@ export default {
             };
           });
         });
-        
+
         Promise.all(checkPromises).then(results => {
           if (!results || results.length === 0) {
             return;
           }
-          
+
           results.forEach(result => {
             if (result && result.item) {
               result.item.hasInventoryRecord = result.hasRecord || false;
@@ -963,7 +963,7 @@ export default {
         this.departmentList = [];
         return;
       }
-      
+
       // 参考 getWarehouseList 的实现方式，直接调用 API
       listdepartAll(userId).then(response => {
         // 参考 SelectDepartment 组件的处理方式：直接使用 response || []
@@ -1078,23 +1078,23 @@ export default {
         this.$modal.msgWarning("请先添加明细数据");
         return;
       }
-      
+
       // 检查必填项
       if (!this.queryParams.fixedNumberType) {
         this.$modal.msgWarning("请先选择定数类型");
         return;
       }
-      
+
       if (this.queryParams.fixedNumberType === '1' && !this.queryParams.warehouseId) {
         this.$modal.msgWarning("请先选择仓库");
         return;
       }
-      
+
       if (this.queryParams.fixedNumberType === '2' && !this.queryParams.departmentId) {
         this.$modal.msgWarning("请先选择科室");
         return;
       }
-      
+
       // 构建保存数据
       const saveData = {
         fixedNumberType: this.queryParams.fixedNumberType,
@@ -1114,7 +1114,7 @@ export default {
           };
         })
       };
-      
+
       // 调用保存API
       addFixedNumber(saveData).then(response => {
         this.$modal.msgSuccess("保存成功");
@@ -1342,11 +1342,11 @@ export default {
         this.$modal.msgWarning("该产品已有入库记录，不能删除");
         return;
       }
-      
+
       // 如果有materialId和warehouseId，再次检查入库记录
       const materialId = row.material ? row.material.id : (row.materialId || null);
       const warehouseId = this.queryParams.fixedNumberType === '1' ? this.queryParams.warehouseId : null;
-      
+
       if (materialId && warehouseId) {
         // 检查是否有入库记录
         listInventory({

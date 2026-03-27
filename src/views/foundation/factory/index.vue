@@ -151,7 +151,7 @@
           <el-button
             size="small"
             type="text"
-           
+
             @click="handleUpdate(scope.row)"
             v-hasPermi="['foundation:factory:edit']"
           >修改</el-button>
@@ -186,7 +186,7 @@
           <el-row>
             <el-col :span="6">
               <el-form-item label="厂家编码" prop="factoryCode">
-                <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="厂家编码" />
+                <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="厂家编码（不填自动生成）" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
@@ -247,10 +247,10 @@
           :closable="false"
           show-icon
           style="margin-bottom:12px;"
-          title="衡水市第三人民医院：Excel 新增行须填「HIS生产厂家ID」且租户内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
+          title="衡水市第三人民医院：Excel 新增行须填「HIS生产厂家ID」且组织机构内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
         />
         <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-          <strong>增量导入</strong>：按厂家编码匹配租户下数据；可勾选「更新已存在」后<strong>仅更新厂家名称与厂家简码</strong>。先整单校验并确认后写入。
+          <strong>增量导入</strong>：按厂家编码匹配组织机构下数据；可勾选「更新已存在」后<strong>仅更新厂家名称与厂家简码</strong>。先整单校验并确认后写入。
         </p>
         <el-upload
           ref="upload"
@@ -339,10 +339,7 @@ export default {
       if (this.form && this.form.factoryId) {
         return "保存后不可修改";
       }
-      if (this.factoryImportRequiresHisId) {
-        return "必填：HIS 生产厂家标识，租户内唯一";
-      }
-      return "非衡水医院租户无需填写（后台不保存）";
+      return "选填：HIS 生产厂家标识（不填不影响保存）";
     },
   },
   data() {
@@ -404,31 +401,8 @@ export default {
       form: {},
       // 表单校验
       rules: {
-        factoryCode: [
-          { required: true, message: "厂家编码不能为空", trigger: "blur" }
-        ],
         factoryName: [
           { required: true, message: "厂家名称不能为空", trigger: "blur" }
-        ],
-        factoryAddress: [
-          { required: true, message: "厂家地址不能为空", trigger: "blur" }
-        ],
-        factoryContact: [
-          { required: true, message: "厂家联系方式不能为空", trigger: "blur" }
-        ],
-        hisId: [
-          {
-            validator: (rule, value, callback) => {
-              if (!this.form.factoryId && this.factoryImportRequiresHisId) {
-                if (value === undefined || value === null || String(value).trim() === "") {
-                  callback(new Error("衡水市第三人民医院新增时必须填写HIS生产厂家ID"));
-                  return;
-                }
-              }
-              callback();
-            },
-            trigger: "blur"
-          }
         ]
       }
     };

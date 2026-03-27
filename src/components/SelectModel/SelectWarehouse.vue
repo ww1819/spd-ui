@@ -1,7 +1,9 @@
-﻿<template>
-  <el-select v-model="warehouse" filterable
+<template>
+  <el-select v-model="warehouse"
+             filterable
+             :filter-method="filterMethod"
              clearable
-             placeholder="请选择仓库"
+             placeholder="编码/名称/简码搜索"
              :disabled="value2"
   >
     <el-option
@@ -15,6 +17,7 @@
 
 <script>
 import { listWarehouseAll} from "@/api/foundation/warehouse";
+import { pinyin } from "pinyin-pro";
 
 export default {
   props: ['value','value2','excludeWarehouseType','includeWarehouseType'],
@@ -22,6 +25,7 @@ export default {
     return {
       // 仓库选项
       warehouseOptions: [],
+      allWarehouseOptions: [],
       // 表单参数
       form: {},
     }
@@ -81,9 +85,31 @@ export default {
       this.loading = true;
       let userId = this.$store.state.user.userId;
       listWarehouseAll(userId).then(response => {
-        this.warehouseOptions = response;
+        this.allWarehouseOptions = response || [];
+        this.warehouseOptions = this.allWarehouseOptions;
       });
     },
+    filterMethod(query) {
+      if (!query) {
+        this.warehouseOptions = this.allWarehouseOptions;
+        return;
+      }
+      const q = query.trim().toUpperCase();
+      this.warehouseOptions = (this.allWarehouseOptions || []).filter(item => {
+        const code = String(item.code || item.warehouseCode || "").toUpperCase();
+        const name = String(item.name || item.warehouseName || "").toUpperCase();
+        const referred = String(item.referredName || item.warehouseReferredCode || "").toUpperCase();
+        const py = this.getPinyinInitials(item.name || item.warehouseName || "");
+        return code.includes(q) || name.includes(q) || referred.includes(q) || py.includes(q);
+      });
+    },
+    getPinyinInitials(str) {
+      try {
+        return pinyin(str || "", { pattern: "first", toneType: "none", type: "array" }).join("").toUpperCase();
+      } catch (e) {
+        return "";
+      }
+    }
   }
 }
 </script>

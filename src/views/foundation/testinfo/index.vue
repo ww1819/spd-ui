@@ -232,8 +232,8 @@
               </el-form-item>
             </el-col>
             <el-col :span="6">
-              <el-form-item label="注册证件号" prop="registerNo" label-width="100px">
-                <el-input v-model="form.registerNo" placeholder="注册证件号" />
+              <el-form-item label="注册证号" prop="registerNo" label-width="100px">
+                <el-input v-model="form.registerNo" placeholder="注册证号" />
               </el-form-item>
             </el-col>
             <el-col :span="6">

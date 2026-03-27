@@ -1,0 +1,30 @@
+.select-dropdown--multiline {
+  min-width: 320px !important;
+  max-width: 680px !important;
+}
+
+.select-dropdown--multiline .el-select-dropdown__item {
+  height: auto !important;
+  line-height: 1.4 !important;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.select-option-label-wrap {
+  display: inline-block;
+  width: 100%;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.select-model-dropdown-tooltip {
+  max-width: 760px !important;
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+

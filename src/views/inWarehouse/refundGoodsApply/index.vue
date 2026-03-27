@@ -997,9 +997,13 @@ export default {
       this.departmentValue = this.form.departmentId;
     },
     selectRkApplyData(val) {
-      // 假设 val 是科室申请单对象或数组，取 id
-      const rkApplyId = Array.isArray(val) ? val[0].id : val.id;
-      if (!rkApplyId) return;
+      const rows = Array.isArray(val) ? val : (val ? [val] : []);
+      const first = rows[0];
+      const rkApplyId = first && first.id;
+      if (!rkApplyId) {
+        this.$message.warning('请先选择有效的入库单');
+        return;
+      }
 
       const rkApplyIdStr = String(rkApplyId);
       var param = {
@@ -1013,8 +1017,9 @@ export default {
           this.form.billType = '301';
           this.DialogRkApplyComponentShow = false;
         }
-      }).catch(() => {
-        this.$message.error("加载入库单明细失败");
+      }).catch((err) => {
+        const msg = (err && err.message) || (err && err.response && err.response.data && err.response.data.msg) || '';
+        this.$message.error(msg ? `加载入库单明细失败：${msg}` : '加载入库单明细失败');
       });
     },
     closeTkApplyDialog() {

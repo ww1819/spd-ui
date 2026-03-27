@@ -96,7 +96,7 @@
           <el-table-column label="货位编码" align="center" prop="locationCode" width="120"/>
           <el-table-column label="货位名称" align="center" prop="locationName" width="180"/>
           <el-table-column label="仓库" align="center" prop="warehouseName" width="150"/>
-          <el-table-column label="租户ID" align="center" prop="tenantId" width="120" show-overflow-tooltip />
+          <el-table-column label="组织机构ID" align="center" prop="tenantId" width="120" show-overflow-tooltip />
           <el-table-column label="备注" align="center" prop="remark" min-width="100" show-overflow-tooltip />
           <el-table-column label="上级货位" align="center" width="150">
             <template slot-scope="scope">
@@ -185,7 +185,7 @@
           </el-row>
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="租户ID(客户)">
+              <el-form-item label="组织机构ID">
                 <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
               </el-form-item>
             </el-col>

@@ -187,6 +187,23 @@ export function getMaterialTimeline(id) {
   })
 }
 
+// 查询产品档案入库记录-供应商树
+export function getMaterialInboundSuppliers(id) {
+  return request({
+    url: '/foundation/material/' + id + '/inboundSuppliers',
+    method: 'get'
+  })
+}
+
+// 查询产品档案入库记录
+export function getMaterialInboundRecords(id, query) {
+  return request({
+    url: '/foundation/material/' + id + '/inboundRecords',
+    method: 'get',
+    params: query
+  })
+}
+
 export function sleft(str,x){
 		if(str){
 			return str.slice(0,x);
