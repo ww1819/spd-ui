@@ -48,18 +48,61 @@
             <el-table-column label="数量" prop="qty" min-width="90" align="right" />
             <el-table-column label="单价" prop="unitPrice" min-width="90" align="right" />
             <el-table-column label="金额" prop="amt" min-width="90" align="right" />
-            <el-table-column label="批号" prop="batchNo" min-width="110" show-overflow-tooltip />
+            <el-table-column label="批号" prop="batchNumber" min-width="110" show-overflow-tooltip />
             <el-table-column label="有效期" prop="endTime" min-width="120" />
-            <el-table-column label="批次号" prop="batchNumber" min-width="110" show-overflow-tooltip />
+            <el-table-column label="批次号" prop="batchNo" min-width="110" show-overflow-tooltip />
           </el-table>
         </div>
       </el-col>
     </el-row>
+
+    <el-dialog
+      title="入库单详情"
+      :visible.sync="billDialog.visible"
+      width="1100px"
+      append-to-body
+    >
+      <div v-loading="billDialog.loading">
+        <el-descriptions :column="4" border size="mini" class="bill-header">
+          <el-descriptions-item label="入库单号">{{ billDialog.header.billNo || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="供应商">{{ billDialog.header.supplierName || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="仓库">{{ billDialog.header.warehouseName || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="制单人">{{ billDialog.header.creator || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="制单时间">{{ billDialog.header.createTime || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="审核人">{{ billDialog.header.auditor || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="审核时间">{{ billDialog.header.auditTime || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="状态">{{ billDialog.header.billStatus || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="备注" :span="4">{{ billDialog.header.remark || "-" }}</el-descriptions-item>
+        </el-descriptions>
+        <el-table
+          :data="billDialog.details"
+          border
+          size="mini"
+          max-height="420"
+          style="margin-top: 12px;"
+        >
+          <el-table-column label="耗材编码" prop="materialCode" min-width="120" show-overflow-tooltip />
+          <el-table-column label="耗材名称" prop="materialName" min-width="160" show-overflow-tooltip />
+          <el-table-column label="规格" prop="speci" min-width="120" show-overflow-tooltip />
+          <el-table-column label="型号" prop="model" min-width="120" show-overflow-tooltip />
+          <el-table-column label="数量" prop="qty" min-width="90" align="right" />
+          <el-table-column label="单价" prop="unitPrice" min-width="90" align="right" />
+          <el-table-column label="金额" prop="amt" min-width="100" align="right" />
+          <el-table-column label="批号" prop="batchNumber" min-width="110" show-overflow-tooltip />
+          <el-table-column label="批次号" prop="batchNo" min-width="110" show-overflow-tooltip />
+          <el-table-column label="有效期" prop="endTime" min-width="120" />
+        </el-table>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button size="mini" @click="billDialog.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { getMaterialInboundSuppliers, getMaterialInboundRecords } from "@/api/foundation/material";
+import { getInWarehouse } from "@/api/warehouse/warehouse";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 
 export default {
@@ -76,7 +119,13 @@ export default {
       orderMode: "AUDIT_DESC",
       selectedSupplierId: null,
       supplierTree: [{ id: "ALL", supplierId: null, label: "供应商" }],
-      records: []
+      records: [],
+      billDialog: {
+        visible: false,
+        loading: false,
+        header: {},
+        details: []
+      }
     };
   },
   methods: {
@@ -116,10 +165,57 @@ export default {
       this.selectedSupplierId = node.supplierId || null;
       this.loadRecords();
     },
-    openBill(billId) {
+    formatBillStatus(status) {
+      if (status === 2 || status === "2") return "已审核";
+      if (status === 1 || status === "1") return "未审核";
+      return status == null ? "" : String(status);
+    },
+    normalizeDetail(row) {
+      const material = row && row.material ? row.material : {};
+      return {
+        materialCode: material.code || "",
+        materialName: material.name || "",
+        speci: material.speci || "",
+        model: material.model || "",
+        qty: row && row.qty != null ? row.qty : "",
+        unitPrice: row && row.unitPrice != null ? row.unitPrice : "",
+        amt: row && row.amt != null ? row.amt : "",
+        batchNo: row && row.batchNo ? row.batchNo : "",
+        batchNumber: row && row.batchNumber ? row.batchNumber : "",
+        endTime: row && row.endTime ? row.endTime : ""
+      };
+    },
+    async openBill(billId) {
       if (!billId) return;
-      const routeData = this.$router.resolve({ path: `/inWarehouse/apply`, query: { id: billId } });
-      window.open(routeData.href, "_blank");
+      this.billDialog.visible = true;
+      this.billDialog.loading = true;
+      try {
+        const res = await getInWarehouse(billId);
+        const data = res && res.data ? res.data : {};
+        const supplier = data.supplier || {};
+        const warehouse = data.warehouse || {};
+        const creater = data.creater || {};
+        const auditor = data.auditPerson || {};
+        this.billDialog.header = {
+          billNo: data.billNo,
+          supplierName: supplier.name || "",
+          warehouseName: warehouse.name || "",
+          creator: creater.nickName || creater.userName || "",
+          createTime: data.createTime || "",
+          auditor: auditor.nickName || auditor.userName || "",
+          auditTime: data.auditDate || "",
+          billStatus: this.formatBillStatus(data.billStatus),
+          remark: data.remark || ""
+        };
+        const list = Array.isArray(data.stkIoBillEntryList) ? data.stkIoBillEntryList : [];
+        this.billDialog.details = list.map(this.normalizeDetail);
+      } catch (e) {
+        this.billDialog.header = {};
+        this.billDialog.details = [];
+        this.$modal.msgError("查询入库单详情失败");
+      } finally {
+        this.billDialog.loading = false;
+      }
     },
     async exportSuppliers() {
       const rows = this.supplierTree
@@ -141,4 +237,5 @@ export default {
 .panel-title { font-weight: 600; color: #303133; }
 .left-panel, .right-panel { border: 1px solid #ebeef5; border-radius: 4px; padding: 8px; background: #fff; }
 .custom-tree-node { font-size: 12px; line-height: 1.6; }
+.bill-header :deep(.el-descriptions-item__label) { width: 90px; }
 </style>

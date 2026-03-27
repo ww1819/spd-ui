@@ -519,6 +519,7 @@ export default {
         billStatus: null,
         userId: null,
         billType: null,
+        sortScene: 'apply',
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
