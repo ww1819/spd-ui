@@ -386,7 +386,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="耗材名称：" prop="name">
-                <el-input v-model="form.name" @input="nameChange" placeholder="耗材名称" />
+                <el-input v-model="form.name" @focus="openZoomEditor('name', '耗材名称')" @input="nameChange" placeholder="耗材名称" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -406,7 +406,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="规格：" prop="speci">
-                    <el-input v-model="form.speci" placeholder="规格" />
+                    <el-input v-model="form.speci" @focus="openZoomEditor('speci', '规格')" placeholder="规格" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -415,7 +415,7 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="型号：" prop="model">
-                    <el-input v-model="form.model" placeholder="型号" />
+                    <el-input v-model="form.model" @focus="openZoomEditor('model', '型号')" placeholder="型号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -459,7 +459,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="注册证号：" prop="registerNo">
-                    <el-input v-model="form.registerNo" placeholder="注册证号" />
+                    <el-input v-model="form.registerNo" @focus="openZoomEditor('registerNo', '注册证号')" placeholder="注册证号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -496,7 +496,7 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="医保编码：" prop="medicalNo">
-                <el-input v-model="form.medicalNo" placeholder="医保编码" />
+                <el-input v-model="form.medicalNo" @focus="openZoomEditor('medicalNo', '医保编码')" placeholder="医保编码" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -653,7 +653,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="备注：" prop="countryName">
-                <el-input v-model="form.countryName" placeholder="备注" />
+                <el-input v-model="form.countryName" @focus="openZoomEditor('countryName', '备注')" placeholder="备注" />
                   </el-form-item>
                 </el-col>
           </el-row>
@@ -767,7 +767,7 @@
               <!-- 第九行 - HIS对照框 -->
           <el-row :gutter="20">
             <el-col :span="24">
-              <div class="his-compare-container">
+              <div v-if="!isEditMode" class="his-compare-container">
                 <div class="his-compare-header">
                   <span class="his-compare-title">HIS对照</span>
                 </div>
@@ -1083,6 +1083,9 @@
               </el-row>
             </div>
           </el-tab-pane>
+          <el-tab-pane v-if="form.id && isViewMode" label="入库记录" name="inboundRecords">
+            <MaterialInboundRecords ref="inboundRecordsRef" :material-id="form.id" />
+          </el-tab-pane>
         </el-tabs>
 
         <div class="dialog-footer" style="text-align:center;margin-top:16px;" v-if="!isViewMode">
@@ -1105,6 +1108,19 @@
       <div style="text-align: center;">
         <img :src="imagePreviewUrl" style="max-width: 100%; max-height: 600px;" alt="预览图片" />
       </div>
+    </el-dialog>
+    <el-dialog :title="zoomEditor.label + ' - 放大编辑'" :visible.sync="zoomEditor.visible" width="760px" append-to-body>
+      <el-input
+        v-model="zoomEditor.value"
+        type="textarea"
+        :rows="10"
+        resize="none"
+        placeholder="请输入内容"
+      />
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="zoomEditor.visible = false">取 消</el-button>
+        <el-button type="primary" @click="applyZoomEditor">确 定</el-button>
+      </span>
     </el-dialog>
 
     <!-- 耗材档案：新增/更新导入 -->
@@ -1193,6 +1209,7 @@ import SelectFinanceCategory from "@/components/SelectModel/SelectFinanceCategor
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import SelectUnit from "@/components/SelectModel/SelectUnit";
 import SelectLocation from "@/components/SelectModel/SelectLocation";
+import MaterialInboundRecords from "@/views/foundation/material/components/MaterialInboundRecords";
 import { getWarehouseCategory } from "@/api/foundation/warehouseCategory";
 import { getFinanceCategory } from "@/api/foundation/financeCategory";
 import { pinyin } from 'pinyin-pro'
@@ -1201,11 +1218,14 @@ import { getToken } from "@/utils/auth";
 export default {
   name: "Material",
   dicts: ['is_use_status', 'is_yes_no','way_status','material_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
-  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectWarehouseCategory,SelectUnit,SelectLocation},
+  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords},
   computed: {
     ...mapGetters(['customerId']),
     isHsThirdTenant() {
       return this.customerId === 'hengsui-third-001';
+    },
+    isEditMode() {
+      return this.dialogMode === 'edit';
     },
     isViewMode() {
       return this.dialogMode === 'view';
@@ -1368,6 +1388,12 @@ export default {
       imageUploadHeaders: { Authorization: "Bearer " + getToken() },
       imagePreviewVisible: false,
       imagePreviewUrl: '',
+      zoomEditor: {
+        visible: false,
+        prop: '',
+        label: '',
+        value: ''
+      },
       // 当前激活的标签页：'form' 表单视图，'image' 图片视图
       activeTab: 'form'
     };
@@ -1906,6 +1932,12 @@ export default {
         getMaterialTimeline(this.form.id).then(res => {
           this.timelineList = res.data || [];
         });
+      } else if (tab.name === 'inboundRecords' && this.form.id) {
+        this.$nextTick(() => {
+          if (this.$refs.inboundRecordsRef && this.$refs.inboundRecordsRef.loadData) {
+            this.$refs.inboundRecordsRef.loadData();
+          }
+        });
       }
     },
     /** 提交按钮 */
@@ -1922,7 +1954,7 @@ export default {
           this.validateHsHighValueRule().then(pass => {
             if (!pass) return;
             if (this.form.id != null) {
-              updateMaterial(this.form).then(response => {
+              updateMaterial(this.buildUpdatePayload(this.form)).then(response => {
                 this.$modal.msgSuccess("修改成功");
                 this.open = false;
                 this.originalIsUse = null;
@@ -1938,6 +1970,41 @@ export default {
           });
         }
       });
+    },
+    buildUpdatePayload(form) {
+      const allowFields = [
+        'id', 'code', 'name', 'referredName', 'supplierId', 'factoryId', 'speci', 'model', 'price', 'producer',
+        'useName', 'registerName', 'registerNo', 'storeroomId', 'financeCategoryId', 'medicalNo', 'medicalName',
+        'salePrice', 'successfulPrice', 'successfulNo', 'successfulType', 'selectionReason', 'packageSpeci',
+        'unitId', 'isUse', 'isGz', 'isFollow', 'isMonitor', 'isCentralizedProcurement', 'isSunshineProcurement',
+        'isTemporaryPurchase', 'isServiceFee', 'isBilling', 'materialLevel', 'registerLevel', 'riskLevel',
+        'firstaidLevel', 'doctorLevel', 'brand', 'useto', 'quality', 'function', 'isWay', 'locationId', 'udiNo',
+        'sunshineCode', 'countryNo', 'permitNo', 'description', 'countryName', 'periodDate', 'imageUrl',
+        'mainBarcode', 'subBarcode', 'defaultWarehouseId'
+      ];
+      const payload = {};
+      allowFields.forEach(k => {
+        if (Object.prototype.hasOwnProperty.call(form, k)) {
+          payload[k] = form[k];
+        }
+      });
+      return payload;
+    },
+    openZoomEditor(prop, label) {
+      if (!this.isEditMode || !prop) return;
+      this.zoomEditor.prop = prop;
+      this.zoomEditor.label = label || prop;
+      this.zoomEditor.value = this.form[prop] || '';
+      this.zoomEditor.visible = true;
+    },
+    applyZoomEditor() {
+      if (this.zoomEditor.prop) {
+        this.$set(this.form, this.zoomEditor.prop, this.zoomEditor.value);
+        if (this.zoomEditor.prop === 'name') {
+          this.nameChange(this.zoomEditor.value);
+        }
+      }
+      this.zoomEditor.visible = false;
     },
     /** 删除按钮操作 */
     handleDelete(row) {
@@ -2598,6 +2665,18 @@ export default {
 
 .material-price-cell {
   vertical-align: top !important;
+}
+
+.material-modal-content .el-input__inner,
+.material-modal-content .el-textarea__inner {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.material-modal-content .el-textarea__inner {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .local-modal-content.material-modal-content {

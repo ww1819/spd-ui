@@ -1,9 +1,9 @@
-﻿<template>
+<template>
   <el-select v-model="department" 
              filterable
              :filter-method="filterMethod"
              clearable
-             placeholder="科室名称或首字母搜索"
+             placeholder="编码/名称/简码搜索"
              :disabled="value2"
   >
     <el-option
@@ -89,9 +89,11 @@ export default {
         
         const name = item.name;
         const nameUpper = name.toUpperCase();
+        const code = (item.code || '').toUpperCase();
+        const referred = (item.referredName || '').toUpperCase();
         
-        // 1. 名称模糊匹配（不区分大小写）
-        if (name.includes(query) || nameUpper.includes(queryUpper)) {
+        // 1. 名称/编码/简码模糊匹配（不区分大小写）
+        if (name.includes(query) || nameUpper.includes(queryUpper) || code.includes(queryUpper) || referred.includes(queryUpper)) {
           return true;
         }
         

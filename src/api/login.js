@@ -44,6 +44,14 @@ export function getInfo() {
   })
 }
 
+// 实时获取当前租户信息（避免仅依赖缓存）
+export function getCurrentTenant() {
+  return request({
+    url: '/getCurrentTenant',
+    method: 'get'
+  })
+}
+
 // 退出方法
 export function logout() {
   return request({

@@ -2,8 +2,9 @@
   <el-select v-model="financeCategory"
              popper-class="select-dropdown--multiline"
              filterable
+             :filter-method="filterMethod"
              clearable
-             placeholder="请选择财务分类"
+             placeholder="编码/名称/简码搜索"
              :disabled="value2"
   >
     <el-option
@@ -27,6 +28,7 @@
 
 <script>
 import { listFinanceCategoryAll} from "@/api/foundation/financeCategory";
+import { pinyin } from "pinyin-pro";
 
 export default {
   // props: ['value','size'],
@@ -35,6 +37,7 @@ export default {
     return {
       // 财务分类选项
       financeCategoryOptions: [],
+      allFinanceCategoryOptions: [],
       // 表单参数
       form: {},
     }
@@ -98,12 +101,34 @@ export default {
     getList() {
       this.loading = true;
       listFinanceCategoryAll().then(response => {
-        this.financeCategoryOptions = response || [];
+        this.allFinanceCategoryOptions = response || [];
+        this.financeCategoryOptions = this.allFinanceCategoryOptions;
         this.loading = false;
       }).catch(() => {
         this.loading = false;
       });
     },
+    filterMethod(query) {
+      if (!query) {
+        this.financeCategoryOptions = this.allFinanceCategoryOptions;
+        return;
+      }
+      const q = query.trim().toUpperCase();
+      this.financeCategoryOptions = this.allFinanceCategoryOptions.filter(item => {
+        const code = String(item.financeCategoryCode || item.code || "").toUpperCase();
+        const name = String(item.financeCategoryName || item.name || "").toUpperCase();
+        const referred = String(item.referredName || "").toUpperCase();
+        const py = this.getPinyinInitials(item.financeCategoryName || item.name || "");
+        return code.includes(q) || name.includes(q) || referred.includes(q) || py.includes(q);
+      });
+    },
+    getPinyinInitials(str) {
+      try {
+        return pinyin(str || "", { pattern: "first", toneType: "none", type: "array" }).join("").toUpperCase();
+      } catch (e) {
+        return "";
+      }
+    }
   }
 }
 </script>
