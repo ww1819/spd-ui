@@ -581,6 +581,7 @@ export default {
         billStatus: null,
         userId: null,
         billType: null,
+        sortScene: 'apply',
       },
       // 表单参数
       form: {},

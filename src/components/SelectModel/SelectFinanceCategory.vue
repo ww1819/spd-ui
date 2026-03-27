@@ -117,7 +117,7 @@ export default {
       this.financeCategoryOptions = this.allFinanceCategoryOptions.filter(item => {
         const code = String(item.financeCategoryCode || item.code || "").toUpperCase();
         const name = String(item.financeCategoryName || item.name || "").toUpperCase();
-        const referred = String(item.referredName || "").toUpperCase();
+        const referred = String(item.referredName || item.referredCode || item.financeCategoryReferredCode || "").toUpperCase();
         const py = this.getPinyinInitials(item.financeCategoryName || item.name || "");
         return code.includes(q) || name.includes(q) || referred.includes(q) || py.includes(q);
       });

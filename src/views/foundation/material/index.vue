@@ -386,7 +386,17 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="耗材名称：" prop="name">
-                <el-input v-model="form.name" @focus="openZoomEditor('name', '耗材名称')" @input="nameChange" placeholder="耗材名称" />
+                <el-input
+                  v-model="form.name"
+                  type="textarea"
+                  :autosize="isFieldFocused('name') ? { minRows: 3, maxRows: 6 } : { minRows: 1, maxRows: 1 }"
+                  class="expandable-textarea"
+                  :class="{ 'is-focused-expand': isFieldFocused('name') }"
+                  @focus="onEditableFieldFocus('name')"
+                  @blur="onEditableFieldBlur"
+                  @input="nameChange"
+                  placeholder="耗材名称"
+                />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -406,7 +416,16 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="规格：" prop="speci">
-                    <el-input v-model="form.speci" @focus="openZoomEditor('speci', '规格')" placeholder="规格" />
+                    <el-input
+                      v-model="form.speci"
+                      type="textarea"
+                      :autosize="isFieldFocused('speci') ? { minRows: 3, maxRows: 6 } : { minRows: 1, maxRows: 1 }"
+                      class="expandable-textarea"
+                      :class="{ 'is-focused-expand': isFieldFocused('speci') }"
+                      @focus="onEditableFieldFocus('speci')"
+                      @blur="onEditableFieldBlur"
+                      placeholder="规格"
+                    />
               </el-form-item>
             </el-col>
           </el-row>
@@ -415,7 +434,16 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="型号：" prop="model">
-                    <el-input v-model="form.model" @focus="openZoomEditor('model', '型号')" placeholder="型号" />
+                    <el-input
+                      v-model="form.model"
+                      type="textarea"
+                      :autosize="isFieldFocused('model') ? { minRows: 3, maxRows: 6 } : { minRows: 1, maxRows: 1 }"
+                      class="expandable-textarea"
+                      :class="{ 'is-focused-expand': isFieldFocused('model') }"
+                      @focus="onEditableFieldFocus('model')"
+                      @blur="onEditableFieldBlur"
+                      placeholder="型号"
+                    />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -459,7 +487,16 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="注册证号：" prop="registerNo">
-                    <el-input v-model="form.registerNo" @focus="openZoomEditor('registerNo', '注册证号')" placeholder="注册证号" />
+                    <el-input
+                      v-model="form.registerNo"
+                      type="textarea"
+                      :autosize="isFieldFocused('registerNo') ? { minRows: 3, maxRows: 6 } : { minRows: 1, maxRows: 1 }"
+                      class="expandable-textarea"
+                      :class="{ 'is-focused-expand': isFieldFocused('registerNo') }"
+                      @focus="onEditableFieldFocus('registerNo')"
+                      @blur="onEditableFieldBlur"
+                      placeholder="注册证号"
+                    />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -496,7 +533,16 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="医保编码：" prop="medicalNo">
-                <el-input v-model="form.medicalNo" @focus="openZoomEditor('medicalNo', '医保编码')" placeholder="医保编码" />
+                <el-input
+                  v-model="form.medicalNo"
+                  type="textarea"
+                  :autosize="isFieldFocused('medicalNo') ? { minRows: 3, maxRows: 6 } : { minRows: 1, maxRows: 1 }"
+                  class="expandable-textarea"
+                  :class="{ 'is-focused-expand': isFieldFocused('medicalNo') }"
+                  @focus="onEditableFieldFocus('medicalNo')"
+                  @blur="onEditableFieldBlur"
+                  placeholder="医保编码"
+                />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -653,7 +699,16 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="备注：" prop="countryName">
-                <el-input v-model="form.countryName" @focus="openZoomEditor('countryName', '备注')" placeholder="备注" />
+                <el-input
+                  v-model="form.countryName"
+                  type="textarea"
+                  :autosize="isFieldFocused('countryName') ? { minRows: 3, maxRows: 6 } : { minRows: 1, maxRows: 1 }"
+                  class="expandable-textarea"
+                  :class="{ 'is-focused-expand': isFieldFocused('countryName') }"
+                  @focus="onEditableFieldFocus('countryName')"
+                  @blur="onEditableFieldBlur"
+                  placeholder="备注"
+                />
                   </el-form-item>
                 </el-col>
           </el-row>
@@ -1109,12 +1164,13 @@
         <img :src="imagePreviewUrl" style="max-width: 100%; max-height: 600px;" alt="预览图片" />
       </div>
     </el-dialog>
-    <el-dialog :title="zoomEditor.label + ' - 放大编辑'" :visible.sync="zoomEditor.visible" width="760px" append-to-body>
+    <el-dialog :title="zoomEditor.label + ' - 放大编辑'" :visible.sync="zoomEditor.visible" width="760px" append-to-body custom-class="zoom-editor-dialog">
       <el-input
         v-model="zoomEditor.value"
         type="textarea"
-        :rows="10"
+        :rows="14"
         resize="none"
+        class="zoom-editor-textarea"
         placeholder="请输入内容"
       />
       <span slot="footer" class="dialog-footer">
@@ -1324,6 +1380,11 @@ export default {
               callback();
               return;
             }
+            // 衡水三院新增时编码由后端按规则生成，前端不做唯一性拦截，避免误判
+            if (this.isHsThirdTenant && !this.form.id) {
+              callback();
+              return;
+            }
             listMaterial({ code: value, pageNum: 1, pageSize: 1 }).then(response => {
               if (response.rows && response.rows.length > 0) {
                 const existingMaterial = response.rows[0];
@@ -1346,8 +1407,20 @@ export default {
         storeroomId: [
           {
             validator: (rule, value, callback) => {
-              if (this.isHsThirdTenant && (value === null || value === undefined || value === '')) {
-                callback(new Error('衡水三院新增产品档案必须选择库房分类'));
+              if (this.dialogMode === 'add' && (value === null || value === undefined || value === '')) {
+                callback(new Error('新增产品档案必须选择库房分类'));
+                return;
+              }
+              callback();
+            },
+            trigger: "change"
+          }
+        ],
+        financeCategoryId: [
+          {
+            validator: (rule, value, callback) => {
+              if (this.dialogMode === 'add' && (value === null || value === undefined || value === '')) {
+                callback(new Error('新增产品档案必须选择财务分类'));
                 return;
               }
               callback();
@@ -1394,6 +1467,7 @@ export default {
         label: '',
         value: ''
       },
+      focusedEditableField: '',
       // 当前激活的标签页：'form' 表单视图，'image' 图片视图
       activeTab: 'form'
     };
@@ -1414,7 +1488,17 @@ export default {
     // 取消按钮
     cancel() {
       this.open = false;
+      this.focusedEditableField = '';
       this.reset();
+    },
+    onEditableFieldFocus(fieldName) {
+      this.focusedEditableField = fieldName || '';
+    },
+    onEditableFieldBlur() {
+      this.focusedEditableField = '';
+    },
+    isFieldFocused(fieldName) {
+      return this.focusedEditableField === fieldName;
     },
     // 表单重置
     reset() {
@@ -1961,8 +2045,17 @@ export default {
                 this.getList();
               });
             } else {
+              if (this.isHsThirdTenant) {
+                // 衡水三院新增编码以服务端为准，避免本地生成并发重复
+                this.form.code = '';
+              }
               addMaterial(this.form).then(response => {
-                this.$modal.msgSuccess("新增成功");
+                const finalCode = this.getFinalMaterialCode(response);
+                if (finalCode) {
+                  this.$modal.msgSuccess("新增成功，后端最终生成编码：" + finalCode);
+                } else {
+                  this.$modal.msgSuccess("新增成功");
+                }
                 this.open = false;
                 this.getList();
               });
@@ -1989,6 +2082,14 @@ export default {
         }
       });
       return payload;
+    },
+    getFinalMaterialCode(response) {
+      const data = response && response.data ? response.data : null;
+      if (!data) return '';
+      if (data.code) return String(data.code);
+      if (data.materialCode) return String(data.materialCode);
+      if (data.material && data.material.code) return String(data.material.code);
+      return '';
     },
     openZoomEditor(prop, label) {
       if (!this.isEditMode || !prop) return;
@@ -3052,5 +3153,31 @@ export default {
 .timeline-item-meta { font-size: 12px; color: #909399; margin-bottom: 2px; }
 .timeline-item-desc { font-size: 12px; color: #606266; line-height: 1.4; word-break: break-all; }
 .el-timeline { padding-left: 8px; }
+
+/* 放大编辑区域：缩小字号并自动换行，尽量展示完整内容 */
+.zoom-editor-dialog .zoom-editor-textarea .el-textarea__inner {
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* 新增/修改表单：聚焦时字段变高、缩小字号并自动换行 */
+.material-modal-content .expandable-textarea .el-textarea__inner {
+  font-size: 13px;
+  line-height: 1.35;
+  min-height: 32px !important;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  transition: min-height .2s ease, font-size .2s ease;
+}
+
+.material-modal-content .expandable-textarea.is-focused-expand .el-textarea__inner {
+  font-size: 12px;
+  line-height: 1.4;
+  min-height: 72px !important;
+}
 </style>
 

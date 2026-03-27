@@ -37,15 +37,42 @@
               @wheel.prevent="onSceneWheel"
             >
               <div class="scene-top-actions">
-                <el-button size="mini" icon="el-icon-setting" circle />
-                <span class="scene-action-text">循播 50 帧局</span>
-                <el-button size="mini" icon="el-icon-refresh" circle />
+                <el-button size="mini" icon="el-icon-setting" circle @click="openLayoutDialog" />
+                <el-button type="text" class="scene-edit-btn" @click="openLayoutDialog">编辑3D布局</el-button>
+                <el-button size="mini" icon="el-icon-refresh" circle @click="refreshHtScene" />
               </div>
-              <button class="scene-left-arrow" type="button" aria-label="prev">◀</button>
+              <button v-show="showLegacy" class="scene-left-arrow" type="button" aria-label="prev">◀</button>
 
-              <div class="scene-floor"></div>
-              <div class="scene-glow"></div>
-              <div class="warehouse-scene">
+              <!-- 原有 CSS 3D 等元素已隐藏，以 HT 看板为主 -->
+              <div v-show="false" class="scene-floor"></div>
+              <div v-show="false" class="scene-glow"></div>
+              <div class="warehouse-scene ht-scene">
+                <div ref="htDrawingContainer" class="ht-drawing-canvas"></div>
+                <div v-if="showTwinMetricsPanel" class="twin-stats-panel">
+                  <div class="twin-title">数字孪生指标</div>
+                  <div class="twin-grid">
+                    <div class="twin-card">
+                      <div class="twin-key">在线设备</div>
+                      <div class="twin-val">{{ twinMetrics.onlineDevices }}</div>
+                    </div>
+                    <div class="twin-card">
+                      <div class="twin-key">库位使用率</div>
+                      <div class="twin-val">{{ twinMetrics.slotUsageRate }}%</div>
+                    </div>
+                    <div class="twin-card">
+                      <div class="twin-key">每小时吞吐</div>
+                      <div class="twin-val">{{ twinMetrics.hourlyThroughput }}</div>
+                    </div>
+                    <div class="twin-card">
+                      <div class="twin-key">异常告警</div>
+                      <div class="twin-val">{{ twinMetrics.alertCount }}</div>
+                    </div>
+                  </div>
+                  <div class="twin-foot">{{ twinMetrics.lastSyncTime }}</div>
+                </div>
+              </div>
+              <!-- 原有 CSS 3D 货架场景已隐藏 -->
+              <div v-show="showLegacy" class="warehouse-scene legacy-rack-scene">
                 <div class="scene-stage" :style="sceneTransformStyle" :class="{ dragging: isDragging }">
                   <div class="rack-row rack-row-back">
                     <div class="rack-block rack-block-back" v-for="(rack, i) in rackBackLabels" :key="'b'+i" :style="rack3dStyle(i, true)">
@@ -95,6 +122,9 @@
                   </div>
                 </div>
               </div>
+              <div v-if="!htReady" class="ht-tip">
+                {{ htErrorMsg || 'HT for Web 未加载，接入后将自动启用 HT Drawing 交互。' }}
+              </div>
             </div>
           </div>
         </el-col>
@@ -108,6 +138,53 @@
         </el-col>
       </el-row>
     </div>
+
+    <el-dialog
+      title="编辑3D布局"
+      :visible.sync="layoutDialogVisible"
+      width="520px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <el-form ref="layoutFormRef" :model="layoutForm" :rules="layoutFormRules" label-width="110px" size="small">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="仓库名称" prop="warehouseName">
+              <el-input v-model.trim="layoutForm.warehouseName" placeholder="请输入仓库名称" maxlength="30" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="仓库区域" prop="areaName">
+              <el-input v-model.trim="layoutForm.areaName" placeholder="请输入区域名称" maxlength="30" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="仓库长度(m)" prop="warehouseLength">
+              <el-input-number v-model="layoutForm.warehouseLength" :min="1" :max="10000" :precision="2" :step="0.5" controls-position="right" style="width: 100%;" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="仓库宽度(m)" prop="warehouseWidth">
+              <el-input-number v-model="layoutForm.warehouseWidth" :min="1" :max="10000" :precision="2" :step="0.5" controls-position="right" style="width: 100%;" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="区域长度(m)" prop="areaLength">
+              <el-input-number v-model="layoutForm.areaLength" :min="1" :max="10000" :precision="2" :step="0.5" controls-position="right" style="width: 100%;" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="区域宽度(m)" prop="areaWidth">
+              <el-input-number v-model="layoutForm.areaWidth" :min="1" :max="10000" :precision="2" :step="0.5" controls-position="right" style="width: 100%;" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button size="small" @click="layoutDialogVisible = false">取 消</el-button>
+        <el-button type="primary" size="small" @click="submitLayoutForm">保 存</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -118,7 +195,52 @@ export default {
     return {
       /** 暂无接口数据时固定展示；接入接口后由接口赋值 */
       warehouseUsageRate: '0.00%',
-      rackLabels: ['QM3(9/9)', 'WS', 'QM3(9/9)', 'ZX-88001', 'WS', 'ZX-88001'],
+      rackLabels: ['QM3(9/9)', 'WS'],
+      layoutDialogVisible: false,
+      showLegacy: false,
+      htReady: false,
+      htAssetsLoaded: false,
+      htLoading: false,
+      htErrorMsg: '',
+      showTwinMetricsPanel: false,
+      twinTimer: null,
+      htGraphView: null,
+      _htResizeHandler: null,
+      layoutForm: {
+        warehouseName: '默认仓库',
+        areaName: '默认区域',
+        warehouseLength: 120,
+        warehouseWidth: 80,
+        areaLength: 60,
+        areaWidth: 40
+      },
+      layoutFormRules: {
+        warehouseName: [
+          { required: true, message: '请输入仓库名称', trigger: 'blur' }
+        ],
+        areaName: [
+          { required: true, message: '请输入仓库区域', trigger: 'blur' }
+        ],
+        warehouseLength: [
+          { required: true, message: '请输入仓库长度', trigger: 'change' }
+        ],
+        warehouseWidth: [
+          { required: true, message: '请输入仓库宽度', trigger: 'change' }
+        ],
+        areaLength: [
+          { required: true, message: '请输入区域长度', trigger: 'change' }
+        ],
+        areaWidth: [
+          { required: true, message: '请输入区域宽度', trigger: 'change' }
+        ]
+      },
+      twinMetrics: {
+        onlineDevices: 18,
+        slotUsageRate: 64.8,
+        hourlyThroughput: 136,
+        alertCount: 2,
+        lastSyncTime: '-'
+      },
       // 场景交互状态
       rotateX: 2,
       rotateY: -8,
@@ -132,10 +254,10 @@ export default {
   },
   computed: {
     rackBackLabels() {
-      return this.rackLabels.slice(0, 4)
+      return []  // 看板暂只显示2个仓库，后排不展示
     },
     rackFrontLabels() {
-      return this.rackLabels.slice(1, 6)
+      return this.rackLabels.slice(0, 2)
     },
     sceneTransformStyle() {
       return {
@@ -191,13 +313,299 @@ export default {
     handleQuery() {
       // 后续在此请求看板聚合接口并刷新中间看板 / 左右侧数据
     },
+    refreshHtScene() {
+      this.initHtDrawing()
+    },
+    openLayoutDialog() {
+      this.layoutDialogVisible = true
+    },
+    submitLayoutForm() {
+      this.$refs.layoutFormRef.validate(valid => {
+        if (!valid) return
+        this.layoutDialogVisible = false
+        this.$message.success('3D布局参数已保存')
+      })
+    },
     resetQuery() {
       this.warehouseUsageRate = '0.00%'
+    },
+    startTwinMetricsTimer() {
+      const refresh = () => {
+        this.twinMetrics = {
+          onlineDevices: this.randBetween(16, 22),
+          slotUsageRate: this.randDecimal(58, 79, 1),
+          hourlyThroughput: this.randBetween(118, 168),
+          alertCount: this.randBetween(0, 4),
+          lastSyncTime: `${this.formatDate(new Date())} 实时同步`
+        }
+      }
+      refresh()
+      this.twinTimer = setInterval(refresh, 3000)
+    },
+    randBetween(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min
+    },
+    randDecimal(min, max, precision) {
+      const value = Math.random() * (max - min) + min
+      return Number(value.toFixed(precision))
+    },
+    formatDate(date) {
+      const pad = v => (v < 10 ? `0${v}` : `${v}`)
+      const y = date.getFullYear()
+      const m = pad(date.getMonth() + 1)
+      const d = pad(date.getDate())
+      const hh = pad(date.getHours())
+      const mm = pad(date.getMinutes())
+      const ss = pad(date.getSeconds())
+      return `${y}-${m}-${d} ${hh}:${mm}:${ss}`
+    },
+    disposeHtGraph() {
+      if (this._htResizeHandler) {
+        window.removeEventListener('resize', this._htResizeHandler)
+        this._htResizeHandler = null
+      }
+      if (this.htGraphView) {
+        try {
+          const v = this.htGraphView.getView && this.htGraphView.getView()
+          if (v && v.parentNode) {
+            v.parentNode.removeChild(v)
+          }
+          if (typeof this.htGraphView.dispose === 'function') {
+            this.htGraphView.dispose()
+          }
+        } catch (e) {
+          /* ignore */
+        }
+        this.htGraphView = null
+      }
+    },
+    resizeHtView() {
+      const container = this.$refs.htDrawingContainer
+      const gv = this.htGraphView
+      if (!container || !gv) return
+      const w = container.clientWidth || container.offsetWidth
+      const h = container.clientHeight || container.offsetHeight
+      if (w > 0 && h > 0 && typeof gv.resize === 'function') {
+        gv.resize(w, h)
+      }
+      if (typeof gv.invalidate === 'function') {
+        gv.invalidate()
+      }
+    },
+    initHtDrawing() {
+      const container = this.$refs.htDrawingContainer
+      if (!container || !window.ht) {
+        this.htReady = false
+        this.htErrorMsg = 'HT 核心未挂载，请检查 ht.js 是否加载成功'
+        return
+      }
+      this.disposeHtGraph()
+      try {
+        const dm = new window.ht.DataModel()
+        const ht = window.ht
+        const G3d = ht.graph3d && ht.graph3d.Graph3dView
+        let gv
+        let use3d = false
+
+        if (G3d) {
+          gv = new G3d(dm)
+          use3d = true
+          gv.setFar(1e6)
+          gv.setMovableFunc(() => false)
+          if (ht.graph3d.MapInteractor) {
+            gv.setInteractors([new ht.graph3d.MapInteractor(gv)])
+          }
+
+          const floor = new ht.Node()
+          floor.setName('地面')
+          floor.s('shape3d', 'box')
+          floor.s3([1000, 30, 700])
+          floor.p3([0, -15, 0])
+          floor.s('shape3d.color', '#2a4a7a')
+          floor.s('3d.selectable', false)
+          dm.add(floor)
+
+          const labels = this.rackLabels.length >= 2 ? this.rackLabels : ['货架-1', '货架-2']
+          for (let i = 0; i < 2; i++) {
+            const rack = new ht.Node()
+            rack.setName(labels[i])
+            rack.s('shape3d', 'box')
+            rack.s3([180, 280, 120])
+            rack.p3([-220 + i * 440, 140, 0])
+            rack.s('shape3d.color', i === 0 ? '#e8a23c' : '#67c23a')
+            rack.s('label.color', '#ffffff')
+            rack.s('label.font', 'bold 14px sans-serif')
+            dm.add(rack)
+          }
+
+          gv.setEye([900, 600, 900])
+          gv.setCenter([0, 120, 0])
+        } else {
+          gv = new ht.graph.GraphView(dm)
+          gv.setPannable(true)
+          gv.setZoom(1)
+
+          const floor = new ht.Node()
+          floor.setName('地面区域')
+          floor.setPosition(460, 220)
+          floor.setSize(760, 280)
+          floor.s('shape', 'roundRect')
+          floor.s('shape.background', '#2f66ff')
+          floor.s('shape.border.color', '#80aaff')
+          floor.s('shape.border.width', 2)
+          floor.s('shape.corner.radius', 8)
+          floor.s('shape.opacity', 0.22)
+          floor.s('label.color', '#9fc2ff')
+          floor.s('label.position', 17)
+          dm.add(floor)
+
+          const labels = this.rackLabels.length >= 2 ? this.rackLabels : ['货架-1', '货架-2']
+          for (let i = 0; i < 2; i++) {
+            const rack = new ht.Node()
+            rack.setName(labels[i])
+            rack.setPosition(260 + i * 260, 220)
+            rack.setSize(180, 160)
+            rack.s('shape', 'rect')
+            rack.s('shape.background', '#f5b84b')
+            rack.s('shape.border.color', '#ffde9a')
+            rack.s('label.color', '#ffffff')
+            rack.s('label.font', '14px arial')
+            rack.s('label.position', 17)
+            dm.add(rack)
+          }
+        }
+
+        container.innerHTML = ''
+        const view = gv.getView()
+        view.style.width = '100%'
+        view.style.height = '100%'
+        container.appendChild(view)
+
+        this.$nextTick(() => {
+          this.resizeHtView()
+          if (typeof gv.fitContent === 'function') {
+            gv.fitContent(true)
+          }
+          this.resizeHtView()
+        })
+
+        this._htResizeHandler = () => this.resizeHtView()
+        window.addEventListener('resize', this._htResizeHandler)
+
+        this.htGraphView = gv
+        this.htReady = true
+        this.htErrorMsg = use3d ? '' : '当前为 2D 图纸模式（未加载 ht.graph3d），货架以平面示意'
+      } catch (e) {
+        this.htReady = false
+        this.htErrorMsg = `HT 初始化失败：${e && e.message ? e.message : '未知错误'}`
+      }
+    },
+    loadScriptOnce(src) {
+      return new Promise((resolve, reject) => {
+        const exists = document.querySelector(`script[data-src="${src}"]`)
+        if (exists) {
+          if (exists.getAttribute('data-loaded') === '1') return resolve()
+          // 历史失败脚本允许重建，避免后续重试一直卡住
+          if (exists.getAttribute('data-failed') === '1') {
+            exists.remove()
+          } else {
+            exists.addEventListener('load', () => resolve(), { once: true })
+            exists.addEventListener('error', () => reject(new Error(`load fail: ${src}`)), { once: true })
+            return
+          }
+        }
+        const script = document.createElement('script')
+        script.src = src
+        script.async = false
+        script.setAttribute('data-src', src)
+        script.onload = () => {
+          script.setAttribute('data-loaded', '1')
+          resolve()
+        }
+        script.onerror = () => {
+          script.setAttribute('data-failed', '1')
+          reject(new Error(`load fail: ${src}`))
+        }
+        document.body.appendChild(script)
+      })
+    },
+    getAssetBasePath() {
+      const envBase = process.env.BASE_URL || '/'
+      const normalized = envBase.endsWith('/') ? envBase : `${envBase}/`
+      return normalized
+    },
+    async ensureHtAssets() {
+      if (window.ht) return true
+      if (this.htLoading) return false
+      this.htLoading = true
+      this.htErrorMsg = ''
+      // 对齐你提供的 html 清单，统一从 public/libs 加载
+      window.htconfig = {
+        Style: {
+          'select.width': 0
+        }
+      }
+      const base = this.getAssetBasePath()
+      const defaultBases = [
+        base,
+        '/',
+        `${window.location.pathname.replace(/\/[^/]*$/, '/')}`
+      ]
+      const uniqBases = Array.from(new Set(defaultBases.map(v => (v.endsWith('/') ? v : `${v}/`))))
+      const scriptNames = [
+        'numeral.min.js',
+        'ht.js',
+        'ht-modeling.js',
+        'ht-obj.js',
+        'ht-vector.js',
+        'ht-ui.js',
+        'ht-ui-framework.js'
+      ]
+      try {
+        for (let b = 0; b < uniqBases.length; b++) {
+          const candidateBase = uniqBases[b]
+          const scripts = scriptNames.map(name => `${candidateBase}libs/${name}`)
+          try {
+            for (let i = 0; i < scripts.length; i++) {
+              await this.loadScriptOnce(scripts[i])
+            }
+          } catch (e) {
+            continue
+          }
+          if (window.ht) break
+        }
+        this.htAssetsLoaded = !!window.ht
+        if (!this.htAssetsLoaded) {
+          this.htErrorMsg = `脚本未加载成功，请确认 libs 可访问。已尝试前缀：${uniqBases.join(' , ')}`
+        }
+        return this.htAssetsLoaded
+      } catch (e) {
+        this.htAssetsLoaded = false
+        this.htErrorMsg = `HT 资源加载失败：${e && e.message ? e.message : '未知错误'}`
+        return false
+      } finally {
+        this.htLoading = false
+      }
     }
   },
+  async mounted() {
+    if (this.showTwinMetricsPanel) {
+      this.startTwinMetricsTimer()
+    }
+    const loaded = await this.ensureHtAssets()
+    if (!loaded) {
+      this.$message.warning('未检测到 HT 资源，请将库文件放到 public/libs 后刷新页面')
+    }
+    this.$nextTick(() => this.initHtDrawing())
+  },
   beforeDestroy() {
+    this.disposeHtGraph()
     window.removeEventListener('mousemove', this.onSceneMouseMove)
     window.removeEventListener('mouseup', this.onSceneMouseUp)
+    if (this.twinTimer) {
+      clearInterval(this.twinTimer)
+      this.twinTimer = null
+    }
   }
 }
 </script>
@@ -364,6 +772,11 @@ export default {
   font-size: 12px;
   color: #2c3e50;
 }
+.scene-edit-btn {
+  color: #409eff;
+  font-size: 12px;
+  padding: 0 4px;
+}
 .scene-left-arrow {
   position: absolute;
   left: 10px;
@@ -388,6 +801,70 @@ export default {
   top: 46px;
   display: block;
   z-index: 2;
+}
+.ht-scene {
+  background: radial-gradient(circle at 70% 18%, rgba(63, 118, 255, 0.25), rgba(10, 20, 50, 0.84));
+  border-radius: 8px;
+}
+.ht-drawing-canvas {
+  position: absolute;
+  inset: 0;
+}
+.ht-tip {
+  position: absolute;
+  left: 56px;
+  top: 58px;
+  z-index: 4;
+  color: #c7d9ff;
+  font-size: 12px;
+  background: rgba(14, 28, 58, 0.7);
+  border: 1px solid rgba(112, 164, 255, 0.35);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.twin-stats-panel {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 4;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(101, 149, 255, 0.35);
+  background: rgba(10, 20, 48, 0.72);
+  backdrop-filter: blur(2px);
+}
+.twin-title {
+  color: #dce9ff;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.twin-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.twin-card {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(132, 176, 255, 0.26);
+  background: rgba(40, 76, 152, 0.2);
+}
+.twin-key {
+  color: #99b7f2;
+  font-size: 12px;
+}
+.twin-val {
+  color: #f4fbff;
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 4px;
+  line-height: 1;
+}
+.twin-foot {
+  margin-top: 8px;
+  color: #7fa7e6;
+  font-size: 12px;
 }
 .scene-stage {
   position: absolute;

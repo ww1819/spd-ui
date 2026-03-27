@@ -30,6 +30,7 @@
 
 <script>
 import { listFactoryAll, listFactory, getFactory } from "@/api/foundation/factory";
+import { pinyin } from 'pinyin-pro';
 
 export default {
   // props: ['value','size'],
@@ -87,12 +88,20 @@ export default {
         const name = (item.factoryName || '').toUpperCase();
         const code = (item.factoryCode || '').toUpperCase();
         const referred = (item.factoryReferredCode || '').toUpperCase();
-        return name.includes(upper) || code.includes(upper) || referred.includes(upper);
+        const py = this.getPinyinInitials(item.factoryName || '');
+        return name.includes(upper) || code.includes(upper) || referred.includes(upper) || py.includes(upper);
       }).slice(0, 200);
       if (this.factoryOptions.length === 0) {
         this.loading = true;
         listFactory({ factoryName: q, pageNum: 1, pageSize: 100 }).then(response => {
-          this.factoryOptions = response.rows || [];
+          const rows = response.rows || [];
+          this.factoryOptions = rows.filter(item => {
+            const name = String(item.factoryName || '').toUpperCase();
+            const code = String(item.factoryCode || item.code || '').toUpperCase();
+            const referred = String(item.factoryReferredCode || item.referredName || '').toUpperCase();
+            const py = this.getPinyinInitials(item.factoryName || '');
+            return name.includes(upper) || code.includes(upper) || referred.includes(upper) || py.includes(upper);
+          });
         }).finally(() => {
           this.loading = false;
         });
@@ -108,6 +117,13 @@ export default {
         this.loading = false;
       });
     },
+    getPinyinInitials(str) {
+      try {
+        return pinyin(str || "", { pattern: "first", toneType: "none", type: "array" }).join("").toUpperCase();
+      } catch (e) {
+        return "";
+      }
+    }
   }
 }
 </script>

@@ -1,4 +1,4 @@
-import { login, logout, getInfo } from '@/api/login'
+import { login, logout, getInfo, getCurrentTenant } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 
 const user = {
@@ -10,7 +10,8 @@ const user = {
     roles: [],
     permissions: [],
     // 租户信息（与设备前端一致）：登录/ getInfo 带回，供请求头 X-Tenant-Id 与租户数据隔离
-    tenant: null
+    tenant: null,
+    tenantSyncedAt: 0
   },
 
   mutations: {
@@ -19,6 +20,9 @@ const user = {
     },
     SET_TENANT: (state, tenant) => {
       state.tenant = tenant
+    },
+    SET_TENANT_SYNCED_AT: (state, ts) => {
+      state.tenantSyncedAt = ts || 0
     },
     SET_NAME: (state, name) => {
       state.name = name
@@ -55,6 +59,7 @@ const user = {
           } else {
             commit('SET_TENANT', null)
           }
+          commit('SET_TENANT_SYNCED_AT', Date.now())
           resolve()
         }).catch(error => {
           reject(error)
@@ -85,6 +90,7 @@ const user = {
           } else {
             commit('SET_TENANT', null)
           }
+          commit('SET_TENANT_SYNCED_AT', Date.now())
           resolve(res)
         }).catch(error => {
           reject(error)
@@ -100,6 +106,7 @@ const user = {
           commit('SET_ROLES', [])
           commit('SET_PERMISSIONS', [])
           commit('SET_TENANT', null)
+          commit('SET_TENANT_SYNCED_AT', 0)
           removeToken()
           resolve()
         }).catch(error => {
@@ -113,10 +120,33 @@ const user = {
       return new Promise(resolve => {
         commit('SET_TOKEN', '')
         commit('SET_TENANT', null)
+        commit('SET_TENANT_SYNCED_AT', 0)
         removeToken()
         resolve()
       })
-    }
+    },
+    RefreshTenant({ commit, state }, force = false) {
+      return new Promise((resolve) => {
+        if (!state.token) {
+          resolve(null)
+          return
+        }
+        const now = Date.now()
+        if (!force && state.tenant && state.tenant.customerId && (now - (state.tenantSyncedAt || 0) < 15000)) {
+          resolve(state.tenant)
+          return
+        }
+        getCurrentTenant().then(res => {
+          if (res && res.tenant) {
+            commit('SET_TENANT', res.tenant)
+          }
+          commit('SET_TENANT_SYNCED_AT', Date.now())
+          resolve(res && res.tenant ? res.tenant : null)
+        }).catch(() => {
+          resolve(null)
+        })
+      })
+    },
   }
 }
 
