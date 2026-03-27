@@ -1,76 +1,79 @@
 <template>
-  <div
-    class="order-print receipt-print"
-    ref="receiptOrderPrintRef"
-    :style="printStyle"
-  >
-    <!-- 标题：医院名称 + 物资入库单 -->
-    <div class="doc-title">
-      <span v-if="hospitalName">{{ hospitalName }}</span>物资入库单
-    </div>
-
-    <!-- 基本信息区：单据号、供货商、入库日期、资金来源账户 -->
-    <div class="info-block" :style="tableStyle">
-      <div class="info-row">
-        <span class="info-label">单据号</span>
-        <span class="info-value">{{ row.billNo || '' }}</span>
-        <span class="info-label info-gap">供货商</span>
-        <span class="info-value info-value-wide">{{ row.supplierName || '' }}</span>
+  <div class="order-print receipt-print" ref="receiptOrderPrintRef">
+    <div
+      v-for="(pageRows, pageIndex) in pagedDetailList"
+      :key="`print-page-${pageIndex}`"
+      class="print-page"
+      :style="printStyle"
+    >
+      <!-- 标题：医院名称 + 物资入库单 -->
+      <div class="doc-title">
+        <span v-if="hospitalName">{{ hospitalName }}</span>物资入库单
       </div>
-      <div class="info-row">
-        <span class="info-label">入库日期</span>
-        <span class="info-value">{{ formatInboundDate(row.billDate) }}</span>
-        <span class="info-label info-gap">资金来源账户</span>
-        <span class="info-value">{{ row.fundSourceAccount || '' }}</span>
+
+      <!-- 基本信息区：单据号、供货商、入库日期、资金来源账户 -->
+      <div class="info-block" :style="tableStyle">
+        <div class="info-row">
+          <span class="info-label">单据号</span>
+          <span class="info-value">{{ row.billNo || '' }}</span>
+          <span class="info-label info-gap">供货商</span>
+          <span class="info-value info-value-wide">{{ row.supplierName || '' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">入库日期</span>
+          <span class="info-value">{{ formatInboundDate(row.billDate) }}</span>
+          <span class="info-label info-gap">资金来源账户</span>
+          <span class="info-value">{{ row.fundSourceAccount || '' }}</span>
+        </div>
       </div>
-    </div>
 
-    <!-- 耗材明细表：消耗品名称、规格、单位、数量、采购价、采购金额、产地 -->
-    <table class="detail-table" :style="tableStyle">
-      <colgroup>
-        <col style="width: 24%;" />
-        <col style="width: 16%;" />
-        <col style="width: 6%;" />
-        <col style="width: 10%;" />
-        <col style="width: 14%;" />
-        <col style="width: 14%;" />
-        <col style="width: 16%;" />
-      </colgroup>
-      <thead>
-        <tr>
-          <th>消耗品名称</th>
-          <th>规格</th>
-          <th>单位</th>
-          <th>数量</th>
-          <th>采购价</th>
-          <th>采购金额</th>
-          <th>产地</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(item, idx) in (row.detailList || [])" :key="idx">
-          <td>{{ item.materialName || '' }}</td>
-          <td>{{ item.materialSpeci || '' }}</td>
-          <td>{{ item.unitName || '' }}</td>
-          <td>{{ formatNum(item.qty) }}</td>
-          <td>{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
-          <td>{{ formatAmt(item.amt) }}</td>
-          <td>{{ item.factoryName || '' }}</td>
-        </tr>
-      </tbody>
-    </table>
+      <!-- 耗材明细表：消耗品名称、规格、单位、数量、采购价、采购金额、产地 -->
+      <table class="detail-table" :style="tableStyle">
+        <colgroup>
+          <col style="width: 24%;" />
+          <col style="width: 16%;" />
+          <col style="width: 6%;" />
+          <col style="width: 10%;" />
+          <col style="width: 14%;" />
+          <col style="width: 14%;" />
+          <col style="width: 16%;" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>消耗品名称</th>
+            <th>规格</th>
+            <th>单位</th>
+            <th>数量</th>
+            <th>采购价</th>
+            <th>采购金额</th>
+            <th>产地</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(item, idx) in pageRows" :key="`${pageIndex}-${idx}`">
+            <td>{{ item.materialName || '' }}</td>
+            <td>{{ item.materialSpeci || '' }}</td>
+            <td>{{ item.unitName || '' }}</td>
+            <td>{{ formatNum(item.qty) }}</td>
+            <td>{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
+            <td>{{ formatAmt(item.amt) }}</td>
+            <td>{{ item.factoryName || '' }}</td>
+          </tr>
+        </tbody>
+      </table>
 
-    <!-- 合计：左侧“合计: 贰仟柒佰元”，右侧数字与采购金额列对齐 -->
-    <div class="total-row" :style="tableStyle">
-      <span class="total-left">合计: {{ row.totalAmtConverter || '' }}</span>
-      <span class="total-num">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</span>
-    </div>
+      <!-- 合计：左侧“合计: 贰仟柒佰元”，右侧数字与采购金额列对齐 -->
+      <div class="total-row" :style="tableStyle">
+        <span class="total-left">合计: {{ row.totalAmtConverter || '' }}</span>
+        <span class="total-num">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</span>
+      </div>
 
-    <!-- 签字区：采购、保管、入库操作员 -->
-    <div class="sign-block" :style="tableStyle">
-      <span class="sign-item">采购</span>
-      <span class="sign-item">保管</span>
-      <span class="sign-item">入库操作员 {{ row.inboundOperator || row.createBy || '' }}</span>
+      <!-- 签字区：采购、保管、入库操作员 -->
+      <div class="sign-block" :style="tableStyle">
+        <span class="sign-item">采购</span>
+        <span class="sign-item">保管</span>
+        <span class="sign-item">入库操作员 {{ row.inboundOperator || row.createBy || '' }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -103,6 +106,33 @@ export default {
     }
   },
   computed: {
+    pagedDetailList() {
+      const details = (this.row && this.row.detailList) || []
+      const pageRows = this.maxRowsPerPage
+      if (!details.length) return [[]]
+      const result = []
+      for (let i = 0; i < details.length; i += pageRows) {
+        result.push(details.slice(i, i + pageRows))
+      }
+      return result
+    },
+    maxRowsPerPage() {
+      // 纸张：宽 241mm，高 93mm（纵向按高计算）；保留安全余量，避免不同浏览器实际打印误差
+      const paperHeightMm = 93
+      const reserveMm = 5
+      const fixedMm =
+        this.mmValue(this.printSetting.marginTop) +
+        this.mmValue(this.printSetting.marginBottom) +
+        8 + // 标题区域
+        16 + // 基本信息区域
+        8 + // 表头行
+        8 + // 合计区域
+        8 + // 签字区域
+        3 // 结构间距
+      const rowHeightMm = 7
+      const available = paperHeightMm - reserveMm - fixedMm
+      return Math.max(1, Math.floor(available / rowHeightMm))
+    },
     effectiveOrientation() {
       const p = this.printOrientation
       if (p === 'landscape' || p === 'portrait') return p
@@ -130,6 +160,10 @@ export default {
     this.loadPrintSetting()
   },
   methods: {
+    mmValue(v) {
+      const n = Number(v)
+      return isNaN(n) ? 0 : n
+    },
     /** 入库日期格式：yyyyMMddHH:mm:ss，与样张一致 */
     formatInboundDate(val) {
       if (!val) return ''
@@ -177,9 +211,9 @@ export default {
         this.$nextTick(() => {
           const el = this.$refs.receiptOrderPrintRef || this.$el
           if (!el) return
-          const pageSize = this.effectiveOrientation === 'landscape' ? 'A4 landscape' : 'A4'
+          const pageSize = '241mm 93mm'
           if (typeof this.$print === 'function') {
-            this.$print(el, {}, pageSize)
+            this.$print(el, { injectPageSize: false }, pageSize)
           } else {
             try {
               window.print()
@@ -201,9 +235,21 @@ export default {
 <style lang="stylus" scoped>
 .receipt-print
   line-height 1.5
-  max-width 800px
+  width 241mm
+  max-width 241mm
   margin 0 auto
   font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
+
+.print-page
+  width 241mm
+  min-height 93mm
+  box-sizing border-box
+  break-inside avoid
+  page-break-inside avoid
+  page-break-after always
+
+.print-page:last-child
+  page-break-after auto
 
 .doc-title
   font-size 22px
@@ -294,18 +340,30 @@ export default {
 
 <style lang="stylus" media="print">
 @page
-  size auto
-  margin 12mm
+  size 241mm 93mm
+  margin 0
 
 @media print
   *
     color #000 !important
 
   .receipt-print
-    width 100% !important
-    max-width none
+    width 241mm !important
+    max-width 241mm !important
     font-size 14px
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+
+  .print-page
+    width 241mm !important
+    min-height 93mm !important
+    max-height 93mm !important
+    overflow hidden
+    break-inside avoid
+    page-break-inside avoid
+    page-break-after always
+
+  .print-page:last-child
+    page-break-after auto
 
   .doc-title
     font-size 22px
