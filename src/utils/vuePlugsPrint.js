@@ -7,7 +7,15 @@ const Print = function (dom, options, pageSize) {
   this.options = this.extend({
     'noPrint': '.no-print',
     /** 为 false 时不注入通用 @page size，便于业务用命名 @page（如三等分横/纵） */
-    'injectPageSize': true
+    'injectPageSize': true,
+    /** 可选：统一注入 @page margin，减少预览/实打偏差 */
+    'pageMargin': '',
+    /** 打印前等待资源渲染稳定（图片/字体） */
+    'waitForAssets': true,
+    /** 打印前额外等待时间，默认给驱动和浏览器排版缓冲 */
+    'beforePrintDelay': 260,
+    /** afterprint 兜底超时，避免 iframe 遗留 */
+    'cleanupDelay': 15000
   }, options);
 
   if ((typeof dom) === "string") {
@@ -44,6 +52,9 @@ Print.prototype = {
     // 自定义纸张（如三等分 210mm×99mm）：注入 @page，避免仅依赖页面内 style 的替换
     if (this.options.injectPageSize !== false && pageSize && String(pageSize).indexOf('mm') !== -1) {
       str += "<style>@page { size: " + pageSize + " !important; }</style>";
+    }
+    if (this.options.pageMargin && String(this.options.pageMargin).trim()) {
+      str += "<style>@page { margin: " + this.options.pageMargin + " !important; }</style>";
     }
 
     return str;
@@ -108,16 +119,23 @@ Print.prototype = {
     var doc = iframe.contentDocument || iframe.contentWindow.document;
 
     var printDone = false;
+    var cleanupDone = false;
+    function cleanup() {
+      if (cleanupDone) return;
+      cleanupDone = true;
+      try {
+        if (iframe && iframe.parentNode) {
+          document.body.removeChild(iframe);
+        }
+      } catch (e) {}
+    }
     function finishAndPrint() {
       if (printDone) return;
       printDone = true;
       iframe.onload = null;
-      _this.toPrint(w, _this.options);
-      setTimeout(function () {
-        if (iframe.parentNode) {
-          document.body.removeChild(iframe);
-        }
-      }, 100);
+      _this.prepareAndPrint(w, _this.options).finally(function () {
+        setTimeout(cleanup, _this.options.cleanupDelay || 15000);
+      });
     }
     // 必须先绑定 onload 再 write/close；部分环境下 load 不触发，需定时兜底否则打印对话框永不出现
     iframe.onload = function () {
@@ -126,12 +144,72 @@ Print.prototype = {
     doc.open();
     doc.write(content);
     doc.close();
-    setTimeout(finishAndPrint, 200);
+    setTimeout(finishAndPrint, 300);
   },
 
-  toPrint: function (frameWindow, options) {
+  prepareAndPrint: function (frameWindow, options) {
+    var _this = this;
+    var tasks = [];
+    if (options.waitForAssets !== false) {
+      tasks.push(this.waitFontsReady(frameWindow));
+      tasks.push(this.waitImagesReady(frameWindow));
+    }
+    return Promise.all(tasks).catch(function () {}).then(function () {
+      return new Promise(function (resolve) {
+        setTimeout(function () {
+          _this.toPrint(frameWindow, options, resolve);
+        }, options.beforePrintDelay || 260);
+      });
+    });
+  },
+  waitFontsReady: function (frameWindow) {
+    try {
+      if (frameWindow.document && frameWindow.document.fonts && frameWindow.document.fonts.ready) {
+        return Promise.race([
+          frameWindow.document.fonts.ready,
+          new Promise(function (resolve) { setTimeout(resolve, 1200); })
+        ]);
+      }
+    } catch (e) {}
+    return Promise.resolve();
+  },
+  waitImagesReady: function (frameWindow) {
+    try {
+      var imgs = frameWindow.document.querySelectorAll('img');
+      if (!imgs || imgs.length === 0) return Promise.resolve();
+      var waits = [];
+      for (var i = 0; i < imgs.length; i++) {
+        var img = imgs[i];
+        if (img.complete) continue;
+        waits.push(new Promise(function (resolve) {
+          var done = false;
+          function finish() {
+            if (done) return;
+            done = true;
+            resolve();
+          }
+          img.addEventListener('load', finish, { once: true });
+          img.addEventListener('error', finish, { once: true });
+          setTimeout(finish, 1200);
+        }));
+      }
+      return Promise.all(waits);
+    } catch (e) {
+      return Promise.resolve();
+    }
+  },
+  toPrint: function (frameWindow, options, done) {
     try {
       setTimeout(function () {
+        var finished = false;
+        function finish() {
+          if (finished) return;
+          finished = true;
+          if (typeof done === 'function') done();
+        }
+        try {
+          frameWindow.onafterprint = finish;
+        } catch (e) {}
         frameWindow.focus();
         try {
           if (!frameWindow.document.execCommand('print', false, null)) {
@@ -141,10 +219,12 @@ Print.prototype = {
         } catch (e) {
           frameWindow.print();
         }
-        frameWindow.close();
+        // 部分浏览器 afterprint 不触发，兜底 2s
+        setTimeout(finish, 2000);
       }, 10);
     } catch (err) {
       console.log('err', err);
+      if (typeof done === 'function') done();
     }
   },
   isDOM: (typeof HTMLElement === 'object') ?

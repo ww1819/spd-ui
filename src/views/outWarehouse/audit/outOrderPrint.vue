@@ -11,6 +11,19 @@
       class="print-copy-block"
       :class="{ 'is-third-split-copy': isThirdSplitPaper }"
     >
+      <div class="doc-title">
+        <span v-if="hospitalName">{{ hospitalName }}</span>物资出库单
+      </div>
+      <div class="info-row print-head-info">
+        <span class="info-label">发往科</span>
+        <span class="info-value">{{ row.departmentName || '' }}</span>
+        <span class="info-label info-gap">单据号</span>
+        <span class="info-value">{{ row.billNo || '' }}</span>
+        <span class="info-label info-gap">出库日期（审核）</span>
+        <span class="info-value">{{ formatOutboundDate(row.auditDate || row.billDate) }}</span>
+        <span class="info-label info-gap">资金来源</span>
+        <span class="info-value">{{ row.fundSource || '' }}</span>
+      </div>
       <table class="detail-table" :style="tableStyle">
         <colgroup>
           <col class="col-name" />
@@ -25,23 +38,6 @@
         </colgroup>
         <!-- 页眉：标题 + 发往科室等（thead 在打印时每页重复） -->
         <thead>
-          <tr class="print-doc-header">
-            <td colspan="9" class="header-cell">
-              <div class="doc-title">
-                <span v-if="hospitalName">{{ hospitalName }}</span>物资出库单
-              </div>
-              <div class="info-row">
-                <span class="info-label">发往科</span>
-                <span class="info-value">{{ row.departmentName || '' }}</span>
-                <span class="info-label info-gap">单据号</span>
-                <span class="info-value">{{ row.billNo || '' }}</span>
-                <span class="info-label info-gap">出库日期（审核）</span>
-                <span class="info-value">{{ formatOutboundDate(row.auditDate || row.billDate) }}</span>
-                <span class="info-label info-gap">资金来源</span>
-                <span class="info-value">{{ row.fundSource || '' }}</span>
-              </div>
-            </td>
-          </tr>
           <tr>
             <th>消耗品名称</th>
             <th>规格型号</th>
@@ -112,8 +108,8 @@ export default {
       /** 与耗材出库默认模板（bill_type=201）一致：正文略小、表体统一字号 */
       printSetting: {
         orientation: 'landscape',
-        fontSize: 14,
-        tableFontSize: 10,
+        fontSize: 16,
+        tableFontSize: 11,
         marginTop: 0,
         marginBottom: 0,
         marginLeft: 0,
@@ -144,29 +140,28 @@ export default {
     },
     /** 纸张尺寸：A4 模式整页；三等分模式 99mm 高条带 */
     pageSizeForPrint() {
-      if (this.isA4Paper) {
-        return this.effectiveOrientation === 'portrait' ? '210mm 297mm' : '297mm 210mm'
-      }
-      // 纸张：宽 210mm，高 140mm；纵向/横向根据打印方向交换
-      return this.effectiveOrientation === 'portrait' ? '140mm 210mm' : '210mm 140mm'
+      return '200mm 140mm'
     },
     printStyle() {
       const m = this.printSetting
-      const margin = `${m.marginTop || 0}mm ${m.marginRight || 0}mm ${m.marginBottom || 0}mm ${m.marginLeft || 0}mm`
+      // 点阵打印机对顶部裁切/留白也比较敏感：对 marginTop 做上限保护
+      const safeTopMm = Math.min(2, m.marginTop || 0)
+      const margin = `${safeTopMm}mm ${m.marginRight || 0}mm ${m.marginBottom || 0}mm ${m.marginLeft || 0}mm`
       const wide = this.effectiveOrientation === 'landscape'
       return {
         padding: margin,
         fontSize: (m.fontSize || 16) + 'px',
-        fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif',
-        width: wide ? '210mm' : '140mm',
-        maxWidth: wide ? '210mm' : '140mm'
+        // 点阵机更适合等宽字体，减少字形/宽度差异导致的糊边
+        fontFamily: '"Courier New", "Consolas", "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif',
+        width: wide ? '297mm' : '210mm',
+        maxWidth: wide ? '297mm' : '210mm'
       }
     },
     tableStyle() {
       const px = this.printSetting.tableFontSize || 11
       return {
         fontSize: px + 'px',
-        fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif'
+        fontFamily: '"Courier New", "Consolas", "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif'
       }
     }
   },
@@ -238,12 +233,9 @@ export default {
      * 触发浏览器打印。三等分纸高度约 99mm（A4 纵向 297mm 的 1/3）。
      */
     start() {
-      if (typeof this.ensureHospitalNameLoaded === 'function') {
-        this.ensureHospitalNameLoaded().catch(() => {})
-      }
-      const doPrint = () => {
+      const printNow = () => {
         this.$nextTick(() => {
-          this.$nextTick(() => {
+          requestAnimationFrame(() => {
             const el = this.$refs.receiptOrderPrintRef || this.$el
             if (!el) {
               console.warn('[outOrderPrint] 打印节点未就绪')
@@ -252,7 +244,12 @@ export default {
             const pageSize = this.pageSizeForPrint
             try {
               if (typeof this.$print === 'function') {
-                this.$print(el, { injectPageSize: true }, pageSize)
+                this.$print(el, {
+                  injectPageSize: true,
+                  pageMargin: '0',
+                  waitForAssets: true,
+                  beforePrintDelay: 320
+                }, pageSize)
               } else {
                 window.print()
               }
@@ -262,7 +259,13 @@ export default {
           })
         })
       }
-      doPrint()
+
+      // 等待医院名称加载完成后再打印，避免标题/字段中间段渲染不完整
+      if (typeof this.ensureHospitalNameLoaded === 'function') {
+        this.ensureHospitalNameLoaded().then(printNow).catch(printNow)
+      } else {
+        printNow()
+      }
     }
   }
 }
@@ -276,21 +279,21 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   position fixed
   left -9999px
   top 0
-  width 140mm
+  width 210mm
   max-width 900px
   z-index -1
   visibility visible
 
 .out-order-print.page-slip-landscape.print-root-offscreen
-  width 210mm
+  width 297mm
   max-width 1100px
 
 .receipt-print
-  line-height 1.25
+  line-height 1.35
   max-width 900px
   margin 0 auto
   font-family $font-song
-  min-height 140mm
+  min-height 99mm
   box-sizing border-box
   break-inside avoid
   page-break-inside avoid
@@ -312,7 +315,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   font-size 15px
   font-weight bold
   text-align center
-  margin-bottom 6px
+  margin-bottom 3px
   line-height 1.25
 
 .header-cell
@@ -327,8 +330,13 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   display flex
   align-items center
   flex-wrap wrap
-  margin-bottom 2px
-  font-size 11px
+  margin-bottom 1px
+  font-size 10px
+
+.print-head-info
+  width 96%
+  margin 0 auto 3px
+  padding 0
 
 .info-label
   min-width 56px
@@ -342,17 +350,19 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   margin-left 10px
 
 .detail-table
-  width 100%
+  width 96%
   table-layout fixed
   border-collapse collapse
   border 1px solid #000
   margin-bottom 0
+  margin-left auto
+  margin-right auto
   font-family $font-song
 
 .detail-table .col-name
-  width 13%
+  width 14%
 .detail-table .col-spec
-  width 11%
+  width 12%
 .detail-table .col-qty
   width 7%
 .detail-table .col-unit
@@ -362,16 +372,16 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .detail-table .col-amt
   width 9%
 .detail-table .col-origin
-  width 16%
+  width 18%
 .detail-table .col-batch
-  width 9%
+  width 10%
 .detail-table .col-exp
-  width 9%
+  width 10%
 
 .detail-table th,
 .detail-table td
   border 1px solid #000
-  padding 1px 2px
+  padding 1px 3px
   vertical-align middle
   font-size inherit
 
@@ -407,13 +417,11 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   white-space nowrap
 
 .detail-table tbody td:nth-child(1),
-.detail-table tbody td:nth-child(2),
-.detail-table tbody td:nth-child(7),
-.detail-table tbody td:nth-child(8)
+.detail-table tbody td:nth-child(2)
   white-space nowrap
   overflow hidden
-  text-overflow ellipsis
-  word-break normal
+  text-overflow clip
+  text-overflow clip
 
 /* 合计行：与采购价(第5列)、采购金额(第6列)同列竖线，底边为合计横线 */
 .detail-table tbody tr.print-total-row td
@@ -446,13 +454,16 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 /* 屏上不占用视口；打印时在复制块内展示 */
 .print-sign-footer-fixed
   display none
+  width 96%
+  margin 0 auto
 </style>
 
 <style lang="stylus" media="print">
 /* 不强制纸张 size：允许用户在浏览器里选择 A4；
    组件本身按 99mm 高度排版，A4 下可自然一页容纳 3 条 */
 @page
-  margin 4mm 6mm
+  size 200mm 140mm
+  margin 0
 
 @media print
   *
@@ -464,34 +475,78 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     top auto !important
     z-index auto !important
     width 100% !important
-    padding-bottom 14mm !important
+    padding-bottom 0 !important
 
   .receipt-print
     width 100% !important
     max-width none
     padding 0
     min-height auto !important
-    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    /* Epson LQ-690K：等宽+固定字号，减少模糊差异 */
+    font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-size 13px !important
+    -webkit-font-smoothing none !important
+    -moz-osx-font-smoothing none !important
+    text-rendering optimizeSpeed
 
   .print-copy-block
-    min-height 140mm !important
+    min-height auto !important
     box-sizing border-box
-    padding 0 0 4mm 0
+    /* 针式机顶部可打印区域偏小：整体下移内容，避免标题/单据号上半截被裁切 */
+    padding 6mm 0 0 0 !important
+    justify-content flex-start !important
 
   .print-copy-block.is-third-split-copy
-    height 140mm !important
+    height auto !important
     overflow hidden !important
 
   .doc-title
-    font-size 15px !important
+    font-size 16px !important
+    font-weight normal !important
+    padding-top 2mm !important
+    padding-bottom 0 !important
+    margin-top 0 !important
+    margin-bottom 0 !important
+    line-height 1.55 !important
+    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    page-break-inside avoid !important
+
+  /* 点阵打印：标题区下移，保证在可打印区域 */
+  .header-cell
+    padding 2px 2px 2px !important
+
+  .print-head-info
+    width 96% !important
+    margin 0 auto 1px !important
+    padding 0 !important
+    line-height 1.4 !important
 
   .detail-table
-    width 100% !important
+    width 96% !important
+    margin-left auto !important
+    margin-right auto !important
+    /* 点阵打印：固定字号/等宽，降低模糊 */
+    font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-size 11px !important
 
   .detail-table th,
   .detail-table td
     border 1px solid #000
+    padding 2px 4px !important
     overflow hidden
+    text-overflow clip !important
+
+  .detail-table th
+    line-height 1.2 !important
+    white-space nowrap !important
+    padding-top 1px !important
+    padding-bottom 1px !important
+
+  /* 名称只显示一行，不换行 */
+  .detail-table tbody td:nth-child(1)
+    white-space nowrap !important
+    overflow hidden !important
+    text-overflow clip !important
 
   .detail-table thead tr.print-doc-header td
     border none !important
@@ -500,9 +555,10 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     white-space nowrap !important
 
   .detail-table th
-    background #f5f5f5 !important
-    -webkit-print-color-adjust exact
-    print-color-adjust exact
+    background transparent !important
+    font-weight normal !important
+    -webkit-print-color-adjust economy
+    print-color-adjust economy
 
   .detail-table tbody tr.print-total-row td
     border 1px solid #000 !important
@@ -511,12 +567,14 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   .print-sign-footer-fixed
     display block !important
     position static
+    width 96% !important
+    margin 0 auto !important
     box-sizing border-box
-    padding 2px 0 0
+    padding 1px 0 0
     border-top none
     background transparent
-    font-size 11px
-    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-size 10px
+    font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
 
   .print-sign-footer-fixed .sign-block
     padding-right 8%

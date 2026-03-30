@@ -98,7 +98,7 @@ export default {
       this.warehouseOptions = (this.allWarehouseOptions || []).filter(item => {
         const code = String(item.code || item.warehouseCode || "").toUpperCase();
         const name = String(item.name || item.warehouseName || "").toUpperCase();
-        const referred = String(item.referredName || item.warehouseReferredCode || "").toUpperCase();
+        const referred = String(item.referredName || "").toUpperCase();
         const py = this.getPinyinInitials(item.name || item.warehouseName || "");
         return code.includes(q) || name.includes(q) || referred.includes(q) || py.includes(q);
       });

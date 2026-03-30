@@ -61,7 +61,7 @@ export default {
       this.warehouseCategoryOptions = this.allWarehouseCategoryOptions.filter(item => {
         const code = String(item.warehouseCategoryCode || item.code || "").toUpperCase();
         const name = String(item.warehouseCategoryName || item.name || "").toUpperCase();
-        const referred = String(item.referredName || item.referredCode || item.warehouseCategoryReferredCode || "").toUpperCase();
+        const referred = String(item.referredName || "").toUpperCase();
         const py = this.getPinyinInitials(item.warehouseCategoryName || item.name || "");
         return code.includes(q) || name.includes(q) || referred.includes(q) || py.includes(q);
       });

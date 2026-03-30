@@ -110,11 +110,7 @@ export default {
       return 1
     },
     pageSizeForPrint() {
-      if (this.isA4Paper) {
-        return this.effectiveOrientation === 'portrait' ? '210mm 297mm' : '297mm 210mm'
-      }
-      // 纸张：宽 210mm，高 140mm
-      return this.effectiveOrientation === 'portrait' ? '140mm 210mm' : '210mm 140mm'
+      return '200mm 140mm'
     }
   },
   methods: {
@@ -123,12 +119,12 @@ export default {
       this.ensureHospitalNameLoaded().then(() => {
         // 等待Vue更新DOM
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: true }, this.pageSizeForPrint)
+          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
         })
       }).catch(() => {
         // 即使加载失败也继续打印
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: true }, this.pageSizeForPrint)
+          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
         })
       })
     },
@@ -159,10 +155,10 @@ export default {
 
 <style lang="stylus" media="print">
 .refund-goods-print
-  padding 6px 6px
-  line-height 1.25
-  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
-  font-size 11px
+  padding 8px
+  line-height 1.35
+  font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
+  font-size 13px
 
 /* 仅三等分纸固定版心高度；A4 用内容自然高度，避免 min-height+page-break-inside 触发空白第二页 */
 .print-copy-block
@@ -185,14 +181,19 @@ export default {
   page-break-inside auto
 
 .doc-title
-  font-size 18px
-  line-height 1.2
+  font-size 15px
+  line-height 1.55
+  padding-top 2mm
+  padding-bottom 1mm
   text-align center
   margin-bottom 2px
+  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .summary
   display flex
   flex-wrap wrap
+  width 96%
+  margin 0 auto 2px
   margin-bottom 2px
   line-height 1.25
 
@@ -204,19 +205,21 @@ export default {
   text-align right
 
 .common-table
-  width 100%
+  width 96%
+  margin-left auto
+  margin-right auto
   table-layout fixed
   border-collapse collapse
   border-spacing 0
 
 .common-table .col-name
-  width 22%
+  width 24%
 
 .common-table .col-unit
   width 6%
 
 .common-table .col-spec
-  width 15%
+  width 16%
 
 .common-table .col-qty
   width 12%
@@ -228,7 +231,7 @@ export default {
   width 15%
 
 .common-table .col-batch
-  width 15%
+  width 12%
 
 .common-table thead tr:first-child th
   padding-top 1px
@@ -236,14 +239,16 @@ export default {
 .common-table th,
 .common-table td
   border 1px solid #000
-  padding 1px 2px
+  padding 3px 5px
   font-size 11px
   white-space nowrap
   overflow hidden
+  text-overflow clip
 
 .common-table th
   text-align center
   font-weight normal
+  background transparent
 
 .common-table td:nth-child(1),
 .common-table td:nth-child(2),
@@ -260,17 +265,31 @@ export default {
 .amount-row
   display flex
   justify-content space-between
-  margin-top 2px
+  width 96%
+  margin 2px auto 0
   white-space nowrap
 
 .foot
   display flex
   justify-content space-between
-  margin-top 6px
+  width 96%
+  margin 6px auto 0
   white-space nowrap
 
+.foot span:nth-child(1)
+  flex 1
+  text-align left
+
+.foot span:nth-child(2)
+  flex 0 0 auto
+  text-align center
+
+.foot span:nth-child(3)
+  flex 1
+  text-align right
+
 @page
-  size auto
+  size 200mm 140mm
   margin 0
 
 @media print
@@ -278,18 +297,52 @@ export default {
     color #000 !important
 
   .refund-goods-print
-    width 210mm !important
-    max-width 210mm !important
+    width 100% !important
+    /* 针式机左右容易裁切：给内容区留安全边 */
+    padding 0 6mm !important
+    font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-size 13px !important
+
+  .common-table
+    width 96% !important
+    margin-left auto !important
+    margin-right auto !important
+
+  .summary
+    width 96% !important
+    margin 0 auto 2px !important
+
+  .amount-row
+    width 96% !important
+    margin 2px auto 0 !important
+
+  .foot
+    width 96% !important
+    margin 6px auto 0 !important
+
+  .doc-title
+    font-size 15px !important
+    line-height 1.55 !important
+    padding-top 2mm !important
+    padding-bottom 1mm !important
+    margin-top 0 !important
+    margin-bottom 2px !important
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
 
   .common-table th,
   .common-table td
     border 1px solid #000
+    padding 3px 5px !important
+    font-size 11px !important
     white-space nowrap !important
     word-break normal !important
 
   .common-table th
     text-align center !important
+    font-weight normal !important
+    background transparent !important
+    -webkit-print-color-adjust economy
+    print-color-adjust economy
 
   .common-table td:nth-child(1),
   .common-table td:nth-child(2),

@@ -29,9 +29,7 @@ service.interceptors.request.use(async config => {
   const isRepeatSubmit = (config.headers || {}).repeatSubmit === false
   if (getToken() && !isToken) {
     if (!skipTenantSync) {
-      const method = String(config.method || '').toLowerCase()
-      const forceTenantSync = method === 'post' || method === 'put' || method === 'delete'
-      await store.dispatch('RefreshTenant', forceTenantSync)
+      await store.dispatch('RefreshTenant')
     }
     config.headers['Authorization'] = 'Bearer ' + getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
     // 租户标识（与设备前端一致）：请求头携带，后端做数据隔离与校验

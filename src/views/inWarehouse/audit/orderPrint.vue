@@ -149,11 +149,14 @@ export default {
         if (isNaN(n)) return 0
         return Math.max(0, n)
       }
-      const margin = `${clampNonNegativeMm(m.marginTop)}mm ${clampNonNegativeMm(m.marginRight)}mm ${clampNonNegativeMm(m.marginBottom)}mm ${clampNonNegativeMm(m.marginLeft)}mm`
+      // 点阵打印机对顶部裁切很敏感：对 marginTop 做上限保护，既避免裁切又避免标题下移过多。
+      const safeTopMm = Math.min(2, clampNonNegativeMm(m.marginTop))
+      const margin = `${safeTopMm}mm ${clampNonNegativeMm(m.marginRight)}mm ${clampNonNegativeMm(m.marginBottom)}mm ${clampNonNegativeMm(m.marginLeft)}mm`
       return {
         padding: margin,
         fontSize: Math.round(m.fontSize || 14) + 'px',
-        fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif'
+        // 点阵机更适合等宽字体，减少字符挤压/模糊差异
+        fontFamily: '"Courier New", "Consolas", "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif'
       }
     },
     tableStyle() {
@@ -217,19 +220,26 @@ export default {
     start() {
       const doPrint = () => {
         this.$nextTick(() => {
-          const el = this.$refs.receiptOrderPrintRef || this.$el
-          if (!el) return
-          const pageSize = '200mm 140mm'
-          if (typeof this.$print === 'function') {
-            // 显式注入 @page size，避免浏览器因“适配页面”导致整体缩放而文字模糊
-            this.$print(el, { injectPageSize: true }, pageSize)
-          } else {
-            try {
-              window.print()
-            } catch (e) {
-              console.error('打印失败:', e)
+          requestAnimationFrame(() => {
+            const el = this.$refs.receiptOrderPrintRef || this.$el
+            if (!el) return
+            const pageSize = '200mm 140mm'
+            if (typeof this.$print === 'function') {
+              this.$print(el, {
+                injectPageSize: true,
+                // 保持与页面高度一致，避免可打印区被压缩后从一页变两页
+                pageMargin: '0',
+                waitForAssets: true,
+                beforePrintDelay: 320
+              }, pageSize)
+            } else {
+              try {
+                window.print()
+              } catch (e) {
+                console.error('打印失败:', e)
+              }
             }
-          }
+          })
         })
       }
       Promise.all([
@@ -358,25 +368,33 @@ export default {
   margin 0
 
 @media print
+  html,body
+    margin 0 !important
+    padding 0 !important
+
   *
     color #000 !important
 
   .receipt-print
     width 200mm !important
     max-width 200mm !important
-    font-size 15px
-    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    /* Epson LQ-690K 点阵打印：等宽+固定字号，减少模糊/字形差异 */
+    font-size 13px !important
+    font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     font-weight normal
-    -webkit-font-smoothing antialiased
-    -moz-osx-font-smoothing grayscale
-    text-rendering optimizeLegibility
+    -webkit-font-smoothing none !important
+    -moz-osx-font-smoothing none !important
+    text-rendering optimizeSpeed
     -webkit-print-color-adjust exact
     print-color-adjust exact
 
   .print-page
     width 200mm !important
     min-height 140mm !important
-    max-height 140mm !important
+    // 避免某些浏览器在打印模式对 max-height 裁切到标题区域
+    max-height none !important
+    /* 针式机顶部不可打印区更大，标题整体下移 */
+    padding-top 6mm !important
     overflow-x: visible
     overflow-y: visible
     break-inside avoid
@@ -387,15 +405,41 @@ export default {
     page-break-after auto
 
   .doc-title
-    font-size 20px
+    display block !important
+    /* 标题字号收小，避免在点阵纸高度/行高估算下出现半截或空白 */
+    font-size 15px !important
     font-weight normal !important
-    padding-top 3mm
-    line-height 1.1
+    /* 标题字形上半部被裁切：增加标题内部安全区并放宽行框 */
+    padding-top 2mm !important
+    padding-bottom 1mm !important
+    margin-top 0 !important
+    margin-bottom 2px !important
+    line-height 1.55 !important
+    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    overflow visible !important
+    page-break-inside avoid !important
+
+  /* 下方区域压缩，抵消标题下移导致的分页压力 */
+  .info-block
+    margin-bottom 3px !important
+
+  .detail-table
+    margin-bottom 6px !important
+
+  .detail-table th,
+  .detail-table td
+    padding 3px 5px !important
+
+  .total-row
+    margin-bottom 8px !important
 
   .detail-table
     width 100% !important
     table-layout fixed
     border-collapse collapse
+    /* 覆盖行内 style：后台配置的字号/字体对点阵机容易触发模糊/裁切 */
+    font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-size 11px !important
 
   .detail-table th,
   .detail-table td
@@ -408,9 +452,9 @@ export default {
     font-weight normal !important
 
   .detail-table th
-    background #f5f5f5 !important
-    -webkit-print-color-adjust exact
-    print-color-adjust exact
+    background transparent !important
+    -webkit-print-color-adjust economy
+    print-color-adjust economy
 
   /* 列名统一居中 */
   .detail-table th

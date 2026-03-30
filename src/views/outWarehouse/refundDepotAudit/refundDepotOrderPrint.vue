@@ -108,11 +108,7 @@ export default {
       return 1
     },
     pageSizeForPrint() {
-      if (this.isA4Paper) {
-        return this.effectiveOrientation === 'portrait' ? '210mm 297mm' : '297mm 210mm'
-      }
-      // 纸张：宽 210mm，高 140mm
-      return this.effectiveOrientation === 'portrait' ? '140mm 210mm' : '210mm 140mm'
+      return '200mm 140mm'
     }
   },
   methods: {
@@ -172,7 +168,7 @@ export default {
 
 <style lang="stylus" media="print">
 @page
-  size auto
+  size 200mm 140mm
   margin 0
 
 @media print
@@ -180,15 +176,18 @@ export default {
     color #000 !important
 
   .refund-depot-order-print
-    width 210mm !important
-    max-width 210mm !important
-    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
-    font-size 11px
+    width 200mm !important
+    max-width 200mm !important
+    /* 针式机左右容易裁切：给内容区留安全边 */
+    padding 0 6mm !important
+    font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-size 13px !important
 
   .common-table th
-    background #fff !important
-    -webkit-print-color-adjust exact
-    print-color-adjust exact
+    background transparent !important
+    font-weight normal !important
+    -webkit-print-color-adjust economy
+    print-color-adjust economy
 
 .refund-depot-order-print
   padding 5px 6px
@@ -213,9 +212,14 @@ export default {
 
 .doc-title
   text-align center
-  font-size 22px
-  margin-bottom 6px
-  font-weight bold
+  font-size 15px
+  line-height 1.55
+  padding-top 2mm
+  padding-bottom 1mm
+  margin-top 0
+  margin-bottom 2px
+  font-weight normal
+  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .summary
   display flex
@@ -228,7 +232,7 @@ export default {
   padding 1px 0
   white-space nowrap
   overflow hidden
-  text-overflow ellipsis
+  text-overflow clip
 
 .summary-left
   width 34%
@@ -241,7 +245,9 @@ export default {
   text-align right
 
 .common-table
-  width 100%
+  width 96%
+  margin-left auto
+  margin-right auto
   table-layout fixed
   border-collapse collapse
   border-spacing 0
@@ -267,7 +273,7 @@ export default {
 .common-table th,
 .common-table td
   border 1px solid #000
-  padding 1px 2px
+  padding 3px 5px
   font-size 11px
 
 .common-table th
@@ -280,7 +286,7 @@ export default {
   text-align left
   white-space nowrap
   overflow hidden
-  text-overflow ellipsis
+  text-overflow clip
 
 .num-cell
   text-align right

@@ -75,18 +75,6 @@ export function getCustomerOptions(systemType) {
   })
 }
 
-// 平台管理员模式：租户切换（重签 super_01 token）
-export function switchTenant(customerId, systemType = 'hc') {
-  return request({
-    url: '/switchTenant',
-    method: 'post',
-    data: {
-      customerId,
-      systemType
-    }
-  })
-}
-
 // 获取验证码
 export function getCodeImg() {
   return request({
