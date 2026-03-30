@@ -100,6 +100,19 @@ export const constantRoutes = [
         meta: { title: '科室库存查询测试' }
       }
     ]
+  },
+  {
+    path: '/tenant-switch',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/system/tenantSwitch/index'),
+        name: 'TenantSwitch',
+        meta: { title: '租户切换', icon: 'peoples' }
+      }
+    ]
   }
 ]
 

@@ -111,7 +111,8 @@ export default {
       if (this.isA4Paper) {
         return this.effectiveOrientation === 'portrait' ? '210mm 297mm' : '297mm 210mm'
       }
-      return this.effectiveOrientation === 'portrait' ? '210mm 99mm' : '297mm 99mm'
+      // 纸张：宽 210mm，高 140mm
+      return this.effectiveOrientation === 'portrait' ? '140mm 210mm' : '210mm 140mm'
     }
   },
   methods: {
@@ -155,12 +156,12 @@ export default {
       this.ensureHospitalNameLoaded().then(() => {
         // 等待Vue更新DOM
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundDepotOrderPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
+          this.$print(this.$refs.receiptRefundDepotOrderPrintRef, { injectPageSize: true }, this.pageSizeForPrint)
         })
       }).catch(() => {
         // 即使加载失败也继续打印
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundDepotOrderPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
+          this.$print(this.$refs.receiptRefundDepotOrderPrintRef, { injectPageSize: true }, this.pageSizeForPrint)
         })
       })
     }
@@ -172,16 +173,17 @@ export default {
 <style lang="stylus" media="print">
 @page
   size auto
-  margin 10mm
+  margin 0
 
 @media print
   *
     color #000 !important
 
   .refund-depot-order-print
-    width 100% !important
+    width 210mm !important
+    max-width 210mm !important
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
-    font-size 12px
+    font-size 11px
 
   .common-table th
     background #fff !important
@@ -189,15 +191,15 @@ export default {
     print-color-adjust exact
 
 .refund-depot-order-print
-  padding 6px 8px
-  line-height 1.35
+  padding 5px 6px
+  line-height 1.25
   font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
-  font-size 12px
+  font-size 11px
   break-inside avoid
   page-break-inside avoid
 
 .print-copy-block
-  min-height 99mm
+  min-height 140mm
   box-sizing border-box
   display flex
   flex-direction column
@@ -206,7 +208,7 @@ export default {
   page-break-inside avoid
 
 .print-copy-block.is-third-split-copy
-  height 99mm
+  height 140mm
   overflow hidden
 
 .doc-title
@@ -222,7 +224,7 @@ export default {
 
 .summary-item
   box-sizing border-box
-  font-size 12px
+  font-size 11px
   padding 1px 0
   white-space nowrap
   overflow hidden
@@ -245,28 +247,28 @@ export default {
   border-spacing 0
 
 .common-table .col-name
-  width 28%
+  width 26%
 
 .common-table .col-spec
-  width 20%
+  width 18%
 
 .common-table .col-batch
-  width 15%
+  width 14%
 
 .common-table .col-qty
-  width 11%
+  width 12%
 
 .common-table .col-price
-  width 13%
+  width 14%
 
 .common-table .col-amt
-  width 13%
+  width 16%
 
 .common-table th,
 .common-table td
   border 1px solid #000
-  padding 2px 4px
-  font-size 12px
+  padding 1px 2px
+  font-size 11px
 
 .common-table th
   text-align center
@@ -293,11 +295,11 @@ export default {
   display flex
   justify-content space-between
   margin-top 4px
-  font-size 12px
+  font-size 11px
 
 .sign-block
   display flex
   justify-content space-between
   margin-top 14px
-  font-size 12px
+  font-size 11px
 </style>

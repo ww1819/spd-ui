@@ -1,4 +1,4 @@
-import { login, logout, getInfo, getCurrentTenant } from '@/api/login'
+import { login, logout, getInfo, getCurrentTenant, switchTenant } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 
 const user = {
@@ -147,6 +147,34 @@ const user = {
         })
       })
     },
+
+    // 已登录平台管理员切换租户：重签 token 并刷新会话
+    SwitchTenant({ commit, dispatch }, payload) {
+      const customerId = payload && payload.customerId ? String(payload.customerId).trim() : ''
+      const systemType = payload && payload.systemType ? payload.systemType : 'hc'
+      return new Promise((resolve, reject) => {
+        if (!customerId) {
+          reject(new Error('请选择租户'))
+          return
+        }
+        switchTenant(customerId, systemType).then(res => {
+          const token = res && res.token
+          if (!token) {
+            reject(new Error('切换失败：未返回 token'))
+            return
+          }
+          setToken(token)
+          commit('SET_TOKEN', token)
+          if (res.tenant) {
+            commit('SET_TENANT', res.tenant)
+          } else {
+            commit('SET_TENANT', null)
+          }
+          commit('SET_TENANT_SYNCED_AT', Date.now())
+          dispatch('GetInfo').then(() => resolve(res)).catch(reject)
+        }).catch(reject)
+      })
+    }
   }
 }
 

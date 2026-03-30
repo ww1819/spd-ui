@@ -112,8 +112,8 @@ export default {
       /** 与耗材出库默认模板（bill_type=201）一致：正文略小、表体统一字号 */
       printSetting: {
         orientation: 'landscape',
-        fontSize: 16,
-        tableFontSize: 11,
+        fontSize: 14,
+        tableFontSize: 10,
         marginTop: 0,
         marginBottom: 0,
         marginLeft: 0,
@@ -147,7 +147,8 @@ export default {
       if (this.isA4Paper) {
         return this.effectiveOrientation === 'portrait' ? '210mm 297mm' : '297mm 210mm'
       }
-      return this.effectiveOrientation === 'portrait' ? '210mm 99mm' : '297mm 99mm'
+      // 纸张：宽 210mm，高 140mm；纵向/横向根据打印方向交换
+      return this.effectiveOrientation === 'portrait' ? '140mm 210mm' : '210mm 140mm'
     },
     printStyle() {
       const m = this.printSetting
@@ -157,8 +158,8 @@ export default {
         padding: margin,
         fontSize: (m.fontSize || 16) + 'px',
         fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif',
-        width: wide ? '297mm' : '210mm',
-        maxWidth: wide ? '297mm' : '210mm'
+        width: wide ? '210mm' : '140mm',
+        maxWidth: wide ? '210mm' : '140mm'
       }
     },
     tableStyle() {
@@ -251,7 +252,7 @@ export default {
             const pageSize = this.pageSizeForPrint
             try {
               if (typeof this.$print === 'function') {
-                this.$print(el, { injectPageSize: false }, pageSize)
+                this.$print(el, { injectPageSize: true }, pageSize)
               } else {
                 window.print()
               }
@@ -275,27 +276,27 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   position fixed
   left -9999px
   top 0
-  width 210mm
+  width 140mm
   max-width 900px
   z-index -1
   visibility visible
 
 .out-order-print.page-slip-landscape.print-root-offscreen
-  width 297mm
+  width 210mm
   max-width 1100px
 
 .receipt-print
-  line-height 1.35
+  line-height 1.25
   max-width 900px
   margin 0 auto
   font-family $font-song
-  min-height 99mm
+  min-height 140mm
   box-sizing border-box
   break-inside avoid
   page-break-inside avoid
 
 .print-copy-block
-  min-height 99mm
+  min-height 140mm
   box-sizing border-box
   display flex
   flex-direction column
@@ -304,7 +305,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   page-break-inside avoid
 
 .print-copy-block.is-third-split-copy
-  height 99mm
+  height 140mm
   overflow hidden
 
 .doc-title
@@ -349,9 +350,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   font-family $font-song
 
 .detail-table .col-name
-  width 14%
+  width 13%
 .detail-table .col-spec
-  width 12%
+  width 11%
 .detail-table .col-qty
   width 7%
 .detail-table .col-unit
@@ -361,16 +362,16 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .detail-table .col-amt
   width 9%
 .detail-table .col-origin
-  width 18%
+  width 16%
 .detail-table .col-batch
-  width 10%
+  width 9%
 .detail-table .col-exp
-  width 10%
+  width 9%
 
 .detail-table th,
 .detail-table td
   border 1px solid #000
-  padding 2px 4px
+  padding 1px 2px
   vertical-align middle
   font-size inherit
 
@@ -406,8 +407,13 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   white-space nowrap
 
 .detail-table tbody td:nth-child(1),
-.detail-table tbody td:nth-child(2)
-  word-break break-all
+.detail-table tbody td:nth-child(2),
+.detail-table tbody td:nth-child(7),
+.detail-table tbody td:nth-child(8)
+  white-space nowrap
+  overflow hidden
+  text-overflow ellipsis
+  word-break normal
 
 /* 合计行：与采购价(第5列)、采购金额(第6列)同列竖线，底边为合计横线 */
 .detail-table tbody tr.print-total-row td
@@ -468,12 +474,12 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
 
   .print-copy-block
-    min-height 99mm !important
+    min-height 140mm !important
     box-sizing border-box
     padding 0 0 4mm 0
 
   .print-copy-block.is-third-split-copy
-    height 99mm !important
+    height 140mm !important
     overflow hidden !important
 
   .doc-title

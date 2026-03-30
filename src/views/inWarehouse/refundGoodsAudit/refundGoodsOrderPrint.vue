@@ -113,7 +113,8 @@ export default {
       if (this.isA4Paper) {
         return this.effectiveOrientation === 'portrait' ? '210mm 297mm' : '297mm 210mm'
       }
-      return this.effectiveOrientation === 'portrait' ? '210mm 99mm' : '297mm 99mm'
+      // 纸张：宽 210mm，高 140mm
+      return this.effectiveOrientation === 'portrait' ? '140mm 210mm' : '210mm 140mm'
     }
   },
   methods: {
@@ -122,12 +123,12 @@ export default {
       this.ensureHospitalNameLoaded().then(() => {
         // 等待Vue更新DOM
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
+          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: true }, this.pageSizeForPrint)
         })
       }).catch(() => {
         // 即使加载失败也继续打印
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
+          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: true }, this.pageSizeForPrint)
         })
       })
     },
@@ -158,10 +159,10 @@ export default {
 
 <style lang="stylus" media="print">
 .refund-goods-print
-  padding 8px
-  line-height 1.35
+  padding 6px 6px
+  line-height 1.25
   font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
-  font-size 12px
+  font-size 11px
 
 /* 仅三等分纸固定版心高度；A4 用内容自然高度，避免 min-height+page-break-inside 触发空白第二页 */
 .print-copy-block
@@ -173,8 +174,8 @@ export default {
   height auto
 
 .print-copy-block.is-third-split-copy
-  min-height 99mm
-  height 99mm
+  min-height 140mm
+  height 140mm
   overflow hidden
   break-inside avoid
   page-break-inside avoid
@@ -209,13 +210,13 @@ export default {
   border-spacing 0
 
 .common-table .col-name
-  width 24%
+  width 22%
 
 .common-table .col-unit
   width 6%
 
 .common-table .col-spec
-  width 16%
+  width 15%
 
 .common-table .col-qty
   width 12%
@@ -227,7 +228,7 @@ export default {
   width 15%
 
 .common-table .col-batch
-  width 12%
+  width 15%
 
 .common-table thead tr:first-child th
   padding-top 1px
@@ -235,8 +236,8 @@ export default {
 .common-table th,
 .common-table td
   border 1px solid #000
-  padding 2px 4px
-  font-size 12px
+  padding 1px 2px
+  font-size 11px
   white-space nowrap
   overflow hidden
 
@@ -277,7 +278,8 @@ export default {
     color #000 !important
 
   .refund-goods-print
-    width 100% !important
+    width 210mm !important
+    max-width 210mm !important
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
 
   .common-table th,

@@ -30,13 +30,13 @@
       <!-- 耗材明细表：消耗品名称、规格、单位、数量、采购价、采购金额、产地 -->
       <table class="detail-table" :style="tableStyle">
         <colgroup>
-          <col style="width: 24%;" />
-          <col style="width: 16%;" />
+          <col style="width: 23%;" />
+          <col style="width: 15%;" />
           <col style="width: 6%;" />
           <col style="width: 10%;" />
+          <col style="width: 15%;" />
           <col style="width: 14%;" />
-          <col style="width: 14%;" />
-          <col style="width: 16%;" />
+          <col style="width: 17%;" />
         </colgroup>
         <thead>
           <tr>
@@ -96,7 +96,7 @@ export default {
     return {
       printSetting: {
         orientation: 'portrait',
-        fontSize: 22,
+        fontSize: 21,
         tableFontSize: 12,
         marginTop: 0,
         marginBottom: 0,
@@ -117,19 +117,21 @@ export default {
       return result
     },
     maxRowsPerPage() {
-      // 纸张：宽 241mm，高 93mm（纵向按高计算）；保留安全余量，避免不同浏览器实际打印误差
-      const paperHeightMm = 93
+      // 纸张：宽 200mm，高 140mm（纵向按高计算）；保留安全余量，避免不同浏览器实际打印误差
+      const paperHeightMm = 140
       const reserveMm = 5
       const fixedMm =
         this.mmValue(this.printSetting.marginTop) +
         this.mmValue(this.printSetting.marginBottom) +
-        8 + // 标题区域
+        11 + // 标题区域（含上方补偿/加大字号）
         16 + // 基本信息区域
         8 + // 表头行
         8 + // 合计区域
         8 + // 签字区域
         3 // 结构间距
-      const rowHeightMm = 7
+      const baseRowHeightMm = 6.5
+      const tableFont = this.printSetting.tableFontSize || 11
+      const rowHeightMm = baseRowHeightMm * (tableFont / 11)
       const available = paperHeightMm - reserveMm - fixedMm
       return Math.max(1, Math.floor(available / rowHeightMm))
     },
@@ -142,16 +144,21 @@ export default {
     },
     printStyle() {
       const m = this.printSetting
-      const margin = `${m.marginTop || 0}mm ${m.marginRight || 0}mm ${m.marginBottom || 0}mm ${m.marginLeft || 0}mm`
+      const clampNonNegativeMm = (v) => {
+        const n = Number(v)
+        if (isNaN(n)) return 0
+        return Math.max(0, n)
+      }
+      const margin = `${clampNonNegativeMm(m.marginTop)}mm ${clampNonNegativeMm(m.marginRight)}mm ${clampNonNegativeMm(m.marginBottom)}mm ${clampNonNegativeMm(m.marginLeft)}mm`
       return {
         padding: margin,
-        fontSize: (m.fontSize || 14) + 'px',
+        fontSize: Math.round(m.fontSize || 14) + 'px',
         fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif'
       }
     },
     tableStyle() {
       return {
-        fontSize: (this.printSetting.tableFontSize || 12) + 'px',
+        fontSize: Math.round(this.printSetting.tableFontSize || 12) + 'px',
         fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif'
       }
     }
@@ -196,8 +203,9 @@ export default {
       getDefaultTemplate(billType).then(response => {
         if (response.data) {
           const data = response.data
-          if (data.fontSize != null) this.printSetting.fontSize = data.fontSize
-          if (data.tableFontSize != null) this.printSetting.tableFontSize = data.tableFontSize
+          // “整体字号加大一号”：在后台配置基础上 +1
+          if (data.fontSize != null) this.printSetting.fontSize = Math.round(Number(data.fontSize)) + 1
+          if (data.tableFontSize != null) this.printSetting.tableFontSize = Math.round(Number(data.tableFontSize)) + 1
           if (data.orientation) this.printSetting.orientation = data.orientation
           if (data.marginTop != null) this.printSetting.marginTop = data.marginTop
           if (data.marginBottom != null) this.printSetting.marginBottom = data.marginBottom
@@ -211,9 +219,10 @@ export default {
         this.$nextTick(() => {
           const el = this.$refs.receiptOrderPrintRef || this.$el
           if (!el) return
-          const pageSize = '241mm 93mm'
+          const pageSize = '200mm 140mm'
           if (typeof this.$print === 'function') {
-            this.$print(el, { injectPageSize: false }, pageSize)
+            // 显式注入 @page size，避免浏览器因“适配页面”导致整体缩放而文字模糊
+            this.$print(el, { injectPageSize: true }, pageSize)
           } else {
             try {
               window.print()
@@ -235,26 +244,30 @@ export default {
 <style lang="stylus" scoped>
 .receipt-print
   line-height 1.5
-  width 241mm
-  max-width 241mm
+  width 200mm
+  max-width 200mm
   margin 0 auto
   font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .print-page
-  width 241mm
-  min-height 93mm
+  width 200mm
+  min-height 140mm
   box-sizing border-box
   break-inside avoid
   page-break-inside avoid
   page-break-after always
+  overflow-x: visible
+  overflow-y: visible
 
 .print-page:last-child
   page-break-after auto
 
 .doc-title
-  font-size 22px
+  font-size 20px
   font-weight normal
   text-align center
+  padding-top 3mm
+  line-height 1.1
   margin-bottom 6px
 
 .info-block
@@ -291,7 +304,7 @@ export default {
 .detail-table th,
 .detail-table td
   border 1px solid #000
-  padding 6px 8px
+  padding 4px 6px
   text-align center
 
 .detail-table th
@@ -309,6 +322,7 @@ export default {
 .detail-table td:nth-child(7)
   text-align left
   white-space nowrap
+  text-overflow clip
 
 /* 数量、采购价、采购金额：内容右对齐 */
 .detail-table td:nth-child(4),
@@ -340,7 +354,7 @@ export default {
 
 <style lang="stylus" media="print">
 @page
-  size 241mm 93mm
+  size 200mm 140mm
   margin 0
 
 @media print
@@ -348,16 +362,23 @@ export default {
     color #000 !important
 
   .receipt-print
-    width 241mm !important
-    max-width 241mm !important
-    font-size 14px
+    width 200mm !important
+    max-width 200mm !important
+    font-size 15px
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-weight normal
+    -webkit-font-smoothing antialiased
+    -moz-osx-font-smoothing grayscale
+    text-rendering optimizeLegibility
+    -webkit-print-color-adjust exact
+    print-color-adjust exact
 
   .print-page
-    width 241mm !important
-    min-height 93mm !important
-    max-height 93mm !important
-    overflow hidden
+    width 200mm !important
+    min-height 140mm !important
+    max-height 140mm !important
+    overflow-x: visible
+    overflow-y: visible
     break-inside avoid
     page-break-inside avoid
     page-break-after always
@@ -366,8 +387,10 @@ export default {
     page-break-after auto
 
   .doc-title
-    font-size 22px
+    font-size 20px
     font-weight normal !important
+    padding-top 3mm
+    line-height 1.1
 
   .detail-table
     width 100% !important

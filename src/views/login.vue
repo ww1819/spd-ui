@@ -2,6 +2,22 @@
   <div class="login">
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form">
       <h3 class="title"></h3><!-- SPD后台管理系统 -->
+      <el-form-item v-if="showOrgSelector" prop="customerId" label="组织机构">
+        <el-select
+          v-model="loginForm.customerId"
+          placeholder="请选择组织机构"
+          clearable
+          filterable
+          style="width: 100%"
+        >
+          <el-option
+            v-for="item in customerOptions"
+            :key="item.customerId"
+            :label="item.customerName"
+            :value="item.customerId"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item prop="username">
         <el-input
           v-model="loginForm.username"
@@ -62,7 +78,7 @@
 </template>
 
 <script>
-import { getCodeImg } from "@/api/login";
+import { getCodeImg, getCustomerOptions } from "@/api/login";
 import Cookies from "js-cookie";
 import { encrypt, decrypt } from '@/utils/jsencrypt'
 
@@ -71,6 +87,8 @@ export default {
   data() {
     return {
       codeUrl: "",
+      customerOptions: [],
+      showOrgSelector: false,
       loginForm: {
         customerId: "",
         username: "",
@@ -85,6 +103,22 @@ export default {
         ],
         password: [
           { required: true, trigger: "blur", message: "请输入您的密码" }
+        ],
+        customerId: [
+          {
+            validator: (rule, value, callback) => {
+              if (!this.showOrgSelector) {
+                callback();
+                return;
+              }
+              if (!value || String(value).trim() === '') {
+                callback(new Error('请选择组织机构'));
+              } else {
+                callback();
+              }
+            },
+            trigger: 'change'
+          }
         ],
         code: [{ required: true, trigger: "change", message: "请输入验证码" }]
       },
@@ -106,9 +140,27 @@ export default {
   },
   created() {
     this.getCode();
+    this.initCustomerOptions();
     this.getCookie();
   },
   methods: {
+    initCustomerOptions() {
+      getCustomerOptions("hc").then(res => {
+        this.customerOptions = res.data || [];
+        const def = res.defaultCustomerId;
+        // 若系统配置了默认租户，则默认带入；否则显示下拉供用户选择
+        if (def) {
+          this.loginForm.customerId = def;
+          this.showOrgSelector = false;
+        } else {
+          this.showOrgSelector = true;
+        }
+      }).catch(() => {
+        this.customerOptions = [];
+        // 查询失败时按“无默认租户”处理，仍允许用户手动选择
+        this.showOrgSelector = true;
+      });
+    },
     getCode() {
       getCodeImg().then(res => {
         this.captchaEnabled = res.captchaEnabled === undefined ? true : res.captchaEnabled;
@@ -152,7 +204,16 @@ export default {
             Cookies.remove("customerId");
           }
           this.$store.dispatch("Login", this.loginForm).then(() => {
-            this.$router.push({ path: this.redirect || "/" }).catch(()=>{});
+            const username = (this.loginForm.username || '').trim()
+            const redirectPath = this.redirect || '/'
+            if (username && username.toLowerCase() === 'admin') {
+              this.$router.push({
+                path: '/tenant-switch/index',
+                query: { redirect: redirectPath }
+              }).catch(() => {})
+            } else {
+              this.$router.push({ path: redirectPath }).catch(() => {})
+            }
           }).catch(() => {
             this.loading = false;
             if (this.captchaEnabled) {
