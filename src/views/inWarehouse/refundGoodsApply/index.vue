@@ -935,6 +935,7 @@ export default {
           warehouseName: (row.warehouse && row.warehouse.name) || '',
           billDate: row.billDate,
           auditDate: row.auditDate,
+          printDate: row.printDate,
           totalAmt: totalAmt,
           totalQty: totalQty,
           totalAmtConverter: totalAmtConverter,

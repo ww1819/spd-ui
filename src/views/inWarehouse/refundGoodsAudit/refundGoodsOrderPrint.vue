@@ -64,19 +64,20 @@
           </tr>
         </tbody>
       </table>
+
+        <div class="amount-row">
+          <span>合计金额（大写）: {{ row.totalAmtConverter || '' }}</span>
+          <span>（小写）: {{ formatPrice(row.totalAmt) }}</span>
+        </div>
       </div>
 
       <div class="print-copy-block__grow" aria-hidden="true" />
 
       <div class="print-copy-block__footer">
-        <div class="amount-row">
-          <span>合计金额（大写）: {{ row.totalAmtConverter || '' }}</span>
-          <span>（小写）: {{ formatPrice(row.totalAmt) }}</span>
-        </div>
         <div class="foot">
           <span>操作员</span>
-          <span>合计:</span>
-          <span>{{ formatPrice(row.totalAmt) }}</span>
+          <span>合计: {{ formatPrice(row.totalAmt) }}</span>
+          <span>打印日期 {{ formatPrintDateTime(row.printDate || new Date()) }}</span>
         </div>
       </div>
     </div>
@@ -166,6 +167,18 @@ export default {
         return ''
       }
       return num.toFixed(4)
+    },
+    formatPrintDateTime(v) {
+      if (!v) return ''
+      const d = new Date(v)
+      if (isNaN(d.getTime())) return v
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      const h = String(d.getHours()).padStart(2, '0')
+      const mi = String(d.getMinutes()).padStart(2, '0')
+      const s = String(d.getSeconds()).padStart(2, '0')
+      return `${y}-${m}-${day} ${h}:${mi}:${s}`
     }
   }
 }
@@ -175,21 +188,17 @@ export default {
 <style lang="stylus" media="print">
 .refund-goods-print
   padding 8px
-  line-height 1.35
+  line-height 1.45
   font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
-  font-size 13px
+  font-size 15px
 
-/* 仅三等分纸固定版心高度；A4 用内容自然高度，避免 min-height+page-break-inside 触发空白第二页 */
+/* 200×140mm 退货单默认占满一页；flex 占位才能把签字区顶到底部。选 A4 预览时改为自然高度 */
 .print-copy-block
   box-sizing border-box
   display flex
   flex-direction column
   justify-content flex-start
   align-items stretch
-  min-height 0
-  height auto
-
-.print-copy-block.is-third-split-copy
   min-height 140mm
   height 140mm
   padding-top 5mm
@@ -197,6 +206,17 @@ export default {
   overflow hidden
   break-inside avoid
   page-break-inside avoid
+
+.print-copy-block.is-third-split-copy
+  min-height 140mm
+  height 140mm
+
+.is-a4-print .print-copy-block
+  min-height 0
+  height auto
+  padding-top 0
+  padding-bottom 0
+  overflow visible
 
 .print-copy-block__top
   flex 0 0 auto
@@ -215,9 +235,9 @@ export default {
   page-break-inside auto
 
 .doc-title
-  font-size 15px
-  line-height 1.55
-  padding-top 2mm
+  font-size 17px
+  line-height 1.6
+  padding-top 5mm
   padding-bottom 1mm
   text-align center
   margin-bottom 2px
@@ -229,11 +249,12 @@ export default {
   width 96%
   margin 0 auto 2px
   margin-bottom 2px
-  line-height 1.25
+  line-height 1.45
 
 .summary-item
   width 33.33%
   white-space nowrap
+  font-size 15px
 
 .summary-right
   text-align right
@@ -273,8 +294,8 @@ export default {
 .common-table th,
 .common-table td
   border 1px solid #000
-  padding 3px 5px
-  font-size 11px
+  padding 4px 5px
+  font-size 13px
   white-space nowrap
   overflow hidden
   text-overflow clip
@@ -286,7 +307,7 @@ export default {
 
 /* 批号列值：比表体默认大 1 号 */
 .common-table tbody td:nth-child(7)
-  font-size 12px
+  font-size 14px
 
 .common-table td:nth-child(1),
 .common-table td:nth-child(2),
@@ -304,27 +325,35 @@ export default {
   display flex
   justify-content space-between
   width 96%
-  margin 0 auto 6px
+  margin 8px auto 0
   white-space nowrap
+  font-size 15px
+  line-height 1.55
 
 .foot
   display flex
   justify-content space-between
+  align-items flex-start
   width 96%
   margin 0 auto
   white-space nowrap
   padding-bottom 0
+  font-size 15px
+  line-height 1.6
+
+.foot span
+  flex 1 1 0
+  min-width 0
+  padding 0 4px
+  box-sizing border-box
 
 .foot span:nth-child(1)
-  flex 1
   text-align left
 
 .foot span:nth-child(2)
-  flex 0 0 auto
   text-align center
 
 .foot span:nth-child(3)
-  flex 1
   text-align right
 
 @page
@@ -340,7 +369,15 @@ export default {
     /* 针式机左右容易裁切：给内容区留安全边 */
     padding 0 6mm !important
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
-    font-size 13px !important
+    font-size 15px !important
+
+  .summary-item
+    font-size 15px !important
+    line-height 1.45 !important
+
+  .amount-row
+    font-size 15px !important
+    line-height 1.55 !important
 
   .common-table
     width 96% !important
@@ -353,7 +390,7 @@ export default {
 
   .amount-row
     width 96% !important
-    margin 0 auto 6px !important
+    margin 8px auto 0 !important
 
   .foot
     width 96% !important
@@ -361,16 +398,26 @@ export default {
     margin-right auto !important
     margin-top 0 !important
     padding-bottom 0 !important
+    font-size 15px !important
+    line-height 1.6 !important
 
-  .print-copy-block.is-third-split-copy
+  .print-copy-block
+    min-height 140mm !important
+    height 140mm !important
     padding-top 5mm !important
     padding-bottom 5mm !important
     box-sizing border-box !important
 
+  .is-a4-print .print-copy-block
+    min-height 0 !important
+    height auto !important
+    padding-top 0 !important
+    padding-bottom 0 !important
+
   .doc-title
-    font-size 15px !important
-    line-height 1.55 !important
-    padding-top 2mm !important
+    font-size 17px !important
+    line-height 1.6 !important
+    padding-top 5mm !important
     padding-bottom 1mm !important
     margin-top 0 !important
     margin-bottom 2px !important
@@ -379,8 +426,8 @@ export default {
   .common-table th,
   .common-table td
     border 1px solid #000
-    padding 3px 5px !important
-    font-size 11px !important
+    padding 4px 5px !important
+    font-size 13px !important
     white-space nowrap !important
     word-break normal !important
 
@@ -403,5 +450,5 @@ export default {
     text-align right !important
 
   .common-table tbody td:nth-child(7)
-    font-size 12px !important
+    font-size 14px !important
 </style>

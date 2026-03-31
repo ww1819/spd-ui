@@ -435,7 +435,7 @@
         <refund-goods-order-print
           :row=" modalObj.form.row "
           :print-orientation="modalObj.form.printOrientation || 'portrait'"
-          :paper-type="modalObj.form.paperType || 'a4'"
+          :paper-type="modalObj.form.paperType || 'third-split'"
           ref="receiptRefundGoodsPrintRef"
         ></refund-goods-order-print>
       </template>
@@ -450,7 +450,7 @@
         v-if="printRowData"
         :row="printRowData"
         print-orientation="portrait"
-        paper-type="a4"
+        paper-type="third-split"
         ref="receiptRefundGoodsPrintRefAuto"
       ></refund-goods-order-print>
     </div>
@@ -991,6 +991,7 @@ export default {
           warehouseName: (row.warehouse && row.warehouse.name) || '',
           billDate: row.billDate,
           auditDate: row.auditDate,
+          printDate: row.printDate,
           totalAmt: totalAmt,
           totalQty: totalQty,
           totalAmtConverter: totalAmtConverter,
