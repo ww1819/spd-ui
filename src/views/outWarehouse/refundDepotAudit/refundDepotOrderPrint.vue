@@ -308,4 +308,5 @@ export default {
   justify-content space-between
   margin-top auto
   font-size 11px
+  padding-bottom 3mm
 </style>

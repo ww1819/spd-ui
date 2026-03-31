@@ -275,6 +275,7 @@ export default {
   width 96%
   margin 6px auto 0
   white-space nowrap
+  padding-bottom 3mm
 
 .foot span:nth-child(1)
   flex 1

@@ -572,7 +572,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     margin-left auto !important
     margin-right auto !important
     box-sizing border-box
-    padding 1px 0 0
+    padding 1px 0 3mm
     border-top none
     background transparent
     font-size 10px

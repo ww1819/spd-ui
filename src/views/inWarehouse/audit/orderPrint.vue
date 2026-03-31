@@ -436,6 +436,11 @@ export default {
   .total-row
     margin-bottom 8px !important
 
+  /* 签字区上移一点，避开针式机底部不可打印区域 */
+  .sign-block
+    margin-top auto !important
+    padding-bottom 3mm !important
+
   .detail-table
     width 100% !important
     table-layout fixed
