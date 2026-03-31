@@ -345,9 +345,9 @@
               <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
             </template>
           </el-table-column>
-          <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
+          <el-table-column label="批次号" prop="batchNo" width="320" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" />
+              <el-input class="batch-no-input" v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" />
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
@@ -410,6 +410,7 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="warehouseValue"
+      :selectedDetails="stkIoBillEntryList"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectInventory>
@@ -746,12 +747,20 @@ export default {
       this.DialogRkApplyComponentShow = false
     },
     selectData(val) {
-      //监听“弹窗组件”返回的数据
-      this.selectRow = val;
+      // 监听“弹窗组件”返回的数据，按批次号去重，避免重复选中
+      const rows = Array.isArray(val) ? val : (val ? [val] : []);
+      if (!rows.length) return;
+      const existedBatchNos = new Set(
+        this.stkIoBillEntryList
+          .map(e => e && e.batchNo)
+          .filter(b => b != null && String(b).trim() !== '')
+      );
 
-      this.selectRow.forEach((item, index) => {
-        // this.stkIoBillEntryList.splice(this.stkIoBillEntryList.length, 0, JSON.parse(JSON.stringify(item)));
-
+      rows.forEach((item) => {
+        if (!item) return;
+        if (item.batchNo && existedBatchNos.has(item.batchNo)) {
+          return;
+        }
         let obj = {};
         obj.materialId = item.materialId;
         obj.unitPrice = item.unitPrice;
@@ -935,6 +944,17 @@ export default {
     async submitForm() {
       this.$refs["form"].validate(async (valid) => {
         if (valid) {
+          // 校验明细批次号是否有重复
+          const batchMap = new Map();
+          for (const [index, entry] of this.stkIoBillEntryList.entries()) {
+            const key = entry && entry.batchNo && String(entry.batchNo).trim();
+            if (!key) continue;
+            if (batchMap.has(key)) {
+              this.$modal.msgError(`明细第${batchMap.get(key)}行与第${index + 1}行批次号重复，请检查后再保存`);
+              return;
+            }
+            batchMap.set(key, index + 1);
+          }
           // 新增/修改耗材校验逻辑：存在未审核出库单则提示（修改时排除当前单据）
           for (const [index, entry] of this.stkIoBillEntryList.entries()) {
             if (entry.materialId) {
@@ -1518,6 +1538,16 @@ export default {
   flex: 1;
   overflow: hidden;
   margin-top: 10px;
+}
+
+/* 批次号输入框单独放宽，避免被表单统一 140px 限制 */
+.table-wrapper ::v-deep .batch-no-input.el-input {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.table-wrapper ::v-deep .batch-no-input .el-input__inner {
+  min-width: 280px;
 }
 
 .local-modal-content .el-table {

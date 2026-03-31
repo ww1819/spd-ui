@@ -262,7 +262,23 @@ export default {
     getList() {
       this.loading = true;
       listInventory(this.queryParams).then(response => {
-        this.inventoryList = response.rows;
+        const rows = response.rows || [];
+        // 如果父组件传入了已选明细，按 materialId + batchNo 过滤掉，避免重复选择
+        if (this.selectedDetails && this.selectedDetails.length) {
+          const existedKeySet = new Set(
+            this.selectedDetails
+              .filter(d => d && d.materialId != null && d.batchNo)
+              .map(d => `${d.materialId}__${d.batchNo}`)
+          );
+          this.inventoryList = rows.filter(it => {
+            const key = (it && it.materialId != null && it.batchNo)
+              ? `${it.materialId}__${it.batchNo}`
+              : null;
+            return !key || !existedKeySet.has(key);
+          });
+        } else {
+          this.inventoryList = rows;
+        }
         this.total = response.total;
         this.loading = false;
         // 如果有已选择的明细，标记已添加的项目

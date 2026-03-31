@@ -126,7 +126,7 @@ export default {
   name: "SelectInventory",
   components: {SelectMaterial,SelectDepartment},
   dicts:['way_status'],
-  props: ['DialogComponentShow','departmentValue'], //接受父组件传递过来的数据
+  props: ['DialogComponentShow','departmentValue','selectedDetails'], //接受父组件传递过来的数据
   data() {
     return {
       // 遮罩层
@@ -177,7 +177,23 @@ export default {
     getList() {
       this.loading = true;
       listInventory(this.queryParams).then(response => {
-        this.inventoryList = response.rows;
+        const rows = response.rows || [];
+        // 退库场景下，父组件会传入已选明细列表（selectedDetails），按 materialId + batchNo 过滤掉已选批次
+        if (this.selectedDetails && this.selectedDetails.length) {
+          const existedKeySet = new Set(
+            this.selectedDetails
+              .filter(d => d && d.materialId != null && d.batchNo)
+              .map(d => `${d.materialId}__${d.batchNo}`)
+          );
+          this.inventoryList = rows.filter(it => {
+            const key = (it && it.materialId != null && it.batchNo)
+              ? `${it.materialId}__${it.batchNo}`
+              : null;
+            return !key || !existedKeySet.has(key);
+          });
+        } else {
+          this.inventoryList = rows;
+        }
         this.total = response.total;
         this.loading = false;
       });

@@ -32,6 +32,11 @@
                 <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
               </div>
             </el-form-item>
+            <el-form-item label="出库科室" prop="departmentId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectDepartment v-model="queryParams.departmentId" />
+              </div>
+            </el-form-item>
           </el-col>
         </el-row>
 

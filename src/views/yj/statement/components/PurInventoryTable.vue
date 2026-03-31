@@ -118,7 +118,7 @@
       </el-table-column>
       <el-table-column label="规格" align="center" prop="materialSpeci" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="型号" align="center" prop="materialModel" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="数量" align="center" prop="materialQty" width="100" show-overflow-tooltip resizable/>
+      <el-table-column label="出库数量" align="center" prop="materialQty" width="100" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单价" align="center" prop="price" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -130,14 +130,37 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="出库金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="国家医保编码" align="center" prop="medicalNo" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.medicalNo || (scope.row.material && scope.row.material.medicalNo) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="注册证号" align="center" prop="registerNo" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.registerNo || (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="生产厂家" align="center" prop="factoryName" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.factoryName || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="供应商编码" align="center" prop="supplierCode" width="140" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ getSupplierCode(scope.row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ getSupplierName(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="科室" align="center" prop="departmentName" width="160" show-overflow-tooltip resizable/>
     </el-table>
     </div>
@@ -205,6 +228,24 @@ export default {
   },
   methods: {
     parseTime,
+    getSupplierName(row) {
+      return row.supplierName
+        || row.supplier
+        || (row.supplierInfo && row.supplierInfo.name)
+        || (row.supplierObj && row.supplierObj.name)
+        || (row.supplierEntity && row.supplierEntity.name)
+        || (row.material && row.material.supplier && row.material.supplier.name)
+        || '--';
+    },
+    getSupplierCode(row) {
+      return row.supplierCode
+        || row.supplerCode
+        || (row.supplierInfo && (row.supplierInfo.code || row.supplierInfo.supplierCode))
+        || (row.supplierObj && (row.supplierObj.code || row.supplierObj.supplierCode))
+        || (row.supplierEntity && (row.supplierEntity.code || row.supplierEntity.supplierCode))
+        || (row.material && row.material.supplier && (row.material.supplier.code || row.material.supplier.supplierCode))
+        || '--';
+    },
     getTotalSummaries(param) {
       const { columns, data } = param;
       const sums = [];

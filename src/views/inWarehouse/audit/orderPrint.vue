@@ -62,13 +62,13 @@
         </tbody>
       </table>
 
-      <!-- 合计：左侧“合计: 贰仟柒佰元”，右侧数字与采购金额列对齐 -->
-      <div class="total-row" :style="tableStyle">
+      <!-- 合计：仅最后一页显示 -->
+      <div v-if="pageIndex === pagedDetailList.length - 1" class="total-row" :style="tableStyle">
         <span class="total-left">合计: {{ row.totalAmtConverter || '' }}</span>
         <span class="total-num">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</span>
       </div>
 
-      <!-- 签字区：采购、保管、入库操作员 -->
+      <!-- 签字区：每一页都显示，固定在页尾 -->
       <div class="sign-block" :style="tableStyle">
         <span class="sign-item">采购</span>
         <span class="sign-item">保管</span>
@@ -117,23 +117,8 @@ export default {
       return result
     },
     maxRowsPerPage() {
-      // 纸张：宽 200mm，高 140mm（纵向按高计算）；保留安全余量，避免不同浏览器实际打印误差
-      const paperHeightMm = 140
-      const reserveMm = 10
-      const fixedMm =
-        this.mmValue(this.printSetting.marginTop) +
-        this.mmValue(this.printSetting.marginBottom) +
-        14 + // 标题区域（含上方补偿/加大字号）
-        20 + // 基本信息区域
-        10 + // 表头行
-        9 + // 合计区域
-        9 + // 签字区域
-        3 // 结构间距
-      const baseRowHeightMm = 6.5
-      const tableFont = this.printSetting.tableFontSize || 11
-      const rowHeightMm = baseRowHeightMm * (tableFont / 11)
-      const available = paperHeightMm - reserveMm - fixedMm
-      return Math.max(1, Math.floor(available / rowHeightMm))
+      // 业务要求：入库单明细固定每页 9 行
+      return 9
     },
     effectiveOrientation() {
       const p = this.printOrientation

@@ -6,10 +6,10 @@
     :style="printStyle"
   >
     <div
-      v-for="copyIndex in renderCopies"
-      :key="copyIndex"
+      v-for="(detailPage, pageIndex) in detailPages"
+      :key="`page-${pageIndex}`"
       class="print-copy-block"
-      :class="{ 'is-third-split-copy': isThirdSplitPaper }"
+      :class="{ 'is-third-split-copy': isThirdSplitPaper, 'print-page-break': pageIndex < detailPages.length - 1 }"
     >
       <div class="doc-title">
         <span v-if="hospitalName">{{ hospitalName }}</span>物资出库单
@@ -51,7 +51,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(item, idx) in (row.detailList || [])" :key="idx">
+          <tr v-for="(item, idx) in detailPage" :key="`${pageIndex}-${idx}`">
             <td>{{ item.materialName || '' }}</td>
             <td>{{ formatSpecModel(item) }}</td>
             <td>{{ formatNum(item.qty) }}</td>
@@ -63,7 +63,7 @@
             <td>{{ formatValidDate(item.endTime || item.periodDate) }}</td>
           </tr>
           <!-- 合计：与表同列网，采购价左/采购金额右竖线延伸至本行底横线；金额在采购价、采购金额列下方 -->
-          <tr class="print-total-row">
+          <tr v-if="pageIndex === detailPages.length - 1" class="print-total-row">
             <td colspan="4" class="total-label-cell">合计: {{ row.totalAmtConverter || '' }}</td>
             <td class="total-under-price"></td>
             <td class="total-under-amt">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</td>
@@ -134,6 +134,16 @@ export default {
     },
     isThirdSplitPaper() {
       return this.paperType === 'third-split'
+    },
+    detailPages() {
+      const list = (this.row && Array.isArray(this.row.detailList)) ? this.row.detailList : []
+      if (!list.length) return [[]]
+      const pageSize = 6
+      const pages = []
+      for (let i = 0; i < list.length; i += pageSize) {
+        pages.push(list.slice(i, i + pageSize))
+      }
+      return pages
     },
     renderCopies() {
       return 1
@@ -300,6 +310,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .print-copy-block
   min-height 140mm
+  position relative
   box-sizing border-box
   display flex
   flex-direction column
@@ -500,6 +511,10 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     height 140mm !important
     overflow hidden !important
 
+  .print-page-break
+    break-after page !important
+    page-break-after always !important
+
   .doc-title
     font-size 19px !important
     font-weight normal !important
@@ -586,16 +601,15 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   /* 每联底部签字 */
   .print-sign-footer-fixed
     display block !important
-    position static
-    width 96% !important
-    margin-top auto !important
-    margin-left auto !important
-    margin-right auto !important
-    box-sizing border-box
-    padding 1px 0 3mm
+    position absolute !important
+    left 2% !important
+    right 2% !important
+    bottom 3mm !important
+    box-sizing border-box !important
+    padding 0
     border-top none
     background transparent
-    font-size 13px
+    font-size 17px
     line-height 1.55 !important
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
 

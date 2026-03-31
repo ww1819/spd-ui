@@ -1,10 +1,10 @@
 <template>
   <div class="refund-depot-order-print print-root-offscreen" ref="receiptRefundDepotOrderPrintRef" :class="rootOrientationClass">
     <div
-      v-for="copyIndex in renderCopies"
-      :key="copyIndex"
+      v-for="(detailPage, pageIndex) in detailPages"
+      :key="`page-${pageIndex}`"
       class="print-copy-block"
-      :class="{ 'is-third-split-copy': isThirdSplitPaper }"
+      :class="{ 'is-third-split-copy': isThirdSplitPaper, 'print-page-break': pageIndex < detailPages.length - 1 }"
     >
       <div class="print-copy-block__top">
         <div class="doc-title">{{ displayHospitalName }}科室退库单</div>
@@ -38,7 +38,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, idx) in (row.detailList || [])" :key="idx">
+            <tr v-for="(item, idx) in detailPage" :key="`${pageIndex}-${idx}`">
               <td>{{ item.materialName || '' }}</td>
               <td>{{ item.materialSpeci || '' }}</td>
               <td>{{ item.batchNumber || '' }}</td>
@@ -46,7 +46,7 @@
               <td class="num-cell">{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
               <td class="num-cell">{{ formatAmt(item.amt) }}</td>
             </tr>
-            <tr class="total-row">
+            <tr v-if="pageIndex === detailPages.length - 1" class="total-row">
               <td colspan="3" class="total-label">合计:</td>
               <td class="num-cell">{{ formatQty(row.totalQty) }}</td>
               <td></td>
@@ -55,7 +55,7 @@
           </tbody>
         </table>
 
-        <div class="amount-line">
+        <div v-if="pageIndex === detailPages.length - 1" class="amount-line">
           <span>合计金额（大写）: {{ row.totalAmtConverter || '' }}</span>
           <span>（小写）: {{ formatAmt(row.totalAmt) }}</span>
         </div>
@@ -109,6 +109,16 @@ export default {
     },
     isThirdSplitPaper() {
       return this.paperType === 'third-split'
+    },
+    detailPages() {
+      const list = (this.row && Array.isArray(this.row.detailList)) ? this.row.detailList : []
+      if (!list.length) return [[]]
+      const pageSize = 7
+      const pages = []
+      for (let i = 0; i < list.length; i += pageSize) {
+        pages.push(list.slice(i, i + pageSize))
+      }
+      return pages
     },
     renderCopies() {
       return 1
@@ -290,6 +300,10 @@ export default {
 .print-copy-block.is-third-split-copy
   height 140mm
   overflow hidden
+
+  .print-page-break
+    break-after page !important
+    page-break-after always !important
 
 .doc-title
   text-align center
