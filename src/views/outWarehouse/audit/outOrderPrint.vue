@@ -368,15 +368,15 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .detail-table .col-unit
   width 4%
 .detail-table .col-price
-  width 9%
+  width 13%
 .detail-table .col-amt
-  width 9%
+  width 13%
 .detail-table .col-origin
-  width 18%
+  width 14%
 .detail-table .col-batch
-  width 10%
+  width 8%
 .detail-table .col-exp
-  width 10%
+  width 8%
 
 .detail-table th,
 .detail-table td
@@ -484,7 +484,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     min-height auto !important
     /* Epson LQ-690K：等宽+固定字号，减少模糊差异 */
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
-    font-size 13px !important
+    font-size 16px !important
     -webkit-font-smoothing none !important
     -moz-osx-font-smoothing none !important
     text-rendering optimizeSpeed
@@ -501,13 +501,13 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     overflow hidden !important
 
   .doc-title
-    font-size 16px !important
+    font-size 19px !important
     font-weight normal !important
     padding-top 2mm !important
     padding-bottom 0 !important
     margin-top 0 !important
     margin-bottom 0 !important
-    line-height 1.55 !important
+    line-height 1.65 !important
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     page-break-inside avoid !important
 
@@ -519,7 +519,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     width 96% !important
     margin 0 auto 1px !important
     padding 0 !important
-    line-height 1.4 !important
+    font-size 16px !important
+    line-height 1.55 !important
 
   .detail-table
     width 96% !important
@@ -527,26 +528,43 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     margin-right auto !important
     /* 点阵打印：固定字号/等宽，降低模糊 */
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
-    font-size 11px !important
+    font-size 14px !important
 
   .detail-table th,
   .detail-table td
     border 1px solid #000
-    padding 2px 4px !important
+    padding 3px 5px !important
     overflow hidden
     text-overflow clip !important
+    line-height 1.45 !important
 
   .detail-table th
-    line-height 1.2 !important
+    line-height 1.35 !important
     white-space nowrap !important
-    padding-top 1px !important
-    padding-bottom 1px !important
+    padding-top 2px !important
+    padding-bottom 2px !important
 
   /* 名称只显示一行，不换行 */
   .detail-table tbody td:nth-child(1)
     white-space nowrap !important
     overflow hidden !important
     text-overflow clip !important
+
+  /* 批号允许换行显示 */
+  .detail-table tbody td:nth-child(8)
+    white-space normal !important
+    word-break break-all !important
+    overflow hidden !important
+
+  /* 有效期字号缩小 2 号 */
+  .detail-table tbody td:nth-child(9)
+    font-size 12px !important
+
+  /* 数量、采购价、采购金额 字号缩小 1 号 */
+  .detail-table tbody td:nth-child(3),
+  .detail-table tbody td:nth-child(5),
+  .detail-table tbody td:nth-child(6)
+    font-size 13px !important
 
   .detail-table thead tr.print-doc-header td
     border none !important
@@ -562,6 +580,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
   .detail-table tbody tr.print-total-row td
     border 1px solid #000 !important
+    font-size 14px !important
+    line-height 1.45 !important
 
   /* 每联底部签字 */
   .print-sign-footer-fixed
@@ -575,7 +595,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     padding 1px 0 3mm
     border-top none
     background transparent
-    font-size 10px
+    font-size 13px
+    line-height 1.55 !important
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
 
   .print-sign-footer-fixed .sign-block
