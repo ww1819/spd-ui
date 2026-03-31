@@ -30,20 +30,20 @@
           <el-form-item style="display: flex; align-items: center;">
           <el-date-picker
             v-model="queryParams.beginDate"
-            type="date"
-            value-format="yyyy-MM-dd"
+            type="datetime"
+            value-format="yyyy-MM-dd HH:mm:ss"
             placeholder="起始日期"
             clearable
-            style="width: 180px; margin-right: 8px;"
+            style="width: 220px; margin-right: 8px;"
           />
           <span style="margin: 0 4px;">至</span>
           <el-date-picker
             v-model="queryParams.endDate"
-            type="date"
-            value-format="yyyy-MM-dd"
+            type="datetime"
+            value-format="yyyy-MM-dd HH:mm:ss"
             placeholder="截止日期"
             clearable
-            style="width: 180px; margin-left: 8px;"
+            style="width: 220px; margin-left: 8px;"
           />
           </el-form-item>
         </el-col>
@@ -607,7 +607,7 @@ export default {
       let myDate = new Date();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
+      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01 00:00:00"; //月初
       return statDate;
     },
     getEndDate(){
@@ -615,7 +615,8 @@ export default {
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
       let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
+      let day = dayEnd < 10 ? "0" + dayEnd : dayEnd;
+      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + day + " 23:59:59"; //月末
       return endDate;
     },
     //当天日期

@@ -263,6 +263,8 @@ export default {
   width 200mm
   min-height 140mm
   box-sizing border-box
+  display flex
+  flex-direction column
   break-inside avoid
   page-break-inside avoid
   page-break-after always
@@ -357,6 +359,7 @@ export default {
   display flex
   justify-content space-between
   padding-right 20%
+  margin-top auto
 
 .sign-item
   min-width 80px

@@ -30,20 +30,20 @@
           <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="起始日期"
               clearable
-              style="width: 180px; margin-right: 8px;"
+              style="width: 220px; margin-right: 8px;"
             />
             <span style="margin: 0 4px;">至</span>
             <el-date-picker
               v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="截止日期"
               clearable
-              style="width: 180px; margin-left: 8px;"
+              style="width: 220px; margin-left: 8px;"
             />
           </el-form-item>
         </el-col>
@@ -51,12 +51,8 @@
           <el-form-item prop="billStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                        clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.biz_status"
-                         :key="dict.value"
-                         :label="dict.label"
-                         :value="dict.value"
-                         v-if="dict.label !== '待审核'"
-              />
+              <el-option :label="'未审核'" :value="1" />
+              <el-option :label="'已审核'" :value="2" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -506,6 +502,7 @@ export default {
         billDate: null,
         warehouseId: null,
         departmentId: null,
+        // 默认不选择单据状态
         billStatus: null,
         userId: null,
         billType: null,
@@ -610,11 +607,40 @@ export default {
     /** 查询退库列表 */
     getList() {
       this.loading = true;
-
-      this.queryParams.billType = "401";
-      listTkInventory(this.queryParams).then(response => {
-        this.warehouseList = response.rows;
-        this.total = response.total;
+      const status = this.queryParams.billStatus
+      const baseQuery = { ...this.queryParams, billType: "401" }
+      if (String(status) === '1') {
+        Promise.all([
+          listTkInventory({ ...baseQuery, billStatus: 1 }),
+          listTkInventory({ ...baseQuery, billStatus: 0 }),
+          listTkInventory({ ...baseQuery, billStatus: null })
+        ]).then((responses) => {
+          const mergedMap = new Map()
+          responses.forEach(res => {
+            const rows = (res && res.rows) || []
+            rows.forEach(row => {
+              const key = row && row.id != null ? String(row.id) : JSON.stringify(row)
+              if (!mergedMap.has(key)) mergedMap.set(key, row)
+            })
+          })
+          const mergedRows = Array.from(mergedMap.values())
+          this.warehouseList = mergedRows.filter(r => r.billStatus == null || Number(r.billStatus) === 0 || Number(r.billStatus) === 1)
+          this.total = this.warehouseList.length
+          this.loading = false
+        }).catch(() => {
+          this.loading = false
+        })
+        return
+      }
+      listTkInventory(baseQuery).then(response => {
+        const rows = (response && response.rows) || []
+        if (String(status) === '2') {
+          this.warehouseList = rows.filter(r => Number(r.billStatus) === 2)
+          this.total = this.warehouseList.length
+        } else {
+          this.warehouseList = rows
+          this.total = response.total
+        }
         this.loading = false;
       });
     },
@@ -654,7 +680,7 @@ export default {
       let myDate = new Date();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
+      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01 00:00:00"; //月初
       return statDate;
     },
     getEndDate(){
@@ -662,7 +688,8 @@ export default {
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
       let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
+      let day = dayEnd < 10 ? "0" + dayEnd : dayEnd;
+      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + day + " 23:59:59"; //月末
       return endDate;
     },
     //当天日期

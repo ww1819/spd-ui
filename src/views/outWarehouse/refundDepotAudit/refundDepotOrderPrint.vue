@@ -202,7 +202,7 @@ export default {
   box-sizing border-box
   display flex
   flex-direction column
-  justify-content space-between
+  justify-content flex-start
   break-inside avoid
   page-break-inside avoid
 
@@ -306,6 +306,6 @@ export default {
 .sign-block
   display flex
   justify-content space-between
-  margin-top 14px
+  margin-top auto
   font-size 11px
 </style>

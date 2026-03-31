@@ -318,7 +318,9 @@ export default {
 
   .foot
     width 96% !important
-    margin 6px auto 0 !important
+    margin-top auto !important
+    margin-left auto !important
+    margin-right auto !important
 
   .doc-title
     font-size 15px !important

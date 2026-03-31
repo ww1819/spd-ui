@@ -303,7 +303,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   box-sizing border-box
   display flex
   flex-direction column
-  justify-content space-between
+  justify-content flex-start
   break-inside avoid
   page-break-inside avoid
 
@@ -490,14 +490,14 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     text-rendering optimizeSpeed
 
   .print-copy-block
-    min-height auto !important
+    min-height 140mm !important
     box-sizing border-box
     /* 针式机顶部可打印区域偏小：整体下移内容，避免标题/单据号上半截被裁切 */
     padding 6mm 0 0 0 !important
     justify-content flex-start !important
 
   .print-copy-block.is-third-split-copy
-    height auto !important
+    height 140mm !important
     overflow hidden !important
 
   .doc-title
@@ -568,7 +568,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     display block !important
     position static
     width 96% !important
-    margin 0 auto !important
+    margin-top auto !important
+    margin-left auto !important
+    margin-right auto !important
     box-sizing border-box
     padding 1px 0 0
     border-top none

@@ -30,20 +30,20 @@
           <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="起始日期"
               clearable
-              style="width: 180px; margin-right: 8px;"
+              style="width: 220px; margin-right: 8px;"
             />
             <span style="margin: 0 4px;">至</span>
             <el-date-picker
               v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="截止日期"
               clearable
-              style="width: 180px; margin-left: 8px;"
+              style="width: 220px; margin-left: 8px;"
             />
           </el-form-item>
         </el-col>
@@ -720,7 +720,7 @@ export default {
       month = month < 10 ? "0" + month : month;
       let day = myDate.getDate();
       day = day < 10 ? "0" + day : day;
-      let statDate = year.toString() + "-" + month + "-" + day;
+      let statDate = year.toString() + "-" + month + "-" + day + " 00:00:00";
       return statDate;
     },
     getEndDate(){
@@ -731,7 +731,7 @@ export default {
       month = month < 10 ? "0" + month : month;
       let day = myDate.getDate();
       day = day < 10 ? "0" + day : day;
-      let endDate = year.toString() + "-" + month + "-" + day;
+      let endDate = year.toString() + "-" + month + "-" + day + " 23:59:59";
       return endDate;
     },
     //当天日期

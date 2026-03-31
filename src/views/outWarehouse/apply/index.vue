@@ -30,20 +30,20 @@
           <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="起始日期"
               clearable
-              style="width: 180px; margin-right: 8px;"
+              style="width: 220px; margin-right: 8px;"
             />
             <span style="margin: 0 4px;">至</span>
             <el-date-picker
               v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="截止日期"
               clearable
-              style="width: 180px; margin-left: 8px;"
+              style="width: 220px; margin-left: 8px;"
             />
           </el-form-item>
         </el-col>
@@ -582,6 +582,8 @@ export default {
         userId: null,
         billType: null,
         sortScene: 'apply',
+        beginDate: this.getStatDate(),
+        endDate: this.getEndDate(),
       },
       // 表单参数
       form: {},
@@ -613,6 +615,27 @@ export default {
     this.getList();
   },
   methods: {
+    getStatDate(){
+      // 返回前5天 00:00:00
+      let myDate = new Date();
+      myDate.setDate(myDate.getDate() - 5);
+      let year = myDate.getFullYear();
+      let month = myDate.getMonth() + 1;
+      month = month < 10 ? "0" + month : month;
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      return year + "-" + month + "-" + day + " 00:00:00";
+    },
+    getEndDate(){
+      // 返回当天 23:59:59
+      let myDate = new Date();
+      let year = myDate.getFullYear();
+      let month = myDate.getMonth() + 1;
+      month = month < 10 ? "0" + month : month;
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      return year + "-" + month + "-" + day + " 23:59:59";
+    },
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
