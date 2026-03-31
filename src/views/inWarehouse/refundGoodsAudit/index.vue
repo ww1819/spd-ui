@@ -972,6 +972,7 @@ export default {
             amt: item.amt,
             qty: item.qty,
             unitPrice: item.unitPrice,
+            unitName: (prod.fdUnit && prod.fdUnit.unitName) || (item.material && item.material.fdUnit && item.material.fdUnit.unitName) || '',
             materialCode: (prod && prod.code) || '',
             materialName: (prod && prod.name) || '',
             materialSpeci: (prod && prod.speci) || '',

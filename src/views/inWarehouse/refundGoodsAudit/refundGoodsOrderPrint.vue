@@ -10,18 +10,19 @@
       class="print-copy-block"
       :class="{ 'is-third-split-copy': isThirdSplitPaper }"
     >
-      <div class="doc-title">
-        <span v-if="hospitalName">{{ hospitalName }}</span>采购退货单
-      </div>
-      <div class="summary">
-        <div class="summary-item">单号: {{ row.billNo || '' }}</div>
-        <div class="summary-item">仓库: {{ row.warehouseName || '' }}</div>
-        <div class="summary-item">供应商: {{ row.supplierName || '' }}</div>
-        <div class="summary-item">申请时间: {{ row.billDate || '' }}</div>
-        <div class="summary-item">审核时间: {{ row.auditDate || '' }}</div>
-        <div class="summary-item summary-right">单位: 元</div>
-      </div>
-      <table class="common-table">
+      <div class="print-copy-block__top">
+        <div class="doc-title">
+          <span v-if="hospitalName">{{ hospitalName }}</span>采购退货单
+        </div>
+        <div class="summary">
+          <div class="summary-item">单号: {{ row.billNo || '' }}</div>
+          <div class="summary-item">仓库: {{ row.warehouseName || '' }}</div>
+          <div class="summary-item">供应商: {{ row.supplierName || '' }}</div>
+          <div class="summary-item">申请时间: {{ row.billDate || '' }}</div>
+          <div class="summary-item">审核时间: {{ row.auditDate || '' }}</div>
+          <div class="summary-item summary-right">单位: 元</div>
+        </div>
+        <table class="common-table">
         <colgroup>
           <col class="col-name" />
           <col class="col-unit" />
@@ -45,7 +46,7 @@
         <tbody>
           <tr v-for="(item, idx) in (row.detailList || [])" :key="idx">
             <td>{{ item.materialName || '' }}</td>
-            <td>{{ item.unitName || '' }}</td>
+            <td>{{ item.unitName || (item.fdUnit && item.fdUnit.unitName) || '' }}</td>
             <td>{{ item.materialSpeci || '' }}</td>
             <td class="num-cell">{{ formatQty(item.qty) }}</td>
             <td class="num-cell">{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
@@ -63,14 +64,20 @@
           </tr>
         </tbody>
       </table>
-      <div class="amount-row">
-        <span>合计金额（大写）: {{ row.totalAmtConverter || '' }}</span>
-        <span>（小写）: {{ formatPrice(row.totalAmt) }}</span>
       </div>
-      <div class="foot">
-        <span>操作员</span>
-        <span>合计:</span>
-        <span>{{ formatPrice(row.totalAmt) }}</span>
+
+      <div class="print-copy-block__grow" aria-hidden="true" />
+
+      <div class="print-copy-block__footer">
+        <div class="amount-row">
+          <span>合计金额（大写）: {{ row.totalAmtConverter || '' }}</span>
+          <span>（小写）: {{ formatPrice(row.totalAmt) }}</span>
+        </div>
+        <div class="foot">
+          <span>操作员</span>
+          <span>合计:</span>
+          <span>{{ formatPrice(row.totalAmt) }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -119,12 +126,24 @@ export default {
       this.ensureHospitalNameLoaded().then(() => {
         // 等待Vue更新DOM
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
+          requestAnimationFrame(() => {
+            this.$print(
+              this.$refs.receiptRefundGoodsPrintRef,
+              { injectPageSize: true, pageMargin: '0', waitForAssets: true, beforePrintDelay: 320 },
+              this.pageSizeForPrint
+            )
+          })
         })
       }).catch(() => {
         // 即使加载失败也继续打印
         this.$nextTick(() => {
-          this.$print(this.$refs.receiptRefundGoodsPrintRef, { injectPageSize: false }, this.pageSizeForPrint)
+          requestAnimationFrame(() => {
+            this.$print(
+              this.$refs.receiptRefundGoodsPrintRef,
+              { injectPageSize: true, pageMargin: '0', waitForAssets: true, beforePrintDelay: 320 },
+              this.pageSizeForPrint
+            )
+          })
         })
       })
     },
@@ -166,15 +185,30 @@ export default {
   display flex
   flex-direction column
   justify-content flex-start
+  align-items stretch
   min-height 0
   height auto
 
 .print-copy-block.is-third-split-copy
   min-height 140mm
   height 140mm
+  padding-top 5mm
+  padding-bottom 5mm
   overflow hidden
   break-inside avoid
   page-break-inside avoid
+
+.print-copy-block__top
+  flex 0 0 auto
+
+.print-copy-block__grow
+  flex 1 1 auto
+  min-height 4mm
+
+.print-copy-block__footer
+  flex 0 0 auto
+  width 100%
+  box-sizing border-box
 
 .is-a4-print .print-copy-block:not(.is-third-split-copy)
   break-inside auto
@@ -250,6 +284,10 @@ export default {
   font-weight normal
   background transparent
 
+/* 批号列值：比表体默认大 1 号 */
+.common-table tbody td:nth-child(7)
+  font-size 12px
+
 .common-table td:nth-child(1),
 .common-table td:nth-child(2),
 .common-table td:nth-child(3),
@@ -266,16 +304,16 @@ export default {
   display flex
   justify-content space-between
   width 96%
-  margin 2px auto 0
+  margin 0 auto 6px
   white-space nowrap
 
 .foot
   display flex
   justify-content space-between
   width 96%
-  margin 6px auto 0
+  margin 0 auto
   white-space nowrap
-  padding-bottom 3mm
+  padding-bottom 0
 
 .foot span:nth-child(1)
   flex 1
@@ -315,13 +353,19 @@ export default {
 
   .amount-row
     width 96% !important
-    margin 2px auto 0 !important
+    margin 0 auto 6px !important
 
   .foot
     width 96% !important
-    margin-top auto !important
     margin-left auto !important
     margin-right auto !important
+    margin-top 0 !important
+    padding-bottom 0 !important
+
+  .print-copy-block.is-third-split-copy
+    padding-top 5mm !important
+    padding-bottom 5mm !important
+    box-sizing border-box !important
 
   .doc-title
     font-size 15px !important
@@ -357,4 +401,7 @@ export default {
   .common-table td:nth-child(5),
   .common-table td:nth-child(6)
     text-align right !important
+
+  .common-table tbody td:nth-child(7)
+    font-size 12px !important
 </style>

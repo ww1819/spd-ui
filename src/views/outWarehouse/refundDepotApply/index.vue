@@ -156,7 +156,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -181,6 +181,13 @@
               v-if="scope.row.billStatus != 2"
               style="padding: 0 5px; margin: 0;"
             >删除</el-button>
+            <el-button
+              size="small"
+              type="text"
+              @click="handlePrint(scope.row)"
+              v-if="scope.row.billStatus == 2"
+              style="padding: 0 5px; margin: 0;"
+            >打印</el-button>
           </span>
         </template>
       </el-table-column>
@@ -404,6 +411,17 @@
 
     </SelectCkApply>
 
+    <!-- 隐藏打印组件（用于直接打印，不显示弹窗） -->
+    <div v-show="false">
+      <refund-depot-order-print
+        v-if="printRowData"
+        :row="printRowData"
+        print-orientation="portrait"
+        paper-type="a4"
+        ref="receiptRefundDepotOrderPrintRefAuto"
+      />
+    </div>
+
   </div>
 </template>
 
@@ -424,12 +442,14 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
 import SelectCkApply from "@/components/SelectModel/SelectCkApply";
+import refundDepotOrderPrint from "@/views/outWarehouse/refundDepotAudit/refundDepotOrderPrint.vue";
+import RMBConverter from "@/utils/tools";
 
 export default {
   name: "OutWarehouseRefund",
   dicts: ['biz_status','bill_type','way_status'],
   components: {
-    SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory,SelectCkApply},
+    SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory,SelectCkApply, refundDepotOrderPrint},
   data() {
     return {
       // 遮罩层
@@ -456,6 +476,8 @@ export default {
       selectRow: [],
       // 退库明细表格数据
       stkIoBillEntryList: [],
+      // 打印数据（用于隐藏打印组件）
+      printRowData: null,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -804,7 +826,59 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print) {
-      this.$modal.msgWarning("打印功能开发中");
+      this.getRefundDepotDetail(row).then(res => {
+        this.printRowData = res
+        this.$nextTick(() => {
+          const ref = this.$refs['receiptRefundDepotOrderPrintRefAuto']
+          if (ref && typeof ref.start === 'function') {
+            ref.start()
+          } else {
+            setTimeout(() => {
+              this.$refs['receiptRefundDepotOrderPrintRefAuto']?.start?.()
+            }, 100)
+          }
+        })
+      })
+    },
+    // 组装打印信息
+    getRefundDepotDetail(row) {
+      return getTkInventory(row.id).then(response => {
+        const details = response.data.stkIoBillEntryList
+        const materiaDetails = response.data.materialList
+        const map = {}
+        ;(materiaDetails || []).forEach(it => {
+          if (it && it.id != null) map[it.id] = it
+        })
+
+        let detailList = []
+        let totalAmt = 0
+        let totalQty = 0
+        ;(details || []).forEach(item => {
+          totalAmt += item.amt || 0
+          totalQty += item.qty || 0
+          const prod = map[item.materialId] || {}
+          detailList.push({
+            batchNumber: item.batchNumber,
+            amt: item.amt,
+            qty: item.qty,
+            price: item.unitPrice,
+            materialName: prod.name || '',
+            materialSpeci: prod.speci || ''
+          })
+        })
+
+        return {
+          billNo: row.billNo,
+          departmentName: (row.department && row.department.name) || '',
+          warehouseName: (row.warehouse && row.warehouse.name) || '',
+          billDate: row.billDate,
+          auditDate: row.auditDate,
+          totalAmt: totalAmt,
+          totalQty: totalQty,
+          totalAmtConverter: RMBConverter.numberToChinese(totalAmt),
+          detailList: detailList
+        }
+      })
     },
     /** 退库明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {

@@ -915,6 +915,7 @@ export default {
             qty: item.qty,
             unitPrice: item.unitPrice,
             price: item.unitPrice, // 打印组件需要 price 字段
+            unitName: (prod.fdUnit && prod.fdUnit.unitName) || (item.material && item.material.fdUnit && item.material.fdUnit.unitName) || '',
             materialCode: (prod && prod.code) || '',
             materialName: (prod && prod.name) || '',
             materialSpeci: (prod && prod.speci) || '',
