@@ -22,7 +22,7 @@ class RMBConverter {
     let chineseStr = ''
     // 分离金额后用的数组，预定义
     let parts
-    if (money === '') {
+    if (money === '' || money == null) {
       return ''
     }
     money = parseFloat(money)
@@ -47,10 +47,11 @@ class RMBConverter {
       integerNum = money
 
       decimalNum = ''
-    }else {
+    } else {
       parts = money.split('.')
       integerNum = parts[0]
-      decimalNum = parts[1].substr(0, 4)
+      // 只处理到角、分两位小数，避免多余位数导致单位越界（undefined）
+      decimalNum = parts[1].substr(0, cnDecUnits.length)
     }
     // 获取整型部分转换
     if (parseInt(integerNum, 10) > 0) {
@@ -80,7 +81,8 @@ class RMBConverter {
     }
     //小数部分
     if (decimalNum !== '') {
-      const decLen = decimalNum.length
+      // 最多处理到角、分两位，防止下标越界
+      const decLen = Math.min(decimalNum.length, cnDecUnits.length)
       for (let i = 0; i < decLen; i++) {
         const n = decimalNum.substr(i, 1)
         if (n !== '0') {
