@@ -54,16 +54,16 @@
             </tr>
           </tbody>
         </table>
+
+        <div class="amount-line">
+          <span>合计金额（大写）: {{ row.totalAmtConverter || '' }}</span>
+          <span>（小写）: {{ formatAmt(row.totalAmt) }}</span>
+        </div>
       </div>
 
       <div class="print-copy-block__grow" aria-hidden="true" />
 
       <div class="print-copy-block__footer">
-        <div class="amount-line">
-          <span>合计金额（大写）: {{ row.totalAmtConverter || '' }}</span>
-          <span>（小写）: {{ formatAmt(row.totalAmt) }}</span>
-        </div>
-
         <div class="sign-block">
           <span>退库操作员</span>
           <span>退款人员</span>
@@ -211,32 +211,30 @@ export default {
     line-height 1.7 !important
     margin-top 5mm !important
 
-  /* 列名 + 明细信息 +3号 */
-  .common-table th,
-  .common-table td
-    font-size 17px !important
-    line-height 1.6 !important
+  /* 列名、明细数据行较原设置缩小 1 号；表格内「合计」行保持原字号 */
+  .common-table thead th
+    font-size 18px !important
+    line-height 1.55 !important
 
-  .common-table th
-    font-size 19px !important
+  .common-table tbody tr:not(.total-row) td
+    font-size 16px !important
+    line-height 1.55 !important
 
-  /* 合计信息（含大写/小写）+3号 */
-  .amount-line,
-  .total-row td
-    font-size 17px !important
-    line-height 1.6 !important
+  .common-table tbody tr:not(.total-row) td:nth-child(4),
+  .common-table tbody tr:not(.total-row) td:nth-child(5),
+  .common-table tbody tr:not(.total-row) td:nth-child(6)
+    font-size 14px !important
 
-  /* 仅数量值、退库单价值、金额值缩小 2 号 */
-  .common-table tbody td:nth-child(4),
-  .common-table tbody td:nth-child(5),
-  .common-table tbody td:nth-child(6)
+  .common-table tbody tr:not(.total-row) td:nth-child(1),
+  .common-table tbody tr:not(.total-row) td:nth-child(2),
+  .common-table tbody tr:not(.total-row) td:nth-child(3)
     font-size 15px !important
 
-  /* 名称值、规格型号值、批号值缩小 1 号 */
-  .common-table tbody td:nth-child(1),
-  .common-table tbody td:nth-child(2),
-  .common-table tbody td:nth-child(3)
-    font-size 16px !important
+  /* 合计信息（含大写/小写）+ 表格内合计行 */
+  .amount-line,
+  .common-table .total-row td
+    font-size 17px !important
+    line-height 1.6 !important
 
   .common-table th
     background transparent !important
@@ -278,12 +276,12 @@ export default {
 .print-copy-block__top
   flex 0 0 auto
 
-/* 中间占位：把合计与签字区顶到纸张底部，避免与表格合计行重叠 */
+/* 中间占位：把签字区顶到纸张底部；合计大写/小写已在表格下方 */
 .print-copy-block__grow
   flex 1 1 auto
   min-height 4mm
 
-/* 页脚区：跟在 flex 占位后自然落在纸张底部；print-copy-block padding-bottom 5mm 保证距底边 5mm */
+/* 仅签字区；距底边由 print-copy-block padding-bottom 5mm 控制 */
 .print-copy-block__footer
   flex 0 0 auto
   width 100%
@@ -361,6 +359,24 @@ export default {
   font-size 17px
   line-height 1.6
 
+.common-table thead th
+  font-size 16px
+  line-height 1.55
+
+.common-table tbody tr:not(.total-row) td
+  font-size 16px
+  line-height 1.55
+
+.common-table tbody tr:not(.total-row) td:nth-child(4),
+.common-table tbody tr:not(.total-row) td:nth-child(5),
+.common-table tbody tr:not(.total-row) td:nth-child(6)
+  font-size 14px
+
+.common-table tbody tr:not(.total-row) td:nth-child(1),
+.common-table tbody tr:not(.total-row) td:nth-child(2),
+.common-table tbody tr:not(.total-row) td:nth-child(3)
+  font-size 15px
+
 .common-table th
   text-align center
   font-weight normal
@@ -385,8 +401,8 @@ export default {
 .amount-line
   display flex
   justify-content space-between
-  margin-top 0
-  margin-bottom 8px
+  margin-top 8px
+  margin-bottom 0
   font-size 14px
   line-height 1.55
   width 94%
