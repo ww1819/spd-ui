@@ -152,7 +152,11 @@
         </template>
       </el-table-column>
       <el-table-column label="厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ getSupplierName(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="科室" align="center" prop="departmentName" width="160" show-overflow-tooltip resizable/>
     </el-table>
     </div>
@@ -217,6 +221,15 @@ export default {
   },
   methods: {
     parseTime,
+    getSupplierName(row) {
+      return row.supplierName
+        || row.supplerName
+        || row.supplier
+        || (row.supplierInfo && row.supplierInfo.name)
+        || (row.supplierObj && row.supplierObj.name)
+        || (row.supplierEntity && row.supplierEntity.name)
+        || '--';
+    },
     getTotalSummaries(param) {
       const { columns, data } = param;
       const sums = [];

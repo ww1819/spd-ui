@@ -230,11 +230,11 @@ export default {
     parseTime,
     getSupplierName(row) {
       return row.supplierName
+        || row.supplerName
         || row.supplier
         || (row.supplierInfo && row.supplierInfo.name)
         || (row.supplierObj && row.supplierObj.name)
         || (row.supplierEntity && row.supplierEntity.name)
-        || (row.material && row.material.supplier && row.material.supplier.name)
         || '--';
     },
     getSupplierCode(row) {
@@ -243,7 +243,6 @@ export default {
         || (row.supplierInfo && (row.supplierInfo.code || row.supplierInfo.supplierCode))
         || (row.supplierObj && (row.supplierObj.code || row.supplierObj.supplierCode))
         || (row.supplierEntity && (row.supplierEntity.code || row.supplierEntity.supplierCode))
-        || (row.material && row.material.supplier && (row.material.supplier.code || row.material.supplier.supplierCode))
         || '--';
     },
     getTotalSummaries(param) {
