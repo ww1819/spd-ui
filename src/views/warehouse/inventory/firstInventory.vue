@@ -183,7 +183,11 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="入库批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable/>
+      <el-table-column label="入库批次号" align="center" prop="batchNo" width="220" resizable>
+        <template slot-scope="scope">
+          <span class="batch-no-text">{{ scope.row.batchNo || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="主条码" align="center" prop="mainBarcode" width="140" show-overflow-tooltip resizable/>
@@ -597,6 +601,15 @@ export default {
 }
 .first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
   padding: 2px 0 !important;
+}
+
+/* 批次号自动换行显示完整 */
+.batch-no-text {
+  display: inline-block;
+  width: 100%;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 18px;
 }
 </style>
 

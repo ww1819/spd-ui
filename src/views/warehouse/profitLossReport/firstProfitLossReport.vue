@@ -113,7 +113,11 @@
             <span>{{ scope.row.unitName || '--' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="批次号" align="center" prop="batchNo" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="批次号" align="center" prop="batchNo" width="160" resizable>
+          <template slot-scope="scope">
+            <span class="batch-no-text">{{ scope.row.batchNo || '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="当前库存" align="center" prop="bookQty" width="100" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ formatNum(scope.row.bookQty) }}</span>
@@ -311,6 +315,15 @@ export default {
 }
 .first-profit-loss-report-page .pagination-wrapper .pagination-container .el-pagination {
   padding: 2px 0 !important;
+}
+
+/* 批次号自动换行显示完整 */
+.batch-no-text {
+  display: inline-block;
+  width: 100%;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 18px;
 }
 </style>
 

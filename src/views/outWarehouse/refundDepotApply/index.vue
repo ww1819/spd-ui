@@ -337,7 +337,7 @@
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="320" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input class="batch-no-input" v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" />
+              <span class="batch-no-text">{{ scope.row.batchNo }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
@@ -1215,6 +1215,15 @@ export default {
 .modal-form-compact .el-date-editor .el-input__inner {
   height: 28px;
   line-height: 28px;
+}
+
+/* 明细表 批次号自动换行显示完整 */
+.batch-no-text {
+  display: inline-block;
+  width: 100%;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 18px;
 }
 
 /* 表格包装器样式 */

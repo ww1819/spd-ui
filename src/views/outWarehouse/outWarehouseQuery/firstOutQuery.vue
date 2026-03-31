@@ -162,7 +162,11 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="批次" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable/>
+      <el-table-column label="批次" align="center" prop="batchNo" width="220" resizable>
+        <template slot-scope="scope">
+          <span class="batch-no-text">{{ scope.row.batchNo || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="批号" align="center" prop="batchNumber" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="生产日期" align="center" prop="beginDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
