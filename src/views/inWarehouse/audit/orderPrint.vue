@@ -119,15 +119,15 @@ export default {
     maxRowsPerPage() {
       // 纸张：宽 200mm，高 140mm（纵向按高计算）；保留安全余量，避免不同浏览器实际打印误差
       const paperHeightMm = 140
-      const reserveMm = 5
+      const reserveMm = 10
       const fixedMm =
         this.mmValue(this.printSetting.marginTop) +
         this.mmValue(this.printSetting.marginBottom) +
-        11 + // 标题区域（含上方补偿/加大字号）
-        16 + // 基本信息区域
-        8 + // 表头行
-        8 + // 合计区域
-        8 + // 签字区域
+        14 + // 标题区域（含上方补偿/加大字号）
+        20 + // 基本信息区域
+        10 + // 表头行
+        9 + // 合计区域
+        9 + // 签字区域
         3 // 结构间距
       const baseRowHeightMm = 6.5
       const tableFont = this.printSetting.tableFontSize || 11
@@ -206,9 +206,9 @@ export default {
       getDefaultTemplate(billType).then(response => {
         if (response.data) {
           const data = response.data
-          // “整体字号加大一号”：在后台配置基础上 +1
-          if (data.fontSize != null) this.printSetting.fontSize = Math.round(Number(data.fontSize)) + 1
-          if (data.tableFontSize != null) this.printSetting.tableFontSize = Math.round(Number(data.tableFontSize)) + 1
+          // 打印字体整体放大三号
+          if (data.fontSize != null) this.printSetting.fontSize = Math.round(Number(data.fontSize)) + 3
+          if (data.tableFontSize != null) this.printSetting.tableFontSize = Math.round(Number(data.tableFontSize)) + 3
           if (data.orientation) this.printSetting.orientation = data.orientation
           if (data.marginTop != null) this.printSetting.marginTop = data.marginTop
           if (data.marginBottom != null) this.printSetting.marginBottom = data.marginBottom
@@ -382,7 +382,7 @@ export default {
     width 200mm !important
     max-width 200mm !important
     /* Epson LQ-690K 点阵打印：等宽+固定字号，减少模糊/字形差异 */
-    font-size 13px !important
+    font-size 16px !important
     font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     font-weight normal
     -webkit-font-smoothing none !important
@@ -410,14 +410,14 @@ export default {
   .doc-title
     display block !important
     /* 标题字号收小，避免在点阵纸高度/行高估算下出现半截或空白 */
-    font-size 15px !important
+    font-size 18px !important
     font-weight normal !important
     /* 标题字形上半部被裁切：增加标题内部安全区并放宽行框 */
     padding-top 2mm !important
     padding-bottom 1mm !important
     margin-top 0 !important
     margin-bottom 2px !important
-    line-height 1.55 !important
+    line-height 1.7 !important
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     overflow visible !important
     page-break-inside avoid !important
@@ -425,21 +425,27 @@ export default {
   /* 下方区域压缩，抵消标题下移导致的分页压力 */
   .info-block
     margin-bottom 3px !important
+    font-size 17px !important
+
+  .info-row
+    font-size 17px !important
 
   .detail-table
     margin-bottom 6px !important
 
   .detail-table th,
   .detail-table td
-    padding 3px 5px !important
+    padding 4px 6px !important
 
   .total-row
     margin-bottom 8px !important
+    font-size 17px !important
 
   /* 签字区上移一点，避开针式机底部不可打印区域 */
   .sign-block
     margin-top auto !important
     padding-bottom 3mm !important
+    font-size 17px !important
 
   .detail-table
     width 100% !important
@@ -447,7 +453,7 @@ export default {
     border-collapse collapse
     /* 覆盖行内 style：后台配置的字号/字体对点阵机容易触发模糊/裁切 */
     font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
-    font-size 11px !important
+    font-size 14px !important
 
   .detail-table th,
   .detail-table td
@@ -455,6 +461,7 @@ export default {
     overflow hidden
     word-wrap normal
     word-break normal
+    line-height 1.45 !important
 
   .detail-table th
     font-weight normal !important
