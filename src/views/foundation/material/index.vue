@@ -1419,10 +1419,66 @@ export default {
     this.getList();
   },
   methods: {
+    /**
+     * 将“耗材产品”输入框内容转换为后端筛选参数（不改写输入框本身的值）
+     * - 数字/字母数字：按编码 `code` 查
+     * - 中文：按名称 `name` 模糊查，同时生成首字母 `nameSearch`
+     * - 纯字母：按首字母 `nameSearch` 查
+     */
+    deriveNameSearchParams(keyword) {
+      const nameValue = keyword;
+      if (!nameValue || String(nameValue).trim() === '') {
+        return { code: undefined, name: undefined, nameSearch: undefined };
+      }
+
+      const trimmedValue = String(nameValue).trim();
+      const isCodePattern = /^[A-Za-z0-9]+$/.test(trimmedValue);
+      const hasChinese = /[\u4e00-\u9fa5]/.test(trimmedValue);
+      const isLetterOnly = /^[A-Za-z]+$/.test(trimmedValue);
+
+      let pinyinCode = '';
+      if (hasChinese) {
+        pinyinCode = pinyin(trimmedValue, {
+          pattern: 'first',
+          toneType: 'none',
+          type: 'array',
+        }).join('').toUpperCase();
+      } else if (isLetterOnly) {
+        pinyinCode = trimmedValue.toUpperCase();
+      }
+
+      return {
+        code: (isCodePattern && !hasChinese) ? trimmedValue : undefined,
+        name: hasChinese ? trimmedValue : undefined,
+        nameSearch: pinyinCode || undefined
+      };
+    },
+
+    /** 构建列表/导出请求参数（不影响输入框显示） */
+    buildMaterialQueryParams(includePagination = true) {
+      const base = { ...this.queryParams };
+      const keyword = base.name; // 输入框绑定字段：用户看到的原始输入
+      const derived = this.deriveNameSearchParams(keyword);
+
+      // 用派生后的 name/code/nameSearch 覆盖请求参数，避免把输入框值直接当 name 传给后端
+      const merged = {
+        ...base,
+        code: derived.code,
+        name: derived.name,
+        nameSearch: derived.nameSearch,
+      };
+
+      if (!includePagination) {
+        delete merged.pageNum;
+        delete merged.pageSize;
+      }
+      return merged;
+    },
+
     /** 查询耗材产品列表 */
     getList() {
       this.loading = true;
-      listMaterial(this.queryParams).then(response => {
+      listMaterial(this.buildMaterialQueryParams(true)).then(response => {
         this.materialList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -1517,67 +1573,7 @@ export default {
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
-      // 处理耗材名称搜索：支持编码、名称、首字母搜索
-      this.processNameSearch();
       this.getList();
-    },
-    /** 处理名称搜索参数 */
-    processNameSearch() {
-      const nameValue = this.queryParams.name;
-
-      if (!nameValue || nameValue.trim() === '') {
-        // 清空搜索参数
-        this.queryParams.code = undefined;
-        this.queryParams.name = undefined;
-        this.queryParams.nameSearch = undefined;
-        return;
-      }
-
-      const trimmedValue = nameValue.trim();
-
-      // 判断输入类型
-      // 1. 如果全是数字或字母数字组合，可能是编码
-      const isCodePattern = /^[A-Za-z0-9]+$/.test(trimmedValue);
-      // 2. 如果包含中文，是名称搜索
-      const hasChinese = /[\u4e00-\u9fa5]/.test(trimmedValue);
-      // 3. 如果全是字母，可能是首字母
-      const isLetterOnly = /^[A-Za-z]+$/.test(trimmedValue);
-
-      // 生成首字母（用于首字母搜索）
-      let pinyinCode = '';
-      if (hasChinese) {
-        // 提取每个字符的首字母
-        pinyinCode = pinyin(trimmedValue, {
-          pattern: 'first',
-          toneType: 'none',
-          type: 'array',
-        }).join('').toUpperCase();
-      } else if (isLetterOnly) {
-        // 如果输入的是纯字母，直接作为首字母搜索
-        pinyinCode = trimmedValue.toUpperCase();
-      }
-
-      // 设置搜索参数
-      // 如果看起来像编码，同时设置 code 参数
-      if (isCodePattern && !hasChinese) {
-        this.queryParams.code = trimmedValue;
-      } else {
-        this.queryParams.code = undefined;
-      }
-
-      // 设置名称搜索（支持中文名称模糊搜索）
-      if (hasChinese) {
-        this.queryParams.name = trimmedValue;
-      } else {
-        this.queryParams.name = undefined;
-      }
-
-      // 设置首字母搜索参数（如果有）
-      if (pinyinCode) {
-        this.queryParams.nameSearch = pinyinCode;
-      } else {
-        this.queryParams.nameSearch = undefined;
-      }
     },
     /** 重置按钮操作 */
     resetQuery() {
@@ -1588,6 +1584,9 @@ export default {
       this.queryParams.isGz = '';
       this.queryParams.isFollow = '';
       this.queryParams.isBilling = '';
+      // 清空派生搜索参数，避免残留影响查询/导出
+      this.queryParams.code = undefined;
+      this.queryParams.nameSearch = undefined;
       this.handleQuery();
     },
     handleMaterialImport(mode) {
@@ -2041,10 +2040,61 @@ export default {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 导出按钮操作 */
-    handleExport() {
-      this.download('foundation/material/export', {
-        ...this.queryParams
-      }, `material_${new Date().getTime()}.xlsx`)
+    async handleExport() {
+      // 后端导出接口在部分环境未按筛选参数生效，这里改为：
+      // 用相同筛选条件拉取筛选后的全量数据，再由前端生成 Excel，保证“页面搜到什么就导出什么”
+      const params = this.buildMaterialQueryParams(false);
+      try {
+        this.loading = true;
+        const resp = await listMaterialAll(params);
+        const rows = (() => {
+          if (Array.isArray(resp)) return resp;
+          if (Array.isArray(resp?.rows)) return resp.rows;
+          if (Array.isArray(resp?.data)) return resp.data;
+          if (Array.isArray(resp?.data?.rows)) return resp.data.rows;
+          return [];
+        })();
+        if (!rows.length) {
+          this.$modal.msgWarning('没有可导出的数据');
+          return;
+        }
+
+        const dictLabel = (options, value) => {
+          const v = value === null || value === undefined ? '' : String(value);
+          const hit = (options || []).find(d => String(d.value) === v);
+          return hit ? hit.label : v;
+        };
+
+        const exportRows = rows.map(r => ({
+          '耗材编码': r?.code ?? '',
+          '耗材名称': r?.name ?? '',
+          '规格': r?.speci ?? '',
+          '型号': r?.model ?? '',
+          '医保编码': r?.medicalNo ?? '',
+          '注册证号': r?.registerNo ?? '',
+          '财务分类': r?.fdFinanceCategory?.financeCategoryName ?? '',
+          '价格': this.formatPrice4(r?.price),
+          '单位': r?.fdUnit?.unitName ?? '',
+          '生产厂家': r?.fdFactory?.factoryName ?? '',
+          '供应商': r?.supplier?.name ?? '',
+          '库房分类': r?.fdWarehouseCategory?.warehouseCategoryName ?? '',
+          '储存方式': dictLabel(this.dict?.type?.way_status, r?.isWay),
+          '货位': r?.fdLocation?.locationName ?? '',
+          '启用': dictLabel(this.dict?.type?.is_use_status, r?.isUse),
+          '高值': dictLabel(this.dict?.type?.is_yes_no, r?.isGz),
+          '跟台': dictLabel(this.dict?.type?.is_yes_no, r?.isFollow),
+          '计费': dictLabel(this.dict?.type?.is_yes_no, r?.isBilling),
+          '品牌': r?.brand ?? '',
+          '创建日期': r?.createTime ?? ''
+        }));
+
+        await exportPreviewRowsToXlsx(exportRows, `material_${new Date().getTime()}.xlsx`);
+        this.$modal.msgSuccess('已导出');
+      } catch (e) {
+        this.$modal.msgError(e?.message || '导出失败');
+      } finally {
+        this.loading = false;
+      }
     },
     /** 更新名称简码 */
     handleUpdateReferred() {
