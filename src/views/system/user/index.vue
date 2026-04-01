@@ -103,7 +103,7 @@
         </el-form>
 
         <div class="table-wrapper">
-          <el-table v-loading="loading" :data="userList" stripe @selection-change="handleSelectionChange" height="24vh" border>
+          <el-table v-loading="loading" :data="userList" stripe @selection-change="handleSelectionChange" height="66vh" border>
           <el-table-column type="selection" width="50" align="center" />
           <el-table-column type="index" label="序号" align="center" width="80" v-if="columns[0].visible" :index="indexMethod" />
           <el-table-column label="用户账户" align="center" key="userName" prop="userName" v-if="columns[1].visible" :show-overflow-tooltip="true" />
@@ -1515,7 +1515,8 @@ export default {
 
 /* 表格区域 - 占据剩余空间 */
 .app-container > .el-row > .el-col:last-child > .table-wrapper > .el-table {
-  flex: 1;
+  /* 这里如果 flex:1 会强制表格撑满剩余高度，导致 el-table 的 height 属性不生效 */
+  flex: 0 0 auto;
   overflow: hidden;
 }
 
