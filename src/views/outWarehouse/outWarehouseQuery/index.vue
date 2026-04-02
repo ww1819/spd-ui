@@ -3,10 +3,12 @@
     <el-tabs v-model="activeName" type="card" class="inventory-tabs-compact" @tab-click="handleTabClick">
       <el-tab-pane label="出/退库明细表" name="first"></el-tab-pane>
       <el-tab-pane label="出/退库汇总表" name="second"></el-tab-pane>
+      <el-tab-pane label="出/退库汇总(供应商)" name="thirdSupplier"></el-tab-pane>
     </el-tabs>
     <!-- 使用 v-show 替代 v-if，切换时只切换显示不销毁组件，避免重复创建和请求 -->
     <FirstOutQuery v-show="activeName === 'first'" ref="firstQuery"/>
     <SecondOutQuery v-show="activeName === 'second'" ref="secondQuery"/>
+    <ThirdSupplierOutQuery v-show="activeName === 'thirdSupplier'" ref="thirdSupplierQuery"/>
   </div>
 </template>
 
@@ -14,11 +16,12 @@
 
 import FirstOutQuery from "@/views/outWarehouse/outWarehouseQuery/firstOutQuery";
 import SecondOutQuery from "@/views/outWarehouse/outWarehouseQuery/secondOutQuery";
+import ThirdSupplierOutQuery from "@/views/outWarehouse/outWarehouseQuery/thirdSupplierOutQuery";
 
 
 export default {
   name: "OutWarehouseQuery",
-  components: {FirstOutQuery, SecondOutQuery},
+  components: {FirstOutQuery, SecondOutQuery, ThirdSupplierOutQuery},
   data() {
     return {
       activeName: 'first',
@@ -41,6 +44,9 @@ export default {
     handleTabClick(tab) {
       if (tab.name === 'second' && this.$refs.secondQuery && typeof this.$refs.secondQuery.getList === 'function') {
         this.$nextTick(() => this.$refs.secondQuery.getList());
+      }
+      if (tab.name === 'thirdSupplier' && this.$refs.thirdSupplierQuery && typeof this.$refs.thirdSupplierQuery.getList === 'function') {
+        this.$nextTick(() => this.$refs.thirdSupplierQuery.getList());
       }
     },
   },
