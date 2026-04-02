@@ -1361,16 +1361,6 @@ export default {
             }
           }, trigger: "blur" }
         ],
-        model: [
-          { required: true, message: "型号不能为空", trigger: "blur" },
-          { validator: (rule, value, callback) => {
-            if (value !== null && value !== undefined && String(value).trim() === '') {
-              callback(new Error('型号不能为空'));
-            } else {
-              callback();
-            }
-          }, trigger: "blur" }
-        ],
         unitId: [
           { required: true, message: "请选择单位", trigger: "change" }
         ],
