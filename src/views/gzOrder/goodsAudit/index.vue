@@ -374,6 +374,7 @@
       :departmentValue="form.departmentId"
       :useDepInventory="true"
       :gzOrderEntryList="gzOrderEntryList"
+      :require-document-supplier="false"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>

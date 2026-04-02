@@ -347,6 +347,8 @@
         >
           <el-table-column type="selection" width="60" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
+          <!-- 主条码、辅条码列隐藏（数据仍可通过顶部扫描条码写入，如需恢复可取消注释） -->
+          <!--
           <el-table-column label="主条码" align="center" width="160" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.mainBarcode" placeholder="主条码(udi)"
@@ -360,6 +362,7 @@
               <el-input v-model="scope.row.subBarcode" placeholder="辅条码" size="small" clearable />
             </template>
           </el-table-column>
+          -->
           <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
@@ -1344,7 +1347,7 @@ export default {
           };
           this.stkIoBillEntryList.push(row);
           this.scanBarcodeInput = "";
-          this.$message.success("已根据条码添加明细，主/辅条码可在表格中修改");
+          this.$message.success("已根据条码添加明细");
           this.$nextTick(() => {
             if (this.$refs.scanBarcodeInputRef) {
               this.$refs.scanBarcodeInputRef.focus();

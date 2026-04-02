@@ -414,6 +414,7 @@
       :departmentValue="form.departmentId"
       :gzOrderEntryList="gzRefundGoodsEntryList"
       :useDepInventory="true"
+      :require-document-supplier="false"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>
