@@ -32,49 +32,44 @@
         </el-row>
 
         <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24">
-            <el-form-item label="业务日期" style="display: flex; align-items: center;">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                style="width: 180px; margin-right: 8px;"
+                class="query-date-start"
               />
-              <span style="margin: 0 4px;">至</span>
+              <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                style="width: 180px; margin-left: 8px;"
+                class="query-date-end"
               />
             </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="16" class="query-row-third">
-          <el-col :span="24">
             <el-form-item label="生产批号" prop="batchNumber" class="query-item-inline">
               <el-input
                 v-model="queryParams.batchNumber"
                 placeholder="生产批号(batch_number)"
                 clearable
-                style="width: 180px"
+                class="query-input-batch"
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
             <el-form-item label="计费" prop="isBilling" class="query-item-inline">
               <el-select v-model="queryParams.isBilling" placeholder="请选择计费"
-                         clearable style="width: 150px">
+                         clearable class="query-select-billing">
                 <el-option label="是" value="1"/>
                 <el-option label="否" value="0"/>
               </el-select>
             </el-form-item>
             <el-form-item label="库房分类" prop="warehouseCategoryId" class="query-item-inline">
-              <div class="query-select-wrapper">
+              <div class="query-select-wrapper query-select-warehouse-cat">
                 <SelectWarehouseCategory v-model="queryParams.warehouseCategoryId" />
               </div>
             </el-form-item>
@@ -137,6 +132,7 @@
     <div class="table-container">
     <el-table v-loading="loading" :data="inventoryList"
               :row-class-name="inventoryListIndex"
+              show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" 
               height="57vh"
               border>
@@ -392,6 +388,32 @@ export default {
     });
   },
   methods: {
+    getTotalSummaries(param) {
+      const { columns, data } = param;
+      const sums = Array(columns.length).fill('');
+      // 第 1 列是勾选框列，宽度很窄；把“合计”放到第 2 列（序号列）避免换行撑高
+      sums[0] = '';
+      if (sums.length > 1) sums[1] = '合计';
+
+      let totalQty = 0;
+      let totalAmt = 0;
+      for (let i = 0; i < (data || []).length; i++) {
+        const item = data[i] || {};
+        totalQty += Number(item.qty || 0);
+        totalAmt += Number(item.amt || 0);
+      }
+
+      columns.forEach((column, index) => {
+        if (column.property === 'qty') {
+          sums[index] = totalQty.toFixed(2);
+        } else if (column.property === 'amt') {
+          const fmt = this.$options.filters && this.$options.filters.formatCurrency;
+          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
+        }
+      });
+
+      return sums;
+    },
     openColumnDialog() {
       this.columnHiddenKeys = this.columns.filter(c => !c.visible).map(c => String(c.key));
       this.columnDialogVisible = true;
@@ -581,7 +603,7 @@ export default {
   align-items: center !important;
   flex-wrap: wrap !important;
   gap: 12px !important;
-  margin-top: -12px !important;
+  margin-top: 0 !important;
   padding-bottom: 0 !important;
   margin-bottom: 0 !important;
 }
@@ -646,15 +668,54 @@ export default {
   position: relative;
 }
 
-.query-row-second .el-form-item {
-  white-space: nowrap;
-  margin-bottom: 0;
+/* 第二行：强制同一行不换行（避免 inline-block 宽度不足时“掉到第三行”） */
+.query-row-second-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  gap: 4px;
+  padding-bottom: 2px;
 }
 
-.query-row-second .el-form-item .el-form-item__content {
+.query-row-second-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.query-row-second-inner .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+
+.query-item-date-range .query-date-start,
+.query-item-date-range .query-date-end {
+  width: 150px;
+}
+.query-item-date-range .query-date-start {
+  margin-right: 6px;
+}
+.query-item-date-range .query-date-end {
+  margin-left: 6px;
+}
+.query-item-date-range .query-date-sep {
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.query-input-batch {
+  width: 150px;
+}
+.query-select-billing {
+  width: 120px;
+}
+.query-select-warehouse-cat {
+  width: 160px;
 }
 
 .query-row-third {
@@ -710,6 +771,26 @@ export default {
   margin-left: 0;
   margin-right: 0;
   position: relative;
+}
+
+/* 关键：给表体底部留空间，把横向滚动条“顶”上去，避免遮挡汇总(合计)行 */
+.table-container ::v-deep .el-table__body-wrapper {
+  /* 预留：横向滚动条(最高 12px) + 合计行粘底偏移 */
+  padding-bottom: 32px;
+}
+
+/* 合计行：粘在表格底部，并抬高一段距离避开横向滚动条 */
+.table-container ::v-deep .el-table__footer-wrapper {
+  position: sticky;
+  bottom: 12px;
+  z-index: 3;
+  background: #fff;
+}
+.table-container ::v-deep .el-table__fixed-footer-wrapper {
+  position: sticky;
+  bottom: 12px;
+  z-index: 4;
+  background: #fff;
 }
 
 /* 表格底部横向滚动条：默认 6px，鼠标悬停自动变粗 12px */
