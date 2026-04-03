@@ -4,11 +4,13 @@
       <el-tab-pane label="出/退库明细表" name="first"></el-tab-pane>
       <el-tab-pane label="出/退库汇总表" name="second"></el-tab-pane>
       <el-tab-pane label="出/退库汇总(供应商)" name="thirdSupplier"></el-tab-pane>
+      <el-tab-pane label="出/退库汇总(科室)" name="fourthDepartment"></el-tab-pane>
     </el-tabs>
     <!-- 使用 v-show 替代 v-if，切换时只切换显示不销毁组件，避免重复创建和请求 -->
     <FirstOutQuery v-show="activeName === 'first'" ref="firstQuery"/>
     <SecondOutQuery v-show="activeName === 'second'" ref="secondQuery"/>
     <ThirdSupplierOutQuery v-show="activeName === 'thirdSupplier'" ref="thirdSupplierQuery"/>
+    <FourthDepartmentOutQuery v-show="activeName === 'fourthDepartment'" ref="fourthDepartmentQuery"/>
   </div>
 </template>
 
@@ -17,11 +19,12 @@
 import FirstOutQuery from "@/views/outWarehouse/outWarehouseQuery/firstOutQuery";
 import SecondOutQuery from "@/views/outWarehouse/outWarehouseQuery/secondOutQuery";
 import ThirdSupplierOutQuery from "@/views/outWarehouse/outWarehouseQuery/thirdSupplierOutQuery";
+import FourthDepartmentOutQuery from "@/views/outWarehouse/outWarehouseQuery/fourthDepartmentOutQuery";
 
 
 export default {
   name: "OutWarehouseQuery",
-  components: {FirstOutQuery, SecondOutQuery, ThirdSupplierOutQuery},
+  components: {FirstOutQuery, SecondOutQuery, ThirdSupplierOutQuery, FourthDepartmentOutQuery},
   data() {
     return {
       activeName: 'first',
@@ -47,6 +50,9 @@ export default {
       }
       if (tab.name === 'thirdSupplier' && this.$refs.thirdSupplierQuery && typeof this.$refs.thirdSupplierQuery.getList === 'function') {
         this.$nextTick(() => this.$refs.thirdSupplierQuery.getList());
+      }
+      if (tab.name === 'fourthDepartment' && this.$refs.fourthDepartmentQuery && typeof this.$refs.fourthDepartmentQuery.getList === 'function') {
+        this.$nextTick(() => this.$refs.fourthDepartmentQuery.getList());
       }
     },
   },

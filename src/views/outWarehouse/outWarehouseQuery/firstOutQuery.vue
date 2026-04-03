@@ -41,37 +41,34 @@
         </el-row>
 
         <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24">
-            <el-form-item style="display: flex; align-items: center;">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                style="width: 180px; margin-right: 8px;"
+                class="query-date-start"
               />
-              <span style="margin: 0 4px;">至</span>
+              <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                style="width: 180px; margin-left: 8px;"
+                class="query-date-end"
               />
             </el-form-item>
-          </el-col>
-        </el-row>
 
-        <el-row :gutter="16" class="query-row-third">
-          <el-col :span="24">
-            <el-form-item prop="supplerId" class="query-item-inline">
+            <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectSupplier v-model="queryParams.supplerId" />
               </div>
             </el-form-item>
-            <el-form-item prop="billType" class="query-item-inline">
+
+            <el-form-item label="单据类型" prop="billType" class="query-item-inline">
               <el-select v-model="queryParams.billType" placeholder="单据类型"
                          clearable style="width: 150px">
                 <el-option v-for="dict in dict.type.out_warehouse_bill_type"
@@ -87,35 +84,35 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8 button-row-inventory">
-      <el-col :span="1.5">
+    <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
+      <div class="button-row-left">
         <el-button
-          type="primary"
+          type="warning"
+          icon="el-icon-download"
           size="medium"
           @click="handleExport"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="primary"
+          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
+          icon="el-icon-refresh"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="button-row-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <div class="table-container">
     <el-table v-loading="loading" :data="warehouseList"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="57vh" border stripe>
+              @selection-change="handleSelectionChange" height="60vh" border stripe>
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
@@ -493,6 +490,10 @@ export default {
 </script>
 
 <style scoped>
+.app-container {
+  margin-top: -10px;
+}
+
 /* 查询条件样式 */
 .query-row-left {
   margin-bottom: 2px;
@@ -531,6 +532,49 @@ export default {
   flex-wrap: nowrap;
 }
 
+/* 第二行：强制同一行不换行（避免宽度不足时“掉到下一行”） */
+.query-row-second-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+
+.query-row-second-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.query-row-second-inner .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.query-item-date-range .query-date-start,
+.query-item-date-range .query-date-end {
+  width: 150px;
+}
+
+.query-item-date-range .query-date-start {
+  margin-right: 6px;
+}
+
+.query-item-date-range .query-date-end {
+  margin-left: 6px;
+}
+
+.query-item-date-range .query-date-sep {
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
 .query-row-third {
   margin-bottom: 2px;
 }
@@ -559,19 +603,60 @@ export default {
   padding-top: 0 !important;
 }
 
+.button-row-inventory-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.button-row-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.button-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .table-container {
   margin-top: 8px;
   margin-bottom: 0;
   overflow: visible;
   width: 100%;
+  min-width: 0;
   margin-left: 0;
   margin-right: 0;
   position: relative;
 }
 
-/* 表格底部横向滚动条：默认 6px，鼠标悬停自动变粗 12px */
+/* 关键：给表体底部留空间，并把合计行抬高，避免横向滚动条遮挡 */
+.table-container ::v-deep .el-table__body-wrapper {
+  padding-bottom: 32px;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: #a0a0a0 #e8e8e8;
+}
+
+.table-container ::v-deep .el-table__footer-wrapper {
+  position: sticky;
+  bottom: 12px;
+  z-index: 3;
+  background: #fff;
+}
+
+.table-container ::v-deep .el-table__fixed-footer-wrapper {
+  position: sticky;
+  bottom: 12px;
+  z-index: 4;
+  background: #fff;
+}
+
+/* 表格底部横向滚动条：默认 10px，鼠标悬停 12px */
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 6px;
+  height: 10px;
   transition: height 0.2s ease;
 }
 .table-container:hover ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
@@ -600,13 +685,26 @@ export default {
   cursor: grabbing;
 }
 
-/* 优化表格列间距 */
+/* 优化表格列间距（与科室库存明细等 first-inventory-page 表头高度一致） */
 .table-container ::v-deep .el-table th.el-table__cell {
   padding: 10px 12px !important;
 }
 
 .table-container ::v-deep .el-table td.el-table__cell {
   padding: 10px 12px !important;
+}
+
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell {
+  white-space: nowrap;
+  line-height: 23px;
+}
+
+.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell > .cell,
+.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell > .cell {
+  white-space: nowrap;
+  word-break: normal;
+  overflow: visible;
+  line-height: 23px;
 }
 </style>
 
@@ -623,7 +721,7 @@ export default {
   align-items: center !important;
   flex-wrap: wrap !important;
   gap: 12px !important;
-  margin-top: -12px !important;
+  margin-top: 0 !important;
   padding-bottom: 0 !important;
   margin-bottom: 0 !important;
 }
@@ -659,7 +757,7 @@ export default {
   align-items: center !important;
   flex-wrap: wrap !important;
   gap: 12px !important;
-  margin-top: -12px !important;
+  margin-top: 0 !important;
   padding-bottom: 0 !important;
   margin-bottom: 0 !important;
 }

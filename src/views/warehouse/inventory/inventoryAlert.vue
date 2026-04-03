@@ -24,7 +24,7 @@
           </el-col>
         </el-row>
         <el-row class="query-row-second">
-          <el-col :span="24">
+          <el-col :span="24" class="query-row-second-inner">
             <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectSupplier v-model="queryParams.supplierId" />
@@ -35,26 +35,25 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8 button-row-inventory">
-      <el-col :span="1.5">
+    <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
+      <div class="button-row-left">
         <el-button type="warning" icon="el-icon-download" size="medium" @click="handleExport">导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button type="primary" icon="el-icon-search" size="medium" @click="handleQuery">搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button icon="el-icon-refresh" size="medium" @click="resetQuery">重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="button-row-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <div class="table-container">
       <el-table v-loading="loading" :data="list"
                 @selection-change="handleSelectionChange"
-                height="57vh"
+                show-summary :summary-method="getTotalSummaries"
+                height="60vh"
                 border>
         <el-table-column type="selection" width="48" align="center" fixed="left"/>
-        <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable fixed="left">
+        <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
           <template slot-scope="scope">{{ scope.$index + 1 + (queryParams.pageNum - 1) * queryParams.pageSize }}</template>
         </el-table-column>
         <el-table-column label="耗材编码" align="center" prop="materialCode" width="100" min-width="100" show-overflow-tooltip resizable/>
@@ -77,7 +76,7 @@
 
     <div class="pagination-wrapper">
       <div class="pagination-summary">
-        <span class="summary-label">合计：</span>共 {{ total }} 条，当前页 {{ list.length }} 条
+        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额: {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
       <pagination
         :total="total"
@@ -108,6 +107,10 @@ export default {
       multiple: true,
       total: 0,
       list: [],
+      totalInfo: {
+        totalQty: 0,
+        totalAmt: 0
+      },
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -118,19 +121,50 @@ export default {
       }
     }
   },
+  computed: {
+    pageTotalQty() {
+      return (this.list || []).reduce((s, r) => s + Number(r.currentQty || 0), 0)
+    },
+    pageTotalAmtFormatted() {
+      const amt = 0
+      return this.$options.filters && this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(amt)
+        : '0.00'
+    }
+  },
   created() {
     this.getList()
   },
   methods: {
+    getTotalSummaries(param) {
+      const { columns, data } = param
+      const sums = Array(columns.length).fill('')
+      let totalQty = 0
+      for (let i = 0; i < (data || []).length; i++) {
+        totalQty += Number((data[i] || {}).currentQty || 0)
+      }
+      columns.forEach((column, index) => {
+        if (column.property === 'currentQty') {
+          sums[index] = totalQty.toFixed(2)
+        }
+      })
+      sums[0] = ''
+      if (sums.length > 1) {
+        sums[1] = '合计'
+      }
+      return sums
+    },
     getList() {
       this.loading = true
       listInventoryAlert(this.queryParams).then(response => {
         this.list = response.rows || []
         this.total = response.total != null ? response.total : 0
+        this.totalInfo = response.totalInfo || { totalQty: 0, totalAmt: 0 }
         this.loading = false
       }).catch(() => {
         this.list = []
         this.total = 0
+        this.totalInfo = { totalQty: 0, totalAmt: 0 }
         this.loading = false
       })
     },
@@ -170,7 +204,7 @@ export default {
   align-items: center !important;
   flex-wrap: wrap !important;
   gap: 12px !important;
-  margin-top: -12px !important;
+  margin-top: 0 !important;
   padding-bottom: 0 !important;
   margin-bottom: 0 !important;
 }
@@ -178,6 +212,7 @@ export default {
   flex-shrink: 0;
   font-size: 14px;
   color: #606266;
+  white-space: nowrap;
 }
 .inventory-alert-page .pagination-wrapper .pagination-summary .summary-label {
   font-weight: 700;
@@ -197,7 +232,38 @@ export default {
 .app-container { margin-top: -10px; }
 .query-row-left { margin-bottom: 2px; }
 .query-row-second { margin-bottom: 2px; position: relative; }
-.query-row-second .el-form-item { white-space: nowrap; margin-bottom: 0; }
+.query-row-second-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+.query-row-second-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.button-row-inventory-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.button-row-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.button-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
 .query-item-inline { display: inline-block; margin-right: 16px; margin-bottom: 2px; }
 .query-item-inline .el-form-item__label { width: 80px !important; }
 .query-item-inline .el-form-item { margin-bottom: 0; }
@@ -237,4 +303,22 @@ export default {
 .table-container ::v-deep .el-table th.el-table__cell .cell { white-space: nowrap; }
 .table-container ::v-deep .el-table td.el-table__cell { padding: 10px 12px !important; }
 .table-container ::v-deep .el-table .cell { padding: 0 4px; }
+.table-container ::v-deep .el-table__body-wrapper { padding-bottom: 32px; }
+.table-container ::v-deep .el-table__footer-wrapper {
+  position: sticky;
+  bottom: 12px;
+  z-index: 3;
+  background: #fff;
+}
+.table-container ::v-deep .el-table__fixed-footer-wrapper {
+  position: sticky;
+  bottom: 12px;
+  z-index: 4;
+  background: #fff;
+}
+.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell .cell,
+.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell .cell {
+  white-space: nowrap;
+  overflow: visible;
+}
 </style>

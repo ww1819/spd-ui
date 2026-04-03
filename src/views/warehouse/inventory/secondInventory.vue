@@ -23,34 +23,29 @@
         </el-row>
 
         <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24">
-            <el-form-item label="业务日期" style="display: flex; align-items: center;">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                style="width: 180px; margin-right: 8px;"
+                class="query-date-start"
               />
-              <span style="margin: 0 4px;">至</span>
+              <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                style="width: 180px; margin-left: 8px;"
+                class="query-date-end"
               />
             </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="16" class="query-row-third">
-          <el-col :span="24">
             <el-form-item label="计费" prop="isBilling" class="query-item-inline">
               <el-select v-model="queryParams.isBilling" placeholder="请选择计费"
-                         clearable style="width: 150px">
+                         clearable class="query-select-billing">
                 <el-option label="是" value="1"/>
                 <el-option label="否" value="0"/>
               </el-select>
@@ -60,40 +55,39 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8 button-row-inventory">
-      <el-col :span="1.5">
+    <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
+      <div class="button-row-left">
         <el-button
           type="warning"
           icon="el-icon-download"
           size="medium"
           @click="handleExport"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="primary"
           icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="button-row-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <div class="table-container">
     <el-table v-loading="loading" :data="inventoryList"
-              @selection-change="handleSelectionChange" 
-              height="57vh"
+              @selection-change="handleSelectionChange"
+              show-summary :summary-method="getTotalSummaries"
+              height="60vh"
               border>
       <el-table-column type="selection" width="48" align="center" fixed="left"/>
-      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable fixed="left">
+      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ scope.$index + 1 }}
         </template>
@@ -235,8 +229,30 @@ export default {
     });
   },
   methods: {
-    // 表格合计方法 - 参考项目中成功的实现
-
+    getTotalSummaries(param) {
+      const { columns, data } = param;
+      const sums = Array(columns.length).fill('');
+      let totalQty = 0;
+      let totalAmt = 0;
+      for (let i = 0; i < (data || []).length; i++) {
+        const item = data[i] || {};
+        totalQty += Number(item.materialQty || 0);
+        totalAmt += Number(item.materialAmt || 0);
+      }
+      columns.forEach((column, index) => {
+        if (column.property === 'materialQty') {
+          sums[index] = totalQty.toFixed(2);
+        } else if (column.property === 'materialAmt') {
+          const fmt = this.$options.filters && this.$options.filters.formatCurrency;
+          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
+        }
+      });
+      sums[0] = '';
+      if (sums.length > 1) {
+        sums[1] = '合计';
+      }
+      return sums;
+    },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
       if(res.length>0) {
@@ -329,7 +345,7 @@ export default {
   align-items: center !important;
   flex-wrap: wrap !important;
   gap: 12px !important;
-  margin-top: -12px !important;
+  margin-top: 0 !important;
   padding-bottom: 0 !important;
   margin-bottom: 0 !important;
 }
@@ -337,6 +353,7 @@ export default {
   flex-shrink: 0;
   font-size: 14px;
   color: #606266;
+  white-space: nowrap;
 }
 .second-inventory-page .pagination-wrapper .pagination-summary .summary-label {
   font-weight: 700;
@@ -384,23 +401,64 @@ export default {
   position: relative;
 }
 
-.query-row-second .el-form-item {
-  white-space: nowrap;
-  margin-bottom: 0;
+.query-row-second-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  gap: 4px;
+  padding-bottom: 2px;
 }
 
-.query-row-second .el-form-item .el-form-item__content {
+.query-row-second-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.query-row-second-inner .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
 
-.query-row-third {
-  margin-bottom: 2px;
+.query-item-date-range .query-date-start,
+.query-item-date-range .query-date-end {
+  width: 150px;
+}
+.query-item-date-range .query-date-start {
+  margin-right: 6px;
+}
+.query-item-date-range .query-date-end {
+  margin-left: 6px;
+}
+.query-item-date-range .query-date-sep {
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
-.query-row-third .el-form-item {
-  margin-bottom: 0;
+.query-select-billing {
+  width: 120px;
+}
+
+.button-row-inventory-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.button-row-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.button-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .form-fields-container {
@@ -468,5 +526,26 @@ export default {
 }
 .table-container ::v-deep .el-table .cell {
   padding: 0 4px;
+}
+
+.table-container ::v-deep .el-table__body-wrapper {
+  padding-bottom: 32px;
+}
+.table-container ::v-deep .el-table__footer-wrapper {
+  position: sticky;
+  bottom: 12px;
+  z-index: 3;
+  background: #fff;
+}
+.table-container ::v-deep .el-table__fixed-footer-wrapper {
+  position: sticky;
+  bottom: 12px;
+  z-index: 4;
+  background: #fff;
+}
+.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell .cell,
+.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell .cell {
+  white-space: nowrap;
+  overflow: visible;
 }
 </style>

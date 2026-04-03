@@ -4,20 +4,6 @@
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item prop="materialId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectMaterial v-model="queryParams.materialId" />
-              </div>
-            </el-form-item>
-            <el-form-item label="产品名称" prop="materialNameLike" class="query-item-inline">
-              <el-input v-model="queryParams.materialNameLike" placeholder="名称/编码/拼音简码" clearable style="width: 160px" />
-            </el-form-item>
-            <el-form-item label="规格" prop="materialSpeciLike" class="query-item-inline">
-              <el-input v-model="queryParams.materialSpeciLike" placeholder="规格模糊" clearable style="width: 140px" />
-            </el-form-item>
-            <el-form-item label="型号" prop="materialModelLike" class="query-item-inline">
-              <el-input v-model="queryParams.materialModelLike" placeholder="型号模糊" clearable style="width: 140px" />
-            </el-form-item>
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
@@ -95,21 +81,24 @@
             {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column label="供应商" align="center" prop="supplierName" min-width="220" show-overflow-tooltip resizable>
+        <el-table-column label="科室" align="center" prop="departmentName" min-width="220" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            <span>{{ scope.row.supplierName || (scope.row.supplier && scope.row.supplier.name) || '未维护供应商' }}</span>
+            <span>{{ scope.row.departmentName || (scope.row.department && scope.row.department.name) || '未维护科室' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="出库数量" align="center" prop="outQty" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="出库金额" align="center" prop="outAmt" width="140" show-overflow-tooltip resizable>
+        <!-- 库房分类：动态列，展示该科室在该分类下出/退库金额合计 -->
+        <el-table-column
+          v-for="(cat, catIdx) in warehouseCategoryNames"
+          :key="'wc-' + catIdx + '-' + cat"
+          :label="cat"
+          :prop="'catAmt_' + catIdx"
+          align="center"
+          min-width="130"
+          show-overflow-tooltip
+          resizable
+        >
           <template slot-scope="scope">
-            <span>{{ scope.row.outAmt | formatCurrency }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="退库数量" align="center" prop="retQty" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="退库金额" align="center" prop="retAmt" width="140" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span>{{ scope.row.retAmt | formatCurrency }}</span>
+            <span>{{ formatCategoryCell(scope.row, catIdx) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="净出库数量" align="center" prop="netQty" width="120" show-overflow-tooltip resizable/>
@@ -144,15 +133,15 @@
 
 <script>
 import { listCTKWarehouseSummary } from "@/api/warehouse/outWarehouse";
-import SelectMaterial from '@/components/SelectModel/SelectMaterial';
+import { exportDepartmentSummaryStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import RightToolbar from "@/components/RightToolbar";
 
 export default {
-  name: "thirdSupplierOutQuery",
-  components: { SelectMaterial, SelectWarehouse, SelectDepartment, SelectSupplier, RightToolbar },
+  name: "fourthDepartmentOutQuery",
+  components: { SelectWarehouse, SelectDepartment, SelectSupplier, RightToolbar },
   data() {
     return {
       loading: false,
@@ -168,18 +157,16 @@ export default {
       },
       // 后端返回的明细（汇总表数据行）
       rawList: [],
-      // 供应商聚合后的全量列表（用于前端分页）
-      supplierAggList: [],
+      // 科室聚合后的全量列表（用于前端分页）
+      departmentAggList: [],
+      /** 当前查询结果中出现的库房分类名称（有序），用于动态列 */
+      warehouseCategoryNames: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        materialId: null,
         supplerId: null,
         warehouseId: null,
         departmentId: null,
-        materialNameLike: null,
-        materialSpeciLike: null,
-        materialModelLike: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
@@ -189,7 +176,7 @@ export default {
     pagedList() {
       const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize;
       const end = start + this.queryParams.pageSize;
-      return (this.supplierAggList || []).slice(start, end);
+      return (this.departmentAggList || []).slice(start, end);
     },
     /** 全量净出库数量 */
     totalNetQty() {
@@ -215,34 +202,42 @@ export default {
     },
   },
   methods: {
+    /** 汇总行金额展示 */
+    formatCategoryCell(row, catIdx) {
+      const v = row && row[`catAmt_${catIdx}`] != null ? Number(row[`catAmt_${catIdx}`]) : 0;
+      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
+      return fmt ? fmt(v) : v.toFixed(2);
+    },
+    /** 从汇总行数据取库房分类名称 */
+    getWarehouseCategoryName(r) {
+      const n = (
+        r.materialWarehouseCategoryName
+        || (r.material && r.material.fdWarehouseCategory && r.material.fdWarehouseCategory.warehouseCategoryName)
+        || ''
+      ).trim();
+      return n || '未分类';
+    },
     getTotalSummaries(param) {
       const { columns, data } = param;
       const sums = Array(columns.length).fill('');
       if (sums.length > 0) sums[0] = '合计';
 
-      const totalOutQty = (data || []).reduce((acc, r) => acc + Number(r.outQty || 0), 0);
-      const totalOutAmt = (data || []).reduce((acc, r) => acc + Number(r.outAmt || 0), 0);
-      const totalRetQty = (data || []).reduce((acc, r) => acc + Number(r.retQty || 0), 0);
-      const totalRetAmt = (data || []).reduce((acc, r) => acc + Number(r.retAmt || 0), 0);
       const totalNetQty = (data || []).reduce((acc, r) => acc + Number(r.netQty || 0), 0);
       const totalNetAmt = (data || []).reduce((acc, r) => acc + Number(r.netAmt || 0), 0);
 
       const fmt = this.$options.filters && this.$options.filters.formatCurrency;
 
       columns.forEach((column, index) => {
-        switch (column.property) {
-          case 'outQty':
-            sums[index] = totalOutQty.toFixed(2);
-            break;
-          case 'outAmt':
-            sums[index] = fmt ? fmt(totalOutAmt) : totalOutAmt.toFixed(2);
-            break;
-          case 'retQty':
-            sums[index] = totalRetQty.toFixed(2);
-            break;
-          case 'retAmt':
-            sums[index] = fmt ? fmt(totalRetAmt) : totalRetAmt.toFixed(2);
-            break;
+        const prop = column.property;
+        if (prop && String(prop).startsWith('catAmt_')) {
+          const idx = parseInt(String(prop).replace('catAmt_', ''), 10);
+          if (!Number.isNaN(idx)) {
+            const t = (data || []).reduce((acc, r) => acc + Number((r && r[`catAmt_${idx}`]) || 0), 0);
+            sums[index] = fmt ? fmt(t) : t.toFixed(2);
+          }
+          return;
+        }
+        switch (prop) {
           case 'netQty':
             sums[index] = totalNetQty.toFixed(2);
             break;
@@ -271,7 +266,7 @@ export default {
     getList() {
       this.loading = true;
       const queryParams = this.normalizeQueryParams();
-      // 为了供应商汇总准确性，优先拉取较大 pageSize 做前端分组，再前端分页
+      // 为了科室汇总准确性，优先拉取较大 pageSize 做前端分组，再前端分页
       const requestParams = {
         ...queryParams,
         pageNum: 1,
@@ -285,38 +280,59 @@ export default {
           materialQty: item.materialQty != null ? Number(item.materialQty) : 0,
           billType: item.billType != null ? Number(item.billType) : null,
         }));
-        this.buildSupplierAgg();
-        this.total = this.supplierAggList.length;
+        this.buildDepartmentAgg();
+        this.total = this.departmentAggList.length;
         this.loading = false;
       }).catch(() => {
         this.rawList = [];
-        this.supplierAggList = [];
+        this.departmentAggList = [];
+        this.warehouseCategoryNames = [];
         this.total = 0;
         this.loading = false;
       });
     },
-    buildSupplierAgg() {
+    buildDepartmentAgg() {
       const BILL_OUT = 201;
       const BILL_RET = 401;
+      // 当前结果集中出现的库房分类（动态列）
+      const catSet = new Set();
+      (this.rawList || []).forEach(r => {
+        catSet.add(this.getWarehouseCategoryName(r));
+      });
+      this.warehouseCategoryNames = Array.from(catSet).sort((a, b) => String(a).localeCompare(String(b), 'zh-CN'));
+      const catList = this.warehouseCategoryNames;
+      const catIndex = {};
+      catList.forEach((c, i) => { catIndex[c] = i; });
+
       const map = new Map();
       (this.rawList || []).forEach(r => {
-        const sid = r.supplierId != null && r.supplierId !== '' ? String(r.supplierId) : null;
-        const supplierName = (r.supplierName || (r.supplier && r.supplier.name) || '').trim() || '未维护供应商';
-        const key = sid != null ? `id:${sid}` : `name:${supplierName}`;
+        const did = r.departmentId != null && r.departmentId !== '' ? String(r.departmentId) : null;
+        const departmentName = (r.departmentName || (r.department && r.department.name) || '').trim() || '未维护科室';
+        const key = did != null ? `id:${did}` : `name:${departmentName}`;
         if (!map.has(key)) {
-          map.set(key, {
-            supplierId: r.supplierId,
-            supplierName,
+          const init = {
+            departmentId: r.departmentId,
+            departmentName,
             outQty: 0,
             outAmt: 0,
             retQty: 0,
             retAmt: 0,
+          };
+          catList.forEach((c, i) => {
+            init[`catAmt_${i}`] = 0;
           });
+          map.set(key, init);
         }
         const agg = map.get(key);
         const bt = r.billType != null ? Number(r.billType) : null;
         const qty = Number(r.materialQty || 0);
         const amt = Number(r.materialAmt || 0);
+        const cat = this.getWarehouseCategoryName(r);
+        const ci = catIndex[cat];
+        if (ci != null && agg[`catAmt_${ci}`] != null) {
+          // 该分类下出、退库金额合计（含出库与退库）
+          agg[`catAmt_${ci}`] += amt;
+        }
         if (bt === BILL_OUT) {
           agg.outQty += qty;
           agg.outAmt += amt;
@@ -328,14 +344,14 @@ export default {
           agg.outAmt += amt;
         }
       });
-      this.supplierAggList = Array.from(map.values())
+      this.departmentAggList = Array.from(map.values())
         .map((row) => ({
           ...row,
           netQty: row.outQty - row.retQty,
           netAmt: row.outAmt - row.retAmt,
         }))
         .sort((a, b) => b.netAmt - a.netAmt);
-      this.totalInfo = this.supplierAggList.reduce(
+      this.totalInfo = this.departmentAggList.reduce(
         (acc, r) => {
           acc.outQty += r.outQty;
           acc.outAmt += r.outAmt;
@@ -363,83 +379,27 @@ export default {
     handleCurrentChange(val) {
       this.queryParams.pageNum = val;
     },
-    /** 导出按钮操作：导出当前供应商汇总后的数据，保持与页面展示一致 */
-    handleExport() {
-      const rows = this.supplierAggList || [];
+    /** 导出按钮操作：xlsx，合并标题、边框、合计行红色数字 */
+    async handleExport() {
+      const rows = this.departmentAggList || [];
       if (!rows.length) {
         this.$message && this.$message.warning('暂无数据可导出');
         return;
       }
-
-      // 标题行：出/退库汇总(供应商)表（YYYY-MM-DD至YYYY-MM-DD）
-      const beginDate = this.queryParams.beginDate || '';
-      const endDate = this.queryParams.endDate || this.queryParams.beginDate || '';
-      const dateRange = beginDate && endDate ? `${beginDate}至${endDate}` : '';
-      const title = dateRange
-        ? `出/退库汇总(供应商)表（${dateRange}）`
-        : '出/退库汇总(供应商)表';
-
-      // 表头（含序号列）
-      const header = [
-        '序号',
-        '供应商',
-        '出库数量',
-        '出库金额',
-        '退库数量',
-        '退库金额',
-        '净出库数量',
-        '净出库金额'
-      ];
-
-      // 数据行（使用两位小数，避免与页面展示不一致）
-      const lines = rows.map((row, index) => {
-        const outQty = Number(row.outQty || 0).toFixed(2);
-        const outAmt = Number(row.outAmt || 0).toFixed(2);
-        const retQty = Number(row.retQty || 0).toFixed(2);
-        const retAmt = Number(row.retAmt || 0).toFixed(2);
-        const netQty = Number(row.netQty || 0).toFixed(2);
-        const netAmt = Number(row.netAmt || 0).toFixed(2);
-        const supplierName = (row.supplierName || '').replace(/"/g, '""');
-        // 供应商名称用双引号包裹，避免逗号等特殊字符影响 CSV 结构
-        return [
-          index + 1,
-          `"${supplierName}"`,
-          outQty,
-          outAmt,
-          retQty,
-          retAmt,
-          netQty,
-          netAmt
-        ].join(',');
-      });
-
-      const csvContent = [
-        title,
-        header.join(','),
-        ...lines
-      ].join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-
-      // 文件名：出/退库汇总(供应商)YYYYMMDD
       const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth() + 1).padStart(2, '0');
-      const d = String(now.getDate()).padStart(2, '0');
-      const dateStr = `${y}${m}${d}`;
-      const fileName = `出退库汇总(供应商)${dateStr}.csv`;
-
-      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-        // 兼容 IE
-        window.navigator.msSaveOrOpenBlob(blob, fileName);
-      } else {
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+      const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+      const fileName = `出退库汇总(科室)${dateStr}.xlsx`;
+      try {
+        await exportDepartmentSummaryStyledXlsx({
+          warehouseCategoryNames: this.warehouseCategoryNames || [],
+          rows,
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+          fileName,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$message && this.$message.error('导出失败，请稍后重试');
       }
     },
     getStatDate() {

@@ -117,9 +117,6 @@ export default {
       }
     };
   },
-  created() {
-    this.getList();
-  },
   methods: {
     /** 查询库存汇总列表 */
     getList() {

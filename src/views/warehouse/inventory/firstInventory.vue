@@ -134,7 +134,7 @@
               :row-class-name="inventoryListIndex"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" 
-              height="57vh"
+              height="60vh"
               border>
       <el-table-column type="selection" width="48" align="center" fixed="left"/>
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable v-if="columns[0].visible">
@@ -391,9 +391,6 @@ export default {
     getTotalSummaries(param) {
       const { columns, data } = param;
       const sums = Array(columns.length).fill('');
-      // 第 1 列是勾选框列，宽度很窄；把“合计”放到第 2 列（序号列）避免换行撑高
-      sums[0] = '';
-      if (sums.length > 1) sums[1] = '合计';
 
       let totalQty = 0;
       let totalAmt = 0;
@@ -412,6 +409,10 @@ export default {
         }
       });
 
+      sums[0] = '';
+      if (sums.length > 1) {
+        sums[1] = '合计';
+      }
       return sums;
     },
     openColumnDialog() {
@@ -611,6 +612,7 @@ export default {
   flex-shrink: 0;
   font-size: 14px;
   color: #606266;
+  white-space: nowrap;
 }
 .first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
   font-weight: 700;
@@ -791,6 +793,11 @@ export default {
   bottom: 12px;
   z-index: 4;
   background: #fff;
+}
+.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell .cell,
+.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell .cell {
+  white-space: nowrap;
+  overflow: visible;
 }
 
 /* 表格底部横向滚动条：默认 6px，鼠标悬停自动变粗 12px */

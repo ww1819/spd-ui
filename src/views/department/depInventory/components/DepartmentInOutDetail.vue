@@ -239,9 +239,6 @@ export default {
       }
     };
   },
-  created() {
-    this.getList();
-  },
   methods: {
     /** 查询进销存明细列表 */
     getList() {

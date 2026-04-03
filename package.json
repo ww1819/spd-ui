@@ -43,6 +43,7 @@
     "core-js": "3.25.3",
     "echarts": "^5.5.1",
     "element-ui": "^2.15.13",
+    "exceljs": "^4.4.0",
     "file-saver": "2.0.5",
     "fuse.js": "6.4.3",
     "highlight.js": "9.18.5",

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container first-query-page">
+  <div class="app-container first-inventory-page">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
@@ -27,32 +27,28 @@
         </el-row>
 
         <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24">
-            <el-form-item style="display: flex; align-items: center;">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                style="width: 180px; margin-right: 8px;"
+                class="query-date-start"
               />
-              <span style="margin: 0 4px;">至</span>
+              <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                style="width: 180px; margin-left: 8px;"
+                class="query-date-end"
               />
             </el-form-item>
-          </el-col>
-        </el-row>
 
-        <el-row :gutter="16" class="query-row-third">
-          <el-col :span="24">
-            <el-form-item prop="billType" class="query-item-inline">
+            <el-form-item label="单据类型" prop="billType" class="query-item-inline">
               <el-select v-model="queryParams.billType" placeholder="单据类型"
                          clearable style="width: 150px">
                 <el-option v-for="dict in dict.type.in_warehouse_bill_type"
@@ -62,7 +58,7 @@
                 />
               </el-select>
             </el-form-item>
-            <el-form-item prop="isBilling" class="query-item-inline">
+            <el-form-item label="计费" prop="isBilling" class="query-item-inline">
               <el-select v-model="queryParams.isBilling" placeholder="计费"
                          clearable style="width: 150px">
                 <el-option label="是" value="1" />
@@ -75,39 +71,36 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8 button-row-inventory">
-      <el-col :span="1.5">
+    <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
+      <div class="button-row-left">
         <el-button
-          type="primary"
+          type="warning"
+          icon="el-icon-download"
           size="medium"
           @click="handleExport"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="primary"
+          icon="el-icon-search"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
+          icon="el-icon-refresh"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
+      </div>
+      <div class="button-row-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
+      </div>
     </el-row>
 
-    <!-- 保留原来的表单组件 -->
-
     <div class="table-container">
-      <!-- 最基础的Element UI表格配置，仅启用汇总功能 -->
       <el-table v-loading="loading" :data="displayData"
                 show-summary
-                :summary-method="getSummaries"
-                height="57vh"
+                :summary-method="getTotalSummaries"
+                height="60vh"
                 border
                 stripe
                 style="width: 100%">
@@ -131,13 +124,13 @@
 
       <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable v-if="columns[7].visible"/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable v-if="columns[8].visible"/>
-      <el-table-column label="价格" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable v-if="columns[10].visible">
+      <el-table-column label="价格" align="center" prop="unitPrice" width="120" class-name="col-in-sum-price" show-overflow-tooltip resizable v-if="columns[10].visible">
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable v-if="columns[11].visible">
+      <el-table-column label="数量" align="center" prop="materialQty" width="120" class-name="col-in-sum-qty" show-overflow-tooltip resizable v-if="columns[11].visible">
         <template slot-scope="scope">
           {{ scope.row.materialQty }}
         </template>
@@ -186,28 +179,37 @@
       </el-table>
     </div>
 
-    <!-- 分页控件 -->
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="pagination-wrapper">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额: {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <div class="pagination-container">
+        <el-pagination
+          background
+          :current-page="queryParams.pageNum"
+          :page-size="queryParams.pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="total"
+          :pager-count="11"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import { listRTHWarehouse} from "@/api/warehouse/warehouse";
-import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
-import SelectDepartment from '@/components/SelectModel/SelectDepartment';
-import SelectUser from '@/components/SelectModel/SelectUser';
+import RightToolbar from "@/components/RightToolbar";
 
 export default {
   name: "firstQuery",
   dicts: ['biz_status','bill_type','in_warehouse_bill_type','way_status'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser},
+  components: { SelectMaterial, SelectWarehouse, RightToolbar },
   data() {
       return {
         // 遮罩层
@@ -228,18 +230,11 @@ export default {
         total: 0,
         // 入/退货表格数据
         warehouseList: [],
-        // 表格数据 - 包含明确数值类型的测试数据
-        displayData: [
-          { materialQty: 10, unitPrice: 20.5, materialAmt: 205.0 },
-          { materialQty: 5, unitPrice: 30.0, materialAmt: 150.0 },
-          { materialQty: 8, unitPrice: 15.5, materialAmt: 124.0 }
-        ], // 初始化显示数据
-        // 测试汇总功能的专用数据
-        testData: [
-          { name: '商品1', quantity: 100, price: 50.5, amount: 5050 },
-          { name: '商品2', quantity: 200, price: 30.0, amount: 6000 },
-          { name: '商品3', quantity: 150, price: 20.8, amount: 3120 }
-        ],
+        displayData: [],
+        totalInfo: {
+          totalAmt: 0,
+          totalQty: 0
+        },
       stkMaterialList: [],
       // 入/退货明细表格数据
       stkIoBillEntryList: [],
@@ -311,78 +306,83 @@ export default {
       ]
     };
   },
+  computed: {
+    pageTotalQty() {
+      return (this.displayData || []).reduce((s, r) => s + Number(r.materialQty || 0), 0);
+    },
+    pageTotalAmtFormatted() {
+      const amt = (this.displayData || []).reduce((s, r) => s + Number(r.materialAmt || 0), 0);
+      return this.$options.filters && this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(amt)
+        : String(Number(amt).toFixed(2));
+    },
+  },
   created() {
     this.getList();
   },
   methods: {
-    /** 自定义汇总方法 */
-    getSummaries(param) {
+    getTotalSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
+      const sums = Array(columns.length).fill('');
+      if (sums.length > 0) sums[0] = '合计';
+
+      const totalQty = (data || []).reduce((acc, r) => acc + Number(r.materialQty || 0), 0);
+      const totalAmt = (data || []).reduce((acc, r) => acc + Number(r.materialAmt || 0), 0);
+      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
+
+      const hasPriceCol = columns.some(c => c.property === 'unitPrice');
+      const hasQtyCol = columns.some(c => c.property === 'materialQty');
+
       columns.forEach((column, index) => {
-        // 第一列显示汇总文本
-        if (index === 0) {
-          sums[index] = '合计';
+        if (column.property === 'materialAmt') {
+          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
           return;
         }
-        
-        // 只对数量和金额列进行汇总
-        if (column.property === 'materialQty' || column.property === 'materialAmt') {
-          const values = data.map(item => Number(item[column.property]) || 0);
-          if (!values.every(value => isNaN(value))) {
-            const sum = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] = column.property === 'materialAmt' ? 
-              this.$options.filters.formatCurrency(sum) : 
-              sum;
-          } else {
-            sums[index] = '--';
+        // 价格+数量两列同时存在时：合计数量合并到「价格」列（更宽），「数量」列留空，避免换行
+        if (column.property === 'unitPrice') {
+          if (hasQtyCol) {
+            sums[index] = totalQty.toFixed(2);
           }
-        } else {
-          // 其他列不显示汇总
-          sums[index] = '';
+          return;
+        }
+        if (column.property === 'materialQty') {
+          sums[index] = hasPriceCol ? '' : totalQty.toFixed(2);
         }
       });
       return sums;
     },
-    
+
     /** 查询入/退货列表 */
     getList() {
       this.loading = true;
-      // 处理截止日期，确保包含当天的所有数据（23:59:59）
-      const queryParams = {
-        ...this.queryParams
-      };
-      if (queryParams.endDate && queryParams.endDate.length === 10) {
-        // 如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
+      const queryParams = { ...this.queryParams };
+      if (!queryParams.beginDate || queryParams.beginDate === '') {
+        queryParams.beginDate = null;
+      }
+      if (!queryParams.endDate || queryParams.endDate === '') {
+        queryParams.endDate = null;
+      } else if (queryParams.endDate && queryParams.endDate.length === 10) {
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
       }
+      Object.keys(queryParams).forEach(key => {
+        if (queryParams[key] === '') queryParams[key] = null;
+      });
       listRTHWarehouse(queryParams).then(response => {
-        console.log('API响应数据:', response);
         this.warehouseList = response.rows || [];
-        this.total = response.total || 0;
-
-        // 确保数据格式正确，直接使用实际数据
+        this.total = response.total != null ? Number(response.total) : 0;
+        this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0 };
         this.displayData = this.warehouseList.map(item => ({
           ...item,
-          unitPrice: Number(item.unitPrice) || 0,
-          materialQty: Number(item.materialQty) || 0,
-          materialAmt: Number(item.materialAmt) || 0
+          unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
+          materialQty: item.materialQty != null ? Number(item.materialQty) : 0,
+          materialAmt: item.materialAmt != null ? Number(item.materialAmt) : 0
         }));
-
-        console.log('显示数据:', this.displayData);
         this.loading = false;
-      }).catch(error => {
-        console.error('获取数据失败:', error);
+      }).catch(() => {
         this.warehouseList = [];
         this.displayData = [];
         this.total = 0;
+        this.totalInfo = { totalAmt: 0, totalQty: 0 };
         this.loading = false;
       });
     },
@@ -444,9 +444,16 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      this.queryParams.beginDate = null;
-      this.queryParams.endDate = null;
       this.handleQuery();
+    },
+    handleSizeChange(val) {
+      this.queryParams.pageSize = val;
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    handleCurrentChange(val) {
+      this.queryParams.pageNum = val;
+      this.getList();
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -469,10 +476,37 @@ export default {
 </script>
 
 <style>
-/* 与库存明细查询一致：内层不叠加左右 padding */
-.app-container.first-query-page {
+/* 与出/退库明细、库存明细一致：内层不叠加左右 padding */
+.app-container.first-inventory-page {
   padding-left: 0 !important;
   padding-right: 0 !important;
+}
+
+.first-inventory-page .pagination-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  margin-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+.first-inventory-page .pagination-wrapper .pagination-summary {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #606266;
+}
+.first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
+  font-weight: 700;
+}
+.first-inventory-page .pagination-wrapper .pagination-container {
+  margin-top: 0 !important;
+  margin-left: auto !important;
+  padding: 4px 0 4px 16px !important;
+  flex-shrink: 0;
+}
+.first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
+  padding: 2px 0 !important;
 }
 </style>
 
@@ -505,7 +539,6 @@ export default {
 
 .query-row-second {
   margin-bottom: 2px;
-  position: relative;
 }
 
 .query-row-second .el-form-item {
@@ -519,15 +552,48 @@ export default {
   flex-wrap: nowrap;
 }
 
-.query-row-third {
-  margin-bottom: 2px;
+.query-row-second-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  gap: 4px;
+  padding-bottom: 2px;
 }
 
-.query-row-third .el-form-item {
-  margin-bottom: 0;
+.query-row-second-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 8px;
+  white-space: nowrap;
 }
 
-/* 与库存明细查询一致：由外层统一左右 8px，此处占满内容区 */
+.query-row-second-inner .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.query-item-date-range .query-date-start,
+.query-item-date-range .query-date-end {
+  width: 150px;
+}
+
+.query-item-date-range .query-date-start {
+  margin-right: 6px;
+}
+
+.query-item-date-range .query-date-end {
+  margin-left: 6px;
+}
+
+.query-item-date-range .query-date-sep {
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
 .form-fields-container {
   background: #fff;
   padding: 6px 8px;
@@ -546,6 +612,23 @@ export default {
   padding-top: 0 !important;
 }
 
+.button-row-inventory-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.button-row-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.button-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .table-container {
   margin-top: 8px;
   margin-bottom: 0;
@@ -556,11 +639,29 @@ export default {
   position: relative;
 }
 
+.table-container ::v-deep .el-table__body-wrapper {
+  padding-bottom: 32px;
+}
+
+.table-container ::v-deep .el-table__footer-wrapper {
+  position: sticky;
+  bottom: 12px;
+  z-index: 3;
+  background: #fff;
+}
+
+.table-container ::v-deep .el-table__fixed-footer-wrapper {
+  position: sticky;
+  bottom: 12px;
+  z-index: 4;
+  background: #fff;
+}
+
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
   height: 6px;
   transition: height 0.2s ease;
 }
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:hover {
+.table-container:hover ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
   height: 12px;
 }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
@@ -587,7 +688,25 @@ export default {
 .table-container ::v-deep .el-table td.el-table__cell {
   padding: 10px 12px !important;
 }
-.table-container ::v-deep .el-table .cell {
-  padding: 0 4px;
+
+/* 合计行：价格+数量合并展示时，数量列与左侧价格列视觉连成一体，且数字不换行 */
+.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell,
+.table-container ::v-deep .el-table__footer-wrapper .cell {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: initial;
+}
+.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell,
+.table-container ::v-deep .el-table__fixed-footer-wrapper .cell {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: initial;
+}
+/* 合计行数量列留空时去掉左竖线，与价格列合并观感 */
+.table-container ::v-deep .el-table__footer-wrapper td.col-in-sum-qty {
+  border-left: none !important;
+}
+.table-container ::v-deep .el-table__fixed-footer-wrapper td.col-in-sum-qty {
+  border-left: none !important;
 }
 </style>

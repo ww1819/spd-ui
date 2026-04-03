@@ -1,7 +1,7 @@
 <template>
   <div class="app-container inventory-distribution-page">
     <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
         <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
@@ -20,7 +20,7 @@
               </div>
             </el-form-item>
             <el-form-item label="分组" prop="groupBy" class="query-item-inline">
-              <el-select v-model="queryParams.groupBy" placeholder="请选择" style="width: 150px">
+              <el-select v-model="queryParams.groupBy" placeholder="请选择" class="query-select-metric">
                 <el-option label="仓库" value="warehouse"/>
                 <el-option label="供应商" value="supplier"/>
                 <el-option label="生产厂家" value="factory"/>
@@ -28,7 +28,7 @@
               </el-select>
             </el-form-item>
             <el-form-item label="口径" prop="metric" class="query-item-inline">
-              <el-select v-model="queryParams.metric" placeholder="请选择" style="width: 150px">
+              <el-select v-model="queryParams.metric" placeholder="请选择" class="query-select-metric">
                 <el-option label="库存数量" value="qty"/>
                 <el-option label="金额" value="amt"/>
               </el-select>
@@ -36,29 +36,29 @@
           </el-col>
         </el-row>
 
-        <el-row class="query-row-second">
-          <el-col :span="24">
-            <el-form-item label="业务日期" style="display: flex; align-items: center;">
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                style="width: 180px; margin-right: 8px;"
+                class="query-date-start"
               />
-              <span style="margin: 0 4px;">至</span>
+              <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                style="width: 180px; margin-left: 8px;"
+                class="query-date-end"
               />
             </el-form-item>
             <el-form-item label="Top" prop="topN" class="query-item-inline">
-              <el-input-number v-model="queryParams.topN" :min="1" :max="50" controls-position="right" style="width: 140px"/>
+              <el-input-number v-model="queryParams.topN" :min="1" :max="50" controls-position="right" class="query-input-topn"/>
             </el-form-item>
           </el-col>
         </el-row>
@@ -302,7 +302,19 @@ export default {
 }
 </script>
 
+<style>
+/* 与库存明细查询一致：内层不叠加左右 padding，由 inventory-query-page 统一 8px */
+.app-container.inventory-distribution-page {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+</style>
+
 <style scoped>
+.app-container {
+  margin-top: -10px;
+}
+
 .query-row-left {
   margin-bottom: 2px;
 }
@@ -325,33 +337,75 @@ export default {
   width: 180px;
 }
 
+.query-select-metric {
+  width: 120px;
+}
+
 .query-row-second {
   margin-bottom: 2px;
   position: relative;
 }
 
-.query-row-second .el-form-item {
-  white-space: nowrap;
-  margin-bottom: 0;
+.query-row-second-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  gap: 4px;
+  padding-bottom: 2px;
 }
 
-.query-row-second .el-form-item .el-form-item__content {
+.query-row-second-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.query-row-second-inner .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
 
+.query-item-date-range .query-date-start,
+.query-item-date-range .query-date-end {
+  width: 150px;
+}
+.query-item-date-range .query-date-start {
+  margin-right: 6px;
+}
+.query-item-date-range .query-date-end {
+  margin-left: 6px;
+}
+.query-item-date-range .query-date-sep {
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.query-input-topn {
+  width: 140px;
+}
+
+/* 与库存明细查询 query-fields 容器一致 */
 .form-fields-container {
   background: #fff;
   padding: 6px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 8px;
-  /* 参考库存明细查询：整体再上移一点；左右扩展一点宽度 */
-  margin-top: -30px;
-  margin-left: -20px;
-  margin-right: -20px;
+  margin-top: -20px;
+  margin-left: 0;
+  margin-right: 0;
   border: 1px solid #EBEEF5;
+}
+
+.button-row-inventory {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
 }
 
 .button-row-inventory-flex {
@@ -373,10 +427,9 @@ export default {
 
 .detail-container {
   margin-top: 8px;
-  height: calc(100vh - 280px);
-  /* 与顶部搜索框容器对齐：左右同样扩展 */
-  margin-left: -20px;
-  margin-right: -20px;
+  height: calc(100vh - 260px);
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .detail-box {
