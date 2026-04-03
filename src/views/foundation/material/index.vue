@@ -663,16 +663,13 @@
             <el-col :span="24">
               <div class="switch-container">
                 <div class="switch-row">
-                  <el-form-item label="" prop="isUse" class="switch-form-item">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isUse === '1' }">启用</span>
-                      <el-switch
-                        v-model="form.isUse"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                        @change="onIsUseChange"
-                      ></el-switch>
-                    </div>
+                  <el-form-item label="启用：" prop="isUse" class="switch-form-item">
+                    <el-switch
+                      v-model="form.isUse"
+                      :active-value="'1'"
+                      :inactive-value="'2'"
+                      @change="onIsUseChange"
+                    ></el-switch>
                   </el-form-item>
                   <el-form-item v-if="form.id && form.isUse !== originalIsUse" label="状态变更原因：" prop="statusChangeReason" class="status-reason-form-item">
                     <el-input v-model="form.statusChangeReason" type="textarea" :rows="2" :placeholder="form.isUse === '1' ? '请填写启用原因' : '请填写停用原因'" />
@@ -1316,7 +1313,7 @@ export default {
         { key: 24, label: `注册证号`, visible: true },
         { key: 25, label: `财务分类`, visible: true }
       ],
-      // 表单校验：仅耗材名称必填；单价若填写则校验为数字
+      // 表单校验：基本信息区多项必填；单价必填且为有效数字
       rules: {
         code: [
           { validator: (rule, value, callback) => {
@@ -1348,31 +1345,33 @@ export default {
         name: [
           { required: true, message: "耗材名称不能为空", trigger: "blur" }
         ],
-        storeroomId: [
-          {
-            validator: (rule, value, callback) => {
-              if (this.dialogMode === 'add' && (value === null || value === undefined || value === '')) {
-                callback(new Error('新增产品档案必须选择库房分类'));
-                return;
-              }
+        supplierId: [
+          { required: true, message: "请选择供应商", trigger: "change" }
+        ],
+        factoryId: [
+          { required: true, message: "请选择生产厂家", trigger: "change" }
+        ],
+        speci: [
+          { required: true, message: "规格不能为空", trigger: "blur" },
+          { validator: (rule, value, callback) => {
+            if (value !== null && value !== undefined && String(value).trim() === '') {
+              callback(new Error('规格不能为空'));
+            } else {
               callback();
-            },
-            trigger: "change"
-          }
+            }
+          }, trigger: "blur" }
+        ],
+        unitId: [
+          { required: true, message: "请选择单位", trigger: "change" }
+        ],
+        storeroomId: [
+          { required: true, message: "请选择库房分类", trigger: "change" }
         ],
         financeCategoryId: [
-          {
-            validator: (rule, value, callback) => {
-              if (this.dialogMode === 'add' && (value === null || value === undefined || value === '')) {
-                callback(new Error('新增产品档案必须选择财务分类'));
-                return;
-              }
-              callback();
-            },
-            trigger: "change"
-          }
+          { required: true, message: "请选择财务分类", trigger: "change" }
         ],
         price: [
+          { required: true, message: "单价不能为空", trigger: "blur" },
           { validator: (rule, value, callback) => {
             if (value === '' || value === null || value === undefined) {
               callback();
@@ -1385,6 +1384,9 @@ export default {
               callback();
             }
           }, trigger: "blur" }
+        ],
+        isUse: [
+          { required: true, message: "请选择启用状态", trigger: "change" }
         ]
       },
       upload: {

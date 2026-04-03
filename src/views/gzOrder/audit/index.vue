@@ -411,6 +411,7 @@
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="form.warehouseId"
       :gzOrderEntryList="gzOrderEntryList"
+      :require-document-supplier="false"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>
