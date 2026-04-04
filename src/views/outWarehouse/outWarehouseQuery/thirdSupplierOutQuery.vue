@@ -144,6 +144,7 @@
 
 <script>
 import { listCTKWarehouseSummary } from "@/api/warehouse/outWarehouse";
+import { exportSupplierSummaryStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -363,83 +364,26 @@ export default {
     handleCurrentChange(val) {
       this.queryParams.pageNum = val;
     },
-    /** 导出按钮操作：导出当前供应商汇总后的数据，保持与页面展示一致 */
-    handleExport() {
+    /** 导出：与出/退库汇总(科室)相同版式（xlsx、宋体、标题合并、表头加粗、合计行红色数字） */
+    async handleExport() {
       const rows = this.supplierAggList || [];
       if (!rows.length) {
         this.$message && this.$message.warning('暂无数据可导出');
         return;
       }
-
-      // 标题行：出/退库汇总(供应商)表（YYYY-MM-DD至YYYY-MM-DD）
-      const beginDate = this.queryParams.beginDate || '';
-      const endDate = this.queryParams.endDate || this.queryParams.beginDate || '';
-      const dateRange = beginDate && endDate ? `${beginDate}至${endDate}` : '';
-      const title = dateRange
-        ? `出/退库汇总(供应商)表（${dateRange}）`
-        : '出/退库汇总(供应商)表';
-
-      // 表头（含序号列）
-      const header = [
-        '序号',
-        '供应商',
-        '出库数量',
-        '出库金额',
-        '退库数量',
-        '退库金额',
-        '净出库数量',
-        '净出库金额'
-      ];
-
-      // 数据行（使用两位小数，避免与页面展示不一致）
-      const lines = rows.map((row, index) => {
-        const outQty = Number(row.outQty || 0).toFixed(2);
-        const outAmt = Number(row.outAmt || 0).toFixed(2);
-        const retQty = Number(row.retQty || 0).toFixed(2);
-        const retAmt = Number(row.retAmt || 0).toFixed(2);
-        const netQty = Number(row.netQty || 0).toFixed(2);
-        const netAmt = Number(row.netAmt || 0).toFixed(2);
-        const supplierName = (row.supplierName || '').replace(/"/g, '""');
-        // 供应商名称用双引号包裹，避免逗号等特殊字符影响 CSV 结构
-        return [
-          index + 1,
-          `"${supplierName}"`,
-          outQty,
-          outAmt,
-          retQty,
-          retAmt,
-          netQty,
-          netAmt
-        ].join(',');
-      });
-
-      const csvContent = [
-        title,
-        header.join(','),
-        ...lines
-      ].join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-
-      // 文件名：出/退库汇总(供应商)YYYYMMDD
       const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth() + 1).padStart(2, '0');
-      const d = String(now.getDate()).padStart(2, '0');
-      const dateStr = `${y}${m}${d}`;
-      const fileName = `出退库汇总(供应商)${dateStr}.csv`;
-
-      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-        // 兼容 IE
-        window.navigator.msSaveOrOpenBlob(blob, fileName);
-      } else {
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+      const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+      const fileName = `出退库汇总(供应商)${dateStr}.xlsx`;
+      try {
+        await exportSupplierSummaryStyledXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+          fileName,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$message && this.$message.error('导出失败，请稍后重试');
       }
     },
     getStatDate() {

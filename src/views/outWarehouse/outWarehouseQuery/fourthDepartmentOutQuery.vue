@@ -86,7 +86,7 @@
             <span>{{ scope.row.departmentName || (scope.row.department && scope.row.department.name) || '未维护科室' }}</span>
           </template>
         </el-table-column>
-        <!-- 库房分类：动态列，展示该科室在该分类下出/退库金额合计 -->
+        <!-- 库房分类：动态列，该分类下净金额（出库加、退库减），与科室净出库口径一致 -->
         <el-table-column
           v-for="(cat, catIdx) in warehouseCategoryNames"
           :key="'wc-' + catIdx + '-' + cat"
@@ -104,7 +104,7 @@
         <el-table-column label="净出库数量" align="center" prop="netQty" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="净出库金额" align="center" prop="netAmt" width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            <span>{{ scope.row.netAmt | formatCurrency }}</span>
+            <span>{{ formatNetCurrency(scope.row.netAmt) }}</span>
           </template>
         </el-table-column>
       </el-table>
@@ -184,10 +184,7 @@ export default {
     },
     /** 全量净出库金额（格式化） */
     totalNetAmtFormatted() {
-      const amt = Number(this.totalInfo.netAmt || 0);
-      return this.$options.filters && this.$options.filters.formatCurrency
-        ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+      return this.formatNetCurrency(this.totalInfo.netAmt || 0);
     },
     /** 当前页净出库数量 */
     pageNetQty() {
@@ -196,17 +193,27 @@ export default {
     /** 当前页净出库金额（格式化） */
     pageNetAmtFormatted() {
       const amt = (this.pagedList || []).reduce((s, r) => s + Number(r.netAmt || 0), 0);
-      return this.$options.filters && this.$options.filters.formatCurrency
-        ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+      return this.formatNetCurrency(amt);
     },
   },
   methods: {
-    /** 汇总行金额展示 */
+    /** 汇总行金额展示（分类净额，可为负；0 显示 0.00 而非全局 formatCurrency 的「-」） */
     formatCategoryCell(row, catIdx) {
       const v = row && row[`catAmt_${catIdx}`] != null ? Number(row[`catAmt_${catIdx}`]) : 0;
+      if (!Number.isFinite(v) || v === 0) {
+        return '0.00';
+      }
       const fmt = this.$options.filters && this.$options.filters.formatCurrency;
       return fmt ? fmt(v) : v.toFixed(2);
+    },
+    /** 净出库金额：0 显示 0.00（避免 formatCurrency 将 0 当成空） */
+    formatNetCurrency(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n === 0) {
+        return '0.00';
+      }
+      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
+      return fmt ? fmt(n) : n.toFixed(2);
     },
     /** 从汇总行数据取库房分类名称 */
     getWarehouseCategoryName(r) {
@@ -233,7 +240,7 @@ export default {
           const idx = parseInt(String(prop).replace('catAmt_', ''), 10);
           if (!Number.isNaN(idx)) {
             const t = (data || []).reduce((acc, r) => acc + Number((r && r[`catAmt_${idx}`]) || 0), 0);
-            sums[index] = fmt ? fmt(t) : t.toFixed(2);
+            sums[index] = !Number.isFinite(t) || t === 0 ? '0.00' : fmt ? fmt(t) : t.toFixed(2);
           }
           return;
         }
@@ -242,7 +249,7 @@ export default {
             sums[index] = totalNetQty.toFixed(2);
             break;
           case 'netAmt':
-            sums[index] = fmt ? fmt(totalNetAmt) : totalNetAmt.toFixed(2);
+            sums[index] = this.formatNetCurrency(totalNetAmt);
             break;
           default:
             break;
@@ -330,8 +337,12 @@ export default {
         const cat = this.getWarehouseCategoryName(r);
         const ci = catIndex[cat];
         if (ci != null && agg[`catAmt_${ci}`] != null) {
-          // 该分类下出、退库金额合计（含出库与退库）
-          agg[`catAmt_${ci}`] += amt;
+          // 该分类下净金额：出库加、退库减（与本科室「净出库金额 = 出库合计 − 退库合计」一致，避免退库发生在其它分类时本分类仍显示毛额造成误解）
+          if (bt === BILL_RET) {
+            agg[`catAmt_${ci}`] -= amt;
+          } else {
+            agg[`catAmt_${ci}`] += amt;
+          }
         }
         if (bt === BILL_OUT) {
           agg.outQty += qty;

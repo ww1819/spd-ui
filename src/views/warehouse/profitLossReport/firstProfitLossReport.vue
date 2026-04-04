@@ -188,6 +188,7 @@
 
 <script>
 import { listProfitLossEntry } from '@/api/warehouse/profitLoss'
+import { exportProfitLossEntryStyledXlsx } from '@/utils/departmentOutSummaryExport'
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse'
 import MaterialAutocomplete from '@/components/SelectModel/MaterialAutocomplete'
 import RightToolbar from '@/components/RightToolbar'
@@ -273,10 +274,31 @@ export default {
       this.queryParams.endDate = null;
       this.handleQuery();
     },
-    handleExport() {
-      this.download('warehouse/profitLoss/exportEntry', {
-        ...this.queryParams
-      }, `profitLossEntry_${new Date().getTime()}.xlsx`)
+    /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
+    async handleExport() {
+      const requestParams = { ...this.queryParams, pageNum: 1, pageSize: 10000 }
+      this.loading = true
+      try {
+        const response = await listProfitLossEntry(requestParams)
+        const rows = response.rows || []
+        if (!rows.length) {
+          this.$message && this.$message.warning('暂无数据可导出')
+          return
+        }
+        const now = new Date()
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+        await exportProfitLossEntryStyledXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+          fileName: `盈亏明细表${dateStr}.xlsx`,
+        })
+      } catch (e) {
+        console.error(e)
+        this.$message && this.$message.error('导出失败，请稍后重试')
+      } finally {
+        this.loading = false
+      }
     },
   }
 };

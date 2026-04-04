@@ -99,6 +99,7 @@
 
 <script>
 import { listExpiryAlert } from '@/api/warehouse/inventory'
+import { exportExpiryAlertStyledXlsx } from '@/utils/departmentOutSummaryExport'
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier'
 import MaterialAutocomplete from '@/components/SelectModel/MaterialAutocomplete'
@@ -201,10 +202,30 @@ export default {
       this.single = selection.length !== 1
       this.multiple = !selection.length
     },
-    handleExport() {
-      this.download('warehouse/inventory/exportExpiryAlert', {
-        ...this.queryParams
-      }, `expiry_alert_${new Date().getTime()}.xlsx`)
+    async handleExport() {
+      const requestParams = { ...this.queryParams, pageNum: 1, pageSize: 10000 }
+      this.loading = true
+      try {
+        const response = await listExpiryAlert(requestParams)
+        const rows = response.rows || []
+        if (!rows.length) {
+          this.$message && this.$message.warning('暂无数据可导出')
+          return
+        }
+        const now = new Date()
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+        await exportExpiryAlertStyledXlsx({
+          rows,
+          beginDate: '',
+          endDate: '',
+          fileName: `有效期预警表${dateStr}.xlsx`,
+        })
+      } catch (e) {
+        console.error(e)
+        this.$message && this.$message.error('导出失败，请稍后重试')
+      } finally {
+        this.loading = false
+      }
     }
   }
 }

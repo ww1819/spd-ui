@@ -81,7 +81,7 @@
           type="primary"
           size="medium"
           @click="handleAdd"
-          v-hasPermi="['inWarehouse:apply:add']"
+          v-hasPermi="['caigou:jihua:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -89,7 +89,7 @@
           type="primary"
           size="medium"
           @click="handleExport"
-          v-hasPermi="['inWarehouse:apply:export']"
+          v-hasPermi="['caigou:jihua:export']"
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -188,14 +188,14 @@
               size="small"
               type="text"
               @click="handleUpdate(scope.row)"
-              v-hasPermi="['inWarehouse:apply:edit']"
+              v-hasPermi="['caigou:jihua:edit']"
               v-if="scope.row.planStatus != 2"
             >修改</el-button>
             <el-button
               size="small"
               type="text"
               @click="handleDelete(scope.row)"
-              v-hasPermi="['inWarehouse:apply:remove']"
+              v-hasPermi="['caigou:jihua:remove']"
               v-if="scope.row.planStatus != 2"
             >删除</el-button>
             <el-button
@@ -426,18 +426,12 @@
           </el-table-column>
           <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material && scope.row.material.isWay"/>
             </template>
           </el-table-column>
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
-              <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" align="center" width="120" fixed="right">
+          <el-table-column label="备注" align="center" width="140" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-button v-if="scope.row.id" type="text" size="small" @click="handleViewApplyDetails(scope.row)">查看申购明细</el-button>
-              <span v-else>--</span>
+              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
             </template>
           </el-table-column>
           <el-table-column label="操作" align="center" width="120" fixed="right">
@@ -1811,7 +1805,7 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 只在主内容区域内显示，不覆盖左侧菜单栏 */
+/* 相对 .app-container 铺满主内容区，不盖住顶部导航栏与左侧菜单（勿用 fixed 全屏） */
 .local-modal-mask {
   position: absolute;
   left: 0;
@@ -1830,7 +1824,7 @@ export default {
   background: #fff;
   width: 100%;
   height: 100%;
-  max-height: 100vh;
+  max-height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1967,10 +1961,8 @@ export default {
   transform: scale(0.7) translateY(-50px);
 }
 
-  /* 确保页面容器有相对定位，以便内部弹窗正确定位 */
   .app-container {
     position: relative;
-    overflow: hidden; /* 防止弹窗超出容器 */
   }
 
   /* 查询条件紧凑布局 */

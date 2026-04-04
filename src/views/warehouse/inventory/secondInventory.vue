@@ -151,7 +151,8 @@
 </template>
 
 <script>
-import { listInventorySummary, listInventory } from "@/api/warehouse/inventory";
+import { listInventorySummary } from "@/api/warehouse/inventory";
+import { exportWarehouseInventorySummaryStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
@@ -322,11 +323,31 @@ export default {
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('warehouse/inventory/export', {
-        ...this.queryParams
-      }, `inventory_${new Date().getTime()}.xlsx`)
+    /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
+    async handleExport() {
+      const requestParams = { ...this.queryParams, pageNum: 1, pageSize: 10000 };
+      this.loading = true;
+      try {
+        const response = await listInventorySummary(requestParams);
+        const rows = Array.isArray(response) ? response : (response.rows || []);
+        if (!rows.length) {
+          this.$message && this.$message.warning('暂无数据可导出');
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        await exportWarehouseInventorySummaryStyledXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+          fileName: `库存汇总查询表${dateStr}.xlsx`,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$message && this.$message.error('导出失败，请稍后重试');
+      } finally {
+        this.loading = false;
+      }
     },
   }
 

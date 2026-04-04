@@ -222,6 +222,7 @@
 
 <script>
 import { listCTKWarehouse} from "@/api/warehouse/outWarehouse";
+import { exportCTKWarehouseDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -468,11 +469,50 @@ export default {
     handleStkIoBillEntrySelectionChange(selection) {
       this.checkedStkIoBillEntry = selection.map(item => item.index)
     },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('warehouse/warehouse/export', {
-        ...this.queryParams
-      }, `warehouse_${new Date().getTime()}.xlsx`)
+    /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
+    async handleExport() {
+      const queryParams = { ...this.queryParams };
+      if (!queryParams.beginDate || queryParams.beginDate === '' || queryParams.beginDate == null) {
+        queryParams.beginDate = null;
+      }
+      if (!queryParams.endDate || queryParams.endDate === '' || queryParams.endDate == null) {
+        queryParams.endDate = null;
+      } else if (queryParams.endDate && queryParams.endDate.length === 10) {
+        queryParams.endDate = `${queryParams.endDate} 23:59:59`;
+      }
+      Object.keys(queryParams).forEach(key => {
+        if (queryParams[key] === '') queryParams[key] = null;
+      });
+      const requestParams = { ...queryParams, pageNum: 1, pageSize: 10000 };
+      this.loading = true;
+      try {
+        const response = await listCTKWarehouse(requestParams);
+        const rows = response.rows || [];
+        if (!rows.length) {
+          this.$message && this.$message.warning('暂无数据可导出');
+          return;
+        }
+        const wayOpts = this.dict.type.way_status || [];
+        const resolveWay = v => {
+          if (v == null || v === '') return '';
+          const hit = wayOpts.find(d => String(d.value) === String(v));
+          return hit ? hit.label : String(v);
+        };
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        await exportCTKWarehouseDetailStyledXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+          fileName: `出退库明细表${dateStr}.xlsx`,
+          resolveWay,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$message && this.$message.error('导出失败，请稍后重试');
+      } finally {
+        this.loading = false;
+      }
     },
     /** 分页大小改变 */
     handleSizeChange(val) {

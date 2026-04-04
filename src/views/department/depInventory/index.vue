@@ -1,14 +1,14 @@
 <template>
   <div class="app-container dep-inventory-query-page">
-    <el-tabs v-model="activeTab" type="card" class="inventory-tabs-compact" @tab-click="handleTabClick">
+    <el-tabs v-model="activeTab" type="card" class="inventory-tabs-compact">
       <el-tab-pane label="库存明细查询" name="detail"></el-tab-pane>
       <el-tab-pane label="库存汇总查询" name="summary"></el-tab-pane>
       <el-tab-pane label="科室进销存明细查询" name="inout"></el-tab-pane>
     </el-tabs>
-    <!-- 与出/退库查询页一致：内容在 el-tabs 外，保证与 firstOutQuery 相同的顶部间距与表格高度 -->
-    <InventoryDetail v-show="activeTab === 'detail'" ref="detailQuery" />
-    <InventorySummary v-show="activeTab === 'summary'" ref="summaryQuery" />
-    <DepartmentInOutDetail v-show="activeTab === 'inout'" ref="inoutQuery" />
+    <!-- 使用 v-if 而非 v-show：隐藏时 display:none 会导致 el-table 测宽为 0，切回后横向滚动条异常；销毁重建可稳定恢复布局 -->
+    <InventoryDetail v-if="activeTab === 'detail'" ref="detailQuery" />
+    <InventorySummary v-if="activeTab === 'summary'" ref="summaryQuery" />
+    <DepartmentInOutDetail v-if="activeTab === 'inout'" ref="inoutQuery" />
   </div>
 </template>
 
@@ -40,17 +40,6 @@ export default {
   },
   beforeDestroy() {
     document.body.classList.remove('inventory-query-fixed');
-  },
-  methods: {
-    /** 切换到非默认 Tab 时再拉数，与出退库汇总表懒加载一致，避免首屏多请求 */
-    handleTabClick(tab) {
-      if (tab.name === 'summary' && this.$refs.summaryQuery && typeof this.$refs.summaryQuery.getList === 'function') {
-        this.$nextTick(() => this.$refs.summaryQuery.getList());
-      }
-      if (tab.name === 'inout' && this.$refs.inoutQuery && typeof this.$refs.inoutQuery.getList === 'function') {
-        this.$nextTick(() => this.$refs.inoutQuery.getList());
-      }
-    }
   }
 };
 </script>

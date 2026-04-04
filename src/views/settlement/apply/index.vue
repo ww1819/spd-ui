@@ -71,7 +71,7 @@
           icon="el-icon-plus"
           size="small"
           @click="handleAdd"
-          v-hasPermi="['settlement:apply:add']"
+          v-hasPermi="['settlement:apply:add', 'settlement:apply:list']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -81,7 +81,7 @@
           icon="el-icon-download"
           size="small"
           @click="handleExport"
-          v-hasPermi="['settlement:apply:export']"
+          v-hasPermi="['settlement:apply:export', 'settlement:apply:list']"
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">

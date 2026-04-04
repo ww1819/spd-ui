@@ -214,6 +214,7 @@
 
 <script>
 import { listInventory } from "@/api/department/depInventory";
+import { exportDepInventoryDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
@@ -320,10 +321,31 @@ export default {
       this.queryParams.pageNum = val;
       this.getList();
     },
-    handleExport() {
-      this.download('department/depInventory/export', {
-        ...this.queryParams
-      }, `department_inventory_${new Date().getTime()}.xlsx`);
+    /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
+    async handleExport() {
+      const requestParams = { ...this.queryParams, pageNum: 1, pageSize: 10000 };
+      this.loading = true;
+      try {
+        const response = await listInventory(requestParams);
+        const rows = response.rows || [];
+        if (!rows.length) {
+          this.$message && this.$message.warning("暂无数据可导出");
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+        await exportDepInventoryDetailStyledXlsx({
+          rows,
+          beginDate: "",
+          endDate: "",
+          fileName: `科室库存明细查询表${dateStr}.xlsx`,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$message && this.$message.error("导出失败，请稍后重试");
+      } finally {
+        this.loading = false;
+      }
     },
     depFactoryName(row) {
       if (!row) return '--';
