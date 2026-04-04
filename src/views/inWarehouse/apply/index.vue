@@ -291,11 +291,30 @@
               <el-input v-model="form.refBillNo" :disabled="true" placeholder="引用采购订单号" />
             </el-form-item>
           </el-col>
+          <el-col v-show="action" :span="8" class="scan-barcode-col">
+            <el-form-item label="扫描条码" label-width="80px" class="scan-barcode-form-item">
+              <el-input
+                ref="scanBarcodeInputRef"
+                v-model="scanBarcodeInput"
+                placeholder="扫码或输入条码后回车"
+                title="请用扫码枪扫描或键盘输入条码后回车，自动解析主/辅条码并匹配产品档案"
+                clearable
+                size="small"
+                class="scan-barcode-input"
+                @keyup.enter.native="onScanBarcodeSubmit"
+              >
+                <template slot="prepend">
+                  <i class="el-icon-s-operation"></i>
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-col>
         </el-row>
         </div>
 
 <!--        <el-divider content-position="left">入库明细信息</el-divider>-->
-        <el-row :gutter="10" class="mb8">
+        <div class="modal-detail-section">
+        <el-row :gutter="10" class="mb8 detail-toolbar-row">
           <el-col :span="1.5">
             <span>入库明细信息</span>
           </el-col>
@@ -312,40 +331,20 @@
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="primary" size="small" @click="submitForm">保 存</el-button>
+              <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
             </el-col>
           </div>
 
         </el-row>
-        <!-- 扫描条码：扫码枪或键盘输入后回车，自动解析并匹配产品、新增一行明细 -->
-        <el-row v-show="action" :gutter="10" class="mb8 scan-barcode-row">
-          <el-col :span="24">
-            <el-form-item label="扫描条码" label-width="80px" class="scan-barcode-form-item">
-              <el-input
-                ref="scanBarcodeInputRef"
-                v-model="scanBarcodeInput"
-                placeholder="请用扫码枪扫描或键盘输入条码后回车，自动解析主/辅条码并匹配产品档案"
-                clearable
-                size="medium"
-                style="width: 100%; max-width: 900px;"
-                @keyup.enter.native="onScanBarcodeSubmit"
-              >
-                <template slot="prepend">
-                  <i class="el-icon-s-operation"></i> 扫码
-                </template>
-              </el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
         <div class="table-wrapper">
         <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
-                  show-summary :summary-method="getSummaries"
+                  show-summary :summary-method="getSummariesWithRefresh"
                   @selection-change="handleStkIoBillEntrySelectionChange"
                   ref="stkIoBillEntry"
                   border
-                   height="48vh"
+                  :height="detailTableHeight"
         >
-          <el-table-column type="selection" width="60" align="center" />
+          <el-table-column type="selection" width="60" align="center" fixed="left" />
           <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
           <!-- 主条码、辅条码列隐藏（数据仍可通过顶部扫描条码写入，如需恢复可取消注释） -->
           <!--
@@ -436,36 +435,55 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="批号" align="center" prop="batchNumber" width="200" show-overflow-tooltip resizable sortable>
+          <el-table-column label="批号" align="center" prop="batchNumber" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber"  placeholder="批号" />
+              <div style="text-align: center;">
+                <el-input
+                  v-model="scope.row.batchNumber"
+                  placeholder="批号"
+                  size="small"
+                  class="detail-input-compact"
+                />
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" align="center" prop="endTime" width="180" show-overflow-tooltip resizable sortable>
+          <el-table-column label="有效期" align="center" prop="endTime" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.endTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              :picker-options="pickerEndTimeOptions"
-                              placeholder="请选择入库日期">
-              </el-date-picker>
+              <div style="text-align: center;">
+                <el-date-picker
+                  clearable
+                  v-model="scope.row.endTime"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  :picker-options="pickerEndTimeOptions"
+                  placeholder="有效期"
+                  size="small"
+                  class="detail-input-compact"
+                />
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="生产日期" align="center" prop="beginTime" width="180" show-overflow-tooltip resizable sortable>
+          <el-table-column label="生产日期" align="center" prop="beginTime" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.beginTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              :picker-options="pickerBeginTimeOptions"
-                              placeholder="请选择入库日期">
-              </el-date-picker>
+              <div style="text-align: center;">
+                <el-date-picker
+                  clearable
+                  v-model="scope.row.beginTime"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  :picker-options="pickerBeginTimeOptions"
+                  placeholder="生产日期"
+                  size="small"
+                  class="detail-input-compact"
+                />
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable sortable>
+          <el-table-column label="批次号" align="center" prop="batchNo" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" />
+              <div style="text-align: center;">
+                <el-input v-model="scope.row.batchNo" :disabled="true" placeholder="批次号" size="small" class="detail-input-compact" />
+              </div>
             </template>
           </el-table-column>
           <el-table-column label="生产厂家" align="center" width="180" show-overflow-tooltip resizable sortable>
@@ -498,12 +516,15 @@
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable sortable>
+          <el-table-column label="备注" prop="remark" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="备注" />
+              <div style="text-align: center;">
+                <el-input v-model="scope.row.remark" placeholder="备注" size="small" class="detail-input-compact" />
+              </div>
             </template>
           </el-table-column>
         </el-table>
+        </div>
         </div>
         </el-form>
           </div>
@@ -631,7 +652,9 @@ export default {
       stkMaterialList: [],
       // 入库明细表格数据
       stkIoBillEntryList: [],
-      // 扫描条码输入框（添加按钮下、明细上）
+      /** 仅用于触发 el-table 合计行随明细 qty/amt 等变更重新渲染（summary-method 对嵌套变更有时不重算） */
+      detailSummaryTick: 0,
+      // 扫描条码输入框（与引用单号同一行）
       scanBarcodeInput: "",
       // 弹出层标题
       title: "",
@@ -671,37 +694,61 @@ export default {
       }
     };
   },
+  computed: {
+    /** 明细表高度：为弹窗标题、主表表单、工具栏与合计行预留空间，避免底部被父级 overflow 裁切 */
+    detailTableHeight() {
+      return 'max(240px, calc(100vh - 400px))';
+    }
+  },
   created() {
     this.getList();
   },
   methods: {
+    /** 包装合计：依赖 detailSummaryTick，确保改数量/金额/增删行后表尾数字会更新 */
+    getSummariesWithRefresh(param) {
+      void this.detailSummaryTick;
+      return this.getSummaries(param);
+    },
+    refreshDetailSummary() {
+      this.detailSummaryTick++;
+      this.$nextTick(() => {
+        const t = this.$refs.stkIoBillEntry;
+        if (t && typeof t.doLayout === 'function') {
+          t.doLayout();
+        }
+      });
+    },
     getSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
+      const sums = columns.map(() => '');
       columns.forEach((column, index) => {
         if (index === 0) {
           sums[index] = '合计';
           return;
         }
-        const values = data.map(item => Number(item[column.property]));
-        if( index === 5){
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] = sums[index].toFixed(2);
+        const prop = column.property;
+        if (!prop) {
+          return;
+        }
+        if (prop === 'qty') {
+          const values = data.map(row => {
+            const v = row[prop];
+            if (v === '' || v == null) return NaN;
+            return Number(v);
+          });
+          if (!values.every(v => isNaN(v))) {
+            const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
+            sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
           }
-
-          if(index === 5){
-            let res = parseFloat(sums[index]);
-            if(!isNaN(res)){
-              let parRes = res.toFixed(2);
-              this.form.totalAmount = parRes;
+          return;
+        }
+        if (prop === 'unitPrice' || prop === 'amt') {
+          const values = data.map(row => Number(row[prop]));
+          if (!values.every(v => isNaN(v))) {
+            const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
+            sums[index] = total.toFixed(2);
+            if (prop === 'amt') {
+              this.form.totalAmount = sums[index];
             }
           }
         }
@@ -822,6 +869,7 @@ export default {
 
         this.stkIoBillEntryList.push(obj);
       });
+      this.refreshDetailSummary();
     },
     getStatDate(){
       // 获取前5天日期
@@ -896,21 +944,23 @@ export default {
     qtyChange(row){
       let totalAmt = 0;
       if(row.qty && row.unitPrice){
-        totalAmt = row.qty * row.unitPrice;
+        totalAmt = Number(row.qty) * Number(row.unitPrice);
       }else{
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
+      this.refreshDetailSummary();
     },
     //价格改变事件
     priceChange(row){
       let totalAmt = 0;
       if(row.qty && row.unitPrice){
-        totalAmt = row.qty * row.unitPrice;
+        totalAmt = Number(row.qty) * Number(row.unitPrice);
       }else{
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
+      this.refreshDetailSummary();
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -968,9 +1018,7 @@ export default {
         // 强制更新视图
         this.$nextTick(() => {
           console.log('视图更新后的明细列表:', this.stkIoBillEntryList);
-          if (this.$refs.stkIoBillEntry) {
-            this.$refs.stkIoBillEntry.doLayout();
-          }
+          this.refreshDetailSummary();
         });
       }).catch(error => {
         console.error('获取入库单详情失败:', error);
@@ -1161,6 +1209,7 @@ export default {
         this.open = true;
         this.title = "修改入库";
         this.action = true;
+        this.$nextTick(() => this.refreshDetailSummary());
       });
     },
     /** 提交按钮 */
@@ -1197,6 +1246,7 @@ export default {
               // 重置单据状态查询条件，确保能查询到所有状态的单据
               this.queryParams.billStatus = null;
               this.getList();
+              this.$nextTick(() => this.refreshDetailSummary());
               // 保存成功后不关闭弹窗，允许继续修改
               // this.open = false;
             });
@@ -1212,6 +1262,7 @@ export default {
               // 重置单据状态查询条件，确保新增的单据能显示出来
               this.queryParams.billStatus = null;
               this.getList();
+              this.$nextTick(() => this.refreshDetailSummary());
               // 保存成功后不关闭弹窗，允许继续修改
               // this.open = false;
             });
@@ -1253,6 +1304,7 @@ export default {
       obj.remark = "";
 
       this.stkIoBillEntryList.push(obj);
+      this.refreshDetailSummary();
     },
     /** 条码录入回车/失焦：解析主辅条码、批号效期，并按主条码(udi_no)匹配产品档案 */
     onBarcodeInputEnter(row) {
@@ -1348,6 +1400,7 @@ export default {
           this.stkIoBillEntryList.push(row);
           this.scanBarcodeInput = "";
           this.$message.success("已根据条码添加明细");
+          this.refreshDetailSummary();
           this.$nextTick(() => {
             if (this.$refs.scanBarcodeInputRef) {
               this.$refs.scanBarcodeInputRef.focus();
@@ -1370,6 +1423,7 @@ export default {
         this.stkIoBillEntryList = stkIoBillEntryList.filter(function(item) {
           return checkedStkIoBillEntry.indexOf(item.index) == -1
         });
+        this.refreshDetailSummary();
       }
     },
     /** 复选框选中数据 */
@@ -1411,6 +1465,7 @@ export default {
           this.form.billStatus = '1';
           this.form.billType = '101';
           this.DialogDingdanComponentShow = false;
+          this.$nextTick(() => this.refreshDetailSummary());
         }
       }).catch(() => {
         this.$message.error("加载科室申请单明细失败");
@@ -1444,19 +1499,22 @@ export default {
   width: 100%;
   height: 100%;
   min-height: 95vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  padding-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 20px;
   border-bottom: 1px solid #EBEEF5;
   background: #EBEEF5;
-  min-height: 48px;
+  min-height: 40px;
 }
 
 .modal-title {
@@ -1490,7 +1548,7 @@ export default {
 .local-modal-content .el-form {
   flex: 1;
   overflow: visible;
-  padding: 24px;
+  padding: 6px 20px 12px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
@@ -1534,12 +1592,20 @@ export default {
   transition: all 0.3s;
 }
 
-/* 扫描条码行：添加按钮下、明细上 */
-.scan-barcode-row .scan-barcode-form-item {
+/* 扫描条码：与引用单号同一行，占栅格两列(span 8)，输入区铺满该列（覆盖弹窗内 140px 限制） */
+.scan-barcode-col .scan-barcode-form-item {
   margin-bottom: 0;
 }
-.scan-barcode-row .el-form-item__content {
+.scan-barcode-col .el-form-item__content {
   line-height: 32px;
+}
+.local-modal-content .modal-form-compact .scan-barcode-col .el-input,
+.local-modal-content .modal-form-compact .scan-barcode-col .el-input-group {
+  width: 100% !important;
+  max-width: none !important;
+}
+.scan-barcode-col .scan-barcode-input .el-input-group__prepend {
+  padding: 0 8px;
 }
 
 /* 按钮样式 */
@@ -1654,19 +1720,53 @@ export default {
   padding-right: 0;
 }
 
-/* 弹窗内表单字段容器样式 */
+/* 弹窗内顶部字段区：抵消 el-form 左右 20px 内边距，灰框与弹窗主区域同宽 */
 .local-modal-content .form-fields-container {
   background: #fff;
-  padding: 16px 20px;
+  padding: 8px 16px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
   border: 1px solid #EBEEF5;
+}
+
+.local-modal-content .form-fields-container .el-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 弹窗内明细区（工具栏+表格）：与顶部字段区同宽；flex 子项 min-height:0 避免合计行被裁切 */
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: -2px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .table-wrapper {
+  margin-top: 6px;
+}
+
+/* 明细表可编辑列：与「数量」列同尺度（约 118px，small） */
+.local-modal-content .modal-detail-section .el-table .detail-input-compact {
+  width: 118px !important;
+  max-width: 118px;
+}
+.local-modal-content .modal-detail-section .el-table .detail-input-compact.el-date-editor.el-input {
+  width: 118px !important;
 }
 
 /* 弹窗内表单紧凑布局 */
 .local-modal-content .modal-form-compact .el-row {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .local-modal-content .modal-form-compact .el-form-item {
@@ -1696,7 +1796,7 @@ export default {
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact image.png.el-date-editor.el-input {
+.local-modal-content .modal-form-compact .el-date-editor.el-input {
   height: 28px !important;
 }
 
@@ -1722,16 +1822,17 @@ export default {
   font-size: 13px;
 }
 
-/* 弹窗内表格样式 - 高度调到确定按钮上面一点 */
+/* 弹窗内表格：高度仅由 el-table 的 :height 控制 */
 .local-modal-content .table-wrapper {
   flex: 1;
-  overflow: hidden;
+  min-height: 0;
+  overflow: auto;
   margin-top: 10px;
+  padding-bottom: 4px;
 }
 
-.local-modal-content .el-table {
-  height: 48vh;
-  max-height: 48vh;
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
 }
 
 /* 明细框表头样式：字体加粗、背景加深 */
@@ -1763,16 +1864,38 @@ export default {
   font-weight: 600 !important;
 }
 
-.local-modal-content .el-table__body-wrapper {
-  max-height: calc(48vh - 48px);
-  overflow-y: auto;
+/* 表体横向滚动条与合计行错开，避免视觉上压在合计数字区域 */
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+  padding-bottom: 6px;
+  box-sizing: border-box;
 }
 
-/* 加粗滚动条 - 覆盖所有表格滚动条 */
+/* 合计行：主表区 + 左侧固定列底部同步，避免被滚动条或固定层盖住 */
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+  position: relative;
+  z-index: 10 !important;
+  background-color: #fff !important;
+  margin-top: 0;
+  box-shadow: 0 -1px 0 #ebeef5;
+  overflow: visible !important;
+}
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+  z-index: 11 !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+}
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  background-color: #fff !important;
+}
+
+/* 弹窗内明细表滚动条：细 */
 .local-modal-content .el-table__body-wrapper::-webkit-scrollbar,
 .local-modal-content .el-table::-webkit-scrollbar,
 .local-modal-content .table-wrapper::-webkit-scrollbar {
-  width: 10px !important;
+  width: 5px !important;
 }
 
 .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-track,
@@ -1796,45 +1919,44 @@ export default {
 }
 
 /* 针对Element UI表格滚动条的通用样式 */
+.local-modal-content .el-table .el-scrollbar__bar.is-vertical {
+  width: 5px !important;
+}
 .local-modal-content .el-table .el-scrollbar__bar {
   opacity: 1 !important;
 }
 
 .local-modal-content .el-table .el-scrollbar__thumb {
-  background-color: #c1c1c1 !important;
-  border-radius: 5px !important;
-  min-height: 10px !important;
+  background-color: #c0c4cc !important;
+  border-radius: 3px !important;
+  min-height: 8px !important;
 }
 
 .local-modal-content .el-table .el-scrollbar__thumb:hover {
   background-color: #a8a8a8 !important;
 }
 
-/* 全局滚动条样式 - 确保表格滚动条更粗 */
+/* 弹窗内通用滚动条（勿含 app-container，避免影响主列表） */
 .local-modal-content *::-webkit-scrollbar,
-.local-modal-mask *::-webkit-scrollbar,
-.app-container *::-webkit-scrollbar {
-  width: 10px !important;
-  height: 10px !important;
+.local-modal-mask *::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
 }
 
 .local-modal-content *::-webkit-scrollbar-track,
-.local-modal-mask *::-webkit-scrollbar-track,
-.app-container *::-webkit-scrollbar-track {
+.local-modal-mask *::-webkit-scrollbar-track {
   background: #f1f1f1 !important;
-  border-radius: 5px !important;
+  border-radius: 4px !important;
 }
 
 .local-modal-content *::-webkit-scrollbar-thumb,
-.local-modal-mask *::-webkit-scrollbar-thumb,
-.app-container *::-webkit-scrollbar-thumb {
-  background: #c1c1c1 !important;
-  border-radius: 5px !important;
+.local-modal-mask *::-webkit-scrollbar-thumb {
+  background: #c0c4cc !important;
+  border-radius: 3px !important;
 }
 
 .local-modal-content *::-webkit-scrollbar-thumb:hover,
-.local-modal-mask *::-webkit-scrollbar-thumb:hover,
-.app-container *::-webkit-scrollbar-thumb:hover {
+.local-modal-mask *::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8 !important;
 }
 
@@ -1842,15 +1964,15 @@ export default {
 .local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar,
 .local-modal-content .el-table__body-wrapper::-webkit-scrollbar,
 .local-modal-content .el-table .el-table__body-wrapper::-webkit-scrollbar {
-  width: 10px !important;
+  width: 5px !important;
 }
 
 .local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-thumb,
 .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb,
 .local-modal-content .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #c1c1c1 !important;
-  border-radius: 5px !important;
-  min-width: 12px !important;
+  background: #c0c4cc !important;
+  border-radius: 3px !important;
+  min-width: 4px !important;
 }
 
 .local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-track,
@@ -1898,23 +2020,23 @@ export default {
   min-height: 95vh !important;
 }
 
-/* 弹窗内所有表格的滚动条加粗 - 统一使用和主弹窗相同的宽度 */
+/* 弹窗内表格滚动条：细 */
 ::v-deep .local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar,
 ::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar,
 ::v-deep .purchase-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar,
 ::v-deep .purchase-modal-content .el-table__body-wrapper::-webkit-scrollbar {
-  width: 10px !important;
-  height: 10px !important;
+  width: 5px !important;
+  height: 5px !important;
 }
 
 ::v-deep .local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-thumb,
 ::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb,
 ::v-deep .purchase-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-thumb,
 ::v-deep .purchase-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #c1c1c1 !important;
-  border-radius: 5px !important;
-  min-width: 10px !important;
-  min-height: 10px !important;
+  background: #c0c4cc !important;
+  border-radius: 3px !important;
+  min-width: 4px !important;
+  min-height: 8px !important;
 }
 
 ::v-deep .local-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-track,
@@ -1932,15 +2054,15 @@ export default {
   background: #a8a8a8 !important;
 }
 
-/* 主表格滚动条优化 - 增加宽度和灵敏度 */
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+/* 主列表表格滚动条（仅 table-compact，不含弹窗内明细表） */
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar,
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
   width: 20px !important;
   height: 12px !important;
 }
 
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb,
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
   background: #909399 !important;
   border-radius: 10px !important;
   border: 2px solid #f1f1f1 !important;
@@ -1949,37 +2071,49 @@ export default {
   transition: background 0.2s ease !important;
 }
 
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
   background: #606266 !important;
 }
 
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:active,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:active,
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
   background: #303133 !important;
 }
 
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-track,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track,
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
   background: #f1f1f1 !important;
   border-radius: 10px !important;
   border: 1px solid #e4e7ed !important;
 }
 
-/* 控制滚动条滑块长度 - 通过调整滚动条轨道和滑块的显示比例 */
-::v-deep .el-table .el-table__body-wrapper {
+::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper {
   scrollbar-width: thick;
   -ms-overflow-style: -ms-autohiding-scrollbar;
   scroll-behavior: smooth !important;
   -webkit-overflow-scrolling: touch !important;
+}
+
+/* 弹窗内明细表：Firefox 等使用细滚动条 */
+::v-deep .local-modal-content .el-table .el-table__body-wrapper {
+  scrollbar-width: thin;
 }
 </style>
 
 <style>
 /* 本页主容器左右仅留 8px，使搜索框/按钮/表格整体更宽（非scoped确保生效） */
 .app-container.inWarehouse-apply-page {
+  position: relative;
   padding-left: 8px !important;
   padding-right: 8px !important;
+}
+
+/* 弹窗整层加宽：向外扩展抵消本页 container 左右 8px，只动外层遮罩不改表单内部 */
+.app-container.inWarehouse-apply-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
 }
 
 /* 搜索框容器：往上移8px（非scoped确保生效） */
