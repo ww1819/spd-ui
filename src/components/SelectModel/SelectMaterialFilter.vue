@@ -18,8 +18,7 @@
               <SelectFactory v-model="queryParams.factoryId"/>
             </el-form-item>
           </el-col>
-          <!-- 按供应商过滤固定为「是」，单选暂时隐藏 -->
-          <el-col v-if="false" :span="8">
+          <el-col :span="8">
             <el-form-item label="按供应商过滤" prop="filterBySupplier" label-width="100px">
               <el-radio-group v-model="queryParams.filterBySupplier">
                 <el-radio :label="true">是</el-radio>
@@ -214,11 +213,6 @@ export default {
     useFixedNumberMaterialArchive: { // 入库新增明细：列出该仓库下定数检测的产品档案（来自定数数据，非库存接口）
       type: Boolean,
       default: false
-    },
-    /** 为 true 时必须带单据供应商（入库/结算等）；为 false 时不强制（如高值退货仅科室库存、无供应商头） */
-    requireDocumentSupplier: {
-      type: Boolean,
-      default: true
     }
   },
   data() {
@@ -264,7 +258,7 @@ export default {
         supplierId: null,
         storeroomId: null, // 库房分类ID
         factoryId: null, // 生产厂家ID
-        filterBySupplier: true, // 固定按供应商过滤（与界面单选同步，单选已隐藏）
+        filterBySupplier: true, // 是否按供应商过滤（默认是）
       },
       // 表单参数
       form: {},
@@ -328,33 +322,6 @@ export default {
     // this.getList();
   },
   methods: {
-    /** 档案是否维护了供应商（有 supplierId 或 supplier.id） */
-    hasMaterialSupplierArchive(material) {
-      if (!material || typeof material !== 'object') return false;
-      const id = material.supplierId;
-      if (id != null && id !== '') return true;
-      return !!(material.supplier && material.supplier.id != null && material.supplier.id !== '');
-    },
-    /** 取行/物料上的供应商 ID（与列表过滤逻辑一致） */
-    getRowSupplierId(item) {
-      if (!item) return null;
-      const m = item.material;
-      if (m && m.supplierId != null && m.supplierId !== '') return m.supplierId;
-      if (m && m.supplier && m.supplier.id != null && m.supplier.id !== '') return m.supplier.id;
-      if (item.supplierId != null && item.supplierId !== '') return item.supplierId;
-      return null;
-    },
-    /** 固定按单供应商过滤：无供应商档案的明细不展示；且仅展示与当前单据供应商一致的行 */
-    filterByDocumentSupplierAndArchive(materialList, supplierId) {
-      if (!supplierId) return [];
-      const sid = String(supplierId);
-      return materialList.filter(item => {
-        const m = item.material;
-        if (!this.hasMaterialSupplierArchive(m)) return false;
-        const rowSid = this.getRowSupplierId(item);
-        return rowSid != null && String(rowSid) === sid;
-      });
-    },
     /** 加载定数监测的产品列表 */
     loadFixedNumberMaterials(warehouseId) {
       if (!warehouseId) {
@@ -417,12 +384,6 @@ export default {
       // 入库新增明细：从后端定数检测数据中筛选该仓库下的产品（走定数监测列表接口）
       if (this.useFixedNumberMaterialArchive && hasWarehouse) {
         const docSupplierId = this.supplierValue || this.queryParams.supplierId;
-        if (this.requireDocumentSupplier && !docSupplierId) {
-          this.materialList = [];
-          this.total = 0;
-          this.loading = false;
-          return;
-        }
         this.loading = true;
         const params = {
           fixedNumberType: '1',
@@ -430,7 +391,7 @@ export default {
           pageNum: this.queryParams.pageNum,
           pageSize: this.queryParams.pageSize
         };
-        if (docSupplierId) {
+        if (this.queryParams.filterBySupplier && docSupplierId) {
           params.supplierId = docSupplierId;
         }
         if (this.queryParams.materialKeyword) {
@@ -447,10 +408,6 @@ export default {
             ? response.rows
             : (response.data && Array.isArray(response.data.rows) ? response.data.rows : []);
           const materialList = rows.map(row => {
-            // 定数接口曾只返回 supplierName 不返回 supplierId，前端「供应商档案」校验会清空列表；优先用行数据，否则用当前单据供应商（与查询条件一致）
-            const supplierIdVal = row.supplierId != null && row.supplierId !== ''
-              ? row.supplierId
-              : (docSupplierId && row.supplierName ? docSupplierId : null);
             const material = {
               id: row.materialId,
               code: row.code,
@@ -459,12 +416,8 @@ export default {
               model: row.model,
               price: row.price,
               registerNo: row.registerNo,
-              supplierId: supplierIdVal,
               fdUnit: row.unitName != null ? { unitName: row.unitName } : null,
               fdFactory: row.factoryName != null ? { factoryName: row.factoryName } : null,
-              supplier: row.supplierName != null
-                ? { name: row.supplierName, id: supplierIdVal }
-                : (supplierIdVal != null ? { id: supplierIdVal } : null),
               fdWarehouseCategory: row.warehouseCategoryName != null ? { warehouseCategoryName: row.warehouseCategoryName } : null
             };
             return {
@@ -479,9 +432,7 @@ export default {
               inHospitalCode: ''
             };
           });
-          this.materialList = docSupplierId
-            ? this.filterByDocumentSupplierAndArchive(materialList, docSupplierId)
-            : materialList.filter(item => this.hasMaterialSupplierArchive(item.material));
+          this.materialList = materialList.slice();
           this.total = this.materialList.length;
           this.loading = false;
         }).catch(() => {
@@ -493,15 +444,9 @@ export default {
       // 未选仓库/科室时：走产品档案列表接口（如入库界面先搜产品再选仓库）
       if (needDep ? !hasDepartment : !hasWarehouse) {
         const docSupplierId = this.supplierValue || this.queryParams.supplierId;
-        if (this.requireDocumentSupplier && !docSupplierId) {
-          this.materialList = [];
-          this.total = 0;
-          this.loading = false;
-          return;
-        }
         this.loading = true;
         const query = {};
-        if (docSupplierId) {
+        if (this.queryParams.filterBySupplier && docSupplierId) {
           query.supplierId = docSupplierId;
         }
         if (this.queryParams.materialKeyword) {
@@ -533,10 +478,7 @@ export default {
             endTime: null,
             inHospitalCode: ''
           }));
-          const filtered = docSupplierId
-            ? this.filterByDocumentSupplierAndArchive(materialList, docSupplierId)
-            : materialList.filter(item => this.hasMaterialSupplierArchive(item.material));
-          this.materialList = filtered.slice();
+          this.materialList = materialList.slice();
           this.total = Number(totalVal) || 0;
           this.loading = false;
         }).catch(() => {
@@ -545,24 +487,10 @@ export default {
         return;
       }
 
-      const docSupplierId = this.supplierValue || this.queryParams.supplierId;
-      if (this.requireDocumentSupplier && !docSupplierId) {
-        this.materialList = [];
-        this.total = 0;
-        this.loading = false;
-        return;
-      }
-      if (docSupplierId) {
-        this.queryParams.supplierId = docSupplierId;
-      }
-
       this.loading = true;
       // 根据场景决定使用哪个 API：科室库存 -> 高值科室；低值仓库 -> 低值库存；否则 -> 高值备货库存
       let apiCall;
       const params = { ...this.queryParams };
-      if (!docSupplierId) {
-        delete params.supplierId;
-      }
       if (this.useDepInventory) {
         apiCall = listGzDepInventory(params);
       } else if (this.useStkInventory) {
@@ -582,11 +510,13 @@ export default {
           });
         }
         
-        // 固定按单据供应商过滤；档案未维护供应商的明细不展示
-        if (docSupplierId) {
-          materialList = this.filterByDocumentSupplierAndArchive(materialList, docSupplierId);
-        } else {
-          materialList = materialList.filter(item => this.hasMaterialSupplierArchive(item.material));
+        // 根据供应商过滤（优先使用 props 传入的 supplierValue）；库存行可能用 item.supplierId，物料用 item.material.supplierId
+        const supplierId = this.supplierValue || this.queryParams.supplierId;
+        if (this.queryParams.filterBySupplier && supplierId) {
+          materialList = materialList.filter(item => {
+            const sid = (item.material && item.material.supplierId != null) ? item.material.supplierId : item.supplierId;
+            return sid != null && sid == supplierId;
+          });
         }
         
         // 根据库房分类过滤（仅当行/物料有该字段时才过滤，避免因未关联而清空列表）
@@ -646,6 +576,7 @@ export default {
       this.queryParams.materialKeyword = undefined;
       this.queryParams.storeroomId = null;
       this.queryParams.factoryId = null;
+      this.queryParams.filterBySupplier = true;
       // 保留仓库ID或科室ID，不重置
       this.handleQuery();
     },
@@ -668,22 +599,6 @@ export default {
       if(!this.selectRow || this.selectRow.length === 0) {
         this.$message({ message: '请先选择数据', type: 'warning' })
         return
-      }
-
-      const docSupplierId = this.supplierValue || this.queryParams.supplierId;
-      for (let i = 0; i < this.selectRow.length; i++) {
-        const item = this.selectRow[i];
-        if (!this.hasMaterialSupplierArchive(item.material)) {
-          this.$message({ message: '存在档案未维护供应商的耗材，无法加入明细', type: 'error' });
-          return;
-        }
-        if (this.requireDocumentSupplier && docSupplierId) {
-          const rowSid = this.getRowSupplierId(item);
-          if (rowSid == null || String(rowSid) !== String(docSupplierId)) {
-            this.$message({ message: '只能选择与当前单据供应商一致的耗材', type: 'error' });
-            return;
-          }
-        }
       }
       
       // 检查选择的明细是否有未出库的出库单
