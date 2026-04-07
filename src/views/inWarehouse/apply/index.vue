@@ -314,7 +314,7 @@
 
 <!--        <el-divider content-position="left">入库明细信息</el-divider>-->
         <div class="modal-detail-section">
-        <el-row :gutter="10" class="mb8 detail-toolbar-row">
+        <el-row :gutter="10" class="detail-toolbar-row">
           <el-col :span="1.5">
             <span>入库明细信息</span>
           </el-col>
@@ -697,7 +697,7 @@ export default {
   computed: {
     /** 明细表高度：为弹窗标题、主表表单、工具栏与合计行预留空间，避免底部被父级 overflow 裁切 */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 400px))';
+      return 'max(260px, calc(100vh - 368px))';
     }
   },
   created() {
@@ -1744,15 +1744,24 @@ export default {
   margin-right: -20px;
   width: calc(100% + 40px);
   box-sizing: border-box;
-  margin-top: -2px;
+  margin-top: 4px;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
+/* 入库明细标题与按钮：上下留白一致，整体略下移，与表格间距对称 */
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
+
 .local-modal-content .modal-detail-section .table-wrapper {
-  margin-top: 6px;
+  margin-top: 0;
 }
 
 /* 明细表可编辑列：与「数量」列同尺度（约 118px，small） */

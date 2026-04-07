@@ -47,7 +47,7 @@ function colToLetter(n) {
 
 /**
  * @param {Object} options
- * @param {string[]} options.warehouseCategoryNames
+ * @param {string[]} options.warehouseCategoryNames 动态分类列标题（出/退库汇总(科室)固定为 [高值耗材, 低值耗材]，按耗材 isGz 分列）
  * @param {Object[]} options.rows buildDepartmentAgg 后的行（含 catAmt_0、netQty、netAmt）
  * @param {string} [options.beginDate] yyyy-MM-dd
  * @param {string} [options.endDate] yyyy-MM-dd

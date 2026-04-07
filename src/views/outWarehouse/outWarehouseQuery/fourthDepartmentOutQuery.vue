@@ -86,19 +86,29 @@
             <span>{{ scope.row.departmentName || (scope.row.department && scope.row.department.name) || '未维护科室' }}</span>
           </template>
         </el-table-column>
-        <!-- 库房分类：动态列，该分类下净金额（出库加、退库减），与科室净出库口径一致 -->
+        <!-- 按耗材档案「是否高值」(isGz=1) 分列：高值耗材 / 低值耗材（净金额：出库加、退库减） -->
         <el-table-column
-          v-for="(cat, catIdx) in warehouseCategoryNames"
-          :key="'wc-' + catIdx + '-' + cat"
-          :label="cat"
-          :prop="'catAmt_' + catIdx"
+          label="高值耗材"
+          prop="catAmt_0"
           align="center"
           min-width="130"
           show-overflow-tooltip
           resizable
         >
           <template slot-scope="scope">
-            <span>{{ formatCategoryCell(scope.row, catIdx) }}</span>
+            <span>{{ formatCategoryCell(scope.row, 0) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="低值耗材"
+          prop="catAmt_1"
+          align="center"
+          min-width="130"
+          show-overflow-tooltip
+          resizable
+        >
+          <template slot-scope="scope">
+            <span>{{ formatCategoryCell(scope.row, 1) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="净出库数量" align="center" prop="netQty" width="120" show-overflow-tooltip resizable/>
@@ -159,8 +169,8 @@ export default {
       rawList: [],
       // 科室聚合后的全量列表（用于前端分页）
       departmentAggList: [],
-      /** 当前查询结果中出现的库房分类名称（有序），用于动态列 */
-      warehouseCategoryNames: [],
+      /** 出/退库汇总(科室) 金额分列：高值耗材 catAmt_0、低值耗材 catAmt_1（与耗材档案 isGz 一致） */
+      gzLowColumnLabels: ['高值耗材', '低值耗材'],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -215,14 +225,18 @@ export default {
       const fmt = this.$options.filters && this.$options.filters.formatCurrency;
       return fmt ? fmt(n) : n.toFixed(2);
     },
-    /** 从汇总行数据取库房分类名称 */
-    getWarehouseCategoryName(r) {
-      const n = (
-        r.materialWarehouseCategoryName
-        || (r.material && r.material.fdWarehouseCategory && r.material.fdWarehouseCategory.warehouseCategoryName)
-        || ''
-      ).trim();
-      return n || '未分类';
+    /**
+     * 是否高值耗材：产品档案 isGz=1 为高值，其余归入低值列
+     * （汇总接口 materialIsGz / material.isGz，与 fd_material.is_gz 一致）
+     */
+    isMaterialHighValue(r) {
+      const raw =
+        r.materialIsGz != null && r.materialIsGz !== ''
+          ? r.materialIsGz
+          : (r.material && r.material.isGz != null && r.material.isGz !== '' ? r.material.isGz : null);
+      if (raw === null || raw === undefined || raw === '') return false;
+      const s = String(raw).trim();
+      return s === '1';
     },
     getTotalSummaries(param) {
       const { columns, data } = param;
@@ -286,6 +300,9 @@ export default {
           materialAmt: item.materialAmt != null ? Number(item.materialAmt) : 0,
           materialQty: item.materialQty != null ? Number(item.materialQty) : 0,
           billType: item.billType != null ? Number(item.billType) : null,
+          materialIsGz: item.materialIsGz != null && item.materialIsGz !== ''
+            ? item.materialIsGz
+            : (item.material && item.material.isGz),
         }));
         this.buildDepartmentAgg();
         this.total = this.departmentAggList.length;
@@ -293,7 +310,6 @@ export default {
       }).catch(() => {
         this.rawList = [];
         this.departmentAggList = [];
-        this.warehouseCategoryNames = [];
         this.total = 0;
         this.loading = false;
       });
@@ -301,15 +317,8 @@ export default {
     buildDepartmentAgg() {
       const BILL_OUT = 201;
       const BILL_RET = 401;
-      // 当前结果集中出现的库房分类（动态列）
-      const catSet = new Set();
-      (this.rawList || []).forEach(r => {
-        catSet.add(this.getWarehouseCategoryName(r));
-      });
-      this.warehouseCategoryNames = Array.from(catSet).sort((a, b) => String(a).localeCompare(String(b), 'zh-CN'));
-      const catList = this.warehouseCategoryNames;
-      const catIndex = {};
-      catList.forEach((c, i) => { catIndex[c] = i; });
+      const IDX_HIGH = 0;
+      const IDX_LOW = 1;
 
       const map = new Map();
       (this.rawList || []).forEach(r => {
@@ -324,20 +333,18 @@ export default {
             outAmt: 0,
             retQty: 0,
             retAmt: 0,
+            catAmt_0: 0,
+            catAmt_1: 0,
           };
-          catList.forEach((c, i) => {
-            init[`catAmt_${i}`] = 0;
-          });
           map.set(key, init);
         }
         const agg = map.get(key);
         const bt = r.billType != null ? Number(r.billType) : null;
         const qty = Number(r.materialQty || 0);
         const amt = Number(r.materialAmt || 0);
-        const cat = this.getWarehouseCategoryName(r);
-        const ci = catIndex[cat];
-        if (ci != null && agg[`catAmt_${ci}`] != null) {
-          // 该分类下净金额：出库加、退库减（与本科室「净出库金额 = 出库合计 − 退库合计」一致，避免退库发生在其它分类时本分类仍显示毛额造成误解）
+        const ci = this.isMaterialHighValue(r) ? IDX_HIGH : IDX_LOW;
+        if (agg[`catAmt_${ci}`] != null) {
+          // 高值/低值列净金额：出库加、退库减（与本科室净出库金额口径一致）
           if (bt === BILL_RET) {
             agg[`catAmt_${ci}`] -= amt;
           } else {
@@ -402,7 +409,7 @@ export default {
       const fileName = `出退库汇总(科室)${dateStr}.xlsx`;
       try {
         await exportDepartmentSummaryStyledXlsx({
-          warehouseCategoryNames: this.warehouseCategoryNames || [],
+          warehouseCategoryNames: this.gzLowColumnLabels || [],
           rows,
           beginDate: this.queryParams.beginDate || '',
           endDate: this.queryParams.endDate || this.queryParams.beginDate || '',

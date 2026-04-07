@@ -2,19 +2,17 @@
   <div v-show="show" class="local-modal-mask">
     <div class="local-modal-content">
       <div class="modal-header">
-        <div class="modal-title">耗材明细</div>
+        <div class="modal-title">添加明细</div>
         <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
       </div>
       <div class="modal-body">
         <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
-        <el-row :gutter="20">
+        <el-row :gutter="16" class="query-form-row">
           <el-col :span="8">
             <el-form-item label="库房分类" prop="storeroomId" label-width="100px">
               <SelectWarehouseCategory v-model="queryParams.storeroomId"/>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="生产厂家" prop="factoryId" label-width="100px">
               <SelectFactory v-model="queryParams.factoryId"/>
@@ -903,16 +901,25 @@ export default {
   transition: all 0.3s;
 }
 
-/* 搜索表单样式 */
-.el-form {
+/* 顶部筛选区：压缩内边距与表单项间距，降低容器高度 */
+.query-form {
   background: #fff;
-  padding: 20px;
+  padding: 8px 12px 10px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
-.el-form .el-form-item {
-  margin-bottom: 15px;
+.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.query-form .el-form-item__label {
+  line-height: 32px;
+  padding-right: 8px;
+}
+
+.query-form-row {
+  margin-bottom: 0 !important;
 }
 </style>
