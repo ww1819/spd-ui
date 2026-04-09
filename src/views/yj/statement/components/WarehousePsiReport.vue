@@ -96,6 +96,18 @@
           <span v-else>0.00</span>
         </template>
       </el-table-column>
+      <el-table-column label="期初导入数量" align="center" prop="qc_import_qty" width="130" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.qc_import_qty">{{ scope.row.qc_import_qty | formatCurrency}}</span>
+          <span v-else>0.0</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="期初导入金额" align="center" prop="qc_import_amt" width="130" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.qc_import_amt">{{ scope.row.qc_import_amt | formatCurrency}}</span>
+          <span v-else>0.00</span>
+        </template>
+      </el-table-column>
       <el-table-column label="入库数量" align="center" prop="rk_qty" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.rk_qty">{{ scope.row.rk_qty | formatCurrency}}</span>

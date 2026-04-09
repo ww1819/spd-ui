@@ -3,19 +3,22 @@
     <el-tabs v-model="activeName" type="card" class="inWarehouse-query-tabs-compact">
       <el-tab-pane label="入/退货明细表" name="first"></el-tab-pane>
       <el-tab-pane label="入/退货汇总表" name="second"></el-tab-pane>
+      <el-tab-pane label="采购汇总报表" name="purchaseSummary"></el-tab-pane>
     </el-tabs>
     <FirstQuery v-if="activeName === 'first'"></FirstQuery>
     <SecondQuery v-if="activeName === 'second'"></SecondQuery>
+    <PurchaseSummaryReport v-if="activeName === 'purchaseSummary'" :inline="true" />
   </div>
 </template>
 
 <script>
 import FirstQuery from '@/views/inWarehouse/inWarehouseQuery/firstQuery';
 import SecondQuery from '@/views/inWarehouse/inWarehouseQuery/secondQuery';
+import PurchaseSummaryReport from '@/views/shared/PurchaseSummaryReport';
 
 export default {
   name: "InWarehouseQuery",
-  components: {FirstQuery, SecondQuery},
+  components: {FirstQuery, SecondQuery, PurchaseSummaryReport},
   data() {
     return {
       activeName: 'first',

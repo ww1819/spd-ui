@@ -216,7 +216,6 @@
         />
       </div>
     </div>
-
   </div>
 </template>
 
@@ -524,7 +523,7 @@ export default {
     handleCurrentChange(val) {
       this.queryParams.pageNum = val;
       this.getList();
-    }
+    },
   }
 };
 </script>
