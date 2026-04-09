@@ -4,10 +4,14 @@
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectMaterial v-model="queryParams.materialId" />
-              </div>
+            <el-form-item label="耗材" prop="materialKeyword" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialKeyword"
+                placeholder="耗材名称/编码"
+                clearable
+                class="query-select-wrapper"
+                @keyup.enter.native="handleQuery"
+              />
             </el-form-item>
             <el-form-item label="科室" prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
@@ -62,8 +66,6 @@
       <el-table
         v-loading="loading"
         :data="summaryList"
-        show-summary
-        :summary-method="getTotalSummaries"
         height="60vh"
         border
         stripe
@@ -140,14 +142,13 @@
 <script>
 import { listInventorySummary } from "@/api/department/depInventory";
 import { exportDepInventorySummaryStyledXlsx } from "@/utils/departmentOutSummaryExport";
-import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import RightToolbar from "@/components/RightToolbar";
 
 export default {
   name: "InventorySummary",
-  components: { SelectMaterial, SelectDepartment, SelectSupplier, RightToolbar },
+  components: { SelectDepartment, SelectSupplier, RightToolbar },
   data() {
     return {
       loading: true,
@@ -161,7 +162,7 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        materialId: null,
+        materialKeyword: '',
         departmentId: null,
         warehouseId: null,
         supplierId: null,
@@ -235,27 +236,6 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill("");
-      let totalQty = 0;
-      let totalAmt = 0;
-      for (let i = 0; i < (data || []).length; i++) {
-        const item = data[i] || {};
-        totalQty += Number(item.totalQty || 0);
-        totalAmt += Number(item.totalAmount || 0);
-      }
-      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-      columns.forEach((column, index) => {
-        if (column.property === "totalQty") {
-          sums[index] = totalQty.toFixed(2);
-        } else if (column.property === "totalAmount") {
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-        }
-      });
-      sums[0] = "合计";
-      return sums;
     },
     handleSizeChange(val) {
       this.queryParams.pageSize = val;

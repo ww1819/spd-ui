@@ -755,6 +755,9 @@ export default {
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
         ],
+        departmentId: [
+          { required: true, message: "科室不能为空", trigger: "change" }
+        ],
       }
     };
   },
@@ -1393,6 +1396,11 @@ export default {
       // 验证仓库是否选择
       if (!this.form.warehouseId) {
         this.$modal.msgError("请先选择仓库");
+        return;
+      }
+      // 验证科室是否选择
+      if (!this.form.departmentId) {
+        this.$modal.msgError("请先选择科室");
         return;
       }
       
