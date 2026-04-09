@@ -114,7 +114,7 @@
           </div>
         </div>
         <div class="report-meta">
-          <span>填报科室（章）：{{ tenantDisplayName }}</span>
+          <span>填报科室（章）：药剂科</span>
           <span>填报日期：{{ reportDate }}</span>
         </div>
         <div class="table-scroll">
@@ -441,7 +441,7 @@ export default {
 
         ws.mergeCells("A2:D2");
         ws.mergeCells("E2:H2");
-        ws.getCell("A2").value = `填报科室（章）：${this.tenantDisplayName}`;
+        ws.getCell("A2").value = `填报科室（章）：药剂科`;
         ws.getCell("E2").value = `填报日期：${this.reportDate || this.fmtDate(new Date())}`;
         ws.getCell("A2").alignment = { vertical: "middle", horizontal: "left" };
         ws.getCell("E2").alignment = { vertical: "middle", horizontal: "right" };
