@@ -70,6 +70,15 @@ export function updateUserReferred(ids) {
   })
 }
 
+/** 批量设置耗材工作组（sys_user_post） */
+export function batchSetUserWorkgroup(data) {
+  return request({
+    url: '/system/user/batchWorkgroup',
+    method: 'post',
+    data
+  })
+}
+
 // 用户密码重置
 export function resetUserPwd(userId, password) {
   const data = {

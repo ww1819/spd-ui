@@ -176,6 +176,13 @@
 
     <!-- 授权弹窗 -->
     <el-dialog :title="authTitle || '授权'" :visible.sync="authOpen" width="700px" append-to-body>
+    <el-alert
+      type="info"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 12px;"
+      title="此处保存的是工作组（岗位）权限；用户实际登录与按钮权限以「用户管理」中的用户菜单为准。修改工作组菜单后，请在列表勾选该工作组并点击「同步菜单」将菜单下发到组内用户，否则成员仍无对应按钮权限。"
+    />
     <el-tabs type="card">
       <el-tab-pane label="菜单权限">
         <div style="margin-bottom: 8px;">
