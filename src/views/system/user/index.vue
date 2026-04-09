@@ -41,7 +41,7 @@
               <el-form-item prop="userName" class="query-item-inline">
                 <el-input
                   v-model="queryParams.userName"
-                  placeholder="用户账户"
+                  placeholder="用户账户/用户姓名"
                   clearable
                   style="width: 180px"
                   @keyup.enter.native="handleQuery"
@@ -87,7 +87,7 @@
               </el-form-item>
             </el-col>
           </el-row>
-          <el-row>
+          <el-row class="query-actions-row">
             <el-col :span="24">
               <el-form-item class="query-item-inline">
                 <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
@@ -102,6 +102,31 @@
                 <el-button icon="el-icon-refresh" size="small" @click="resetQuery" v-hasPermi="['system:user:list']" style="margin-left: 10px;">重置</el-button>
                 <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns" style="margin-left: 10px;"></right-toolbar>
               </el-form-item>
+              <div class="query-actions-bar">
+                <div class="query-actions-left">
+                  <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
+                  <el-button type="success" icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
+                  <el-button type="danger" icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
+                  <el-button type="primary" icon="el-icon-refresh" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']">更新简码</el-button>
+
+                  <el-dropdown trigger="click" @command="handleMoreCommand">
+                    <el-button size="small">
+                      更多功能<i class="el-icon-arrow-down el-icon--right"></i>
+                    </el-button>
+                    <el-dropdown-menu slot="dropdown">
+                      <el-dropdown-item command="importAdd" v-hasPermi="['system:user:import']">新增导入</el-dropdown-item>
+                      <el-dropdown-item command="importUpdate" v-hasPermi="['system:user:import']">更新导入</el-dropdown-item>
+                      <el-dropdown-item command="export" v-hasPermi="['system:user:export']">导出</el-dropdown-item>
+                      <el-dropdown-item command="reset">重置</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </el-dropdown>
+
+                  <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+                </div>
+                <div class="query-actions-right">
+                  <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
+                </div>
+              </div>
             </el-col>
           </el-row>
         </el-form>
@@ -751,6 +776,24 @@ export default {
 
   },
   methods: {
+    handleMoreCommand(command) {
+      switch (command) {
+        case "importAdd":
+          this.handleImport("add");
+          break;
+        case "importUpdate":
+          this.handleImport("update");
+          break;
+        case "export":
+          this.handleExport();
+          break;
+        case "reset":
+          this.resetQuery();
+          break;
+        default:
+          break;
+      }
+    },
     /** 查询用户列表 */
     getList() {
       this.loading = true;
@@ -1759,6 +1802,32 @@ export default {
   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
   margin-bottom: 16px;
   margin-top: -10px;
+}
+
+/* 查询条件与按钮行间距（更美观） */
+.query-form .query-actions-row {
+  margin-top: 10px;
+}
+
+/* 按钮条：左边操作按钮 + 右侧工具栏（靠右） */
+.query-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.query-actions-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.query-actions-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 .query-form-card .el-row {
