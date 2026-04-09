@@ -161,7 +161,7 @@
               type="text"
               icon="el-icon-view"
               @click="handleView(scope.row)"
-              v-hasPermi="['settlement:apply:view']"
+              v-hasPermi="['settlement:apply:query']"
             >查看</el-button>
           </span>
         </template>
