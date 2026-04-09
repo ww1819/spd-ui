@@ -51,7 +51,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="简码" prop="referredName" label-width="100px">
+            <el-form-item prop="referredName">
               <el-input
                 v-model="queryParams.referredName"
                 placeholder="拼音简码"
@@ -62,29 +62,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="备注" prop="deptRemark" label-width="100px">
-              <el-input
-                v-model="queryParams.deptRemark"
-                placeholder="备注模糊查询"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="简码" prop="referredName" label-width="100px">
-              <el-input
-                v-model="queryParams.referredName"
-                placeholder="拼音简码"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="备注" prop="deptRemark" label-width="100px">
+            <el-form-item prop="deptRemark">
               <el-input
                 v-model="queryParams.deptRemark"
                 placeholder="备注模糊查询"

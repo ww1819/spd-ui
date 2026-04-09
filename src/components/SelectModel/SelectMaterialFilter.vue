@@ -431,7 +431,8 @@ export default {
               registerNo: row.registerNo,
               fdUnit: row.unitName != null ? { unitName: row.unitName } : null,
               fdFactory: row.factoryName != null ? { factoryName: row.factoryName } : null,
-              fdWarehouseCategory: row.warehouseCategoryName != null ? { warehouseCategoryName: row.warehouseCategoryName } : null
+              fdWarehouseCategory: row.warehouseCategoryName != null ? { warehouseCategoryName: row.warehouseCategoryName } : null,
+              fdFinanceCategory: row.financeCategoryName != null ? { financeCategoryName: row.financeCategoryName } : null
             };
             return {
               material,

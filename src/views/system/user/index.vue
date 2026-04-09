@@ -89,23 +89,11 @@
           </el-row>
           <el-row class="query-actions-row">
             <el-col :span="24">
-              <el-form-item class="query-item-inline">
-                <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
-                <el-button type="success" icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']" style="margin-left: 10px;">修改</el-button>
-                <el-button type="primary" icon="el-icon-s-custom" size="small" :disabled="multiple" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']" style="margin-left: 10px;">批量设置工作组</el-button>
-                <el-button type="danger" icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']" style="margin-left: 10px;">删除</el-button>
-                <el-button type="primary" icon="el-icon-refresh" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']" style="margin-left: 10px;">更新简码</el-button>
-                <el-button type="info" icon="el-icon-upload2" size="small" @click="handleImport('add')" v-hasPermi="['system:user:import']" style="margin-left: 10px;">新增导入</el-button>
-                <el-button type="info" icon="el-icon-refresh-right" size="small" @click="handleImport('update')" v-hasPermi="['system:user:import']" style="margin-left: 10px;">更新导入</el-button>
-                <el-button type="warning" icon="el-icon-download" size="small" @click="handleExport" v-hasPermi="['system:user:export']" style="margin-left: 10px;">导出</el-button>
-                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery" v-hasPermi="['system:user:list']" style="margin-left: 10px;">搜索</el-button>
-                <el-button icon="el-icon-refresh" size="small" @click="resetQuery" v-hasPermi="['system:user:list']" style="margin-left: 10px;">重置</el-button>
-                <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns" style="margin-left: 10px;"></right-toolbar>
-              </el-form-item>
               <div class="query-actions-bar">
                 <div class="query-actions-left">
                   <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
                   <el-button type="success" icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
+                  <el-button type="primary" icon="el-icon-s-custom" size="small" :disabled="multiple" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']">批量设置工作组</el-button>
                   <el-button type="danger" icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
                   <el-button type="primary" icon="el-icon-refresh" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']">更新简码</el-button>
 
@@ -121,7 +109,7 @@
                     </el-dropdown-menu>
                   </el-dropdown>
 
-                  <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+                  <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery" v-hasPermi="['system:user:list']">搜索</el-button>
                 </div>
                 <div class="query-actions-right">
                   <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
@@ -475,7 +463,7 @@
           :props="defaultProps"
           node-key="id"
           show-checkbox
-          :check-strictly="false"
+          :check-strictly="true"
           :default-expand-all="false"
           :expand-on-click-node="false"
           :check-on-click-node="true"
@@ -956,6 +944,8 @@ export default {
             const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
             console.log('设置菜单树选中状态 - menuIds:', menuIds);
             this.$refs.authMenuTree.setCheckedKeys(menuIds);
+            // check-strictly=true 时不会自动联动父节点，这里补齐父链路（不级联子节点）
+            (menuIds || []).forEach(id => this.ensureAuthMenuAncestorsChecked(id));
             this.updateAuthMenuCheckState();
           }
         });
@@ -965,6 +955,7 @@ export default {
             const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
             console.log('延迟设置菜单树选中状态 - menuIds:', menuIds);
             this.$refs.authMenuTree.setCheckedKeys(menuIds);
+            (menuIds || []).forEach(id => this.ensureAuthMenuAncestorsChecked(id));
             this.updateAuthMenuCheckState();
           }
         }, 100);
@@ -987,12 +978,56 @@ export default {
     },
     /** 授权菜单选择变化 */
     handleAuthMenuCheck(data, checked) {
-      // 获取所有选中的菜单ID（包括半选中的父节点）
-      const allMenuIds = this.getAuthMenuAllCheckedKeys();
-      this.authForm.menuIds = allMenuIds;
-      const checkedKeys = this.$refs.authMenuTree.getCheckedKeys();
-      const halfCheckedKeys = this.$refs.authMenuTree.getHalfCheckedKeys();
-      this.updateAuthMenuCheckState(checkedKeys, halfCheckedKeys);
+      if (!this.$refs.authMenuTree || !data) {
+        return;
+      }
+
+      // ElementUI Tree 在 @check 回调里第二参包含 checkedKeys/halfCheckedKeys
+      const checkedKeys = (checked && checked.checkedKeys) ? checked.checkedKeys : (this.$refs.authMenuTree.getCheckedKeys() || []);
+
+      // 只做“向上联动”：勾选子节点时自动勾选父链路，但不勾选兄弟/整棵子树
+      const currentId = data.id;
+      const isNowChecked = Array.isArray(checkedKeys) && checkedKeys.includes(currentId);
+      if (isNowChecked) {
+        this.ensureAuthMenuAncestorsChecked(currentId);
+      } else {
+        // 取消勾选时：若父节点已无任何子节点被勾选，则向上回收父链路
+        this.cleanupAuthMenuAncestorsUnchecked(currentId);
+      }
+
+      // 同步表单 menuIds（check-strictly=true 时不需要 halfCheckedKeys 兜底）
+      const finalCheckedKeys = this.$refs.authMenuTree.getCheckedKeys() || [];
+      this.authForm.menuIds = finalCheckedKeys;
+      this.updateAuthMenuCheckState(finalCheckedKeys, []);
+    },
+
+    /** 授权菜单：勾选时仅补齐父链路（不级联子节点） */
+    ensureAuthMenuAncestorsChecked(nodeId) {
+      if (!this.$refs.authMenuTree) return;
+      const node = this.$refs.authMenuTree.getNode(nodeId);
+      if (!node) return;
+      let p = node.parent;
+      while (p && p.data && p.data.id != null) {
+        // setChecked(key, checked, deep) deep=false 避免把父节点的子树全部勾上
+        this.$refs.authMenuTree.setChecked(p.data.id, true, false);
+        p = p.parent;
+      }
+    },
+
+    /** 授权菜单：取消勾选时按需回收父链路（父节点无任何勾选子项则取消父节点） */
+    cleanupAuthMenuAncestorsUnchecked(nodeId) {
+      if (!this.$refs.authMenuTree) return;
+      const node = this.$refs.authMenuTree.getNode(nodeId);
+      if (!node) return;
+      let p = node.parent;
+      while (p && p.data && p.data.id != null) {
+        const anyChildChecked = (p.childNodes || []).some(c => c.checked || c.indeterminate);
+        if (anyChildChecked) {
+          break;
+        }
+        this.$refs.authMenuTree.setChecked(p.data.id, false, false);
+        p = p.parent;
+      }
     },
     /** 更新授权菜单全选/半选状态 */
     updateAuthMenuCheckState(checkedKeysParam, halfCheckedKeysParam) {
