@@ -989,9 +989,14 @@ export default {
         this.workgroupOptions = response.data;
       });
     },
-    /** 查询工作组列表 */
+    /** 查询工作组列表（耗材岗位 sys_post；租户必须带 tenantId，否则会混入其他租户/平台岗位，点击左侧行时 sysPostId 与 sys_user_post 不一致导致列表为空） */
     getWorkgroupList() {
-      listPost({}).then(response => {
+      const cid = this.$store.getters.customerId;
+      const query = {};
+      if (cid) {
+        query.tenantId = cid;
+      }
+      listPost(query).then(response => {
         this.workgroupList = response.rows || [];
       });
     },
@@ -1139,14 +1144,17 @@ export default {
       const userId = row.userId || this.ids;
       getUser(userId).then(response => {
         this.form = response.data;
-        this.postOptions = response.posts;
+        // posts：接口返回的是「当前操作者可见的全部岗位」供下拉（等同 postService.selectPostAll），不是 userId 的关联列表
+        this.postOptions = response.posts || response.postOptions;
         this.roleOptions = response.roles;
         this.userWarehouseOptions = response.warehouses;
         this.userDepartmentOptions = response.departments;
 
-        // 设置工作组（如果有postIds数组，取第一个值）
+        // 工作组：必须以 postIds（sys_user_post）为准。data.deptId 来自 sys_user.dept_id（组织部门），与 post_id 不同名空间，数值可能相同，若仅在「无 postIds」时沿用 data.deptId，会误匹配岗位下拉而显示错误（如显示「耗材入出库」）
         if (response.postIds && response.postIds.length > 0) {
           this.$set(this.form, "deptId", response.postIds[0]);
+        } else {
+          this.$set(this.form, "deptId", undefined);
         }
         this.$set(this.form, "roleIds", response.roleIds);
         this.$set(this.form, "warehouseIds", response.warehouseIds);
