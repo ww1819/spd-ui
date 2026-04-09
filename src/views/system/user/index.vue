@@ -72,6 +72,9 @@
                 </el-select>
               </el-form-item>
               <el-form-item class="query-item-inline">
+                <el-checkbox v-model="onlyWithoutWorkgroup" @change="onOnlyWithoutWorkgroupChange">仅无工作组</el-checkbox>
+              </el-form-item>
+              <el-form-item class="query-item-inline">
                 <el-date-picker
                   v-model="dateRange"
                   style="width: 240px"
@@ -89,13 +92,14 @@
               <el-form-item class="query-item-inline">
                 <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
                 <el-button type="success" icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']" style="margin-left: 10px;">修改</el-button>
+                <el-button type="primary" icon="el-icon-s-custom" size="small" :disabled="multiple" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']" style="margin-left: 10px;">批量设置工作组</el-button>
                 <el-button type="danger" icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']" style="margin-left: 10px;">删除</el-button>
                 <el-button type="primary" icon="el-icon-refresh" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']" style="margin-left: 10px;">更新简码</el-button>
                 <el-button type="info" icon="el-icon-upload2" size="small" @click="handleImport('add')" v-hasPermi="['system:user:import']" style="margin-left: 10px;">新增导入</el-button>
                 <el-button type="info" icon="el-icon-refresh-right" size="small" @click="handleImport('update')" v-hasPermi="['system:user:import']" style="margin-left: 10px;">更新导入</el-button>
                 <el-button type="warning" icon="el-icon-download" size="small" @click="handleExport" v-hasPermi="['system:user:export']" style="margin-left: 10px;">导出</el-button>
-                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery" style="margin-left: 10px;">搜索</el-button>
-                <el-button icon="el-icon-refresh" size="small" @click="resetQuery" style="margin-left: 10px;">重置</el-button>
+                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery" v-hasPermi="['system:user:list']" style="margin-left: 10px;">搜索</el-button>
+                <el-button icon="el-icon-refresh" size="small" @click="resetQuery" v-hasPermi="['system:user:list']" style="margin-left: 10px;">重置</el-button>
                 <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns" style="margin-left: 10px;"></right-toolbar>
               </el-form-item>
             </el-col>
@@ -113,11 +117,13 @@
           <el-table-column label="状态" align="center" key="status" v-if="columns[5].visible">
             <template slot-scope="scope">
               <el-switch
+                v-if="canChangeUserStatus"
                 v-model="scope.row.status"
                 active-value="0"
                 inactive-value="1"
                 @change="handleStatusChange(scope.row)"
               ></el-switch>
+              <dict-tag v-else :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
             </template>
           </el-table-column>
           <el-table-column label="创建时间" align="center" prop="createTime" v-if="columns[6].visible" width="160">
@@ -128,7 +134,7 @@
           <el-table-column
             label="操作"
             align="center"
-            width="200"
+            width="260"
             class-name="small-padding fixed-width"
             fixed="right"
           >
@@ -140,7 +146,6 @@
                   icon="el-icon-edit"
                   @click="handleUpdate(scope.row)"
                   v-hasPermi="['system:user:edit']"
-                  v-if="false"
                 >修改</el-button>
                 <el-button
                   size="small"
@@ -148,7 +153,6 @@
                   icon="el-icon-delete"
                   @click="handleDelete(scope.row)"
                   v-hasPermi="['system:user:remove']"
-                  v-if="false"
                 >删除</el-button>
                 <el-button
                   size="small"
@@ -368,7 +372,7 @@
               </el-row>
             </el-form>
             <div class="modal-footer">
-              <el-button type="primary" @click="submitForm">确 定</el-button>
+              <el-button type="primary" v-if="canSubmitUserForm" @click="submitForm">确 定</el-button>
               <el-button @click="cancel">取 消</el-button>
             </div>
           </div>
@@ -401,7 +405,7 @@
         </div>
       </el-upload>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitFileForm">确 定</el-button>
+        <el-button type="primary" @click="submitFileForm" v-hasPermi="['system:user:import']">确 定</el-button>
         <el-button @click="upload.open = false">取 消</el-button>
       </div>
     </el-dialog>
@@ -415,7 +419,7 @@
       @close="importPreview.rows = []; importPreview.columns = []"
     >
       <div style="margin-bottom:10px;">
-        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportUserImportPreview">导出解析结果</el-button>
+        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportUserImportPreview" v-hasPermi="['system:user:import']">导出解析结果</el-button>
       </div>
       <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
         <el-table-column
@@ -506,20 +510,44 @@
       </el-tab-pane>
     </el-tabs>
     <span slot="footer" class="dialog-footer">
-      <el-button type="primary" @click="submitAuth">保 存</el-button>
+      <el-button type="primary" @click="submitAuth" v-hasPermi="['system:user:edit']">保 存</el-button>
       <el-button @click="authOpen = false">取 消</el-button>
     </span>
+    </el-dialog>
+
+    <!-- 批量设置耗材工作组 -->
+    <el-dialog title="批量设置工作组" :visible.sync="batchWorkgroupOpen" width="440px" append-to-body @close="batchPostId = undefined">
+      <p style="color:#909399; margin: 0 0 12px; line-height: 1.5;">
+        已选 <b>{{ ids.length }}</b> 人，将统一设置为所选耗材工作组（覆盖每人原有 sys_user_post 关联）。
+      </p>
+      <el-form label-width="88px" size="small">
+        <el-form-item label="工作组" required>
+          <el-select v-model="batchPostId" placeholder="请选择工作组" clearable filterable style="width: 100%;">
+            <el-option
+              v-for="p in workgroupList"
+              :key="p.postId"
+              :label="p.postName"
+              :value="p.postId"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="batchWorkgroupOpen = false">取 消</el-button>
+        <el-button type="primary" @click="submitBatchWorkgroup">确 定</el-button>
+      </span>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser } from "@/api/system/user";
+import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser, batchSetUserWorkgroup } from "@/api/system/user";
 import { workgroupTreeSelect } from "@/api/system/workgroup";
 import { listPost } from "@/api/system/post";
 import { getConfigKey, listConfig } from "@/api/system/config";
 import { treeselect as menuTreeselect } from "@/api/system/menu";
 import { getToken } from "@/utils/auth";
+import { checkPermi } from "@/utils/permission";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
@@ -529,6 +557,21 @@ export default {
   dicts: ['sys_normal_disable', 'sys_user_sex','warehouse_role'],
   components: { Treeselect },
   computed: {
+    /** 列表启停开关：需编辑权限 */
+    canChangeUserStatus() {
+      return checkPermi(['system:user:edit']);
+    },
+    /** 新增/修改弹窗提交：新增需 add，修改需 edit */
+    canSubmitUserForm() {
+      if (!this.open) {
+        return false;
+      }
+      const uid = this.form && this.form.userId;
+      if (uid == null || uid === undefined || uid === '') {
+        return checkPermi(['system:user:add']);
+      }
+      return checkPermi(['system:user:edit']);
+    },
     /** 科室筛选 */
     filteredDepartmentOptions() {
       const keyword = (this.departmentKeyword || "").trim();
@@ -685,6 +728,10 @@ export default {
         rows: [],
         columns: []
       },
+      /** 仅列无 sys_user_post 的用户 */
+      onlyWithoutWorkgroup: false,
+      batchWorkgroupOpen: false,
+      batchPostId: undefined
     };
   },
   watch: {
@@ -707,12 +754,41 @@ export default {
     /** 查询用户列表 */
     getList() {
       this.loading = true;
-      listUser(this.addDateRange(this.queryParams, this.dateRange)).then(response => {
+      const q = { ...this.queryParams };
+      if (this.onlyWithoutWorkgroup) {
+        q.withoutWorkgroup = true;
+      }
+      listUser(this.addDateRange(q, this.dateRange)).then(response => {
           this.userList = response.rows;
           this.total = response.total;
           this.loading = false;
         }
       );
+    },
+    /** 打开批量设置工作组 */
+    openBatchWorkgroup() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先勾选要设置的用户");
+        return;
+      }
+      this.batchPostId = undefined;
+      this.batchWorkgroupOpen = true;
+    },
+    /** 提交批量设置工作组 */
+    submitBatchWorkgroup() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先勾选用户");
+        return;
+      }
+      if (this.batchPostId == null || this.batchPostId === "") {
+        this.$modal.msgWarning("请选择工作组");
+        return;
+      }
+      batchSetUserWorkgroup({ userIds: this.ids, postId: this.batchPostId }).then(() => {
+        this.$modal.msgSuccess("批量设置成功");
+        this.batchWorkgroupOpen = false;
+        this.getList();
+      });
     },
     /** 仓库全选 */
     handleCheckAllChange(val) {
@@ -1002,6 +1078,7 @@ export default {
     },
     // 工作组行点击事件（耗材：按 sys_user_post 筛选，不能用 deptId）
     handleWorkgroupRowClick(row) {
+      this.onlyWithoutWorkgroup = false;
       this.currentWorkgroupId = row.postId;
       this.queryParams.sysPostId = row.postId;
       this.queryParams.deptId = undefined;
@@ -1012,6 +1089,14 @@ export default {
       this.currentWorkgroupId = undefined;
       this.queryParams.sysPostId = undefined;
       this.queryParams.deptId = undefined;
+      this.handleQuery();
+    },
+    /** 勾选「仅无工作组」时与左侧工作组筛选互斥，避免条件矛盾 */
+    onOnlyWithoutWorkgroupChange(val) {
+      if (val) {
+        this.queryParams.sysPostId = undefined;
+        this.currentWorkgroupId = undefined;
+      }
       this.handleQuery();
     },
     // 工作组行样式类名
@@ -1037,6 +1122,10 @@ export default {
     },
     // 用户状态修改
     handleStatusChange(row) {
+      if (!checkPermi(['system:user:edit'])) {
+        row.status = row.status === "0" ? "1" : "0";
+        return;
+      }
       let text = row.status === "0" ? "启用" : "停用";
       this.$modal.confirm('确认要"' + text + '""' + row.userName + '"用户吗？').then(function() {
         return changeUserStatus(row.userId, row.status);
@@ -1089,6 +1178,7 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.deptId = undefined;
       this.queryParams.sysPostId = undefined;
+      this.onlyWithoutWorkgroup = false;
       this.currentWorkgroupId = undefined;
       this.handleQuery();
     },
@@ -1285,9 +1375,11 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('system/user/export', {
-        ...this.queryParams
-      }, `user_${new Date().getTime()}.xlsx`)
+      const q = { ...this.queryParams };
+      if (this.onlyWithoutWorkgroup) {
+        q.withoutWorkgroup = true;
+      }
+      this.download('system/user/export', q, `user_${new Date().getTime()}.xlsx`)
     },
     /** 更新用户名称简码 */
     handleUpdateReferred() {
