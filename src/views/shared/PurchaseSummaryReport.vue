@@ -37,7 +37,7 @@
         </div>
       </div>
       <div class="report-meta">
-        <span>填报科室（章）：药剂科</span>
+        <span>填报科室（章）：{{ tenantDisplayName }}</span>
         <span>填报日期：{{ reportDate }}</span>
       </div>
       <div class="table-scroll">
@@ -114,7 +114,7 @@
           </div>
         </div>
         <div class="report-meta">
-          <span>填报科室（章）：药剂科</span>
+          <span>填报科室（章）：{{ tenantDisplayName }}</span>
           <span>填报日期：{{ reportDate }}</span>
         </div>
         <div class="table-scroll">
@@ -157,6 +157,7 @@
 <script>
 import { listRTHWarehouse } from "@/api/warehouse/warehouse";
 import { listCTKWarehouse } from "@/api/warehouse/outWarehouse";
+import { listPurInventory } from "@/api/warehouse/purInventory";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
@@ -276,18 +277,10 @@ export default {
       return q;
     },
     async fetchAllRows(fetchFn, query) {
-      const all = [];
-      let pageNum = 1;
-      const pageSize = 500;
-      while (true) {
-        const resp = await fetchFn({ ...query, pageNum, pageSize });
-        const rows = Array.isArray(resp?.rows) ? resp.rows : [];
-        all.push(...rows);
-        const total = this.toNum(resp?.total);
-        if (!rows.length || all.length >= total || rows.length < pageSize) break;
-        pageNum += 1;
-      }
-      return all;
+      // 历史接口分页存在已知问题（总数与二次分页不一致），循环翻页会漏数。
+      // 报表改为一次性大页拉取再聚合，保证与实际业务数据一致。
+      const resp = await fetchFn({ ...query, pageNum: 1, pageSize: 100000 });
+      return Array.isArray(resp?.rows) ? resp.rows : [];
     },
     calcInAmt(row) {
       const amt = this.toNum(row.materialAmt);
@@ -310,6 +303,20 @@ export default {
         "未维护供应商"
       );
     },
+    async fetchSupplierUniverseByEndDate(query) {
+      const endOnlyQuery = {
+        ...query,
+        beginDate: null,
+        endDate: query.endDate || this.defaultEndDateTime(),
+      };
+      const rows = await this.fetchAllRows(listPurInventory, endOnlyQuery);
+      const names = new Set();
+      rows.forEach((r) => {
+        const name = this.pickSupplier(r);
+        if (name) names.add(String(name));
+      });
+      return names;
+    },
     async loadReport() {
       this.loading = true;
       try {
@@ -325,12 +332,18 @@ export default {
         const historyOutPromise = beforeBegin
           ? this.fetchAllRows(listCTKWarehouse, { ...q, beginDate: null, endDate: `${beforeBegin} 23:59:59` })
           : Promise.resolve([]);
+        // 供应商全集：按“截止结束时间”的库存明细取供应商集合，避免仅按本期发生导致供应商缺失
+        // 指定供应商查询时，RTH/CTK 已按 supplerId 过滤，此处不再扩大集合。
+        const universePromise = q.supplerId == null
+          ? this.fetchSupplierUniverseByEndDate(q)
+          : Promise.resolve(new Set());
 
-        const [curIn, curOut, hisIn, hisOut] = await Promise.all([
+        const [curIn, curOut, hisIn, hisOut, supplierUniverse] = await Promise.all([
           currentInPromise,
           currentOutPromise,
           historyInPromise,
-          historyOutPromise
+          historyOutPromise,
+          universePromise
         ]);
 
         const map = new Map();
@@ -350,6 +363,7 @@ export default {
           return map.get(key);
         };
 
+        supplierUniverse.forEach((name) => ensure(name));
         hisIn.forEach((r) => {
           const item = ensure(this.pickSupplier(r));
           item.lastMonthBalance += this.calcInAmt(r);
@@ -384,7 +398,7 @@ export default {
             return acc;
           },
           {
-            supplierName: "",
+            supplierName: "合计",
             lastMonthBalance: 0,
             monthInAmount: 0,
             totalAmount: 0,
@@ -441,7 +455,7 @@ export default {
 
         ws.mergeCells("A2:D2");
         ws.mergeCells("E2:H2");
-        ws.getCell("A2").value = `填报科室（章）：药剂科`;
+        ws.getCell("A2").value = `填报科室（章）：${this.tenantDisplayName}`;
         ws.getCell("E2").value = `填报日期：${this.reportDate || this.fmtDate(new Date())}`;
         ws.getCell("A2").alignment = { vertical: "middle", horizontal: "left" };
         ws.getCell("E2").alignment = { vertical: "middle", horizontal: "right" };
@@ -514,12 +528,20 @@ export default {
   height: calc(100vh - 170px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
 }
 .report-title { text-align: center; font-size: 30px; font-weight: 700; margin-bottom: 10px; }
-.query-container { background: #fff; border: 1px solid #ebeef5; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; }
+.query-container {
+  display: block !important;
+  visibility: visible !important;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
 .query-form { margin-bottom: 6px; }
-.query-actions { display: flex; gap: 8px; align-items: center; }
+.query-actions { display: flex !important; gap: 8px; align-items: center; }
 .report-meta { display: flex; justify-content: space-between; margin: 8px 4px 12px; font-size: 16px; }
 .report-footer { display: flex; justify-content: space-between; margin-top: 10px; padding: 0 4px; font-size: 16px; flex-shrink: 0; }
 .table-scroll { width: 100%; overflow-x: auto; overflow-y: auto; flex: 1; min-height: 280px; }
