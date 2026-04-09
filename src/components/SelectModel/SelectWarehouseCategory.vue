@@ -3,7 +3,7 @@
              filterable
              :filter-method="filterMethod"
              clearable
-             placeholder="编码/名称/简码搜索"
+             :placeholder="placeholder || '编码/名称/简码搜索'"
              :disabled="value2"
   >
     <el-option
@@ -20,7 +20,7 @@ import { listWarehouseCategoryAll} from "@/api/foundation/warehouseCategory";
 import { pinyin } from "pinyin-pro";
 
 export default {
-  props: ['value','value2'],
+  props: ['value','value2','placeholder'],
   data() {
     return {
       // 库房分类选项

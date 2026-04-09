@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="navbar">
     <hamburger id="hamburger-container" :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
 
@@ -90,7 +90,7 @@
 
       <el-dropdown class="avatar-container right-menu-item hover-effect" trigger="click">
         <div class="avatar-wrapper">
-          <img :src="avatar" class="user-avatar">
+          <span class="user-nickname">{{ nickName || name }}</span>
           <i class="el-icon-caret-bottom" />
         </div>
         <el-dropdown-menu slot="dropdown">
@@ -212,7 +212,9 @@ export default {
     ...mapGetters([
       'sidebar',
       'avatar',
-      'device'
+      'device',
+      'name',
+      'nickName'
     ]),
     setting: {
       get() {
@@ -240,7 +242,7 @@ export default {
       this.$store.dispatch('app/toggleSideBar')
     },
     async logout() {
-      this.$confirm('确定注销并退出系统吗？', '提示', {
+      this.$confirm('确定退出当前账户吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -374,19 +376,27 @@ export default {
       .avatar-wrapper {
         margin-top: 5px;
         position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
 
-        .user-avatar {
+        .user-nickname {
+          max-width: 160px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 14px;
+          color: #303133;
+          line-height: 40px;
           cursor: pointer;
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
         }
 
         .el-icon-caret-bottom {
           cursor: pointer;
-          position: absolute;
-          right: -20px;
-          top: 25px;
+          position: relative;
+          right: auto;
+          top: auto;
           font-size: 12px;
         }
       }
