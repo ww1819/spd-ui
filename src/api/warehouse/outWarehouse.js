@@ -70,6 +70,15 @@ export function listCTKWarehouseSummary(query) {
   })
 }
 
+// 采购汇总报表（按供应商）
+export function listPurchaseSummaryBySupplier(query) {
+  return request({
+    url: '/warehouse/rthWarehouse/purchaseSummaryBySupplier',
+    method: 'get',
+    params: query
+  })
+}
+
 
 export function createCkEntriesByRkApply(data) {
   return request({

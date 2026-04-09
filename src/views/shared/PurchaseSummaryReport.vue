@@ -26,7 +26,15 @@
             <SelectWarehouse v-model="searchForm.warehouseId" clearable />
           </el-form-item>
           <el-form-item label="供应商">
-            <SelectSupplier v-model="searchForm.supplerId" clearable />
+            <el-input
+              v-model="searchForm.supplierKeyword"
+              clearable
+              placeholder="名称/编码/简码"
+              style="width: 220px"
+            />
+          </el-form-item>
+          <el-form-item>
+            <el-checkbox v-model="searchForm.excludeZeroNoBiz">过滤上期=0且无入出库</el-checkbox>
           </el-form-item>
         </el-form>
         <div class="query-actions">
@@ -103,7 +111,15 @@
               <SelectWarehouse v-model="searchForm.warehouseId" clearable />
             </el-form-item>
             <el-form-item label="供应商">
-              <SelectSupplier v-model="searchForm.supplerId" clearable />
+              <el-input
+                v-model="searchForm.supplierKeyword"
+                clearable
+                placeholder="名称/编码/简码"
+                style="width: 220px"
+              />
+            </el-form-item>
+            <el-form-item>
+              <el-checkbox v-model="searchForm.excludeZeroNoBiz">过滤上期=0且无入出库</el-checkbox>
             </el-form-item>
           </el-form>
           <div class="query-actions">
@@ -155,17 +171,14 @@
 </template>
 
 <script>
-import { listRTHWarehouse } from "@/api/warehouse/warehouse";
-import { listCTKWarehouse } from "@/api/warehouse/outWarehouse";
-import { listPurInventory } from "@/api/warehouse/purInventory";
+import { listPurchaseSummaryBySupplier } from "@/api/warehouse/outWarehouse";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
-import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 
 export default {
   name: "PurchaseSummaryReport",
-  components: { SelectWarehouse, SelectSupplier },
+  components: { SelectWarehouse },
   props: {
     visible: { type: Boolean, default: false },
     queryParams: { type: Object, default: () => ({}) },
@@ -182,7 +195,8 @@ export default {
         beginDate: "",
         endDate: "",
         warehouseId: null,
-        supplerId: null,
+        supplierKeyword: "",
+        excludeZeroNoBiz: false,
       },
     };
   },
@@ -233,7 +247,8 @@ export default {
       this.searchForm.beginDate = q.beginDate ? String(q.beginDate) : this.defaultBeginDateTime();
       this.searchForm.endDate = q.endDate ? String(q.endDate) : this.defaultEndDateTime();
       this.searchForm.warehouseId = q.warehouseId != null ? q.warehouseId : null;
-      this.searchForm.supplerId = q.supplerId != null ? q.supplerId : null;
+      this.searchForm.supplierKeyword = q.supplierKeyword ? String(q.supplierKeyword) : "";
+      this.searchForm.excludeZeroNoBiz = q.excludeZeroNoBiz === 1 || q.excludeZeroNoBiz === true;
     },
     handleQuery() {
       this.loadReport();
@@ -242,7 +257,8 @@ export default {
       this.searchForm.beginDate = this.defaultBeginDateTime();
       this.searchForm.endDate = this.defaultEndDateTime();
       this.searchForm.warehouseId = null;
-      this.searchForm.supplerId = null;
+      this.searchForm.supplierKeyword = "";
+      this.searchForm.excludeZeroNoBiz = false;
       this.loadReport();
     },
     toNum(v) {
@@ -268,19 +284,15 @@ export default {
       q.beginDate = this.searchForm.beginDate || this.defaultBeginDateTime();
       q.endDate = this.searchForm.endDate || this.defaultEndDateTime();
       q.warehouseId = this.searchForm.warehouseId != null ? this.searchForm.warehouseId : null;
-      q.supplerId = this.searchForm.supplerId != null ? this.searchForm.supplerId : null;
+      q.supplerId = null;
+      q.supplierKeyword = this.searchForm.supplierKeyword ? String(this.searchForm.supplierKeyword).trim() : null;
+      q.excludeZeroNoBiz = this.searchForm.excludeZeroNoBiz ? 1 : 0;
       if (String(q.beginDate).length === 10) q.beginDate = `${q.beginDate} 00:00:00`;
       if (String(q.endDate).length === 10) q.endDate = `${q.endDate} 23:59:59`;
       Object.keys(q).forEach((k) => {
         if (q[k] === "") q[k] = null;
       });
       return q;
-    },
-    async fetchAllRows(fetchFn, query) {
-      // 历史接口分页存在已知问题（总数与二次分页不一致），循环翻页会漏数。
-      // 报表改为一次性大页拉取再聚合，保证与实际业务数据一致。
-      const resp = await fetchFn({ ...query, pageNum: 1, pageSize: 100000 });
-      return Array.isArray(resp?.rows) ? resp.rows : [];
     },
     calcInAmt(row) {
       const amt = this.toNum(row.materialAmt);
@@ -303,88 +315,25 @@ export default {
         "未维护供应商"
       );
     },
-    async fetchSupplierUniverseByEndDate(query) {
-      const endOnlyQuery = {
-        ...query,
-        beginDate: null,
-        endDate: query.endDate || this.defaultEndDateTime(),
-      };
-      const rows = await this.fetchAllRows(listPurInventory, endOnlyQuery);
-      const names = new Set();
-      rows.forEach((r) => {
-        const name = this.pickSupplier(r);
-        if (name) names.add(String(name));
-      });
-      return names;
-    },
     async loadReport() {
       this.loading = true;
       try {
         const q = this.normalizeQuery();
-        const begin = q.beginDate ? String(q.beginDate).slice(0, 10) : null;
-        const beforeBegin = begin ? this.prevDay(begin) : null;
-
-        const currentInPromise = this.fetchAllRows(listRTHWarehouse, q);
-        const currentOutPromise = this.fetchAllRows(listCTKWarehouse, q);
-        const historyInPromise = beforeBegin
-          ? this.fetchAllRows(listRTHWarehouse, { ...q, beginDate: null, endDate: `${beforeBegin} 23:59:59` })
-          : Promise.resolve([]);
-        const historyOutPromise = beforeBegin
-          ? this.fetchAllRows(listCTKWarehouse, { ...q, beginDate: null, endDate: `${beforeBegin} 23:59:59` })
-          : Promise.resolve([]);
-        // 供应商全集：按“截止结束时间”的库存明细取供应商集合，避免仅按本期发生导致供应商缺失
-        // 指定供应商查询时，RTH/CTK 已按 supplerId 过滤，此处不再扩大集合。
-        const universePromise = q.supplerId == null
-          ? this.fetchSupplierUniverseByEndDate(q)
-          : Promise.resolve(new Set());
-
-        const [curIn, curOut, hisIn, hisOut, supplierUniverse] = await Promise.all([
-          currentInPromise,
-          currentOutPromise,
-          historyInPromise,
-          historyOutPromise,
-          universePromise
-        ]);
-
-        const map = new Map();
-        const ensure = (name) => {
-          const key = String(name || "未维护供应商");
-          if (!map.has(key)) {
-            map.set(key, {
-              supplierName: key,
-              lastMonthBalance: 0,
-              monthInAmount: 0,
-              totalAmount: 0,
-              spdStockAmount: 0,
-              monthOutAmount: 0,
-              remark: ""
-            });
-          }
-          return map.get(key);
-        };
-
-        supplierUniverse.forEach((name) => ensure(name));
-        hisIn.forEach((r) => {
-          const item = ensure(this.pickSupplier(r));
-          item.lastMonthBalance += this.calcInAmt(r);
-        });
-        hisOut.forEach((r) => {
-          const item = ensure(this.pickSupplier(r));
-          item.lastMonthBalance -= this.calcOutAmt(r);
-        });
-        curIn.forEach((r) => {
-          const item = ensure(this.pickSupplier(r));
-          item.monthInAmount += this.calcInAmt(r);
-        });
-        curOut.forEach((r) => {
-          const item = ensure(this.pickSupplier(r));
-          item.monthOutAmount += this.calcOutAmt(r);
-        });
-
-        const rows = Array.from(map.values()).map((r) => {
-          const totalAmount = r.lastMonthBalance + r.monthInAmount;
-          const spdStockAmount = totalAmount - r.monthOutAmount;
-          return { ...r, totalAmount, spdStockAmount };
+        const backendRows = await listPurchaseSummaryBySupplier(q);
+        const rows = (Array.isArray(backendRows) ? backendRows : []).map((r) => {
+          const lastMonthBalance = this.toNum(r.lastMonthBalance);
+          const monthInAmount = this.toNum(r.monthInAmount);
+          const monthOutAmount = this.toNum(r.monthOutAmount);
+          const spdStockAmount = this.toNum(r.spdStockAmount);
+          return {
+            supplierName: r.supplierName || "未维护供应商",
+            lastMonthBalance,
+            monthInAmount,
+            totalAmount: lastMonthBalance + monthInAmount,
+            spdStockAmount,
+            monthOutAmount,
+            remark: ""
+          };
         });
         rows.sort((a, b) => b.totalAmount - a.totalAmount);
 
