@@ -167,7 +167,7 @@
           :total="total"
           :page.sync="queryParams.pageNum"
           :limit.sync="queryParams.pageSize"
-          @pagination="getList"
+          @pagination="handlePagination"
         />
       </div>
 
@@ -286,6 +286,7 @@ export default {
     DialogComponentShow(newVal) {
       this.show = newVal;
       if (newVal) {
+        this.queryParams.pageNum = 1;
         // 弹窗打开时更新仓库/科室并重新加载数据
         if (this.useDepInventory) {
           this.queryParams.departmentId = this.departmentValue;
@@ -322,6 +323,12 @@ export default {
     // this.getList();
   },
   methods: {
+    /** 分页组件回调：与后端分页参数同步后再拉数，避免 total 与当前页条数不一致 */
+    handlePagination({ page, limit }) {
+      if (page != null) this.queryParams.pageNum = page;
+      if (limit != null) this.queryParams.pageSize = limit;
+      this.getList();
+    },
     /** 加载定数监测的产品列表 */
     loadFixedNumberMaterials(warehouseId) {
       if (!warehouseId) {
@@ -407,6 +414,12 @@ export default {
           const rows = Array.isArray(response.rows)
             ? response.rows
             : (response.data && Array.isArray(response.data.rows) ? response.data.rows : []);
+          const totalVal =
+            response.total !== undefined && response.total !== null
+              ? response.total
+              : (response.data && response.data.total !== undefined && response.data.total !== null
+                ? response.data.total
+                : null);
           const materialList = rows.map(row => {
             const material = {
               id: row.materialId,
@@ -433,7 +446,7 @@ export default {
             };
           });
           this.materialList = materialList.slice();
-          this.total = this.materialList.length;
+          this.total = totalVal != null ? Number(totalVal) : materialList.length;
           this.loading = false;
         }).catch(() => {
           this.loading = false;
