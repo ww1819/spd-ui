@@ -4,7 +4,7 @@
              filterable
              :filter-method="filterMethod"
              clearable
-             placeholder="编码/名称/简码搜索"
+             :placeholder="placeholder || '编码/名称/简码搜索'"
              :disabled="value2"
   >
     <el-option
@@ -32,7 +32,7 @@ import { pinyin } from "pinyin-pro";
 
 export default {
   // props: ['value','size'],
-  props: ['value','value2'],
+  props: ['value','value2','placeholder'],
   data() {
     return {
       // 财务分类选项

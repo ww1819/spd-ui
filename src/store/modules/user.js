@@ -5,6 +5,7 @@ const user = {
   state: {
     token: getToken(),
     name: '',
+    nickName: '',
     userId: '',
     avatar: '',
     roles: [],
@@ -26,6 +27,9 @@ const user = {
     },
     SET_NAME: (state, name) => {
       state.name = name
+    },
+    SET_NICK_NAME: (state, nickName) => {
+      state.nickName = nickName
     },
     SET_ID: (state, userId) => {
       state.userId = userId
@@ -83,6 +87,7 @@ const user = {
             commit('SET_PERMISSIONS', Array.isArray(res.permissions) ? res.permissions : [...res.permissions])
           }
           commit('SET_NAME', user.userName)
+          commit('SET_NICK_NAME', user.nickName || user.userName)
           commit('SET_ID', user.userId)
           commit('SET_AVATAR', avatar)
           if (res.tenant) {

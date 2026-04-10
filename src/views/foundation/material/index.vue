@@ -15,7 +15,7 @@
           <el-form-item prop="name" class="query-item-inline">
             <el-input
               v-model="queryParams.name"
-                  placeholder="支持名称/编码/首字母搜索"
+                  placeholder="耗材名称"
               clearable
               @keyup.enter.native="handleQuery"
                   style="width: 150px"
@@ -25,7 +25,7 @@
           <el-form-item prop="udiNo" class="query-item-inline">
             <el-input
               v-model="queryParams.udiNo"
-              placeholder="UDI码（支持模糊查询）"
+              placeholder="UDI"
               clearable
               @keyup.enter.native="handleQuery"
                   style="width: 150px"
@@ -54,8 +54,18 @@
 
           <el-form-item prop="factoryId" class="query-item-inline">
             <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
-              <SelectFactory v-model="queryParams.factoryId"/>
+              <SelectFactory v-model="queryParams.factoryId" placeholder="生产厂家"/>
             </div>
+          </el-form-item>
+
+          <el-form-item prop="speci" class="query-item-inline">
+            <el-input
+              v-model="queryParams.speci"
+              placeholder="规格"
+              clearable
+              @keyup.enter.native="handleQuery"
+              style="width: 150px"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -84,13 +94,13 @@
 
               <el-form-item prop="storeroomId" class="query-item-inline">
                 <div class="query-select-wrapper query-select-wrapper-small" style="width: 100px !important;">
-                  <SelectWarehouseCategory v-model="queryParams.storeroomId" style="width: 100%"/>
+                  <SelectWarehouseCategory v-model="queryParams.storeroomId" placeholder="库房分类" style="width: 100%"/>
                 </div>
               </el-form-item>
 
               <el-form-item prop="financeCategoryId" class="query-item-inline">
                 <div class="query-select-wrapper query-select-wrapper-small" style="width: 100px !important;">
-                  <SelectFinanceCategory v-model="queryParams.financeCategoryId" style="width: 100%"/>
+                  <SelectFinanceCategory v-model="queryParams.financeCategoryId" placeholder="财务分类" style="width: 100%"/>
                 </div>
               </el-form-item>
 
@@ -105,7 +115,7 @@
           <el-row class="query-row-fourth">
             <el-col :span="24">
           <el-form-item prop="isUse" class="query-item-inline">
-            <el-select v-model="queryParams.isUse" placeholder="启停用状态" style="width: 110px" clearable>
+            <el-select v-model="queryParams.isUse" placeholder="启用" style="width: 110px" clearable>
               <el-option
                 v-for="dict in dict.type.is_use_status"
                 :key="dict.value"
@@ -237,60 +247,60 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="left" prop="code" width="160" key="code" v-if="columns[1].visible" resizable class-name="material-top-cell">
+      <el-table-column label="耗材编码" align="center" prop="code" width="100" key="code" v-if="columns[1].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left">{{ scope.row.code }}</div>
+          <div class="material-cell-top-left" :title="scope.row.code || ''">{{ scope.row.code }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="耗材名称" align="left" prop="name" width="240" key="name" v-if="columns[2].visible" resizable class-name="material-top-cell">
+      <el-table-column label="耗材名称" align="center" prop="name" width="240" key="name" v-if="columns[2].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left">{{ scope.row.name }}</div>
+          <div class="material-cell-top-left" :title="scope.row.name || ''">{{ scope.row.name }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="规格" align="left" prop="speci" width="200" key="speci" v-if="columns[3].visible" resizable class-name="material-top-cell">
+      <el-table-column label="规格" align="center" prop="speci" width="200" key="speci" v-if="columns[3].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left">{{ scope.row.speci }}</div>
+          <div class="material-cell-top-left" :title="scope.row.speci || ''">{{ scope.row.speci }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="型号" align="left" prop="model" width="200" key="model" v-if="columns[4].visible" resizable class-name="material-top-cell">
+      <el-table-column label="价格" align="center" prop="price" width="130" key="price" v-if="columns[5].visible" resizable class-name="material-price-cell cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left">{{ scope.row.model }}</div>
+          <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.price) || '')">{{ formatPrice4(scope.row.price) }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="医保编码" align="left" prop="medicalNo" width="190" key="medicalNo" v-if="columns[23].visible" resizable class-name="material-top-cell">
+      <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" show-overflow-tooltip resizable class-name="cell-pad-tight"/>
+      <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="220" key="factory" v-if="columns[7].visible" resizable class-name="material-top-cell">
         <template slot-scope="scope">
-          <div class="material-cell-top-left">{{ scope.row.medicalNo }}</div>
+          <div class="material-cell-top-left" :title="(scope.row.fdFactory && scope.row.fdFactory.factoryName) ? scope.row.fdFactory.factoryName : ''">{{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '' }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="注册证号" align="left" prop="registerNo" width="190" key="registerNo" v-if="columns[24].visible" resizable class-name="material-top-cell">
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="240" key="supplier" v-if="columns[8].visible" resizable class-name="material-top-cell">
         <template slot-scope="scope">
-          <div class="material-cell-top-left">{{ scope.row.registerNo }}</div>
+          <div class="material-cell-top-left" :title="(scope.row.supplier && scope.row.supplier.name) ? scope.row.supplier.name : ''">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '' }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="财务分类" align="left" prop="fdFinanceCategory.financeCategoryName" width="220" key="financeCategory" v-if="columns[25].visible" resizable class-name="material-top-cell">
+      <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" key="warehouseCategory" v-if="columns[9].visible" show-overflow-tooltip resizable/>
+      <el-table-column label="财务分类" align="center" prop="fdFinanceCategory.financeCategoryName" width="120" key="financeCategory" v-if="columns[25].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left">
+          <div class="material-cell-top-left" :title="(scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName) ? scope.row.fdFinanceCategory.financeCategoryName : ''">
             {{ scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName ? scope.row.fdFinanceCategory.financeCategoryName : '' }}
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="价格" align="right" prop="price" width="130" key="price" v-if="columns[5].visible" resizable class-name="material-price-cell">
+      <el-table-column label="注册证号" align="center" prop="registerNo" width="190" key="registerNo" v-if="columns[24].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-price-right">{{ formatPrice4(scope.row.price) }}</div>
+          <div class="material-cell-top-left" :title="scope.row.registerNo || ''">{{ scope.row.registerNo }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="生产厂家" align="left" prop="fdFactory.factoryName" width="220" key="factory" v-if="columns[7].visible" resizable class-name="material-top-cell">
+      <el-table-column label="医保编码" align="center" prop="medicalNo" width="190" key="medicalNo" v-if="columns[23].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left">{{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '' }}</div>
+          <div class="material-cell-top-left" :title="scope.row.medicalNo || ''">{{ scope.row.medicalNo }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="left" prop="supplier.name" width="240" key="supplier" v-if="columns[8].visible" resizable class-name="material-top-cell">
+      <el-table-column label="型号" align="center" prop="model" width="200" key="model" v-if="columns[4].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '' }}</div>
+          <div class="material-cell-top-left" :title="scope.row.model || ''">{{ scope.row.model }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" key="warehouseCategory" v-if="columns[9].visible" show-overflow-tooltip resizable/>
       <el-table-column label="储存方式" align="center" prop="isWay" width="100" key="storageMethod" v-if="columns[10].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.way_status" :value="scope.row.isWay"/>
@@ -1268,7 +1278,7 @@ export default {
         locationId: undefined,
         isFollow: '', // 默认全部
         isBilling: '', // 默认全部
-        isUse: '', // 默认全部（启停用状态）
+        isUse: '1', // 默认启用
         udiNo: undefined,
         registerNo: undefined,
         sunshineCode: undefined,
@@ -1582,7 +1592,7 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
-      this.queryParams.isUse = ''; // 重置为全部
+      this.queryParams.isUse = '1'; // 重置为启用
       this.queryParams.isGz = '';
       this.queryParams.isFollow = '';
       this.queryParams.isBilling = '';
@@ -2310,8 +2320,13 @@ export default {
 
 /* 减小查询条件表单项的内边距 */
 .form-fields-container .el-form-item {
-  margin-bottom: 8px !important;
+  margin-bottom: 6px !important;
   padding: 0 !important;
+}
+
+/* 末行不再额外撑高：底部留白由容器 padding-bottom 提供，保证与顶部一致 */
+.material-page-container .form-fields-container .el-row:last-child .el-form-item {
+  margin-bottom: 0 !important;
 }
 
 .form-fields-container .el-form-item__content {
@@ -2527,10 +2542,13 @@ export default {
   padding-bottom: 8px !important;
 }
 
-/* 翻页上移、底部不留白 */
+/* 翻页：更贴近表格（覆盖 Pagination 组件默认 padding: 32px 16px） */
 .material-page-container .pagination-container {
-  margin-top: 4px !important;
+  margin-top: 0 !important;
   margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  transform: translateY(-6px);
 }
 
 /* 查询容器样式 */
@@ -2539,16 +2557,66 @@ export default {
   margin-bottom: 16px;
 }
 
+/* 表格列内容强制单行显示（不换行），超出省略号 + tooltip */
+.material-page-container .el-table .cell {
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.material-page-container .el-table th .cell {
+  white-space: nowrap !important;
+}
+
+/* 某些列单元格里可能嵌套了 span/div，这里也强制不换行（解决“生产厂家仍换行”） */
+.material-page-container .el-table .cell * {
+  white-space: nowrap !important;
+}
+
+/* 行高统一，确保「序号」与「耗材编码」视觉同一行 */
+.material-page-container .el-table td,
+.material-page-container .el-table th {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+.material-page-container .el-table td .cell,
+.material-page-container .el-table th .cell {
+  line-height: 22px !important;
+}
+
+/* 让单元格内容垂直居中（参考「序号」列的观感） */
+.material-page-container .el-table td .cell {
+  display: flex;
+  align-items: center;
+  min-height: 22px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.material-page-container .el-table td .cell > * {
+  min-width: 0; /* 配合省略号 */
+}
+
 /* 查询条件容器框样式：左右内边距 8px，容器更宽 */
 .form-fields-container {
   background: #F5F7FA;
-  padding: 12px 8px;
+  padding: 8px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
   border: 1px solid #DCDFE6;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* 顶部查询条件：框内上下对齐（内容区统一居中） */
+.material-page-container .form-fields-container .el-form-item__content {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+.material-page-container .form-fields-container .el-form-item__label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
 }
 
 /* 图片容器样式 */
@@ -2715,29 +2783,59 @@ export default {
 <style>
 /* 非scoped样式，确保弹窗宽度生效 */
 .material-cell-top-left {
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  text-align: left;
-  vertical-align: top;
-  line-height: 1.4;
+  /* 列表单元格：强制单行 + 省略号（避免“生产厂家”等列换行） */
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  line-height: 22px;
+  width: 100%;
+  box-sizing: border-box;
+  /* 兜底：有些列使用自定义 div 渲染，强制垂直居中 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .material-cell-price-right {
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  text-align: right;
-  vertical-align: top;
-  line-height: 1.4;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  line-height: 22px;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .material-top-cell {
-  vertical-align: top !important;
+  vertical-align: middle !important;
 }
 
 .material-price-cell {
-  vertical-align: top !important;
+  vertical-align: middle !important;
+}
+
+/* 兜底：整表单元格垂直居中（避免某些列仍“偏上”） */
+.material-page-container .el-table td {
+  vertical-align: middle !important;
+}
+
+/* 列间距：默认更舒展；按列单独收紧（cell-pad-tight） */
+.material-page-container .el-table th .cell,
+.material-page-container .el-table td .cell {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+.material-page-container .el-table .cell-pad-tight .cell {
+  padding-left: 4px !important;
+  padding-right: 4px !important;
 }
 
 .material-modal-content .el-input__inner,
