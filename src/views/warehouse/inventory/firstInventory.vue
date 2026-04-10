@@ -179,16 +179,15 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="入库批次号" align="center" prop="batchNo" width="220" resizable>
+      <el-table-column key="batchNo" label="入库批次号" align="center" prop="batchNo" width="220" resizable v-if="columns[12].visible">
         <template slot-scope="scope">
           <span class="batch-no-text">{{ scope.row.batchNo || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
+      <el-table-column key="materialNo" label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable v-if="columns[13].visible"/>
       <el-table-column label="主条码" align="center" prop="mainBarcode" width="140" show-overflow-tooltip resizable/>
       <el-table-column label="辅条码" align="center" prop="subBarcode" width="140" show-overflow-tooltip resizable/>
-      <el-table-column label="生产日期" align="center" prop="beginTime" width="160" show-overflow-tooltip resizable>
+      <el-table-column key="beginTime" label="生产日期" align="center" prop="beginTime" width="160" show-overflow-tooltip resizable v-if="columns[14].visible">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
         </template>
@@ -340,8 +339,8 @@ export default {
         { key: 9, label: '单位', visible: true },
         { key: 10, label: '库存数量', visible: true },
         { key: 11, label: '金额', visible: true },
-        { key: 12, label: '批次号', visible: true },
-        { key: 13, label: '批号', visible: true },
+        { key: 12, label: '入库批次号', visible: true },
+        { key: 13, label: '耗材批次号', visible: true },
         { key: 14, label: '生产日期', visible: true },
         { key: 15, label: '有效期', visible: true },
         { key: 16, label: '注册证号', visible: true },
