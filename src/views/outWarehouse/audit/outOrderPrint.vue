@@ -52,21 +52,20 @@
         </thead>
         <tbody>
           <tr v-for="(item, idx) in detailPage" :key="`${pageIndex}-${idx}`">
-            <td>{{ item.materialName || '' }}</td>
+            <td class="cell-name-batch"><span class="print-line-clamp-2">{{ item.materialName || '' }}</span></td>
             <td>{{ formatSpecModel(item) }}</td>
             <td>{{ formatNum(item.qty) }}</td>
             <td>{{ item.unitName || '' }}</td>
             <td>{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
             <td>{{ formatAmt(item.amt) }}</td>
             <td>{{ item.factoryName || '' }}</td>
-            <td>{{ item.batchNumber || '' }}</td>
+            <td class="cell-name-batch"><span class="print-line-clamp-2">{{ item.batchNumber || '' }}</span></td>
             <td>{{ formatValidDate(item.endTime || item.periodDate) }}</td>
           </tr>
-          <!-- 合计：与表同列网，采购价左/采购金额右竖线延伸至本行底横线；金额在采购价、采购金额列下方 -->
+          <!-- 合计：大写占前四列；小写金额横跨采购价、采购金额两列 -->
           <tr v-if="pageIndex === detailPages.length - 1" class="print-total-row">
             <td colspan="4" class="total-label-cell">合计: {{ row.totalAmtConverter || '' }}</td>
-            <td class="total-under-price"></td>
-            <td class="total-under-amt">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</td>
+            <td colspan="2" class="total-amt-span">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</td>
             <td colspan="3" class="total-tail-cells"></td>
           </tr>
         </tbody>
@@ -430,35 +429,27 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   overflow hidden
   text-overflow ellipsis
 
-.detail-table tbody td:nth-child(8)
+/* 名称、批号：td 保持 table-cell 以与整行底边对齐；两行截断在内层 span */
+.print-line-clamp-2
   display -webkit-box
   -webkit-box-orient vertical
   -webkit-line-clamp 2
   line-clamp 2
   overflow hidden
   word-break break-all
-  vertical-align top
-  /* 两行：约 2 * line-height（与表体 line-height 一致） */
-  max-height 2.7em
-
-/* 消耗品名称：最多两行，超出截断 */
-.detail-table tbody td:nth-child(1)
-  display -webkit-box
-  -webkit-box-orient vertical
-  -webkit-line-clamp 2
-  line-clamp 2
-  overflow hidden
-  word-break break-all
-  vertical-align top
-  max-height 2.7em
   white-space normal
 
-.detail-table tbody td:nth-child(2)
+.detail-table tbody tr:not(.print-total-row) td.cell-name-batch
+  vertical-align top
+  overflow hidden
+
+.detail-table tbody tr:not(.print-total-row) td:nth-child(2)
   white-space nowrap
   overflow hidden
   text-overflow clip
+  vertical-align top
 
-/* 合计行：与采购价(第5列)、采购金额(第6列)同列竖线，底边为合计横线 */
+/* 合计行：小写横跨采购价+采购金额两列 */
 .detail-table tbody tr.print-total-row td
   border 1px solid #000
   padding 4px 4px 6px
@@ -469,12 +460,10 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   text-align left
   font-weight normal
 
-.detail-table tbody tr.print-total-row td.total-under-price
-  text-align right
-
-.detail-table tbody tr.print-total-row td.total-under-amt
+.detail-table tbody tr.print-total-row td.total-amt-span
   text-align right
   font-weight normal
+  white-space nowrap
 
 .sign-block
   display flex
@@ -583,20 +572,14 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     padding-top 2px !important
     padding-bottom 2px !important
 
-  /* 消耗品名称：最多两行，超出截断 */
-  .detail-table tbody td:nth-child(1)
-    display -webkit-box !important
-    -webkit-box-orient vertical !important
-    -webkit-line-clamp 2 !important
-    line-clamp 2 !important
-    white-space normal !important
-    word-break break-all !important
-    overflow hidden !important
+  .detail-table tbody tr:not(.print-total-row) td:nth-child(2)
     vertical-align top !important
-    max-height 2.9em !important
 
-  /* 批号：最多两行 */
-  .detail-table tbody td:nth-child(8)
+  /* 名称、批号：内层两行截断，td 仍为单元格以便与整行底边框对齐 */
+  .detail-table tbody tr:not(.print-total-row) td.cell-name-batch
+    vertical-align top !important
+
+  .detail-table tbody tr:not(.print-total-row) .print-line-clamp-2
     display -webkit-box !important
     -webkit-box-orient vertical !important
     -webkit-line-clamp 2 !important
@@ -604,8 +587,6 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     white-space normal !important
     word-break break-all !important
     overflow hidden !important
-    vertical-align top !important
-    max-height 2.9em !important
 
   /* 有效期字号缩小 2 号 */
   .detail-table tbody td:nth-child(9)
@@ -635,6 +616,11 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     border 1px solid #000 !important
     font-size 14px !important
     line-height 1.45 !important
+
+  .detail-table tbody tr.print-total-row td.total-amt-span
+    text-align right !important
+    font-weight normal !important
+    white-space nowrap !important
 
   /* 每联底部签字 */
   .print-sign-footer-fixed
