@@ -72,24 +72,27 @@
         <el-button
           type="primary"
           size="small"
+          :disabled="single"
           @click="handleSyncWarehouse"
-          v-hasPermi="['system:post:sync']"
+          v-hasPermi="['system:post:edit', 'system:post:sync']"
         >同步仓库</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           type="primary"
           size="small"
+          :disabled="single"
           @click="handleSyncDepartment"
-          v-hasPermi="['system:post:sync']"
+          v-hasPermi="['system:post:edit', 'system:post:sync']"
         >同步科室</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           type="primary"
           size="small"
+          :disabled="single"
           @click="handleSyncMenu"
-          v-hasPermi="['system:post:sync']"
+          v-hasPermi="['system:post:edit', 'system:post:sync']"
         >同步菜单</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
@@ -181,7 +184,7 @@
       :closable="false"
       show-icon
       style="margin-bottom: 12px;"
-      title="此处保存的是工作组（岗位）权限；用户实际登录与按钮权限以「用户管理」中的用户菜单为准。修改工作组菜单后，请在列表勾选该工作组并点击「同步菜单」将菜单下发到组内用户，否则成员仍无对应按钮权限。"
+      title="此处保存的是工作组（岗位）权限；用户实际登录与按钮权限以「用户管理」中的用户菜单为准。列表勾选工作组后使用「同步菜单/科室/仓库」：仅将工作组已有而用户尚未拥有的权限补充给用户，不会移除用户原有权限。"
     />
     <el-tabs type="card">
       <el-tab-pane label="菜单权限">
@@ -467,7 +470,7 @@ export default {
           return;
         }
         
-        this.$modal.confirm(`是否确认将工作组的仓库权限同步到该工作组下的所有用户？`).then(() => {
+        this.$modal.confirm(`是否将工作组已配置的仓库权限中、各用户尚未拥有的部分补充到组内用户？（不删除用户已有仓库权限）`).then(() => {
           this.syncWarehouseToUsers(postId, warehouseIds);
         }).catch(() => {});
       }).catch(error => {
@@ -494,7 +497,7 @@ export default {
           return;
         }
         
-        this.$modal.confirm(`是否确认将工作组的科室权限同步到该工作组下的所有用户？`).then(() => {
+        this.$modal.confirm(`是否将工作组已配置的科室权限中、各用户尚未拥有的部分补充到组内用户？（不删除用户已有科室权限）`).then(() => {
           this.syncDepartmentToUsers(postId, departmentIds);
         }).catch(() => {});
       }).catch(error => {
@@ -527,7 +530,7 @@ export default {
         const allMenuIds = [...new Set([...menuIds, ...parentIds])];
         console.log('工作组菜单:', menuIds, '父级目录:', parentIds, '合并后:', allMenuIds);
         
-        this.$modal.confirm(`是否确认将工作组的菜单权限同步到该工作组下的所有用户？（包含${parentIds.length}个父级目录）`).then(() => {
+        this.$modal.confirm(`是否将工作组菜单（含${parentIds.length}个上级目录）中、各用户尚未拥有的菜单补充到组内用户？（不删除用户已有菜单权限）`).then(() => {
           this.syncMenuToUsers(postId, allMenuIds);
         }).catch(() => {});
       }).catch(error => {
@@ -572,6 +575,57 @@ export default {
       }
       return false;
     },
+    /**
+     * 用户详情接口将 postIds、roleIds、科室/仓库/菜单、workGroupIds 等放在响应根级，与 data 并列（与用户管理 handleUpdate 一致）。
+     * 同步时若仅用 data 内的字段，会得到 undefined 并误传空数组，从而清空 sys_user_post、角色及租户侧 sb_work_group_user。
+     */
+    pickUserAssociationsFromDetail(userResponse) {
+      const d = userResponse && userResponse.data ? userResponse.data : {};
+      const numArr = (a) => (Array.isArray(a) ? a.map(Number).filter(n => !isNaN(n)) : []);
+      const postIdsSrc = userResponse.postIds != null ? userResponse.postIds : d.postIds;
+      const roleIdsSrc = userResponse.roleIds != null ? userResponse.roleIds : d.roleIds;
+      const whSrc = userResponse.warehouseIds != null ? userResponse.warehouseIds : d.warehouseIds;
+      const deptSrc = userResponse.departmentIds != null ? userResponse.departmentIds : d.departmentIds;
+      const menuSrc = userResponse.menuIds != null ? userResponse.menuIds : d.menuIds;
+      const wgSrc = userResponse.workGroupIds != null ? userResponse.workGroupIds : d.workGroupIds;
+      return {
+        postIds: numArr(postIdsSrc),
+        roleIds: numArr(roleIdsSrc),
+        warehouseIds: numArr(whSrc),
+        departmentIds: numArr(deptSrc),
+        menuIds: Array.isArray(menuSrc) ? menuSrc.map(id => (id != null ? String(id) : '')).filter(s => s !== '') : [],
+        workGroupIds: Array.isArray(wgSrc) ? wgSrc.map(id => String(id)).filter(s => s !== '') : []
+      };
+    },
+    /** 仓库/科室：工作组相对用户的补集并入用户现有（去重，保留用户原有顺序） */
+    mergeNumericIdsBySupplement(userIds, groupIds) {
+      const u = (userIds || []).map(Number).filter(n => !isNaN(n));
+      const seen = new Set(u);
+      const add = [];
+      for (const x of groupIds || []) {
+        const n = Number(x);
+        if (!isNaN(n) && !seen.has(n)) {
+          seen.add(n);
+          add.push(n);
+        }
+      }
+      return u.concat(add);
+    },
+    /** 菜单：工作组相对用户的补集并入用户现有（字符串 ID，与耗材 sys_user_menu 一致） */
+    mergeMenuIdsBySupplement(userMenuIds, groupMenuIds) {
+      const norm = (id) => (id != null && String(id).trim() !== '' ? String(id) : null);
+      const u = (userMenuIds || []).map(norm).filter(Boolean);
+      const seen = new Set(u);
+      const add = [];
+      for (const g of groupMenuIds || []) {
+        const s = norm(g);
+        if (s && !seen.has(s)) {
+          seen.add(s);
+          add.push(s);
+        }
+      }
+      return u.concat(add);
+    },
     /** 获取工作组下的所有用户（与设备端一致：sys_user_post 关联，避免全量用户扫描） */
     getUsersByPostId(postId) {
       const postIdNum = Number(postId);
@@ -592,16 +646,20 @@ export default {
           return Promise.resolve(0);
         }
         
-        // 批量更新用户的菜单权限（替换模式：清除原有权限，使用工作组权限）
+        // 仅补充：工作组菜单（含父级）相对用户菜单的补集
         const updatePromises = users.map(userResponse => {
           const userData = userResponse.data;
+          const assoc = this.pickUserAssociationsFromDetail(userResponse);
+          const mergedMenuIds = this.mergeMenuIdsBySupplement(assoc.menuIds, menuIds);
           const payload = {
             ...userData,
             userId: userData.userId,
-            menuIds: menuIds,
-            postIds: userData.postIds || [],
-            departmentIds: userData.departmentIds || [],
-            warehouseIds: userData.warehouseIds || []
+            menuIds: mergedMenuIds,
+            postIds: assoc.postIds,
+            roleIds: assoc.roleIds,
+            departmentIds: assoc.departmentIds,
+            warehouseIds: assoc.warehouseIds,
+            workGroupIds: assoc.workGroupIds
           };
           return updateUser(payload);
         });
@@ -611,7 +669,7 @@ export default {
         });
       }).then(userCount => {
         if (userCount > 0) {
-          this.$modal.msgSuccess(`成功同步菜单权限到 ${userCount} 个用户`);
+          this.$modal.msgSuccess(`已为 ${userCount} 个用户补充菜单权限（保留用户原有菜单）`);
           this.getList();
         }
       }).catch(error => {
@@ -627,16 +685,19 @@ export default {
           return Promise.resolve(0);
         }
         
-        // 批量更新用户的仓库权限
         const updatePromises = users.map(userResponse => {
           const userData = userResponse.data;
+          const assoc = this.pickUserAssociationsFromDetail(userResponse);
+          const mergedWh = this.mergeNumericIdsBySupplement(assoc.warehouseIds, warehouseIds);
           const payload = {
             ...userData,
             userId: userData.userId,
-            warehouseIds: warehouseIds,
-            postIds: userData.postIds || [],
-            menuIds: userData.menuIds || [],
-            departmentIds: userData.departmentIds || []
+            warehouseIds: mergedWh,
+            postIds: assoc.postIds,
+            roleIds: assoc.roleIds,
+            menuIds: assoc.menuIds,
+            departmentIds: assoc.departmentIds,
+            workGroupIds: assoc.workGroupIds
           };
           return updateUser(payload);
         });
@@ -646,7 +707,7 @@ export default {
         });
       }).then(userCount => {
         if (userCount > 0) {
-          this.$modal.msgSuccess(`成功同步仓库权限到 ${userCount} 个用户`);
+          this.$modal.msgSuccess(`已为 ${userCount} 个用户补充仓库权限（保留用户原有仓库）`);
           this.getList();
         }
       }).catch(error => {
@@ -662,16 +723,19 @@ export default {
           return Promise.resolve(0);
         }
         
-        // 批量更新用户的科室权限
         const updatePromises = users.map(userResponse => {
           const userData = userResponse.data;
+          const assoc = this.pickUserAssociationsFromDetail(userResponse);
+          const mergedDept = this.mergeNumericIdsBySupplement(assoc.departmentIds, departmentIds);
           const payload = {
             ...userData,
             userId: userData.userId,
-            departmentIds: departmentIds,
-            postIds: userData.postIds || [],
-            menuIds: userData.menuIds || [],
-            warehouseIds: userData.warehouseIds || []
+            departmentIds: mergedDept,
+            postIds: assoc.postIds,
+            roleIds: assoc.roleIds,
+            menuIds: assoc.menuIds,
+            warehouseIds: assoc.warehouseIds,
+            workGroupIds: assoc.workGroupIds
           };
           return updateUser(payload);
         });
@@ -681,7 +745,7 @@ export default {
         });
       }).then(userCount => {
         if (userCount > 0) {
-          this.$modal.msgSuccess(`成功同步科室权限到 ${userCount} 个用户`);
+          this.$modal.msgSuccess(`已为 ${userCount} 个用户补充科室权限（保留用户原有科室）`);
           this.getList();
         }
       }).catch(error => {

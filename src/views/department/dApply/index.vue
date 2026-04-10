@@ -2002,10 +2002,18 @@ export default {
   margin-bottom: 8px !important;
 }
 
-/* 翻页底部不留空白 */
+/* 翻页：贴近表格；下方不留白 */
 .d-apply-page .pagination-bottom-wrap {
+  margin-top: 0 !important;
   margin-bottom: 0;
   padding-bottom: 0;
+  /* 避免 margin 折叠/组件内 padding 影响，强制整体上移 */
+  transform: translateY(-8px);
+}
+
+/* 覆盖全局 Pagination 组件默认 padding(32px 16px)，让翻页紧贴表格底部（需穿透子组件样式作用域） */
+::v-deep .d-apply-page .pagination-bottom-wrap .pagination-container {
+  padding: 0 !important;
 }
 
 /* 确保表格可以水平滚动和垂直滚动 */
@@ -2077,6 +2085,11 @@ export default {
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 0px !important;
+}
+
+/* 表格与翻页之间更紧凑 */
+.app-container.d-apply-page > .el-table {
+  margin-bottom: 1px;
 }
 
 .app-container.d-apply-page > .el-table th {

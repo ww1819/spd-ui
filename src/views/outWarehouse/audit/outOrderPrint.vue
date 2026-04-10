@@ -370,6 +370,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   margin-right auto
   font-family $font-song
 
+/* 消耗品名称 14%（最多两行截断）；产地 8% */
 .detail-table .col-name
   width 14%
 .detail-table .col-spec
@@ -383,9 +384,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .detail-table .col-amt
   width 13%
 .detail-table .col-origin
-  width 14%
-.detail-table .col-batch
   width 8%
+.detail-table .col-batch
+  width 13%
 .detail-table .col-exp
   width 8%
 
@@ -426,12 +427,35 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .detail-table tbody td:nth-child(7)
   white-space nowrap
+  overflow hidden
+  text-overflow ellipsis
 
-.detail-table tbody td:nth-child(1),
+.detail-table tbody td:nth-child(8)
+  display -webkit-box
+  -webkit-box-orient vertical
+  -webkit-line-clamp 2
+  line-clamp 2
+  overflow hidden
+  word-break break-all
+  vertical-align top
+  /* 两行：约 2 * line-height（与表体 line-height 一致） */
+  max-height 2.7em
+
+/* 消耗品名称：最多两行，超出截断 */
+.detail-table tbody td:nth-child(1)
+  display -webkit-box
+  -webkit-box-orient vertical
+  -webkit-line-clamp 2
+  line-clamp 2
+  overflow hidden
+  word-break break-all
+  vertical-align top
+  max-height 2.7em
+  white-space normal
+
 .detail-table tbody td:nth-child(2)
   white-space nowrap
   overflow hidden
-  text-overflow clip
   text-overflow clip
 
 /* 合计行：与采购价(第5列)、采购金额(第6列)同列竖线，底边为合计横线 */
@@ -559,17 +583,29 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     padding-top 2px !important
     padding-bottom 2px !important
 
-  /* 名称只显示一行，不换行 */
+  /* 消耗品名称：最多两行，超出截断 */
   .detail-table tbody td:nth-child(1)
-    white-space nowrap !important
-    overflow hidden !important
-    text-overflow clip !important
-
-  /* 批号允许换行显示 */
-  .detail-table tbody td:nth-child(8)
+    display -webkit-box !important
+    -webkit-box-orient vertical !important
+    -webkit-line-clamp 2 !important
+    line-clamp 2 !important
     white-space normal !important
     word-break break-all !important
     overflow hidden !important
+    vertical-align top !important
+    max-height 2.9em !important
+
+  /* 批号：最多两行 */
+  .detail-table tbody td:nth-child(8)
+    display -webkit-box !important
+    -webkit-box-orient vertical !important
+    -webkit-line-clamp 2 !important
+    line-clamp 2 !important
+    white-space normal !important
+    word-break break-all !important
+    overflow hidden !important
+    vertical-align top !important
+    max-height 2.9em !important
 
   /* 有效期字号缩小 2 号 */
   .detail-table tbody td:nth-child(9)
@@ -586,6 +622,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
   .detail-table tbody td:nth-child(7)
     white-space nowrap !important
+    overflow hidden !important
+    text-overflow ellipsis !important
 
   .detail-table th
     background transparent !important

@@ -5,7 +5,7 @@
              remote
              :remote-method="remoteMethod"
              clearable
-             placeholder="供应商名称或首字母搜索"
+             placeholder="供应商"
              :disabled="value2"
              :loading="loading"
              default-first-option

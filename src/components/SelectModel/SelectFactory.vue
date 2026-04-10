@@ -6,7 +6,7 @@
              :remote-method="remoteMethod"
              :loading="loading"
              clearable
-             placeholder="厂家名称/编码/简码搜索"
+             :placeholder="placeholder || '厂家名称/编码/简码搜索'"
              :disabled="value2"
   >
     <el-option
@@ -33,7 +33,7 @@ import { listFactoryAll, listFactory, getFactory } from "@/api/foundation/factor
 
 export default {
   // props: ['value','size'],
-  props: ['value','value2'],
+  props: ['value','value2','placeholder'],
   data() {
     return {
       // 厂家选项
