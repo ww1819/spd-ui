@@ -126,7 +126,7 @@ export default {
   name: "SelectInventory",
   components: {SelectMaterial,SelectDepartment},
   dicts:['way_status'],
-  props: ['DialogComponentShow','departmentValue','selectedDetails'], //接受父组件传递过来的数据
+  props: ['DialogComponentShow', 'departmentValue', 'warehouseValue', 'selectedDetails'],
   data() {
     return {
       // 遮罩层
@@ -156,6 +156,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         departmentId: null,
+        warehouseId: null,
         materialId: null,
         batchNo: null,
       },
@@ -167,6 +168,9 @@ export default {
     //显示弹窗
     this.show = this.DialogComponentShow
     this.queryParams.departmentId = this.departmentValue
+    if (this.warehouseValue != null && this.warehouseValue !== '') {
+      this.queryParams.warehouseId = this.warehouseValue
+    }
     this.getList();
   },
   created() {
@@ -178,18 +182,31 @@ export default {
       this.loading = true;
       listInventory(this.queryParams).then(response => {
         const rows = response.rows || [];
-        // 退库场景下，父组件会传入已选明细列表（selectedDetails），按 materialId + batchNo 过滤掉已选批次
+        // 退库：已选明细若含科室库存 id（kcNo，即 stk_dep_inventory.id）则按 id 排除；否则兼容旧数据按 materialId+batchNo
         if (this.selectedDetails && this.selectedDetails.length) {
-          const existedKeySet = new Set(
+          const existedDepInvIds = new Set(
             this.selectedDetails
-              .filter(d => d && d.materialId != null && d.batchNo)
+              .map(d => d && d.kcNo)
+              .filter(id => id != null && id !== '')
+              .map(id => String(id))
+          );
+          const existedBatchKeys = new Set(
+            this.selectedDetails
+              .filter(d => d && d.materialId != null && d.batchNo && (d.kcNo == null || d.kcNo === ''))
               .map(d => `${d.materialId}__${d.batchNo}`)
           );
           this.inventoryList = rows.filter(it => {
-            const key = (it && it.materialId != null && it.batchNo)
+            if (!it) return true;
+            if (it.id != null && existedDepInvIds.has(String(it.id))) {
+              return false;
+            }
+            const legacyKey = (it.materialId != null && it.batchNo)
               ? `${it.materialId}__${it.batchNo}`
               : null;
-            return !key || !existedKeySet.has(key);
+            if (legacyKey && existedBatchKeys.has(legacyKey)) {
+              return false;
+            }
+            return true;
           });
         } else {
           this.inventoryList = rows;
@@ -206,6 +223,12 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.departmentId = this.departmentValue;
+      if (this.warehouseValue != null && this.warehouseValue !== '') {
+        this.queryParams.warehouseId = this.warehouseValue;
+      } else {
+        this.queryParams.warehouseId = null;
+      }
       this.handleQuery();
     },
     handleSelectionChange(val) {

@@ -209,12 +209,12 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="供应商" prop="supplerId">
-              <SelectSupplier v-model="form.supplerId"/>
+              <SelectSupplier v-model="form.supplerId" :value2="stkIoBillEntryList.length > 0"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" excludeWarehouseType="高值"/>
+              <SelectWarehouse v-model="form.warehouseId" :value2="stkIoBillEntryList.length > 0" excludeWarehouseType="高值"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -415,6 +415,7 @@
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="warehouseValue"
       :supplierValue="supplierValue"
+      :hide-supplier-query="true"
       :selectedDetails="stkIoBillEntryList"
       @closeDialog="closeDialog"
       @selectData="selectData"
@@ -620,13 +621,13 @@ export default {
       });
     },
     checkMaterialBtn() {
-      if(!this.form.warehouseId) {
-        this.$message({ message: '请选择仓库', type: 'warning' })
+      if (!this.form.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' })
         return
       }
 
-      if(!this.form.supplerId) {
-        this.$message({ message: '请选择供应商', type: 'warning' })
+      if (!this.form.supplerId) {
+        this.$message({ message: '请先选择供应商', type: 'warning' })
         return
       }
 
@@ -1010,8 +1011,12 @@ export default {
       this.DialogRkApplyComponentShow = false
     },
     refRkApply() {
-      if(!this.form.warehouseId) {
+      if (!this.form.warehouseId) {
         this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
+      if (!this.form.supplerId) {
+        this.$message({ message: '请先选择供应商', type: 'warning' })
         return
       }
 
@@ -1051,8 +1056,12 @@ export default {
       this.DialogTkApplyComponentShow = false
     },
     refTkApply() {
-      if(!this.form.warehouseId) {
+      if (!this.form.warehouseId) {
         this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
+      if (!this.form.supplerId) {
+        this.$message({ message: '请先选择供应商', type: 'warning' })
         return
       }
 

@@ -194,12 +194,12 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :disabled="true" excludeWarehouseType="高值"/>
+              <SelectWarehouse v-model="form.warehouseId" :value2="true" excludeWarehouseType="高值"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="科室" prop="departmentId">
-              <SelectDepartment v-model="form.departmentId" :disabled="true"/>
+              <SelectDepartment v-model="form.departmentId" :value2="true"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -431,6 +431,7 @@
 
 <script>
 import { listTkInventory, getTkInventory, delTkInventory, addTkInventory, updateTkInventory,auditTkInventory } from "@/api/warehouse/tkInventory";
+import { collectTkScopeErrors } from '@/utils/auditBillScopeValidate';
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -792,14 +793,20 @@ export default {
       this.reset();
       const id = row.id || this.ids
       const auditBy = this.$store.state.user.userId;
-
-      this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(function() {
-        return auditTkInventory({id:id,auditBy:auditBy});
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("审核退库成功！");
-      }).catch(() => {});
-
+      getTkInventory(id).then(async res => {
+        const data = res.data
+        const errs = await collectTkScopeErrors(data, data.stkIoBillEntryList)
+        if (errs.length) {
+          this.$modal.msgError(errs.join('；'))
+          return
+        }
+        this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+          return auditTkInventory({ id: id, auditBy: auditBy })
+        }).then(() => {
+          this.getList()
+          this.$modal.msgSuccess('审核退库成功！')
+        }).catch(() => {})
+      }).catch(() => {})
     },
     /** 批量审核按钮操作 */
     handleBatchAudit() {
@@ -835,31 +842,29 @@ export default {
 
     /** 提交按钮 */
     submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          this.form.stkIoBillEntryList = this.stkIoBillEntryList;
-          var totalAmt = 0;
-          this.stkIoBillEntryList.forEach(item => {
-            if(item.amt){
-              totalAmt += parseFloat(item.amt);
-            }
-          });
-          this.form.totalAmount = totalAmt.toFixed(2);
-          if (this.form.id != null) {
-            updateTkInventory(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            // addWarehouse(this.form).then(response => {
-            //   this.$modal.msgSuccess("新增成功");
-            //   this.open = false;
-            //   this.getList();
-            // });
-          }
+      this.$refs["form"].validate(async valid => {
+        if (!valid) return
+        this.form.stkIoBillEntryList = this.stkIoBillEntryList
+        const scopeErrs = await collectTkScopeErrors(this.form, this.stkIoBillEntryList)
+        if (scopeErrs.length) {
+          this.$modal.msgError(scopeErrs.join('；'))
+          return
         }
-      });
+        var totalAmt = 0
+        this.stkIoBillEntryList.forEach(item => {
+          if (item.amt) {
+            totalAmt += parseFloat(item.amt)
+          }
+        })
+        this.form.totalAmount = totalAmt.toFixed(2)
+        if (this.form.id != null) {
+          updateTkInventory(this.form).then(response => {
+            this.$modal.msgSuccess('修改成功')
+            this.open = false
+            this.getList()
+          })
+        }
+      })
     },
     /** 打印按钮操作 */
     handlePrint(row, print){

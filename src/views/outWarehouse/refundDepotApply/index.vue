@@ -215,12 +215,12 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" excludeWarehouseType="高值"/>
+              <SelectWarehouse v-model="form.warehouseId" :value2="stkIoBillEntryList.length > 0" excludeWarehouseType="高值"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="科室" prop="departmentId">
-              <SelectDepartment v-model="form.departmentId"/>
+              <SelectDepartment v-model="form.departmentId" :value2="stkIoBillEntryList.length > 0"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -396,6 +396,7 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :departmentValue="departmentValue"
+      :warehouseValue="form.warehouseId"
       :selectedDetails="stkIoBillEntryList"
       @closeDialog="closeDialog"
       @selectData="selectData"
@@ -589,7 +590,11 @@ export default {
       });
     },
     nameBtn() {
-      if(!this.form.departmentId) {
+      if (!this.form.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
+      if (!this.form.departmentId) {
         this.$message({ message: '请先选择科室', type: 'warning' })
         return
       }
@@ -607,18 +612,28 @@ export default {
       this.DialogCkApplyComponentShow = false
     },
     selectData(val) {
-      // 监听“弹窗组件”返回的数据，按批次号去重，避免重复选中
+      // 按科室库存 id（kcNo）去重；无 id 时回退按批次号（兼容旧明细）
       const rows = Array.isArray(val) ? val : (val ? [val] : []);
       if (!rows.length) return;
+      const existedKc = new Set(
+        this.stkIoBillEntryList
+          .map(e => e && e.kcNo)
+          .filter(id => id != null && id !== '')
+          .map(id => String(id))
+      );
       const existedBatchNos = new Set(
         this.stkIoBillEntryList
-          .map(e => e && e.batchNo)
+          .filter(e => e && (e.kcNo == null || e.kcNo === ''))
+          .map(e => e.batchNo)
           .filter(b => b != null && String(b).trim() !== '')
       );
 
       rows.forEach((item) => {
         if (!item) return;
-        if (item.batchNo && existedBatchNos.has(item.batchNo)) {
+        if (item.id != null && existedKc.has(String(item.id))) {
+          return;
+        }
+        if ((item.id == null || item.id === '') && item.batchNo && existedBatchNos.has(item.batchNo)) {
           return;
         }
         let obj = {};
@@ -632,8 +647,8 @@ export default {
         obj.endTime = item.endTime;
         obj.remark = item.remark;
         obj.material = item.material;
+        obj.kcNo = item.id != null ? item.id : null;
         this.stkIoBillEntryList.push(obj);
-        // this.stkIoBillEntryList.splice(this.stkIoBillEntryList.length, 0, JSON.parse(JSON.stringify(item)));
       });
     },
     getStatDate(){
@@ -777,10 +792,21 @@ export default {
     async submitForm() {
       this.$refs["form"].validate(async (valid) => {
         if (valid) {
-          // 校验明细批次号是否有重复
+          // 校验：有科室库存 id 时按 id 判重；否则按批次号判重（兼容旧数据）
+          const kcMap = new Map();
           const batchMap = new Map();
           for (const [index, entry] of this.stkIoBillEntryList.entries()) {
-            const key = entry && entry.batchNo && String(entry.batchNo).trim();
+            if (!entry) continue;
+            if (entry.kcNo != null && entry.kcNo !== '') {
+              const kid = String(entry.kcNo);
+              if (kcMap.has(kid)) {
+                this.$modal.msgError(`明细第${kcMap.get(kid)}行与第${index + 1}行指向同一科室库存，请检查后再保存`);
+                return;
+              }
+              kcMap.set(kid, index + 1);
+              continue;
+            }
+            const key = entry.batchNo && String(entry.batchNo).trim();
             if (!key) continue;
             if (batchMap.has(key)) {
               this.$modal.msgError(`明细第${batchMap.get(key)}行与第${index + 1}行批次号重复，请检查后再保存`);
@@ -922,6 +948,7 @@ export default {
       obj.beginTime = "";
       obj.endTime = "";
       obj.remark = "";
+      obj.kcNo = null;
 
       this.stkIoBillEntryList.push(obj);
     },
@@ -976,8 +1003,12 @@ export default {
       });
     },
     refCkApply() {
-      if(!this.form.warehouseId) {
+      if (!this.form.warehouseId) {
         this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
+      if (!this.form.departmentId) {
+        this.$message({ message: '请先选择科室', type: 'warning' })
         return
       }
 

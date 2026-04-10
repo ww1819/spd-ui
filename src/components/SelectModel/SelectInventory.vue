@@ -19,7 +19,7 @@
                 </el-form-item>
               </el-col>
 
-              <el-col :span="6">
+              <el-col v-if="!hideSupplierQuery" :span="6">
                 <el-form-item label="供应商" prop="supplierId" label-width="100px">
                   <SelectSupplier v-model="queryParams.supplierId" :value2="false"/>
                 </el-form-item>
@@ -161,7 +161,17 @@ export default {
   name: "SelectInventory",
   dicts:['way_status'],
   components: {SelectWarehouse,SelectSupplier},
-  props: ['DialogComponentShow','warehouseValue','supplierValue','selectedDetails'], //接受父组件传递过来的数据
+  props: {
+    DialogComponentShow: [Boolean],
+    warehouseValue: [String, Number],
+    supplierValue: [String, Number],
+    selectedDetails: Array,
+    /** 为 true 时不展示供应商条件，查询固定使用 supplierValue（如采购退货申请） */
+    hideSupplierQuery: {
+      type: Boolean,
+      default: false,
+    },
+  },
   data() {
     return {
       // 遮罩层
@@ -205,8 +215,8 @@ export default {
   mounted() {
     //显示弹窗
     this.show = this.DialogComponentShow || false;
-    this.queryParams.warehouseId = this.warehouseValue
-    this.queryParams.supplierId = this.supplierValue
+    this.queryParams.warehouseId = this.warehouseValue;
+    this.applyHeaderSupplierFilter();
     if (this.show) {
       this.getList();
       // 动态设置容器样式
@@ -228,6 +238,7 @@ export default {
       if (newVal) {
         // 弹窗每次打开时，都重新查询一次库存，避免用户以为“搜索无效”
         this.queryParams.pageNum = 1;
+        this.applyHeaderSupplierFilter();
         this.getList();
         this.$nextTick(() => {
           this.setContainerStyle();
@@ -258,8 +269,15 @@ export default {
     setContainerStyle() {
       this.$nextTick(() => {});
     },
+    applyHeaderSupplierFilter() {
+      if (this.hideSupplierQuery) {
+        this.queryParams.supplierId = this.supplierValue;
+        this.queryParams.warehouseId = this.warehouseValue;
+      }
+    },
     /** 查询库存信息列表 */
     getList() {
+      this.applyHeaderSupplierFilter();
       this.loading = true;
       listInventory(this.queryParams).then(response => {
         const rows = response.rows || [];
@@ -327,6 +345,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.applyHeaderSupplierFilter();
       this.handleQuery();
     },
     handleSelectionChange(val) {

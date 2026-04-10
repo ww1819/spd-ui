@@ -316,9 +316,57 @@
 <!--            </template>-->
 <!--          </el-table-column>-->
 
-          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column
+            label="名称"
+            align="left"
+            header-align="center"
+            width="240"
+            min-width="180"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-text-wrap"
+            resizable
+          >
+            <template slot-scope="scope">
+              <span
+                class="detail-text-cell-2line"
+                :title="(scope.row.material && scope.row.material.name) || '--'"
+              >{{ (scope.row.material && scope.row.material.name) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="规格"
+            align="left"
+            header-align="center"
+            width="200"
+            min-width="150"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-text-wrap"
+            resizable
+          >
+            <template slot-scope="scope">
+              <span
+                class="detail-text-cell-2line"
+                :title="(scope.row.material && scope.row.material.speci) || '--'"
+              >{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="型号"
+            align="left"
+            header-align="center"
+            width="200"
+            min-width="150"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-text-wrap"
+            resizable
+          >
+            <template slot-scope="scope">
+              <span
+                class="detail-text-cell-2line"
+                :title="(scope.row.material && scope.row.material.model) || '--'"
+              >{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -380,7 +428,23 @@
               <span>{{ scope.row.batchNo || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column
+            label="生产厂家"
+            align="left"
+            header-align="center"
+            width="260"
+            min-width="200"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-text-wrap"
+            resizable
+          >
+            <template slot-scope="scope">
+              <span
+                class="detail-text-cell-2line"
+                :title="(scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--'"
+              >{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
@@ -1453,6 +1517,27 @@ export default {
 /* 单据状态列表头不换行 */
 .app-container > .el-table thead th:nth-child(9) .cell {
   white-space: nowrap !important;
+}
+
+/* 修改入库弹窗明细：名称/规格/型号/生产厂家最多两行，行高随内容；悬停 title 看全文 */
+.app-container.inWarehouse-audit-page .local-modal-content .table-wrapper .el-table tbody td {
+  vertical-align: top;
+}
+.app-container.inWarehouse-audit-page .local-modal-content .table-wrapper .el-table td.detail-col-text-wrap .cell {
+  vertical-align: top;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  padding: 8px 10px 8px 12px;
+}
+.app-container.inWarehouse-audit-page .local-modal-content .table-wrapper .el-table td.detail-col-text-wrap .detail-text-cell-2line {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  line-height: 1.45;
+  max-height: calc(1.45em * 2 + 2px);
 }
 </style>
 

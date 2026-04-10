@@ -204,12 +204,12 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="供应商" prop="supplerId">
-              <SelectSupplier v-model="form.supplerId" :disabled="true" />
+              <SelectSupplier v-model="form.supplerId" :value2="true" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :disabled="true" excludeWarehouseType="高值"/>
+              <SelectWarehouse v-model="form.warehouseId" :value2="true" excludeWarehouseType="高值"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -460,6 +460,7 @@
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="warehouseValue"
       :supplierValue="supplierValue"
+      :hide-supplier-query="true"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectInventory>
@@ -469,6 +470,7 @@
 
 <script>
 import { listThInventory, getThInventory, delThInventory, addThInventory, updateThInventory,auditThInventory } from "@/api/warehouse/thInventory";
+import { collectCkThScopeErrors } from '@/utils/auditBillScopeValidate';
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -818,13 +820,20 @@ export default {
       this.reset();
       const id = row.id || this.ids
       const auditBy = this.$store.state.user.userId;
-
-      this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(function() {
-        return auditThInventory({id:id,auditBy:auditBy});
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("审核退货成功！");
-      }).catch(() => {});
+      getThInventory(id).then(async res => {
+        const data = res.data
+        const errs = await collectCkThScopeErrors(data, data.stkIoBillEntryList, data.billType)
+        if (errs.length) {
+          this.$modal.msgError(errs.join('；'))
+          return
+        }
+        this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+          return auditThInventory({ id: id, auditBy: auditBy })
+        }).then(() => {
+          this.getList()
+          this.$modal.msgSuccess('审核退货成功！')
+        }).catch(() => {})
+      }).catch(() => {})
     },
     /** 批量审核按钮操作 */
     handleBatchAudit() {
@@ -859,36 +868,40 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          this.form.stkIoBillEntryList = this.stkIoBillEntryList;
-          var totalAmt = 0;
-          this.stkIoBillEntryList.forEach(item => {
-            if(item.amt){
-              totalAmt += parseFloat(item.amt);
-            }
-          });
-          this.form.totalAmount = totalAmt.toFixed(2);
-          if (this.form.id != null) {
-            updateThInventory(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addThInventory(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              const resData = response && response.data;
-              if (resData && (resData.id != null || resData.billNo != null)) {
-                this.form.id = resData.id;
-                this.form.billNo = resData.billNo;
-              }
-              this.open = false;
-              this.getList();
-            });
-          }
+      this.$refs["form"].validate(async valid => {
+        if (!valid) return
+        this.form.stkIoBillEntryList = this.stkIoBillEntryList
+        const scopeErrs = await collectCkThScopeErrors(this.form, this.stkIoBillEntryList, this.form.billType)
+        if (scopeErrs.length) {
+          this.$modal.msgError(scopeErrs.join('；'))
+          return
         }
-      });
+        var totalAmt = 0
+        this.stkIoBillEntryList.forEach(item => {
+          if (item.amt) {
+            totalAmt += parseFloat(item.amt)
+          }
+        })
+        this.form.totalAmount = totalAmt.toFixed(2)
+        if (this.form.id != null) {
+          updateThInventory(this.form).then(response => {
+            this.$modal.msgSuccess('修改成功')
+            this.open = false
+            this.getList()
+          })
+        } else {
+          addThInventory(this.form).then(response => {
+            this.$modal.msgSuccess('新增成功')
+            const resData = response && response.data
+            if (resData && (resData.id != null || resData.billNo != null)) {
+              this.form.id = resData.id
+              this.form.billNo = resData.billNo
+            }
+            this.open = false
+            this.getList()
+          })
+        }
+      })
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
