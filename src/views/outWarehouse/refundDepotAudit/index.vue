@@ -47,12 +47,19 @@
             />
           </el-form-item>
         </el-col>
-        <el-col :span="12" class="query-status-col">
+        <el-col :span="6" class="query-status-col">
           <el-form-item prop="billStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                        clearable style="width: 150px">
               <el-option :label="'未审核'" :value="1" />
               <el-option :label="'已审核'" :value="2" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="被引用状态" label-width="88px">
+            <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" style="width: 150px">
+              <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -138,6 +145,14 @@
         <template slot-scope="scope">
           <span v-if="scope.row.printDate">{{ parseTime(scope.row.printDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="被引用" align="center" prop="docRefStatus" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.docRefStatus === 'NONE'" type="info" size="mini">未引用</el-tag>
+          <el-tag v-else-if="scope.row.docRefStatus === 'PARTIAL'" type="warning" size="mini">部分引用</el-tag>
+          <el-tag v-else-if="scope.row.docRefStatus === 'FULL'" type="success" size="mini">全部引用</el-tag>
+          <span v-else>—</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
@@ -292,6 +307,16 @@
                 placeholder="自动带出单价"/>
             </template>
           </el-table-column>
+          <el-table-column label="已引用" prop="srcRefedQty" width="72" align="center" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.srcRefedQty != null ? scope.row.srcRefedQty : '—' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="可引用" prop="srcRefableQty" width="72" align="center" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.srcRefableQty != null ? scope.row.srcRefableQty : '—' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" :disabled="true" placeholder="数量"
@@ -432,6 +457,7 @@
 <script>
 import { listTkInventory, getTkInventory, delTkInventory, addTkInventory, updateTkInventory,auditTkInventory } from "@/api/warehouse/tkInventory";
 import { collectTkScopeErrors } from '@/utils/auditBillScopeValidate';
+import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -449,6 +475,7 @@ export default {
   components: {refundGoodsOrderPrint, refundDepotOrderPrint,SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory},
   data() {
     return {
+      docRefStatusOptions: DOC_REF_STATUS_OPTIONS,
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
@@ -510,6 +537,7 @@ export default {
         sortScene: 'audit',
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
+        params: {}
       },
       // 表单参数
       form: {},
@@ -763,6 +791,8 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
+      this.queryParams.params = this.queryParams.params || {};
+      this.queryParams.params.docRefStatus = null;
       this.handleQuery();
     },
     // 多选框选中数据

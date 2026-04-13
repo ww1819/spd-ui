@@ -1,4 +1,5 @@
 <template>
+  <div class="select-ref-bill-root">
   <transition name="modal-fade">
     <div v-if="show" class="local-modal-mask">
       <transition name="modal-zoom">
@@ -47,6 +48,14 @@
             </el-form-item>
           </el-col>
 
+          <el-col :span="6">
+            <el-form-item label="引用状态" label-width="100px">
+              <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" style="width:100%">
+                <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+
         </el-row>
 
         <el-row :gutter="24">
@@ -80,6 +89,14 @@
             <template slot-scope="scope">
               <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
               <span v-else>--</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="引用状态" align="center" prop="docRefStatus" width="100">
+            <template slot-scope="scope">
+              <el-tag v-if="scope.row.docRefStatus === 'NONE'" type="info" size="mini">未引用</el-tag>
+              <el-tag v-else-if="scope.row.docRefStatus === 'PARTIAL'" type="warning" size="mini">部分引用</el-tag>
+              <el-tag v-else-if="scope.row.docRefStatus === 'FULL'" type="success" size="mini">全部引用</el-tag>
+              <span v-else>—</span>
             </template>
           </el-table-column>
           <el-table-column label="订单状态" align="center" prop="orderStatus">
@@ -124,6 +141,30 @@
       </transition>
     </div>
   </transition>
+
+  <el-dialog :title="title" :visible.sync="open" append-to-body width="90%" top="4vh" @close="open = false">
+    <el-table :data="stkIoBillEntryList" border max-height="520" size="small">
+      <el-table-column type="index" label="序号" width="55" align="center" />
+      <el-table-column label="名称" min-width="160" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.material && scope.row.material.name) || '—' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="数量" prop="qty" width="90" align="right" />
+      <el-table-column label="已引用数量" prop="srcRefedQty" width="110" align="right">
+        <template slot-scope="scope">
+          <span>{{ scope.row.srcRefedQty != null ? scope.row.srcRefedQty : '—' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="可引用数量" prop="srcRefableQty" width="110" align="right">
+        <template slot-scope="scope">
+          <span>{{ scope.row.srcRefableQty != null ? scope.row.srcRefableQty : '—' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="批次号" prop="batchNo" width="120" show-overflow-tooltip />
+    </el-table>
+  </el-dialog>
+  </div>
 </template>
 
 <script>
@@ -132,6 +173,7 @@ import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import { listWarehouse, getInWarehouse } from "@/api/warehouse/warehouse";
+import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus';
 
 export default {
   name: "SelectDApply",
@@ -140,6 +182,7 @@ export default {
   props: ['DialogComponentShow','warehouseValue','departmentValue','materialValue','supplierValue'], //接受父组件传递过来的数据
   data() {
     return {
+      docRefStatusOptions: DOC_REF_STATUS_OPTIONS,
       // 遮罩层
       show: false, //弹窗默认隐藏
       selectRow: [], //选择的行数据
@@ -172,7 +215,8 @@ export default {
         warehouseId: null,
         departmentId: null,
         supplierId: null,
-        materialId: null
+        materialId: null,
+        params: {}
       },
       // 表单参数
       form: {},
@@ -210,6 +254,8 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.params = this.queryParams.params || {};
+      this.queryParams.params.docRefStatus = null;
       this.handleQuery();
     },
     handleSelectionChange(val) {
@@ -243,7 +289,7 @@ export default {
         this.action = false;
         this.form.orderStatus = '0';
         this.form.orderType = '1';
-        this.title = "查看入库单";
+        this.title = "查看入库单明细";
       });
     },
   }

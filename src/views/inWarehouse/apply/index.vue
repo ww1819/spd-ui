@@ -47,7 +47,7 @@
             />
           </el-form-item>
         </el-col>
-        <el-col :span="12" class="query-status-col">
+        <el-col :span="6" class="query-status-col">
           <el-form-item prop="billStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                        clearable style="width: 150px">
@@ -57,6 +57,13 @@
                          :value="dict.value"
                          v-if="dict.label !== '待审核'"
               />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
+          <el-form-item label="被引用状态" label-width="88px">
+            <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" style="width: 150px">
+              <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -168,6 +175,14 @@
         </template>
       </el-table-column>
       <el-table-column label="引用单号" align="center" prop="refBillNo" width="180" show-overflow-tooltip resizable/>
+      <el-table-column label="被引用" align="center" prop="docRefStatus" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.docRefStatus === 'NONE'" type="info" size="mini">未引用</el-tag>
+          <el-tag v-else-if="scope.row.docRefStatus === 'PARTIAL'" type="warning" size="mini">部分引用</el-tag>
+          <el-tag v-else-if="scope.row.docRefStatus === 'FULL'" type="success" size="mini">全部引用</el-tag>
+          <span v-else>—</span>
+        </template>
+      </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
         <template slot-scope="scope">
@@ -433,6 +448,16 @@
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="已引用" align="center" prop="srcRefedQty" width="88" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.srcRefedQty != null ? scope.row.srcRefedQty : '—' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="可引用" align="center" prop="srcRefableQty" width="88" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.srcRefableQty != null ? scope.row.srcRefableQty : '—' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="数量" align="center" prop="qty" width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
@@ -685,6 +710,7 @@ import SelectDingdan from '@/components/SelectModel/SelectDingdan';
 import orderPrint from "@/views/inWarehouse/audit/orderPrint";
 import RMBConverter from "@/utils/tools";
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
+import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 
 export default {
   name: "InWarehouse",
@@ -692,6 +718,7 @@ export default {
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMaterialFilter,SelectDingdan,orderPrint},
   data() {
     return {
+      docRefStatusOptions: DOC_REF_STATUS_OPTIONS,
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
@@ -770,6 +797,7 @@ export default {
         sortScene: 'apply',
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
+        params: {}
       },
       // 表单参数
       form: {},
@@ -1065,6 +1093,8 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
+      this.queryParams.params = this.queryParams.params || {};
+      this.queryParams.params.docRefStatus = null;
       this.handleQuery();
     },
     // 多选框选中数据
