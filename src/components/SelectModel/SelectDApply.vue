@@ -4,10 +4,12 @@
       <transition name="modal-zoom">
         <div v-if="show" class="local-modal-content">
       <div class="modal-header">
-        <div class="modal-title">科室申请单</div>
+        <div class="modal-title">引用科室申领 / 仓库申请单</div>
         <el-button icon="el-icon-close" size="small" circle @click="handleClose" class="close-btn"></el-button>
       </div>
       <div class="modal-body">
+        <el-tabs v-model="refTab" @tab-click="onRefTabClick">
+          <el-tab-pane label="科室申领单" name="bas">
         <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
         <el-row :gutter="20">
 
@@ -30,7 +32,7 @@
 
           <el-col :span="6">
             <el-form-item label="科室" prop="departmentId" label-width="100px">
-              <SelectWarehouse v-model="queryParams.departmentId" :value2="isShow"/>
+              <SelectDepartment v-model="queryParams.departmentId" />
             </el-form-item>
           </el-col>
 
@@ -53,12 +55,12 @@
         </el-row>
       </el-form>
 
-        <el-table ref="singleTable" :data="applyList" :row-class-name="applyIndex" @selection-change="handleSelectionChange" height="calc(42vh)" border>
+        <el-table ref="basTable" :data="applyList" :row-class-name="applyIndex" @selection-change="handleSelectionChange" height="calc(38vh)" border>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
           <el-table-column label="申领单号" align="center" prop="applyBillNo" show-overflow-tooltip resizable >
             <template slot-scope="scope">
-              <el-button type="text" @click="handleView(scope.row)">
+              <el-button type="text" @click="handleViewBas(scope.row)">
                 <span>{{ scope.row.applyBillNo }}</span>
               </el-button>
             </template>
@@ -83,18 +85,6 @@
             </template>
           </el-table-column>
           <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-          <el-table-column label="id" align="center" prop="id" show-overflow-tooltip resizable />
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-button
-                size="small"
-                type="text"
-                icon="el-icon-view"
-                @click="handleView(scope.row)"
-                v-hasPermi="['department:dApply:view']"
-              >查看</el-button>
-            </template>
-          </el-table-column>
         </el-table>
 
         <pagination
@@ -104,6 +94,77 @@
           :limit.sync="queryParams.pageSize"
           @pagination="getList"
         />
+          </el-tab-pane>
+
+          <el-tab-pane label="仓库申请单" name="wh">
+            <el-form :model="queryParamsWh" ref="queryFormWh" :inline="true" v-show="showSearch" label-width="0" class="query-form">
+              <el-row :gutter="20">
+                <el-col :span="6">
+                  <el-form-item label="仓库申请单号" prop="applyBillNo" label-width="110px">
+                    <el-input v-model="queryParamsWh.applyBillNo" placeholder="单号" clearable @keyup.enter.native="handleQueryWh" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="科室申领单号" prop="basApplyBillNo" label-width="110px">
+                    <el-input v-model="queryParamsWh.basApplyBillNo" placeholder="原申领单号" clearable @keyup.enter.native="handleQueryWh" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="仓库" prop="warehouseId" label-width="100px">
+                    <SelectWarehouse v-model="queryParamsWh.warehouseId" :value2="isShow"/>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="科室" prop="departmentId" label-width="100px">
+                    <SelectDepartment v-model="queryParamsWh.departmentId" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="24">
+                <el-col :span="6">
+                  <el-form-item>
+                    <el-button type="primary" icon="el-icon-search" size="small" @click="handleQueryWh">搜索</el-button>
+                    <el-button icon="el-icon-refresh" size="small" @click="resetQueryWh">重置</el-button>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-form>
+
+            <el-table ref="whTable" :data="whApplyList" :row-class-name="whApplyIndex" @selection-change="handleSelectionChangeWh" height="calc(38vh)" border>
+              <el-table-column type="selection" width="55" align="center" />
+              <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable />
+              <el-table-column label="仓库申请单号" align="center" prop="applyBillNo" min-width="150" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <el-button type="text" @click="handleViewWh(scope.row)">
+                    <span>{{ scope.row.applyBillNo }}</span>
+                  </el-button>
+                </template>
+              </el-table-column>
+              <el-table-column label="科室申领单号" align="center" prop="basApplyBillNo" min-width="140" show-overflow-tooltip resizable />
+              <el-table-column label="仓库" align="center" prop="warehouse.name" min-width="100" show-overflow-tooltip resizable />
+              <el-table-column label="科室" align="center" prop="department.name" min-width="100" show-overflow-tooltip resizable />
+              <el-table-column label="待出库数量" align="center" prop="pendingOutboundTotal" width="110" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ scope.row.pendingOutboundTotal != null ? Number(scope.row.pendingOutboundTotal).toFixed(2) : '—' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="源审核日期" align="center" prop="sourceAuditDate" width="160" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span v-if="scope.row.sourceAuditDate">{{ parseTime(scope.row.sourceAuditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+                  <span v-else>—</span>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <pagination
+              v-show="totalWh>0"
+              :total="totalWh"
+              :page.sync="queryParamsWh.pageNum"
+              :limit.sync="queryParamsWh.pageSize"
+              @pagination="getListWh"
+            />
+          </el-tab-pane>
+        </el-tabs>
       </div>
 
       <div class="modal-footer">
@@ -114,69 +175,109 @@
       </transition>
     </div>
   </transition>
+
+  <el-dialog :title="detailTitle" :visible.sync="openBasDetail" append-to-body width="88%" top="5vh" @close="openBasDetail = false">
+    <p class="detail-hint">科室申领明细预览；生成出库请在列表勾选后点「确定」（按仓拆分请选「仓库申请单」页签）。</p>
+    <el-table :data="basEntryPreviewList" border max-height="480" size="small">
+      <el-table-column type="index" label="行" width="50" align="center" />
+      <el-table-column label="耗材" min-width="160" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.material && scope.row.material.name) || '—' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="数量" prop="qty" width="90" align="right" />
+    </el-table>
+  </el-dialog>
+
+  <el-dialog :title="detailTitle" :visible.sync="openWhDetail" append-to-body width="88%" top="5vh" @close="openWhDetail = false">
+    <el-table :data="whEntryPreviewList" border max-height="480" size="small">
+      <el-table-column type="index" label="行" width="50" align="center" />
+      <el-table-column label="耗材" min-width="160" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.material && scope.row.material.name) || '—' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="申请数量" prop="qty" width="90" align="right" />
+      <el-table-column label="可出库" prop="pendingOutboundQty" width="90" align="right">
+        <template slot-scope="scope">
+          <span>{{ scope.row.pendingOutboundQty != null ? Number(scope.row.pendingOutboundQty).toFixed(2) : '—' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="批号" prop="batchNo" width="120" show-overflow-tooltip />
+    </el-table>
+  </el-dialog>
 </template>
 
 <script>
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
-import {listApply} from "@/api/department/apply";
+import { listApply, getApply } from "@/api/department/apply";
+import { listWhApplyForCk } from "@/api/warehouse/outWarehouse";
+import { getWhWarehouseApply } from "@/api/department/whWarehouseApply";
 
 export default {
   name: "SelectDApply",
-  dicts:['way_status'],
+  dicts:['biz_status','way_status'],
   components: {SelectMaterial,SelectWarehouse,SelectDepartment},
-  props: ['DialogComponentShow','warehouseValue','departmentValue','materialValue'], //接受父组件传递过来的数据
+  props: ['DialogComponentShow','warehouseValue','departmentValue','materialValue'],
   data() {
     return {
+      refTab: 'bas',
       // 遮罩层
-      show: false, //弹窗默认隐藏
-      selectRow: [], //选择的行数据
-      isShow: true,//是否显示
-      // 选中数组
+      show: false,
+      selectRow: [],
+      selectRowWh: [],
+      isShow: true,
       ids: [],
-      // 非单个禁用
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      // 总条数
       total: 0,
-      // 库存信息表格数据
+      totalWh: 0,
       applyList: [],
-      //单位
-      unitOptions: [],
-      // 弹出层标题
+      whApplyList: [],
+      whEntryPreviewList: [],
+      basEntryPreviewList: [],
       title: "",
-      // 是否显示弹出层
-      open: false,
-      // 查询参数
+      detailTitle: "",
+      openBasDetail: false,
+      openWhDetail: false,
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        applyBillNo:null,
+        applyBillNo: null,
         warehouseId: null,
         departmentId: null,
-        materialId: null
+        materialId: null,
+        applyBillStatus: 2
       },
-      // 表单参数
+      queryParamsWh: {
+        pageNum: 1,
+        pageSize: 10,
+        applyBillNo: null,
+        basApplyBillNo: null,
+        warehouseId: null,
+        departmentId: null
+      },
       form: {},
     };
   },
   mounted() {
-    //显示弹窗
     this.show = this.DialogComponentShow
     this.queryParams.warehouseId = this.warehouseValue
     this.queryParams.departmentId = this.departmentValue
     this.queryParams.materialId = this.materialValue
+    this.queryParamsWh.warehouseId = this.warehouseValue
+    this.queryParamsWh.departmentId = this.departmentValue
     this.getList();
   },
-  created() {
-    // this.getList();
-  },
   methods: {
-    /** 查询科室申请单 */
+    onRefTabClick(tab) {
+      if (tab && tab.name === 'wh' && (!this.whApplyList || this.whApplyList.length === 0)) {
+        this.getListWh();
+      }
+    },
     getList() {
       this.loading = true;
       listApply(this.queryParams).then(response => {
@@ -185,43 +286,99 @@ export default {
         this.loading = false;
       });
     },
-    /** 搜索按钮操作 */
+    getListWh() {
+      this.loading = true;
+      listWhApplyForCk(this.queryParamsWh).then(response => {
+        this.whApplyList = response.rows || [];
+        this.totalWh = response.total || 0;
+        this.loading = false;
+      }).catch(() => { this.loading = false; });
+    },
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.applyBillStatus = 2;
       this.handleQuery();
     },
+    handleQueryWh() {
+      this.queryParamsWh.pageNum = 1;
+      this.getListWh();
+    },
+    resetQueryWh() {
+      this.resetForm("queryFormWh");
+      this.queryParamsWh.pageNum = 1;
+      this.queryParamsWh.pageSize = 10;
+      this.queryParamsWh.warehouseId = this.warehouseValue;
+      this.queryParamsWh.departmentId = this.departmentValue;
+      this.handleQueryWh();
+    },
     handleSelectionChange(val) {
-      //获取选择的行数据
-      this.selectRow = val
+      this.selectRow = val || [];
+    },
+    handleSelectionChangeWh(val) {
+      this.selectRowWh = val || [];
     },
     handleClose() {
-      //关闭弹窗
       this.show = false
       this.$emit('closeDialog')
     },
     checkBtn() {
-      //确定按钮
-      if(!this.selectRow) {
-        this.$message({ message: '请先选择数据', type: 'warning' })
-        return
+      if (this.refTab === 'bas') {
+        if (!this.selectRow || this.selectRow.length === 0) {
+          this.$message({ message: '请先选择科室申领单', type: 'warning' })
+          return
+        }
+        this.$emit('selectData', this.selectRow)
+      } else {
+        if (!this.selectRowWh || this.selectRowWh.length === 0) {
+          this.$message({ message: '请先选择仓库申请单', type: 'warning' })
+          return
+        }
+        if (this.selectRowWh.length > 1) {
+          this.$message({ message: '仓库申请单请单选', type: 'warning' })
+          return
+        }
+        this.$emit('selectWhApplyData', this.selectRowWh[0])
       }
-      this.$emit('selectData', this.selectRow)   //发送数据到父组件
       this.handleClose()
     },
     applyIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
-    }
+    },
+    whApplyIndex({ row, rowIndex }) {
+      row.index = (this.queryParamsWh.pageNum - 1) * this.queryParamsWh.pageSize + rowIndex + 1;
+    },
+    handleViewBas(row) {
+      if (!row || !row.id) return;
+      getApply(row.id).then(res => {
+        const data = res.data || {};
+        this.basEntryPreviewList = data.basApplyEntryList || [];
+        this.detailTitle = '科室申领单 ' + (data.applyBillNo || row.applyBillNo || '');
+        this.openBasDetail = true;
+      });
+    },
+    handleViewWh(row) {
+      if (!row || !row.id) return;
+      getWhWarehouseApply(row.id).then(res => {
+        const data = res.data || {};
+        this.whEntryPreviewList = data.entryList || [];
+        this.detailTitle = '仓库申请单 ' + (data.applyBillNo || row.applyBillNo || '');
+        this.openWhDetail = true;
+      });
+    },
   }
 };
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 占满整个遮罩层 */
+.detail-hint {
+  color: #909399;
+  font-size: 13px;
+  margin: 0 0 12px 0;
+}
 .local-modal-mask {
   position: fixed;
   left: 0;
@@ -290,7 +447,6 @@ export default {
   margin-left: 12px;
 }
 
-/* 表格样式优化 */
 .el-table {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
@@ -317,7 +473,6 @@ export default {
   transition: all 0.3s;
 }
 
-/* 搜索表单样式 */
 .el-form {
   background: #fff;
   padding: 20px;
@@ -330,7 +485,6 @@ export default {
   margin-bottom: 15px;
 }
 
-/* 弹窗动画效果 */
 .modal-fade-enter-active, .modal-fade-leave-active {
   transition: opacity 0.3s ease;
 }

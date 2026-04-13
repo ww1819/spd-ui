@@ -104,3 +104,12 @@ export function createCkEntriesByWhApply(data) {
     params: data
   })
 }
+
+/** 出库引用：仍有可出库数量的仓库申请单分页列表 */
+export function listWhApplyForCk(query) {
+  return request({
+    url: '/warehouse/outWarehouse/whApplyListForCk',
+    method: 'get',
+    params: query
+  })
+}

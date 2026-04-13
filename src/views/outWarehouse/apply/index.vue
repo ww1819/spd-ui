@@ -307,7 +307,7 @@
               <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="outline" icon="el-icon-ref" size="small" @click="refDeptApply">引用科室申请单</el-button>
+              <el-button type="outline" icon="el-icon-ref" size="small" @click="refDeptApply">引用科室申领/仓库申请单</el-button>
             </el-col>
             <el-col :span="1.5">
               <el-button type="outline" icon="el-icon-ref" size="small" @click="refRkApply">引用入库单</el-button>
@@ -449,6 +449,7 @@
     :warehouseValue="warehouseValue"
     @closeDialog="closeDApplyDialog"
     @selectData="selectDApplyData"
+    @selectWhApplyData="selectWhApplyData"
     >
 
     </SelectDApply>
@@ -527,7 +528,7 @@ import {
   addOutWarehouse,
   updateOutWarehouse,
   listCTKWarehouse,
-  createCkEntriesByDApply, createCkEntriesByRkApply
+  createCkEntriesByDApply, createCkEntriesByRkApply, createCkEntriesByWhApply
 } from "@/api/warehouse/outWarehouse";
 import { listInventoryMaterialAll } from "@/api/warehouse/inventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -846,6 +847,21 @@ export default {
         }
       }).catch(() => {
         this.$message.error("加载科室申请单明细失败");
+      });
+    },
+    /** 仓库申请单（科室申领按仓拆分）：带出 wh_warehouse_apply_id、明细 wh_apply_entry_id，保存后写入 wh_wh_apply_ck_entry_ref */
+    selectWhApplyData(row) {
+      if (!row || !row.id) return;
+      createCkEntriesByWhApply({ whWarehouseApplyId: String(row.id) }).then(response => {
+        if (response && response.data) {
+          this.form = response.data;
+          this.stkIoBillEntryList = response.data.stkIoBillEntryList || [];
+          this.form.billStatus = '1';
+          this.form.billType = '201';
+          this.DialogDApplyComponentShow = false;
+        }
+      }).catch(() => {
+        this.$message.error("加载仓库申请单生成出库明细失败");
       });
     },
     selectRkApplyData(val) {
