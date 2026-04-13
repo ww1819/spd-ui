@@ -819,6 +819,10 @@ export default {
         this.$modal.msgSuccess("批量设置成功");
         this.batchWorkgroupOpen = false;
         this.getList();
+        const uid = this.$store.state.user && this.$store.state.user.userId;
+        if (uid != null && this.ids.map(id => Number(id)).includes(Number(uid))) {
+          this.$store.dispatch("GetInfo");
+        }
       });
     },
     /** 仓库全选 */
@@ -1082,7 +1086,19 @@ export default {
       
       // 先获取完整的用户信息，然后合并权限数据
       getUser(this.authForm.userId).then(response => {
-        const userData = response.data;
+        const userData = response.data ? { ...response.data } : {};
+        // 详情接口把 postIds/roleIds 放在响应根级；仅展开 data 会导致 postIds 为空，updateUser 先删 sys_user_post 再插 → 耗材工作组丢失。
+        delete userData.postIds;
+        delete userData.roleIds;
+        delete userData.workGroupIds;
+        const postIdsSrc = response.postIds != null ? response.postIds : [];
+        const postIdsNorm = Array.isArray(postIdsSrc)
+          ? postIdsSrc.map(id => Number(id)).filter(id => !isNaN(id))
+          : [];
+        const roleIdsSrc = response.roleIds != null ? response.roleIds : [];
+        const roleIdsNorm = Array.isArray(roleIdsSrc)
+          ? roleIdsSrc.map(id => Number(id)).filter(id => !isNaN(id))
+          : [];
         // 确保 menuIds 是数字数组
         const finalMenuIds = menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
         console.log('处理后的 menuIds:', finalMenuIds);
@@ -1099,8 +1115,11 @@ export default {
           userId: this.authForm.userId,
           menuIds: finalMenuIds, // 明确设置 menuIds，确保不被 userData 中的值覆盖
           departmentIds: this.authForm.departmentIds || [],
-          warehouseIds: this.authForm.warehouseIds || []
+          warehouseIds: this.authForm.warehouseIds || [],
+          postIds: postIdsNorm,
+          roleIds: roleIdsNorm
         };
+        // 授权弹窗不传 workGroupIds，由后端保留设备侧 sb_work_group_user
         // 再次确认 menuIds 没有被覆盖
         if (payload.menuIds !== finalMenuIds) {
           console.warn('警告：menuIds 被覆盖！原始值:', finalMenuIds, '当前值:', payload.menuIds);
@@ -1430,6 +1449,10 @@ export default {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
+              const uid = this.$store.state.user && this.$store.state.user.userId;
+              if (uid != null && Number(this.form.userId) === Number(uid)) {
+                this.$store.dispatch("GetInfo");
+              }
             });
           } else {
             addUser(this.form).then(response => {
