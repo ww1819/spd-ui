@@ -208,13 +208,18 @@
         <div class="form-fields-container">
         <el-row :gutter="8">
           <el-col :span="4">
+            <el-form-item label="单据号" prop="billNo">
+              <el-input v-model="form.billNo" :disabled="true" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
             <el-form-item label="供应商" prop="supplerId">
               <SelectSupplier v-model="form.supplerId" :value2="stkIoBillEntryList.length > 0"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :value2="stkIoBillEntryList.length > 0" excludeWarehouseType="高值"/>
+              <SelectWarehouse v-model="form.warehouseId" :value2="stkIoBillEntryList.length > 0" :excludeWarehouseType="['高值', '设备']"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -227,14 +232,14 @@
               <SelectUser v-model="form.createrName"/>
             </el-form-item>
           </el-col>
+        </el-row>
+
+        <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="采购员" prop="proPerson">
               <SelectUser v-model="form.proPerson"/>
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
               <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
@@ -255,6 +260,9 @@
               <el-input v-model="form.invoiceAmount" placeholder="发票金额" />
             </el-form-item>
           </el-col>
+        </el-row>
+
+        <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="发票时间" prop="invoiceTime">
               <el-date-picker clearable
@@ -264,14 +272,6 @@
                               style="width: 100%"
                               placeholder="发票时间">
               </el-date-picker>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="8">
-          <el-col :span="4">
-            <el-form-item label="单据号" prop="billNo">
-              <el-input v-model="form.billNo" :disabled="true" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -287,15 +287,14 @@
         </el-row>
         </div>
 
-<!--        <el-divider content-position="left">退货明细信息</el-divider>-->
-        <el-row :gutter="10" class="mb8">
+        <div class="modal-detail-section">
+        <el-row :gutter="10" class="detail-toolbar-row">
           <el-col :span="1.5">
             <span>退货明细信息</span>
           </el-col>
 
           <div v-show="action">
             <el-col :span="1.5">
-  <!--            <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddStkIoBillEntry">添加</el-button>-->
               <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
@@ -308,7 +307,7 @@
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="primary" size="small" @click="submitForm">保 存</el-button>
+              <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
             </el-col>
           </div>
 
@@ -319,10 +318,10 @@
                   @selection-change="handleStkIoBillEntrySelectionChange"
                   ref="stkIoBillEntry"
                   border
-                  height="48vh"
+                  :height="detailTableHeight"
         >
-          <el-table-column type="selection" width="60" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
+          <el-table-column type="selection" width="60" align="center" fixed="left" />
+          <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
           <!-- <el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
@@ -402,6 +401,7 @@
             </template>
           </el-table-column>
         </el-table>
+        </div>
         </div>
         </el-form>
           </div>
@@ -542,6 +542,12 @@ export default {
       }
     };
   },
+  computed: {
+    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    detailTableHeight() {
+      return 'max(260px, calc(100vh - 368px))';
+    }
+  },
   created() {
     this.getList();
   },
@@ -554,25 +560,23 @@ export default {
           sums[index] = '合计';
           return;
         }
-        const values = data.map(item => Number(item[column.property]));
-        if(index === 3 || index === 4 || index === 5){
+        const prop = column.property;
+        if (prop === 'unitPrice' || prop === 'qty' || prop === 'amt') {
+          const values = data.map(item => Number(item[prop]));
           if (!values.every(value => isNaN(value))) {
             sums[index] = values.reduce((prev, curr) => {
               const value = Number(curr);
               if (!isNaN(value)) {
                 return prev + curr;
-              } else {
-                return prev;
               }
+              return prev;
             }, 0);
             sums[index] = sums[index].toFixed(2);
           }
-
-          if(index === 5){
-            let res = parseFloat(sums[index]);
-            if(!isNaN(res)){
-              let parRes = res.toFixed(2);
-              this.form.totalAmount = parRes;
+          if (prop === 'amt') {
+            const res = parseFloat(sums[index]);
+            if (!isNaN(res)) {
+              this.form.totalAmount = res.toFixed(2);
             }
           }
         }
@@ -1115,19 +1119,22 @@ export default {
   width: 100%;
   height: 100%;
   min-height: 95vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  padding-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  min-height: 48px;
+  background: #EBEEF5;
+  min-height: 40px;
 }
 
 .modal-title {
@@ -1161,7 +1168,7 @@ export default {
 .local-modal-content .el-form {
   flex: 1;
   overflow: visible;
-  padding: 24px;
+  padding: 6px 20px 12px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
@@ -1205,12 +1212,16 @@ export default {
   color: #409EFF;
 }
 
-/* 搜索区域样式 */
+/* 搜索区域：外层白底容器（宽度铺满、边框与阴影略加强） */
 .app-container > .el-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
 }
 
@@ -1286,19 +1297,52 @@ export default {
   padding-right: 0;
 }
 
-/* 弹窗内表单字段容器样式 */
+/* 弹窗内顶部字段区：与到货验收一致 */
 .local-modal-content .form-fields-container {
   background: #fff;
-  padding: 16px 20px;
+  padding: 8px 16px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
   border: 1px solid #EBEEF5;
+}
+
+.local-modal-content .form-fields-container .el-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 弹窗内明细区：与到货验收一致 */
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .modal-detail-section .table-wrapper {
+  margin-top: 0;
 }
 
 /* 弹窗内表单紧凑布局 */
 .local-modal-content .modal-form-compact .el-row {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .local-modal-content .modal-form-compact .el-form-item {
@@ -1363,11 +1407,72 @@ export default {
   font-size: 13px;
 }
 
-/* 弹窗内表格样式 - 高度调到确定按钮上面一点 */
+/* 弹窗内表格：高度由 el-table :height 控制 */
 .local-modal-content .table-wrapper {
   flex: 1;
-  overflow: hidden;
+  min-height: 0;
+  overflow: auto;
   margin-top: 10px;
+  padding-bottom: 4px;
+}
+
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
+}
+
+::v-deep .local-modal-content .el-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+::v-deep .local-modal-content .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table thead th {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table thead th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table th.is-leaf {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+  padding-bottom: 6px;
+  box-sizing: border-box;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+  position: relative;
+  z-index: 10 !important;
+  background-color: #fff !important;
+  margin-top: 0;
+  box-shadow: 0 -1px 0 #ebeef5;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+  z-index: 11 !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  background-color: #fff !important;
 }
 
 /* 批次号输入框单独放宽，避免被表单统一 140px 限制 */
@@ -1380,14 +1485,12 @@ export default {
   min-width: 280px;
 }
 
-.local-modal-content .el-table {
-  height: 48vh;
-  max-height: 48vh;
+::v-deep .local-modal-content {
+  min-height: 95vh !important;
 }
 
-.local-modal-content .el-table__body-wrapper {
-  max-height: calc(48vh - 48px);
-  overflow-y: auto;
+::v-deep .local-modal-content .el-table .el-table__body-wrapper {
+  scrollbar-width: thin;
 }
 
 /* 确保页面容器有相对定位，以便内部弹窗正确定位 */
@@ -1423,13 +1526,20 @@ export default {
 <style>
 /* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
 .app-container.inWarehouse-refundGoodsApply-page {
+  position: relative;
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 8px !important;
 }
 
+.app-container.inWarehouse-refundGoodsApply-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+}
+
 .app-container.inWarehouse-refundGoodsApply-page > .el-form.query-form-compact {
-  margin-top: -8px !important;
+  margin-top: -12px !important;
 }
 
 .app-container.inWarehouse-refundGoodsApply-page > .el-row.button-row-compact {
@@ -1448,12 +1558,16 @@ export default {
   background-color: #EBEEF5 !important;
 }
 
-/* 搜索区域：与到货验收一致 */
+/* 搜索区域：与到货验收一致（仅外层容器视觉） */
 .app-container.inWarehouse-refundGoodsApply-page > .el-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
 }
 

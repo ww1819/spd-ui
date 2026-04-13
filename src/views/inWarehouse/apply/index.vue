@@ -480,20 +480,18 @@
             prop="batchNumber"
             width="200"
             min-width="180"
-            :show-overflow-tooltip="false"
-            class-name="detail-col-multiline"
+            show-overflow-tooltip
             resizable
             sortable
           >
             <template slot-scope="scope">
-              <div class="detail-cell-edit-wrap">
+              <div style="text-align: center;">
                 <el-input
                   v-model="scope.row.batchNumber"
-                  type="textarea"
-                  :autosize="{ minRows: 2, maxRows: 6 }"
+                  clearable
                   placeholder="批号"
                   size="small"
-                  class="detail-input-multiline"
+                  style="width: 100%"
                 />
               </div>
             </template>
@@ -547,21 +545,18 @@
             prop="batchNo"
             width="200"
             min-width="180"
-            :show-overflow-tooltip="false"
-            class-name="detail-col-multiline"
+            show-overflow-tooltip
             resizable
             sortable
           >
             <template slot-scope="scope">
-              <div class="detail-cell-edit-wrap">
+              <div style="text-align: center;">
                 <el-input
                   v-model="scope.row.batchNo"
-                  type="textarea"
-                  :autosize="{ minRows: 2, maxRows: 6 }"
                   :disabled="true"
                   placeholder="批次号"
                   size="small"
-                  class="detail-input-multiline"
+                  style="width: 100%"
                 />
               </div>
             </template>
@@ -1710,12 +1705,16 @@ export default {
   color: #409EFF;
 }
 
-/* 搜索区域样式 */
+/* 搜索区域：外层白底容器（宽度铺满、边框与阴影略加强，便于辨认区域边界） */
 .app-container > .el-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
 }
 
@@ -1866,21 +1865,10 @@ export default {
   width: 118px !important;
 }
 
-/* 批号 / 批次号：加高、可换行 */
+/* 批号 / 有效期等可编辑列外层容器 */
 .local-modal-content .modal-detail-section .el-table .detail-cell-edit-wrap {
   text-align: left;
   padding: 2px 0;
-}
-.local-modal-content .modal-detail-section .el-table .detail-input-multiline {
-  width: 100% !important;
-  max-width: none !important;
-}
-.local-modal-content .modal-detail-section .el-table ::v-deep .detail-input-multiline .el-textarea__inner {
-  min-height: 44px !important;
-  line-height: 1.45 !important;
-  padding: 8px 10px !important;
-  font-size: 13px !important;
-  resize: vertical;
 }
 /* 有效期：加宽，避免日历/清空图标压住日期文字 */
 .local-modal-content .modal-detail-section .el-table .detail-date-expiry {
@@ -2235,8 +2223,7 @@ export default {
 </style>
 
 <style>
-/* 添加入库弹窗：批号/批次号多行、有效期列单元格允许换行展示 */
-.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-multiline .cell,
+/* 添加入库弹窗：有效期列单元格允许换行展示 */
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-date .cell {
   white-space: normal;
   word-break: break-word;
@@ -2247,7 +2234,7 @@ export default {
 
 /* 名称、规格、型号、生产厂家：左上对齐，最多两行；行高随内容在 1～2 行间变化；列可拖拽加宽 */
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td {
-  vertical-align: top;
+  vertical-align: middle;
 }
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .cell {
   vertical-align: top;
@@ -2280,9 +2267,14 @@ export default {
   width: auto;
 }
 
-/* 搜索框容器：往上移8px（非scoped确保生效） */
+/* 搜索框容器：略上移，与其它列表页一致 */
 .app-container > .el-form.query-form-compact {
   margin-top: -8px !important;
+}
+
+/* 到货验收：再上移 4px，使「标签栏 → 搜索区」与「搜索区 → 操作按钮」留白接近 */
+.app-container.inWarehouse-apply-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
 }
 
 /* 新增/导出/搜索/重置按钮行紧凑：往上移8px，与明细框间距8px（非scoped确保生效） */
