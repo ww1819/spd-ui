@@ -12,7 +12,9 @@ const user = {
     permissions: [],
     // 租户信息（与设备前端一致）：登录/ getInfo 带回，供请求头 X-Tenant-Id 与租户数据隔离
     tenant: null,
-    tenantSyncedAt: 0
+    tenantSyncedAt: 0,
+    /** 耗材 sys_user_post 岗位/工作组 ID 列表（与 getInfo 同步，管理员维护后需 GetInfo 刷新） */
+    postIds: []
   },
 
   mutations: {
@@ -42,6 +44,9 @@ const user = {
     },
     SET_PERMISSIONS: (state, permissions) => {
       state.permissions = permissions
+    },
+    SET_POST_IDS: (state, postIds) => {
+      state.postIds = Array.isArray(postIds) ? postIds : []
     }
   },
 
@@ -96,6 +101,7 @@ const user = {
             commit('SET_TENANT', null)
           }
           commit('SET_TENANT_SYNCED_AT', Date.now())
+          commit('SET_POST_IDS', user.postIds != null && Array.isArray(user.postIds) ? user.postIds : [])
           resolve(res)
         }).catch(error => {
           reject(error)
@@ -112,6 +118,7 @@ const user = {
           commit('SET_PERMISSIONS', [])
           commit('SET_TENANT', null)
           commit('SET_TENANT_SYNCED_AT', 0)
+          commit('SET_POST_IDS', [])
           removeToken()
           resolve()
         }).catch(error => {
