@@ -17,6 +17,15 @@ export function getApply(id) {
   })
 }
 
+/** 科室申领操作人下拉（科室数据权限；有申请科室时仅该科室关联用户） */
+export function listDeptApplyOperatorOptions(departmentId) {
+  return request({
+    url: '/department/apply/operatorOptions',
+    method: 'get',
+    params: { departmentId }
+  })
+}
+
 // 新增科室申领
 export function addApply(data) {
   return request({

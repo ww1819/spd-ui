@@ -14,11 +14,6 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-              </div>
-            </el-form-item>
             <el-form-item prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
@@ -114,7 +109,6 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -221,14 +215,13 @@
                 </el-col>
 
                 <el-col :span="4">
-                  <el-form-item label="仓库" prop="warehouseId">
-                    <SelectWarehouse v-model="form.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-                  </el-form-item>
-                </el-col>
-
-                <el-col :span="4">
                   <el-form-item label="科室" prop="departmentId">
                     <SelectDepartment v-model="form.departmentId"/>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="4">
+                  <el-form-item label="制单人">
+                    <el-input :value="creatorDisplayName" disabled placeholder="—" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -248,7 +241,7 @@
 
                 <el-col :span="4">
                   <el-form-item label="操作人" prop="userId">
-                    <SelectUser v-model="form.userId"/>
+                    <SelectDeptApplyOperator v-model="form.userId" :department-id="form.departmentId" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
@@ -264,6 +257,9 @@
               <el-row :gutter="10" class="detail-toolbar-row">
                 <el-col :span="1.5">
                   <span>科室申领明细信息</span>
+                </el-col>
+                <el-col v-if="!action" :span="6">
+                  <el-button type="primary" size="small" @click="openOutboundRefDialog(null)">关联出库单一览</el-button>
                 </el-col>
 
                 <div v-show="action">
@@ -288,26 +284,71 @@
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="型号" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
+                <el-table-column label="型号" align="center" prop="material.model" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
+                <el-table-column label="库存仓库" align="center" width="120" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ (scope.row.stockWarehouse && scope.row.stockWarehouse.name) ? scope.row.stockWarehouse.name : '—' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="本仓可用" prop="availableStockQty" width="100" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.availableStockQty != null && scope.row.availableStockQty !== '' ? scope.row.availableStockQty : '—' }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.unitPrice || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="数量" prop="qty" width="90" show-overflow-tooltip resizable>
+                <el-table-column :label="action ? '数量' : '申请数量'" prop="qty" width="96" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input clearable v-model="scope.row.qty" placeholder="数量"
-                              onkeyup="value=value.replace(/\D/g,'')"
-                              onafterpaste="value=value.replace(/\D/g,'')"
-                              @blur="form.result=$event.target.value"
-                              @input="qtyChange(scope.row)"
+                    <el-input
+                      v-if="action"
+                      clearable
+                      v-model="scope.row.qty"
+                      placeholder="数量"
+                      onkeyup="value=value.replace(/\D/g,'')"
+                      onafterpaste="value=value.replace(/\D/g,'')"
+                      @blur="form.result=$event.target.value"
+                      @input="qtyChange(scope.row)"
                     />
+                    <span v-else>{{ fmtQty(scope.row.qty) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.amt || '--' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column v-if="!action" label="待出库数量" prop="pendingOutboundQty" width="100" align="right" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ fmtQty(scope.row.pendingOutboundQty) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column v-if="!action" label="出库待审核数量" prop="ckPendingAuditQty" width="118" align="right" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ fmtQty(scope.row.ckPendingAuditQty) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column v-if="!action" label="已下推出库合计" prop="linkedCkQty" width="118" align="right" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ fmtQty(scope.row.linkedCkQty) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column v-if="!action" label="已审核出库数量" prop="ckAuditedQty" width="118" align="right" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ fmtQty(scope.row.ckAuditedQty) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column v-if="!action" label="已作废数量" prop="whLineVoidQty" width="100" align="right" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ fmtQty(scope.row.whLineVoidQty) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column v-if="!action" label="关联出库" width="88" align="center" fixed="right">
+                  <template slot-scope="scope">
+                    <el-button type="text" size="small" @click="openOutboundRefDialog(scope.row.id)">查看</el-button>
                   </template>
                 </el-table-column>
                 <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
@@ -326,7 +367,7 @@
                     <el-input v-model="scope.row.remark" placeholder="备注" />
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" align="center" width="100" fixed="right">
+                <el-table-column v-if="action" label="操作" align="center" width="100" fixed="right">
                   <template slot-scope="scope">
                     <el-button
                       size="small"
@@ -625,14 +666,60 @@
       </div>
     </transition>
 
-    <!-- 3、使用组件（科室申领添加明细 / 新增制单模板添加明细 共用） -->
+    <el-dialog
+      :title="outboundRefFilterEntryId != null ? '本行关联出库单据与明细' : '关联出库单据与明细'"
+      :visible.sync="outboundRefDialogVisible"
+      width="1120px"
+      append-to-body
+      @closed="outboundRefFilterEntryId = null"
+    >
+      <el-table :data="filteredOutboundRefList" border size="small" max-height="420" empty-text="暂无关联出库记录">
+        <el-table-column label="申领明细" align="center" width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ outboundRefEntryLabel(scope.row.basApplyEntryId) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="耗材名称" align="center" min-width="120" prop="materialName" show-overflow-tooltip />
+        <el-table-column label="库房申请单号" align="center" width="140" prop="whApplyBillNo" show-overflow-tooltip />
+        <el-table-column label="出库单号" align="center" width="140" prop="ckBillNo" show-overflow-tooltip />
+        <el-table-column label="出库状态" align="center" width="100">
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.biz_status" :value="scope.row.ckBillStatus" />
+          </template>
+        </el-table-column>
+        <el-table-column label="关联数量" align="right" width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ fmtQty(scope.row.refQty) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="出库明细数量" align="right" width="110" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ fmtQty(scope.row.ckEntryQty) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="出库单ID" align="center" width="100" prop="ckBillId" show-overflow-tooltip />
+        <el-table-column label="出库明细ID" align="center" width="100" prop="ckEntryId" show-overflow-tooltip />
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="outboundRefDialogVisible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 科室申领：全院聚合可用库存；制单模板：仍按仓库选库存明细 -->
+    <SelectDepartmentApplyAvailableStock
+      v-if="DialogComponentShow && selectTarget === 'apply'"
+      :DialogComponentShow="DialogComponentShow"
+      :selectedDetails="basApplyEntryList"
+      @closeDialog="closeDialog"
+      @selectData="selectData"
+    />
     <SelectInventory
-      v-if="DialogComponentShow"
+      v-if="DialogComponentShow && selectTarget === 'template'"
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="currentSelectWarehouseValue"
       @closeDialog="closeDialog"
       @selectData="selectData"
-    ></SelectInventory>
+    />
 
   </div>
 </template>
@@ -644,13 +731,15 @@ import { listMaterialAll } from "@/api/foundation/material";
 import { pinyin } from 'pinyin-pro';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
-import SelectUser from '@/components/SelectModel/SelectUser';
+import SelectDeptApplyOperator from '@/components/SelectModel/SelectDeptApplyOperator';
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
+import SelectDepartmentApplyAvailableStock from '@/components/SelectModel/SelectDepartmentApplyAvailableStock';
+import SelectInventory from '@/components/SelectModel/SelectInventory';
 
 export default {
   name: "dApply",
   dicts: ['biz_status','way_status'],
-  components: { SelectWarehouse, SelectDepartment, SelectUser, SelectSupplier },
+  components: { SelectWarehouse, SelectDepartment, SelectDeptApplyOperator, SelectSupplier, SelectDepartmentApplyAvailableStock, SelectInventory },
   data() {
     return {
       // 遮罩层
@@ -659,7 +748,7 @@ export default {
       warehouseValue: "",
       /** 库存选择弹窗：当前用于哪个表单（apply=科室申领明细，template=新增制单模板明细） */
       selectTarget: 'apply',
-      /** 库存选择弹窗：当前传入的仓库（科室申领用 form.warehouseId，制单模板用 addTemplateForm.warehouseId） */
+      /** 制单模板选库存明细时传入的仓库 */
       currentSelectWarehouseValue: '',
       /** 新增制单模板弹窗：搜索条件（首字母+模糊） */
       addTemplateDialogVisible: false,
@@ -724,6 +813,10 @@ export default {
       columnList: [],
       //是否显示
       action: true,
+      /** 查看关联出库单弹窗 */
+      outboundRefDialogVisible: false,
+      /** null=整单全部明细；有值=仅该 bas_apply_entry.id */
+      outboundRefFilterEntryId: null,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -731,7 +824,6 @@ export default {
         applyBillNo: null,
         beginDate: null,
         endDate: null,
-        warehouseId: null,
         departmentId: null,
         userId: null,
         applyBillStatus: null,
@@ -743,9 +835,6 @@ export default {
       form: {},
       // 表单校验
       rules: {
-        warehouseId: [
-          { required: true, message: "仓库不能为空", trigger: "blur" }
-        ],
         departmentId: [
           { required: true, message: "科室不能为空", trigger: "change" }
         ],
@@ -803,6 +892,26 @@ export default {
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
     },
+    /** 制单人：已保存单据显示后端姓名；新增显示当前登录用户 */
+    creatorDisplayName() {
+      const n = this.form && this.form.createrNmae;
+      if (n) {
+        return n;
+      }
+      if (!this.form || !this.form.id) {
+        return (this.$store.state.user && this.$store.state.user.name) ? this.$store.state.user.name : '';
+      }
+      return '—';
+    },
+    /** 关联出库一览（可按申领明细行过滤） */
+    filteredOutboundRefList() {
+      const list = (this.form && this.form.outboundRefList) || [];
+      const eid = this.outboundRefFilterEntryId;
+      if (eid == null || eid === '') {
+        return list;
+      }
+      return list.filter(r => r.basApplyEntryId == eid);
+    }
   },
   watch: {
     templateDialogVisible(val) {
@@ -855,12 +964,7 @@ export default {
       });
     },
     nameBtn() {
-      if(!this.form.warehouseId) {
-        this.$message({ message: '请先选择仓库', type: 'warning' })
-        return
-      }
       this.selectTarget = 'apply'
-      this.currentSelectWarehouseValue = this.form.warehouseId
       this.DialogComponentShow = true
     },
     closeDialog() {
@@ -1214,7 +1318,40 @@ export default {
         })
       } else {
         val.forEach(item => {
-          this.basApplyEntryList.splice(this.basApplyEntryList.length, 0, JSON.parse(JSON.stringify(item)))
+          const unitPrice = item.unitPrice != null ? Number(item.unitPrice) : null
+          const row = {
+            materialId: item.materialId,
+            stockWarehouseId: item.warehouseId != null ? item.warehouseId : null,
+            stockWarehouse: item.warehouseId != null ? {
+              id: item.warehouseId,
+              code: item.warehouseCode,
+              name: item.warehouseName
+            } : null,
+            material: {
+              id: item.materialId,
+              code: item.materialCode,
+              name: item.materialName,
+              speci: item.materialSpeci,
+              model: item.materialModel,
+              registerNo: item.registerNo,
+              packageSpeci: item.packageSpeci,
+              isWay: item.isWay,
+              fdUnit: item.unitName ? { unitName: item.unitName } : null,
+              fdFactory: item.factoryName ? { factoryName: item.factoryName } : null,
+              fdWarehouseCategory: item.warehouseCategoryName ? { warehouseCategoryName: item.warehouseCategoryName } : null,
+              fdFinanceCategory: item.financeCategoryName ? { financeCategoryName: item.financeCategoryName } : null
+            },
+            unitPrice: unitPrice,
+            qty: '',
+            amt: '0',
+            availableStockQty: item.availableQty != null ? item.availableQty : null,
+            batchNo: null,
+            batchNumer: null,
+            beginTime: null,
+            endTime: null,
+            remark: null
+          }
+          this.basApplyEntryList.push(row)
         })
         this.calculateTotals()
       }
@@ -1243,7 +1380,6 @@ export default {
         userId: null,
         applyBillStatus: null,
         billType: 1,
-        createBy: null,
         createTime: null,
         updateBy: null,
         updateTime: null,
@@ -1274,19 +1410,23 @@ export default {
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
+      const sumNumProp = (prop) => {
+        let t = 0;
+        data.forEach(item => {
+          const v = item[prop];
+          if (v != null && v !== '' && !isNaN(v)) {
+            t += parseFloat(v);
+          }
+        });
+        return t;
+      };
       columns.forEach((column, index) => {
         if (index === 1) {
           sums[index] = '合计';
           return;
         }
         if (column.property === 'qty') {
-          let totalQty = 0;
-          data.forEach(item => {
-            if (item.qty && !isNaN(item.qty)) {
-              totalQty += parseFloat(item.qty);
-            }
-          });
-          sums[index] = totalQty;
+          sums[index] = sumNumProp('qty');
         } else if (column.property === 'amt') {
           let totalAmount = 0;
           data.forEach(item => {
@@ -1295,11 +1435,32 @@ export default {
             }
           });
           sums[index] = '￥' + totalAmount.toFixed(2);
+        } else if (column.property === 'pendingOutboundQty' || column.property === 'ckPendingAuditQty'
+          || column.property === 'linkedCkQty' || column.property === 'ckAuditedQty' || column.property === 'whLineVoidQty') {
+          sums[index] = sumNumProp(column.property);
         } else {
           sums[index] = '';
         }
       });
       return sums;
+    },
+    fmtQty(v) {
+      if (v === null || v === undefined || v === '') {
+        return '—';
+      }
+      return v;
+    },
+    openOutboundRefDialog(entryId) {
+      this.outboundRefFilterEntryId = entryId;
+      this.outboundRefDialogVisible = true;
+    },
+    outboundRefEntryLabel(entryId) {
+      if (entryId == null || entryId === '') {
+        return '—';
+      }
+      const list = this.basApplyEntryList || [];
+      const idx = list.findIndex(e => e.id == entryId);
+      return idx >= 0 ? `第${idx + 1}行` : `明细${entryId}`;
     },
     
     //数量改变事件
@@ -1368,9 +1529,8 @@ export default {
       this.form.applyBillDate = this.getBillDate();
       this.title = "添加科室申领";
       this.action = true;
-      var userName = this.$store.state.user.name;
-      var userId = this.$store.state.user.userId;
-      this.form.createBy = userId;
+      const uid = this.$store.state.user.userId;
+      this.form.userId = uid != null && uid !== '' ? uid : null;
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -1388,11 +1548,6 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
-      // 验证仓库是否选择
-      if (!this.form.warehouseId) {
-        this.$modal.msgError("请先选择仓库");
-        return;
-      }
       // 验证科室是否选择
       if (!this.form.departmentId) {
         this.$modal.msgError("请先选择科室");
