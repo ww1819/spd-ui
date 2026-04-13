@@ -1,66 +1,64 @@
 <template>
   <div class="app-container d-apply-page">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item prop="applyBillNo" class="query-item-inline">
-              <el-input
-                v-model="queryParams.applyBillNo"
-                placeholder="单号"
-                clearable
-                style="width: 180px"
-                @keyup.enter.native="handleQuery"
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item prop="applyBillNo" class="query-item-inline">
+            <el-input
+              v-model="queryParams.applyBillNo"
+              placeholder="单号"
+              clearable
+              style="width: 180px"
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+          <el-form-item prop="departmentId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectDepartment v-model="queryParams.departmentId" />
+            </div>
+          </el-form-item>
+          <el-form-item prop="applyBillStatus" class="query-item-inline">
+            <el-select v-model="queryParams.applyBillStatus" placeholder="单据状态"
+                       :disabled="false"
+                       clearable
+                       style="width: 180px">
+              <el-option v-for="dict in dict.type.biz_status.filter(item => item.value == '1' || item.value == '2' || item.value == 1 || item.value == 2)"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
               />
-            </el-form-item>
-            <el-form-item prop="departmentId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
-            </el-form-item>
-            <el-form-item prop="applyBillStatus" class="query-item-inline">
-              <el-select v-model="queryParams.applyBillStatus" placeholder="单据状态"
-                         :disabled="false"
-                         clearable
-                         style="width: 180px">
-                <el-option v-for="dict in dict.type.biz_status.filter(item => item.value == '1' || item.value == '2' || item.value == 1 || item.value == 2)"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
-            <el-form-item style="display: flex; align-items: center;">
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
-                clearable
-                style="width: 180px; margin-right: 8px;"
-              />
-              <span style="margin: 0 4px;">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
-                clearable
-                style="width: 180px; margin-left: 8px;"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-    </div>
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="12">
+          <el-form-item style="display: flex; align-items: center;">
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="起始日期"
+              clearable
+              style="width: 180px; margin-right: 8px;"
+            />
+            <span style="margin: 0 4px;">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="截止日期"
+              clearable
+              style="width: 180px; margin-left: 8px;"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -888,9 +886,9 @@ export default {
       const start = (this.addTemplateDetailPageNum - 1) * this.addTemplateDetailPageSize;
       return list.slice(start, start + this.addTemplateDetailPageSize);
     },
-    /** 与出库申请添加弹窗明细表高度一致 */
+    /** 弹窗明细表固定高度：表体可滚动，合计行始终在表格区域最底部 */
     detailTableHeight() {
-      return 'max(260px, calc(100vh - 368px))';
+      return 'max(300px, calc(100vh - 320px))';
     },
     /** 制单人：已保存单据显示后端姓名；新增显示当前登录用户 */
     creatorDisplayName() {
@@ -1698,15 +1696,18 @@ export default {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  /* 禁止弹窗内容把主布局撑出纵向滚动条（95vh 曾导致超出主内容区高度） */
+  overflow: hidden;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  min-height: 95vh;
+  max-height: 100%;
+  min-height: 0;
   overflow-x: hidden;
-  /* 弹窗整体不滚动，仅明细表区域内部滚动（与出库申请固定弹窗一致） */
+  /* 弹窗白底自身不滚动，只在明细表 body 内滚动 */
   overflow-y: hidden;
   display: flex;
   flex-direction: column;
@@ -2117,7 +2118,7 @@ export default {
 }
 
 ::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
-  padding-bottom: 6px;
+  padding-bottom: 0;
   box-sizing: border-box;
   overflow-y: auto !important;
   overflow-x: auto !important;
@@ -2159,8 +2160,11 @@ export default {
   background-color: #fff !important;
 }
 
-::v-deep .local-modal-content {
-  min-height: 95vh !important;
+/* 不再使用 min-height:95vh，避免高于 #app 主内容区时带动整页滚动 */
+::v-deep .local-modal-content:not(.template-dialog-content) {
+  min-height: 0 !important;
+  max-height: 100% !important;
+  height: 100% !important;
 }
 
 ::v-deep .local-modal-content .el-table .el-table__body-wrapper {
@@ -2242,47 +2246,78 @@ export default {
   font-weight: 500;
 }
 
-/* 搜索条件容器样式 */
-.form-fields-container {
+/* 搜索区域：与到货验收一致（顶层 el-form 白底容器，边框与阴影略加强） */
+.app-container.d-apply-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
-  padding: 16px 24px 2px 24px;
+  padding: 16px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-top: -2px;
-  margin-bottom: 6px;
-  border: 1px solid #EBEEF5;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
 }
 
-.query-row-left {
-  margin-bottom: 0px;
-  margin-top: 0px;
+.app-container.d-apply-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
 }
 
-.query-item-inline {
+.app-container.d-apply-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.d-apply-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.d-apply-page > .el-form.query-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.d-apply-page > .el-form.query-form .query-row-left .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.d-apply-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.d-apply-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container.d-apply-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.d-apply-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.d-apply-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 180px;
 }
 
 .query-item-inline .el-form-item__label {
   width: 80px !important;
 }
 
-.query-select-wrapper {
-  width: 180px;
-}
-
 .query-row-second {
-  margin-bottom: 0px;
-  margin-top: 0px;
   position: relative;
 }
 
-.query-row-second .el-form-item {
+.app-container.d-apply-page > .el-form.query-form .query-row-second .el-form-item {
   white-space: nowrap;
 }
 
-.query-row-second .el-form-item .el-form-item__content {
+.app-container.d-apply-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
@@ -2365,22 +2400,29 @@ export default {
 </style>
 
 <style>
-/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+/* 与到货验收一致：全局 padding-top:20px 保留；仅用 -12px 略上提，标签与搜索框之间保留可见缝隙（勿用 -20px 贴顶） */
 .app-container.d-apply-page {
   position: relative;
-  max-width: 100%;
-  overflow-x: hidden;
-  box-sizing: border-box;
-  padding-top: 10px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 8px !important;
+}
+
+.app-container.d-apply-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.d-apply-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
 }
 
 .app-container.d-apply-page .local-modal-mask {
   left: -8px;
   right: -8px;
   width: auto;
+  overflow: hidden;
 }
 
 /* 表格与翻页之间更紧凑 */

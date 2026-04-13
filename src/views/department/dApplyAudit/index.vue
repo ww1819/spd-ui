@@ -1,68 +1,66 @@
 <template>
   <div class="app-container d-apply-audit-page">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item prop="applyBillNo" class="query-item-inline">
-              <el-input
-                v-model="queryParams.applyBillNo"
-                placeholder="单号"
-                clearable
-                style="width: 180px"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-              </div>
-            </el-form-item>
-            <el-form-item prop="departmentId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
-            </el-form-item>
-            <el-form-item prop="applyBillStatus" class="query-item-inline">
-              <el-select v-model="queryParams.applyBillStatus" placeholder="状态"
-                         clearable
-                         style="width: 180px">
-                <el-option label="未审核" :value="1" />
-                <el-option label="已审核" :value="2" />
-                <el-option label="已驳回" :value="3" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item prop="applyBillNo" class="query-item-inline">
+            <el-input
+              v-model="queryParams.applyBillNo"
+              placeholder="单号"
+              clearable
+              style="width: 180px"
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+          <el-form-item prop="warehouseId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+            </div>
+          </el-form-item>
+          <el-form-item prop="departmentId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectDepartment v-model="queryParams.departmentId" />
+            </div>
+          </el-form-item>
+          <el-form-item prop="applyBillStatus" class="query-item-inline">
+            <el-select v-model="queryParams.applyBillStatus" placeholder="状态"
+                       clearable
+                       style="width: 180px">
+              <el-option label="未审核" :value="1" />
+              <el-option label="已审核" :value="2" />
+              <el-option label="已驳回" :value="3" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
-            <el-form-item style="display: flex; align-items: center;">
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
-                clearable
-                style="width: 180px; margin-right: 8px;"
-              />
-              <span style="margin: 0 4px;">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
-                clearable
-                style="width: 180px; margin-left: 8px;"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-    </div>
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="12">
+          <el-form-item style="display: flex; align-items: center;">
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="起始日期"
+              clearable
+              style="width: 180px; margin-right: 8px;"
+            />
+            <span style="margin: 0 4px;">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="截止日期"
+              clearable
+              style="width: 180px; margin-left: 8px;"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -88,7 +86,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="54vh" border stripe>
+    <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="64vh" border stripe>
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="单号" align="center" prop="applyBillNo" width="180" show-overflow-tooltip resizable >
@@ -169,13 +167,15 @@
       </el-table-column>
     </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="pagination-bottom-wrap">
+      <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
 
     <!-- 添加或修改科室申领对话框 -->
     <transition name="modal-fade">
@@ -250,8 +250,7 @@
                   <el-form-item label="驳回原因" prop="rejectReason" class="form-item-reject-reason">
                     <el-input
                       v-model="form.rejectReason"
-                      type="textarea"
-                      :rows="3"
+                      clearable
                       placeholder="驳回原因（驳回时必填）"
                     />
                   </el-form-item>
@@ -276,7 +275,8 @@
                 </el-col>
               </el-row>
               <div class="table-wrapper">
-              <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" ref="basApplyEntry" :height="detailTableHeight" border :summary-method="getSummaries" show-summary>
+              <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" ref="basApplyEntry" :height="detailTableHeight" border :summary-method="getSummaries" show-summary @selection-change="handleBasApplyEntrySelectionChange">
+                <el-table-column type="selection" width="55" align="center" fixed="left" />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
@@ -382,6 +382,8 @@ export default {
       applyList: [],
       // 科室申领明细表格数据
       basApplyEntryList: [],
+      // 弹窗内明细表勾选
+      basApplyEntrySelection: [],
       // 合计数量
       totalQty: 0,
       // 合计金额
@@ -428,10 +430,9 @@ export default {
       if (this.form.rejectReason != null && String(this.form.rejectReason).trim() !== '') return false;
       return true;
     },
-    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    /** 与科室申领 dApply 弹窗明细表高度一致 */
     detailTableHeight() {
-      /* 弹窗整体下调高度，明细区也稍微降低一点 */
-      return 'max(170px, calc(100vh - 540px))';
+      return 'max(300px, calc(100vh - 320px))';
     }
   },
   created() {
@@ -499,6 +500,7 @@ export default {
         remark: null
       };
       this.basApplyEntryList = [];
+      this.basApplyEntrySelection = [];
       this.calculateTotals();
       this.resetForm("form");
     },
@@ -524,7 +526,11 @@ export default {
       const { columns, data } = param;
       const sums = [];
       columns.forEach((column, index) => {
-        if (index === 0) {
+        if (column.type === 'selection') {
+          sums[index] = '';
+          return;
+        }
+        if (column.property === 'index') {
           sums[index] = '合计';
           return;
         }
@@ -569,6 +575,10 @@ export default {
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
+    /** 弹窗内明细表勾选 */
+    handleBasApplyEntrySelectionChange(selection) {
+      this.basApplyEntrySelection = selection || [];
+    },
     /** 查看按钮操作 */
     handleView(row){
       this.dialogMode = 'view';
@@ -576,8 +586,14 @@ export default {
       getApplyAudit(id).then(response => {
         this.form = response.data;
         this.basApplyEntryList = response.data.basApplyEntryList || [];
+        this.basApplyEntrySelection = [];
         this.open = true;
         this.calculateTotals();
+        this.$nextTick(() => {
+          if (this.$refs.basApplyEntry) {
+            this.$refs.basApplyEntry.clearSelection();
+          }
+        });
 
         // 保持与后端一致的状态值（1=未审核，2=已审核，3=已驳回）
         this.form.applyBillStatus = response.data.applyBillStatus;
@@ -882,21 +898,15 @@ export default {
   font-size: 13px;
 }
 
-/* 驳回原因多行输入：不受单行控件 140px 限制 */
+/* 驳回原因：单行输入，与弹窗内其它 el-input 宽度一致 */
 .local-modal-content .modal-form-compact .form-item-reject-reason .el-form-item__content {
   margin-left: 0 !important;
   max-width: none;
 }
 
-.local-modal-content .modal-form-compact .form-item-reject-reason .el-textarea {
+.local-modal-content .modal-form-compact .form-item-reject-reason .el-input {
   width: 100%;
   max-width: 420px;
-}
-
-.local-modal-content .modal-form-compact .form-item-reject-reason .el-textarea__inner {
-  min-height: 72px !important;
-  font-size: 13px !important;
-  line-height: 1.45 !important;
 }
 
 /* 弹窗内明细区 */
@@ -921,13 +931,14 @@ export default {
   flex-shrink: 0;
 }
 
+/* 明细区：外层不出纵向滚动条，仅表体滚动，表头与合计行固定、左右滚动与表体同步 */
 .local-modal-content .modal-detail-section .table-wrapper {
   flex: 1;
   min-height: 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow: auto;
+  overflow: hidden;
   margin-top: 0;
   padding-bottom: 4px;
 }
@@ -942,8 +953,25 @@ export default {
 }
 
 ::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
-  padding-bottom: 6px;
+  padding-bottom: 0;
   box-sizing: border-box;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  scrollbar-width: thin;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.06);
 }
 
 ::v-deep .local-modal-content .el-table th {
@@ -981,10 +1009,6 @@ export default {
 
 ::v-deep .local-modal-content {
   min-height: 95vh !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
-  scrollbar-width: thin;
 }
 
 .app-container {
@@ -1060,24 +1084,63 @@ export default {
   font-weight: 500;
 }
 
-/* 搜索条件容器样式 */
-.form-fields-container {
+/* 搜索区域：与科室申领 dApply 列表页一致（顶层 el-form 白底、边框与阴影） */
+.app-container.d-apply-audit-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
 }
 
-.query-row-left {
-  margin-bottom: 10px;
+.app-container.d-apply-audit-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
 }
 
-.query-item-inline {
+.app-container.d-apply-audit-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.d-apply-audit-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 180px;
 }
 
 .query-item-inline .el-form-item__label {
@@ -1099,23 +1162,36 @@ export default {
   font-size: 14px;
 }
 
-.query-select-wrapper {
-  width: 180px;
-}
-
 .query-row-second {
-  margin-bottom: 10px;
   position: relative;
 }
 
-.query-row-second .el-form-item {
+.app-container.d-apply-audit-page > .el-form.query-form .query-row-second .el-form-item {
   white-space: nowrap;
 }
 
-.query-row-second .el-form-item .el-form-item__content {
+.app-container.d-apply-audit-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+
+/* 按钮行：与科室申领一致 */
+.mb8 {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+/* 翻页：贴近表格；下方不留白（与科室申领 dApply 一致） */
+.d-apply-audit-page .pagination-bottom-wrap {
+  margin-top: 0 !important;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  transform: translateY(-8px);
+}
+
+::v-deep .d-apply-audit-page .pagination-bottom-wrap .pagination-container {
+  padding: 0 !important;
 }
 
 /* 仅列表主表（勿作用于弹窗内表，避免白屏修复后仍出现整页/弹窗双横向条） */
@@ -1174,19 +1250,49 @@ export default {
 </style>
 
 <style>
+/* 与到货验收 inWarehouse-audit-page 非 scoped 块保持一致（避免多出的 overflow/max-width 等影响首屏负 margin 表现） */
 .app-container.d-apply-audit-page {
   position: relative;
-  max-width: 100%;
-  overflow-x: hidden;
-  box-sizing: border-box;
   padding-left: 8px !important;
   padding-right: 8px !important;
-  padding-bottom: 8px !important;
+}
+
+.app-container.d-apply-audit-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.d-apply-audit-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
 }
 
 .app-container.d-apply-audit-page .local-modal-mask {
   left: -8px;
   right: -8px;
   width: auto;
+  overflow: hidden;
+}
+
+/* 主表与翻页间距、表头：与科室申领列表一致 */
+.app-container.d-apply-audit-page > .el-table {
+  margin-bottom: 1px;
+}
+
+.app-container.d-apply-audit-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.d-apply-audit-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
 }
 </style>

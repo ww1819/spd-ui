@@ -1,9 +1,8 @@
 <template>
-  <div class="app-container">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+  <div class="app-container d-purchase-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
-        <el-row class="query-row-left">
+      <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item prop="purchaseBillNo" class="query-item-inline">
               <el-input
@@ -62,10 +61,9 @@
             </el-form-item>
           </el-col>
         </el-row>
-      </el-form>
-    </div>
+    </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -99,7 +97,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="purchaseList" :row-class-name="rowPurchaseIndex" @selection-change="handleSelectionChange" height="54vh" border stripe>
+    <el-table v-loading="loading" :data="purchaseList" :row-class-name="rowPurchaseIndex" @selection-change="handleSelectionChange" height="64vh" border stripe>
       <el-table-column type="selection" width="60" align="center" resizable />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="申购单号" align="center" prop="purchaseBillNo" width="180" show-overflow-tooltip resizable>
@@ -180,13 +178,15 @@
       </el-table-column>
     </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="pagination-bottom-wrap">
+      <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
 
     <!-- 添加或修改科室申购对话框 -->
     <transition name="modal-fade">
@@ -197,22 +197,21 @@
               <div class="modal-title">{{ title }}</div>
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
               <div class="form-fields-container">
-                <el-row>
+                <el-row :gutter="8">
                   <el-col :span="4">
-                    <el-form-item label="科室" prop="departmentId" label-width="100px">
-                      <SelectDepartment v-model="form.departmentId" filterable/>
+                    <el-form-item label="科室" prop="departmentId">
+                      <SelectDepartment v-model="form.departmentId" :disabled="!action" filterable/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="申购状态" prop="purchaseBillStatus" label-width="100px">
+                    <el-form-item label="申购状态" prop="purchaseBillStatus">
                       <el-select
                         v-model="form.purchaseBillStatus"
                         placeholder="请选择申购状态"
                         :disabled="true"
                         clearable
-                        style="width: 150px"
                       >
                         <el-option
                           v-for="dict in dict.type.purchase_status"
@@ -224,11 +223,11 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="制单日期" prop="purchaseBillDate" label-width="100px">
+                    <el-form-item label="制单日期" prop="purchaseBillDate">
                       <el-date-picker clearable
                                       v-model="form.purchaseBillDate"
                                       type="date"
-                                      style="width: 150px"
+                                      style="width: 100%"
                                       value-format="yyyy-MM-dd"
                                       :disabled="true"
                                       placeholder="请选择制单日期">
@@ -236,27 +235,24 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="制单人" prop="userId" label-width="100px">
-                      <el-input v-model="form.userName" :disabled="true" placeholder="制单人" style="width: 150px"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-                      <SelectWarehouse v-model="form.warehouseId" exclude-warehouse-type="高值,设备"/>
+                    <el-form-item label="制单人" prop="userId">
+                      <el-input v-model="form.userName" :disabled="true" placeholder="—" />
                     </el-form-item>
                   </el-col>
                 </el-row>
-
-                <el-row>
+                <el-row :gutter="8">
                   <el-col :span="4">
-                    <el-form-item label="紧急程度" prop="urgencyLevel" label-width="100px">
-                      <!-- 编辑状态：下拉框显示中文标签 -->
+                    <el-form-item label="仓库" prop="warehouseId">
+                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action" exclude-warehouse-type="高值,设备"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="紧急程度" prop="urgencyLevel">
                       <el-select
                         v-if="action"
                         v-model="form.urgencyLevel"
                         placeholder="请选择紧急程度"
                         clearable
-                        style="width: 150px"
                       >
                         <el-option
                           v-for="dict in dict.type.urgency_level"
@@ -265,17 +261,17 @@
                           :value="String(dict.value)"
                         />
                       </el-select>
-                      <!-- 查看状态：只读汉字显示 -->
-                      <el-input v-else v-model="urgencyLevelText" disabled style="width: 150px"></el-input>
+                      <el-input v-else v-model="urgencyLevelText" disabled />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="期望到货日期" prop="expectedDeliveryDate" label-width="100px">
+                    <el-form-item label="期望到货" prop="expectedDeliveryDate">
                       <el-date-picker clearable
                                       v-model="form.expectedDeliveryDate"
                                       type="date"
-                                      style="width: 150px"
+                                      style="width: 100%"
                                       value-format="yyyy-MM-dd"
+                                      :disabled="!action"
                                       placeholder="请选择期望到货日期">
                       </el-date-picker>
                     </el-form-item>
@@ -283,31 +279,31 @@
                 </el-row>
               </div>
 
-              <el-row :gutter="10" class="mb8">
+              <div class="modal-detail-section">
+              <el-row :gutter="10" class="detail-toolbar-row">
                 <el-col :span="1.5">
                   <span>科室申购明细信息</span>
                 </el-col>
-
                 <div v-show="action">
                   <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-plus" @click="addMaterialRow" :disabled="!form.warehouseId || !form.departmentId">添加耗材</el-button>
+                    <el-button type="primary" icon="el-icon-plus" size="small" @click="addMaterialRow" :disabled="!form.warehouseId || !form.departmentId">添加耗材</el-button>
                   </el-col>
                   <el-col :span="1.5">
-                    <el-button type="danger" icon="el-icon-delete" @click="handleDeleteDepPurchaseApplyEntry">删除</el-button>
+                    <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteDepPurchaseApplyEntry">删除</el-button>
                   </el-col>
                   <el-col :span="1.5">
-                    <el-button @click="cancel">取消</el-button>
+                    <el-button size="small" @click="cancel">取消</el-button>
                   </el-col>
                   <el-col :span="1.5">
-                    <el-button type="primary" @click="submitForm">保存</el-button>
+                    <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
                   </el-col>
                 </div>
               </el-row>
 
               <div class="table-wrapper">
-              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" border>
-                <el-table-column type="selection" width="50" align="center" resizable />
-                <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
+              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" :height="detailTableHeight" border :summary-method="getPurchaseSummaries" show-summary>
+                <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
+                <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>
@@ -335,14 +331,24 @@
                 </el-table-column>
                 <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input v-model="scope.row.qty" placeholder="数量"
-                              @input="qtyChange(scope.row)"
+                    <el-input
+                      v-if="action"
+                      v-model="scope.row.qty"
+                      placeholder="数量"
+                      @input="qtyChange(scope.row)"
                     />
+                    <span v-else>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '—' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span v-if="scope.row.unitPrice">¥{{ parseFloat(scope.row.unitPrice).toFixed(2) }}</span>
+                    <span v-else>--</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span v-if="scope.row.amt">¥{{ parseFloat(scope.row.amt).toFixed(2) }}</span>
                     <span v-else>--</span>
                   </template>
                 </el-table-column>
@@ -363,10 +369,11 @@
                 </el-table-column>
                 <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input v-model="scope.row.remark" placeholder="备注" />
+                    <el-input v-if="action" v-model="scope.row.remark" placeholder="备注" />
+                    <span v-else>{{ scope.row.remark || '—' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" align="center" width="100" fixed="right">
+                <el-table-column v-if="action" label="操作" align="center" width="100" fixed="right">
                   <template slot-scope="scope">
                     <el-button
                       size="small"
@@ -378,6 +385,7 @@
                   </template>
                 </el-table-column>
               </el-table>
+              </div>
               </div>
             </el-form>
           </div>
@@ -462,6 +470,12 @@ export default {
         ],
       }
     };
+  },
+  computed: {
+    /** 与科室申领弹窗明细表同一高度 */
+    detailTableHeight() {
+      return 'max(300px, calc(100vh - 320px))';
+    }
   },
   created() {
     this.getList();
@@ -559,6 +573,41 @@ export default {
       this.ids = selection.map(item => item.id)
       this.single = selection.length!==1
       this.multiple = !selection.length
+    },
+    /** 明细表合计（与科室申领弹窗一致） */
+    getPurchaseSummaries(param) {
+      const { columns, data } = param;
+      const sums = [];
+      const sumNumProp = (prop) => {
+        let t = 0;
+        data.forEach((item) => {
+          const v = item[prop];
+          if (v != null && v !== '' && !isNaN(v)) {
+            t += parseFloat(v);
+          }
+        });
+        return t;
+      };
+      columns.forEach((column, index) => {
+        if (index === 1) {
+          sums[index] = '合计';
+          return;
+        }
+        if (column.property === 'qty') {
+          sums[index] = sumNumProp('qty');
+        } else if (column.property === 'amt') {
+          let totalAmount = 0;
+          data.forEach((item) => {
+            if (item.amt != null && item.amt !== '' && !isNaN(item.amt)) {
+              totalAmount += parseFloat(item.amt);
+            }
+          });
+          sums[index] = '¥' + totalAmount.toFixed(2);
+        } else {
+          sums[index] = '';
+        }
+      });
+      return sums;
     },
     /** 科室申购序号 */
     rowPurchaseIndex({ row, rowIndex }) {
@@ -844,39 +893,44 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 占满整个遮罩层 */
+/* 内部弹窗样式 - 与科室申领 dApply 弹窗一致 */
+/* 与科室申领 dApply：遮罩相对 .app-container 铺满主内容区，不盖住侧栏 */
 .local-modal-mask {
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.3);
   z-index: 1000;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  overflow: hidden;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  max-height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 95vh !important;
+  padding-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  flex-shrink: 0;
-  min-height: 48px;
+  background: #EBEEF5;
+  min-height: 40px;
 }
 
 .modal-title {
@@ -887,68 +941,234 @@ export default {
 }
 
 .close-btn {
-  border: 1px solid #DCDFE6;
-  background: #fff;
-  padding: 7px 15px;
+  border: none;
+  background: transparent;
 }
 
 .close-btn:hover {
-  background: #F5F7FA;
-  border-color: #C0C4CC;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .modal-footer {
-  padding: 15px 20px;
+  padding: 16px 24px;
+  text-align: right;
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
-  text-align: right;
-  flex-shrink: 0;
 }
 
 .modal-footer .el-button {
-  margin-left: 10px;
+  margin-left: 12px;
 }
 
 .local-modal-content .el-form {
   flex: 1;
-  overflow-y: auto;
-  padding: 24px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px 20px 12px;
+  background: #fff;
+  box-shadow: none;
+  margin-bottom: 0;
   display: flex;
   flex-direction: column;
 }
 
-/* 弹窗内表单字段容器 */
+/* 弹窗内顶部字段区 */
 .local-modal-content .form-fields-container {
   background: #fff;
-  padding: 16px 20px;
+  padding: 8px 16px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
   border: 1px solid #EBEEF5;
-  flex-shrink: 0;
 }
 
-.local-modal-content .mb8 {
-  flex-shrink: 0;
-  margin-bottom: 10px;
+.local-modal-content .form-fields-container .el-row:last-child {
+  margin-bottom: 0;
 }
 
-/* 明细表格区域，参考科室申领弹窗布局，占满剩余高度，表头固定不滚动 */
+.local-modal-content .modal-form-compact .el-row {
+  margin-bottom: 6px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .modal-form-compact .el-input,
+.local-modal-content .modal-form-compact .el-select,
+.local-modal-content .modal-form-compact .el-date-picker {
+  width: 140px;
+  max-width: 140px;
+}
+
+.local-modal-content .modal-form-compact .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+}
+
+.local-modal-content .modal-form-compact .el-input__icon {
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-select .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor.el-input {
+  height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__content {
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__label {
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
+
 .local-modal-content .table-wrapper {
   flex: 1;
-  overflow: hidden;
   min-height: 0;
-  height: 0;
+  overflow: auto;
+  margin-top: 10px;
+  padding-bottom: 4px;
 }
 
-.local-modal-content .table-wrapper .el-table {
+.local-modal-content .modal-detail-section .table-wrapper {
+  margin-top: 0;
+  overflow: hidden;
+}
+
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
+}
+
+::v-deep .local-modal-content .el-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+::v-deep .local-modal-content .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table thead th {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table thead th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table th.is-leaf {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+  padding-bottom: 0;
+  box-sizing: border-box;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+  position: relative;
+  z-index: 10 !important;
+  background-color: #fff !important;
+  margin-top: 0;
+  box-shadow: 0 -1px 0 #ebeef5;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+  z-index: 11 !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  background-color: #fff !important;
+}
+
+::v-deep .local-modal-content:not(.template-dialog-content) {
+  min-height: 0 !important;
+  max-height: 100% !important;
   height: 100% !important;
 }
 
-.local-modal-content .table-wrapper .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  max-height: calc(100vh - 450px) !important;
+::v-deep .local-modal-content .el-table .el-table__body-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.06);
+}
+
+::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .el-table__cell {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .cell {
+  white-space: nowrap !important;
+  overflow: hidden !important;
 }
 
 /* 弹窗动画效果 */
@@ -1009,53 +1229,114 @@ export default {
   font-weight: 500;
 }
 
-/* 搜索条件容器样式 */
-.form-fields-container {
+/* 搜索区域：与科室申领一致 */
+.app-container.d-purchase-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
 }
 
-.query-row-left {
-  margin-bottom: 10px;
+.app-container.d-purchase-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
 }
 
-.query-item-inline {
+.app-container.d-purchase-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.d-purchase-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.d-purchase-page > .el-form.query-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.d-purchase-page > .el-form.query-form .query-row-left .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.d-purchase-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.d-purchase-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container.d-purchase-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.d-purchase-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.d-purchase-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 180px;
 }
 
 .query-item-inline .el-form-item__label {
   width: 80px !important;
 }
 
-.query-select-wrapper {
-  width: 180px;
-}
-
 .query-row-second {
-  margin-bottom: 10px;
   position: relative;
 }
 
-.query-row-second .el-form-item {
+.app-container.d-purchase-page > .el-form.query-form .query-row-second .el-form-item {
   white-space: nowrap;
 }
 
-.query-row-second .el-form-item .el-form-item__content {
+.app-container.d-purchase-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
 
-/* 确保表格可以水平滚动和垂直滚动 */
-::v-deep .el-table__body-wrapper {
+.mb8 {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+/* 翻页：贴近表格；下方不留白（与科室申领一致） */
+.d-purchase-page .pagination-bottom-wrap {
+  margin-top: 0 !important;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  transform: translateY(-8px);
+}
+
+::v-deep .d-purchase-page .pagination-bottom-wrap .pagination-container {
+  padding: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* 仅列表主表滚动条（勿作用于弹窗内表） */
+::v-deep .d-purchase-page > .el-table .el-table__body-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
+}
+
+::v-deep .d-purchase-page > .el-table .el-table__body-wrapper::-webkit-scrollbar {
+  height: 12px !important;
+}
+
+::v-deep .d-purchase-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  height: 12px !important;
+  border-radius: 6px;
 }
 
 /* 确保操作列固定 */
@@ -1086,5 +1367,58 @@ export default {
 /* 确保固定列在滚动时保持固定 */
 ::v-deep .el-table__fixed {
   position: absolute !important;
+}
+
+::v-deep .d-purchase-page > .el-table {
+  overflow-x: auto;
+}
+</style>
+
+<style>
+/* 与科室申领 d-apply-page 非 scoped 块一致（勿加 overflow-x/max-width，避免搜索区与标签栏间距表现不一致） */
+.app-container.d-purchase-page {
+  position: relative;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 0 !important;
+}
+
+.app-container.d-purchase-page > .el-table {
+  margin-bottom: 1px;
+}
+
+.app-container.d-purchase-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.d-purchase-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container.d-purchase-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.d-purchase-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+/* 与科室申领：抵消页面主体内边距，遮罩与白底与列表同宽 */
+.app-container.d-purchase-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+  overflow: hidden;
 }
 </style>

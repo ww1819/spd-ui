@@ -1330,13 +1330,15 @@ export default {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  overflow: hidden;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  min-height: 95vh;
+  max-height: 100%;
+  min-height: 0;
   overflow-x: hidden;
   /* 弹窗整体不滚动，仅明细表区域内部滚动 */
   overflow-y: hidden;
@@ -1710,7 +1712,9 @@ export default {
 }
 
 ::v-deep .local-modal-content {
-  min-height: 95vh !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  height: 100% !important;
 }
 
 ::v-deep .local-modal-content .el-table .el-table__body-wrapper {
@@ -1900,6 +1904,7 @@ export default {
   left: -8px;
   right: -8px;
   width: auto;
+  overflow: hidden;
 }
 
 .app-container.outWarehouse-apply-page > .el-form.query-form-compact {

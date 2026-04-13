@@ -1620,6 +1620,7 @@ export default {
 }
 
 .app-container.inWarehouse-audit-page > .el-form.query-form-compact {
+  /* 与全局 padding-top:20px 部分相抵，保留与标签栏的少量缝隙（约 8px 量级） */
   margin-top: -12px !important;
 }
 
