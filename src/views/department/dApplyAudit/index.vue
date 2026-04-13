@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container d-apply-audit-page">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
@@ -16,7 +16,7 @@
             </el-form-item>
             <el-form-item prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId"/>
+                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
               </div>
             </el-form-item>
             <el-form-item prop="departmentId" class="query-item-inline">
@@ -186,20 +186,20 @@
               <div class="modal-title">{{ title }}</div>
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="modal-form-wrapper">
+            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact modal-form-wrapper">
               <div class="form-fields-container">
-              <el-row>
+              <el-row :gutter="8">
                 <el-col :span="4">
-                  <el-form-item label="单号" prop="applyBillNo" label-width="100px">
-                    <el-input v-model="form.applyBillNo" :disabled="true" style="width: 150px" />
+                  <el-form-item label="单号" prop="applyBillNo">
+                    <el-input v-model="form.applyBillNo" :disabled="true" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
-                  <el-form-item label="申领状态" prop="billStatus" label-width="100px">
+                  <el-form-item label="申领状态" prop="billStatus">
                     <span v-if="form.applyBillStatus === 3 || form.applyBillStatus === '3'" class="status-text status-rejected">已驳回</span>
                     <el-select v-else v-model="form.applyBillStatus" placeholder="请选择申领状态"
                                :disabled="true"
-                               clearable style="width: 150px">
+                               clearable>
                       <el-option v-for="dict in dict.type.biz_status"
                                  :key="dict.value"
                                  :label="dict.label"
@@ -210,24 +210,24 @@
                 </el-col>
 
                 <el-col :span="4">
-                  <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-                    <SelectWarehouse v-model="form.warehouseId" :disabled="true"/>
+                  <el-form-item label="仓库" prop="warehouseId">
+                    <SelectWarehouse v-model="form.warehouseId" :disabled="true" :excludeWarehouseType="['高值', '设备']"/>
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="4">
-                  <el-form-item label="科室" prop="departmentId" label-width="100px">
+                  <el-form-item label="科室" prop="departmentId">
                     <SelectDepartment v-model="form.departmentId" :disabled="true"/>
                   </el-form-item>
                 </el-col>
               </el-row>
-              <el-row>
+              <el-row :gutter="8">
                 <el-col :span="4">
-                  <el-form-item label="申请日期" prop="applyBillDate" label-width="100px">
+                  <el-form-item label="申请日期" prop="applyBillDate">
                     <el-date-picker clearable
                                     v-model="form.applyBillDate"
                                     type="date"
-                                    style="width: 150px"
+                                    style="width: 100%"
                                     value-format="yyyy-MM-dd"
                                     :disabled="true"
                                     placeholder="请选择申请日期">
@@ -236,47 +236,48 @@
                 </el-col>
 
                 <el-col :span="4">
-                  <el-form-item label="操作人" prop="userId" label-width="100px">
+                  <el-form-item label="操作人" prop="userId">
                     <SelectUser v-model="form.userId" :disabled="true"/>
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
-                  <el-form-item label="备注" prop="remark" label-width="100px">
-                    <el-input v-model="form.remark" placeholder="备注" style="width: 150px" :disabled="true" />
+                  <el-form-item label="备注" prop="remark">
+                    <el-input v-model="form.remark" placeholder="备注" :disabled="true" />
                   </el-form-item>
                 </el-col>
                 <!-- 驳回原因：与备注同一行，仅未审核且未驳回时显示可编辑 -->
-                <el-col :span="4" v-if="isDetailUnAuditAndNotRejected">
-                  <el-form-item label="驳回原因" prop="rejectReason" label-width="100px">
-                    <el-input 
-                      v-model="form.rejectReason" 
-                      type="textarea" 
+                <el-col :span="8" v-if="isDetailUnAuditAndNotRejected">
+                  <el-form-item label="驳回原因" prop="rejectReason" class="form-item-reject-reason">
+                    <el-input
+                      v-model="form.rejectReason"
+                      type="textarea"
                       :rows="3"
-                      placeholder="驳回原因（驳回时必填）" 
-                      style="width: 100%" 
+                      placeholder="驳回原因（驳回时必填）"
                     />
                   </el-form-item>
                 </el-col>
               </el-row>
               </div>
 
+              <div class="modal-detail-section">
 <!--        <el-divider content-position="center">科室申领明细信息</el-divider>-->
-              <el-row :gutter="10" class="mb8">
+              <el-row :gutter="10" class="detail-toolbar-row">
                 <el-col :span="24">
                   <div class="detail-header-row">
                     <span class="detail-header-title">科室申领明细信息</span>
                     <el-button
                       v-if="isDetailUnAuditAndNotRejected"
                       type="primary"
-                      size="medium"
+                      icon="el-icon-check"
+                      size="small"
                       @click="handleAuditSubmit"
                     >审 核</el-button>
                   </div>
                 </el-col>
               </el-row>
               <div class="table-wrapper">
-              <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" ref="basApplyEntry" height="100%" border :summary-method="getSummaries" show-summary>
-                <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable/>
+              <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" ref="basApplyEntry" :height="detailTableHeight" border :summary-method="getSummaries" show-summary>
+                <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
                 <el-table-column label="型号" align="center" prop="material.model" width="140" show-overflow-tooltip resizable/>
@@ -317,6 +318,7 @@
               <div class="modal-footer" v-if="dialogMode === 'audit' && isDetailUnAuditAndNotRejected">
                 <el-button @click="cancel">取 消</el-button>
                 <el-button type="danger" @click="handleRejectSubmit">驳 回</el-button>
+              </div>
               </div>
             </el-form>
           </div>
@@ -425,6 +427,10 @@ export default {
       if (this.form.applyBillStatus != 1) return false;
       if (this.form.rejectReason != null && String(this.form.rejectReason).trim() !== '') return false;
       return true;
+    },
+    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    detailTableHeight() {
+      return 'max(260px, calc(100vh - 368px))';
     }
   },
   created() {
@@ -517,7 +523,7 @@ export default {
       const { columns, data } = param;
       const sums = [];
       columns.forEach((column, index) => {
-        if (index === 1) {
+        if (index === 0) {
           sums[index] = '合计';
           return;
         }
@@ -714,7 +720,7 @@ export default {
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.3);
   z-index: 1000;
   display: flex;
   align-items: stretch;
@@ -725,21 +731,24 @@ export default {
   background: #fff;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  min-height: 95vh;
+  overflow-x: hidden;
+  overflow-y: hidden;
   display: flex;
-  min-height: 95vh !important;
   flex-direction: column;
+  padding-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
+  background: #EBEEF5;
   flex-shrink: 0;
-  min-height: 48px;
+  min-height: 40px;
 }
 
 .modal-title {
@@ -775,49 +784,208 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 24px;
+  padding: 6px 20px 12px;
+  background: #fff;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 .modal-form-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-.local-modal-content .form-fields-container {
-  flex-shrink: 0;
-}
-
-.local-modal-content .mb8 {
-  flex-shrink: 0;
-  margin-bottom: 10px;
-}
-
-.local-modal-content .table-wrapper {
+  min-height: 0;
   flex: 1;
   overflow: hidden;
+}
+
+/* 弹窗内顶部字段区：与到货验收一致 */
+.local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 8px 16px 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  border: 1px solid #EBEEF5;
+  flex-shrink: 0;
+}
+
+.local-modal-content .form-fields-container .el-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 弹窗内表单紧凑布局（与 inWarehouse/audit 到货验收弹窗一致） */
+.local-modal-content .modal-form-compact .el-row {
+  margin-bottom: 6px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .modal-form-compact .el-input,
+.local-modal-content .modal-form-compact .el-select,
+.local-modal-content .modal-form-compact .el-date-picker {
+  width: 140px;
+  max-width: 140px;
+}
+
+.local-modal-content .modal-form-compact .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+}
+
+.local-modal-content .modal-form-compact .el-input__icon {
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-select .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor.el-input {
+  height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__content {
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__label {
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+/* 驳回原因多行输入：不受单行控件 140px 限制 */
+.local-modal-content .modal-form-compact .form-item-reject-reason .el-form-item__content {
+  margin-left: 0 !important;
+  max-width: none;
+}
+
+.local-modal-content .modal-form-compact .form-item-reject-reason .el-textarea {
+  width: 100%;
+  max-width: 420px;
+}
+
+.local-modal-content .modal-form-compact .form-item-reject-reason .el-textarea__inner {
+  min-height: 72px !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+/* 弹窗内明细区 */
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 1;
   min-height: 0;
-  height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.local-modal-content .table-wrapper .el-table {
-  height: 100% !important;
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
-::v-deep .local-modal-content .table-wrapper .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  max-height: calc(100vh - 450px) !important;
+.local-modal-content .modal-detail-section .table-wrapper {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+  margin-top: 0;
+  padding-bottom: 4px;
+}
+
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
+}
+
+.local-modal-content .modal-detail-section .modal-footer {
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+  padding-bottom: 6px;
+  box-sizing: border-box;
+}
+
+::v-deep .local-modal-content .el-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+::v-deep .local-modal-content .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+  position: relative;
+  z-index: 10 !important;
+  background-color: #fff !important;
+  margin-top: 0;
+  box-shadow: 0 -1px 0 #ebeef5;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+  z-index: 11 !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  background-color: #fff !important;
+}
+
+::v-deep .local-modal-content {
+  min-height: 95vh !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+  scrollbar-width: thin;
+}
+
+.app-container {
+  position: relative;
 }
 
 /* 防止表格列自动换行 */
-::v-deep .local-modal-content .table-wrapper .el-table .el-table__cell {
+::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .el-table__cell {
   white-space: nowrap !important;
   overflow: hidden !important;
 }
 
-::v-deep .local-modal-content .table-wrapper .el-table .cell {
+::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .cell {
   white-space: nowrap !important;
   overflow: hidden !important;
 }
@@ -904,16 +1072,6 @@ export default {
   width: 80px !important;
 }
 
-/* 弹窗内表单字段容器 */
-.local-modal-content .form-fields-container {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
-}
-
 .detail-header-row {
   display: flex;
   align-items: center;
@@ -948,18 +1106,17 @@ export default {
   flex-wrap: nowrap;
 }
 
-/* 确保表格可以水平滚动和垂直滚动 */
-::v-deep .el-table__body-wrapper {
+/* 仅列表主表（勿作用于弹窗内表，避免白屏修复后仍出现整页/弹窗双横向条） */
+::v-deep .d-apply-audit-page > .el-table .el-table__body-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
 }
 
-/* 增大底部滚动条 */
-::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+::v-deep .d-apply-audit-page > .el-table .el-table__body-wrapper::-webkit-scrollbar {
   height: 12px !important;
 }
 
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+::v-deep .d-apply-audit-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
   height: 12px !important;
   border-radius: 6px;
 }
@@ -998,14 +1155,26 @@ export default {
   right: 0 !important;
 }
 
-/* 确保表格可以水平滚动 */
-::v-deep .el-table {
+::v-deep .d-apply-audit-page > .el-table {
   overflow-x: auto;
 }
 
-/* 确保明细表格可以水平滚动 */
-::v-deep .local-modal-content .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
+</style>
+
+<style>
+.app-container.d-apply-audit-page {
+  position: relative;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+.app-container.d-apply-audit-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
 }
 </style>

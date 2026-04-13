@@ -16,7 +16,7 @@
             </el-form-item>
             <el-form-item prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId"/>
+                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
               </div>
             </el-form-item>
             <el-form-item prop="departmentId" class="query-item-inline">
@@ -198,19 +198,19 @@
               <div class="modal-title">{{ title }}</div>
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="modal-form-wrapper">
-              <div class="form-fields-container d-apply-form-fields">
-              <el-row>
+            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact modal-form-wrapper">
+              <div class="form-fields-container">
+              <el-row :gutter="8">
                 <el-col :span="4">
-                  <el-form-item label="单号" prop="applyBillNo" label-width="100px">
-                    <el-input v-model="form.applyBillNo" :disabled="true" class="d-apply-form-input" />
+                  <el-form-item label="单号" prop="applyBillNo">
+                    <el-input v-model="form.applyBillNo" :disabled="true" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
-                  <el-form-item label="申领状态" prop="billStatus" label-width="100px">
+                  <el-form-item label="申领状态" prop="billStatus">
                     <el-select v-model="form.applyBillStatus" placeholder="请选择申领状态"
                                :disabled="true"
-                               clearable class="d-apply-form-input">
+                               clearable>
                       <el-option v-for="dict in dict.type.biz_status"
                                  :key="dict.value"
                                  :label="dict.label"
@@ -221,28 +221,24 @@
                 </el-col>
 
                 <el-col :span="4">
-                  <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-                    <div class="d-apply-form-input">
-                      <SelectWarehouse v-model="form.warehouseId"/>
-                    </div>
+                  <el-form-item label="仓库" prop="warehouseId">
+                    <SelectWarehouse v-model="form.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="4">
-                  <el-form-item label="科室" prop="departmentId" label-width="100px">
-                    <div class="d-apply-form-input">
-                      <SelectDepartment v-model="form.departmentId"/>
-                    </div>
+                  <el-form-item label="科室" prop="departmentId">
+                    <SelectDepartment v-model="form.departmentId"/>
                   </el-form-item>
                 </el-col>
               </el-row>
-              <el-row>
+              <el-row :gutter="8">
                 <el-col :span="4">
-                  <el-form-item label="申请日期" prop="applyBillDate" label-width="100px">
+                  <el-form-item label="申请日期" prop="applyBillDate">
                     <el-date-picker clearable
                                     v-model="form.applyBillDate"
                                     type="date"
-                                    class="d-apply-form-input"
+                                    style="width: 100%"
                                     value-format="yyyy-MM-dd"
                                     :disabled="true"
                                     placeholder="请选择申请日期">
@@ -251,22 +247,21 @@
                 </el-col>
 
                 <el-col :span="4">
-                  <el-form-item label="操作人" prop="userId" label-width="100px">
-                    <div class="d-apply-form-input">
-                      <SelectUser v-model="form.userId"/>
-                    </div>
+                  <el-form-item label="操作人" prop="userId">
+                    <SelectUser v-model="form.userId"/>
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
-                  <el-form-item label="备注" prop="remark" label-width="100px">
-                    <el-input v-model="form.remark" placeholder="备注" class="d-apply-form-input" />
+                  <el-form-item label="备注" prop="remark">
+                    <el-input v-model="form.remark" placeholder="备注" />
                   </el-form-item>
                 </el-col>
               </el-row>
               </div>
 
+              <div class="modal-detail-section">
 <!--        <el-divider content-position="center">科室申领明细信息</el-divider>-->
-              <el-row :gutter="10" class="mb8">
+              <el-row :gutter="10" class="detail-toolbar-row">
                 <el-col :span="1.5">
                   <span>科室申领明细信息</span>
                 </el-col>
@@ -274,26 +269,23 @@
                 <div v-show="action">
                   <el-col :span="1.5">
 <!--              <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddBasApplyEntry">添加</el-button>-->
-                    <el-button type="primary" icon="el-icon-plus" size="medium" @click="nameBtn">添加</el-button>
+                    <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
                   </el-col>
                   <el-col :span="1.5">
-                    <el-button type="danger" icon="el-icon-delete" size="medium" @click="handleDeleteBasApplyEntry">删除</el-button>
+                    <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteBasApplyEntry">删除</el-button>
                   </el-col>
                   <el-col :span="1.5" v-show="action">
-                    <el-button size="medium" @click="cancel">取 消</el-button>
+                    <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
                   </el-col>
                   <el-col :span="1.5" v-show="action">
-                    <el-button type="primary" size="medium" @click="submitForm">保 存</el-button>
-                  </el-col>
-                  <el-col :span="1.5" v-show="action">
-                    <el-button type="success" size="medium" @click="handleRefTemplate">引用模板</el-button>
+                    <el-button type="success" size="small" @click="handleRefTemplate">引用模板</el-button>
                   </el-col>
                 </div>
               </el-row>
               <div class="table-wrapper">
-              <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" @selection-change="handleBasApplyEntrySelectionChange" ref="basApplyEntry" height="100%" border :summary-method="getSummaries" show-summary>
-                <el-table-column type="selection" width="50" align="center" resizable />
-                <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable/>
+              <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" @selection-change="handleBasApplyEntrySelectionChange" ref="basApplyEntry" :height="detailTableHeight" border :summary-method="getSummaries" show-summary>
+                <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
+                <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
                 <el-table-column label="型号" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
@@ -346,6 +338,7 @@
                   </template>
                 </el-table-column>
               </el-table>
+              </div>
               </div>
             </el-form>
           </div>
@@ -526,24 +519,22 @@
               <div class="modal-title">{{ addTemplateAppendMode ? '往当前模板插入明细' : '新增制单模板' }}</div>
               <el-button size="small" @click="closeAddTemplateDialog" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="addTemplateFormRef" :model="addTemplateForm" :rules="addTemplateRules" label-width="80px" class="modal-form-wrapper add-template-form">
-              <div class="form-fields-container d-apply-form-fields add-template-search-row">
-                <el-row>
+            <el-form ref="addTemplateFormRef" :model="addTemplateForm" :rules="addTemplateRules" label-width="70px" size="small" class="modal-form-compact modal-form-wrapper add-template-form">
+              <div class="form-fields-container add-template-search-row">
+                <el-row :gutter="8">
                   <el-col :span="4">
-                    <el-form-item label="供应商名称" prop="supplierId" label-width="100px">
-                      <div class="d-apply-form-input">
-                        <SelectSupplier v-model="addTemplateForm.supplierId" :value2="false"/>
-                      </div>
+                    <el-form-item label="供应商名称" prop="supplierId">
+                      <SelectSupplier v-model="addTemplateForm.supplierId" :value2="false"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="耗材名称" prop="materialKeyword" label-width="100px">
-                      <el-input v-model="addTemplateForm.materialKeyword" placeholder="请输入耗材名称或首字母" clearable size="small" class="d-apply-form-input" />
+                    <el-form-item label="耗材名称" prop="materialKeyword">
+                      <el-input v-model="addTemplateForm.materialKeyword" placeholder="请输入耗材名称或首字母" clearable />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="规格搜索" prop="speciSearch" label-width="100px">
-                      <el-input v-model="addTemplateForm.speciSearch" placeholder="请输入规格或首字母" clearable size="small" class="d-apply-form-input" />
+                    <el-form-item label="规格搜索" prop="speciSearch">
+                      <el-input v-model="addTemplateForm.speciSearch" placeholder="请输入规格或首字母" clearable />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -807,6 +798,10 @@ export default {
       const list = this.addTemplateFilteredList || [];
       const start = (this.addTemplateDetailPageNum - 1) * this.addTemplateDetailPageSize;
       return list.slice(start, start + this.addTemplateDetailPageSize);
+    },
+    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    detailTableHeight() {
+      return 'max(260px, calc(100vh - 368px))';
     },
   },
   watch: {
@@ -1543,7 +1538,7 @@ export default {
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.3);
   z-index: 1000;
   display: flex;
   align-items: stretch;
@@ -1554,21 +1549,24 @@ export default {
   background: #fff;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  min-height: 95vh;
+  overflow-x: hidden;
+  overflow-y: hidden;
   display: flex;
-  min-height: 95vh !important;
   flex-direction: column;
+  padding-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
+  background: #EBEEF5;
   flex-shrink: 0;
-  min-height: 48px;
+  min-height: 40px;
 }
 
 .modal-title {
@@ -1604,60 +1602,124 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 24px;
+  padding: 6px 20px 12px;
+  background: #fff;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
-/* 添加/修改科室申领弹窗：输入框容器距顶与左右各 6px，容器更宽 */
 .local-modal-content .el-form.modal-form-wrapper {
-  padding: 10px 6px 24px 6px;
+  padding: 6px 20px 12px;
 }
 
 .modal-form-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0;
+  flex: 1;
   overflow: hidden;
 }
 
-/* 弹窗内表单字段容器：与顶部、上下间距 10px */
-.local-modal-content .form-fields-container.d-apply-form-fields {
-  padding-top: 8px;
-  margin-bottom: 10px;
-}
-
+/* 弹窗内顶部字段区：与到货验收一致 */
 .local-modal-content .form-fields-container {
   background: #fff;
-  padding: 16px 20px;
+  padding: 8px 16px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
   border: 1px solid #EBEEF5;
   flex-shrink: 0;
 }
 
-/* 科室申领弹窗内输入框/选择框统一加宽 */
-.local-modal-content .d-apply-form-input {
-  width: 180px;
+.local-modal-content .form-fields-container .el-row:last-child {
+  margin-bottom: 0;
 }
 
-.local-modal-content .d-apply-form-input .el-input__inner {
-  width: 100%;
-}
-
-/* 新增制单模板/往当前模板插入明细：搜索框降低高度 */
-.add-template-form .add-template-search-row {
+/* 弹窗内表单紧凑布局（与 inWarehouse/audit 到货验收弹窗一致） */
+.local-modal-content .modal-form-compact .el-row {
   margin-bottom: 6px;
 }
+
+.local-modal-content .modal-form-compact .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .modal-form-compact .el-input,
+.local-modal-content .modal-form-compact .el-select,
+.local-modal-content .modal-form-compact .el-date-picker {
+  width: 140px;
+  max-width: 140px;
+}
+
+.local-modal-content .modal-form-compact .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+}
+
+.local-modal-content .modal-form-compact .el-input__icon {
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-select .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor.el-input {
+  height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__content {
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__label {
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+/* 弹窗内明细区：与到货验收一致 */
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* 新增制单模板/往当前模板插入明细：与主弹窗同一紧凑表单，仅保留行距微调 */
+.add-template-form .add-template-search-row {
+  margin-bottom: 0;
+}
 .add-template-form .add-template-search-row .el-form-item {
-  margin-bottom: 8px;
-}
-.add-template-form .add-template-search-row .el-input__inner {
-  height: 28px;
-  line-height: 28px;
-}
-.add-template-form .add-template-search-row .d-apply-form-input .el-input__inner {
-  height: 28px;
-  line-height: 28px;
+  margin-bottom: 0;
 }
 
 /* 引用模板弹窗：贴顶、左右无留白、高度加倍 */
@@ -1854,35 +1916,74 @@ export default {
   flex-shrink: 0;
 }
 
-.local-modal-content .mb8 {
-  flex-shrink: 0;
-  margin-bottom: 10px;
-}
-
-.local-modal-content .table-wrapper {
+.local-modal-content .modal-detail-section .table-wrapper {
   flex: 1;
-  overflow: hidden;
   min-height: 0;
-  height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+  margin-top: 0;
+  padding-bottom: 4px;
 }
 
-.local-modal-content .table-wrapper .el-table {
-  height: 100% !important;
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
 }
 
-::v-deep .local-modal-content .table-wrapper .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  max-height: calc(100vh - 450px) !important;
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+  padding-bottom: 6px;
+  box-sizing: border-box;
+}
+
+::v-deep .local-modal-content .el-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+::v-deep .local-modal-content .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+  position: relative;
+  z-index: 10 !important;
+  background-color: #fff !important;
+  margin-top: 0;
+  box-shadow: 0 -1px 0 #ebeef5;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+  z-index: 11 !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  background-color: #fff !important;
+}
+
+::v-deep .local-modal-content {
+  min-height: 95vh !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+  scrollbar-width: thin;
 }
 
 /* 防止表格列自动换行 */
-::v-deep .local-modal-content .table-wrapper .el-table .el-table__cell {
+::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .el-table__cell {
   white-space: nowrap !important;
   overflow: hidden !important;
 }
 
-::v-deep .local-modal-content .table-wrapper .el-table .cell {
+::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .cell {
   white-space: nowrap !important;
   overflow: hidden !important;
 }
@@ -2016,18 +2117,17 @@ export default {
   padding: 0 !important;
 }
 
-/* 确保表格可以水平滚动和垂直滚动 */
-::v-deep .el-table__body-wrapper {
+/* 仅列表主表：加粗横向滚动条（勿作用于弹窗内明细表，避免底部双滚动条/整页被撑宽） */
+::v-deep .d-apply-page > .el-table .el-table__body-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
 }
 
-/* 增大底部滚动条 */
-::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+::v-deep .d-apply-page > .el-table .el-table__body-wrapper::-webkit-scrollbar {
   height: 12px !important;
 }
 
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+::v-deep .d-apply-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
   height: 12px !important;
   border-radius: 6px;
 }
@@ -2066,25 +2166,30 @@ export default {
   right: 0 !important;
 }
 
-/* 确保表格可以水平滚动 */
-::v-deep .el-table {
+/* 仅列表主表 */
+::v-deep .d-apply-page > .el-table {
   overflow-x: auto;
 }
 
-/* 确保明细表格可以水平滚动 */
-::v-deep .local-modal-content .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-}
 </style>
 
 <style>
 /* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
 .app-container.d-apply-page {
+  position: relative;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
   padding-top: 10px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
-  padding-bottom: 0px !important;
+  padding-bottom: 8px !important;
+}
+
+.app-container.d-apply-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
 }
 
 /* 表格与翻页之间更紧凑 */
