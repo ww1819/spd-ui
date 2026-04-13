@@ -390,6 +390,8 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      // 整页滚动锁：弹窗打开时锁住 body/html
+      _scrollLockClassName: 'modal-scroll-locked',
       // 审核弹窗模式：'view' 查看，'audit' 审核
       dialogMode: 'view',
       /** 列表页驳回原因小窗 */
@@ -436,7 +438,34 @@ export default {
   created() {
     this.getList();
   },
+  watch: {
+    open: {
+      handler() {
+        this._syncBodyScrollLock();
+      },
+      immediate: true
+    }
+  },
+  beforeDestroy() {
+    this._unlockBodyScroll();
+  },
   methods: {
+    _shouldLockBodyScroll() {
+      return !!this.open;
+    },
+    _syncBodyScrollLock() {
+      if (typeof document === 'undefined') return;
+      const cls = this._scrollLockClassName || 'modal-scroll-locked';
+      const lock = this._shouldLockBodyScroll();
+      if (document.documentElement) document.documentElement.classList.toggle(cls, lock);
+      if (document.body) document.body.classList.toggle(cls, lock);
+    },
+    _unlockBodyScroll() {
+      if (typeof document === 'undefined') return;
+      const cls = this._scrollLockClassName || 'modal-scroll-locked';
+      if (document.documentElement) document.documentElement.classList.remove(cls);
+      if (document.body) document.body.classList.remove(cls);
+    },
     /** 申请状态显示值：已驳回(3) 或 未审核但有驳回原因 视为已驳回 */
     getApplyStatusValue(row) {
       if (!row) return null;
@@ -1170,6 +1199,12 @@ export default {
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 8px !important;
+}
+
+/* 弹窗打开时：锁定整页滚动条（最右侧滚动条消失） */
+html.modal-scroll-locked,
+body.modal-scroll-locked {
+  overflow: hidden !important;
 }
 
 .app-container.d-apply-audit-page .local-modal-mask {

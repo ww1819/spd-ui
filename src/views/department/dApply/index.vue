@@ -724,6 +724,8 @@ export default {
       columnList: [],
       //是否显示
       action: true,
+      // 整页滚动锁：弹窗打开时锁住 body/html
+      _scrollLockClassName: 'modal-scroll-locked',
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -805,12 +807,22 @@ export default {
     },
   },
   watch: {
+    open: {
+      handler() {
+        this._syncBodyScrollLock();
+      },
+      immediate: true
+    },
     templateDialogVisible(val) {
+      this._syncBodyScrollLock();
       if (val) {
         this.$nextTick(() => {
           setTimeout(() => this.calcTemplateDetailTableHeight(), 120);
         });
       }
+    },
+    addTemplateDialogVisible() {
+      this._syncBodyScrollLock();
     },
     addTemplateDetailPageList: {
       handler(list) {
@@ -836,8 +848,25 @@ export default {
   },
   beforeDestroy() {
     if (this._templateDetailTableResize) window.removeEventListener('resize', this._templateDetailTableResize);
+    this._unlockBodyScroll();
   },
   methods: {
+    _shouldLockBodyScroll() {
+      return !!(this.open || this.templateDialogVisible || this.addTemplateDialogVisible);
+    },
+    _syncBodyScrollLock() {
+      if (typeof document === 'undefined') return;
+      const cls = this._scrollLockClassName || 'modal-scroll-locked';
+      const lock = this._shouldLockBodyScroll();
+      if (document.documentElement) document.documentElement.classList.toggle(cls, lock);
+      if (document.body) document.body.classList.toggle(cls, lock);
+    },
+    _unlockBodyScroll() {
+      if (typeof document === 'undefined') return;
+      const cls = this._scrollLockClassName || 'modal-scroll-locked';
+      if (document.documentElement) document.documentElement.classList.remove(cls);
+      if (document.body) document.body.classList.remove(cls);
+    },
     /** 查询科室申领列表 */
     getList() {
       this.loading = true;
@@ -2184,6 +2213,12 @@ export default {
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 8px !important;
+}
+
+/* 弹窗打开时：锁定整页滚动条（最右侧滚动条消失） */
+html.modal-scroll-locked,
+body.modal-scroll-locked {
+  overflow: hidden !important;
 }
 
 .app-container.d-apply-page .local-modal-mask {
