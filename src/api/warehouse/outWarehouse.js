@@ -95,3 +95,12 @@ export function createCkEntriesByDApply(data) {
     params: data
   })
 }
+
+/** 按仓库申请单 UUID7 生成出库明细 */
+export function createCkEntriesByWhApply(data) {
+  return request({
+    url: '/warehouse/outWarehouse/createCkEntriesByWhApply',
+    method: 'get',
+    params: data
+  })
+}

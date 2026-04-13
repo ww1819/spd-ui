@@ -9,6 +9,15 @@ export function listInventory(query) {
   })
 }
 
+/** 科室申领：全院按耗材聚合的可用库存（策略由后端 DepartmentApplyAvailableStockStrategy 决定） */
+export function listDeptApplyAvailableStock(query) {
+  return request({
+    url: '/warehouse/inventory/listDeptApplyAvailableStock',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询库存明细汇总列表
 export function listInventorySummary(query) {
   return request({
