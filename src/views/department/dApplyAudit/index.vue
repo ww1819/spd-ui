@@ -390,8 +390,6 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
-      // 整页滚动锁：弹窗打开时锁住 body/html
-      _scrollLockClassName: 'modal-scroll-locked',
       // 审核弹窗模式：'view' 查看，'audit' 审核
       dialogMode: 'view',
       /** 列表页驳回原因小窗 */
@@ -432,40 +430,14 @@ export default {
     },
     /** 与到货验收「添加入库」弹窗明细表高度一致 */
     detailTableHeight() {
-      return 'max(260px, calc(100vh - 368px))';
+      /* 弹窗整体下调高度，明细区也稍微降低一点 */
+      return 'max(170px, calc(100vh - 540px))';
     }
   },
   created() {
     this.getList();
   },
-  watch: {
-    open: {
-      handler() {
-        this._syncBodyScrollLock();
-      },
-      immediate: true
-    }
-  },
-  beforeDestroy() {
-    this._unlockBodyScroll();
-  },
   methods: {
-    _shouldLockBodyScroll() {
-      return !!this.open;
-    },
-    _syncBodyScrollLock() {
-      if (typeof document === 'undefined') return;
-      const cls = this._scrollLockClassName || 'modal-scroll-locked';
-      const lock = this._shouldLockBodyScroll();
-      if (document.documentElement) document.documentElement.classList.toggle(cls, lock);
-      if (document.body) document.body.classList.toggle(cls, lock);
-    },
-    _unlockBodyScroll() {
-      if (typeof document === 'undefined') return;
-      const cls = this._scrollLockClassName || 'modal-scroll-locked';
-      if (document.documentElement) document.documentElement.classList.remove(cls);
-      if (document.body) document.body.classList.remove(cls);
-    },
     /** 申请状态显示值：已驳回(3) 或 未审核但有驳回原因 视为已驳回 */
     getApplyStatusValue(row) {
       if (!row) return null;
@@ -754,19 +726,30 @@ export default {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  /* 弹窗整体再矮一点（宽度不变），并再往上移动一点 */
+  padding: 0 0 64px;
+  box-sizing: border-box;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  min-height: 95vh;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: hidden;
   display: flex;
   flex-direction: column;
   padding-bottom: 16px;
   box-sizing: border-box;
+  /* 隐藏最右侧滚动条（仅隐藏，不影响明细区滚动） */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.local-modal-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .modal-header {
@@ -1199,12 +1182,6 @@ export default {
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 8px !important;
-}
-
-/* 弹窗打开时：锁定整页滚动条（最右侧滚动条消失） */
-html.modal-scroll-locked,
-body.modal-scroll-locked {
-  overflow: hidden !important;
 }
 
 .app-container.d-apply-audit-page .local-modal-mask {

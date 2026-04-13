@@ -1360,7 +1360,8 @@ export default {
   height: 100%;
   min-height: 95vh;
   overflow-x: hidden;
-  overflow-y: auto;
+  /* 弹窗整体不滚动，仅明细表区域内部滚动 */
+  overflow-y: hidden;
   display: flex;
   flex-direction: column;
   padding-bottom: 16px;
@@ -1434,6 +1435,9 @@ export default {
 
 .local-modal-content .modal-detail-section .table-wrapper {
   margin-top: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .modal-footer {
@@ -1449,7 +1453,8 @@ export default {
 
 .local-modal-content .el-form {
   flex: 1;
-  overflow: visible;
+  min-height: 0;
+  overflow: hidden;
   padding: 6px 20px 12px;
   background: #fff;
   box-shadow: none;
@@ -1676,6 +1681,22 @@ export default {
 ::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
   padding-bottom: 6px;
   box-sizing: border-box;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.06);
 }
 
 ::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
@@ -1716,6 +1737,7 @@ export default {
 
 ::v-deep .local-modal-content .el-table .el-table__body-wrapper {
   scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.06);
 }
 
 /* 确保页面容器有相对定位，以便内部弹窗正确定位 */
