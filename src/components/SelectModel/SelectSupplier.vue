@@ -5,7 +5,7 @@
              remote
              :remote-method="remoteMethod"
              clearable
-             placeholder="供应商"
+             :placeholder="placeholder"
              :disabled="value2"
              :loading="loading"
              default-first-option
@@ -34,8 +34,14 @@ import { listSupplierAll, listSupplier, getSupplier} from "@/api/foundation/supp
 import { pinyin } from 'pinyin-pro';
 
 export default {
-  // props: ['value','size'],
-  props: ['value','value2'],
+  props: {
+    value: {},
+    value2: {},
+    placeholder: {
+      type: String,
+      default: '供应商'
+    }
+  },
   data() {
     return {
       // 供应商选项

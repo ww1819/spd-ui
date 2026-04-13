@@ -3,7 +3,7 @@
              filterable
              :filter-method="filterMethod"
              clearable
-             placeholder="编码/名称/简码搜索"
+             :placeholder="placeholder"
              :disabled="value2"
   >
     <el-option
@@ -20,7 +20,16 @@ import { listWarehouseAll} from "@/api/foundation/warehouse";
 import { pinyin } from "pinyin-pro";
 
 export default {
-  props: ['value','value2','excludeWarehouseType','includeWarehouseType'],
+  props: {
+    value: {},
+    value2: {},
+    excludeWarehouseType: {},
+    includeWarehouseType: {},
+    placeholder: {
+      type: String,
+      default: '编码/名称/简码搜索'
+    }
+  },
   data() {
     return {
       // 仓库选项
