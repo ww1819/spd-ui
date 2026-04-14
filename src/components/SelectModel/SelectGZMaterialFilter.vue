@@ -76,7 +76,8 @@
 <script>
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
-import { listMaterial} from "@/api/foundation/material";
+import { listMaterial, listMaterialDeptSafe } from "@/api/foundation/material";
+import { isForbiddenError } from "@/utils/requestFallback";
 
 export default {
   name: "SelectGZMaterialFilter",
@@ -156,6 +157,17 @@ export default {
     // this.getList();
   },
   methods: {
+    loadDeptSafeMaterials() {
+      return listMaterialDeptSafe(this.queryParams).then(response => {
+        let materials = Array.isArray(response) ? response : [];
+        if (this.warehouseValue && this.fixedNumberMaterialIds.length > 0) {
+          materials = materials.filter(material => this.fixedNumberMaterialIds.includes(material.id));
+        }
+        this.materialList = materials;
+        this.total = materials.length;
+        this.loading = false;
+      });
+    },
     /** 查询耗材信息列表 */
     getList() {
       this.loading = true;
@@ -171,6 +183,14 @@ export default {
         }
         this.materialList = materials;
         this.total = materials.length;
+        this.loading = false;
+      }).catch((err) => {
+        if (isForbiddenError(err)) {
+          this.loadDeptSafeMaterials().catch(() => {
+            this.loading = false;
+          });
+          return;
+        }
         this.loading = false;
       });
     },

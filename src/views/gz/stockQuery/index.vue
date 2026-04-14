@@ -121,7 +121,7 @@
 <script>
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
-import SelectMaterial from "@/components/SelectModel/SelectMaterial";
+import SelectMaterial from "@/components/SelectModel/SelectMaterialDept";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import RightToolbar from "@/components/RightToolbar";
 import InboundRefundTable from "./components/InboundRefundTable.vue";

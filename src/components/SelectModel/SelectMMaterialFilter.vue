@@ -134,7 +134,8 @@
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import SelectFactory from "@/components/SelectModel/SelectFactory";
-import { listMaterial, listMaterialAll} from "@/api/foundation/material";
+import { listMaterial, listMaterialAll, listMaterialDeptSafe } from "@/api/foundation/material";
+import { isForbiddenError } from "@/utils/requestFallback";
 
 export default {
   name: "SelectMaterialFilter",
@@ -234,6 +235,15 @@ export default {
     // this.getList();
   },
   methods: {
+    loadDeptSafeMaterials() {
+      const q = { ...this.queryParams };
+      delete q.pageNum;
+      delete q.pageSize;
+      return listMaterialDeptSafe(q).then(response => {
+        const materialList = Array.isArray(response) ? response : [];
+        this.processMaterialList(materialList);
+      });
+    },
     /** 加载定数监测的产品列表 */
     loadFixedNumberMaterials(warehouseId) {
       if (!warehouseId) {
@@ -411,6 +421,12 @@ export default {
           let materialList = Array.isArray(response) ? response : [];
           this.processMaterialList(materialList);
         }).catch(error => {
+          if (isForbiddenError(error)) {
+            this.loadDeptSafeMaterials().catch(() => {
+              this.loading = false;
+            });
+            return;
+          }
           console.error('查询耗材列表失败:', error);
           this.loading = false;
         });
@@ -422,6 +438,12 @@ export default {
         let materialList = response.rows || [];
         this.processMaterialList(materialList);
       }).catch(error => {
+        if (isForbiddenError(error)) {
+          this.loadDeptSafeMaterials().catch(() => {
+            this.loading = false;
+          });
+          return;
+        }
         console.error('查询耗材列表失败:', error);
         this.loading = false;
       });

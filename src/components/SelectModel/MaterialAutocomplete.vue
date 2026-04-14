@@ -8,15 +8,13 @@
 </template>
 
 <script>
-import { listMaterial } from "@/api/foundation/material";
+import { listMaterialDeptSafe } from "@/api/foundation/material";
 
 export default {
   props: ['value','value2'],
   data() {
     return {
-      // materialName:'',
-      // 表单参数
-      form: {},
+      restaurants: [],
     }
   },
   computed: {
@@ -30,8 +28,10 @@ export default {
     }
   },
   mounted() {
-    listMaterial().then((res) => {
-      this.restaurants = res.rows;
+    listMaterialDeptSafe().then((res) => {
+      this.restaurants = Array.isArray(res) ? res : [];
+    }).catch(() => {
+      this.restaurants = [];
     });
   },
   created() {

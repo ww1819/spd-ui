@@ -30,6 +30,7 @@
 
 <script>
 import { listFactoryAll, listFactory, getFactory } from "@/api/foundation/factory";
+import { isForbiddenError } from "@/utils/requestFallback";
 
 export default {
   // props: ['value','size'],
@@ -42,6 +43,8 @@ export default {
       loading: false,
       // 表单参数
       form: {},
+      // 无 list 权限时降级为 listAll 模式
+      fallbackToListAll: false,
     }
   },
   computed: {
@@ -74,6 +77,8 @@ export default {
           this.factoryOptions = [row, ...this.factoryOptions];
           this.allFactories = [row, ...this.allFactories];
         }
+      }).catch(() => {
+        // 无查询权限时静默，避免影响组件使用
       });
     },
     remoteMethod(query) {
@@ -89,10 +94,20 @@ export default {
         const referred = (item.factoryReferredCode || '').toUpperCase();
         return name.includes(upper) || code.includes(upper) || referred.includes(upper);
       }).slice(0, 200);
-      if (this.factoryOptions.length === 0) {
+      if (this.factoryOptions.length === 0 && !this.fallbackToListAll) {
         this.loading = true;
         listFactory({ factoryName: q, pageNum: 1, pageSize: 100 }).then(response => {
           this.factoryOptions = response.rows || [];
+        }).catch((err) => {
+          if (isForbiddenError(err)) {
+            this.fallbackToListAll = true;
+            this.factoryOptions = this.allFactories.filter(item => {
+              const name = (item.factoryName || '').toUpperCase();
+              const code = (item.factoryCode || '').toUpperCase();
+              const referred = (item.factoryReferredCode || '').toUpperCase();
+              return name.includes(upper) || code.includes(upper) || referred.includes(upper);
+            }).slice(0, 200);
+          }
         }).finally(() => {
           this.loading = false;
         });

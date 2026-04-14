@@ -123,7 +123,7 @@
 </template>
 
 <script>
-import { listMaterial } from "@/api/foundation/material";
+import { listMaterialDeptSafe } from "@/api/foundation/material";
 import { listFixedNumberForPurchase } from "@/api/monitoring/fixedNumber";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 
@@ -255,8 +255,19 @@ export default {
         });
         return;
       }
-      listMaterial(this.queryParams).then(response => {
-        let materialList = response.rows || [];
+      listMaterialDeptSafe().then(response => {
+        let materialList = Array.isArray(response) ? response : [];
+        const code = (this.queryParams.code || '').toLowerCase();
+        const name = (this.queryParams.name || '').toLowerCase();
+        const brand = (this.queryParams.brand || '').toLowerCase();
+        const supplierId = this.queryParams.supplierId;
+        materialList = materialList.filter(item => {
+          const okCode = !code || ((item.code || '').toLowerCase().includes(code));
+          const okName = !name || ((item.name || '').toLowerCase().includes(name));
+          const okBrand = !brand || ((item.brand || '').toLowerCase().includes(brand));
+          const okSupplier = !supplierId || String(item.supplierId) === String(supplierId);
+          return okCode && okName && okBrand && okSupplier;
+        });
         this.allFilteredMaterials = materialList;
         this.total = materialList.length;
         const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize;

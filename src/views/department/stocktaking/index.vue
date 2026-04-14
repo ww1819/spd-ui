@@ -364,7 +364,7 @@
 <script>
 import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking } from "@/api/department/stocktaking";
 import { getMaterial } from "@/api/foundation/material";
-import SelectMaterial from '@/components/SelectModel/SelectMaterial';
+import SelectMaterial from '@/components/SelectModel/SelectMaterialDept';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import RightToolbar from "@/components/RightToolbar";
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';

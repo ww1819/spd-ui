@@ -373,7 +373,7 @@
 
 <script>
 import { listNewProductApply, getNewProductApply, delNewProductApply, addNewProductApply, updateNewProductApply } from "@/api/department/newProductApply";
-import SelectMaterial from '@/components/SelectModel/SelectMaterial';
+import SelectMaterial from '@/components/SelectModel/SelectMaterialDept';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 
 export default {

@@ -30,6 +30,15 @@ export function listMaterialAll(query) {
   })
 }
 
+// 科室/临床模块专用：产品档案低敏列表（仅必要字段）
+export function listMaterialDeptSafe(query) {
+  return request({
+    url: '/foundation/material/listDeptSafe',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询耗材产品详细
 export function getMaterial(id) {
   return request({

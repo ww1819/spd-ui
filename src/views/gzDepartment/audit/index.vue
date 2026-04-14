@@ -233,12 +233,13 @@
 import { listApply, getApply, delApply, addApply, updateApply,auditApply } from "@/api/gzDepartment/apply";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectUser from '@/components/SelectModel/SelectUser';
+import SelectMaterial from '@/components/SelectModel/SelectMaterialDept';
 import SelectGzDepotInventory from '@/components/SelectModel/SelectGzDepotInventory';
 
 export default {
   name: "GZDepartmentAudit",
   dicts: ['biz_status'],
-  components: {SelectWarehouse,SelectUser,SelectGzDepotInventory},
+  components: {SelectWarehouse,SelectUser,SelectMaterial,SelectGzDepotInventory},
   data() {
     return {
       // 遮罩层

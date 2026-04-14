@@ -185,8 +185,9 @@ import { listDepotInventory } from "@/api/gz/depotInventory";
 import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
 import { listInventory } from "@/api/warehouse/inventory";
 import { checkInHospitalCode } from "@/api/gz/order";
-import { listMaterialPost } from "@/api/foundation/material";
+import { listMaterialPost, listMaterialDeptSafe } from "@/api/foundation/material";
 import { listFixedNumber } from "@/api/monitoring/fixedNumber";
+import { isForbiddenError } from "@/utils/requestFallback";
 
 export default {
   name: "SelectMaterialFilter",
@@ -323,6 +324,24 @@ export default {
     // this.getList();
   },
   methods: {
+    async loadDeptSafeMaterialRows(query) {
+      const safeRows = await listMaterialDeptSafe(query || {});
+      const rows = Array.isArray(safeRows) ? safeRows : [];
+      const materialList = rows.map(m => ({
+        material: m && typeof m === 'object' ? m : { id: m },
+        qty: 0,
+        unitPrice: (m && m.price) != null ? m.price : 0,
+        amt: 0,
+        materialNo: '',
+        batchNo: '',
+        materialDate: null,
+        endTime: null,
+        inHospitalCode: ''
+      }));
+      this.materialList = materialList.slice();
+      this.total = materialList.length;
+      this.loading = false;
+    },
     /** 分页组件回调：与后端分页参数同步后再拉数，避免 total 与当前页条数不一致 */
     handlePagination({ page, limit }) {
       if (page != null) this.queryParams.pageNum = page;
@@ -495,7 +514,13 @@ export default {
           this.materialList = materialList.slice();
           this.total = Number(totalVal) || 0;
           this.loading = false;
-        }).catch(() => {
+        }).catch((err) => {
+          if (isForbiddenError(err)) {
+            this.loadDeptSafeMaterialRows(query).catch(() => {
+              this.loading = false;
+            });
+            return;
+          }
           this.loading = false;
         });
         return;

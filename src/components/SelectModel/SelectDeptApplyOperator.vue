@@ -17,6 +17,7 @@
 
 <script>
 import { listDeptApplyOperatorOptions } from '@/api/department/apply';
+import { isForbiddenError } from '@/utils/requestFallback';
 
 export default {
   name: 'SelectDeptApplyOperator',
@@ -56,6 +57,27 @@ export default {
           const list = (res && res.data) != null ? res.data : [];
           this.userOptions = Array.isArray(list) ? list : [];
           this.syncValueWithOptions();
+        })
+        .catch((err) => {
+          if (isForbiddenError(err)) {
+            // 无下拉权限时降级为当前登录人，避免表单阻断
+            const u = (this.$store && this.$store.state && this.$store.state.user) || {};
+            const userId = u.userId || null;
+            if (userId != null) {
+              this.userOptions = [{
+                userId,
+                userName: u.userName || '',
+                nickName: u.nickName || u.name || u.userName || ''
+              }];
+              if (this.value == null || this.value === '') {
+                this.$emit('input', userId);
+              }
+            } else {
+              this.userOptions = [];
+            }
+            return;
+          }
+          this.userOptions = [];
         })
         .finally(() => {
           this.loading = false;

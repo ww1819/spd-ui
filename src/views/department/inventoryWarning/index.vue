@@ -307,7 +307,7 @@ import { listInventoryWarning, getInventoryWarning, delInventoryWarning, addInve
 import { listInventory } from "@/api/department/depInventory";
 import SelectSupplier from '@/components/SelectModel/SelectSupplierDept';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
-import SelectMaterial from '@/components/SelectModel/SelectMaterial';
+import SelectMaterial from '@/components/SelectModel/SelectMaterialDept';
 import { listdepartAll } from "@/api/foundation/depart";
 
 export default {

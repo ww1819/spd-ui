@@ -131,7 +131,7 @@
 </template>
 
 <script>
-import SelectMaterial from "@/components/SelectModel/SelectMaterial";
+import SelectMaterial from "@/components/SelectModel/SelectMaterialDept";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import RightToolbar from "@/components/RightToolbar";

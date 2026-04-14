@@ -157,7 +157,7 @@
 
 <script>
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
-import SelectMaterial from "@/components/SelectModel/SelectMaterial";
+import SelectMaterial from "@/components/SelectModel/SelectMaterialDept";
 import request from "@/utils/request";
 import RightToolbar from "@/components/RightToolbar";
 import { exportDepartmentConsumptionDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";

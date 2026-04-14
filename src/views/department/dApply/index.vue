@@ -725,7 +725,7 @@
 <script>
 import { listApply, getApply, delApply, addApply, updateApply } from "@/api/department/apply";
 import { listApplyTemplate, getApplyTemplate, addApplyTemplate, updateApplyTemplate, deleteApplyTemplate } from "@/api/department/applyTemplate";
-import { listMaterialAll } from "@/api/foundation/material";
+import { listMaterialDeptSafe } from "@/api/foundation/material";
 import { pinyin } from 'pinyin-pro';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -979,7 +979,7 @@ export default {
         this.addTemplateDetailPageSize = 10
         this.addTemplateSelectedIds = []
         this.addTemplateDialogVisible = true
-        listMaterialAll({ isUse: '1' }).then(res => {
+        listMaterialDeptSafe().then(res => {
           const rows = Array.isArray(res) ? res : (res && res.data ? res.data : [])
           this.addTemplateMaterialList = rows
         }).catch(() => {

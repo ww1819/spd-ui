@@ -30,8 +30,9 @@
 </template>
 
 <script>
-import { listSupplierAll, listSupplier, getSupplier} from "@/api/foundation/supplier";
+import { listSupplierAll, listSupplier, getSupplier } from "@/api/foundation/supplier";
 import { pinyin } from 'pinyin-pro';
+import { isForbiddenError } from "@/utils/requestFallback";
 
 export default {
   props: {
@@ -54,6 +55,8 @@ export default {
       allSuppliers: [],
       // 搜索防抖定时器
       searchTimer: null,
+      // 无 list 权限时降级为 listAll 模式
+      fallbackToListAll: false,
     }
   },
   computed: {
@@ -95,6 +98,8 @@ export default {
         if (row) {
           this.supplierOptions = [row, ...this.supplierOptions];
         }
+      }).catch(() => {
+        // 无详情权限时静默降级，避免表单报错
       });
     },
     /** 预加载所有供应商（用于首字母搜索） */
@@ -112,8 +117,21 @@ export default {
         pageSize: 20
       }).then(response => {
         this.supplierOptions = response.rows || [];
-      }).catch(() => {
-        this.supplierOptions = [];
+      }).catch((err) => {
+        if (isForbiddenError(err)) {
+          this.fallbackToListAll = true;
+        }
+        // 无 list 权限时降级到 listAll
+        if (this.allSuppliers.length > 0) {
+          this.supplierOptions = this.allSuppliers.slice(0, 20);
+          return;
+        }
+        listSupplierAll().then(allResponse => {
+          this.allSuppliers = allResponse || [];
+          this.supplierOptions = this.allSuppliers.slice(0, 20);
+        }).catch(() => {
+          this.supplierOptions = [];
+        });
       });
     },
     /** 查询供应商列表（用于非 remote 模式） */
@@ -150,6 +168,20 @@ export default {
     },
     /** 执行搜索 */
     doSearch(query, upperQuery) {
+      if (this.fallbackToListAll) {
+        if (this.allSuppliers.length === 0) {
+          listSupplierAll().then(allResponse => {
+            this.allSuppliers = allResponse || [];
+            this.filterSuppliers(query, upperQuery);
+          }).catch(() => {
+            this.supplierOptions = [];
+            this.loading = false;
+          });
+        } else {
+          this.filterSuppliers(query, upperQuery);
+        }
+        return;
+      }
       // 先尝试后端模糊搜索
       listSupplier({
         name: query,
@@ -173,12 +205,18 @@ export default {
           // 后端有结果，但也要支持首字母搜索，所以合并结果
           this.filterSuppliers(query, upperQuery, results);
         }
-      }).catch(() => {
+      }).catch((err) => {
+        if (isForbiddenError(err)) {
+          this.fallbackToListAll = true;
+        }
         // 如果后端搜索失败，使用前端过滤
         if (this.allSuppliers.length === 0) {
           listSupplierAll().then(allResponse => {
             this.allSuppliers = allResponse || [];
             this.filterSuppliers(query, upperQuery);
+          }).catch(() => {
+            this.supplierOptions = [];
+            this.loading = false;
           });
         } else {
           this.filterSuppliers(query, upperQuery);
