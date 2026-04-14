@@ -135,7 +135,11 @@
       </el-table-column>
       <el-table-column v-if="currentBillType !== '3'" label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
       <el-table-column v-if="currentBillType !== '3'" label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-      <el-table-column v-if="currentBillType === '3'" label="调出科室" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column v-if="currentBillType === '3'" label="调出科室" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.outDepartment && scope.row.outDepartment.name) || (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column v-if="currentBillType === '3'" label="调入科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="制单人" align="center" prop="createrNmae" width="100" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable>

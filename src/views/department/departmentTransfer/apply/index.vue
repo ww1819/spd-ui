@@ -114,7 +114,11 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="调出科室" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="调出科室" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.outDepartment && scope.row.outDepartment.name) || (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="调入科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -212,13 +216,13 @@
 
                 <el-col :span="4">
                   <el-form-item label="调出科室" prop="outDepartmentId" label-width="100px">
-                    <SelectDepartment v-model="form.outDepartmentId"/>
+                    <SelectDepartment v-model="form.outDepartmentId" :value2="transferDeptSelectDisabled"/>
                   </el-form-item>
                 </el-col>
 
                 <el-col :span="4">
                   <el-form-item label="调入科室" prop="inDepartmentId" label-width="100px">
-                    <SelectDepartment v-model="form.inDepartmentId"/>
+                    <SelectDepartment v-model="form.inDepartmentId" :value2="transferDeptSelectDisabled"/>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -412,6 +416,16 @@ export default {
         ],
       }
     };
+  },
+  computed: {
+    /** 已有明细（含已保存的耗材行）时禁止改调出/调入科室；查看模式始终禁用 */
+    transferDeptSelectDisabled() {
+      if (!this.action) {
+        return true;
+      }
+      const list = this.transferEntryList || [];
+      return list.some(row => row && (row.materialId != null || (row.material && row.material.id)));
+    }
   },
   created() {
     this.getList();
