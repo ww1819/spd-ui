@@ -1,9 +1,8 @@
 <template>
-  <div class="app-container">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+  <div class="app-container stocktaking-audit-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
-        <el-row class="query-row-left">
+      <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item prop="stockNo" class="query-item-inline">
               <el-input v-model="queryParams.stockNo"
@@ -53,10 +52,9 @@
           </el-col>
         </el-row>
 
-      </el-form>
-    </div>
+    </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -718,63 +716,114 @@ export default {
   transform: scale(0.8);
 }
 
-/* 查询条件容器框样式 */
-.form-fields-container {
+/* 搜索区域：与科室申领一致 */
+.app-container.stocktaking-audit-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
 }
 
-/* 第一行查询条件左对齐紧凑布局 */
-.app-container > .el-form .query-row-left .el-col {
+.app-container.stocktaking-audit-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container.stocktaking-audit-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.stocktaking-audit-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.stocktaking-audit-page > .el-form.query-form .query-row-left .el-col {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline {
+.app-container.stocktaking-audit-page > .el-form.query-form .query-row-left .query-item-inline {
   display: inline-block;
   margin-right: 16px;
   margin-bottom: 0;
   vertical-align: top;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline:last-child {
+.app-container.stocktaking-audit-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
   margin-right: 0;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .el-input {
+.app-container.stocktaking-audit-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
   width: 180px;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper {
+.app-container.stocktaking-audit-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
   width: 180px;
   display: inline-block;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
+.app-container.stocktaking-audit-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
   width: 100%;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .el-select {
-  width: 150px;
+.app-container.stocktaking-audit-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 180px;
 }
 
-/* 第二行单据状态对齐到仓库位置 */
-.app-container > .el-form .query-row-second {
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-row-second {
   position: relative;
 }
 
-.app-container > .el-form .query-row-second .el-form-item {
+.app-container.stocktaking-audit-page > .el-form.query-form .query-row-second .el-form-item {
   white-space: nowrap;
 }
 
-.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
+.app-container.stocktaking-audit-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+
+.mb8 {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+</style>
+
+<style>
+.app-container.stocktaking-audit-page {
+  position: relative;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+.app-container.stocktaking-audit-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.stocktaking-audit-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.stocktaking-audit-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+  overflow: hidden;
 }
 </style>

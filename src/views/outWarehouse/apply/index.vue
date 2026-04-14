@@ -307,7 +307,7 @@
               <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="outline" icon="el-icon-ref" size="small" @click="refDeptApply">引用科室申领/仓库申请单</el-button>
+              <el-button type="outline" icon="el-icon-ref" size="small" @click="refDeptApply">引用仓库申请单</el-button>
             </el-col>
             <el-col :span="1.5">
               <el-button type="outline" icon="el-icon-ref" size="small" @click="refRkApply">引用入库单</el-button>
@@ -448,7 +448,6 @@
     :departmentValue="departmentValue"
     :warehouseValue="warehouseValue"
     @closeDialog="closeDApplyDialog"
-    @selectData="selectDApplyData"
     @selectWhApplyData="selectWhApplyData"
     >
 
@@ -528,7 +527,7 @@ import {
   addOutWarehouse,
   updateOutWarehouse,
   listCTKWarehouse,
-  createCkEntriesByDApply, createCkEntriesByRkApply, createCkEntriesByWhApply
+  createCkEntriesByRkApply, createCkEntriesByWhApply
 } from "@/api/warehouse/outWarehouse";
 import { listInventoryMaterialAll } from "@/api/warehouse/inventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -828,27 +827,6 @@ export default {
       });
     },
 
-    selectDApplyData(val) {
-      // 假设 val 是科室申请单对象或数组，取 id
-      const dApplyId = Array.isArray(val) ? val[0].id : val.id;
-      if (!dApplyId) return;
-
-      const dApplyIdStr = String(dApplyId);
-      var param = {
-        dApplyId: dApplyIdStr
-      };
-      createCkEntriesByDApply(param).then(response => {
-        if (response && response.data) {
-          this.form = response.data;
-          this.stkIoBillEntryList = response.data.stkIoBillEntryList;
-          this.form.billStatus = '1';
-          this.form.billType = '201';
-          this.DialogDApplyComponentShow = false;
-        }
-      }).catch(() => {
-        this.$message.error("加载科室申请单明细失败");
-      });
-    },
     /** 仓库申请单（科室申领按仓拆分）：带出 wh_warehouse_apply_id、明细 wh_apply_entry_id，保存后写入 wh_wh_apply_ck_entry_ref */
     selectWhApplyData(row) {
       if (!row || !row.id) return;
@@ -1352,15 +1330,18 @@ export default {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  overflow: hidden;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  min-height: 95vh;
+  max-height: 100%;
+  min-height: 0;
   overflow-x: hidden;
-  overflow-y: auto;
+  /* 弹窗整体不滚动，仅明细表区域内部滚动 */
+  overflow-y: hidden;
   display: flex;
   flex-direction: column;
   padding-bottom: 16px;
@@ -1434,6 +1415,9 @@ export default {
 
 .local-modal-content .modal-detail-section .table-wrapper {
   margin-top: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .modal-footer {
@@ -1449,7 +1433,8 @@ export default {
 
 .local-modal-content .el-form {
   flex: 1;
-  overflow: visible;
+  min-height: 0;
+  overflow: hidden;
   padding: 6px 20px 12px;
   background: #fff;
   box-shadow: none;
@@ -1676,6 +1661,22 @@ export default {
 ::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
   padding-bottom: 6px;
   box-sizing: border-box;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.06);
 }
 
 ::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
@@ -1711,11 +1712,14 @@ export default {
 }
 
 ::v-deep .local-modal-content {
-  min-height: 95vh !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  height: 100% !important;
 }
 
 ::v-deep .local-modal-content .el-table .el-table__body-wrapper {
   scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.06);
 }
 
 /* 确保页面容器有相对定位，以便内部弹窗正确定位 */
@@ -1900,6 +1904,7 @@ export default {
   left: -8px;
   right: -8px;
   width: auto;
+  overflow: hidden;
 }
 
 .app-container.outWarehouse-apply-page > .el-form.query-form-compact {

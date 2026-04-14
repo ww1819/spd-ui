@@ -1,9 +1,8 @@
 <template>
   <div class="app-container receipt-confirm-page">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
-        <el-row class="query-row-left">
+      <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item prop="billNo" class="query-item-inline">
               <el-input
@@ -67,10 +66,9 @@
             </el-form-item>
           </el-col>
         </el-row>
-      </el-form>
-    </div>
+    </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -105,7 +103,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="receiptList" :row-class-name="rowReceiptIndex" @selection-change="handleSelectionChange" height="58vh" border stripe>
+    <el-table v-loading="loading" :data="receiptList" :row-class-name="rowReceiptIndex" @selection-change="handleSelectionChange" height="64vh" border stripe>
       <el-table-column type="selection" width="60" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="出库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
@@ -169,13 +167,15 @@
       </el-table-column>
     </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="pagination-bottom-wrap">
+      <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
 
     <!-- 收货确认对话框 -->
     <transition name="modal-fade">
@@ -695,70 +695,112 @@ export default {
   font-weight: 500;
 }
 
-/* 搜索条件容器样式 */
-.form-fields-container {
+/* 搜索区域：与科室申领一致 */
+.app-container.receipt-confirm-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
-  padding: 16px 24px 2px 24px;
+  padding: 16px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-top: -2px;
-  margin-bottom: 12px;
-  border: 1px solid #EBEEF5;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
 }
 
-.query-row-left {
-  margin-bottom: 0px;
-  margin-top: 0px;
+.app-container.receipt-confirm-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
 }
 
-.query-item-inline {
+.app-container.receipt-confirm-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.receipt-confirm-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.receipt-confirm-page > .el-form.query-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.receipt-confirm-page > .el-form.query-form .query-row-left .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.receipt-confirm-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.receipt-confirm-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container.receipt-confirm-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.receipt-confirm-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.receipt-confirm-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 180px;
 }
 
 .query-item-inline .el-form-item__label {
   width: 80px !important;
 }
 
-.query-select-wrapper {
-  width: 180px;
-}
-
 .query-row-second {
-  margin-bottom: 0px;
-  margin-top: 0px;
   position: relative;
 }
 
-.query-row-second .el-form-item {
+.app-container.receipt-confirm-page > .el-form.query-form .query-row-second .el-form-item {
   white-space: nowrap;
 }
 
-.query-row-second .el-form-item .el-form-item__content {
+.app-container.receipt-confirm-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
 
-/* 按钮行样式 */
 .mb8 {
-  margin-top: 8px !important;
+  margin-top: 0 !important;
   margin-bottom: 8px !important;
 }
 
-/* 确保表格可以水平滚动和垂直滚动 */
-::v-deep .el-table__body-wrapper {
+/* 翻页：贴近表格；下方不留白（与科室申购列表一致） */
+.receipt-confirm-page .pagination-bottom-wrap {
+  margin-top: 0 !important;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  transform: translateY(-8px);
+}
+
+::v-deep .receipt-confirm-page .pagination-bottom-wrap .pagination-container {
+  padding: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* 仅列表主表（勿作用于弹窗内表） */
+::v-deep .receipt-confirm-page > .el-table .el-table__body-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
 }
 
-/* 增大底部滚动条 */
-::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+::v-deep .receipt-confirm-page > .el-table .el-table__body-wrapper::-webkit-scrollbar {
   height: 12px !important;
 }
 
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+::v-deep .receipt-confirm-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
   height: 12px !important;
   border-radius: 6px;
 }
@@ -793,6 +835,10 @@ export default {
   position: absolute !important;
 }
 
+::v-deep .receipt-confirm-page > .el-table {
+  overflow-x: auto;
+}
+
 /* 确保页面容器有相对定位，以便内部弹窗正确定位 */
 .app-container {
   position: relative;
@@ -800,12 +846,33 @@ export default {
 </style>
 
 <style>
-/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+/* 与科室申领 d-apply-page 顶部间距一致（非 scoped） */
 .app-container.receipt-confirm-page {
-  padding-top: 10px !important;
+  position: relative;
   padding-left: 8px !important;
   padding-right: 8px !important;
-  padding-bottom: 0px !important;
+  padding-bottom: 0 !important;
+}
+
+.app-container.receipt-confirm-page > .el-table {
+  margin-bottom: 1px;
+}
+
+.app-container.receipt-confirm-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.receipt-confirm-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.receipt-confirm-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+  overflow: hidden;
 }
 
 .app-container.receipt-confirm-page > .el-table th {

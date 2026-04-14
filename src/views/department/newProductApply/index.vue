@@ -1,9 +1,8 @@
 <template>
-  <div class="app-container">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+  <div class="app-container new-product-apply-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
-        <el-row class="query-row-left">
+      <el-row class="query-row-left">
           <el-col :span="24">
             <el-form-item prop="applyNo" class="query-item-inline">
               <el-input v-model="queryParams.applyNo"
@@ -54,10 +53,9 @@
             </el-form-item>
           </el-col>
         </el-row>
-      </el-form>
-    </div>
+    </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -1126,48 +1124,86 @@ export default {
   font-weight: 500;
 }
 
-/* 搜索条件容器样式 */
-.form-fields-container {
+/* 搜索区域：与科室申领一致 */
+.app-container.new-product-apply-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
-  padding: 16px 24px;
+  padding: 16px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-top: -10px;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
 }
 
-.query-row-left {
-  margin-bottom: 10px;
+.app-container.new-product-apply-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
 }
 
-.query-item-inline {
+.app-container.new-product-apply-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.new-product-apply-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.new-product-apply-page > .el-form.query-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 180px;
 }
 
 .query-item-inline .el-form-item__label {
   width: 80px !important;
 }
 
-.query-select-wrapper {
-  width: 180px;
-}
-
 .query-row-second {
-  margin-bottom: 10px;
   position: relative;
 }
 
-.query-row-second .el-form-item {
+.app-container.new-product-apply-page > .el-form.query-form .query-row-second .el-form-item {
   white-space: nowrap;
 }
 
-.query-row-second .el-form-item .el-form-item__content {
+.app-container.new-product-apply-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+
+.mb8 {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
 }
 
 /* 弹窗内表单紧凑布局 */
@@ -1394,6 +1430,35 @@ body > .el-popper:last-child,
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
+}
+</style>
+
+<style>
+.app-container.new-product-apply-page {
+  position: relative;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+.app-container.new-product-apply-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.new-product-apply-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.new-product-apply-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+  overflow: hidden;
 }
 </style>
 

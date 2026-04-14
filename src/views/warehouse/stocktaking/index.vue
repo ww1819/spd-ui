@@ -797,63 +797,6 @@ export default {
   font-weight: 500;
 }
 
-/* 搜索区域样式（与退库审核一致） */
-.app-container > .el-form {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-}
-
-.app-container > .el-form .el-row {
-  margin-bottom: 8px;
-}
-
-.app-container > .el-form .el-row:last-child {
-  margin-bottom: 0;
-}
-
-.app-container > .el-form .el-form-item {
-  margin-bottom: 0;
-}
-
-/* 第一行查询条件左对齐紧凑布局 */
-.app-container > .el-form .query-row-left .el-col {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.app-container > .el-form .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.app-container > .el-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-/* 统一控制查询条件输入框宽度 */
-.app-container > .el-form .query-row-left .query-item-inline .el-input {
-  width: 180px;
-}
-
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
-  width: 100%;
-}
-
-.app-container > .el-form .query-row-left .query-item-inline .el-select {
-  width: 150px;
-}
-
 /* 主表格水平滚动条增粗 */
 ::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar,
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
@@ -880,17 +823,7 @@ export default {
 </style>
 
 <style>
-/* 查询条件样式（与退库审核一致，非 scoped 确保生效） */
-.query-row-left {
-  margin-bottom: 10px;
-}
-
-.query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 10px;
-}
-
+/* 查询条件标签宽度等（非 scoped） */
 .query-item-inline .el-form-item__label {
   width: 80px !important;
 }
@@ -899,29 +832,84 @@ export default {
   width: 180px;
 }
 
-.query-row-second {
-  margin-bottom: 10px;
-  position: relative;
-}
-
-.query-row-second .el-form-item {
-  white-space: nowrap;
-}
-
-.query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+/* 与到货验收 inWarehouse/audit：非 scoped + 页面类，确保 el-form 上边框/阴影一定生效 */
 .app-container.stocktaking-page {
+  position: relative;
   padding-left: 8px !important;
   padding-right: 8px !important;
 }
 
-.app-container.stocktaking-page > .el-form.query-form-compact {
-  margin-top: -8px !important;
+.app-container.stocktaking-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+  margin-top: -12px !important;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .query-row-left .query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 150px;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .query-row-second {
+  position: relative;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.app-container.stocktaking-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 .app-container.stocktaking-page > .el-row.button-row-compact {
