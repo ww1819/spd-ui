@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="select-ref-bill-root">
   <transition name="modal-fade">
     <div v-if="show" class="local-modal-mask">
@@ -53,7 +53,11 @@
                 </template>
               </el-table-column>
               <el-table-column label="科室申领单号" align="center" prop="basApplyBillNo" min-width="140" show-overflow-tooltip resizable />
-              <el-table-column label="仓库" align="center" prop="warehouse.name" min-width="100" show-overflow-tooltip resizable />
+              <el-table-column label="仓库" align="center" min-width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '—' }}</span>
+            </template>
+          </el-table-column>
               <el-table-column label="科室" align="center" prop="department.name" min-width="100" show-overflow-tooltip resizable />
               <el-table-column label="待出库数量" align="center" prop="pendingOutboundTotal" width="110" show-overflow-tooltip resizable>
                 <template slot-scope="scope">

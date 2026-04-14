@@ -101,7 +101,6 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -109,14 +108,22 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="制单人" align="center" prop="createrNmae" width="100" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.creater && scope.row.creater.nickName) || scope.row.createrNmae || '—' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="申请状态" align="center" prop="applyBillStatus" width="100" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <el-tag v-if="getApplyStatusValue(scope.row) === 3 || getApplyStatusValue(scope.row) === '3'" type="danger" size="small">已驳回</el-tag>
           <dict-tag v-else :options="dict.type.biz_status" :value="scope.row.applyBillStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="审核人" align="center" prop="auditPersonName" width="100" show-overflow-tooltip resizable />
+      <el-table-column label="审核人" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.auditPerson && scope.row.auditPerson.nickName) || scope.row.auditPersonName || '—' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
@@ -124,7 +131,8 @@
       </el-table-column>
       <el-table-column label="驳回原因" align="center" prop="rejectReason" width="150" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.rejectReason || '--' }}</span>
+          <span v-if="getApplyStatusValue(scope.row) === 3 || getApplyStatusValue(scope.row) === '3'">{{ scope.row.rejectReason || '--' }}</span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
@@ -188,70 +196,64 @@
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact modal-form-wrapper">
               <div class="form-fields-container">
+              <!-- 表头信息：两行四列（第4列预留空位，避免布局跳动） -->
               <el-row :gutter="8">
-                <el-col :span="4">
+                <el-col :span="6">
                   <el-form-item label="单号" prop="applyBillNo">
                     <el-input v-model="form.applyBillNo" :disabled="true" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="4">
-                  <el-form-item label="申领状态" prop="billStatus">
-                    <span v-if="form.applyBillStatus === 3 || form.applyBillStatus === '3'" class="status-text status-rejected">已驳回</span>
-                    <el-select v-else v-model="form.applyBillStatus" placeholder="请选择申领状态"
-                               :disabled="true"
-                               clearable>
-                      <el-option v-for="dict in dict.type.biz_status"
-                                 :key="dict.value"
-                                 :label="dict.label"
-                                 :value="dict.value"
-                      />
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-
-                <el-col :span="4">
-                  <el-form-item label="仓库" prop="warehouseId">
-                    <SelectWarehouse v-model="form.warehouseId" :disabled="true" :excludeWarehouseType="['高值', '设备']"/>
-                  </el-form-item>
-                </el-col>
-
-                <el-col :span="4">
+                <!-- 科室放到申领状态左边 -->
+                <el-col :span="6">
                   <el-form-item label="科室" prop="departmentId">
                     <SelectDepartment v-model="form.departmentId" :disabled="true"/>
                   </el-form-item>
                 </el-col>
+                <el-col :span="6">
+                  <el-form-item label="申领状态" prop="billStatus">
+                    <span v-if="detailApplyStatusValue === 3 || detailApplyStatusValue === '3'" class="status-text status-rejected">已驳回</span>
+                    <dict-tag v-else :options="dict.type.biz_status" :value="detailApplyStatusValue"/>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6" />
               </el-row>
               <el-row :gutter="8">
-                <el-col :span="4">
+                <el-col :span="6">
                   <el-form-item label="申请日期" prop="applyBillDate">
-                    <el-date-picker clearable
-                                    v-model="form.applyBillDate"
-                                    type="date"
-                                    style="width: 100%"
-                                    value-format="yyyy-MM-dd"
-                                    :disabled="true"
-                                    placeholder="请选择申请日期">
-                    </el-date-picker>
+                    <el-date-picker
+                      clearable
+                      v-model="form.applyBillDate"
+                      type="date"
+                      style="width: 100%"
+                      value-format="yyyy-MM-dd"
+                      :disabled="true"
+                      placeholder="请选择申请日期"
+                    />
                   </el-form-item>
                 </el-col>
 
-                <el-col :span="4">
+                <el-col :span="6">
                   <el-form-item label="操作人" prop="userId">
                     <SelectUser v-model="form.userId" :disabled="true"/>
                   </el-form-item>
                 </el-col>
-                <el-col :span="4">
+                <el-col :span="6">
                   <el-form-item label="备注" prop="remark">
-                    <el-input v-model="form.remark" placeholder="备注" :disabled="true" />
+                    <el-input v-model="form.remark" placeholder="备注" :disabled="true" style="width: 100%" />
                   </el-form-item>
                 </el-col>
-                <!-- 驳回原因：与备注同一行，仅未审核且未驳回时显示可编辑 -->
-                <el-col :span="8" v-if="isDetailUnAuditAndNotRejected">
+                <el-col :span="6" />
+              </el-row>
+              <!-- 驳回原因：仅单据状态为已驳回时展示 -->
+              <el-row :gutter="8" v-if="isDetailRejected">
+                <el-col :span="24">
                   <el-form-item label="驳回原因" prop="rejectReason" class="form-item-reject-reason">
                     <el-input
                       v-model="form.rejectReason"
-                      clearable
-                      placeholder="驳回原因（驳回时必填）"
+                      type="textarea"
+                      :rows="2"
+                      :disabled="true"
+                      placeholder="—"
                     />
                   </el-form-item>
                 </el-col>
@@ -278,6 +280,11 @@
               <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" ref="basApplyEntry" :height="detailTableHeight" border :summary-method="getSummaries" show-summary @selection-change="handleBasApplyEntrySelectionChange">
                 <el-table-column type="selection" width="55" align="center" fixed="left" />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
+                <el-table-column label="仓库" align="center" width="120" min-width="100" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ (scope.row.stockWarehouse && scope.row.stockWarehouse.name) || '—' }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
                 <el-table-column label="型号" align="center" prop="material.model" width="140" show-overflow-tooltip resizable/>
@@ -415,20 +422,25 @@ export default {
       },
       // 表单参数
       form: {},
-      // 表单校验
-      rules: {
-        warehouseId: [
-          { required: true, message: "仓库不能为空", trigger: "blur" }
-        ],
-      }
+      // 表单校验（查看/审核弹窗无必填录入项）
+      rules: {}
     };
   },
   computed: {
+    /** 详情弹窗：状态显示值（与列表一致：未审核但有驳回原因也视为已驳回） */
+    detailApplyStatusValue() {
+      return this.getApplyStatusValue(this.form);
+    },
     /** 详情弹窗内：仅未审核且未驳回时显示审核按钮、驳回原因输入、底部取消/驳回 */
     isDetailUnAuditAndNotRejected() {
       if (this.form.applyBillStatus != 1) return false;
       if (this.form.rejectReason != null && String(this.form.rejectReason).trim() !== '') return false;
       return true;
+    },
+    /** 详情弹窗：已驳回单据展示驳回原因区域 */
+    isDetailRejected() {
+      const s = this.detailApplyStatusValue;
+      return s === 3 || s === '3';
     },
     /** 与科室申领 dApply 弹窗明细表高度一致 */
     detailTableHeight() {
@@ -645,26 +657,15 @@ export default {
         this.getList();
       });
     },
-    /** 驳回提交（大弹窗内按钮，兼容保留） */
+    /** 大弹窗内「驳回」：打开驳回原因小窗（与列表页一致） */
     handleRejectSubmit() {
       if (!this.form.id) {
         this.$modal.msgError("请先选择要驳回的申领单");
         return;
       }
-      if (!this.form.rejectReason || this.form.rejectReason.trim() === '') {
-        this.$modal.msgError("请填写驳回原因");
-        return;
-      }
-      const userId = this.$store.state.user.userId;
-      rejectApply({
-        id: String(this.form.id),
-        rejectReason: this.form.rejectReason,
-        auditBy: userId
-      }).then(() => {
-        this.$modal.msgSuccess("驳回成功");
-        this.open = false;
-        this.getList();
-      });
+      this.rejectDialogRow = { id: this.form.id, applyBillNo: this.form.applyBillNo };
+      this.rejectDialogReason = '';
+      this.rejectDialogVisible = true;
     },
     /** 列表页驳回小窗确认 */
     confirmRejectDialog() {
@@ -688,6 +689,7 @@ export default {
         this.rejectDialogVisible = false;
         this.rejectDialogRow = null;
         this.rejectDialogReason = '';
+        this.open = false;
         this.getList();
       });
     },
