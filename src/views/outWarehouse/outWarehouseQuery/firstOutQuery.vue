@@ -468,7 +468,7 @@ export default {
     handleStkIoBillEntrySelectionChange(selection) {
       this.checkedStkIoBillEntry = selection.map(item => item.index)
     },
-    /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
+    /** 导出：按供应商分段，每段标题「供应商+出/退库明细+日期」、表头、明细、空行、合计数量/金额（红色） */
     async handleExport() {
       const queryParams = { ...this.queryParams };
       if (!queryParams.beginDate || queryParams.beginDate === '' || queryParams.beginDate == null) {

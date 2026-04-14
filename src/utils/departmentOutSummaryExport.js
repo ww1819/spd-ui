@@ -379,8 +379,14 @@ function mat(row) {
   return row.material || {};
 }
 
+function detailSupplierGroupKey(row) {
+  const n = row.supplierName || (row.supplier && row.supplier.name);
+  const s = n != null ? String(n).trim() : '';
+  return s || '未维护供应商';
+}
+
 /**
- * 出/退库明细表：版式与出/退库汇总(供应商)一致；合计仅汇总数量、金额列
+ * 出/退库明细表：按供应商分段；每段标题为「供应商名称 + 出/退库明细 + 日期范围」；每段内序号从 1 起，段末合计数量、金额（红色）
  * @param {Object[]} options.rows listCTKWarehouse 返回行
  * @param {string} [options.beginDate]
  * @param {string} [options.endDate]
@@ -427,6 +433,16 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
   const qtyCol = 15;
   const amtCol = 16;
 
+  const bySupplier = new Map();
+  rows.forEach((row) => {
+    const k = detailSupplierGroupKey(row);
+    if (!bySupplier.has(k)) bySupplier.set(k, []);
+    bySupplier.get(k).push(row);
+  });
+  const supplierNames = Array.from(bySupplier.keys()).sort((a, b) =>
+    a.localeCompare(b, 'zh-Hans-CN')
+  );
+
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('出退库明细', { views: [{ showGridLines: false }] });
 
@@ -434,38 +450,25 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
   const d2 = formatCnDate(endDate || beginDate);
   const datePart = d1 && d2 ? `（${d1}至${d2}）` : '';
 
-  ws.mergeCells(`A1:${colToLetter(colCount)}1`);
-  const titleCell = ws.getCell(1, 1);
-  titleCell.value = {
-    richText: [
-      { font: { ...FONT_TITLE, bold: true }, text: '出/退库明细表' },
-      { font: { ...FONT_TITLE, bold: false }, text: datePart ? ` ${datePart}` : '' },
-    ],
-  };
-  titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-  titleCell.border = {
-    top: BORDER_THIN,
-    left: BORDER_THIN,
-    bottom: BORDER_THIN,
-    right: BORDER_THIN,
-  };
-  ws.getRow(1).height = 26;
+  let r = 1;
 
-  headers.forEach((text, c) => {
-    const cell = ws.getCell(2, c + 1);
-    cell.value = text;
-    cell.font = { ...FONT_BODY, bold: true };
-    cell.alignment = { vertical: 'middle', horizontal: 'center' };
-    setCellBorder(cell);
-  });
+  const writeHeaderRow = () => {
+    headers.forEach((text, c) => {
+      const cell = ws.getCell(r, c + 1);
+      cell.value = text;
+      cell.font = { ...FONT_BODY, bold: true };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      setCellBorder(cell);
+    });
+    r += 1;
+  };
 
-  rows.forEach((row, ri) => {
-    const r = 3 + ri;
+  const writeDetailBodyRow = (row, lineNo) => {
     const m = mat(row);
     const wc = m.fdWarehouseCategory && m.fdWarehouseCategory.warehouseCategoryName;
     const fc = m.fdFinanceCategory && m.fdFinanceCategory.financeCategoryName;
     const cells = [
-      ri + 1,
+      lineNo,
       row.materialCode || '',
       row.materialName || '',
       row.warehouseName || '',
@@ -514,44 +517,76 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
       }
       setCellBorder(cell);
     });
-  });
+    r += 1;
+  };
 
-  const blankRow = 3 + rows.length;
-  for (let c = 1; c <= colCount; c++) {
-    const cell = ws.getCell(blankRow, c);
-    cell.value = '';
-    cell.font = FONT_BODY;
-    cell.alignment = { vertical: 'middle', horizontal: 'center' };
-    setCellBorder(cell);
-  }
+  supplierNames.forEach((supplierName, blockIdx) => {
+    const grp = bySupplier.get(supplierName);
+    if (blockIdx > 0) {
+      r += 1;
+    }
 
-  const totalRow = blankRow + 1;
-  const totalQty = rows.reduce((s, row) => s + Number(row.materialQty || 0), 0);
-  const totalAmt = rows.reduce((s, row) => s + Number(row.materialAmt || 0), 0);
+    ws.mergeCells(`A${r}:${colToLetter(colCount)}${r}`);
+    const titleCell = ws.getCell(r, 1);
+    titleCell.value = {
+      richText: [
+        { font: { ...FONT_TITLE, bold: true }, text: supplierName },
+        { font: { ...FONT_TITLE, bold: false }, text: `出/退库明细${datePart || ''}` },
+      ],
+    };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    titleCell.border = {
+      top: BORDER_THIN,
+      left: BORDER_THIN,
+      bottom: BORDER_THIN,
+      right: BORDER_THIN,
+    };
+    ws.getRow(r).height = 26;
+    r += 1;
 
-  for (let c = 1; c <= colCount; c++) {
-    const cell = ws.getCell(totalRow, c);
-    setCellBorder(cell);
-    if (c === 1) {
-      cell.value = '合计';
-      cell.font = { ...FONT_BODY, bold: true };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
-    } else if (c === qtyCol) {
-      cell.value = totalQty;
-      cell.numFmt = '#,##0.00';
-      cell.font = RED_NUM;
-      cell.alignment = { vertical: 'middle', horizontal: 'right' };
-    } else if (c === amtCol) {
-      cell.value = totalAmt;
-      cell.numFmt = '#,##0.00';
-      cell.font = RED_NUM;
-      cell.alignment = { vertical: 'middle', horizontal: 'right' };
-    } else {
+    writeHeaderRow();
+
+    grp.forEach((row, ri) => {
+      writeDetailBodyRow(row, ri + 1);
+    });
+
+    for (let c = 1; c <= colCount; c++) {
+      const cell = ws.getCell(r, c);
       cell.value = '';
       cell.font = FONT_BODY;
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      setCellBorder(cell);
     }
-  }
+    r += 1;
+
+    const totalQty = grp.reduce((s, row) => s + Number(row.materialQty || 0), 0);
+    const totalAmt = grp.reduce((s, row) => s + Number(row.materialAmt || 0), 0);
+
+    for (let c = 1; c <= colCount; c++) {
+      const cell = ws.getCell(r, c);
+      setCellBorder(cell);
+      if (c === 1) {
+        cell.value = '合计';
+        cell.font = { ...FONT_BODY, bold: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      } else if (c === qtyCol) {
+        cell.value = totalQty;
+        cell.numFmt = '#,##0.00';
+        cell.font = RED_NUM;
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+      } else if (c === amtCol) {
+        cell.value = totalAmt;
+        cell.numFmt = '#,##0.00';
+        cell.font = RED_NUM;
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+      } else {
+        cell.value = '';
+        cell.font = FONT_BODY;
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      }
+    }
+    r += 1;
+  });
 
   ws.getColumn(1).width = 8;
   ws.getColumn(2).width = 14;
