@@ -293,7 +293,7 @@
               <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="outline" icon="el-icon-ref" size="small" @click="refCkApply">引用出库单</el-button>
+              <el-button type="outline" icon="el-icon-ref" size="small" :disabled="stkIoBillEntryList.length > 0" @click="refCkApply">引用出库单</el-button>
             </el-col>
             <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
@@ -1008,45 +1008,35 @@ export default {
       }, `warehouse_${new Date().getTime()}.xlsx`)
     },
     selectCkApplyData(val) {
-      console.log('selectCkApplyData called with:', val);
-      // 假设 val 是出库单对象或数组，取 id
       const ckApplyId = Array.isArray(val) ? val[0].id : val.id;
-      console.log('ckApplyId:', ckApplyId);
       if (!ckApplyId) return;
 
-      const ckApplyIdStr = String(ckApplyId);
-      var param = {
-        ckApplyId: ckApplyIdStr
-      };
-      console.log('calling createTkEntriesByCkApply with param:', param);
-      createTkEntriesByCkApply(param).then(response => {
-        console.log('createTkEntriesByCkApply response:', response);
+      const keepCreater = this.form.createrName;
+      const keepCreateBy = this.form.createBy;
+      createTkEntriesByCkApply({ ckApplyId: String(ckApplyId) }).then(response => {
         if (response && response.data) {
           this.form = response.data;
-          this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+          if (!this.form.createrName && keepCreater) {
+            this.form.createrName = keepCreater;
+          }
+          if (!this.form.createBy && keepCreateBy) {
+            this.form.createBy = keepCreateBy;
+          }
+          this.stkIoBillEntryList = response.data.stkIoBillEntryList || [];
           this.form.billStatus = '1';
           this.form.billType = '401';
           this.DialogCkApplyComponentShow = false;
-          console.log('form updated:', this.form);
-          console.log('stkIoBillEntryList updated:', this.stkIoBillEntryList);
         }
-      }).catch((error) => {
-        console.error('createTkEntriesByCkApply error:', error);
+      }).catch(() => {
         this.$message.error("加载出库单明细失败");
       });
     },
     refCkApply() {
-      if (!this.form.warehouseId) {
-        this.$message({ message: '请先选择仓库', type: 'warning' })
-        return
+      if (this.stkIoBillEntryList.length > 0) {
+        this.$message({ message: '已有退库明细时不能引用单据', type: 'warning' });
+        return;
       }
-      if (!this.form.departmentId) {
-        this.$message({ message: '请先选择科室', type: 'warning' })
-        return
-      }
-
-      //打开“弹窗组件”
-      this.DialogCkApplyComponentShow = true
+      this.DialogCkApplyComponentShow = true;
       this.warehouseValue = this.form.warehouseId;
       this.departmentValue = this.form.departmentId;
     }

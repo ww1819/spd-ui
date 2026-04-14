@@ -313,10 +313,10 @@
               <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="outline" icon="el-icon-ref" size="small" @click="refRkApply">引用入库单</el-button>
+              <el-button type="outline" icon="el-icon-ref" size="small" :disabled="stkIoBillEntryList.length > 0" @click="refRkApply">引用入库单</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="outline" icon="el-icon-ref" size="small" @click="refTkApply">引用科室退库单</el-button>
+              <el-button type="outline" icon="el-icon-ref" size="small" :disabled="stkIoBillEntryList.length > 0" @click="refTkApply">引用科室退库单</el-button>
             </el-col>
             <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
@@ -1045,19 +1045,12 @@ export default {
       this.DialogRkApplyComponentShow = false
     },
     refRkApply() {
-      if (!this.form.warehouseId) {
-        this.$message({ message: '请先选择仓库', type: 'warning' })
-        return
+      if (this.stkIoBillEntryList.length > 0) {
+        this.$message({ message: '已有退货明细时不能引用单据', type: 'warning' });
+        return;
       }
-      if (!this.form.supplerId) {
-        this.$message({ message: '请先选择供应商', type: 'warning' })
-        return
-      }
-
-      //打开“弹窗组件”
-      this.DialogRkApplyComponentShow = true
+      this.DialogRkApplyComponentShow = true;
       this.warehouseValue = this.form.warehouseId;
-      this.departmentValue = this.form.departmentId;
     },
     selectRkApplyData(val) {
       const rows = Array.isArray(val) ? val : (val ? [val] : []);
@@ -1068,14 +1061,18 @@ export default {
         return;
       }
 
-      const rkApplyIdStr = String(rkApplyId);
-      var param = {
-        rkApplyId: rkApplyIdStr
-      };
-      createThEntriesByRkApply(param).then(response => {
+      const keepCreater = this.form.createrName;
+      const keepCreateBy = this.form.createBy;
+      createThEntriesByRkApply({ rkApplyId: String(rkApplyId) }).then(response => {
         if (response && response.data) {
           this.form = response.data;
-          this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+          if (!this.form.createrName && keepCreater) {
+            this.form.createrName = keepCreater;
+          }
+          if (!this.form.createBy && keepCreateBy) {
+            this.form.createBy = keepCreateBy;
+          }
+          this.stkIoBillEntryList = response.data.stkIoBillEntryList || [];
           this.form.billStatus = '1';
           this.form.billType = '301';
           this.DialogRkApplyComponentShow = false;
@@ -1090,33 +1087,29 @@ export default {
       this.DialogTkApplyComponentShow = false
     },
     refTkApply() {
-      if (!this.form.warehouseId) {
-        this.$message({ message: '请先选择仓库', type: 'warning' })
-        return
+      if (this.stkIoBillEntryList.length > 0) {
+        this.$message({ message: '已有退货明细时不能引用单据', type: 'warning' });
+        return;
       }
-      if (!this.form.supplerId) {
-        this.$message({ message: '请先选择供应商', type: 'warning' })
-        return
-      }
-
-      //打开“弹窗组件”
-      this.DialogTkApplyComponentShow = true
+      this.DialogTkApplyComponentShow = true;
       this.warehouseValue = this.form.warehouseId;
-      this.departmentValue = this.form.departmentId;
     },
     selectTkApplyData(val) {
-      // 假设 val 是科室申请单对象或数组，取 id
       const tkApplyId = Array.isArray(val) ? val[0].id : val.id;
       if (!tkApplyId) return;
 
-      const tkApplyIdStr = String(tkApplyId);
-      var param = {
-        tkApplyId: tkApplyIdStr
-      };
-      createThEntriesByTkApply(param).then(response => {
+      const keepCreater = this.form.createrName;
+      const keepCreateBy = this.form.createBy;
+      createThEntriesByTkApply({ tkApplyId: String(tkApplyId) }).then(response => {
         if (response && response.data) {
           this.form = response.data;
-          this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+          if (!this.form.createrName && keepCreater) {
+            this.form.createrName = keepCreater;
+          }
+          if (!this.form.createBy && keepCreateBy) {
+            this.form.createBy = keepCreateBy;
+          }
+          this.stkIoBillEntryList = response.data.stkIoBillEntryList || [];
           this.form.billStatus = '1';
           this.form.billType = '301';
           this.DialogTkApplyComponentShow = false;

@@ -267,14 +267,38 @@ export default {
       this.show = false
       this.$emit('closeDialog')
     },
-    checkBtn() {
-      //确定按钮
-      if(!this.selectRow) {
-        this.$message({ message: '请先选择数据', type: 'warning' })
-        return
+    async checkBtn() {
+      if (!this.selectRow || !this.selectRow.length) {
+        this.$message({ message: '请先选择数据', type: 'warning' });
+        return;
       }
-      this.$emit('selectData', this.selectRow)   //发送数据到父组件
-      this.handleClose()
+      const row = this.selectRow[0];
+      if (!row || !row.id) {
+        this.$message({ message: '请先选择数据', type: 'warning' });
+        return;
+      }
+      try {
+        const res = await getTkInventory(row.id);
+        const entries = (res.data && res.data.stkIoBillEntryList) || [];
+        const sidSet = new Set();
+        for (const e of entries) {
+          if (!e) continue;
+          const sid = e.supplerId != null ? e.supplerId : e.supplierId;
+          if (sid != null && String(sid).trim() !== '') {
+            sidSet.add(String(sid).trim());
+          }
+        }
+        if (sidSet.size > 1) {
+          this.$message.error('该退库单明细存在多个不同供应商，不能引用生成退货单');
+          return;
+        }
+      } catch (err) {
+        const msg = (err && err.response && err.response.data && err.response.data.msg) || (err && err.message) || '';
+        this.$message.error(msg ? `校验退库单失败：${msg}` : '校验退库单失败');
+        return;
+      }
+      this.$emit('selectData', this.selectRow);
+      this.handleClose();
     },
     warehouseListIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
