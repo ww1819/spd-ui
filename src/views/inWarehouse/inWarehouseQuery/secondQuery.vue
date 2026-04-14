@@ -340,19 +340,25 @@ export default {
       this.queryParams.pageNum = val;
     },
     getStatDate(){
+      // 与明细表保持一致：当前日期往前推5天
       let myDate = new Date();
+      myDate.setDate(myDate.getDate() - 5);
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
-      return statDate;
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      return year + "-" + month + "-" + day;
     },
     getEndDate(){
+      // 与明细表保持一致：当前日期
       let myDate = new Date();
+      let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
-      return endDate;
+      let day = myDate.getDate();
+      day = day < 10 ? "0" + day : day;
+      return year + "-" + month + "-" + day;
     },
     // 取消按钮
     cancel() {
