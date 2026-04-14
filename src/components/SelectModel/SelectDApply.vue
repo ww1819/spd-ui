@@ -1,4 +1,5 @@
 ﻿<template>
+  <div class="select-d-apply-root">
   <transition name="modal-fade">
     <div v-if="show" class="local-modal-mask">
       <transition name="modal-zoom">
@@ -206,6 +207,7 @@
       <el-table-column label="批号" prop="batchNo" width="120" show-overflow-tooltip />
     </el-table>
   </el-dialog>
+  </div>
 </template>
 
 <script>
