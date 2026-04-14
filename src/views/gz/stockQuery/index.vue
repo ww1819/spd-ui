@@ -120,7 +120,7 @@
 
 <script>
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
-import SelectSupplier from "@/components/SelectModel/SelectSupplier";
+import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import RightToolbar from "@/components/RightToolbar";

@@ -305,7 +305,7 @@
 <script>
 import { listInventoryWarning, getInventoryWarning, delInventoryWarning, addInventoryWarning, updateInventoryWarning } from "@/api/department/inventoryWarning";
 import { listInventory } from "@/api/department/depInventory";
-import SelectSupplier from '@/components/SelectModel/SelectSupplier';
+import SelectSupplier from '@/components/SelectModel/SelectSupplierDept';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import { listdepartAll } from "@/api/foundation/depart";

@@ -110,7 +110,7 @@
 <script>
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
-import SelectSupplier from "@/components/SelectModel/SelectSupplier";
+import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import RightToolbar from "@/components/RightToolbar";
 import DepotInventoryDetail from "./components/DepotInventoryDetail.vue";
 import DepotInventorySummary from "./components/DepotInventorySummary.vue";

@@ -133,7 +133,7 @@
 <script>
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
-import SelectSupplier from "@/components/SelectModel/SelectSupplier";
+import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import RightToolbar from "@/components/RightToolbar";
 import GzDepInventoryDetail from "./components/GzDepInventoryDetail.vue";
 import GzDepInventorySummary from "./components/GzDepInventorySummary.vue";

@@ -219,7 +219,7 @@ import { listInventory } from "@/api/department/depInventory";
 import { exportDepInventoryDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
-import SelectSupplier from "@/components/SelectModel/SelectSupplier";
+import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import RightToolbar from "@/components/RightToolbar";
 
 export default {

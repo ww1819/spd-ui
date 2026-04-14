@@ -18,6 +18,15 @@ export function listSupplierAll(query) {
   })
 }
 
+// 科室模块专用：供应商低敏列表（仅返回必要字段）
+export function listSupplierDeptSafe(query) {
+  return request({
+    url: '/foundation/supplier/listDeptSafe',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询供应商详细
 export function getSupplier(id) {
   return request({

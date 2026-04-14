@@ -730,7 +730,7 @@ import { pinyin } from 'pinyin-pro';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectDeptApplyOperator from '@/components/SelectModel/SelectDeptApplyOperator';
-import SelectSupplier from '@/components/SelectModel/SelectSupplier';
+import SelectSupplier from '@/components/SelectModel/SelectSupplierDept';
 import SelectDepartmentApplyAvailableStock from '@/components/SelectModel/SelectDepartmentApplyAvailableStock';
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 
