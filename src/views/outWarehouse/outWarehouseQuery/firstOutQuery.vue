@@ -325,25 +325,17 @@ export default {
   methods: {
     getTotalSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
+      const sums = Array(columns.length).fill('');
+      if (sums.length > 0) sums[0] = '合计';
+      const totalQty = (data || []).reduce((acc, r) => acc + Number(r.materialQty || 0), 0);
+      const totalAmt = (data || []).reduce((acc, r) => acc + Number(r.materialAmt || 0), 0);
+      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
       columns.forEach((column, index) => {
-        if (index === 0) {
-          sums[index] = '合计';
-          return;
+        if (column.property === 'materialQty') {
+          sums[index] = totalQty.toFixed(2);
         }
-        const values = data.map(item => Number(item[column.property]));
-        if(index === 11 || index === 12 || index === 13){
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] = sums[index].toFixed(2);
-          }
+        if (column.property === 'materialAmt') {
+          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
         }
       });
       return sums;
