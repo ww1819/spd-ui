@@ -152,7 +152,7 @@
 
           <el-col :span="4">
             <el-form-item label="操作人" prop="userId" label-width="100px">
-              <SelectUser v-model="form.userId"/>
+              <SelectDeptApplyOperator v-model="form.userId"/>
             </el-form-item>
           </el-col>
         </el-row>
@@ -247,14 +247,14 @@
 <script>
 import { listApply, getApply, delApply, addApply, updateApply } from "@/api/gzDepartment/apply";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
-import SelectUser from '@/components/SelectModel/SelectUser';
+import SelectDeptApplyOperator from '@/components/SelectModel/SelectDeptApplyOperator';
 import SelectMaterial from '@/components/SelectModel/SelectMaterialDept';
 import SelectGzDepotInventory from '@/components/SelectModel/SelectGzDepotInventory';
 
 export default {
   name: "GZDepartmentApply",
   dicts: ['biz_status'],
-  components: {SelectWarehouse,SelectUser,SelectMaterial,SelectGzDepotInventory},
+  components: {SelectWarehouse,SelectDeptApplyOperator,SelectMaterial,SelectGzDepotInventory},
   data() {
     return {
       // 遮罩层
