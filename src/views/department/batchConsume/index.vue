@@ -64,7 +64,6 @@
           type="primary"
           size="medium"
           @click="handleAdd"
-          v-hasPermi="['department:batchConsume:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
