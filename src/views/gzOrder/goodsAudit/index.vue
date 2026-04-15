@@ -537,6 +537,7 @@ export default {
         obj.inHospitalCode = item.inHospitalCode || "";
         // 保存UDI码，优先从material对象获取，如果没有则从udiNo字段获取
         obj.udiNo = (item.material && item.material.udiNo) || item.udiNo || "";
+        obj.supplierId = item.supplierId || (item.supplier && item.supplier.id) || (item.material && item.material.supplier && item.material.supplier.id) || null;
         this.gzOrderEntryList.push(obj);
       });
     },
@@ -882,7 +883,10 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          this.form.gzOrderEntryList = this.gzOrderEntryList;
+          this.form.gzOrderEntryList = this.gzOrderEntryList.map(item => ({
+            ...item,
+            supplierId: item.supplierId || (item.supplier && item.supplier.id) || null
+          }));
           this.form.orderType = 301; // 确保设置退库类型
           if (this.form.id != null) {
             updateOrder(this.form).then(response => {

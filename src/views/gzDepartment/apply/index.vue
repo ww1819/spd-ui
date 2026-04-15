@@ -451,7 +451,12 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          this.form.gzDepApplyEntryList = this.gzDepApplyEntryList;
+          this.form.gzDepApplyEntryList = this.gzDepApplyEntryList.map(item => ({
+            ...item,
+            supplierId: item.supplierId || (item.supplier && item.supplier.id) || (item.material && item.material.supplier && item.material.supplier.id) || null,
+            masterBarcode: item.masterBarcode || item.mainBarcode || "",
+            secondaryBarcode: item.secondaryBarcode || item.subBarcode || "",
+          }));
           if (this.form.id != null) {
             updateApply(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -492,6 +497,9 @@ export default {
       obj.amt = "";
       obj.batchNo = "";
       obj.batchNumer = "";
+      obj.supplierId = "";
+      obj.masterBarcode = "";
+      obj.secondaryBarcode = "";
       obj.remark = "";
       this.gzDepApplyEntryList.push(obj);
     },

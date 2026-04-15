@@ -684,6 +684,7 @@ export default {
         obj.inHospitalCode = item.inHospitalCode || "";
         // 保存UDI码，优先从material对象获取，如果没有则从udiNo字段获取
         obj.udiNo = (item.material && item.material.udiNo) || item.udiNo || "";
+        obj.supplierId = item.supplierId || (item.supplier && item.supplier.id) || (item.material && item.material.supplier && item.material.supplier.id) || null;
         this.gzOrderEntryList.push(obj);
       });
     },
@@ -1122,7 +1123,10 @@ export default {
               }
             }
           }
-          this.form.gzOrderEntryList = this.gzOrderEntryList;
+          this.form.gzOrderEntryList = this.gzOrderEntryList.map(item => ({
+            ...item,
+            supplierId: item.supplierId || (item.supplier && item.supplier.id) || null
+          }));
           // 调试：打印提交前的数据，特别是院内码
           console.log('提交前的数据:', {
             form: this.form,

@@ -26,28 +26,32 @@
       </el-row>
 
       <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
+        <el-col :span="18">
           <el-form-item style="display: flex; align-items: center;">
+            <el-select v-model="queryParams.timeField" placeholder="时间字段" clearable style="width: 140px; margin-right: 8px;">
+              <el-option label="制单时间" value="createTime" />
+              <el-option label="审核时间" value="auditDate" />
+            </el-select>
             <el-date-picker
               v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="起始日期"
               clearable
-              style="width: 180px; margin-right: 8px;"
+              style="width: 200px; margin-right: 8px;"
             />
             <span style="margin: 0 4px;">至</span>
             <el-date-picker
               v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="截止日期"
               clearable
-              style="width: 180px; margin-left: 8px;"
+              style="width: 200px; margin-left: 8px;"
             />
           </el-form-item>
         </el-col>
-        <el-col :span="12" class="query-status-col">
+        <el-col :span="6" class="query-status-col">
           <el-form-item prop="orderStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.orderStatus" placeholder="单据状态"
                        clearable style="width: 150px">
@@ -586,6 +590,7 @@ export default {
         warehouseId: null,
         orderStatus: null,
         orderType: null,
+        timeField: "createTime",
         auditDate: null,
         beginDate: this.getStatDate(), // 初始化为当前日期前5天
         endDate: this.getEndDate(), // 初始化为当前日期
@@ -1052,6 +1057,7 @@ export default {
         obj.masterBarcode = parsedUDI.udiCode; // UDI码（包含(01)前缀）
         obj.secondaryBarcode = parsedUDI.secondaryBarcode || ""; // 辅助条码（不包含(01)部分）
         obj.udiNo = parsedUDI.udiCodeForQuery || ""; // 保存UDI码（用于查询，不包含(01)前缀）
+        obj.supplierId = this.form.supplerId || materialSupplierId || null;
         this.gzOrderEntryList.push(obj);
       });
       
@@ -1209,7 +1215,8 @@ export default {
         meta: this.$route.meta
       });
       
-      listOrder(this.queryParams).then(response => {
+      const params = this.normalizeQueryDateTime(this.queryParams);
+      listOrder(params).then(response => {
         console.log('查询响应:', response);
         this.orderList = response.rows || [];
         this.total = response.total || 0;
@@ -1282,6 +1289,7 @@ export default {
         obj.masterBarcode = item.udiNo || ""; // UDI码赋值给masterBarcode字段用于显示
         obj.secondaryBarcode = "";
         obj.udiNo = item.udiNo || ""; // 保存UDI码
+        obj.supplierId = this.form.supplerId || item.supplierId || (item.supplier && item.supplier.id) || null;
         this.gzOrderEntryList.push(obj);
       });
     },
@@ -1368,9 +1376,27 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
+      this.queryParams.timeField = "createTime";
       // 重置后保持orderType，根据路由判断是出库还是入库
       this.setOrderTypeByRoute();
       this.handleQuery();
+    },
+    normalizeQueryDateTime(query) {
+      const params = { ...query };
+      params.timeField = params.timeField || "createTime";
+      params.beginDate = this.normalizeDateTimeValue(params.beginDate, false);
+      params.endDate = this.normalizeDateTimeValue(params.endDate, true);
+      return params;
+    },
+    normalizeDateTimeValue(value, isEnd) {
+      if (!value) return value;
+      if (typeof value !== "string") return value;
+      const trimVal = value.trim();
+      if (!trimVal) return trimVal;
+      if (trimVal.length === 10 && trimVal.indexOf(" ") === -1) {
+        return `${trimVal} ${isEnd ? "23:59:59" : "00:00:00"}`;
+      }
+      return trimVal;
     },
     getStatDate(){
       // 返回当前日期前5天的日期
@@ -1381,7 +1407,7 @@ export default {
       month = month < 10 ? "0" + month : month;
       let day = myDate.getDate();
       day = day < 10 ? "0" + day : day;
-      let statDate = year.toString() + "-" + month + "-" + day;
+      let statDate = year.toString() + "-" + month + "-" + day + " 00:00:00";
       return statDate;
     },
     getEndDate(){
@@ -1392,7 +1418,7 @@ export default {
       month = month < 10 ? "0" + month : month;
       let day = myDate.getDate();
       day = day < 10 ? "0" + day : day;
-      let endDate = year.toString() + "-" + month + "-" + day;
+      let endDate = year.toString() + "-" + month + "-" + day + " 23:59:59";
       return endDate;
     },
     // 多选框选中数据
@@ -2023,6 +2049,10 @@ export default {
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.gzOrderEntryList = this.gzOrderEntryList;
+          this.form.gzOrderEntryList = this.form.gzOrderEntryList.map(item => ({
+            ...item,
+            supplierId: this.form.supplerId || item.supplierId || null
+          }));
           if (this.form.id != null) {
             updateOrder(this.form).then(response => {
               this.$modal.msgSuccess("保存成功");
@@ -2122,8 +2152,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
+      const params = this.normalizeQueryDateTime(this.queryParams);
       this.download('gz/order/export', {
-        ...this.queryParams
+        ...params
       }, `order_${new Date().getTime()}.xlsx`)
     }
   }

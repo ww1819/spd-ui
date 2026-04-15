@@ -21,19 +21,32 @@
       </el-row>
 
       <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
+        <el-col :span="18">
           <el-form-item style="display: flex; align-items: center;">
+            <el-select v-model="queryParams.timeField" placeholder="时间字段" clearable style="width: 140px; margin-right: 8px;">
+              <el-option label="制单时间" value="createTime" />
+              <el-option label="审核时间" value="auditDate" />
+            </el-select>
             <el-date-picker
-              v-model="queryParams.goodsDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="制单日期"
+              v-model="queryParams.beginDate"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              placeholder="开始时间"
               clearable
-              style="width: 180px; margin-right: 8px;"
+              style="width: 200px; margin-right: 8px;"
+            />
+            <span style="margin: 0 4px;">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              placeholder="结束时间"
+              clearable
+              style="width: 200px; margin-left: 8px;"
             />
           </el-form-item>
         </el-col>
-        <el-col :span="12" class="query-status-col">
+        <el-col :span="6" class="query-status-col">
           <el-form-item prop="goodsStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.goodsStatus" placeholder="单据状态"
                        clearable style="width: 150px">
@@ -442,6 +455,9 @@ export default {
         goodsNo: null,
         supplerId: null,
         goodsDate: null,
+        beginDate: null,
+        endDate: null,
+        timeField: "createTime",
         warehouseId: null,
         goodsStatus: null,
         goodsType: null,
@@ -463,7 +479,7 @@ export default {
       this.loading = true;
       // 备货退货页面：只显示GZTH-开头的单号
       const params = {
-        ...this.queryParams
+        ...this.normalizeQueryDateTime(this.queryParams)
       };
       // 如果用户输入了单号，确保以GZTH-开头
       if (params.goodsNo && !params.goodsNo.startsWith('GZTH-')) {
@@ -529,6 +545,7 @@ export default {
         obj.certificateNo = (item.material && item.material.fdCertificate && item.material.fdCertificate.certificateNo) || item.certificateNo || "";
         obj.certificateExpiryDate = (item.material && item.material.fdCertificate && item.material.fdCertificate.expiryDate) || item.certificateExpiryDate || "";
         obj.remark = "";
+        obj.supplierId = this.form.supplerId || item.supplierId || (item.supplier && item.supplier.id) || (item.material && item.material.supplier && item.material.supplier.id) || null;
 
         this.gzRefundGoodsEntryList.push(obj);
       });
@@ -596,7 +613,27 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.beginDate = null;
+      this.queryParams.endDate = null;
+      this.queryParams.timeField = "createTime";
       this.handleQuery();
+    },
+    normalizeQueryDateTime(query) {
+      const params = { ...query };
+      params.timeField = params.timeField || "createTime";
+      params.beginDate = this.normalizeDateTimeValue(params.beginDate, false);
+      params.endDate = this.normalizeDateTimeValue(params.endDate, true);
+      return params;
+    },
+    normalizeDateTimeValue(value, isEnd) {
+      if (!value) return value;
+      if (typeof value !== "string") return value;
+      const trimVal = value.trim();
+      if (!trimVal) return trimVal;
+      if (trimVal.length === 10 && trimVal.indexOf(" ") === -1) {
+        return `${trimVal} ${isEnd ? "23:59:59" : "00:00:00"}`;
+      }
+      return trimVal;
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -676,7 +713,10 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          this.form.gzRefundGoodsEntryList = this.gzRefundGoodsEntryList;
+          this.form.gzRefundGoodsEntryList = this.gzRefundGoodsEntryList.map(item => ({
+            ...item,
+            supplierId: this.form.supplerId || item.supplierId || null
+          }));
           if (this.form.id != null) {
             updateGoods(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -894,8 +934,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
+      const params = this.normalizeQueryDateTime(this.queryParams);
       this.download('gz/goods/export', {
-        ...this.queryParams
+        ...params
       }, `goods_${new Date().getTime()}.xlsx`)
     }
   }
