@@ -1042,7 +1042,8 @@ export default {
           this.form.gzOrderEntryList = this.gzOrderEntryList;
           this.form.gzOrderEntryList = this.form.gzOrderEntryList.map(item => ({
             ...item,
-            supplierId: this.form.supplerId || item.supplierId || null
+            supplierId: this.form.supplerId || item.supplierId || null,
+            warehouseId: this.form.warehouseId || item.warehouseId || null
           }));
           if (this.form.id != null) {
             updateOrder(this.form).then(response => {

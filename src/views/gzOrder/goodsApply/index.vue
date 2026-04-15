@@ -715,7 +715,8 @@ export default {
         if (valid) {
           this.form.gzRefundGoodsEntryList = this.gzRefundGoodsEntryList.map(item => ({
             ...item,
-            supplierId: this.form.supplerId || item.supplierId || null
+            supplierId: this.form.supplerId || item.supplierId || null,
+            warehouseId: this.form.warehouseId || item.warehouseId || null
           }));
           if (this.form.id != null) {
             updateGoods(this.form).then(response => {

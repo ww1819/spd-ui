@@ -1103,7 +1103,8 @@ export default {
       obj.masterBarcode = parsedUDI.udiCode; // UDI码（包含(01)前缀）
       obj.secondaryBarcode = parsedUDI.secondaryBarcode || ""; // 辅助条码（不包含(01)部分）
       obj.udiNo = parsedUDI.udiCodeForQuery || ""; // 保存UDI码（用于查询，不包含(01)前缀）
-      obj.supplierId = this.form.supplerId || materialSupplierId || null;
+      const itemSupplierId = item.supplierId || (item.supplier && item.supplier.id) || null;
+      obj.supplierId = this.form.supplerId || itemSupplierId || null;
       this.gzOrderEntryList.push(obj);
 
       // 主辅一起扫描可解析时：自动取消勾选；仅扫描 UDI 时：只勾选最新新增明细
@@ -2109,7 +2110,8 @@ export default {
           this.form.gzOrderEntryList = this.gzOrderEntryList;
           this.form.gzOrderEntryList = this.form.gzOrderEntryList.map(item => ({
             ...item,
-            supplierId: this.form.supplerId || item.supplierId || null
+            supplierId: this.form.supplerId || item.supplierId || null,
+            warehouseId: this.form.warehouseId || item.warehouseId || null
           }));
           if (this.form.id != null) {
             updateOrder(this.form).then(response => {
