@@ -301,7 +301,7 @@
               </el-row>
 
               <div class="table-wrapper">
-              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" :height="detailTableHeight" border :summary-method="getPurchaseSummaries" show-summary>
+              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" :max-height="detailTableMaxHeight" border :summary-method="getPurchaseSummaries" show-summary>
                 <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
@@ -472,8 +472,8 @@ export default {
     };
   },
   computed: {
-    /** 与科室申领弹窗明细表同一高度 */
-    detailTableHeight() {
+    /** 明细表使用 max-height：行少时不留白，合计紧跟最后一行 */
+    detailTableMaxHeight() {
       return 'max(300px, calc(100vh - 320px))';
     }
   },
