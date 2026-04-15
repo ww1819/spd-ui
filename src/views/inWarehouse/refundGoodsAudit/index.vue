@@ -27,7 +27,11 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="12">
-          <el-form-item style="display: flex; align-items: center;">
+          <el-form-item style="display: flex; align-items: center; flex-wrap: wrap;">
+            <el-radio-group v-model="queryParams.dateQueryType" size="small" style="margin-right: 10px; margin-bottom: 4px;">
+              <el-radio-button label="bill">制单日期</el-radio-button>
+              <el-radio-button label="audit">审核日期</el-radio-button>
+            </el-radio-group>
             <el-date-picker
               v-model="queryParams.beginDate"
               type="datetime"
@@ -565,6 +569,7 @@ export default {
         userId: null,
         billType: null,
         sortScene: 'audit',
+        dateQueryType: 'bill',
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
         params: {}
@@ -811,6 +816,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.dateQueryType = 'bill';
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
       this.queryParams.params = this.queryParams.params || {};
