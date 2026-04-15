@@ -125,11 +125,12 @@
 <script>
 import { listMaterialDeptSafe } from "@/api/foundation/material";
 import { listFixedNumberForPurchase } from "@/api/monitoring/fixedNumber";
-import SelectSupplier from "@/components/SelectModel/SelectSupplier";
+/** 科室场景用低敏供应商接口 listDeptSafe，避免依赖 foundation:supplier:list */
+import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 
 export default {
   name: "SelectMaterialForPurchase",
-  components: {SelectSupplier},
+  components: { SelectSupplier },
   props: {
     DialogComponentShow: Boolean, //接受父组件传递过来的数据
     warehouseValue: [Number, String] // 仓库ID，用于过滤定数监测数据

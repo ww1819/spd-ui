@@ -155,12 +155,13 @@
 <script>
 import { listInventory } from "@/api/warehouse/inventory";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
-import SelectSupplier from "@/components/SelectModel/SelectSupplier";
+/** 下拉用 listDeptSafe，避免依赖 foundation:supplier:list（科室审核/库存选择等场景） */
+import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 
 export default {
   name: "SelectInventory",
   dicts:['way_status'],
-  components: {SelectWarehouse,SelectSupplier},
+  components: { SelectWarehouse, SelectSupplier },
   props: {
     DialogComponentShow: [Boolean],
     warehouseValue: [String, Number],

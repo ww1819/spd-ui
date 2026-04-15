@@ -1,5 +1,14 @@
 <template>
   <div class="app-container">
+    <el-alert
+      v-if="!hasAnyListPermission"
+      type="warning"
+      :closable="false"
+      show-icon
+      style="margin-bottom: 12px"
+      title="您未被分配申领单、申购单或转科申请的任一列表权限，无法查询数据。"
+    />
+    <div v-if="hasAnyListPermission">
     <div class="form-fields-container">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
@@ -88,44 +97,44 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="6">
         <el-radio-group v-model="currentBillType" @change="handleBillTypeChange" size="small">
-          <el-radio-button label="1">申领单</el-radio-button>
-          <el-radio-button label="2">申购单</el-radio-button>
-          <el-radio-button label="3">转科申请单</el-radio-button>
+          <el-radio-button v-if="canListBillType('1')" label="1">申领单</el-radio-button>
+          <el-radio-button v-if="canListBillType('2')" label="2">申购单</el-radio-button>
+          <el-radio-button v-if="canListBillType('3')" label="3">转科申请单</el-radio-button>
         </el-radio-group>
       </el-col>
-      <el-col :span="1.5" style="margin-left: -10px;">
+      <el-col v-if="canListCurrent()" :span="1.5" style="margin-left: -10px;">
         <el-button
           type="primary"
           size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
-      <el-col :span="1.5">
+      <el-col v-if="canListCurrent()" :span="1.5">
         <el-button
           type="primary"
           size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
-      <el-col :span="1.5">
+      <el-col v-if="canAuditCurrent()" :span="1.5">
         <el-button
           type="primary"
           size="medium"
           @click="handleBatchAudit"
-          v-hasPermi="['department:dApply:audit']"
           :disabled="ids.length === 0"
         >审核</el-button>
       </el-col>
     </el-row>
 
     <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange"  height="56vh" border stripe>
-      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column v-if="canAuditCurrent()" type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="单号" align="center" width="180" show-overflow-tooltip resizable >
         <template slot-scope="scope">
-          <el-button type="text" @click="handleView(scope.row)">
+          <el-button v-if="canQueryCurrent()" type="text" @click="handleView(scope.row)">
             <span>{{ getBillNo(scope.row) }}</span>
           </el-button>
+          <span v-else>{{ getBillNo(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="制单日期" align="center" prop="createTime" width="180" show-overflow-tooltip resizable>
@@ -172,32 +181,37 @@
               size="small"
               type="text"
               @click="handleView(scope.row)"
-              v-if="getBillStatus(scope.row) == 2"
+              v-if="getBillStatus(scope.row) == 2 && canQueryCurrent()"
               style="padding: 0 5px; margin: 0;"
             >查看</el-button>
             <el-button
+              v-if="(currentBillType === '1' || currentBillType === '3') && canExportCurrent()"
               size="small"
               type="text"
               icon="el-icon-download"
               @click="handleExportRowDetail(scope.row)"
-              v-if="currentBillType !== '2'"
-              v-hasPermi="['department:dApply:export']"
+              style="padding: 0 5px; margin: 0;"
+            >导出明细</el-button>
+            <el-button
+              v-if="currentBillType === '2' && canExportCurrent()"
+              size="small"
+              type="text"
+              icon="el-icon-download"
+              @click="handleExportRowDetail(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >导出明细</el-button>
             <el-button
               size="small"
               type="text"
               @click="handleUpdate(scope.row)"
-              v-hasPermi="['department:dApply:edit']"
-              v-if="getBillStatus(scope.row) != 2"
+              v-if="getBillStatus(scope.row) != 2 && canEditCurrent()"
               style="padding: 0 5px; margin: 0;"
             >修改</el-button>
             <el-button
               size="small"
               type="text"
               @click="handleDelete(scope.row)"
-              v-hasPermi="['department:dApply:remove']"
-              v-if="getBillStatus(scope.row) != 2"
+              v-if="getBillStatus(scope.row) != 2 && canRemoveCurrent()"
               style="padding: 0 5px; margin: 0;"
             >删除</el-button>
           </span>
@@ -290,24 +304,24 @@
           </el-col>
 
           <div v-show="action">
-            <el-col :span="1.5">
+            <el-col v-if="canEditCurrent()" :span="1.5">
 <!--              <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddBasApplyEntry">添加</el-button>-->
               <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
             </el-col>
-            <el-col :span="1.5">
+            <el-col v-if="canEditCurrent()" :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteBasApplyEntry">删除</el-button>
             </el-col>
             <el-col :span="1.5" v-show="action">
               <el-button @click="cancel">取 消</el-button>
             </el-col>
-            <el-col :span="1.5" v-show="action">
+            <el-col v-if="canEditCurrent()" :span="1.5" v-show="action">
               <el-button type="primary" @click="submitForm">确 定</el-button>
             </el-col>
           </div>
 
         </el-row>
         <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" @selection-change="handleBasApplyEntrySelectionChange" ref="basApplyEntry" height="calc(32vh)" border :summary-method="getSummaries" show-summary>
-          <el-table-column type="selection" width="60" align="center" resizable />
+          <el-table-column v-if="canEditCurrent()" type="selection" width="60" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable/>
           <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
           <el-table-column label="规格" align="center" width="120" show-overflow-tooltip resizable>
@@ -385,7 +399,7 @@
               <el-input v-model="scope.row.remark" placeholder="备注" />
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" width="100" fixed="right">
+          <el-table-column v-if="canEditCurrent()" label="操作" align="center" width="100" fixed="right">
             <template slot-scope="scope">
               <el-button
                 size="small"
@@ -402,6 +416,8 @@
         </transition>
       </div>
     </transition>
+
+    </div>
 
     <!-- 3、使用组件 -->
     <SelectInventory
@@ -424,6 +440,7 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 import {auditWarehouse, getWarehouse} from "@/api/warehouse/warehouse";
+import { checkPermi } from "@/utils/permission";
 
 export default {
   name: "dAudit",
@@ -492,6 +509,15 @@ export default {
       }
     };
   },
+  computed: {
+    hasAnyListPermission() {
+      return (
+        checkPermi(["department:dApply:list"]) ||
+        checkPermi(["department:purchase:list"]) ||
+        checkPermi(["departmentTransfer:apply:list"])
+      );
+    },
+  },
   watch: {
     currentBillType(newVal) {
       // 当单选按钮组改变时，同步更新queryParams.billType
@@ -499,13 +525,68 @@ export default {
     }
   },
   created() {
-    // 初始化单据类型，确保queryParams.billType与currentBillType同步
+    const order = ["1", "2", "3"];
+    for (let i = 0; i < order.length; i++) {
+      if (this.canListBillType(order[i])) {
+        this.currentBillType = order[i];
+        break;
+      }
+    }
     this.queryParams.billType = this.currentBillType;
     this.getList();
   },
   methods: {
+    /** 当前页签是否有列表权限（与后端 list 接口一致） */
+    canListBillType(t) {
+      const s = String(t);
+      if (s === "1") return checkPermi(["department:dApply:list"]);
+      if (s === "2") return checkPermi(["department:purchase:list"]);
+      if (s === "3") return checkPermi(["departmentTransfer:apply:list"]);
+      return false;
+    },
+    canListCurrent() {
+      return this.canListBillType(this.currentBillType);
+    },
+    canAuditCurrent() {
+      if (this.currentBillType === "1") return checkPermi(["department:dApply:audit"]);
+      if (this.currentBillType === "2") return checkPermi(["department:purchase:audit"]);
+      if (this.currentBillType === "3") return checkPermi(["departmentTransfer:apply:audit"]);
+      return false;
+    },
+    canQueryCurrent() {
+      if (this.currentBillType === "1") return checkPermi(["department:dApply:query"]);
+      if (this.currentBillType === "2") return checkPermi(["department:purchase:query"]);
+      if (this.currentBillType === "3") return checkPermi(["departmentTransfer:apply:query"]);
+      return false;
+    },
+    canEditCurrent() {
+      if (this.currentBillType === "1") return checkPermi(["department:dApply:edit"]);
+      if (this.currentBillType === "2") return checkPermi(["department:purchase:edit"]);
+      if (this.currentBillType === "3") return checkPermi(["departmentTransfer:apply:edit"]);
+      return false;
+    },
+    canRemoveCurrent() {
+      if (this.currentBillType === "1") return checkPermi(["department:dApply:remove"]);
+      if (this.currentBillType === "2") return checkPermi(["department:purchase:remove"]);
+      if (this.currentBillType === "3") return checkPermi(["departmentTransfer:apply:remove"]);
+      return false;
+    },
+    canExportCurrent() {
+      if (this.currentBillType === "1") return checkPermi(["department:dApply:export"]);
+      if (this.currentBillType === "2") {
+        return checkPermi(["department:purchase:export", "department:purchaseAudit:export"]);
+      }
+      if (this.currentBillType === "3") return checkPermi(["departmentTransfer:apply:export"]);
+      return false;
+    },
     /** 查询列表（根据当前单据类型） */
     getList() {
+      if (!this.canListCurrent()) {
+        this.applyList = [];
+        this.total = 0;
+        this.loading = false;
+        return;
+      }
       this.loading = true;
       if (this.currentBillType === '1') {
         // 查询申领单 - 设置billType=1，只查询申领单类型，排除转科申请（billType=3）
@@ -976,30 +1057,48 @@ export default {
         });
       }
     },
-    /** 提交按钮 */
+    /** 提交按钮（按当前单据类型调用对应更新/新增接口） */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.basApplyEntryList = this.basApplyEntryList;
-          var totalAmt = 0;
+          let totalAmt = 0;
           this.basApplyEntryList.forEach(item => {
-            if(item.amt){
+            if (item.amt) {
               totalAmt += parseFloat(item.amt);
             }
           });
           this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
-            updateApply(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addApply(this.form).then(response => {
+            if (this.currentBillType === '1') {
+              updateApply(this.form).then(() => {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false;
+                this.getList();
+              });
+            } else if (this.currentBillType === '2') {
+              const payload = { ...this.form, depPurchaseApplyEntryList: this.basApplyEntryList };
+              updatePurchase(payload).then(() => {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false;
+                this.getList();
+              });
+            } else if (this.currentBillType === '3') {
+              const payload = { ...this.form, basApplyEntryList: this.basApplyEntryList, billType: 3 };
+              updateDepartmentTransfer(payload).then(() => {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false;
+                this.getList();
+              });
+            }
+          } else if (this.currentBillType === '1') {
+            addApply(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
             });
+          } else {
+            this.$modal.msgWarning("请从对应菜单新增申购单或转科申请");
           }
         }
       });
