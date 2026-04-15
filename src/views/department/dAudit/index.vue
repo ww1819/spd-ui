@@ -112,7 +112,7 @@
           type="primary"
           size="medium"
           @click="handleBatchAudit"
-          v-hasPermi="['department:dApply:audit']"
+          v-hasPermi="['department:dApply:audit','department:purchase:audit','departmentTransfer:apply:audit']"
           :disabled="ids.length === 0"
         >审核</el-button>
       </el-col>
@@ -180,15 +180,24 @@
               type="text"
               icon="el-icon-download"
               @click="handleExportRowDetail(scope.row)"
-              v-if="currentBillType !== '2'"
-              v-hasPermi="['department:dApply:export']"
+              v-if="currentBillType === '1' || currentBillType === '3'"
+              v-hasPermi="['department:dApply:export','departmentTransfer:apply:export']"
+              style="padding: 0 5px; margin: 0;"
+            >导出明细</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-download"
+              @click="handleExportRowDetail(scope.row)"
+              v-if="currentBillType === '2'"
+              v-hasPermi="['department:purchase:export','department:purchaseAudit:export']"
               style="padding: 0 5px; margin: 0;"
             >导出明细</el-button>
             <el-button
               size="small"
               type="text"
               @click="handleUpdate(scope.row)"
-              v-hasPermi="['department:dApply:edit']"
+              v-hasPermi="['department:dApply:edit','department:purchase:edit','departmentTransfer:apply:edit']"
               v-if="getBillStatus(scope.row) != 2"
               style="padding: 0 5px; margin: 0;"
             >修改</el-button>
@@ -196,7 +205,7 @@
               size="small"
               type="text"
               @click="handleDelete(scope.row)"
-              v-hasPermi="['department:dApply:remove']"
+              v-hasPermi="['department:dApply:remove','department:purchase:remove','departmentTransfer:apply:remove']"
               v-if="getBillStatus(scope.row) != 2"
               style="padding: 0 5px; margin: 0;"
             >删除</el-button>
@@ -976,30 +985,48 @@ export default {
         });
       }
     },
-    /** 提交按钮 */
+    /** 提交按钮（按当前单据类型调用对应更新/新增接口） */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.basApplyEntryList = this.basApplyEntryList;
-          var totalAmt = 0;
+          let totalAmt = 0;
           this.basApplyEntryList.forEach(item => {
-            if(item.amt){
+            if (item.amt) {
               totalAmt += parseFloat(item.amt);
             }
           });
           this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
-            updateApply(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addApply(this.form).then(response => {
+            if (this.currentBillType === '1') {
+              updateApply(this.form).then(() => {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false;
+                this.getList();
+              });
+            } else if (this.currentBillType === '2') {
+              const payload = { ...this.form, depPurchaseApplyEntryList: this.basApplyEntryList };
+              updatePurchase(payload).then(() => {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false;
+                this.getList();
+              });
+            } else if (this.currentBillType === '3') {
+              const payload = { ...this.form, basApplyEntryList: this.basApplyEntryList, billType: 3 };
+              updateDepartmentTransfer(payload).then(() => {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false;
+                this.getList();
+              });
+            }
+          } else if (this.currentBillType === '1') {
+            addApply(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
             });
+          } else {
+            this.$modal.msgWarning("请从对应菜单新增申购单或转科申请");
           }
         }
       });
