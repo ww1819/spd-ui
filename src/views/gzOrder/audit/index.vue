@@ -250,6 +250,21 @@
           </el-col>
         </el-row>
 
+        <el-row :gutter="8" v-if="isOutbound && action">
+          <el-col :span="8">
+            <el-form-item label="院内码" prop="scanInHospitalCode" label-width="70px">
+              <el-input
+                v-model="form.scanInHospitalCode"
+                :placeholder="scanInHospitalPlaceholder"
+                clearable
+                style="width: 260px"
+                :disabled="!form.warehouseId || !form.departmentId"
+                @keyup.enter.native="handleScanInHospitalCode"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <span>{{ isOutbound ? '备货出库明细信息' : '高值备货入库明细信息' }}</span>
@@ -419,7 +434,7 @@
 </template>
 
 <script>
-import { listOrder, getOrder, delOrder, addOrder, updateOrder,auditOrder, checkInHospitalCode } from "@/api/gz/order";
+import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, checkInHospitalCode, getDepotByInHospitalCodeForOutbound } from "@/api/gz/order";
 import { listDepotInventory } from "@/api/gz/depotInventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -514,8 +529,31 @@ export default {
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
         ],
+        departmentId: [
+          {
+            validator: (rule, value, callback) => {
+              if (this.isOutbound && (value === null || value === undefined || value === '')) {
+                callback(new Error('科室不能为空'));
+              } else {
+                callback();
+              }
+            },
+            trigger: 'change'
+          }
+        ],
       }
     };
+  },
+  computed: {
+    scanInHospitalPlaceholder() {
+      if (!this.form || !this.form.warehouseId) {
+        return '请先选择仓库';
+      }
+      if (!this.form.departmentId) {
+        return '请先选择科室';
+      }
+      return '扫描院内码后回车';
+    }
   },
   created() {
     // 根据路由meta.title判断是出库还是入库
@@ -525,6 +563,77 @@ export default {
     this.getList();
   },
   methods: {
+    toHalfWidth(str) {
+      if (!str || typeof str !== 'string') {
+        return str;
+      }
+      return str.replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/\u3000/g, ' ');
+    },
+    handleScanInHospitalCode() {
+      if (!this.isOutbound || !this.action) {
+        return;
+      }
+      const wid = this.form.warehouseId;
+      if (wid === null || wid === undefined || String(wid).trim() === '') {
+        this.$modal.msgWarning('请先选择仓库，再扫描院内码');
+        return;
+      }
+      const did = this.form.departmentId;
+      if (did === null || did === undefined || String(did).trim() === '') {
+        this.$modal.msgWarning('请先选择科室，再扫描院内码');
+        return;
+      }
+      let code = (this.form.scanInHospitalCode || '').trim();
+      if (!code) {
+        this.$modal.msgWarning('请输入院内码');
+        return;
+      }
+      code = this.toHalfWidth(code);
+      getDepotByInHospitalCodeForOutbound(code, wid).then(res => {
+        if (res.code !== 200 || !res.data) {
+          this.$modal.msgWarning('未找到该院内码在当前仓库下的可用库存');
+          return;
+        }
+        const inv = res.data;
+        const dup = this.gzOrderEntryList.some(e => e.inHospitalCode && inv.inHospitalCode && e.inHospitalCode === inv.inHospitalCode);
+        if (dup) {
+          this.$modal.msgWarning('该院内码已在明细中');
+          this.form.scanInHospitalCode = '';
+          return;
+        }
+        const m = inv.material || {};
+        const stockQty = parseFloat(inv.qty) || 0;
+        const price = inv.unitPrice != null ? inv.unitPrice : 0;
+        const qty = 1;
+        const obj = {
+          materialId: inv.materialId,
+          materialName: m.name || inv.materialName || '',
+          speci: m.speci || '',
+          model: m.model || '',
+          factoryName: (m.fdFactory && m.fdFactory.factoryName) || '',
+          supplierName: (inv.supplier && inv.supplier.name) || (m.supplier && m.supplier.name) || '',
+          qty: qty,
+          stockQty: stockQty,
+          price: price,
+          amt: (qty * parseFloat(price || 0)).toFixed(2),
+          batchNo: inv.batchNo || '',
+          batchNumber: inv.materialNo || '',
+          beginTime: inv.materialDate || '',
+          endTime: inv.endTime || '',
+          remark: '',
+          masterBarcode: inv.masterBarcode || '',
+          secondaryBarcode: inv.secondaryBarcode || '',
+          inHospitalCode: inv.inHospitalCode || code,
+          udiNo: m.udiNo || '',
+          supplierId: inv.supplierId || (m.supplier && m.supplier.id) || null,
+          warehouseId: this.form.warehouseId,
+          departmentId: this.form.departmentId,
+          billNo: this.form.orderNo || null
+        };
+        this.gzOrderEntryList.push(obj);
+        this.form.scanInHospitalCode = '';
+      });
+    },
     orderListIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
@@ -636,8 +745,8 @@ export default {
         this.$message.warning('请先选择仓库');
         return;
       }
-      // 检查是否选择了科室
-      if (!this.form.departmentId) {
+      // 出库必须选科室后再选明细
+      if (this.isOutbound && !this.form.departmentId) {
         this.$message.warning('请先选择科室');
         return;
       }
@@ -719,7 +828,8 @@ export default {
         updateTime: null,
         remark: null,
         masterBarcode: null,
-        secondaryBarcode: null
+        secondaryBarcode: null,
+        scanInHospitalCode: null
       };
       this.gzOrderEntryList = [];
       this.resetForm("form");
@@ -1125,7 +1235,10 @@ export default {
           }
           this.form.gzOrderEntryList = this.gzOrderEntryList.map(item => ({
             ...item,
-            supplierId: item.supplierId || (item.supplier && item.supplier.id) || null
+            supplierId: item.supplierId || (item.supplier && item.supplier.id) || null,
+            warehouseId: this.isOutbound ? this.form.warehouseId : item.warehouseId,
+            departmentId: this.isOutbound ? this.form.departmentId : item.departmentId,
+            billNo: this.isOutbound ? this.form.orderNo : item.billNo
           }));
           // 调试：打印提交前的数据，特别是院内码
           console.log('提交前的数据:', {

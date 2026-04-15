@@ -197,7 +197,7 @@
           <el-row :gutter="8">
             <el-col :span="4">
               <el-form-item label="仓库" prop="warehouseId">
-                <SelectWarehouse v-model="form.warehouseId" :disabled="!action" includeWarehouseType="高值"/>
+                <SelectWarehouse v-model="form.warehouseId" :disabled="!action || warehouseSupplierLocked" includeWarehouseType="高值"/>
               </el-form-item>
               <el-form-item label="总金额">
                 <el-input :value="getTotalAmount()" :disabled="true" style="width: 140px; background-color: #fff;">
@@ -206,7 +206,7 @@
             </el-col>
             <el-col :span="4">
               <el-form-item label="供应商" prop="supplerId">
-                <SelectSupplier v-model="form.supplerId" :disabled="!action"/>
+                <SelectSupplier v-model="form.supplerId" :disabled="!action || warehouseSupplierLocked"/>
               </el-form-item>
             </el-col>
             <el-col :span="4">
@@ -250,6 +250,19 @@
                              :value="dict.value"
                   />
                 </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="8" v-show="action" style="margin-top: 4px;">
+            <el-col :span="16">
+              <el-form-item label="扫院内码" label-width="80px">
+                <el-input
+                  v-model="scanCodeInput"
+                  placeholder="请先选择仓库与供应商，在此回车扫描院内码添加明细"
+                  :disabled="!action || scanThDisabled"
+                  clearable
+                  @keyup.enter.native="onScanDepotInHospitalCode"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -401,6 +414,7 @@
 
 <script>
 import { listGoods, getGoods, delGoods, addGoods, updateGoods, auditGoods } from "@/api/gz/goods";
+import { listDepotInventory } from "@/api/gz/depotInventory";
 import { parseTime } from "@/utils/ruoyi";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
@@ -442,6 +456,7 @@ export default {
       goodsList: [],
       // 高值退货明细表格数据
       gzRefundGoodsEntryList: [],
+      scanCodeInput: '',
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -467,13 +482,83 @@ export default {
       form: {},
       // 表单校验
       rules: {
+        warehouseId: [
+          { required: true, message: "请选择仓库", trigger: "change" }
+        ],
+        supplerId: [
+          { required: true, message: "请选择供应商", trigger: "change" }
+        ],
       }
     };
+  },
+  computed: {
+    warehouseSupplierLocked() {
+      return this.gzRefundGoodsEntryList && this.gzRefundGoodsEntryList.length > 0;
+    },
+    scanThDisabled() {
+      return !this.form.warehouseId || !this.form.supplerId;
+    },
   },
   created() {
     this.getList();
   },
   methods: {
+    onScanDepotInHospitalCode() {
+      if (!this.action) {
+        return;
+      }
+      if (!this.form.warehouseId || !this.form.supplerId) {
+        this.$message.warning("请先选择仓库和供应商");
+        return;
+      }
+      const raw = (this.scanCodeInput || "").trim();
+      if (!raw) {
+        return;
+      }
+      listDepotInventory({
+        pageNum: 1,
+        pageSize: 30,
+        inHospitalCode: raw,
+        warehouseId: this.form.warehouseId,
+        supplierId: this.form.supplerId,
+      }).then((res) => {
+        const rows = res.rows || [];
+        const hit = rows.find((r) => r && r.inHospitalCode && String(r.inHospitalCode).trim() === raw);
+        if (!hit) {
+          this.$message.warning("当前仓库/供应商下无该院内码可用备货");
+          return;
+        }
+        if (this.gzRefundGoodsEntryList.some((e) => e && e.inHospitalCode && String(e.inHospitalCode).trim() === raw)) {
+          this.$message.warning("明细中已存在该院内码");
+          this.scanCodeInput = "";
+          return;
+        }
+        const qty = hit.qty != null && parseFloat(hit.qty) > 0 ? String(hit.qty) : "1";
+        const price = hit.unitPrice != null ? hit.unitPrice : "";
+        const obj = {
+          materialId: hit.materialId,
+          materialName: (hit.material && hit.material.name) || "",
+          speci: (hit.material && hit.material.speci) || "",
+          model: (hit.material && hit.material.model) || "",
+          qty,
+          price,
+          amt: qty && price ? (parseFloat(qty) * parseFloat(price)).toFixed(2) : "",
+          batchNo: hit.batchNo || "",
+          batchNumber: hit.materialNo || "",
+          beginTime: hit.materialDate || "",
+          endTime: hit.endTime || "",
+          inHospitalCode: raw,
+          masterBarcode: hit.masterBarcode || "",
+          secondaryBarcode: hit.secondaryBarcode || "",
+          supplierId: this.form.supplerId || hit.supplierId || null,
+          supplierName: (hit.material && hit.material.supplier && hit.material.supplier.name) || "",
+          remark: "",
+        };
+        this.gzRefundGoodsEntryList.push(obj);
+        this.scanCodeInput = "";
+        this.$message.success("已添加院内码 " + raw);
+      }).catch(() => {});
+    },
     /** 查询高值退货列表 */
     getList() {
       this.loading = true;
@@ -583,6 +668,7 @@ export default {
         remark: null
       };
       this.gzRefundGoodsEntryList = [];
+      this.scanCodeInput = "";
       this.resetForm("form");
     },
     //数量改变事件
@@ -716,7 +802,8 @@ export default {
           this.form.gzRefundGoodsEntryList = this.gzRefundGoodsEntryList.map(item => ({
             ...item,
             supplierId: this.form.supplerId || item.supplierId || null,
-            warehouseId: this.form.warehouseId || item.warehouseId || null
+            warehouseId: this.form.warehouseId || item.warehouseId || null,
+            billNo: this.form.goodsNo || item.billNo || null
           }));
           if (this.form.id != null) {
             updateGoods(this.form).then(response => {

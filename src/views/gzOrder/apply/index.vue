@@ -251,9 +251,10 @@
                   <el-col :span="4">
                     <el-form-item label="UDI码" prop="ztm">
                       <el-input v-model="form.ztm"
-                                placeholder="请扫描UDI码"
+                                :placeholder="form.warehouseId ? '请扫描UDI码' : '请先选择仓库'"
                                 clearable
                                 style="width: 140px"
+                                :disabled="!form.warehouseId"
                                 @keyup.enter.native="sm"
                       />
                     </el-form-item>
@@ -771,6 +772,11 @@ export default {
     },
     /** 查询高值入库列表 */
     sm(){
+      const wid = this.form.warehouseId;
+      if (wid === null || wid === undefined || String(wid).trim() === '') {
+        this.$modal.msgWarning("请先选择仓库，再扫描UDI码");
+        return;
+      }
       if (!this.form.ztm || !this.form.ztm.trim()) {
         this.$modal.msgWarning("请输入UDI码");
         return;

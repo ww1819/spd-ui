@@ -62,3 +62,12 @@ export function checkInHospitalCode(data) {
     data: data
   })
 }
+
+/** 备货出库：按院内码+仓库查询一条可用备货库存 */
+export function getDepotByInHospitalCodeForOutbound(inHospitalCode, warehouseId) {
+  return request({
+    url: '/gz/order/depotInventory/byInHospitalCode',
+    method: 'get',
+    params: { inHospitalCode, warehouseId }
+  })
+}
