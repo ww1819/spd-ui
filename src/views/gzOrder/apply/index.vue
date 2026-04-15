@@ -264,7 +264,6 @@
                                 placeholder="请扫描辅条码"
                                 clearable
                                 style="width: 140px"
-                                @keyup.enter.native="sm2"
                                 @keydown.enter.native.prevent="sm2"
                       />
                     </el-form-item>
@@ -1031,36 +1030,81 @@ export default {
     },
     /** 添加产品到明细列表 */
     addMaterialToEntryList(rows, parsedUDI) {
-      rows.forEach((item, index) => {
-        let obj = {};
-        obj.materialId = item.id;
-        obj.material = item; // 保存完整的物料对象，方便访问嵌套属性
-        obj.materialName = item.name || ""; // 保存耗材名称
-        obj.materialCode = item.code || ""; // 保存耗材编码
-        obj.speci = item.speci || ""; // 保存规格
-        obj.model = item.model || ""; // 保存型号
-        obj.unit = item.unit || item.fdUnit || null; // 保存单位
-        obj.factoryName = (item.fdFactory && item.fdFactory.factoryName) || ""; // 保存生产厂家
-        obj.certificateNo = item.certificateNo || (item.fdCertificate && item.fdCertificate.certificateNo) || ""; // 保存注册证号
-        obj.warehouseCategoryName = (item.fdWarehouseCategory && item.fdWarehouseCategory.warehouseCategoryName) || ""; // 保存库房分类
-        obj.financeCategoryName = (item.fdFinanceCategory && item.fdFinanceCategory.financeCategoryName) || ""; // 保存财务分类
-        obj.qty = "1"; // 默认数量为1
-        obj.price = item.price;
-        obj.amt = (item.price ? parseFloat(item.price).toFixed(2) : "0.00");
-        // 使用解析出的数据填充字段
-        obj.batchNo = parsedUDI.batchNo || "";
-        obj.batchNumber = parsedUDI.batchNo || "";
-        obj.beginTime = parsedUDI.productionDate || "";
-        obj.endTime = parsedUDI.expiryDate || "";
-        obj.serialNo = parsedUDI.serialNo || "";
-        obj.remark = "";
-        obj.masterBarcode = parsedUDI.udiCode; // UDI码（包含(01)前缀）
-        obj.secondaryBarcode = parsedUDI.secondaryBarcode || ""; // 辅助条码（不包含(01)部分）
-        obj.udiNo = parsedUDI.udiCodeForQuery || ""; // 保存UDI码（用于查询，不包含(01)前缀）
-        obj.supplierId = this.form.supplerId || materialSupplierId || null;
-        this.gzOrderEntryList.push(obj);
+      if (!rows || rows.length === 0) {
+        return;
+      }
+      const hasSecondaryBarcode = !!(parsedUDI && parsedUDI.secondaryBarcode && parsedUDI.secondaryBarcode.trim());
+      // 仅按匹配结果首条新增，确保“扫描一次 UDI 只新增一条明细”
+      const item = rows[0];
+      const parsedBatchNo = (parsedUDI.batchNo || "").trim();
+
+      // 仅扫描 UDI 时：同产品同批号命中则数量+1，不新增新行
+      if (!hasSecondaryBarcode) {
+        const existedRow = this.gzOrderEntryList.find((row) => {
+          const rowBatchNo = (row.batchNo || row.batchNumber || "").trim();
+          return String(row.materialId || "") === String(item.id || "") && rowBatchNo === parsedBatchNo;
+        });
+        if (existedRow) {
+          const currentQty = Number(existedRow.qty) || 0;
+          const nextQty = currentQty + 1;
+          this.$set(existedRow, 'qty', String(nextQty));
+          const priceNum = Number(existedRow.price) || 0;
+          this.$set(existedRow, 'amt', (nextQty * priceNum).toFixed(2));
+          // 同步主条码，确保后续展示与最近一次扫描一致
+          this.$set(existedRow, 'masterBarcode', parsedUDI.udiCode || existedRow.masterBarcode || "");
+          this.$set(existedRow, 'udiNo', parsedUDI.udiCodeForQuery || existedRow.udiNo || "");
+
+          this.$nextTick(() => {
+            if (this.$refs.gzOrderEntry) {
+              this.$refs.gzOrderEntry.clearSelection();
+              this.$refs.gzOrderEntry.toggleRowSelection(existedRow, true);
+            }
+            this.checkedGzOrderEntry = [existedRow];
+          });
+          this.form.ztm = "";
+          return;
+        }
+      }
+
+      let obj = {};
+      obj.materialId = item.id;
+      obj.material = item; // 保存完整的物料对象，方便访问嵌套属性
+      obj.materialName = item.name || ""; // 保存耗材名称
+      obj.materialCode = item.code || ""; // 保存耗材编码
+      obj.speci = item.speci || ""; // 保存规格
+      obj.model = item.model || ""; // 保存型号
+      obj.unit = item.unit || item.fdUnit || null; // 保存单位
+      obj.factoryName = (item.fdFactory && item.fdFactory.factoryName) || ""; // 保存生产厂家
+      obj.certificateNo = item.certificateNo || (item.fdCertificate && item.fdCertificate.certificateNo) || ""; // 保存注册证号
+      obj.warehouseCategoryName = (item.fdWarehouseCategory && item.fdWarehouseCategory.warehouseCategoryName) || ""; // 保存库房分类
+      obj.financeCategoryName = (item.fdFinanceCategory && item.fdFinanceCategory.financeCategoryName) || ""; // 保存财务分类
+      obj.qty = "1"; // 默认数量为1
+      obj.price = item.price;
+      obj.amt = (item.price ? parseFloat(item.price).toFixed(2) : "0.00");
+      // 使用解析出的数据填充字段
+      obj.batchNo = parsedUDI.batchNo || "";
+      obj.batchNumber = parsedUDI.batchNo || "";
+      obj.beginTime = parsedUDI.productionDate || "";
+      obj.endTime = parsedUDI.expiryDate || "";
+      obj.serialNo = parsedUDI.serialNo || "";
+      obj.remark = "";
+      obj.masterBarcode = parsedUDI.udiCode; // UDI码（包含(01)前缀）
+      obj.secondaryBarcode = parsedUDI.secondaryBarcode || ""; // 辅助条码（不包含(01)部分）
+      obj.udiNo = parsedUDI.udiCodeForQuery || ""; // 保存UDI码（用于查询，不包含(01)前缀）
+      obj.supplierId = this.form.supplerId || materialSupplierId || null;
+      this.gzOrderEntryList.push(obj);
+
+      // 主辅一起扫描可解析时：自动取消勾选；仅扫描 UDI 时：只勾选最新新增明细
+      this.$nextTick(() => {
+        if (this.$refs.gzOrderEntry) {
+          this.$refs.gzOrderEntry.clearSelection();
+          if (!hasSecondaryBarcode) {
+            this.$refs.gzOrderEntry.toggleRowSelection(obj, true);
+          }
+        }
+        this.checkedGzOrderEntry = hasSecondaryBarcode ? [] : [obj];
       });
-      
+
       // 清空UDI码输入框
       this.form.ztm = "";
     },
