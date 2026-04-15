@@ -295,9 +295,23 @@
                     <span class="detail-header-title">科室申购明细信息</span>
                     <el-button
                       v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
+                      size="small"
+                      class="detail-action-btn"
+                      @click="cancel"
+                    >取 消</el-button>
+                    <el-button
+                      v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
+                      type="danger"
+                      size="small"
+                      class="detail-action-btn"
+                      @click="handleRejectSubmit"
+                    >驳 回</el-button>
+                    <el-button
+                      v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
                       type="primary"
                       icon="el-icon-check"
                       size="small"
+                      class="detail-action-btn"
                       @click="handleAuditSubmit"
                     >审 核</el-button>
                   </div>
@@ -305,7 +319,7 @@
               </el-row>
 
               <div class="table-wrapper">
-              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" ref="depPurchaseApplyEntry" :height="detailTableHeight" border :summary-method="getPurchaseSummaries" show-summary>
+              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" ref="depPurchaseApplyEntry" :max-height="detailTableMaxHeight" border :summary-method="getPurchaseSummaries" show-summary>
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
@@ -371,10 +385,6 @@
                 </el-table-column>
               </el-table>
               </div>
-              <div class="modal-footer" v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'">
-                <el-button @click="cancel">取 消</el-button>
-                <el-button type="danger" @click="handleRejectSubmit">驳 回</el-button>
-              </div>
               </div>
             </el-form>
           </div>
@@ -438,7 +448,8 @@ export default {
     };
   },
   computed: {
-    detailTableHeight() {
+    /** 明细表使用 max-height：行少时不留白，合计紧跟最后一行 */
+    detailTableMaxHeight() {
       return 'max(300px, calc(100vh - 320px))';
     }
   },
@@ -895,6 +906,10 @@ export default {
 
 .detail-header-title {
   font-weight: 500;
+}
+
+.detail-action-btn {
+  min-width: 80px;
 }
 
 .local-modal-content .modal-detail-section {
