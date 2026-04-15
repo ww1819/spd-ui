@@ -651,6 +651,17 @@ export default {
     this.getUserList();
   },
   methods: {
+    /** 全角转半角（数字/字母/符号/空格） */
+    toHalfWidth(input) {
+      if (input === null || input === undefined) {
+        return "";
+      }
+      return String(input)
+        .replace(/\u3000/g, " ")
+        .replace(/[\uFF01-\uFF5E]/g, (char) => {
+          return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
+        });
+    },
     setOrderTypeByRoute() {
       // 备货入库页面固定为入库类型（101）
       this.queryParams.orderType = 101;
@@ -678,8 +689,8 @@ export default {
         serialNo: ''          // (21)后面的序列号
       };
       
-      // 去除首尾空格
-      udiString = udiString.trim();
+      // 扫码内容统一转半角并去空格，兼容全角括号/数字/字母
+      udiString = this.toHalfWidth(udiString).trim();
       
       // 提取(01)开头的UDI码
       let udiMatch = udiString.match(/^\(01\)([^\(]+)/);
@@ -764,6 +775,7 @@ export default {
         this.$modal.msgWarning("请输入UDI码");
         return;
       }
+      this.form.ztm = this.toHalfWidth(this.form.ztm).trim();
       
       // 解析UDI码字符串
       const parsedUDI = this.parseUDIString(this.form.ztm);
@@ -1142,8 +1154,9 @@ export default {
         return;
       }
       
+      this.form.ftm = this.toHalfWidth(this.form.ftm).trim();
       // 解析辅助条码
-      const parsedSecondaryBarcode = this.parseSecondaryBarcode(this.form.ftm.trim());
+      const parsedSecondaryBarcode = this.parseSecondaryBarcode(this.form.ftm);
       console.log('解析结果:', parsedSecondaryBarcode);
       
       // 更新所有选中的明细行
@@ -1198,8 +1211,9 @@ export default {
         };
       }
       
+      secondaryBarcodeString = this.toHalfWidth(secondaryBarcodeString).trim();
       const result = {
-        secondaryBarcode: secondaryBarcodeString.trim(), // 完整的辅助条码字符串
+        secondaryBarcode: secondaryBarcodeString, // 完整的辅助条码字符串
         productionDate: '',   // (11)后面的生产日期
         expiryDate: '',       // (17)后面的有效期
         batchNo: '',          // (10)后面的批号
