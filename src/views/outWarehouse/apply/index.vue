@@ -1125,14 +1125,18 @@ export default {
           this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
             updateOutWarehouse(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
+              this.$modal.msgSuccess((response && response.msg) || "修改成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               this.getList();
               // 保存成功后不关闭弹窗，允许继续修改
               // this.open = false;
             });
           } else {
             addOutWarehouse(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
+              this.$modal.msgSuccess((response && response.msg) || "新增成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               // 用后端返回的 id、billNo 更新当前 form，使下次保存走修改逻辑（request 拦截器返回 res.data，实体在 response.data）
               const resData = response && response.data;
               if (resData && (resData.id != null || resData.billNo != null)) {

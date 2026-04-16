@@ -900,7 +900,9 @@ export default {
           }));
           if (this.form.id != null) {
             updateGoods(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
+              this.$modal.msgSuccess((response && response.msg) || "修改成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               // 不关闭弹窗，刷新列表数据
               this.getList();
               // 重新获取最新数据以更新表单
@@ -925,7 +927,9 @@ export default {
             });
           } else {
             addGoods(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
+              this.$modal.msgSuccess((response && response.msg) || "新增成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               // 不关闭弹窗，刷新列表数据
               this.getList();
               // 如果是新增，保存后获取新创建的ID并更新表单

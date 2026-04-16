@@ -193,6 +193,15 @@
                     <el-button type="primary" icon="el-icon-plus" size="medium" @click="nameBtn">添加</el-button>
                   </el-col>
                   <el-col :span="1.5">
+                    <el-button
+                      type="primary"
+                      plain
+                      size="medium"
+                      @click="openOutRefDialog"
+                      v-hasPermi="['department:batchConsume:refOutOrder']"
+                    >引用出库单</el-button>
+                  </el-col>
+                  <el-col :span="1.5">
                     <el-button type="danger" icon="el-icon-delete" size="medium" @click="handleDeleteConsumeEntry">删除</el-button>
                   </el-col>
                   <el-col :span="1.5" v-show="action">
@@ -224,15 +233,61 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :departmentValue="departmentValue"
+      :selectedDetails="deptBatchConsumeEntryList"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectDepInventory>
+
+    <el-dialog title="引用出库单明细" :visible.sync="outRefDialogOpen" width="82%" append-to-body>
+      <el-form :inline="true" size="small">
+        <el-form-item label="出库单号">
+          <el-input v-model="outRefQuery.consumeBillNo" placeholder="请输入出库单号" clearable style="width: 220px" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" size="small" @click="loadOutRefRows">搜索</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="success" size="small" @click="addWholeOutBill">整单引用</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" plain size="small" @click="selectAllOutRefBills">全选当前页单号</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button size="small" @click="clearOutRefSelection">清空选择</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table ref="outRefTable" :data="outRefRows" @selection-change="handleOutRefSelectionChange" border height="420px">
+        <el-table-column type="selection" width="55" />
+        <el-table-column label="出库单号" prop="refOutBillNo" width="160" :span-method="outRefBillSpanMethod" />
+        <el-table-column label="整单" width="80" :span-method="outRefBillSpanMethod">
+          <template slot-scope="scope">
+            <el-checkbox
+              v-if="isFirstOutRefBillRow(scope.$index)"
+              :value="isBillChecked(scope.row.refOutBillNo)"
+              @change="toggleBillSelection(scope.row.refOutBillNo, $event)"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="耗材名称" prop="materialName" width="180" />
+        <el-table-column label="规格" prop="materialSpeci" width="130" />
+        <el-table-column label="型号" prop="materialModel" width="130" />
+        <el-table-column label="库存剩余" prop="availableQty" width="100" />
+        <el-table-column label="出库明细数量" prop="outEntryQty" width="120" />
+        <el-table-column label="默认消耗数量" prop="defaultConsumeQty" width="120" />
+        <el-table-column label="单价" prop="unitPrice" width="100" />
+        <el-table-column label="批次号" prop="batchNo" width="140" />
+      </el-table>
+      <div slot="footer">
+        <el-button @click="outRefDialogOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmOutRef">确 定</el-button>
+      </div>
+    </el-dialog>
 
   </div>
 </template>
 
 <script>
-import { listConsume, getConsume, delConsume, addConsume, updateConsume, auditConsume } from "@/api/department/batchConsume";
+import { listConsume, getConsume, delConsume, addConsume, updateConsume, auditConsume, outRefEntryList } from "@/api/department/batchConsume";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
@@ -255,6 +310,13 @@ export default {
       loading: true,
       DialogComponentShow: false,
       departmentValue: "",
+      outRefDialogOpen: false,
+      outRefRows: [],
+      outRefSelectedRows: [],
+      outRefBillRowSpan: {},
+      outRefQuery: {
+        consumeBillNo: null,
+      },
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -337,26 +399,192 @@ export default {
       //关闭"弹窗组件"
       this.DialogComponentShow = false
     },
+    openOutRefDialog() {
+      if (!this.form.departmentId) {
+        this.$message({ message: '请先选择科室', type: 'warning' })
+        return
+      }
+      this.outRefDialogOpen = true;
+      this.outRefQuery.consumeBillNo = null;
+      this.loadOutRefRows();
+    },
+    loadOutRefRows() {
+      outRefEntryList({
+        departmentId: this.form.departmentId,
+        consumeBillNo: this.outRefQuery.consumeBillNo
+      }).then(response => {
+        const sourceRows = response.rows || [];
+        const filteredRows = this.filterOutRefRows(sourceRows);
+        this.outRefRows = filteredRows;
+        const filteredCount = sourceRows.length - filteredRows.length;
+        if (filteredCount > 0) {
+          this.$message({
+            type: 'warning',
+            message: `已自动过滤 ${filteredCount} 条重复出库明细`
+          });
+        }
+      });
+    },
+    filterOutRefRows(rows) {
+      const existsRefEntryIds = new Set(
+        (this.deptBatchConsumeEntryList || [])
+          .map(item => item && item.refOutEntryId)
+          .filter(v => v !== null && v !== undefined && v !== '')
+          .map(v => String(v))
+      );
+      const filtered = (rows || []).filter(row => {
+        const refEntryId = row.refOutEntryId != null ? String(row.refOutEntryId) : '';
+        if (refEntryId && existsRefEntryIds.has(refEntryId)) {
+          return false;
+        }
+        return true;
+      });
+      this.buildOutRefBillRowSpan(filtered);
+      return filtered;
+    },
+    buildOutRefBillRowSpan(rows) {
+      this.outRefBillRowSpan = {};
+      let i = 0;
+      while (i < rows.length) {
+        const billNo = rows[i].refOutBillNo || '';
+        let j = i + 1;
+        while (j < rows.length && (rows[j].refOutBillNo || '') === billNo) {
+          j++;
+        }
+        this.outRefBillRowSpan[i] = j - i;
+        for (let k = i + 1; k < j; k++) {
+          this.outRefBillRowSpan[k] = 0;
+        }
+        i = j;
+      }
+    },
+    outRefBillSpanMethod({ rowIndex, columnIndex }) {
+      if (columnIndex === 1 || columnIndex === 2) {
+        const rowspan = this.outRefBillRowSpan[rowIndex] || 0;
+        return { rowspan, colspan: rowspan > 0 ? 1 : 0 };
+      }
+      return { rowspan: 1, colspan: 1 };
+    },
+    isFirstOutRefBillRow(index) {
+      return (this.outRefBillRowSpan[index] || 0) > 0;
+    },
+    isBillChecked(billNo) {
+      const rows = (this.outRefRows || []).filter(r => (r.refOutBillNo || '') === (billNo || ''));
+      if (!rows.length) return false;
+      const selectedIds = new Set(
+        (this.outRefSelectedRows || [])
+          .map(r => r && r.refOutEntryId)
+          .filter(v => v !== null && v !== undefined && v !== '')
+          .map(v => String(v))
+      );
+      return rows.every(r => selectedIds.has(String(r.refOutEntryId || '')));
+    },
+    toggleBillSelection(billNo, checked) {
+      const rows = (this.outRefRows || []).filter(r => (r.refOutBillNo || '') === (billNo || ''));
+      if (!this.$refs.outRefTable || !rows.length) return;
+      rows.forEach(r => {
+        this.$refs.outRefTable.toggleRowSelection(r, !!checked);
+      });
+    },
+    handleOutRefSelectionChange(rows) {
+      this.outRefSelectedRows = rows || [];
+    },
+    addWholeOutBill() {
+      if (!this.outRefRows || this.outRefRows.length === 0) {
+        this.$modal.msgError("当前没有可引用的出库明细");
+        return;
+      }
+      this.selectData(this.outRefRows);
+      this.outRefDialogOpen = false;
+    },
+    selectAllOutRefBills() {
+      if (!this.$refs.outRefTable || !this.outRefRows || this.outRefRows.length === 0) {
+        return;
+      }
+      this.outRefRows.forEach(r => {
+        this.$refs.outRefTable.toggleRowSelection(r, true);
+      });
+    },
+    clearOutRefSelection() {
+      if (this.$refs.outRefTable) {
+        this.$refs.outRefTable.clearSelection();
+      }
+      this.outRefSelectedRows = [];
+    },
+    confirmOutRef() {
+      if (!this.outRefSelectedRows || this.outRefSelectedRows.length === 0) {
+        this.$modal.msgError("请先选择要引用的出库明细");
+        return;
+      }
+      this.selectData(this.outRefSelectedRows);
+      this.outRefDialogOpen = false;
+    },
     selectData(val) {
       //监听"弹窗组件"返回的数据
       this.selectRow = val;
+      let skippedCount = 0;
 
       this.selectRow.forEach((item, index) => {
+        const incomingDepInventoryId = item.depInventoryId || item.id || null;
+        const incomingRefOutEntryId = item.refOutEntryId || (item.billEntryId != null ? String(item.billEntryId) : null);
+        const duplicated = (this.deptBatchConsumeEntryList || []).some(exist => {
+          const sameDepInventory = incomingDepInventoryId && exist.depInventoryId && String(exist.depInventoryId) === String(incomingDepInventoryId);
+          const sameRefOutEntry = incomingRefOutEntryId && exist.refOutEntryId && String(exist.refOutEntryId) === String(incomingRefOutEntryId);
+          return sameDepInventory || sameRefOutEntry;
+        });
+        if (duplicated) {
+          skippedCount++;
+          return;
+        }
         const entry = {
+          depInventoryId: item.depInventoryId || item.id || null,
+          kcNo: item.kcNo || null,
           materialId: item.materialId || item.material?.id,
-          material: item.material || {},
+          material: item.material || {
+            id: item.materialId || null,
+            name: item.materialName || '',
+            speci: item.materialSpeci || '',
+            model: item.materialModel || ''
+          },
+          batchId: item.batchId || null,
+          warehouseId: item.warehouseId || item.warehouse?.id || null,
+          departmentId: item.departmentId || item.department?.id || this.form.departmentId || null,
+          supplierId: item.supplierId || item.supplier?.id || null,
+          factoryId: item.factoryId || item.fdFactory?.factoryId || item.material?.fdFactory?.factoryId || null,
           unitPrice: item.unitPrice || 0,
-          qty: item.qty || 0,
+          qty: item.defaultConsumeQty || item.qty || 0,
           price: item.price || 0,
-          amt: item.amt || 0,
+          amt: item.defaultConsumeQty ? (parseFloat(item.defaultConsumeQty || 0) * parseFloat(item.unitPrice || 0)).toFixed(2) : (item.amt || 0),
           batchNo: item.batchNo || '',
           batchNumer: item.batchNumer || item.materialNo || '',
+          materialNo: item.materialNo || '',
           beginTime: item.beginTime || item.materialDate,
           endTime: item.endTime,
+          materialDate: item.materialDate || null,
+          warehouseDate: item.warehouseDate || null,
+          settlementType: item.settlementType || '',
+          materialName: item.materialName || item.material?.name || '',
+          materialSpeci: item.materialSpeci || item.material?.speci || '',
+          materialModel: item.materialModel || item.material?.model || '',
+          materialFactoryId: item.materialFactoryId || item.material?.factoryId || item.factoryId || null,
+          refOutBillId: item.refOutBillId || (item.billId != null ? String(item.billId) : null),
+          refOutBillNo: item.refOutBillNo || item.billNo || null,
+          refOutEntryId: item.refOutEntryId || (item.billEntryId != null ? String(item.billEntryId) : null),
+          refOutEntryQty: item.outEntryQty || null,
+          refOutAvailableQty: item.availableQty || item.qty || null,
+          refDefaultConsumeQty: item.defaultConsumeQty || item.qty || null,
+          mainBarcode: item.mainBarcode || '',
+          subBarcode: item.subBarcode || '',
           remark: ''
         };
         this.deptBatchConsumeEntryList.push(entry);
       });
+      if (skippedCount > 0) {
+        this.$message({
+          type: 'warning',
+          message: `已自动过滤 ${skippedCount} 条重复明细`
+        });
+      }
       this.calculateTotals();
     },
     //当天日期
@@ -499,12 +727,16 @@ export default {
           this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
             updateConsume(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
+              this.$modal.msgSuccess((response && response.msg) || "修改成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               this.getList();
             });
           } else {
             addConsume(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
+              this.$modal.msgSuccess((response && response.msg) || "新增成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               if (response && response.data) {
                 if (response.data.id) {
                   this.form.id = response.data.id;
