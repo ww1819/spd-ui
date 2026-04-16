@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+  <div class="app-container gzOrder-goodsApply-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
@@ -63,7 +63,7 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -106,9 +106,9 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="goodsList"
+    <el-table v-loading="loading" :data="goodsList" class="table-compact"
               :row-class-name="goodsListIndex"
-              @selection-change="handleSelectionChange" height="58vh" border stripe>
+              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="退货单号" align="center" prop="goodsNo" width="180" show-overflow-tooltip resizable>
@@ -1447,5 +1447,98 @@ export default {
 
 .el-button--text:hover {
   color: #409EFF;
+}
+</style>
+
+<style>
+/* =========================
+ * 备货退货（退货申请 goodsApply）：顶部搜索容器 + 主明细框
+ * 直接对齐「到货验收」页面（非 scoped，确保发版后样式一致）
+ * ========================= */
+
+.app-container.gzOrder-goodsApply-page {
+  position: relative;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+/* 搜索框容器：与到货验收一致的上移与外观（宽高/明暗/边框/阴影） */
+.app-container > .el-form.query-form-compact {
+  margin-top: -8px !important;
+}
+
+.app-container.gzOrder-goodsApply-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+/* 按钮行：与到货验收一致的紧凑间距与位置 */
+.app-container.gzOrder-goodsApply-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+/* 主明细框（列表表格）：与到货验收一致 */
+.app-container.gzOrder-goodsApply-page > .el-table.table-compact {
+  margin-top: 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.app-container.gzOrder-goodsApply-page > .el-table.table-compact th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.gzOrder-goodsApply-page > .el-table.table-compact th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container.gzOrder-goodsApply-page > .el-table.table-compact td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.gzOrder-goodsApply-page > .el-table.table-compact tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+/* 主列表滚动条：与到货验收一致 */
+.app-container.gzOrder-goodsApply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
+  width: 20px !important;
+  height: 12px !important;
+}
+
+.app-container.gzOrder-goodsApply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
+}
+
+.app-container.gzOrder-goodsApply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
 }
 </style>

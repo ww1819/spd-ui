@@ -1,32 +1,28 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+  <div class="app-container caigou-publish-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item prop="orderNo">
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item prop="orderNo" class="query-item-inline">
             <el-input v-model="queryParams.orderNo"
                       placeholder="订单单号"
                       clearable
+                      style="width: 180px"
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item prop="supplierId">
-            <SelectSupplier v-model="queryParams.supplierId"/>
+          <el-form-item prop="supplierId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectSupplier v-model="queryParams.supplierId"/>
+            </div>
           </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item prop="warehouseId">
-            <SelectWarehouse v-model="queryParams.warehouseId"/>
+          <el-form-item prop="warehouseId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectWarehouse v-model="queryParams.warehouseId"/>
+            </div>
           </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item prop="orderStatus">
+          <el-form-item prop="orderStatus" class="query-item-inline">
             <el-select v-model="queryParams.orderStatus" placeholder="单据状态" clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
                          :key="dict.value"
@@ -38,16 +34,16 @@
         </el-col>
       </el-row>
 
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item prop="beginDate">
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="24">
+          <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
               value-format="yyyy-MM-dd"
               placeholder="起始日期"
               clearable
-              style="width: 150px; margin-right: 8px;"
+              style="width: 180px; margin-right: 8px;"
             />
             <span style="margin: 0 4px;">至</span>
             <el-date-picker
@@ -56,7 +52,7 @@
               value-format="yyyy-MM-dd"
               placeholder="截止日期"
               clearable
-              style="width: 150px; margin-left: 8px;"
+              style="width: 180px; margin-left: 8px;"
             />
           </el-form-item>
         </el-col>
@@ -64,25 +60,25 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
-          size="small"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['caigou:dingdan:export']"
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+        <el-button type="primary" size="medium" @click="handleQuery">搜索</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" size="medium" @click="resetQuery">重置</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           type="primary"
-          size="small"
+          size="medium"
           @click="handleBatchPublish"
           :disabled="multiple"
         >发布</el-button>
@@ -90,10 +86,12 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="orderList"
+    <el-table ref="mainListTable"
+              v-loading="loading" :data="orderList"
+              class="table-compact"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
-              height="54vh"
+              :height="mainListTableHeight"
               stripe border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
@@ -160,7 +158,6 @@
     </el-table>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -527,14 +524,57 @@ export default {
       applyDetailDialogVisible: false,
       applyDetailList: [],
       planViewDialogVisible: false,
-      planDetail: null
+      planDetail: null,
+      /** 主列表表格高度（像素），由 syncMainListTableHeight 按视口与表格位置计算 */
+      mainListTableHeight: 400
     };
   },
   created() {
     this.getList();
     this.getUserList();
+    this.$nextTick(() => this.syncMainListTableHeight());
+  },
+  mounted() {
+    this.syncMainListTableHeight();
+    window.addEventListener('resize', this.syncMainListTableHeight);
+  },
+  activated() {
+    this.$nextTick(() => this.syncMainListTableHeight());
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.syncMainListTableHeight);
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.syncMainListTableHeight());
+    }
   },
   methods: {
+    syncMainListTableHeight() {
+      this.$nextTick(() => {
+        if (typeof window === 'undefined') return;
+        const innerH =
+          (window.visualViewport && window.visualViewport.height) ||
+          window.innerHeight ||
+          800;
+        const vm = this.$refs.mainListTable;
+        const el = vm && vm.$el;
+        if (!el || typeof el.getBoundingClientRect !== 'function') {
+          this.mainListTableHeight = Math.max(220, Math.floor(innerH - 480));
+          return;
+        }
+        const top = el.getBoundingClientRect().top;
+        // 为底部分页 + 合计行 + 底边距预留（按视口实测，避免 100vh 与主内容区不一致导致改 reserve 无效）
+        const bottomReserve = 100;
+        const h = innerH - top - bottomReserve;
+        this.mainListTableHeight = Math.max(220, Math.floor(h));
+        this.$nextTick(() => {
+          if (vm && typeof vm.doLayout === 'function') {
+            vm.doLayout();
+          }
+        });
+      });
+    },
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
@@ -589,7 +629,7 @@ export default {
         this.orderList = response.rows;
         this.total = response.total;
         this.loading = false;
-
+        this.$nextTick(() => this.syncMainListTableHeight());
       });
     },
     getStatDate(){
@@ -896,5 +936,177 @@ export default {
 /* 确保页面容器有相对定位，以便内部弹窗正确定位 */
 .app-container {
   position: relative;
+}
+</style>
+
+<style>
+/* 订单发布列表：与到货验收一致（非 scoped） */
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+.app-container.caigou-publish-page {
+  position: relative;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 8px !important;
+  box-sizing: border-box;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-row-left .query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 150px;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-row-second {
+  position: relative;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.app-container.caigou-publish-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact {
+  margin-top: 0;
+  margin-bottom: 0 !important;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
+  width: 20px !important;
+  height: 12px !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
+}
+
+/* 翻页：覆盖 ruoyi 全局 .pagination-container{height:25px} + .el-pagination{position:absolute}，避免被 .app-main{overflow:hidden} 裁切 */
+.app-container.caigou-publish-page > .pagination-container {
+  height: auto !important;
+  min-height: 48px;
+  padding: 8px 16px 4px !important;
+  margin-top: 4px;
+  margin-bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.app-container.caigou-publish-page > .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+  <div class="app-container gz-order-apply-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
@@ -64,7 +64,7 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -108,10 +108,11 @@
     </el-row>
 
     <el-table v-loading="loading" :data="orderList"
+              class="table-compact"
               :row-class-name="orderListIndex"
               @selection-change="handleSelectionChange" 
               ref="orderTable"
-              height="58vh" border stripe>
+              height="calc(100vh - 340px)" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="单号" align="center" prop="orderNo" width="180" show-overflow-tooltip resizable>
@@ -2331,85 +2332,101 @@ export default {
   position: relative;
 }
 
-/* 搜索区域样式 */
-.app-container > .el-form {
+/* 搜索区域：与到货验收 inWarehouse-audit-page 完全一致 */
+.gz-order-apply-page > .el-form.query-form-compact {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
 }
 
-.app-container > .el-form .el-row {
+.gz-order-apply-page > .el-form.query-form-compact .el-row {
   margin-bottom: 8px;
 }
 
-.app-container > .el-form .el-row:last-child {
+.gz-order-apply-page > .el-form.query-form-compact .el-row:last-child {
   margin-bottom: 0;
 }
 
-.app-container > .el-form .el-form-item {
+.gz-order-apply-page > .el-form.query-form-compact .el-form-item {
   margin-bottom: 0;
 }
 
 /* 第一行查询条件左对齐紧凑布局 */
-.app-container > .el-form .query-row-left .el-col {
+.gz-order-apply-page > .el-form.query-form-compact .query-row-left .el-col {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline {
+.gz-order-apply-page > .el-form.query-form-compact .query-row-left .query-item-inline {
   display: inline-block;
   margin-right: 16px;
   margin-bottom: 0;
   vertical-align: top;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline:last-child {
+.gz-order-apply-page > .el-form.query-form-compact .query-row-left .query-item-inline:last-child {
   margin-right: 0;
 }
 
 /* 统一控制查询条件输入框宽度 */
-.app-container > .el-form .query-row-left .query-item-inline .el-input {
+.gz-order-apply-page > .el-form.query-form-compact .query-row-left .query-item-inline .el-input {
   width: 180px;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper {
+.gz-order-apply-page > .el-form.query-form-compact .query-row-left .query-item-inline .query-select-wrapper {
   width: 180px;
   display: inline-block;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
+.gz-order-apply-page > .el-form.query-form-compact .query-row-left .query-item-inline .query-select-wrapper > * {
   width: 100%;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .el-select {
+.gz-order-apply-page > .el-form.query-form-compact .query-row-left .query-item-inline .el-select {
   width: 150px;
 }
 
 /* 第二行单据状态对齐到仓库位置 */
-.app-container > .el-form .query-row-second {
+.gz-order-apply-page > .el-form.query-form-compact .query-row-second {
   position: relative;
 }
 
-/* 确保制单日期的两个日期选择器在同一行 */
-.app-container > .el-form .query-row-second .el-form-item {
-  white-space: nowrap;
-}
-
-.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.app-container > .el-form .query-row-second .query-status-col {
+/* 第二行“单据状态”列：与到货验收页面保持同一水平对齐 */
+.gz-order-apply-page > .el-form.query-form-compact .query-row-second .query-status-col {
   position: absolute;
   left: 552px;
   width: auto;
   padding-left: 0;
   padding-right: 0;
+}
+
+/* 确保日期区间在同一行 */
+.gz-order-apply-page > .el-form.query-form-compact .query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.gz-order-apply-page > .el-form.query-form-compact .query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* 与到货验收页面一致：顶部卡片与按钮行之间的缝隙 */
+.gz-order-apply-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.gz-order-apply-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
 }
 
 /* 弹窗内表单紧凑布局 */
@@ -2664,4 +2681,27 @@ export default {
   background-color: #fff;
 }
 
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非scoped确保生效） */
+.app-container.gz-order-apply-page {
+  position: relative;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.gz-order-apply-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.gz-order-apply-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.gz-order-apply-page > .el-table.table-compact {
+  margin-top: 0;
+}
 </style>

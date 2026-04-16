@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+  <div class="app-container warehouseTransfer-apply-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
         <el-col :span="24">
@@ -64,7 +64,7 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -102,7 +102,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getTransferList"></right-toolbar>
     </el-row>
 
-    <el-table :data="tableData" v-loading="loading" :row-class-name="rowTransferIndex" @selection-change="handleSelectionChange" height="58vh" border stripe>
+    <el-table :data="tableData" v-loading="loading" class="table-compact" :row-class-name="rowTransferIndex" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
         <el-table-column type="selection" width="55" align="center" fixed="left" />
         <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
         <el-table-column label="调拨单号" align="center" prop="transferOrderCode" width="180" show-overflow-tooltip resizable>
@@ -196,7 +196,6 @@
       </el-table>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -1704,6 +1703,87 @@ export default {
 /* 确保表格可以水平滚动 */
 ::v-deep .el-table {
   overflow-x: auto;
+}
+</style>
+
+<style>
+/* 调拨申请：与「到货验收」一致的搜索区 + 主表 + 翻页常驻（非 scoped） */
+.app-container.warehouseTransfer-apply-page {
+  position: relative;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.warehouseTransfer-apply-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+.app-container.warehouseTransfer-apply-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.warehouseTransfer-apply-page > .el-table.table-compact {
+  margin-top: 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.app-container.warehouseTransfer-apply-page > .el-table.table-compact th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.warehouseTransfer-apply-page > .el-table.table-compact th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container.warehouseTransfer-apply-page > .el-table.table-compact td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.warehouseTransfer-apply-page > .el-table.table-compact tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+.app-container.warehouseTransfer-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
+  width: 20px !important;
+  height: 12px !important;
+}
+
+.app-container.warehouseTransfer-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
+}
+
+.app-container.warehouseTransfer-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
 }
 </style>
 

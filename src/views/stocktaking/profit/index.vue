@@ -1,60 +1,58 @@
 <template>
-  <div class="app-container">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+  <div class="app-container stocktaking-profit-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="query-form query-form-compact">
 
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item label="业务单号" prop="stockNo" class="query-item-inline">
-              <el-input v-model="queryParams.stockNo"
-                        placeholder="业务单号"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-              </div>
-            </el-form-item>
-          </el-col>
-        </el-row>
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item label="业务单号" prop="stockNo" class="query-item-inline">
+            <el-input v-model="queryParams.stockNo"
+                      placeholder="业务单号"
+                      clearable
+                      style="width: 180px"
+                      @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+            </div>
+          </el-form-item>
+        </el-col>
+      </el-row>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24">
-            <el-form-item label="制单日期" style="display: flex; align-items: center;">
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
-                clearable
-                style="width: 180px; margin-right: 8px;"
-              />
-              <span style="margin: 0 4px;">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
-                clearable
-                style="width: 180px; margin-left: 8px;"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="24">
+          <el-form-item label="制单日期" style="display: flex; align-items: center;">
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="起始日期"
+              clearable
+              style="width: 180px; margin-right: 8px;"
+            />
+            <span style="margin: 0 4px;">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="截止日期"
+              clearable
+              style="width: 180px; margin-left: 8px;"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
 
-      </el-form>
-    </div>
+    </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
           plain
           icon="el-icon-plus"
-          size="small"
+          size="medium"
           @click="handleAdd"
           v-hasPermi="['stocktaking:in:add']"
         >新增</el-button>
@@ -64,7 +62,7 @@
           type="warning"
           plain
           icon="el-icon-download"
-          size="small"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['stocktaking:in:export']"
         >导出</el-button>
@@ -73,14 +71,14 @@
         <el-button
           type="primary"
           icon="el-icon-search"
-          size="small"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
           icon="el-icon-refresh"
-          size="small"
+          size="medium"
           @click="resetQuery"
         >重置</el-button>
       </el-col>
@@ -88,7 +86,7 @@
         <el-button
           type="success"
           icon="el-icon-check"
-          size="small"
+          size="medium"
           :disabled="multiple"
           @click="handleBatchAudit"
           v-hasPermi="['stocktaking:in:audit']"
@@ -97,7 +95,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="inList" :row-class-name="inListIndex" @selection-change="handleSelectionChange" height="54vh" border stripe>
+    <el-table v-loading="loading" :data="inList" class="table-compact" :row-class-name="inListIndex" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="业务单号" align="center" prop="stockNo" width="180" show-overflow-tooltip resizable >
@@ -199,7 +197,6 @@
     </el-table>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -1138,8 +1135,8 @@ export default {
   color: #409EFF;
 }
 
-/* 表单样式优化 */
-.el-form-item {
+/* 表单样式优化：仅弹窗内保留行距，避免列表查询区被撑高 */
+.local-modal-content .el-form-item {
   margin-bottom: 18px;
 }
 
@@ -1148,25 +1145,19 @@ export default {
   font-weight: 500;
 }
 
-/* 搜索条件容器样式 */
+/* 弹窗内搜索条件容器（列表区已改为 query-form-compact，不再用此外层） */
 .form-fields-container {
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 16px;
-  margin-top: -10px;
   border: 1px solid #EBEEF5;
-}
-
-.query-row-left {
-  margin-bottom: 10px;
 }
 
 .query-item-inline {
   display: inline-block;
   margin-right: 16px;
-  margin-bottom: 10px;
 }
 
 .query-item-inline .el-form-item__label {
@@ -1178,7 +1169,6 @@ export default {
 }
 
 .query-row-second {
-  margin-bottom: 10px;
   position: relative;
 }
 
@@ -1190,5 +1180,157 @@ export default {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+</style>
+
+<style>
+/* 库房盘点申请（本页路由）：与到货验收一致（非 scoped） */
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+.app-container.stocktaking-profit-page {
+  position: relative;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .query-row-left .query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 150px;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .query-row-second {
+  position: relative;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.app-container.stocktaking-profit-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.app-container.stocktaking-profit-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.stocktaking-profit-page > .el-table.table-compact {
+  margin-top: 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.app-container.stocktaking-profit-page > .el-table.table-compact th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.stocktaking-profit-page > .el-table.table-compact th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container.stocktaking-profit-page > .el-table.table-compact td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.stocktaking-profit-page > .el-table.table-compact tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+.app-container.stocktaking-profit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
+  width: 20px !important;
+  height: 12px !important;
+}
+
+.app-container.stocktaking-profit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
+}
+
+.app-container.stocktaking-profit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
 }
 </style>
