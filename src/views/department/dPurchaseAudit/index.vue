@@ -233,6 +233,24 @@
                       <SelectWarehouse v-model="form.warehouseId" :disabled="true"/>
                     </el-form-item>
                   </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="备注" prop="remark" class="form-item-remark">
+                      <el-input v-model="form.remark" placeholder="备注" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'" :span="4">
+                    <el-form-item
+                      label="驳回原因"
+                      prop="rejectReason"
+                      class="form-item-reject-reason"
+                    >
+                      <el-input
+                        v-model="form.rejectReason"
+                        clearable
+                        placeholder="驳回原因（驳回时必填）"
+                      />
+                    </el-form-item>
+                  </el-col>
                 </el-row>
                 <el-row :gutter="8">
                   <el-col :span="4">
@@ -269,25 +287,6 @@
                       </el-date-picker>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="8">
-                    <div class="modal-form-right-col">
-                      <el-form-item label="备注" prop="remark" class="form-item-remark">
-                        <el-input v-model="form.remark" placeholder="备注" :disabled="true" />
-                      </el-form-item>
-                      <el-form-item
-                        v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
-                        label="驳回原因"
-                        prop="rejectReason"
-                        class="form-item-reject-reason"
-                      >
-                        <el-input
-                          v-model="form.rejectReason"
-                          clearable
-                          placeholder="驳回原因（驳回时必填）"
-                        />
-                      </el-form-item>
-                    </div>
-                  </el-col>
                 </el-row>
               </div>
 
@@ -322,7 +321,8 @@
               </el-row>
 
               <div class="table-wrapper">
-              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" ref="depPurchaseApplyEntry" :height="detailTableHeight" border :summary-method="getPurchaseSummaries" show-summary>
+              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" ref="depPurchaseApplyEntry" height="100%" border :summary-method="getPurchaseSummaries" show-summary>
+                <el-table-column type="selection" width="55" align="center" fixed="left" resizable />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
@@ -449,12 +449,6 @@ export default {
       // 表单校验
       rules: {}
     };
-  },
-  computed: {
-    /** 明细表固定高度：表体滚动，合计固定在表格最底部 */
-    detailTableHeight() {
-      return 'max(300px, calc(100vh - 320px))';
-    }
   },
   created() {
     this.getList();
@@ -670,7 +664,11 @@ export default {
         return t;
       };
       columns.forEach((column, index) => {
-        if (index === 0) {
+        if (column.type === 'selection') {
+          sums[index] = '';
+          return;
+        }
+        if (column.property === 'index') {
           sums[index] = '合计';
           return;
         }
@@ -916,17 +914,6 @@ export default {
 
 .local-modal-content .modal-form-compact .form-item-reject-reason .el-input {
   width: 100%;
-  max-width: 260px;
-}
-
-.modal-form-right-col {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.modal-form-right-col .el-form-item {
-  margin-bottom: 0;
 }
 
 .detail-header-row {
@@ -973,6 +960,8 @@ export default {
 }
 
 .local-modal-content .modal-detail-section .table-wrapper {
+  /* 1 1 0：在弹窗 flex 布局内按剩余空间收缩，避免子表用 100vh 高度把合计挤出裁切区 */
+  flex: 1 1 0;
   margin-top: 0;
   overflow: hidden;
   width: 100%;
