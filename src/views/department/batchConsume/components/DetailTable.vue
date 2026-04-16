@@ -38,6 +38,16 @@
         <span>{{ scope.row.amt || '--' }}</span>
       </template>
     </el-table-column>
+    <el-table-column label="来源消耗单号" align="center" prop="srcConsumeBillNo" width="140" show-overflow-tooltip resizable>
+      <template slot-scope="scope">
+        <span>{{ scope.row.srcConsumeBillNo || '--' }}</span>
+      </template>
+    </el-table-column>
+    <el-table-column label="来源明细ID" align="center" prop="srcConsumeEntryId" width="120" show-overflow-tooltip resizable>
+      <template slot-scope="scope">
+        <span>{{ scope.row.srcConsumeEntryId || '--' }}</span>
+      </template>
+    </el-table-column>
     <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
     <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="120" show-overflow-tooltip resizable/>
     <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>

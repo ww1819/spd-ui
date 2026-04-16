@@ -69,3 +69,20 @@ export function outRefEntryList(query) {
     params: query
   })
 }
+
+// 反消耗：查询可反消耗明细
+export function reverseEntryList(consumeId) {
+  return request({
+    url: '/department/batchConsume/reverseEntryList/' + consumeId,
+    method: 'get'
+  })
+}
+
+// 反消耗：生成负数消耗单并回补科室库存
+export function reverseConsume(data) {
+  return request({
+    url: '/department/batchConsume/reverse',
+    method: 'post',
+    data: data
+  })
+}

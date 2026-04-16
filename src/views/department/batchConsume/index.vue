@@ -91,6 +91,19 @@
         >审核</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-tooltip :content="getReverseButtonTip()" placement="top">
+          <div style="display:inline-block;">
+            <el-button
+              type="warning"
+              size="medium"
+              :disabled="single || !canReverseSelected()"
+              @click="openReverseDialog"
+              v-hasPermi="['department:batchConsume:reverse']"
+            >退消耗</el-button>
+          </div>
+        </el-tooltip>
+      </el-col>
+      <el-col :span="1.5">
         <el-button
           type="primary"
           size="medium"
@@ -283,11 +296,47 @@
       </div>
     </el-dialog>
 
+    <el-dialog title="退消耗" :visible.sync="reverseDialogOpen" width="900px" append-to-body>
+      <el-alert
+        title="请输入每条明细本次反消耗数量（必须大于0且不超过可退数量）"
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 10px;"
+      />
+      <el-table :data="reverseRows" border max-height="420px">
+        <el-table-column label="来源单号" prop="srcConsumeBillNo" width="170" />
+        <el-table-column label="名称" prop="materialName" min-width="140" />
+        <el-table-column label="规格" prop="materialSpeci" width="120" />
+        <el-table-column label="型号" prop="materialModel" width="120" />
+        <el-table-column label="正向消耗数量" prop="srcConsumeQty" width="120" />
+        <el-table-column label="可退数量" prop="canReverseQty" width="110" />
+        <el-table-column label="本次退消耗数量" width="150">
+          <template slot-scope="scope">
+            <el-input-number
+              v-model="scope.row.reverseQty"
+              :min="0"
+              :max="Number(scope.row.canReverseQty || 0)"
+              :precision="2"
+              :step="1"
+              controls-position="right"
+              style="width: 130px;"
+            />
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer">
+        <el-button @click="reverseDialogOpen = false">取 消</el-button>
+        <el-button @click="fillReverseAll">按可退数量整单反消耗</el-button>
+        <el-button type="primary" @click="submitReverseConsume">确 定</el-button>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 
 <script>
-import { listConsume, getConsume, delConsume, addConsume, updateConsume, auditConsume, outRefEntryList } from "@/api/department/batchConsume";
+import { listConsume, getConsume, delConsume, addConsume, updateConsume, auditConsume, outRefEntryList, reverseEntryList, reverseConsume } from "@/api/department/batchConsume";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
@@ -311,7 +360,10 @@ export default {
       DialogComponentShow: false,
       departmentValue: "",
       outRefDialogOpen: false,
+      reverseDialogOpen: false,
       outRefRows: [],
+      reverseRows: [],
+      reverseTargetConsumeId: null,
       outRefSelectedRows: [],
       outRefBillRowSpan: {},
       outRefQuery: {
@@ -786,6 +838,89 @@ export default {
     /** 复选框选中数据 */
     handleConsumeEntrySelectionChange(selection) {
       this.checkedConsumeEntry = selection.map(item => item.index)
+    },
+    canReverseSelected() {
+      if (!this.ids || this.ids.length !== 1) {
+        return false;
+      }
+      const selected = (this.consumeList || []).find(item => item.id === this.ids[0]);
+      if (!selected) {
+        return false;
+      }
+      const audited = (selected.consumeBillStatus == 2 || selected.consumeBillStatus === '2');
+      const isReverseBill = (selected.reverseFlag == 1 || selected.reverseFlag === '1');
+      return audited && !isReverseBill;
+    },
+    getReverseButtonTip() {
+      if (!this.ids || this.ids.length === 0) return '请先选择一条单据';
+      if (this.ids.length > 1) return '仅支持单选退消耗';
+      const selected = (this.consumeList || []).find(item => item.id === this.ids[0]);
+      if (!selected) return '未找到选中单据';
+      if (!(selected.consumeBillStatus == 2 || selected.consumeBillStatus === '2')) return '仅已审核单据可退消耗';
+      if (selected.reverseFlag == 1 || selected.reverseFlag === '1') return '退消耗单不能再次退消耗';
+      return '对当前已审核正向消耗单执行退消耗';
+    },
+    openReverseDialog() {
+      if (!this.ids || this.ids.length !== 1) {
+        this.$modal.msgError("请先选择一条已审核的消耗单");
+        return;
+      }
+      const selected = (this.consumeList || []).find(item => item.id === this.ids[0]);
+      if (!selected) {
+        this.$modal.msgError("未找到选中的消耗单");
+        return;
+      }
+      if (!(selected.consumeBillStatus == 2 || selected.consumeBillStatus === '2')) {
+        this.$modal.msgError("仅支持对已审核消耗单执行退消耗");
+        return;
+      }
+      this.reverseTargetConsumeId = selected.id;
+      reverseEntryList(selected.id).then(response => {
+        const rows = (response && response.data) || [];
+        if (!rows.length) {
+          this.$modal.msgError("该单据没有可退消耗明细");
+          return;
+        }
+        this.reverseRows = rows.map(r => ({
+          ...r,
+          reverseQty: 0
+        }));
+        this.reverseDialogOpen = true;
+      });
+    },
+    fillReverseAll() {
+      this.reverseRows = (this.reverseRows || []).map(row => ({
+        ...row,
+        reverseQty: Number(row.canReverseQty || 0)
+      }));
+    },
+    submitReverseConsume() {
+      const validRows = (this.reverseRows || []).filter(row => Number(row.reverseQty || 0) > 0);
+      if (!validRows.length) {
+        this.$modal.msgError("请至少输入一条反消耗数量");
+        return;
+      }
+      const invalid = validRows.find(row => Number(row.reverseQty) > Number(row.canReverseQty || 0));
+      if (invalid) {
+        this.$modal.msgError(`明细超限：${invalid.materialName || ''} 可退数量为 ${invalid.canReverseQty}`);
+        return;
+      }
+      reverseConsume({
+        consumeId: this.reverseTargetConsumeId,
+        items: validRows.map(row => ({
+          srcConsumeEntryId: row.srcConsumeEntryId,
+          reverseQty: row.reverseQty
+        }))
+      }).then(response => {
+        this.$modal.msgSuccess((response && response.msg) || "退消耗成功");
+        this.reverseDialogOpen = false;
+        this.reverseRows = [];
+        this.reverseTargetConsumeId = null;
+        this.getList();
+      }).catch(err => {
+        const msg = (err && (err.msg || err.message)) || "数据异常";
+        this.$modal.msgError(`退消耗失败：${msg}`);
+      });
     },
     /** 导出按钮操作 */
     handleExport() {
