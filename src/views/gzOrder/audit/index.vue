@@ -1433,7 +1433,9 @@ export default {
           });
           if (this.form.id != null) {
             updateOrder(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
+              this.$modal.msgSuccess((response && response.msg) || "修改成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               this.open = false;
               // 确保查询时使用正确的 orderType
               this.setOrderTypeByRoute();
@@ -1441,7 +1443,9 @@ export default {
             });
           } else {
             addOrder(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
+              this.$modal.msgSuccess((response && response.msg) || "新增成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               this.open = false;
               // 确保查询时使用正确的 orderType
               this.setOrderTypeByRoute();

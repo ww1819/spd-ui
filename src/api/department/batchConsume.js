@@ -60,3 +60,12 @@ export function exportConsume(query) {
     params: query
   })
 }
+
+// 引用出库单可选明细（低敏感接口）
+export function outRefEntryList(query) {
+  return request({
+    url: '/department/batchConsume/outRefEntryList',
+    method: 'get',
+    params: query
+  })
+}
