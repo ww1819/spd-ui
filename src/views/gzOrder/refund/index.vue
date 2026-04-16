@@ -272,6 +272,11 @@
 
                   <div v-show="action" style="display: flex; align-items: center; gap: 10px;">
                     <el-col :span="1.5">
+                      <el-button type="primary" plain icon="el-icon-link" size="small"
+                                 v-hasPermi="['gz:refDoc:query']"
+                                 @click="openRefShipment">引用出库单</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
                       <el-button @click="cancel">取 消</el-button>
                     </el-col>
                     <el-col :span="1.5">
@@ -435,11 +440,30 @@
       @selectData="selectData"
     ></SelectMaterialFilter>
 
+    <el-dialog title="引用备货出库单（仅带科室仍有库存的明细）" :visible.sync="refShipOpen" width="800px" append-to-body>
+      <el-table :data="refShipList" v-loading="refShipLoading" highlight-current-row
+                @row-click="row => { refPickShipmentId = row.id; refPickShipmentNo = row.shipmentNo }" max-height="360" border size="small">
+        <el-table-column type="index" width="50" label="#" align="center"/>
+        <el-table-column label="出库单号" prop="shipmentNo" min-width="140" show-overflow-tooltip/>
+        <el-table-column label="仓库" min-width="100" show-overflow-tooltip>
+          <template slot-scope="scope">{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</template>
+        </el-table-column>
+        <el-table-column label="科室" min-width="100" show-overflow-tooltip>
+          <template slot-scope="scope">{{ (scope.row.department && scope.row.department.name) || '--' }}</template>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="refShipOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmRefShipment">确 定</el-button>
+      </span>
+    </el-dialog>
+
   </div>
 </template>
 
 <script>
 import { listGoods, getGoods, delGoods, addGoods, updateGoods, auditGoods } from "@/api/gz/goods";
+import { listAuditedShipment, listShipmentLinesForTk } from "@/api/gz/refDoc";
 import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -527,6 +551,11 @@ export default {
       },
       // 表单参数
       form: {},
+      refShipOpen: false,
+      refShipList: [],
+      refShipLoading: false,
+      refPickShipmentId: null,
+      refPickShipmentNo: null,
       // 表单校验
       rules: {
         goodsDate: [
@@ -928,6 +957,70 @@ export default {
         this.action = false;
         this.title = "查看备货退库";
       });
+    },
+    openRefShipment() {
+      if (!this.form.warehouseId || !this.form.departmentId) {
+        this.$message.warning('请先选择仓库与科室');
+        return;
+      }
+      if (this.gzRefundGoodsEntryList && this.gzRefundGoodsEntryList.length > 0) {
+        this.$message.warning('已有明细时请先清空再引用');
+        return;
+      }
+      this.refPickShipmentId = null;
+      this.refPickShipmentNo = null;
+      this.refShipOpen = true;
+      this.refShipLoading = true;
+      listAuditedShipment({ pageNum: 1, pageSize: 100 }).then(res => {
+        this.refShipList = res.data || res.rows || [];
+        this.refShipLoading = false;
+      }).catch(() => { this.refShipLoading = false; });
+    },
+    confirmRefShipment() {
+      if (!this.refPickShipmentId) {
+        this.$message.warning('请单击表格选择出库单');
+        return;
+      }
+      listShipmentLinesForTk(this.refPickShipmentId, this.form.departmentId).then(res => {
+        const rows = res.data || [];
+        if (!rows.length) {
+          this.$message.warning('该出库单在当前科室无可用院内码库存');
+          return;
+        }
+        rows.forEach(e => this.gzRefundGoodsEntryList.push(this.mapShEntryToTk(e)));
+        this.refShipOpen = false;
+        this.$message.success('已带入 ' + rows.length + ' 条明细');
+      });
+    },
+    mapShEntryToTk(e) {
+      const m = e.material || {};
+      const qty = e.qty != null ? String(e.qty) : '1';
+      const price = e.price != null ? e.price : '';
+      let amt = e.amt;
+      if (amt == null && price && qty) {
+        amt = (parseFloat(price) * parseFloat(qty)).toFixed(2);
+      }
+      return {
+        materialId: e.materialId,
+        materialName: m.name || e.materialName || '',
+        speci: m.speci || '',
+        model: m.model || '',
+        qty,
+        price,
+        amt,
+        batchNo: e.batchNo || '',
+        batchNumber: e.batchNumber || '',
+        beginTime: e.beginTime || '',
+        endTime: e.endTime || '',
+        inHospitalCode: e.inHospitalCode || '',
+        masterBarcode: e.masterBarcode || '',
+        secondaryBarcode: e.secondaryBarcode || '',
+        supplierId: e.supplierId,
+        remark: '',
+        refSrcShipmentId: this.refPickShipmentId != null ? String(this.refPickShipmentId) : '',
+        refSrcShipmentNo: this.refPickShipmentNo || '',
+        refSrcShipmentEntryId: e.id != null ? String(e.id) : ''
+      };
     },
     /** 新增按钮操作 */
     handleAdd() {

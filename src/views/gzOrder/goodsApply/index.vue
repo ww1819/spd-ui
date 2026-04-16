@@ -276,6 +276,11 @@
 
           <div v-show="action">
             <el-col :span="1.5">
+              <el-button type="primary" plain icon="el-icon-link" size="small"
+                         v-hasPermi="['gz:refDoc:query']"
+                         @click="openRefAcceptanceTh">引用验收单</el-button>
+            </el-col>
+            <el-col :span="1.5">
               <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
@@ -405,6 +410,22 @@
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectGzDepotInventory>
+
+    <el-dialog title="引用备货验收单（当前仓库有库存且供应商一致）" :visible.sync="refAccThOpen" width="800px" append-to-body>
+      <el-table :data="refAccThList" v-loading="refAccThLoading" highlight-current-row
+                @row-click="row => { refPickAccOrderId = row.id; refPickAccOrderNo = row.orderNo }" max-height="360" border size="small">
+        <el-table-column type="index" width="50" label="#" align="center"/>
+        <el-table-column prop="orderNo" label="验收单号" min-width="140" show-overflow-tooltip/>
+        <el-table-column label="仓库" min-width="100" show-overflow-tooltip>
+          <template slot-scope="scope">{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</template>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="refAccThOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmRefAcceptanceTh">确 定</el-button>
+      </span>
+    </el-dialog>
+
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
       <gz-order-print v-if="printRowData" :row="printRowData" :orientation="printOrientation || 'landscape'" :printType="'refund'" ref="receiptOrderPrintRefAuto"></gz-order-print>
@@ -415,6 +436,7 @@
 <script>
 import { listGoods, getGoods, delGoods, addGoods, updateGoods, auditGoods } from "@/api/gz/goods";
 import { listDepotInventory } from "@/api/gz/depotInventory";
+import { listAuditedAcceptance, listAcceptanceDepotLines } from "@/api/gz/refDoc";
 import { parseTime } from "@/utils/ruoyi";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
@@ -450,6 +472,11 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      refAccThOpen: false,
+      refAccThList: [],
+      refAccThLoading: false,
+      refPickAccOrderId: null,
+      refPickAccOrderNo: null,
       // 总条数
       total: 0,
       // 高值退货表格数据
@@ -753,6 +780,72 @@ export default {
         this.form.goodsType = '301';
         this.title = "查看高值退货";
       });
+    },
+    openRefAcceptanceTh() {
+      if (!this.form.warehouseId || !this.form.supplerId) {
+        this.$message.warning('请先选择仓库与供应商');
+        return;
+      }
+      if (this.gzRefundGoodsEntryList && this.gzRefundGoodsEntryList.length > 0) {
+        this.$message.warning('已有明细时请先清空再引用');
+        return;
+      }
+      this.refPickAccOrderId = null;
+      this.refPickAccOrderNo = null;
+      this.refAccThOpen = true;
+      this.refAccThLoading = true;
+      listAuditedAcceptance({ pageNum: 1, pageSize: 100 }).then(res => {
+        this.refAccThList = res.data || res.rows || [];
+        this.refAccThLoading = false;
+      }).catch(() => { this.refAccThLoading = false; });
+    },
+    confirmRefAcceptanceTh() {
+      if (!this.refPickAccOrderId) {
+        this.$message.warning('请选择验收单');
+        return;
+      }
+      listAcceptanceDepotLines(this.refPickAccOrderId, this.form.warehouseId).then(res => {
+        let rows = res.data || [];
+        rows = rows.filter(r => r.supplierId && String(r.supplierId) === String(this.form.supplerId));
+        if (!rows.length) {
+          this.$message.warning('该验收单在当前仓库无与表头供应商一致的可用备货库存');
+          return;
+        }
+        rows.forEach(r => this.gzRefundGoodsEntryList.push(this.mapDepotToThEntry(r)));
+        this.refAccThOpen = false;
+        this.$message.success('已带入 ' + rows.length + ' 条明细');
+      });
+    },
+    mapDepotToThEntry(r) {
+      const m = r.material || {};
+      const qty = r.qty != null ? String(r.qty) : '1';
+      const price = r.unitPrice != null ? r.unitPrice : '';
+      let amt = r.amt;
+      if (amt == null && price && qty) {
+        amt = (parseFloat(price) * parseFloat(qty)).toFixed(2);
+      }
+      return {
+        materialId: r.materialId,
+        material: r.material,
+        materialName: m.name || '',
+        speci: m.speci || '',
+        model: m.model || '',
+        qty,
+        price,
+        amt,
+        batchNo: r.batchNo,
+        batchNumber: r.materialNo,
+        beginTime: r.materialDate,
+        endTime: r.endTime,
+        inHospitalCode: r.inHospitalCode,
+        masterBarcode: r.masterBarcode,
+        secondaryBarcode: r.secondaryBarcode,
+        supplierId: r.supplierId,
+        refSrcAcceptanceId: String(r.orderId != null ? r.orderId : (this.refPickAccOrderId || '')),
+        refSrcAcceptanceNo: r.orderNo || this.refPickAccOrderNo || '',
+        refSrcOrderEntryId: r.orderEntryId != null ? String(r.orderEntryId) : '',
+        refSrcBarcodeLineId: r.inhospitalcodeListId != null ? String(r.inhospitalcodeListId) : ''
+      };
     },
     /** 新增按钮操作 */
     handleAdd() {
