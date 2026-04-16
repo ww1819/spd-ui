@@ -21,28 +21,32 @@
       </el-row>
 
       <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
+        <el-col :span="18">
           <el-form-item style="display: flex; align-items: center;">
+            <el-select v-model="queryParams.timeField" placeholder="时间字段" clearable style="width: 140px; margin-right: 8px;">
+              <el-option label="制单时间" value="createTime" />
+              <el-option label="审核时间" value="auditDate" />
+            </el-select>
             <el-date-picker
               v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="起始日期"
               clearable
-              style="width: 180px; margin-right: 8px;"
+              style="width: 200px; margin-right: 8px;"
             />
             <span style="margin: 0 4px;">至</span>
             <el-date-picker
               v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="截止日期"
               clearable
-              style="width: 180px; margin-left: 8px;"
+              style="width: 200px; margin-left: 8px;"
             />
           </el-form-item>
         </el-col>
-        <el-col :span="12" class="query-status-col">
+        <el-col :span="6" class="query-status-col">
           <el-form-item prop="goodsStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.goodsStatus" placeholder="单据状态"
                        clearable style="width: 150px">
@@ -198,7 +202,7 @@
                 <el-row :gutter="8">
                   <el-col :span="4">
                     <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action" includeWarehouseType="高值"/>
+                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action || warehouseDeptLocked" includeWarehouseType="高值"/>
                     </el-form-item>
                     <el-form-item label="总金额">
                       <el-input :value="getTotalAmount()" :disabled="true" style="width: 140px; background-color: #fff;">
@@ -207,7 +211,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="科室" prop="departmentId">
-                      <SelectDepartment v-model="form.departmentId" :disabled="!action"/>
+                      <SelectDepartment v-model="form.departmentId" :disabled="!action || warehouseDeptLocked"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -246,6 +250,19 @@
                     </el-form-item>
                   </el-col>
                 </el-row>
+                <el-row :gutter="8" v-show="action" style="margin-top: 4px;">
+                  <el-col :span="16">
+                    <el-form-item label="扫院内码" label-width="80px">
+                      <el-input
+                        v-model="scanCodeInput"
+                        placeholder="请先选择仓库与科室，在此回车扫描院内码添加明细"
+                        :disabled="!action || scanCodeDisabled"
+                        clearable
+                        @keyup.enter.native="onScanInHospitalCode"
+                      />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
               </div>
               <div class="modal-body">
                 <el-row :gutter="10" class="mb8">
@@ -254,6 +271,11 @@
                   </el-col>
 
                   <div v-show="action" style="display: flex; align-items: center; gap: 10px;">
+                    <el-col :span="1.5">
+                      <el-button type="primary" plain icon="el-icon-link" size="small"
+                                 v-hasPermi="['gz:refDoc:query']"
+                                 @click="openRefShipment">引用出库单</el-button>
+                    </el-col>
                     <el-col :span="1.5">
                       <el-button @click="cancel">取 消</el-button>
                     </el-col>
@@ -418,11 +440,31 @@
       @selectData="selectData"
     ></SelectMaterialFilter>
 
+    <el-dialog title="引用备货出库单（仅带科室仍有库存的明细）" :visible.sync="refShipOpen" width="800px" append-to-body>
+      <el-table :data="refShipList" v-loading="refShipLoading" highlight-current-row
+                @row-click="row => { refPickShipmentId = row.id; refPickShipmentNo = row.shipmentNo }" max-height="360" border size="small">
+        <el-table-column type="index" width="50" label="#" align="center"/>
+        <el-table-column label="出库单号" prop="shipmentNo" min-width="140" show-overflow-tooltip/>
+        <el-table-column label="仓库" min-width="100" show-overflow-tooltip>
+          <template slot-scope="scope">{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</template>
+        </el-table-column>
+        <el-table-column label="科室" min-width="100" show-overflow-tooltip>
+          <template slot-scope="scope">{{ (scope.row.department && scope.row.department.name) || '--' }}</template>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="refShipOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmRefShipment">确 定</el-button>
+      </span>
+    </el-dialog>
+
   </div>
 </template>
 
 <script>
 import { listGoods, getGoods, delGoods, addGoods, updateGoods, auditGoods } from "@/api/gz/goods";
+import { listAuditedShipment, listShipmentLinesForTk } from "@/api/gz/refDoc";
+import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -485,8 +527,9 @@ export default {
       total: 0,
       // 高值退货表格数据
       goodsList: [],
-      // 高值退货明细表格数据
+      // 高值退库明细表格数据
       gzRefundGoodsEntryList: [],
+      scanCodeInput: '',
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -501,12 +544,18 @@ export default {
         warehouseId: null,
         goodsStatus: null,
         goodsType: null,
+        timeField: "createTime",
         auditDate: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
       // 表单参数
       form: {},
+      refShipOpen: false,
+      refShipList: [],
+      refShipLoading: false,
+      refPickShipmentId: null,
+      refPickShipmentNo: null,
       // 表单校验
       rules: {
         goodsDate: [
@@ -515,13 +564,80 @@ export default {
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
         ],
+        departmentId: [
+          { required: true, message: "科室不能为空", trigger: "change" }
+        ],
       }
     };
+  },
+  computed: {
+    warehouseDeptLocked() {
+      return this.gzRefundGoodsEntryList && this.gzRefundGoodsEntryList.length > 0;
+    },
+    scanCodeDisabled() {
+      return !this.form.warehouseId || !this.form.departmentId;
+    },
   },
   created() {
     this.getList();
   },
   methods: {
+    onScanInHospitalCode() {
+      if (!this.action) {
+        return;
+      }
+      if (!this.form.warehouseId || !this.form.departmentId) {
+        this.$message.warning("请先选择仓库和科室");
+        return;
+      }
+      const raw = (this.scanCodeInput || "").trim();
+      if (!raw) {
+        return;
+      }
+      listGzDepInventory({
+        pageNum: 1,
+        pageSize: 20,
+        inHospitalCode: raw,
+        departmentId: this.form.departmentId,
+        showZeroStock: false,
+      }).then((res) => {
+        const rows = res.rows || [];
+        const hit = rows.find((r) => r && r.inHospitalCode && String(r.inHospitalCode).trim() === raw);
+        if (!hit) {
+          this.$message.warning("当前科室无该院内码可用库存");
+          return;
+        }
+        if (this.gzRefundGoodsEntryList.some((e) => e && e.inHospitalCode && String(e.inHospitalCode).trim() === raw)) {
+          this.$message.warning("明细中已存在该院内码");
+          this.scanCodeInput = "";
+          return;
+        }
+        const qty = hit.qty != null && parseFloat(hit.qty) > 0 ? String(hit.qty) : "1";
+        const price = hit.unitPrice != null ? hit.unitPrice : (hit.price != null ? hit.price : "");
+        const obj = {
+          materialId: hit.materialId,
+          materialName: (hit.material && hit.material.name) || "",
+          speci: (hit.material && hit.material.speci) || "",
+          model: (hit.material && hit.material.model) || "",
+          qty,
+          price,
+          amt: qty && price ? (parseFloat(qty) * parseFloat(price)).toFixed(2) : "",
+          batchNo: hit.batchNo || "",
+          batchNumber: hit.materialNo || "",
+          beginTime: hit.materialDate || "",
+          endTime: hit.endTime || "",
+          inHospitalCode: raw,
+          masterBarcode: hit.masterBarcode || "",
+          secondaryBarcode: hit.secondaryBarcode || "",
+          supplierId: hit.supplierId || null,
+          supplierName: (hit.material && hit.material.supplier && hit.material.supplier.name) || "",
+          remark: "",
+        };
+        this.gzRefundGoodsEntryList.push(obj);
+        this.scanCodeInput = "";
+        this.$message.success("已添加院内码 " + raw);
+      }).catch(() => {});
+    },
     goodsListIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
@@ -555,7 +671,7 @@ export default {
       this.loading = true;
       // 备货退库页面：只显示GZTK-开头的单号
       const params = {
-        ...this.queryParams
+        ...this.normalizeQueryDateTime(this.queryParams)
       };
       // 如果用户输入了单号，确保以GZTK-开头
       if (params.goodsNo && !params.goodsNo.startsWith('GZTK-')) {
@@ -640,6 +756,7 @@ export default {
         obj.inHospitalCode = item.inHospitalCode || "";
         // 保存UDI码，优先从material对象获取，如果没有则从udiNo字段获取
         obj.udiNo = (item.material && item.material.udiNo) || item.udiNo || item.masterBarcode || "";
+        obj.supplierId = this.form.supplerId || item.supplierId || (item.supplier && item.supplier.id) || (item.material && item.material.supplier && item.material.supplier.id) || null;
         // 确保materialId正确设置
         obj.materialId = obj.materialId || item.materialId || (item.material && item.material.id);
         this.gzRefundGoodsEntryList.push(obj);
@@ -678,6 +795,7 @@ export default {
         remark: null
       };
       this.gzRefundGoodsEntryList = [];
+      this.scanCodeInput = "";
       this.resetForm("form");
     },
     //数量改变事件
@@ -701,13 +819,31 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
+      this.queryParams.timeField = "createTime";
       this.handleQuery();
+    },
+    normalizeQueryDateTime(query) {
+      const params = { ...query };
+      params.timeField = params.timeField || "createTime";
+      params.beginDate = this.normalizeDateTimeValue(params.beginDate, false);
+      params.endDate = this.normalizeDateTimeValue(params.endDate, true);
+      return params;
+    },
+    normalizeDateTimeValue(value, isEnd) {
+      if (!value) return value;
+      if (typeof value !== "string") return value;
+      const trimVal = value.trim();
+      if (!trimVal) return trimVal;
+      if (trimVal.length === 10 && trimVal.indexOf(" ") === -1) {
+        return `${trimVal} ${isEnd ? "23:59:59" : "00:00:00"}`;
+      }
+      return trimVal;
     },
     getStatDate(){
       let myDate = new Date();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
+      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01 00:00:00"; //月初
       return statDate;
     },
     getEndDate(){
@@ -715,7 +851,7 @@ export default {
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
       let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
+      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd + " 23:59:59"; //月末
       return endDate;
     },
     // 多选框选中数据
@@ -822,12 +958,77 @@ export default {
         this.title = "查看备货退库";
       });
     },
+    openRefShipment() {
+      if (!this.form.warehouseId || !this.form.departmentId) {
+        this.$message.warning('请先选择仓库与科室');
+        return;
+      }
+      if (this.gzRefundGoodsEntryList && this.gzRefundGoodsEntryList.length > 0) {
+        this.$message.warning('已有明细时请先清空再引用');
+        return;
+      }
+      this.refPickShipmentId = null;
+      this.refPickShipmentNo = null;
+      this.refShipOpen = true;
+      this.refShipLoading = true;
+      listAuditedShipment({ pageNum: 1, pageSize: 100 }).then(res => {
+        this.refShipList = res.data || res.rows || [];
+        this.refShipLoading = false;
+      }).catch(() => { this.refShipLoading = false; });
+    },
+    confirmRefShipment() {
+      if (!this.refPickShipmentId) {
+        this.$message.warning('请单击表格选择出库单');
+        return;
+      }
+      listShipmentLinesForTk(this.refPickShipmentId, this.form.departmentId).then(res => {
+        const rows = res.data || [];
+        if (!rows.length) {
+          this.$message.warning('该出库单在当前科室无可用院内码库存');
+          return;
+        }
+        rows.forEach(e => this.gzRefundGoodsEntryList.push(this.mapShEntryToTk(e)));
+        this.refShipOpen = false;
+        this.$message.success('已带入 ' + rows.length + ' 条明细');
+      });
+    },
+    mapShEntryToTk(e) {
+      const m = e.material || {};
+      const qty = e.qty != null ? String(e.qty) : '1';
+      const price = e.price != null ? e.price : '';
+      let amt = e.amt;
+      if (amt == null && price && qty) {
+        amt = (parseFloat(price) * parseFloat(qty)).toFixed(2);
+      }
+      return {
+        materialId: e.materialId,
+        materialName: m.name || e.materialName || '',
+        speci: m.speci || '',
+        model: m.model || '',
+        qty,
+        price,
+        amt,
+        batchNo: e.batchNo || '',
+        batchNumber: e.batchNumber || '',
+        beginTime: e.beginTime || '',
+        endTime: e.endTime || '',
+        inHospitalCode: e.inHospitalCode || '',
+        masterBarcode: e.masterBarcode || '',
+        secondaryBarcode: e.secondaryBarcode || '',
+        supplierId: e.supplierId,
+        remark: '',
+        refSrcShipmentId: this.refPickShipmentId != null ? String(this.refPickShipmentId) : '',
+        refSrcShipmentNo: this.refPickShipmentNo || '',
+        refSrcShipmentEntryId: e.id != null ? String(e.id) : ''
+      };
+    },
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
       this.open = true;
       this.title = "添加备货退库";
       this.form.goodsStatus = 1;
+      this.form.goodsType = 301;
       //操作人
       var userName = this.$store.state.user.name;
       this.form.createBy = userName;
@@ -842,7 +1043,7 @@ export default {
         return auditGoods({id: id});
       }).then(() => {
         this.getList();
-        this.$modal.msgSuccess("审核退货成功！");
+        this.$modal.msgSuccess("审核退库成功！");
       }).catch(() => {});
     },
     /** 批量审核按钮操作 */
@@ -856,7 +1057,7 @@ export default {
         return Promise.all(promises);
       }).then(() => {
         this.getList();
-        this.$modal.msgSuccess("批量审核退货成功！");
+        this.$modal.msgSuccess("批量审核退库成功！");
       }).catch(() => {});
     },
     /** 修改按钮操作 */
@@ -882,14 +1083,22 @@ export default {
             const qty = parseFloat(item.qty) || 0;
             
             if (!item.qty || qty <= 0) {
-              this.$message.error(`第${i + 1}行：退货数量必须大于0`);
+              this.$message.error(`第${i + 1}行：退库数量必须大于0`);
               return;
             }
           }
-          this.form.gzRefundGoodsEntryList = this.gzRefundGoodsEntryList;
+          this.form.gzRefundGoodsEntryList = this.gzRefundGoodsEntryList.map(item => ({
+            ...item,
+            supplierId: this.form.supplerId || item.supplierId || null,
+            warehouseId: this.form.warehouseId || item.warehouseId || null,
+            departmentId: this.form.departmentId || item.departmentId || null,
+            billNo: this.form.goodsNo || item.billNo || null
+          }));
           if (this.form.id != null) {
             updateGoods(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
+              this.$modal.msgSuccess((response && response.msg) || "修改成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               // 保存成功后不关闭弹窗，刷新列表和表单数据
               this.getList();
               // 重新获取最新数据
@@ -902,7 +1111,9 @@ export default {
             });
           } else {
             addGoods(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
+              this.$modal.msgSuccess((response && response.msg) || "新增成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               // 保存成功后不关闭弹窗，刷新列表
               this.getList();
               // 如果是新增，重置表单但保持弹窗打开
@@ -1159,8 +1370,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
+      const params = this.normalizeQueryDateTime(this.queryParams);
       this.download('gz/goods/export', {
-        ...this.queryParams
+        ...params
       }, `goods_${new Date().getTime()}.xlsx`)
     }
   }

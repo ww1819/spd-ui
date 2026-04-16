@@ -78,7 +78,7 @@
           type="primary"
           size="medium"
           @click="handleAdd"
-          v-hasPermi="['gzOrder:goodsAudit:add']"
+          v-hasPermi="['gzOrder:apply:add']"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -86,7 +86,7 @@
           type="primary"
           size="medium"
           @click="handleExport"
-          v-hasPermi="['gzOrder:goodsAudit:export']"
+          v-hasPermi="['gzOrder:apply:export']"
         >导出</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -94,7 +94,7 @@
           type="primary"
           size="medium"
           @click="handleBatchAudit"
-          v-hasPermi="['gzOrder:goodsAudit:audit']"
+          v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
@@ -153,13 +153,13 @@
               size="small"
               type="text"
               @click="handleUpdate(scope.row)"
-              v-hasPermi="['gzOrder:goodsAudit:edit']"
+              v-hasPermi="['gzOrder:apply:edit']"
             >修改</el-button>
             <el-button
               size="small"
               type="text"
               @click="handleDelete(scope.row)"
-              v-hasPermi="['gzOrder:goodsAudit:remove']"
+              v-hasPermi="['gzOrder:apply:remove']"
             >删除</el-button>
           </template>
         </template>
@@ -537,6 +537,7 @@ export default {
         obj.inHospitalCode = item.inHospitalCode || "";
         // 保存UDI码，优先从material对象获取，如果没有则从udiNo字段获取
         obj.udiNo = (item.material && item.material.udiNo) || item.udiNo || "";
+        obj.supplierId = item.supplierId || (item.supplier && item.supplier.id) || (item.material && item.material.supplier && item.material.supplier.id) || null;
         this.gzOrderEntryList.push(obj);
       });
     },
@@ -882,7 +883,10 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          this.form.gzOrderEntryList = this.gzOrderEntryList;
+          this.form.gzOrderEntryList = this.gzOrderEntryList.map(item => ({
+            ...item,
+            supplierId: item.supplierId || (item.supplier && item.supplier.id) || null
+          }));
           this.form.orderType = 301; // 确保设置退库类型
           if (this.form.id != null) {
             updateOrder(this.form).then(response => {

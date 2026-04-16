@@ -250,12 +250,32 @@
           </el-col>
         </el-row>
 
+        <el-row :gutter="8" v-if="isOutbound && action">
+          <el-col :span="8">
+            <el-form-item label="院内码" prop="scanInHospitalCode" label-width="70px">
+              <el-input
+                v-model="form.scanInHospitalCode"
+                :placeholder="scanInHospitalPlaceholder"
+                clearable
+                style="width: 260px"
+                :disabled="!form.warehouseId || !form.departmentId"
+                @keyup.enter.native="handleScanInHospitalCode"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-row :gutter="10" class="mb8">
           <el-col :span="1.5">
             <span>{{ isOutbound ? '备货出库明细信息' : '高值备货入库明细信息' }}</span>
           </el-col>
 
           <div v-show="action">
+            <el-col :span="1.5" v-if="isOutbound">
+              <el-button type="primary" plain icon="el-icon-link" size="small"
+                         v-hasPermi="['gz:refDoc:query']"
+                         @click="openRefAcceptance">引用验收单</el-button>
+            </el-col>
             <el-col :span="1.5">
               <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
             </el-col>
@@ -415,12 +435,33 @@
       @selectData="selectData"
     ></SelectMaterialFilter>
 
+    <el-dialog title="引用备货验收单（仅带当前仓库有库存的明细）" :visible.sync="refAcceptOpen" width="800px" append-to-body>
+      <p style="margin:0 0 10px;color:#909399;font-size:13px">请选择已审核的验收单，系统将按当前出库仓库过滤仍有备货库存的条码行并带入明细。</p>
+      <el-table :data="refAcceptList" v-loading="refLoading" highlight-current-row
+                @row-click="row => { refPickOrderId = row.id; refPickOrderNo = row.orderNo }"
+                max-height="360" border size="small">
+        <el-table-column type="index" width="50" label="#" align="center"/>
+        <el-table-column prop="orderNo" label="验收单号" min-width="140" show-overflow-tooltip/>
+        <el-table-column label="仓库" min-width="100" show-overflow-tooltip>
+          <template slot-scope="scope">{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</template>
+        </el-table-column>
+        <el-table-column label="制单日期" width="110" align="center">
+          <template slot-scope="scope">{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</template>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="refAcceptOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmRefAcceptance">确 定</el-button>
+      </span>
+    </el-dialog>
+
   </div>
 </template>
 
 <script>
-import { listOrder, getOrder, delOrder, addOrder, updateOrder,auditOrder, checkInHospitalCode } from "@/api/gz/order";
+import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, checkInHospitalCode, getDepotByInHospitalCodeForOutbound } from "@/api/gz/order";
 import { listDepotInventory } from "@/api/gz/depotInventory";
+import { listAuditedAcceptance, listAcceptanceDepotLines } from "@/api/gz/refDoc";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -492,6 +533,11 @@ export default {
       action: true,
       // 是否为出库
       isOutbound: false,
+      refAcceptOpen: false,
+      refAcceptList: [],
+      refLoading: false,
+      refPickOrderId: null,
+      refPickOrderNo: null,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -514,8 +560,31 @@ export default {
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
         ],
+        departmentId: [
+          {
+            validator: (rule, value, callback) => {
+              if (this.isOutbound && (value === null || value === undefined || value === '')) {
+                callback(new Error('科室不能为空'));
+              } else {
+                callback();
+              }
+            },
+            trigger: 'change'
+          }
+        ],
       }
     };
+  },
+  computed: {
+    scanInHospitalPlaceholder() {
+      if (!this.form || !this.form.warehouseId) {
+        return '请先选择仓库';
+      }
+      if (!this.form.departmentId) {
+        return '请先选择科室';
+      }
+      return '扫描院内码后回车';
+    }
   },
   created() {
     // 根据路由meta.title判断是出库还是入库
@@ -525,6 +594,77 @@ export default {
     this.getList();
   },
   methods: {
+    toHalfWidth(str) {
+      if (!str || typeof str !== 'string') {
+        return str;
+      }
+      return str.replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/\u3000/g, ' ');
+    },
+    handleScanInHospitalCode() {
+      if (!this.isOutbound || !this.action) {
+        return;
+      }
+      const wid = this.form.warehouseId;
+      if (wid === null || wid === undefined || String(wid).trim() === '') {
+        this.$modal.msgWarning('请先选择仓库，再扫描院内码');
+        return;
+      }
+      const did = this.form.departmentId;
+      if (did === null || did === undefined || String(did).trim() === '') {
+        this.$modal.msgWarning('请先选择科室，再扫描院内码');
+        return;
+      }
+      let code = (this.form.scanInHospitalCode || '').trim();
+      if (!code) {
+        this.$modal.msgWarning('请输入院内码');
+        return;
+      }
+      code = this.toHalfWidth(code);
+      getDepotByInHospitalCodeForOutbound(code, wid).then(res => {
+        if (res.code !== 200 || !res.data) {
+          this.$modal.msgWarning('未找到该院内码在当前仓库下的可用库存');
+          return;
+        }
+        const inv = res.data;
+        const dup = this.gzOrderEntryList.some(e => e.inHospitalCode && inv.inHospitalCode && e.inHospitalCode === inv.inHospitalCode);
+        if (dup) {
+          this.$modal.msgWarning('该院内码已在明细中');
+          this.form.scanInHospitalCode = '';
+          return;
+        }
+        const m = inv.material || {};
+        const stockQty = parseFloat(inv.qty) || 0;
+        const price = inv.unitPrice != null ? inv.unitPrice : 0;
+        const qty = 1;
+        const obj = {
+          materialId: inv.materialId,
+          materialName: m.name || inv.materialName || '',
+          speci: m.speci || '',
+          model: m.model || '',
+          factoryName: (m.fdFactory && m.fdFactory.factoryName) || '',
+          supplierName: (inv.supplier && inv.supplier.name) || (m.supplier && m.supplier.name) || '',
+          qty: qty,
+          stockQty: stockQty,
+          price: price,
+          amt: (qty * parseFloat(price || 0)).toFixed(2),
+          batchNo: inv.batchNo || '',
+          batchNumber: inv.materialNo || '',
+          beginTime: inv.materialDate || '',
+          endTime: inv.endTime || '',
+          remark: '',
+          masterBarcode: inv.masterBarcode || '',
+          secondaryBarcode: inv.secondaryBarcode || '',
+          inHospitalCode: inv.inHospitalCode || code,
+          udiNo: m.udiNo || '',
+          supplierId: inv.supplierId || (m.supplier && m.supplier.id) || null,
+          warehouseId: this.form.warehouseId,
+          departmentId: this.form.departmentId,
+          billNo: this.form.orderNo || null
+        };
+        this.gzOrderEntryList.push(obj);
+        this.form.scanInHospitalCode = '';
+      });
+    },
     orderListIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
@@ -636,8 +776,8 @@ export default {
         this.$message.warning('请先选择仓库');
         return;
       }
-      // 检查是否选择了科室
-      if (!this.form.departmentId) {
+      // 出库必须选科室后再选明细
+      if (this.isOutbound && !this.form.departmentId) {
         this.$message.warning('请先选择科室');
         return;
       }
@@ -684,6 +824,7 @@ export default {
         obj.inHospitalCode = item.inHospitalCode || "";
         // 保存UDI码，优先从material对象获取，如果没有则从udiNo字段获取
         obj.udiNo = (item.material && item.material.udiNo) || item.udiNo || "";
+        obj.supplierId = item.supplierId || (item.supplier && item.supplier.id) || (item.material && item.material.supplier && item.material.supplier.id) || null;
         this.gzOrderEntryList.push(obj);
       });
     },
@@ -718,7 +859,8 @@ export default {
         updateTime: null,
         remark: null,
         masterBarcode: null,
-        secondaryBarcode: null
+        secondaryBarcode: null,
+        scanInHospitalCode: null
       };
       this.gzOrderEntryList = [];
       this.resetForm("form");
@@ -896,6 +1038,74 @@ export default {
           this.title = "查看高值备货入库";
         }
       });
+    },
+    openRefAcceptance() {
+      if (!this.form.warehouseId) {
+        this.$message.warning('请先选择出库仓库');
+        return;
+      }
+      if (this.gzOrderEntryList && this.gzOrderEntryList.length > 0) {
+        this.$message.warning('已有出库明细时请先清空或保存后再引用');
+        return;
+      }
+      this.refPickOrderId = null;
+      this.refPickOrderNo = null;
+      this.refAcceptOpen = true;
+      this.refLoading = true;
+      listAuditedAcceptance({ pageNum: 1, pageSize: 100 }).then(res => {
+        this.refAcceptList = res.data || res.rows || [];
+        this.refLoading = false;
+      }).catch(() => { this.refLoading = false; });
+    },
+    confirmRefAcceptance() {
+      if (!this.refPickOrderId) {
+        this.$message.warning('请单击表格选择一条验收单');
+        return;
+      }
+      listAcceptanceDepotLines(this.refPickOrderId, this.form.warehouseId).then(res => {
+        const rows = res.data || [];
+        if (!rows.length) {
+          this.$message.warning('该验收单在当前仓库无可用备货库存');
+          return;
+        }
+        rows.forEach(r => this.gzOrderEntryList.push(this.mapDepotToOutboundEntry(r)));
+        this.refAcceptOpen = false;
+        this.$message.success('已带入 ' + rows.length + ' 条明细');
+      });
+    },
+    mapDepotToOutboundEntry(r) {
+      const m = r.material || {};
+      const qty = r.qty != null ? r.qty : 1;
+      const price = r.unitPrice != null ? r.unitPrice : 0;
+      let amt = r.amt;
+      if (amt == null && price != null) {
+        amt = (parseFloat(price) * parseFloat(qty)).toFixed(2);
+      }
+      return {
+        materialId: r.materialId,
+        materialName: m.name || '',
+        speci: m.speci || '',
+        model: m.model || '',
+        qty,
+        price,
+        amt,
+        batchNo: r.batchNo,
+        batchNumber: r.materialNo,
+        beginTime: r.materialDate,
+        endTime: r.endTime,
+        inHospitalCode: r.inHospitalCode,
+        masterBarcode: r.masterBarcode,
+        secondaryBarcode: r.secondaryBarcode,
+        supplierId: r.supplierId,
+        stockQty: qty,
+        factoryName: m.fdFactory && m.fdFactory.factoryName,
+        supplierName: r.supplier && r.supplier.name,
+        material: r.material,
+        refSrcAcceptanceId: String(r.orderId != null ? r.orderId : (this.refPickOrderId || '')),
+        refSrcAcceptanceNo: r.orderNo || this.refPickOrderNo || '',
+        refSrcOrderEntryId: r.orderEntryId != null ? String(r.orderEntryId) : '',
+        refSrcBarcodeLineId: r.inhospitalcodeListId != null ? String(r.inhospitalcodeListId) : ''
+      };
     },
     /** 新增按钮操作 */
     handleAdd() {
@@ -1122,7 +1332,13 @@ export default {
               }
             }
           }
-          this.form.gzOrderEntryList = this.gzOrderEntryList;
+          this.form.gzOrderEntryList = this.gzOrderEntryList.map(item => ({
+            ...item,
+            supplierId: item.supplierId || (item.supplier && item.supplier.id) || null,
+            warehouseId: this.isOutbound ? this.form.warehouseId : item.warehouseId,
+            departmentId: this.isOutbound ? this.form.departmentId : item.departmentId,
+            billNo: this.isOutbound ? this.form.orderNo : item.billNo
+          }));
           // 调试：打印提交前的数据，特别是院内码
           console.log('提交前的数据:', {
             form: this.form,
@@ -1217,7 +1433,9 @@ export default {
           });
           if (this.form.id != null) {
             updateOrder(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
+              this.$modal.msgSuccess((response && response.msg) || "修改成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               this.open = false;
               // 确保查询时使用正确的 orderType
               this.setOrderTypeByRoute();
@@ -1225,7 +1443,9 @@ export default {
             });
           } else {
             addOrder(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
+              this.$modal.msgSuccess((response && response.msg) || "新增成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               this.open = false;
               // 确保查询时使用正确的 orderType
               this.setOrderTypeByRoute();

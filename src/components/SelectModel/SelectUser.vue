@@ -1,6 +1,7 @@
-﻿<template>
+<template>
   <el-select v-model="user" filterable
              clearable
+             :disabled="disabled"
              placeholder="请选择操作人">
     <el-option
       v-for="item in userOptions"
@@ -15,7 +16,14 @@
 import { listUserAll} from "@/api/system/user";
 
 export default {
-  props: ['value','size'],
+  props: {
+    value: {},
+    size: String,
+    disabled: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       // 用户选项

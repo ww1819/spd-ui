@@ -80,6 +80,7 @@
                   size="small"
                   style="color: #f56c6c;"
                   @click="handleDeleteOrder(scope.row)"
+                  v-hasPermi="['gz:traceability:remove']"
                 >
                   删除
                 </el-button>
@@ -89,6 +90,7 @@
                   size="small"
                   style="color: #409eff;"
                   @click="handleUnauditOrder(scope.row)"
+                  v-hasPermi="['gz:traceability:audit']"
                 >
                   反审核
                 </el-button>
@@ -137,16 +139,16 @@
               >
                 <i slot="prefix" class="el-icon-scan"></i>
               </el-input>
-          <el-button type="primary" icon="el-icon-check" size="medium" :disabled="form.orderStatus === 2" @click="handleSave">
+          <el-button type="primary" icon="el-icon-check" size="medium" :disabled="form.orderStatus === 2" @click="handleSave" v-hasPermi="['gz:traceability:add','gz:traceability:edit']">
             保存
           </el-button>
-          <el-button type="success" icon="el-icon-check" size="medium" :disabled="form.orderStatus === 2" @click="handleAudit">
+          <el-button type="success" icon="el-icon-check" size="medium" :disabled="form.orderStatus === 2" @click="handleAudit" v-hasPermi="['gz:traceability:audit']">
             审核
           </el-button>
-          <el-button type="warning" icon="el-icon-printer" size="medium" @click="handlePrintMaterialList">
+          <el-button type="warning" icon="el-icon-printer" size="medium" @click="handlePrintMaterialList" v-hasPermi="['gz:traceability:printMaterial']">
             打印耗材清单
           </el-button>
-          <el-button type="info" icon="el-icon-printer" size="medium" @click="handlePrintBarcodeList">
+          <el-button type="info" icon="el-icon-printer" size="medium" @click="handlePrintBarcodeList" v-hasPermi="['gz:traceability:printBarcode']">
             打印条码清单
           </el-button>
         </div>
@@ -291,7 +293,7 @@
             <div class="print-material-list">
               <!-- 标题 -->
               <div class="print-header">
-                <el-button type="danger" size="small" @click="handlePrint" style="margin-bottom: 10px;">打印</el-button>
+                <el-button type="danger" size="small" @click="handlePrint" style="margin-bottom: 10px;" v-hasPermi="['gz:traceability:printMaterial']">打印</el-button>
                 <h2 class="print-title">汉寿县人民医院-高值耗材使用清单</h2>
                 <div class="print-page-info">共1页</div>
               </div>
@@ -411,7 +413,7 @@
               <div v-for="(item, index) in materialDetailList" :key="index" class="barcode-page">
                 <!-- 标题 -->
                 <div class="barcode-header">
-                  <el-button type="danger" size="small" @click="handlePrint" style="margin-bottom: 10px;" v-if="index === 0">打印</el-button>
+                  <el-button type="danger" size="small" @click="handlePrint" style="margin-bottom: 10px;" v-if="index === 0" v-hasPermi="['gz:traceability:printBarcode']">打印</el-button>
                   <h2 class="barcode-title">汉寿县人民医院-高值耗材随病历存档清单</h2>
                   <div class="barcode-page-info">共{{ materialDetailList.length }}页</div>
                 </div>

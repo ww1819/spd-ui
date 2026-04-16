@@ -152,7 +152,7 @@
 
           <el-col :span="4">
             <el-form-item label="操作人" prop="userId" label-width="100px">
-              <SelectUser v-model="form.userId"/>
+              <SelectDeptApplyOperator v-model="form.userId"/>
             </el-form-item>
           </el-col>
         </el-row>
@@ -247,14 +247,14 @@
 <script>
 import { listApply, getApply, delApply, addApply, updateApply } from "@/api/gzDepartment/apply";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
-import SelectUser from '@/components/SelectModel/SelectUser';
+import SelectDeptApplyOperator from '@/components/SelectModel/SelectDeptApplyOperator';
 import SelectMaterial from '@/components/SelectModel/SelectMaterialDept';
 import SelectGzDepotInventory from '@/components/SelectModel/SelectGzDepotInventory';
 
 export default {
   name: "GZDepartmentApply",
   dicts: ['biz_status'],
-  components: {SelectWarehouse,SelectUser,SelectMaterial,SelectGzDepotInventory},
+  components: {SelectWarehouse,SelectDeptApplyOperator,SelectMaterial,SelectGzDepotInventory},
   data() {
     return {
       // 遮罩层
@@ -451,7 +451,12 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          this.form.gzDepApplyEntryList = this.gzDepApplyEntryList;
+          this.form.gzDepApplyEntryList = this.gzDepApplyEntryList.map(item => ({
+            ...item,
+            supplierId: item.supplierId || (item.supplier && item.supplier.id) || (item.material && item.material.supplier && item.material.supplier.id) || null,
+            masterBarcode: item.masterBarcode || item.mainBarcode || "",
+            secondaryBarcode: item.secondaryBarcode || item.subBarcode || "",
+          }));
           if (this.form.id != null) {
             updateApply(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -492,6 +497,9 @@ export default {
       obj.amt = "";
       obj.batchNo = "";
       obj.batchNumer = "";
+      obj.supplierId = "";
+      obj.masterBarcode = "";
+      obj.secondaryBarcode = "";
       obj.remark = "";
       this.gzDepApplyEntryList.push(obj);
     },

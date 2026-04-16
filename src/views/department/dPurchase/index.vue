@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container d-purchase-page">
+  <div class="app-container d-purchase-page" :class="{ 'is-modal-open': open }">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
@@ -247,7 +247,7 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="紧急程度" prop="urgencyLevel">
+                    <el-form-item label="紧急程度" prop="urgencyLevel" class="form-item-urgency">
                       <el-select
                         v-if="action"
                         v-model="form.urgencyLevel"
@@ -301,7 +301,7 @@
               </el-row>
 
               <div class="table-wrapper">
-              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" :max-height="detailTableMaxHeight" border :summary-method="getPurchaseSummaries" show-summary>
+              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" :height="detailTableHeight" border :summary-method="getPurchaseSummaries" show-summary>
                 <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
@@ -472,8 +472,8 @@ export default {
     };
   },
   computed: {
-    /** 明细表使用 max-height：行少时不留白，合计紧跟最后一行 */
-    detailTableMaxHeight() {
+    /** 明细表固定高度：表体滚动，合计固定在表格最底部 */
+    detailTableHeight() {
       return 'max(300px, calc(100vh - 320px))';
     }
   },
@@ -1040,6 +1040,24 @@ export default {
   line-height: 28px;
   height: 28px;
   font-size: 13px;
+  white-space: nowrap;
+}
+
+/* 紧急程度：保持与“申购状态”同款对齐（不改 Element 默认布局），仅保证不换行 */
+::v-deep .local-modal-content .modal-form-compact .form-item-urgency .el-form-item__content {
+  white-space: nowrap;
+}
+
+/* 仅隐藏“紧急程度”的必填星号（不影响其它必填项），且不改变布局对齐 */
+::v-deep .local-modal-content .modal-form-compact .form-item-urgency .el-form-item__label:before {
+  display: none !important;
+  content: '' !important;
+}
+
+::v-deep .local-modal-content .modal-form-compact .form-item-urgency .el-input__inner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .local-modal-content .modal-detail-section {
@@ -1337,6 +1355,11 @@ export default {
 ::v-deep .d-purchase-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
   height: 12px !important;
   border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+
+::v-deep .d-purchase-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.06) !important;
 }
 
 /* 确保操作列固定 */
@@ -1381,6 +1404,8 @@ export default {
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 0 !important;
+  /* 确保弹窗遮罩（absolute）能覆盖到底部，避免露出底层条 */
+  min-height: calc(100vh - 84px);
 }
 
 .app-container.d-purchase-page > .el-table {
@@ -1420,5 +1445,10 @@ export default {
   right: -8px;
   width: auto;
   overflow: hidden;
+}
+
+/* 弹窗打开时，隐藏底层分页/横向滚动区域，避免半透明遮罩下透出“蓝色条” */
+.app-container.d-purchase-page.is-modal-open .pagination-bottom-wrap {
+  display: none;
 }
 </style>

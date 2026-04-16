@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container d-purchase-audit-page">
+  <div class="app-container d-purchase-audit-page" :class="{ 'is-modal-open': open }">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
@@ -233,6 +233,24 @@
                       <SelectWarehouse v-model="form.warehouseId" :disabled="true"/>
                     </el-form-item>
                   </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="备注" prop="remark" class="form-item-remark">
+                      <el-input v-model="form.remark" placeholder="备注" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'" :span="4">
+                    <el-form-item
+                      label="驳回原因"
+                      prop="rejectReason"
+                      class="form-item-reject-reason"
+                    >
+                      <el-input
+                        v-model="form.rejectReason"
+                        clearable
+                        placeholder="驳回原因（驳回时必填）"
+                      />
+                    </el-form-item>
+                  </el-col>
                 </el-row>
                 <el-row :gutter="8">
                   <el-col :span="4">
@@ -253,7 +271,7 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="紧急程度" prop="urgencyLevel">
+                    <el-form-item label="紧急程度" prop="urgencyLevel" class="form-item-urgency">
                       <el-input v-model="urgencyLevelText" disabled />
                     </el-form-item>
                   </el-col>
@@ -267,22 +285,6 @@
                                       :disabled="true"
                                       placeholder="请选择期望到货日期">
                       </el-date-picker>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="8">
-                  <el-col :span="4">
-                    <el-form-item label="备注" prop="remark">
-                      <el-input v-model="form.remark" placeholder="备注" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="8" v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'">
-                    <el-form-item label="驳回原因" prop="rejectReason" class="form-item-reject-reason">
-                      <el-input
-                        v-model="form.rejectReason"
-                        clearable
-                        placeholder="驳回原因（驳回时必填）"
-                      />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -319,7 +321,8 @@
               </el-row>
 
               <div class="table-wrapper">
-              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" ref="depPurchaseApplyEntry" :max-height="detailTableMaxHeight" border :summary-method="getPurchaseSummaries" show-summary>
+              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" ref="depPurchaseApplyEntry" height="100%" border :summary-method="getPurchaseSummaries" show-summary>
+                <el-table-column type="selection" width="55" align="center" fixed="left" resizable />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
@@ -446,12 +449,6 @@ export default {
       // 表单校验
       rules: {}
     };
-  },
-  computed: {
-    /** 明细表使用 max-height：行少时不留白，合计紧跟最后一行 */
-    detailTableMaxHeight() {
-      return 'max(300px, calc(100vh - 320px))';
-    }
   },
   created() {
     this.getList();
@@ -667,7 +664,11 @@ export default {
         return t;
       };
       columns.forEach((column, index) => {
-        if (index === 0) {
+        if (column.type === 'selection') {
+          sums[index] = '';
+          return;
+        }
+        if (column.property === 'index') {
           sums[index] = '合计';
           return;
         }
@@ -886,6 +887,24 @@ export default {
   line-height: 28px;
   height: 28px;
   font-size: 13px;
+  white-space: nowrap;
+}
+
+/* 紧急程度：保持与“申购状态”同款对齐（不改 Element 默认布局），仅保证不换行 */
+::v-deep .local-modal-content .modal-form-compact .form-item-urgency .el-form-item__content {
+  white-space: nowrap;
+}
+
+/* 仅隐藏“紧急程度”的必填星号（不影响其它必填项），且不改变布局对齐 */
+::v-deep .local-modal-content .modal-form-compact .form-item-urgency .el-form-item__label:before {
+  display: none !important;
+  content: '' !important;
+}
+
+::v-deep .local-modal-content .modal-form-compact .form-item-urgency .el-input__inner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .local-modal-content .modal-form-compact .form-item-reject-reason .el-form-item__content {
@@ -895,7 +914,6 @@ export default {
 
 .local-modal-content .modal-form-compact .form-item-reject-reason .el-input {
   width: 100%;
-  max-width: 420px;
 }
 
 .detail-header-row {
@@ -942,6 +960,8 @@ export default {
 }
 
 .local-modal-content .modal-detail-section .table-wrapper {
+  /* 1 1 0：在弹窗 flex 布局内按剩余空间收缩，避免子表用 100vh 高度把合计挤出裁切区 */
+  flex: 1 1 0;
   margin-top: 0;
   overflow: hidden;
   width: 100%;
@@ -1199,6 +1219,11 @@ export default {
   transform: translateY(-8px);
 }
 
+/* 弹窗打开时，隐藏底层分页区域，避免半透明遮罩下透出底部“蓝色条” */
+.app-container.d-purchase-audit-page.is-modal-open .pagination-bottom-wrap {
+  display: none;
+}
+
 ::v-deep .d-purchase-audit-page .pagination-bottom-wrap .pagination-container {
   padding: 0 !important;
   margin-top: 0 !important;
@@ -1217,6 +1242,11 @@ export default {
 ::v-deep .d-purchase-audit-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
   height: 12px !important;
   border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+
+::v-deep .d-purchase-audit-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.06) !important;
 }
 
 /* 确保操作列固定 */
@@ -1261,6 +1291,8 @@ export default {
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 0 !important;
+  /* 确保弹窗遮罩（absolute）能覆盖到底部，避免露出底层条 */
+  min-height: calc(100vh - 84px);
 }
 
 .app-container.d-purchase-audit-page > .el-table {

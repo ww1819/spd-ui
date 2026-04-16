@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container batch-consume-page">
+  <div class="app-container batch-consume-page" :class="{ 'is-modal-open': open }">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
@@ -91,6 +91,19 @@
         >审核</el-button>
       </el-col>
       <el-col :span="1.5">
+        <el-tooltip :content="getReverseButtonTip()" placement="top">
+          <div style="display:inline-block;">
+            <el-button
+              type="warning"
+              size="medium"
+              :disabled="single || !canReverseSelected()"
+              @click="openReverseDialog"
+              v-hasPermi="['department:batchConsume:reverse']"
+            >退消耗</el-button>
+          </div>
+        </el-tooltip>
+      </el-col>
+      <el-col :span="1.5">
         <el-button
           type="primary"
           size="medium"
@@ -111,15 +124,17 @@
       @delete="handleDelete"
     />
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="pagination-bottom-wrap">
+      <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
 
-    <!-- 添加或修改科室批量消耗对话框 -->
+    <!-- 添加或修改科室批量消耗对话框（布局与样式与 inWarehouse/audit 到货验收「添加入库」弹窗一致） -->
     <transition name="modal-fade">
       <div v-if="open" class="local-modal-mask">
         <transition name="modal-zoom">
@@ -128,90 +143,161 @@
               <div class="modal-title">{{ title }}</div>
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="modal-form-wrapper">
+            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact modal-form-wrapper">
               <div class="form-fields-container">
-              <el-row>
-                <el-col :span="4">
-                  <el-form-item label="单号" prop="consumeBillNo" label-width="100px">
-                    <el-input v-model="form.consumeBillNo" :disabled="true" style="width: 150px" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="消耗状态" prop="consumeBillStatus" label-width="100px">
-                    <el-select v-model="form.consumeBillStatus" placeholder="请选择消耗状态"
-                               :disabled="true"
-                               clearable style="width: 150px">
-                      <el-option v-for="dict in dict.type.biz_status"
-                                 :key="dict.value"
-                                 :label="dict.label"
-                                 :value="dict.value"
-                      />
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-
-                <el-col :span="4">
-                  <el-form-item label="科室" prop="departmentId" label-width="100px">
-                    <SelectDepartment v-model="form.departmentId"/>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row>
-                <el-col :span="4">
-                  <el-form-item label="消耗日期" prop="consumeBillDate" label-width="100px">
-                    <el-date-picker clearable
-                                    v-model="form.consumeBillDate"
-                                    type="date"
-                                    style="width: 150px"
-                                    value-format="yyyy-MM-dd"
-                                    :disabled="true"
-                                    placeholder="请选择消耗日期">
-                    </el-date-picker>
-                  </el-form-item>
-                </el-col>
-
-                <el-col :span="4">
-                  <el-form-item label="操作人" prop="userId" label-width="100px">
-                    <SelectUser v-model="form.userId"/>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="备注" prop="remark" label-width="100px">
-                    <el-input v-model="form.remark" placeholder="备注" style="width: 150px" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
+                <el-row :gutter="8">
+                  <el-col :span="4">
+                    <el-form-item label="单号" prop="consumeBillNo">
+                      <el-input v-model="form.consumeBillNo" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="消耗状态" prop="consumeBillStatus">
+                      <el-select v-model="form.consumeBillStatus" placeholder="请选择消耗状态"
+                                 :disabled="true"
+                                 clearable>
+                        <el-option v-for="dict in dict.type.biz_status"
+                                   :key="dict.value"
+                                   :label="dict.label"
+                                   :value="dict.value"
+                        />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="科室" prop="departmentId">
+                      <SelectDepartment v-model="form.departmentId"/>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="8">
+                  <el-col :span="4">
+                    <el-form-item label="消耗日期" prop="consumeBillDate">
+                      <el-date-picker clearable
+                                      v-model="form.consumeBillDate"
+                                      type="date"
+                                      style="width: 100%"
+                                      value-format="yyyy-MM-dd"
+                                      :disabled="true"
+                                      placeholder="请选择消耗日期">
+                      </el-date-picker>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="操作人" prop="userId">
+                      <SelectUser v-model="form.userId"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="备注" prop="remark">
+                      <el-input v-model="form.remark" placeholder="备注" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
               </div>
 
-              <el-row :gutter="10" class="mb8">
-                <el-col :span="1.5">
-                  <span>科室批量消耗明细信息</span>
-                </el-col>
-
-                <div v-show="action">
+              <div class="modal-detail-section">
+                <el-row :gutter="10" class="detail-toolbar-row">
                   <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-plus" size="medium" @click="nameBtn">添加</el-button>
+                    <span class="detail-header-title">科室批量消耗明细信息</span>
                   </el-col>
+                  <div v-show="action">
+                    <el-col :span="1.5">
+                      <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
+                    </el-col>
                   <el-col :span="1.5">
-                    <el-button type="danger" icon="el-icon-delete" size="medium" @click="handleDeleteConsumeEntry">删除</el-button>
+                    <el-button
+                      type="primary"
+                      plain
+                      size="medium"
+                      @click="openOutRefDialog"
+                      v-hasPermi="['department:batchConsume:refOutOrder']"
+                    >引用出库单</el-button>
                   </el-col>
-                  <el-col :span="1.5" v-show="action">
-                    <el-button @click="cancel">取 消</el-button>
-                  </el-col>
-                  <el-col :span="1.5" v-show="action">
-                    <el-button type="primary" @click="submitForm">保 存</el-button>
-                  </el-col>
+                    <el-col :span="1.5">
+                      <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteConsumeEntry">删除</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
+                      <el-button size="small" @click="cancel">取 消</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
+                      <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
+                    </el-col>
+                  </div>
+                </el-row>
+                <div class="table-wrapper">
+                  <el-table
+                    :data="deptBatchConsumeEntryList"
+                    :row-class-name="rowDeptBatchConsumeEntryIndex"
+                    ref="deptBatchConsumeEntry"
+                    :height="detailTableHeight"
+                    border
+                    show-summary
+                    :summary-method="getSummaries"
+                    @selection-change="handleConsumeEntrySelectionChange"
+                  >
+                    <el-table-column type="selection" width="55" align="center" fixed="left" resizable />
+                    <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable />
+                    <el-table-column label="名称" align="center" prop="material.name" width="200" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ (scope.row.material && scope.row.material.name) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="规格" align="center" prop="material.speci" width="150" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="型号" align="center" prop="material.model" width="150" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="100" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.unitPrice || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <el-input
+                          v-if="action"
+                          clearable
+                          v-model="scope.row.qty"
+                          placeholder="数量"
+                          @input="qtyChange(scope.row)"
+                        />
+                        <span v-else>{{ scope.row.qty || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.amt || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="200" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column v-if="action" label="操作" align="center" width="100" fixed="right">
+                      <template slot-scope="scope">
+                        <el-button
+                          size="small"
+                          type="text"
+                          icon="el-icon-delete"
+                          @click="handleDeleteDetailRow(scope.$index)"
+                          style="padding: 0 5px; margin: 0;"
+                        >删除</el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
                 </div>
-              </el-row>
-              <div class="table-wrapper">
-                <!-- 明细表格组件 -->
-                <DetailTable
-                  :table-data="deptBatchConsumeEntryList"
-                  :editable="action"
-                  @selection-change="handleConsumeEntrySelectionChange"
-                  @qty-change="qtyChange"
-                  @delete-row="handleDeleteDetailRow"
-                />
               </div>
             </el-form>
           </div>
@@ -224,20 +310,101 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :departmentValue="departmentValue"
+      :selectedDetails="deptBatchConsumeEntryList"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectDepInventory>
+
+    <el-dialog title="引用出库单明细" :visible.sync="outRefDialogOpen" width="82%" append-to-body>
+      <el-form :inline="true" size="small">
+        <el-form-item label="出库单号">
+          <el-input v-model="outRefQuery.consumeBillNo" placeholder="请输入出库单号" clearable style="width: 220px" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" size="small" @click="loadOutRefRows">搜索</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="success" size="small" @click="addWholeOutBill">整单引用</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" plain size="small" @click="selectAllOutRefBills">全选当前页单号</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button size="small" @click="clearOutRefSelection">清空选择</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table ref="outRefTable" :data="outRefRows" @selection-change="handleOutRefSelectionChange" border height="420px">
+        <el-table-column type="selection" width="55" />
+        <el-table-column label="出库单号" prop="refOutBillNo" width="160" :span-method="outRefBillSpanMethod" />
+        <el-table-column label="整单" width="80" :span-method="outRefBillSpanMethod">
+          <template slot-scope="scope">
+            <el-checkbox
+              v-if="isFirstOutRefBillRow(scope.$index)"
+              :value="isBillChecked(scope.row.refOutBillNo)"
+              @change="toggleBillSelection(scope.row.refOutBillNo, $event)"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="耗材名称" prop="materialName" width="180" />
+        <el-table-column label="规格" prop="materialSpeci" width="130" />
+        <el-table-column label="型号" prop="materialModel" width="130" />
+        <el-table-column label="库存剩余" prop="availableQty" width="100" />
+        <el-table-column label="出库明细数量" prop="outEntryQty" width="120" />
+        <el-table-column label="默认消耗数量" prop="defaultConsumeQty" width="120" />
+        <el-table-column label="单价" prop="unitPrice" width="100" />
+        <el-table-column label="批次号" prop="batchNo" width="140" />
+      </el-table>
+      <div slot="footer">
+        <el-button @click="outRefDialogOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmOutRef">确 定</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog title="退消耗" :visible.sync="reverseDialogOpen" width="900px" append-to-body>
+      <el-alert
+        title="请输入每条明细本次反消耗数量（必须大于0且不超过可退数量）"
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 10px;"
+      />
+      <el-table :data="reverseRows" border max-height="420px">
+        <el-table-column label="来源单号" prop="srcConsumeBillNo" width="170" />
+        <el-table-column label="名称" prop="materialName" min-width="140" />
+        <el-table-column label="规格" prop="materialSpeci" width="120" />
+        <el-table-column label="型号" prop="materialModel" width="120" />
+        <el-table-column label="正向消耗数量" prop="srcConsumeQty" width="120" />
+        <el-table-column label="可退数量" prop="canReverseQty" width="110" />
+        <el-table-column label="本次退消耗数量" width="150">
+          <template slot-scope="scope">
+            <el-input-number
+              v-model="scope.row.reverseQty"
+              :min="0"
+              :max="Number(scope.row.canReverseQty || 0)"
+              :precision="2"
+              :step="1"
+              controls-position="right"
+              style="width: 130px;"
+            />
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer">
+        <el-button @click="reverseDialogOpen = false">取 消</el-button>
+        <el-button @click="fillReverseAll">按可退数量整单反消耗</el-button>
+        <el-button type="primary" @click="submitReverseConsume">确 定</el-button>
+      </div>
+    </el-dialog>
 
   </div>
 </template>
 
 <script>
-import { listConsume, getConsume, delConsume, addConsume, updateConsume, auditConsume } from "@/api/department/batchConsume";
+import { listConsume, getConsume, delConsume, addConsume, updateConsume, auditConsume, outRefEntryList, reverseEntryList, reverseConsume } from "@/api/department/batchConsume";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
 import MainTable from './components/MainTable.vue';
-import DetailTable from './components/DetailTable.vue';
 
 export default {
   name: "BatchConsume",
@@ -246,8 +413,7 @@ export default {
     SelectDepartment,
     SelectUser,
     SelectDepInventory,
-    MainTable,
-    DetailTable
+    MainTable
   },
   data() {
     return {
@@ -255,6 +421,16 @@ export default {
       loading: true,
       DialogComponentShow: false,
       departmentValue: "",
+      outRefDialogOpen: false,
+      reverseDialogOpen: false,
+      outRefRows: [],
+      reverseRows: [],
+      reverseTargetConsumeId: null,
+      outRefSelectedRows: [],
+      outRefBillRowSpan: {},
+      outRefQuery: {
+        consumeBillNo: null,
+      },
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -305,10 +481,55 @@ export default {
       }
     };
   },
+  computed: {
+    /** 明细框高度：与科室申领新增弹窗（dApply）一致 */
+    detailTableHeight() {
+      return 'max(300px, calc(100vh - 320px))';
+    }
+  },
   created() {
     this.getList();
   },
   methods: {
+    /** 明细序号（与申领单审核弹窗一致） */
+    rowDeptBatchConsumeEntryIndex({ row, rowIndex }) {
+      row.index = rowIndex + 1;
+    },
+    /** 明细表合计（与申领单审核弹窗一致） */
+    getSummaries(param) {
+      const { columns, data } = param;
+      const sums = [];
+      columns.forEach((column, index) => {
+        if (column.type === 'selection') {
+          sums[index] = '';
+          return;
+        }
+        if (column.property === 'index') {
+          sums[index] = '合计';
+          return;
+        }
+        if (column.property === 'qty') {
+          let totalQty = 0;
+          data.forEach(item => {
+            if (item.qty != null && item.qty !== '' && !isNaN(item.qty)) {
+              totalQty += parseFloat(item.qty);
+            }
+          });
+          sums[index] = totalQty;
+        } else if (column.property === 'amt') {
+          let totalAmount = 0;
+          data.forEach(item => {
+            if (item.amt != null && item.amt !== '' && !isNaN(item.amt)) {
+              totalAmount += parseFloat(item.amt);
+            }
+          });
+          sums[index] = '￥' + totalAmount.toFixed(2);
+        } else {
+          sums[index] = '';
+        }
+      });
+      return sums;
+    },
     /** 查询科室批量消耗列表 */
     getList() {
       this.loading = true;
@@ -337,26 +558,192 @@ export default {
       //关闭"弹窗组件"
       this.DialogComponentShow = false
     },
+    openOutRefDialog() {
+      if (!this.form.departmentId) {
+        this.$message({ message: '请先选择科室', type: 'warning' })
+        return
+      }
+      this.outRefDialogOpen = true;
+      this.outRefQuery.consumeBillNo = null;
+      this.loadOutRefRows();
+    },
+    loadOutRefRows() {
+      outRefEntryList({
+        departmentId: this.form.departmentId,
+        consumeBillNo: this.outRefQuery.consumeBillNo
+      }).then(response => {
+        const sourceRows = response.rows || [];
+        const filteredRows = this.filterOutRefRows(sourceRows);
+        this.outRefRows = filteredRows;
+        const filteredCount = sourceRows.length - filteredRows.length;
+        if (filteredCount > 0) {
+          this.$message({
+            type: 'warning',
+            message: `已自动过滤 ${filteredCount} 条重复出库明细`
+          });
+        }
+      });
+    },
+    filterOutRefRows(rows) {
+      const existsRefEntryIds = new Set(
+        (this.deptBatchConsumeEntryList || [])
+          .map(item => item && item.refOutEntryId)
+          .filter(v => v !== null && v !== undefined && v !== '')
+          .map(v => String(v))
+      );
+      const filtered = (rows || []).filter(row => {
+        const refEntryId = row.refOutEntryId != null ? String(row.refOutEntryId) : '';
+        if (refEntryId && existsRefEntryIds.has(refEntryId)) {
+          return false;
+        }
+        return true;
+      });
+      this.buildOutRefBillRowSpan(filtered);
+      return filtered;
+    },
+    buildOutRefBillRowSpan(rows) {
+      this.outRefBillRowSpan = {};
+      let i = 0;
+      while (i < rows.length) {
+        const billNo = rows[i].refOutBillNo || '';
+        let j = i + 1;
+        while (j < rows.length && (rows[j].refOutBillNo || '') === billNo) {
+          j++;
+        }
+        this.outRefBillRowSpan[i] = j - i;
+        for (let k = i + 1; k < j; k++) {
+          this.outRefBillRowSpan[k] = 0;
+        }
+        i = j;
+      }
+    },
+    outRefBillSpanMethod({ rowIndex, columnIndex }) {
+      if (columnIndex === 1 || columnIndex === 2) {
+        const rowspan = this.outRefBillRowSpan[rowIndex] || 0;
+        return { rowspan, colspan: rowspan > 0 ? 1 : 0 };
+      }
+      return { rowspan: 1, colspan: 1 };
+    },
+    isFirstOutRefBillRow(index) {
+      return (this.outRefBillRowSpan[index] || 0) > 0;
+    },
+    isBillChecked(billNo) {
+      const rows = (this.outRefRows || []).filter(r => (r.refOutBillNo || '') === (billNo || ''));
+      if (!rows.length) return false;
+      const selectedIds = new Set(
+        (this.outRefSelectedRows || [])
+          .map(r => r && r.refOutEntryId)
+          .filter(v => v !== null && v !== undefined && v !== '')
+          .map(v => String(v))
+      );
+      return rows.every(r => selectedIds.has(String(r.refOutEntryId || '')));
+    },
+    toggleBillSelection(billNo, checked) {
+      const rows = (this.outRefRows || []).filter(r => (r.refOutBillNo || '') === (billNo || ''));
+      if (!this.$refs.outRefTable || !rows.length) return;
+      rows.forEach(r => {
+        this.$refs.outRefTable.toggleRowSelection(r, !!checked);
+      });
+    },
+    handleOutRefSelectionChange(rows) {
+      this.outRefSelectedRows = rows || [];
+    },
+    addWholeOutBill() {
+      if (!this.outRefRows || this.outRefRows.length === 0) {
+        this.$modal.msgError("当前没有可引用的出库明细");
+        return;
+      }
+      this.selectData(this.outRefRows);
+      this.outRefDialogOpen = false;
+    },
+    selectAllOutRefBills() {
+      if (!this.$refs.outRefTable || !this.outRefRows || this.outRefRows.length === 0) {
+        return;
+      }
+      this.outRefRows.forEach(r => {
+        this.$refs.outRefTable.toggleRowSelection(r, true);
+      });
+    },
+    clearOutRefSelection() {
+      if (this.$refs.outRefTable) {
+        this.$refs.outRefTable.clearSelection();
+      }
+      this.outRefSelectedRows = [];
+    },
+    confirmOutRef() {
+      if (!this.outRefSelectedRows || this.outRefSelectedRows.length === 0) {
+        this.$modal.msgError("请先选择要引用的出库明细");
+        return;
+      }
+      this.selectData(this.outRefSelectedRows);
+      this.outRefDialogOpen = false;
+    },
     selectData(val) {
       //监听"弹窗组件"返回的数据
       this.selectRow = val;
+      let skippedCount = 0;
 
       this.selectRow.forEach((item, index) => {
+        const incomingDepInventoryId = item.depInventoryId || item.id || null;
+        const incomingRefOutEntryId = item.refOutEntryId || (item.billEntryId != null ? String(item.billEntryId) : null);
+        const duplicated = (this.deptBatchConsumeEntryList || []).some(exist => {
+          const sameDepInventory = incomingDepInventoryId && exist.depInventoryId && String(exist.depInventoryId) === String(incomingDepInventoryId);
+          const sameRefOutEntry = incomingRefOutEntryId && exist.refOutEntryId && String(exist.refOutEntryId) === String(incomingRefOutEntryId);
+          return sameDepInventory || sameRefOutEntry;
+        });
+        if (duplicated) {
+          skippedCount++;
+          return;
+        }
         const entry = {
+          depInventoryId: item.depInventoryId || item.id || null,
+          kcNo: item.kcNo || null,
           materialId: item.materialId || item.material?.id,
-          material: item.material || {},
+          material: item.material || {
+            id: item.materialId || null,
+            name: item.materialName || '',
+            speci: item.materialSpeci || '',
+            model: item.materialModel || ''
+          },
+          batchId: item.batchId || null,
+          warehouseId: item.warehouseId || item.warehouse?.id || null,
+          departmentId: item.departmentId || item.department?.id || this.form.departmentId || null,
+          supplierId: item.supplierId || item.supplier?.id || null,
+          factoryId: item.factoryId || item.fdFactory?.factoryId || item.material?.fdFactory?.factoryId || null,
           unitPrice: item.unitPrice || 0,
-          qty: item.qty || 0,
+          qty: item.defaultConsumeQty || item.qty || 0,
           price: item.price || 0,
-          amt: item.amt || 0,
+          amt: item.defaultConsumeQty ? (parseFloat(item.defaultConsumeQty || 0) * parseFloat(item.unitPrice || 0)).toFixed(2) : (item.amt || 0),
           batchNo: item.batchNo || '',
           batchNumer: item.batchNumer || item.materialNo || '',
+          materialNo: item.materialNo || '',
           beginTime: item.beginTime || item.materialDate,
           endTime: item.endTime,
+          materialDate: item.materialDate || null,
+          warehouseDate: item.warehouseDate || null,
+          settlementType: item.settlementType || '',
+          materialName: item.materialName || item.material?.name || '',
+          materialSpeci: item.materialSpeci || item.material?.speci || '',
+          materialModel: item.materialModel || item.material?.model || '',
+          materialFactoryId: item.materialFactoryId || item.material?.factoryId || item.factoryId || null,
+          refOutBillId: item.refOutBillId || (item.billId != null ? String(item.billId) : null),
+          refOutBillNo: item.refOutBillNo || item.billNo || null,
+          refOutEntryId: item.refOutEntryId || (item.billEntryId != null ? String(item.billEntryId) : null),
+          refOutEntryQty: item.outEntryQty || null,
+          refOutAvailableQty: item.availableQty || item.qty || null,
+          refDefaultConsumeQty: item.defaultConsumeQty || item.qty || null,
+          mainBarcode: item.mainBarcode || '',
+          subBarcode: item.subBarcode || '',
           remark: ''
         };
         this.deptBatchConsumeEntryList.push(entry);
       });
+      if (skippedCount > 0) {
+        this.$message({
+          type: 'warning',
+          message: `已自动过滤 ${skippedCount} 条重复明细`
+        });
+      }
       this.calculateTotals();
     },
     //当天日期
@@ -499,12 +886,16 @@ export default {
           this.form.totalAmount = totalAmt.toFixed(2);
           if (this.form.id != null) {
             updateConsume(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
+              this.$modal.msgSuccess((response && response.msg) || "修改成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               this.getList();
             });
           } else {
             addConsume(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
+              this.$modal.msgSuccess((response && response.msg) || "新增成功");
+              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
               if (response && response.data) {
                 if (response.data.id) {
                   this.form.id = response.data.id;
@@ -554,6 +945,89 @@ export default {
     /** 复选框选中数据 */
     handleConsumeEntrySelectionChange(selection) {
       this.checkedConsumeEntry = selection.map(item => item.index)
+    },
+    canReverseSelected() {
+      if (!this.ids || this.ids.length !== 1) {
+        return false;
+      }
+      const selected = (this.consumeList || []).find(item => item.id === this.ids[0]);
+      if (!selected) {
+        return false;
+      }
+      const audited = (selected.consumeBillStatus == 2 || selected.consumeBillStatus === '2');
+      const isReverseBill = (selected.reverseFlag == 1 || selected.reverseFlag === '1');
+      return audited && !isReverseBill;
+    },
+    getReverseButtonTip() {
+      if (!this.ids || this.ids.length === 0) return '请先选择一条单据';
+      if (this.ids.length > 1) return '仅支持单选退消耗';
+      const selected = (this.consumeList || []).find(item => item.id === this.ids[0]);
+      if (!selected) return '未找到选中单据';
+      if (!(selected.consumeBillStatus == 2 || selected.consumeBillStatus === '2')) return '仅已审核单据可退消耗';
+      if (selected.reverseFlag == 1 || selected.reverseFlag === '1') return '退消耗单不能再次退消耗';
+      return '对当前已审核正向消耗单执行退消耗';
+    },
+    openReverseDialog() {
+      if (!this.ids || this.ids.length !== 1) {
+        this.$modal.msgError("请先选择一条已审核的消耗单");
+        return;
+      }
+      const selected = (this.consumeList || []).find(item => item.id === this.ids[0]);
+      if (!selected) {
+        this.$modal.msgError("未找到选中的消耗单");
+        return;
+      }
+      if (!(selected.consumeBillStatus == 2 || selected.consumeBillStatus === '2')) {
+        this.$modal.msgError("仅支持对已审核消耗单执行退消耗");
+        return;
+      }
+      this.reverseTargetConsumeId = selected.id;
+      reverseEntryList(selected.id).then(response => {
+        const rows = (response && response.data) || [];
+        if (!rows.length) {
+          this.$modal.msgError("该单据没有可退消耗明细");
+          return;
+        }
+        this.reverseRows = rows.map(r => ({
+          ...r,
+          reverseQty: 0
+        }));
+        this.reverseDialogOpen = true;
+      });
+    },
+    fillReverseAll() {
+      this.reverseRows = (this.reverseRows || []).map(row => ({
+        ...row,
+        reverseQty: Number(row.canReverseQty || 0)
+      }));
+    },
+    submitReverseConsume() {
+      const validRows = (this.reverseRows || []).filter(row => Number(row.reverseQty || 0) > 0);
+      if (!validRows.length) {
+        this.$modal.msgError("请至少输入一条反消耗数量");
+        return;
+      }
+      const invalid = validRows.find(row => Number(row.reverseQty) > Number(row.canReverseQty || 0));
+      if (invalid) {
+        this.$modal.msgError(`明细超限：${invalid.materialName || ''} 可退数量为 ${invalid.canReverseQty}`);
+        return;
+      }
+      reverseConsume({
+        consumeId: this.reverseTargetConsumeId,
+        items: validRows.map(row => ({
+          srcConsumeEntryId: row.srcConsumeEntryId,
+          reverseQty: row.reverseQty
+        }))
+      }).then(response => {
+        this.$modal.msgSuccess((response && response.msg) || "退消耗成功");
+        this.reverseDialogOpen = false;
+        this.reverseRows = [];
+        this.reverseTargetConsumeId = null;
+        this.getList();
+      }).catch(err => {
+        const msg = (err && (err.msg || err.message)) || "数据异常";
+        this.$modal.msgError(`退消耗失败：${msg}`);
+      });
     },
     /** 导出按钮操作 */
     handleExport() {
@@ -616,39 +1090,43 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 占满整个遮罩层 */
+/* ========= 内部弹窗：与科室申领 dApply 一致（不用 95vh，避免明细下大块留白） ========= */
 .local-modal-mask {
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.3);
   z-index: 1000;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  overflow: hidden;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  max-height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
   display: flex;
-  min-height: 95vh !important;
   flex-direction: column;
+  padding-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  flex-shrink: 0;
-  min-height: 48px;
+  background: #EBEEF5;
+  min-height: 40px;
 }
 
 .modal-title {
@@ -669,52 +1147,237 @@ export default {
 
 .local-modal-content .el-form {
   flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px 20px 12px;
+  background: #fff;
+  box-shadow: none;
+  margin-bottom: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding: 24px;
+}
+
+.local-modal-content .el-form.modal-form-wrapper {
+  padding: 6px 20px 12px;
 }
 
 .modal-form-wrapper {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0;
+  flex: 1;
   overflow: hidden;
 }
 
 .local-modal-content .form-fields-container {
-  flex-shrink: 0;
+  background: #fff;
+  padding: 8px 16px 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  border: 1px solid #EBEEF5;
 }
 
-.local-modal-content .mb8 {
-  flex-shrink: 0;
-  margin-bottom: 10px;
+.local-modal-content .form-fields-container .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.detail-header-title {
+  font-weight: 500;
+}
+
+.local-modal-content .modal-detail-section .table-wrapper {
+  /* 直接照抄申领单审核（dApplyAudit）：外层不出纵向滚动条，仅表体滚动 */
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  margin-top: 0;
+  padding-bottom: 4px;
+}
+
+.local-modal-content .modal-form-compact .el-row {
+  margin-bottom: 6px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .modal-form-compact .el-input,
+.local-modal-content .modal-form-compact .el-select,
+.local-modal-content .modal-form-compact .el-date-picker {
+  width: 140px;
+  max-width: 140px;
+}
+
+.local-modal-content .modal-form-compact .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+}
+
+.local-modal-content .modal-form-compact .el-input__icon {
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-select .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor.el-input {
+  height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__content {
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__label {
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
 }
 
 .local-modal-content .table-wrapper {
   flex: 1;
-  overflow: hidden;
   min-height: 0;
-  height: 0;
+  overflow: auto;
+  margin-top: 10px;
+  padding-bottom: 4px;
 }
 
-.local-modal-content .table-wrapper .el-table {
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
+  margin-bottom: 0;
+  box-shadow: none;
+}
+
+::v-deep .local-modal-content .el-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+::v-deep .local-modal-content .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table thead th {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table thead th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .el-table th.is-leaf {
+  background-color: #EBEEF5 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+  padding-bottom: 0;
+  box-sizing: border-box;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  scrollbar-width: thin;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+  position: relative;
+  z-index: 10 !important;
+  background-color: #fff !important;
+  margin-top: 0;
+  box-shadow: 0 -1px 0 #ebeef5;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+  z-index: 11 !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  background-color: #fff !important;
+}
+
+::v-deep .local-modal-content:not(.template-dialog-content) {
+  min-height: 0 !important;
+  max-height: 100% !important;
   height: 100% !important;
 }
 
-::v-deep .local-modal-content .table-wrapper .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  max-height: calc(100vh - 450px) !important;
+::v-deep .local-modal-content .el-table .el-table__body-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.06);
 }
 
-/* 防止表格列自动换行 */
-::v-deep .local-modal-content .table-wrapper .el-table .el-table__cell {
+/* 防止表格列自动换行（与科室申领弹窗一致） */
+::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .el-table__cell {
   white-space: nowrap !important;
   overflow: hidden !important;
 }
 
-::v-deep .local-modal-content .table-wrapper .el-table .cell {
+::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .cell {
   white-space: nowrap !important;
   overflow: hidden !important;
 }
@@ -743,14 +1406,14 @@ export default {
   transform: scale(0.8);
 }
 
-/* 表格样式优化 */
+/* 表格样式优化（与科室申领 dApply scoped 一致） */
 .el-table {
   border-radius: 4px;
   overflow: hidden;
 }
 
 .el-table th {
-  background-color: #F5F7FA !important;
+  background-color: #EBEEF5 !important;
   color: #606266 !important;
   font-weight: 600 !important;
   border-right: 1px solid #EBEEF5 !important;
@@ -859,80 +1522,59 @@ export default {
   margin-bottom: 8px !important;
 }
 
-/* 弹窗内表单字段容器 */
-.local-modal-content .form-fields-container {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
-}
-
-/* 确保表格可以水平滚动和垂直滚动 */
-::v-deep .el-table__body-wrapper {
+/* 列表主表：固定列与滚动条（仅主列表，不影响弹窗内表） */
+::v-deep .batch-consume-page > .el-table .el-table__body-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
 }
 
-/* 增大底部滚动条 */
-::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+::v-deep .batch-consume-page > .el-table .el-table__body-wrapper::-webkit-scrollbar {
   height: 12px !important;
 }
 
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+::v-deep .batch-consume-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
   height: 12px !important;
   border-radius: 6px;
 }
 
-/* 确保操作列固定 */
-::v-deep .el-table__fixed-right {
+::v-deep .batch-consume-page > .el-table .el-table__fixed-right {
   right: 0 !important;
   z-index: 12 !important;
 }
 
-::v-deep .el-table__fixed-header-wrapper {
+::v-deep .batch-consume-page > .el-table .el-table__fixed-header-wrapper {
   z-index: 11;
 }
 
-::v-deep .el-table__fixed-right-patch {
+::v-deep .batch-consume-page > .el-table .el-table__fixed-right-patch {
   right: 0 !important;
   z-index: 12 !important;
 }
 
-/* 确保固定列头部和主体都有正确的z-index */
-::v-deep .el-table__fixed-right .el-table__header-wrapper {
+::v-deep .batch-consume-page > .el-table .el-table__fixed-right .el-table__header-wrapper {
   z-index: 12 !important;
 }
 
-::v-deep .el-table__fixed-right .el-table__body-wrapper {
+::v-deep .batch-consume-page > .el-table .el-table__fixed-right .el-table__body-wrapper {
   z-index: 12 !important;
 }
 
-/* 确保固定列在滚动时保持固定 */
-::v-deep .el-table__fixed {
+::v-deep .batch-consume-page > .el-table .el-table__fixed {
   position: absolute !important;
 }
 
-::v-deep .el-table__fixed-right {
+::v-deep .batch-consume-page > .el-table .el-table__fixed-right {
   position: absolute !important;
   right: 0 !important;
 }
 
-/* 确保表格可以水平滚动 */
-::v-deep .el-table {
+::v-deep .batch-consume-page > .el-table {
   overflow-x: auto;
-}
-
-/* 确保明细表格可以水平滚动 */
-::v-deep .local-modal-content .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
 }
 </style>
 
 <style>
-/* 与科室申领 d-apply-page 顶部间距一致 */
+/* 与到货验收 inWarehouse-audit-page 页边距、遮罩外扩一致 */
 .app-container.batch-consume-page {
   position: relative;
   padding-left: 8px !important;
@@ -950,10 +1592,54 @@ export default {
   margin-bottom: 8px !important;
 }
 
+/* 弹窗打开时，隐藏底层分页区域，避免透出“蓝色条” */
+.app-container.batch-consume-page.is-modal-open .pagination-bottom-wrap {
+  display: none;
+}
+
 .app-container.batch-consume-page .local-modal-mask {
   left: -8px;
   right: -8px;
   width: auto;
   overflow: hidden;
+}
+
+/* 主列表表头与到货验收一致 */
+.app-container.batch-consume-page > .el-table th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.batch-consume-page > .el-table th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+}
+
+/* 弹窗明细：名称/规格/型号/生产厂家最多两行（与到货验收一致） */
+.app-container.batch-consume-page .local-modal-content .modal-detail-section .el-table tbody td {
+  vertical-align: middle;
+}
+
+.app-container.batch-consume-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .cell {
+  vertical-align: top;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  padding: 8px 10px 8px 12px;
+}
+
+.app-container.batch-consume-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .detail-text-cell-2line {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  line-height: 1.45;
+  max-height: calc(1.45em * 2 + 2px);
 }
 </style>

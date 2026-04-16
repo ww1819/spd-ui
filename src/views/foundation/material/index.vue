@@ -1968,19 +1968,61 @@ export default {
         });
       }
     },
+    isBlankValue(v) {
+      return v === null || v === undefined || String(v).trim() === '';
+    },
+    collectSaveBlockTips() {
+      const tips = [];
+      const requiredFields = [
+        { key: 'name', label: '耗材名称' },
+        { key: 'supplierId', label: '供应商' },
+        { key: 'factoryId', label: '生产厂家' },
+        { key: 'speci', label: '规格' },
+        { key: 'unitId', label: '单位' },
+        { key: 'storeroomId', label: '库房分类' },
+        { key: 'financeCategoryId', label: '财务分类' },
+        { key: 'price', label: '单价' },
+        { key: 'isUse', label: '启用状态' }
+      ];
+      requiredFields.forEach(item => {
+        if (this.isBlankValue(this.form[item.key])) {
+          tips.push(`请维护「${item.label}」`);
+        }
+      });
+      if (!this.isBlankValue(this.form.price) && Number.isNaN(Number(this.form.price))) {
+        tips.push('请维护「单价」为有效数字');
+      }
+      if (this.form.id != null && this.form.isUse !== this.originalIsUse) {
+        const reason = (this.form.statusChangeReason || '').trim();
+        if (!reason) {
+          tips.push(`请维护「状态变更原因」（当前为${this.form.isUse === '1' ? '启用' : '停用'}）`);
+        }
+      }
+      return Array.from(new Set(tips));
+    },
+    showSaveBlockedDialog(tips, title = '当前不允许保存') {
+      const list = (tips || []).filter(Boolean).map(t => `<li>${t}</li>`).join('');
+      const html = `<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'><p>请先完善以下信息后再点击“确定”：</p><ul style='padding-left:18px;line-height:1.8;margin:6px 0 0'>${list || '<li>请检查表单必填项</li>'}</ul></div>`;
+      this.$alert(html, title, { dangerouslyUseHTMLString: true });
+    },
     /** 提交按钮 */
     submitForm() {
       if (this.form.id != null && this.form.isUse !== this.originalIsUse) {
         const reason = (this.form.statusChangeReason || '').trim();
         if (!reason) {
-          this.$modal.msgError(this.form.isUse === '1' ? '请填写启用原因' : '请填写停用原因');
+          this.showSaveBlockedDialog([
+            `请维护「状态变更原因」（当前为${this.form.isUse === '1' ? '启用' : '停用'}）`
+          ]);
           return;
         }
       }
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.validateHsHighValueRule().then(pass => {
-            if (!pass) return;
+            if (!pass) {
+              this.showSaveBlockedDialog(['财务分类为“高值耗材”时，请勾选「高值」标志']);
+              return;
+            }
             if (this.form.id != null) {
               updateMaterial(this.buildUpdatePayload(this.form)).then(response => {
                 this.$modal.msgSuccess("修改成功");
@@ -2000,6 +2042,8 @@ export default {
               });
             }
           });
+        } else {
+          this.showSaveBlockedDialog(this.collectSaveBlockTips());
         }
       });
     },

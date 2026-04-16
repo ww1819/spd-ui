@@ -60,3 +60,29 @@ export function exportConsume(query) {
     params: query
   })
 }
+
+// 引用出库单可选明细（低敏感接口）
+export function outRefEntryList(query) {
+  return request({
+    url: '/department/batchConsume/outRefEntryList',
+    method: 'get',
+    params: query
+  })
+}
+
+// 反消耗：查询可反消耗明细
+export function reverseEntryList(consumeId) {
+  return request({
+    url: '/department/batchConsume/reverseEntryList/' + consumeId,
+    method: 'get'
+  })
+}
+
+// 反消耗：生成负数消耗单并回补科室库存
+export function reverseConsume(data) {
+  return request({
+    url: '/department/batchConsume/reverse',
+    method: 'post',
+    data: data
+  })
+}
