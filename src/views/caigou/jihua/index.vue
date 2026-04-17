@@ -224,7 +224,7 @@
           <div v-if="open" class="local-modal-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button type="text" @click="cancel" class="close-btn" style="font-size:14px;padding:0;color:#909399;">关闭</el-button>
+              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
               <!-- 顶部容器 -->
@@ -258,6 +258,7 @@
                       <el-input v-model="form.telephone" placeholder="联系电话" />
                     </el-form-item>
                   </el-col>
+                  <el-col :span="4" />
                 </el-row>
 
                 <el-row :gutter="8">
@@ -297,27 +298,27 @@
                 </el-row>
               </div>
 
-              <el-row :gutter="10" class="mb8">
+              <div class="modal-detail-section">
+              <el-row :gutter="10" class="detail-toolbar-row">
                 <el-col :span="1.5">
                   <span>计划明细信息</span>
                 </el-col>
 
                 <div v-show="action">
                   <el-col :span="1.5">
-                    <el-button type="info" icon="el-icon-document" size="medium" @click="handleReferencePurchase">引用申购单</el-button>
+                    <el-button type="info" plain icon="el-icon-document" size="small" @click="handleReferencePurchase">引用申购单</el-button>
                   </el-col>
                   <el-col :span="1.5">
-    <!--            <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddStkIoBillEntry">添加</el-button>-->
-                    <el-button type="primary" icon="el-icon-plus" size="medium" @click="checkMaterialBtn">添加</el-button>
+                    <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
                   </el-col>
                   <el-col :span="1.5">
-                    <el-button type="danger" icon="el-icon-delete" size="medium" @click="handleDeleteStkIoBillEntry">删除</el-button>
+                    <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
                   </el-col>
                   <el-col :span="1.5">
-                    <el-button size="medium" @click="cancel">取 消</el-button>
+                    <el-button size="small" @click="cancel">取 消</el-button>
                   </el-col>
                   <el-col :span="1.5">
-                    <el-button type="primary" size="medium" @click="submitForm">确 定</el-button>
+                    <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">确 定</el-button>
                   </el-col>
                 </div>
               </el-row>
@@ -327,10 +328,10 @@
                           @selection-change="handleStkIoBillEntrySelectionChange"
                           ref="stkIoBillEntry"
                           border
-                          height="48vh"
+                          :height="detailTableHeight"
                 >
-          <el-table-column type="selection" width="60" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
+          <el-table-column type="selection" width="60" align="center" resizable />
+          <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
           <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
@@ -441,6 +442,7 @@
             </template>
           </el-table-column>
                 </el-table>
+              </div>
               </div>
             </el-form>
           </div>
@@ -974,6 +976,33 @@ export default {
       if (this.form.id != null) return true;
       const list = this.stkIoBillEntryList || [];
       return list.length > 0;
+    },
+    /** 与到货验收 inWarehouse/audit 弹窗明细表高度一致 */
+    detailTableHeight() {
+      return 'max(260px, calc(100vh - 368px))';
+    }
+  },
+  watch: {
+    open(val) {
+      if (val) {
+        this.$nextTick(() => {
+          const t = this.$refs.stkIoBillEntry;
+          if (t && typeof t.doLayout === 'function') {
+            t.doLayout();
+          }
+        });
+      }
+    },
+    stkIoBillEntryList: {
+      deep: true,
+      handler() {
+        this.$nextTick(() => {
+          const t = this.$refs.stkIoBillEntry;
+          if (t && typeof t.doLayout === 'function') {
+            t.doLayout();
+          }
+        });
+      }
     }
   },
   methods: {
@@ -987,32 +1016,38 @@ export default {
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
+      const sumNum = (prop) => {
+        let t = 0;
+        data.forEach(item => {
+          const v = item[prop];
+          if (v != null && v !== '' && !isNaN(v)) {
+            t += parseFloat(v);
+          }
+        });
+        return t;
+      };
       columns.forEach((column, index) => {
-        if (index === 0) {
+        if (column.type === 'selection') {
+          sums[index] = '';
+          return;
+        }
+        if (column.property === 'index') {
           sums[index] = '合计';
           return;
         }
-
-        // 只对数量、金额列进行汇总，使用列属性名判断（价格列不汇总）
-        if (column.property === 'qty' || column.property === 'amt') {
-          const values = data.map(item => {
-            const value = item[column.property];
-            return isNaN(Number(value)) ? 0 : Number(value);
-          });
-
-          if (values.length > 0) {
-            sums[index] = values.reduce((prev, curr) => prev + curr, 0).toFixed(2);
-          } else {
-            sums[index] = '0.00';
-          }
-
-          // 更新总金额
-          if (column.property === 'amt') {
-            this.form.totalAmount = sums[index];
-          }
-        } else {
-          sums[index] = '';
+        if (column.property === 'qty') {
+          sums[index] = sumNum('qty').toFixed(2);
+          return;
         }
+        if (column.property === 'amt') {
+          const t = sumNum('amt');
+          sums[index] = '￥' + t.toFixed(2);
+          if (this.form && this.action) {
+            this.form.totalAmount = t.toFixed(2);
+          }
+          return;
+        }
+        sums[index] = '';
       });
       return sums;
     },
@@ -1817,29 +1852,31 @@ export default {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
-  overflow: hidden;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  max-height: 100%;
-  overflow: hidden;
+  min-height: 95vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   position: relative;
+  padding-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
+  background: #EBEEF5;
   flex-shrink: 0;
-  min-height: 48px;
+  min-height: 40px;
 }
 
 .modal-title {
@@ -1891,8 +1928,9 @@ export default {
 
 .local-modal-content .el-form {
   flex: 1;
+  min-height: 0;
   overflow: visible;
-  padding: 24px;
+  padding: 6px 20px 12px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
@@ -1900,9 +1938,101 @@ export default {
   flex-direction: column;
 }
 
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.local-modal-content .modal-detail-section .table-wrapper {
+  margin-top: 0;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 4px;
+}
+
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+  padding-bottom: 6px;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+  position: relative;
+  z-index: 10 !important;
+  background-color: #fff !important;
+  margin-top: 0;
+  box-shadow: 0 -1px 0 #ebeef5;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+  z-index: 11 !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  background-color: #fff !important;
+}
+
+::v-deep .local-modal-content {
+  min-height: 95vh !important;
+}
+
 /* 弹窗内表单紧凑布局 */
 .local-modal-content .modal-form-compact .el-row {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .local-modal-content .modal-form-compact .el-form-item {
@@ -1915,29 +2045,6 @@ export default {
   width: 140px;
   max-width: 140px;
 }
-
-/* 弹窗内表格样式 - 高度调到确定按钮上面一点 */
-.local-modal-content .table-wrapper {
-  flex: 1;
-  overflow: hidden;
-  margin-top: 10px;
-}
-
-.local-modal-content .table-wrapper .el-table {
-  height: 48vh;
-  max-height: 48vh;
-  width: 100%;
-}
-
-.local-modal-content .table-wrapper .el-table__body-wrapper {
-  max-height: calc(48vh - 48px);
-  overflow-y: auto;
-  overflow-x: auto;
-}
-
-.local-modal-content .table-wrapper .el-table {
-    width: 100%;
-  }
 
 .modal-footer .el-button {
   margin-left: 8px;
@@ -2065,34 +2172,6 @@ export default {
     margin-bottom: 0;
   }
 
-  /* 表格样式优化 */
-  .el-table {
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .el-table th {
-    background-color: #F5F7FA;
-    color: #606266;
-    font-weight: 600;
-  }
-
-  .el-table .cell {
-    padding: 0 12px;
-    line-height: 1.5;
-  }
-
-  .el-table td {
-    padding: 12px 0;
-    color: #606266;
-    border-bottom: 1px solid #EBEEF5;
-  }
-
-  .el-table tr:hover > td {
-    background-color: #F5F7FA !important;
-    transition: all 0.3s;
-  }
-
   /* 按钮样式 */
   .el-button--text {
     padding: 0 4px;
@@ -2104,9 +2183,13 @@ export default {
 
   /* 弹窗内表单紧凑布局 */
   .local-modal-content .modal-form-compact .el-row {
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     display: flex;
     flex-wrap: nowrap;
+  }
+
+  .local-modal-content .modal-detail-section .detail-toolbar-row {
+    flex-wrap: wrap;
   }
 
   .local-modal-content .modal-form-compact .el-row .el-col {
@@ -2187,13 +2270,23 @@ export default {
     margin-left: 130px !important;
   }
 
-  /* 表单字段容器 */
+  /* 表单字段容器（与到货验收弹窗一致） */
   .form-fields-container {
     background: #fff;
-    padding: 15px 20px;
-    border-radius: 6px;
-    margin-bottom: 15px;
+    padding: 8px 16px 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    margin-bottom: 8px;
+    margin-left: -20px;
+    margin-right: -20px;
+    width: calc(100% + 40px);
+    box-sizing: border-box;
     border: 1px solid #EBEEF5;
+    flex-shrink: 0;
+  }
+
+  .form-fields-container .el-row:last-child {
+    margin-bottom: 0;
   }
 
   /* 分页组件样式 */
@@ -2787,5 +2880,29 @@ export default {
   background: #f1f1f1 !important;
   border-radius: 10px !important;
   border: 1px solid #e4e7ed !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+  overflow: hidden;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table .el-table__fixed .el-table__fixed-footer-wrapper,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper {
+  position: relative;
+  z-index: 30 !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-footer-wrapper {
+  z-index: 31 !important;
 }
 </style>

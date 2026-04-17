@@ -188,94 +188,92 @@
               <div class="modal-title">{{ title }}</div>
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="modal-form-wrapper">
+            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
               <div class="form-fields-container">
-              <el-row>
-                <el-col :span="4">
-                  <el-form-item label="单号" prop="transferBillNo" label-width="100px">
-                    <el-input v-model="form.transferBillNo" :disabled="true" style="width: 150px" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="转科状态" prop="billStatus" label-width="100px">
-                    <el-select v-model="form.transferBillStatus" placeholder="请选择转科状态"
-                               :disabled="true"
-                               clearable style="width: 150px">
-                      <el-option v-for="dict in dict.type.biz_status"
-                                 :key="dict.value"
-                                 :label="dict.label"
-                                 :value="dict.value"
-                      />
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-
-                <el-col :span="4">
-                  <el-form-item label="调出科室" prop="outDepartmentId" label-width="100px">
-                    <SelectDepartment v-model="form.outDepartmentId" :value2="transferDeptSelectDisabled"/>
-                  </el-form-item>
-                </el-col>
-
-                <el-col :span="4">
-                  <el-form-item label="调入科室" prop="inDepartmentId" label-width="100px">
-                    <SelectDepartment v-model="form.inDepartmentId" :value2="transferDeptSelectDisabled"/>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row>
-                <el-col :span="4">
-                  <el-form-item label="申请日期" prop="transferBillDate" label-width="100px">
-                    <el-date-picker clearable
-                                    v-model="form.transferBillDate"
-                                    type="date"
-                                    style="width: 150px"
-                                    value-format="yyyy-MM-dd"
-                                    :disabled="true"
-                                    placeholder="请选择申请日期">
-                    </el-date-picker>
-                  </el-form-item>
-                </el-col>
-
-                <el-col :span="4">
-                  <el-form-item label="操作人" prop="userId" label-width="100px">
-                    <SelectUser v-model="form.userId"/>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="备注" prop="remark" label-width="100px">
-                    <el-input v-model="form.remark" placeholder="备注" style="width: 150px" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
+                <el-row :gutter="8">
+                  <el-col :span="4">
+                    <el-form-item label="单号" prop="transferBillNo">
+                      <el-input v-model="form.transferBillNo" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="转科状态" prop="transferBillStatus">
+                      <el-select v-model="form.transferBillStatus" placeholder="请选择转科状态"
+                                 :disabled="true"
+                                 clearable>
+                        <el-option v-for="dict in dict.type.biz_status"
+                                   :key="dict.value"
+                                   :label="dict.label"
+                                   :value="dict.value"
+                        />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="调出科室" prop="outDepartmentId" class="transfer-dept-label-item">
+                      <SelectDepartment v-model="form.outDepartmentId" :value2="transferDeptSelectDisabled"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="调入科室" prop="inDepartmentId" class="transfer-dept-label-item">
+                      <SelectDepartment v-model="form.inDepartmentId" :value2="transferDeptSelectDisabled"/>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="8">
+                  <el-col :span="4">
+                    <el-form-item label="申请日期" prop="transferBillDate">
+                      <el-date-picker clearable
+                                      v-model="form.transferBillDate"
+                                      type="date"
+                                      value-format="yyyy-MM-dd"
+                                      :disabled="true"
+                                      style="width: 100%"
+                                      placeholder="请选择申请日期">
+                      </el-date-picker>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="操作人" prop="userId">
+                      <SelectUser v-model="form.userId"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="备注" prop="remark">
+                      <el-input v-model="form.remark" placeholder="备注" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
               </div>
 
-              <el-row :gutter="10" class="mb8">
-                <el-col :span="1.5">
-                  <span>转科申请明细信息</span>
-                </el-col>
-
-                <div v-show="action">
+              <div class="modal-detail-section">
+                <el-row :gutter="10" class="detail-toolbar-row">
                   <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-plus" size="medium" @click="nameBtn">添加</el-button>
+                    <span>转科申请明细信息</span>
                   </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="danger" icon="el-icon-delete" size="medium" @click="handleDeleteTransferEntry">删除</el-button>
-                  </el-col>
-                  <el-col :span="1.5" v-show="action">
-                    <el-button @click="cancel">取 消</el-button>
-                  </el-col>
-                  <el-col :span="1.5" v-show="action">
-                    <el-button type="primary" @click="submitForm">保 存</el-button>
-                  </el-col>
-                </div>
-              </el-row>
-              <div class="table-wrapper">
-              <el-table :data="transferEntryList" :row-class-name="rowTransferEntryIndex" @selection-change="handleTransferEntrySelectionChange" ref="transferEntry" height="100%" border :summary-method="getSummaries" show-summary>
+                  <div v-show="action">
+                    <el-col :span="1.5">
+                      <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
+                      <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteTransferEntry">删除</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
+                      <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
+                    </el-col>
+                  </div>
+                </el-row>
+                <div class="table-wrapper">
+              <el-table :data="transferEntryList" :row-class-name="rowTransferEntryIndex"
+                        @selection-change="handleTransferEntrySelectionChange" ref="transferEntry"
+                        border
+                        :summary-method="getSummaries" show-summary
+                        :height="detailTableHeight">
                 <el-table-column type="selection" width="50" align="center" resizable />
                 <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable/>
                 <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="型号" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
+                <el-table-column label="型号" align="center" prop="material.model" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
@@ -325,6 +323,7 @@
                   </template>
                 </el-table-column>
               </el-table>
+                </div>
               </div>
             </el-form>
           </div>
@@ -414,6 +413,10 @@ export default {
     };
   },
   computed: {
+    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    detailTableHeight() {
+      return 'max(260px, calc(100vh - 368px))';
+    },
     /** 已有明细（含已保存的耗材行）时禁止改调出/调入科室；查看模式始终禁用 */
     transferDeptSelectDisabled() {
       if (!this.action) {
@@ -527,6 +530,10 @@ export default {
       const { columns, data } = param;
       const sums = [];
       columns.forEach((column, index) => {
+        if (index === 0) {
+          sums[index] = '';
+          return;
+        }
         if (index === 1) {
           sums[index] = '合计';
           return;
@@ -768,14 +775,14 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 占满整个遮罩层 */
+/* 内部弹窗：与到货验收 inWarehouse/audit 弹窗一致 */
 .local-modal-mask {
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.3);
   z-index: 1000;
   display: flex;
   align-items: stretch;
@@ -786,21 +793,24 @@ export default {
   background: #fff;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  min-height: 95vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
-  min-height: 95vh !important;
   flex-direction: column;
+  padding-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
+  background: #EBEEF5;
+  min-height: 40px;
   flex-shrink: 0;
-  min-height: 48px;
 }
 
 .modal-title {
@@ -820,70 +830,193 @@ export default {
 }
 
 .modal-footer {
-  padding: 15px 20px;
+  padding: 16px 24px;
+  text-align: right;
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
-  text-align: right;
+  margin-top: 10px;
   flex-shrink: 0;
 }
 
 .modal-footer .el-button {
-  margin-left: 10px;
+  margin-left: 12px;
 }
 
 .local-modal-content .el-form {
   flex: 1;
+  overflow: visible;
+  padding: 6px 20px 12px;
+  background: #fff;
+  box-shadow: none;
+  margin-bottom: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding: 24px;
-}
-
-.modal-form-wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
 }
 
 .local-modal-content .form-fields-container {
-  flex-shrink: 0;
+  background: #fff;
+  padding: 8px 16px 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  border: 1px solid #EBEEF5;
 }
 
-.local-modal-content .mb8 {
-  flex-shrink: 0;
-  margin-bottom: 10px;
+.local-modal-content .form-fields-container .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .modal-detail-section .table-wrapper {
+  margin-top: 0;
 }
 
 .local-modal-content .table-wrapper {
   flex: 1;
-  overflow: hidden;
   min-height: 0;
-  height: 0;
+  /* 仅由表体 .el-table__body-wrapper 承担横向滚动，避免与合计行下方再出现一条重复滚动条 */
+  overflow: hidden;
+  margin-top: 10px;
+  padding-bottom: 4px;
 }
 
-.local-modal-content .table-wrapper .el-table {
-  height: 100% !important;
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
 }
 
-::v-deep .local-modal-content .table-wrapper .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  max-height: calc(100vh - 450px) !important;
+.local-modal-content .modal-form-compact .el-row {
+  margin-bottom: 6px;
 }
 
-/* 防止表格列自动换行 */
-::v-deep .local-modal-content .table-wrapper .el-table .el-table__cell {
+.local-modal-content .modal-form-compact .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .modal-form-compact .el-input,
+.local-modal-content .modal-form-compact .el-select,
+.local-modal-content .modal-form-compact .el-date-picker {
+  width: 140px;
+  max-width: 140px;
+}
+
+.local-modal-content .modal-form-compact .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+}
+
+.local-modal-content .modal-form-compact .el-input__icon {
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-select .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor.el-input {
+  height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__content {
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__label {
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+/* 调出/调入科室：标签红色且不显示必填星号（Element 表单项 DOM 在子组件内，需 ::v-deep 穿透 scoped） */
+.local-modal-content .transfer-dept-label-item.is-required ::v-deep .el-form-item__label::before,
+.local-modal-content .transfer-dept-label-item.is-required ::v-deep .el-form-item__label:before {
+  display: none !important;
+  content: '' !important;
+  margin-right: 0 !important;
+}
+
+.local-modal-content .transfer-dept-label-item ::v-deep .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+::v-deep .local-modal-content .el-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+::v-deep .local-modal-content .el-table th .cell {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+  padding-bottom: 6px;
+  box-sizing: border-box;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+  position: relative;
+  z-index: 10 !important;
+  background-color: #fff !important;
+  margin-top: 0;
+  box-shadow: 0 -1px 0 #ebeef5;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+  z-index: 11 !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  background-color: #fff !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__cell {
   white-space: nowrap !important;
-  overflow: hidden !important;
 }
 
-::v-deep .local-modal-content .table-wrapper .el-table .cell {
+::v-deep .local-modal-content .modal-detail-section .el-table .cell {
   white-space: nowrap !important;
-  overflow: hidden !important;
 }
 
-/* 弹窗动画效果 */
 .modal-fade-enter-active, .modal-fade-leave-active {
   transition: opacity 0.3s ease;
 }
@@ -907,50 +1040,7 @@ export default {
   transform: scale(0.8);
 }
 
-/* 表格样式优化 */
-.el-table {
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266 !important;
-  font-weight: 600 !important;
-  border-right: 1px solid #EBEEF5 !important;
-  border-bottom: 1px solid #EBEEF5 !important;
-}
-
-.el-table td {
-  border-right: 1px solid #EBEEF5 !important;
-  border-bottom: 1px solid #EBEEF5 !important;
-}
-
-.el-table .cell {
-  padding: 0 8px;
-  line-height: 1.5;
-}
-
-/* 表单样式优化：仅弹窗内保留行距，避免列表页查询区被 18px 撑高 */
-.local-modal-content .el-form-item {
-  margin-bottom: 18px;
-}
-
-.el-form-item__label {
-  color: #606266;
-  font-weight: 500;
-}
-
-/* 搜索条件容器样式 */
-.form-fields-container {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
-}
-
+/* 列表查询区（非弹窗） */
 .query-item-inline {
   display: inline-block;
   margin-right: 16px;
@@ -958,16 +1048,6 @@ export default {
 
 .query-item-inline .el-form-item__label {
   width: 80px !important;
-}
-
-/* 弹窗内表单字段容器 */
-.local-modal-content .form-fields-container {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
 }
 
 .query-select-wrapper {
@@ -988,13 +1068,11 @@ export default {
   flex-wrap: nowrap;
 }
 
-/* 确保表格可以水平滚动和垂直滚动 */
 ::v-deep .el-table__body-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
 }
 
-/* 增大底部滚动条 */
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
   height: 12px !important;
 }
@@ -1004,7 +1082,6 @@ export default {
   border-radius: 6px;
 }
 
-/* 确保操作列固定 */
 ::v-deep .el-table__fixed-right {
   right: 0 !important;
   z-index: 12 !important;
@@ -1019,7 +1096,6 @@ export default {
   z-index: 12 !important;
 }
 
-/* 确保固定列头部和主体都有正确的z-index */
 ::v-deep .el-table__fixed-right .el-table__header-wrapper {
   z-index: 12 !important;
 }
@@ -1028,7 +1104,6 @@ export default {
   z-index: 12 !important;
 }
 
-/* 确保固定列在滚动时保持固定 */
 ::v-deep .el-table__fixed {
   position: absolute !important;
 }
@@ -1038,15 +1113,8 @@ export default {
   right: 0 !important;
 }
 
-/* 确保表格可以水平滚动 */
-::v-deep .el-table {
+::v-deep .el-table.table-compact {
   overflow-x: auto;
-}
-
-/* 确保明细表格可以水平滚动 */
-::v-deep .local-modal-content .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
 }
 </style>
 
@@ -1188,6 +1256,25 @@ export default {
   background: #f1f1f1 !important;
   border-radius: 10px !important;
   border: 1px solid #e4e7ed !important;
+}
+
+/* 弹窗遮罩与列表区左右 padding 对齐（与到货验收一致） */
+.app-container.departmentTransfer-apply-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+}
+
+/* 弹窗内调出/调入科室标签（非 scoped，确保覆盖 Element 默认样式） */
+.app-container.departmentTransfer-apply-page .local-modal-content .transfer-dept-label-item.is-required .el-form-item__label::before,
+.app-container.departmentTransfer-apply-page .local-modal-content .transfer-dept-label-item.is-required .el-form-item__label:before {
+  display: none !important;
+  content: none !important;
+  margin-right: 0 !important;
+}
+
+.app-container.departmentTransfer-apply-page .local-modal-content .transfer-dept-label-item .el-form-item__label {
+  color: #f56c6c !important;
 }
 </style>
 
