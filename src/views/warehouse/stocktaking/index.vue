@@ -161,7 +161,6 @@
     </el-table>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -787,8 +786,8 @@ export default {
   line-height: 1.5;
 }
 
-/* 表单样式优化 */
-.el-form-item {
+/* 表单样式优化：仅弹窗内保留行距，避免列表查询区被撑高 */
+.local-modal-content .el-form-item {
   margin-bottom: 18px;
 }
 
@@ -849,6 +848,9 @@ export default {
   border: 1px solid #c0c4cc;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
+}
+
+.app-container.stocktaking-page > .el-form.query-form-compact {
   margin-top: -12px !important;
 }
 
@@ -920,10 +922,12 @@ export default {
 
 .app-container.stocktaking-page > .el-table.table-compact {
   margin-top: 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
-/* 主表格表头样式：与到货验收一致 */
-.app-container.stocktaking-page > .el-table th {
+/* 主表格：与到货验收一致 */
+.app-container.stocktaking-page > .el-table.table-compact th {
   background-color: #EBEEF5 !important;
   color: #606266;
   font-weight: 600 !important;
@@ -934,9 +938,39 @@ export default {
   border-bottom: 1px solid #EBEEF5;
 }
 
-.app-container.stocktaking-page > .el-table th .cell {
+.app-container.stocktaking-page > .el-table.table-compact th .cell {
   font-weight: 600 !important;
   font-size: 15px !important;
   font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container.stocktaking-page > .el-table.table-compact td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.stocktaking-page > .el-table.table-compact tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+.app-container.stocktaking-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
+  width: 20px !important;
+  height: 12px !important;
+}
+
+.app-container.stocktaking-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
+}
+
+.app-container.stocktaking-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
 }
 </style>

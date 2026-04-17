@@ -1,42 +1,52 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="90px">
-      <el-form-item label="发票号码" prop="invoiceNo">
-        <el-input v-model="queryParams.invoiceNo" placeholder="请输入发票号码" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="发票代码" prop="invoiceCode">
-        <el-input v-model="queryParams.invoiceCode" placeholder="请输入发票代码" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="审核状态" prop="auditStatus">
-        <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable style="width: 120px">
-          <el-option label="待审核" :value="0" />
-          <el-option label="已审核" :value="1" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="供应商" prop="supplierId">
-        <SelectSupplier v-model="queryParams.supplierId" />
-      </el-form-item>
-      <el-form-item label="购方名称" prop="buyerName">
-        <el-input v-model="queryParams.buyerName" placeholder="购方名称" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="开票日期">
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          value-format="yyyy-MM-dd"
-          style="width: 240px"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-      </el-form-item>
+  <div class="app-container finance-invoice-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="90px" class="query-form query-form-compact">
+      <el-row class="query-row-left">
+        <el-col :span="24">
+          <el-form-item label="发票号码" prop="invoiceNo" class="query-item-inline">
+            <el-input v-model="queryParams.invoiceNo" placeholder="请输入发票号码" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
+          </el-form-item>
+          <el-form-item label="发票代码" prop="invoiceCode" class="query-item-inline">
+            <el-input v-model="queryParams.invoiceCode" placeholder="请输入发票代码" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
+          </el-form-item>
+          <el-form-item label="审核状态" prop="auditStatus" class="query-item-inline">
+            <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable style="width: 120px">
+              <el-option label="待审核" :value="0" />
+              <el-option label="已审核" :value="1" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectSupplier v-model="queryParams.supplierId" />
+            </div>
+          </el-form-item>
+          <el-form-item label="购方名称" prop="buyerName" class="query-item-inline">
+            <el-input v-model="queryParams.buyerName" placeholder="购方名称" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
+          </el-form-item>
+          <el-form-item label="开票日期" class="query-item-inline">
+            <el-date-picker
+              v-model="dateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              value-format="yyyy-MM-dd"
+              style="width: 240px"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row class="query-row-actions">
+        <el-col :span="24">
+          <el-form-item label-width="0">
+            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button type="primary" plain icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['finance:invoice:add']">新增</el-button>
       </el-col>
@@ -49,7 +59,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="invoiceList" @selection-change="handleSelectionChange" border>
+    <el-table v-loading="loading" :data="invoiceList" class="table-compact" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="发票号码" align="center" prop="invoiceNo" width="120" show-overflow-tooltip />
       <el-table-column label="发票代码" align="center" prop="invoiceCode" width="120" show-overflow-tooltip />
@@ -86,7 +96,7 @@
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
+    <pagination :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
 
     <!-- 新增/修改弹窗 -->
     <el-dialog :title="title" :visible.sync="open" width="720px" append-to-body>
@@ -322,3 +332,122 @@ export default {
   }
 }
 </script>
+
+<style>
+/* 发票管理：与「到货验收」一致的搜索区 + 主表 + 翻页常驻（非 scoped） */
+.app-container.finance-invoice-page {
+  position: relative;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.finance-invoice-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+.app-container.finance-invoice-page > .el-form.query-form-compact .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container.finance-invoice-page > .el-form.query-form-compact .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.finance-invoice-page > .el-form.query-form-compact .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.finance-invoice-page > .el-form.query-form-compact .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.finance-invoice-page > .el-form.query-form-compact .query-row-left .query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.finance-invoice-page > .el-form.query-form-compact .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.finance-invoice-page > .el-form.query-form-compact .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.finance-invoice-page > .el-form.query-form-compact .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.finance-invoice-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.finance-invoice-page > .el-table.table-compact {
+  margin-top: 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.app-container.finance-invoice-page > .el-table.table-compact th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.finance-invoice-page > .el-table.table-compact th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container.finance-invoice-page > .el-table.table-compact td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.finance-invoice-page > .el-table.table-compact tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+.app-container.finance-invoice-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
+  width: 20px !important;
+  height: 12px !important;
+}
+
+.app-container.finance-invoice-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
+}
+
+.app-container.finance-invoice-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
+}
+</style>

@@ -12,7 +12,7 @@
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
-          <el-form-item prop="departmentId" class="query-item-inline">
+          <el-form-item label="科室" prop="departmentId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectDepartment v-model="queryParams.departmentId" />
             </div>
@@ -1413,7 +1413,7 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 占满整个遮罩层 */
+/* 内部弹窗样式 - 占满整个遮罩层（与到货验收页面保持一致） */
 .local-modal-mask {
   position: absolute;
   left: 0;
@@ -1425,18 +1425,15 @@ export default {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
-  overflow: hidden;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  max-height: 100%;
-  min-height: 0;
+  min-height: 95vh;
   overflow-x: hidden;
-  /* 弹窗整体不滚动，仅明细表区域内部滚动 */
-  overflow-y: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding-bottom: 16px;
@@ -1510,9 +1507,6 @@ export default {
 
 .local-modal-content .modal-detail-section .table-wrapper {
   margin-top: 0;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
 }
 
 .modal-footer {
@@ -1528,8 +1522,7 @@ export default {
 
 .local-modal-content .el-form {
   flex: 1;
-  min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   padding: 6px 20px 12px;
   background: #fff;
   box-shadow: none;
@@ -1562,87 +1555,32 @@ export default {
   transform: scale(0.8);
 }
 
-/* 表格样式优化 */
+/* 表格样式优化（与到货验收一致） */
 .el-table {
-  border-radius: 4px;
-  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 10px;
 }
 
-.el-table th {
-  background-color: #F5F7FA;
+/* 主表格 td 与 hover：与到货验收一致 */
+.el-table td {
+  padding: 12px 0;
   color: #606266;
-  font-weight: 600;
+  border-bottom: 1px solid #EBEEF5;
 }
 
-.el-table .cell {
-  padding: 0 8px;
-  line-height: 1.5;
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
 }
 
-/* 表单样式优化 */
-.el-form {
-  background: #fff;
+/* 按钮样式：与到货验收一致 */
+.el-button--text {
+  padding: 0 4px;
 }
 
-.el-form-item {
-  margin-bottom: 18px;
-}
-
-.el-form-item__label {
-  color: #606266;
-  font-weight: 500;
-}
-
-/* 查询条件样式 */
-.query-row-left {
-  margin-bottom: 10px;
-}
-
-.query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 10px;
-}
-
-.query-item-inline .el-form-item__label {
-  width: 80px !important;
-}
-
-.query-select-wrapper {
-  width: 180px;
-}
-
-.query-row-second {
-  margin-bottom: 10px;
-  position: relative;
-}
-
-.query-row-second .el-form-item {
-  white-space: nowrap;
-}
-
-.query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.query-status-col {
-  position: absolute;
-  left: 552px;
-  width: auto;
-  padding-left: 0;
-  padding-right: 0;
-  display: flex;
-  align-items: center;
-}
-
-.query-item-status-aligned {
-  margin-left: 0;
-}
-
-.query-item-status-aligned .el-form-item__label {
-  width: 80px !important;
+.el-button--text:hover {
+  color: #409EFF;
 }
 
 /* 弹窗内表单紧凑布局 */
@@ -1907,30 +1845,6 @@ export default {
   padding-right: 0;
 }
 
-/* 主表格水平滚动条增粗 */
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  width: 16px !important; /* 垂直滚动条宽度 */
-  height: 8px !important;  /* 水平滚动条高度 */
-}
-
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-track,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 8px;
-}
-
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 8px;
-}
-
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
 .print-dialog-title-row {
   display: flex;
   align-items: center;
@@ -1992,14 +1906,16 @@ export default {
   position: relative;
   padding-left: 8px !important;
   padding-right: 8px !important;
-  padding-bottom: 8px !important;
 }
 
 .app-container.outWarehouse-apply-page .local-modal-mask {
   left: -8px;
   right: -8px;
   width: auto;
-  overflow: hidden;
+}
+
+.app-container > .el-form.query-form-compact {
+  margin-top: -8px !important;
 }
 
 .app-container.outWarehouse-apply-page > .el-form.query-form-compact {
@@ -2012,14 +1928,9 @@ export default {
   margin-bottom: 8px !important;
 }
 
+/* 明细框与按钮行间距由按钮行 margin-bottom 控制 */
 .app-container.outWarehouse-apply-page > .el-table.table-compact {
   margin-top: 0;
-  border: 1px solid #EBEEF5 !important;
-}
-
-.app-container.outWarehouse-apply-page > .el-table.table-compact::before,
-.app-container.outWarehouse-apply-page > .el-table.table-compact::after {
-  background-color: #EBEEF5 !important;
 }
 
 /* 主表格表头样式：与到货验收一致 */
@@ -2043,5 +1954,39 @@ export default {
 /* 单据状态列表头不换行（选择框+序号+…+操作人 后为第 8 列） */
 .app-container.outWarehouse-apply-page > .el-table thead th:nth-child(8) .cell {
   white-space: nowrap !important;
+}
+
+/* 主列表表格滚动条：与到货验收一致（仅主列表，不影响弹窗内明细表） */
+.app-container.outWarehouse-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
+  width: 20px !important;
+  height: 12px !important;
+}
+
+.app-container.outWarehouse-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
+  transition: background 0.2s ease !important;
+}
+
+.app-container.outWarehouse-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #606266 !important;
+}
+
+.app-container.outWarehouse-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
+  background: #303133 !important;
+}
+
+.app-container.outWarehouse-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
+}
+
+.app-container.outWarehouse-apply-page > .el-table.table-compact .el-table__body-wrapper {
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+  <div class="app-container caigou-jihua-audit-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
       <el-row class="query-row-left">
         <el-col :span="24">
           <el-form-item prop="planNo" class="query-item-inline">
@@ -60,11 +60,11 @@
       </el-row>
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
-          size="small"
+          size="medium"
           @click="handleBatchAudit"
           :disabled="multiple"
         >审核</el-button>
@@ -72,7 +72,7 @@
       <el-col :span="1.5">
         <el-button
           type="primary"
-          size="small"
+          size="medium"
           @click="handleExport"
         >导出</el-button>
       </el-col>
@@ -81,36 +81,27 @@
           type="primary"
           plain
           icon="el-icon-document"
-          size="small"
+          size="medium"
           @click="handleExportPurchaseRecord"
         >导出采购记录</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-document"
-          size="small"
-          @click="handleExportPurchaseRecord"
-        >导出采购记录</el-button>
+        <el-button type="primary" size="medium" @click="handleQuery">搜索</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
+        <el-button type="primary" size="medium" @click="resetQuery">重置</el-button>
       </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="warehouseList"
+              class="table-compact"
               row-key="id"
               :row-class-name="warehouseListIndex"
               show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" 
-              height="58vh" 
-              stripe border
-              style="width: 100%">
+              @selection-change="handleSelectionChange"
+              height="calc(100vh - 340px)"
+              stripe border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -185,7 +176,6 @@
     </el-table>
 
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
@@ -1356,4 +1346,166 @@ export default {
   .local-modal-content .table-wrapper::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8 !important;
   }
+</style>
+
+<style>
+/* 采购计划审核列表：与到货验收一致（非 scoped） */
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
+.app-container.caigou-jihua-audit-page {
+  position: relative;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-left .el-col {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-left .query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 0;
+  vertical-align: top;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+  margin-right: 0;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+  width: 180px;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+  width: 180px;
+  display: inline-block;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  width: 100%;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+  width: 150px;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-second {
+  position: relative;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-second .el-form-item {
+  white-space: nowrap;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.app-container.caigou-jihua-audit-page > .el-form.query-form .query-row-second .query-status-col {
+  position: absolute;
+  left: 552px;
+  width: auto;
+  padding-left: 0;
+  padding-right: 0;
+  display: flex;
+  align-items: center;
+}
+
+.app-container.caigou-jihua-audit-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.caigou-jihua-audit-page > .el-table.table-compact {
+  margin-top: 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.app-container.caigou-jihua-audit-page > .el-table.table-compact th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.caigou-jihua-audit-page > .el-table.table-compact th .cell {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.app-container.caigou-jihua-audit-page > .el-table.table-compact td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.app-container.caigou-jihua-audit-page > .el-table.table-compact tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+.app-container.caigou-jihua-audit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
+  width: 20px !important;
+  height: 12px !important;
+}
+
+.app-container.caigou-jihua-audit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
+}
+
+.app-container.caigou-jihua-audit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
+}
 </style>
