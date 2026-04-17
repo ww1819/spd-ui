@@ -6,6 +6,10 @@
       class="print-page"
       :style="printStyle"
     >
+      <div class="page-meta">
+        <span class="page-index">{{ pageIndex + 1 }}/{{ pagedDetailList.length }}</span>
+      </div>
+
       <!-- 标题：医院名称 + 物资入库单 -->
       <div class="doc-title">
         <span v-if="hospitalName">{{ hospitalName }}</span>物资入库单
@@ -14,15 +18,15 @@
       <!-- 基本信息区：单据号、供货商、入库日期、资金来源账户 -->
       <div class="info-block" :style="tableStyle">
         <div class="info-row">
-          <span class="info-label">单据号</span>
+          <span class="info-label info-label--l1">单据号</span>
           <span class="info-value">{{ row.billNo || '' }}</span>
-          <span class="info-label info-gap">供货商</span>
+          <span class="info-label info-label--l2 info-gap">供货商</span>
           <span class="info-value info-value-wide">{{ row.supplierName || '' }}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">入库日期</span>
+          <span class="info-label info-label--l1">入库日期</span>
           <span class="info-value">{{ formatInboundDate(row.billDate) }}</span>
-          <span class="info-label info-gap">资金来源账户</span>
+          <span class="info-label info-label--l2 info-gap">资金来源账户</span>
           <span class="info-value">{{ row.fundSourceAccount || '' }}</span>
         </div>
       </div>
@@ -40,39 +44,52 @@
         </colgroup>
         <thead>
           <tr>
-            <th>消耗品名称</th>
-            <th>规格</th>
-            <th>单位</th>
-            <th>数量</th>
-            <th>采购价</th>
-            <th>采购金额</th>
-            <th>产地</th>
+            <th><span class="th-text">消耗品名称</span></th>
+            <th><span class="th-text">规格</span></th>
+            <th><span class="th-text">单位</span></th>
+            <th><span class="th-text">数量</span></th>
+            <th><span class="th-text">采购价</span></th>
+            <th><span class="th-text">采购金额</span></th>
+            <th><span class="th-text">产地</span></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(item, idx) in pageRows" :key="`${pageIndex}-${idx}`">
-            <td>{{ item.materialName || '' }}</td>
-            <td>{{ item.materialSpeci || '' }}</td>
-            <td>{{ item.unitName || '' }}</td>
+            <td class="cell-textual">
+              <span class="cell-text">{{ item.materialName || '' }}</span>
+            </td>
+            <td class="cell-textual">
+              <span class="cell-text">{{ item.materialSpeci || '' }}</span>
+            </td>
+            <td class="cell-textual">
+              <span class="cell-text">{{ item.unitName || '' }}</span>
+            </td>
             <td>{{ formatNum(item.qty) }}</td>
             <td>{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
             <td>{{ formatAmt(item.amt) }}</td>
-            <td>{{ item.factoryName || '' }}</td>
+            <td class="cell-textual">
+              <span class="cell-text">{{ item.factoryName || '' }}</span>
+            </td>
           </tr>
         </tbody>
       </table>
 
       <!-- 合计：仅最后一页显示 -->
       <div v-if="pageIndex === pagedDetailList.length - 1" class="total-row" :style="tableStyle">
-        <span class="total-left">合计: {{ row.totalAmtConverter || '' }}</span>
+        <span class="total-left">
+          <span class="total-label">合计</span><span class="total-value">{{ row.totalAmtConverter || '' }}</span>
+        </span>
         <span class="total-num">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</span>
       </div>
 
       <!-- 签字区：每一页都显示，固定在页尾 -->
       <div class="sign-block" :style="tableStyle">
-        <span class="sign-item">采购</span>
-        <span class="sign-item">保管</span>
-        <span class="sign-item">入库操作员 {{ row.inboundOperator || row.createBy || '' }}</span>
+        <span class="sign-item"><span class="sign-label">采购</span><span class="sign-value sign-value--blank"></span></span>
+        <span class="sign-item"><span class="sign-label">保管</span><span class="sign-value sign-value--blank"></span></span>
+        <span class="sign-item sign-item--wide">
+          <span class="sign-label">入库操作员</span>
+          <span class="sign-value">{{ row.inboundOperator || row.createBy || '' }}</span>
+        </span>
       </div>
     </div>
   </div>
@@ -94,6 +111,8 @@ export default {
   },
   data() {
     return {
+      /** 打印纸张（与业务纸张一致：210mm × 140mm） */
+      pagePaperSize: '210mm 140mm',
       printSetting: {
         orientation: 'portrait',
         fontSize: 21,
@@ -202,13 +221,133 @@ export default {
         }
       }).catch(() => {})
     },
+    /** 明细单元格：最多两行；若两行仍装不下，则逐步缩小字号直到装下（或到达下限） */
+    applyPrintCellAutoFont() {
+      const root = this.$refs.receiptOrderPrintRef || this.$el
+      if (!root || typeof document === 'undefined') return
+
+      const cells = root.querySelectorAll('td.cell-textual .cell-text')
+      if (!cells || !cells.length) return
+
+      const minPx = 8
+      const maxSteps = 40
+
+      const removeMirror = (m) => {
+        try {
+          if (m && m.parentNode) m.parentNode.removeChild(m)
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      const mmToPx = (mm) => {
+        const probe = document.createElement('div')
+        probe.style.position = 'absolute'
+        probe.style.left = '-100000px'
+        probe.style.top = '0'
+        probe.style.visibility = 'hidden'
+        probe.style.height = '0'
+        probe.style.width = `${mm}mm`
+        document.body.appendChild(probe)
+        const w = probe.getBoundingClientRect().width || 0
+        removeMirror(probe)
+        return w
+      }
+
+      const estimateInnerWidthPx = (td) => {
+        const tdCs = window.getComputedStyle(td)
+        const padL = parseFloat(tdCs.paddingLeft || '0') || 0
+        const padR = parseFloat(tdCs.paddingRight || '0') || 0
+
+        const measured = Math.max(0, (td.clientWidth || td.getBoundingClientRect().width || 0) - padL - padR)
+        if (measured > 10) return measured
+
+        // 组件处于 display:none（例如 v-show=false 的直接打印）时，clientWidth 可能为 0：
+        // 用纸张宽度（210mm）按列 colgroup 比例估算单元格内容宽度。
+        const pagePx = mmToPx(210) || 794
+        const tr = td.parentElement
+        if (!tr) return Math.max(120, pagePx * 0.2)
+
+        const tds = Array.from(tr.children || []).filter(n => n && n.tagName === 'TD')
+        const idx = tds.indexOf(td)
+        const ratios = [0.23, 0.15, 0.06, 0.10, 0.15, 0.14, 0.17]
+        const r = ratios[idx] != null ? ratios[idx] : (1 / Math.max(1, tds.length))
+        return Math.max(80, pagePx * r - padL - padR)
+      }
+
+      const measureUnclampedHeightPx = (el, fontPx) => {
+        const td = el.closest('td')
+        if (!td) return 0
+
+        const cs = window.getComputedStyle(el)
+
+        const mirror = document.createElement('div')
+        mirror.textContent = el.textContent || ''
+
+        const innerW = estimateInnerWidthPx(td)
+
+        mirror.style.position = 'absolute'
+        mirror.style.left = '-100000px'
+        mirror.style.top = '0'
+        mirror.style.visibility = 'hidden'
+        mirror.style.pointerEvents = 'none'
+        mirror.style.boxSizing = 'border-box'
+        mirror.style.width = `${innerW}px`
+        mirror.style.whiteSpace = 'normal'
+        mirror.style.wordBreak = 'break-word'
+        mirror.style.overflow = 'visible'
+        mirror.style.lineHeight = '1.35'
+        mirror.style.fontFamily = cs.fontFamily
+        mirror.style.fontWeight = cs.fontWeight
+        mirror.style.fontStyle = cs.fontStyle
+        mirror.style.letterSpacing = cs.letterSpacing
+        mirror.style.fontSize = `${fontPx}px`
+
+        document.body.appendChild(mirror)
+        const h = mirror.scrollHeight
+        removeMirror(mirror)
+        return h
+      }
+
+      cells.forEach((el) => {
+        if (!el || el.nodeType !== 1) return
+        const text = (el.textContent || '').trim()
+        if (!text) return
+
+        // 先恢复为表格默认字号，再按需缩小，避免重复打印越缩越小
+        el.style.fontSize = ''
+        el.style.lineHeight = ''
+
+        const cs0 = window.getComputedStyle(el)
+        let fontPx = parseFloat(cs0.fontSize || '12') || 12
+        const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
+        const maxH = lineHeightPx * 2 + 1
+
+        let step = 0
+        while (step < maxSteps) {
+          const h = measureUnclampedHeightPx(el, fontPx)
+          if (h <= maxH + 0.5 || fontPx <= minPx) {
+            el.style.fontSize = `${fontPx}px`
+            el.style.lineHeight = '1.35'
+            return
+          }
+          fontPx -= 0.5
+          step++
+        }
+
+        el.style.fontSize = `${Math.max(minPx, fontPx)}px`
+        el.style.lineHeight = '1.35'
+      })
+    },
     start() {
       const doPrint = () => {
         this.$nextTick(() => {
           requestAnimationFrame(() => {
             const el = this.$refs.receiptOrderPrintRef || this.$el
             if (!el) return
-            const pageSize = '200mm 140mm'
+            const pageSize = this.pagePaperSize || '210mm 140mm'
+            // 让浏览器先完成布局，再测量/调整字号，最后进入打印 iframe
+            this.applyPrintCellAutoFont()
             if (typeof this.$print === 'function') {
               this.$print(el, {
                 injectPageSize: true,
@@ -239,13 +378,14 @@ export default {
 <style lang="stylus" scoped>
 .receipt-print
   line-height 1.5
-  width 200mm
-  max-width 200mm
+  width 210mm
+  max-width 210mm
   margin 0 auto
   font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .print-page
-  width 200mm
+  position relative
+  width 210mm
   min-height 140mm
   box-sizing border-box
   display flex
@@ -259,11 +399,24 @@ export default {
 .print-page:last-child
   page-break-after auto
 
+.page-meta
+  position absolute
+  top 2mm
+  right 3mm
+  z-index 2
+
+.page-index
+  font-size 12px
+  line-height 1
+  letter-spacing 0.5px
+  color #333
+
 .doc-title
   font-size 20px
   font-weight normal
   text-align center
-  padding-top 3mm
+  /* 预留右上角页码空间，避免与标题挤在一起 */
+  padding-top 8mm
   line-height 1.1
   margin-bottom 6px
 
@@ -277,19 +430,35 @@ export default {
   margin-bottom 2px
 
 .info-label
-  min-width 90px
+  flex 0 0 auto
   flex-shrink 0
+  box-sizing border-box
+  text-align right
+  white-space nowrap
+  &::after
+    content '：'
+
+/* 左列标签（单据号/入库日期）宽度一致，冒号竖线对齐 */
+.info-label--l1
+  flex-basis 5.6em
+  max-width 5.6em
+
+/* 右列标签（供货商/资金来源账户）宽度一致，冒号竖线对齐 */
+.info-label--l2
+  flex-basis 9.6em
+  max-width 9.6em
 
 .info-value
-  min-width 140px
-  margin-right 24px
+  flex 1 1 auto
+  min-width 0
+  margin-right 18px
 
 .info-value-wide
-  flex 1
-  min-width 200px
+  flex 2 1 0
+  min-width 0
 
 .info-gap
-  margin-left 24px
+  margin-left 18px
 
 .detail-table
   width 100%
@@ -308,18 +477,32 @@ export default {
   font-weight normal
   background #f5f5f5
 
+/* 表格列标题不加冒号 */
+.detail-table th .th-text
+  display inline-flex
+  align-items center
+  justify-content center
+  max-width 100%
+  white-space nowrap
+
 .detail-table td
   word-break normal
   overflow hidden
 
-/* 名称、规格、单位、产地：内容左对齐且不换行 */
-.detail-table td:nth-child(1),
-.detail-table td:nth-child(2),
-.detail-table td:nth-child(3),
-.detail-table td:nth-child(7)
+/* 名称、规格、单位、产地：左对齐，最多两行（超出由脚本在打印前自动缩小字号） */
+.detail-table td.cell-textual
   text-align left
-  white-space nowrap
-  text-overflow clip
+  vertical-align top
+  white-space normal
+  word-break break-word
+
+.detail-table td.cell-textual .cell-text
+  display -webkit-box
+  -webkit-box-orient vertical
+  -webkit-line-clamp 2
+  overflow hidden
+  word-break break-word
+  line-height 1.35
 
 /* 数量、采购价、采购金额：内容右对齐 */
 .detail-table td:nth-child(4),
@@ -335,6 +518,23 @@ export default {
 
 .total-left
   flex-shrink 0
+  display inline-flex
+  align-items baseline
+  max-width 72%
+
+.total-label
+  flex 0 0 auto
+  text-align right
+  white-space nowrap
+  &::after
+    content '：'
+
+.total-value
+  flex 1 1 auto
+  min-width 0
+  margin-left 6px
+  white-space normal
+  word-break break-word
 
 .total-num
   min-width 80px
@@ -343,16 +543,40 @@ export default {
 .sign-block
   display flex
   justify-content space-between
-  padding-right 20%
+  padding-right 12%
   margin-top auto
 
 .sign-item
-  min-width 80px
+  display inline-flex
+  align-items center
+  flex 0 0 18%
+  min-width 0
+
+.sign-item--wide
+  flex 0 0 44%
+
+.sign-label
+  flex 0 0 auto
+  text-align right
+  white-space nowrap
+  &::after
+    content '：'
+
+.sign-value
+  flex 1 1 auto
+  min-width 0
+  margin-left 6px
+  white-space nowrap
+  overflow hidden
+  text-overflow ellipsis
+
+.sign-value--blank
+  min-height 1em
 </style>
 
 <style lang="stylus" media="print">
 @page
-  size 200mm 140mm
+  size 210mm 140mm
   margin 0
 
 @media print
@@ -364,8 +588,8 @@ export default {
     color #000 !important
 
   .receipt-print
-    width 200mm !important
-    max-width 200mm !important
+    width 210mm !important
+    max-width 210mm !important
     /* Epson LQ-690K 点阵打印：等宽+固定字号，减少模糊/字形差异 */
     font-size 16px !important
     font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
@@ -377,7 +601,7 @@ export default {
     print-color-adjust exact
 
   .print-page
-    width 200mm !important
+    width 210mm !important
     min-height 140mm !important
     // 避免某些浏览器在打印模式对 max-height 裁切到标题区域
     max-height none !important
@@ -398,7 +622,8 @@ export default {
     font-size 18px !important
     font-weight normal !important
     /* 标题字形上半部被裁切：增加标题内部安全区并放宽行框 */
-    padding-top 2mm !important
+    /* 预留右上角页码空间 */
+    padding-top 7mm !important
     padding-bottom 1mm !important
     margin-top 0 !important
     margin-bottom 2px !important
@@ -414,6 +639,15 @@ export default {
 
   .info-row
     font-size 17px !important
+
+  /* 信息区：标签列固定宽度，冒号竖线对齐（打印字号更大时略加宽） */
+  .info-label--l1
+    flex-basis 6.0em !important
+    max-width 6.0em !important
+
+  .info-label--l2
+    flex-basis 10.2em !important
+    max-width 10.2em !important
 
   .detail-table
     margin-bottom 6px !important
@@ -431,6 +665,13 @@ export default {
     margin-top auto !important
     padding-bottom 3mm !important
     font-size 17px !important
+    padding-right 10% !important
+
+  .sign-item
+    flex-basis 20% !important
+
+  .sign-item--wide
+    flex-basis 46% !important
 
   .detail-table
     width 100% !important
@@ -460,12 +701,27 @@ export default {
   .detail-table th
     text-align center !important
 
-  .detail-table td:nth-child(1),
-  .detail-table td:nth-child(2),
-  .detail-table td:nth-child(3),
-  .detail-table td:nth-child(7)
-    text-align left !important
+  /* 表格列标题不加冒号 */
+  .detail-table th .th-text
+    display inline-flex !important
+    align-items center !important
+    justify-content center !important
+    max-width 100% !important
     white-space nowrap !important
+
+  .detail-table td.cell-textual
+    text-align left !important
+    vertical-align top !important
+    white-space normal !important
+    word-break break-word !important
+
+  .detail-table td.cell-textual .cell-text
+    display -webkit-box !important
+    -webkit-box-orient vertical !important
+    -webkit-line-clamp 2 !important
+    overflow hidden !important
+    word-break break-word !important
+    line-height 1.35 !important
 
   .detail-table td:nth-child(4),
   .detail-table td:nth-child(5),

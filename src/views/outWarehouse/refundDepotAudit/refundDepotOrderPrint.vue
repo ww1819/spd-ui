@@ -6,16 +6,32 @@
       class="print-copy-block"
       :class="{ 'is-third-split-copy': isThirdSplitPaper, 'print-page-break': pageIndex < detailPages.length - 1 }"
     >
+      <div class="page-meta">
+        <span class="page-index">{{ pageIndex + 1 }}/{{ detailPages.length }}</span>
+      </div>
+
       <div class="print-copy-block__top">
         <div class="doc-title">{{ displayHospitalName }}科室退库单</div>
 
         <div class="summary">
-          <div class="summary-item summary-left">科室: {{ row.departmentName || '' }}</div>
-          <div class="summary-item summary-center">单据号: {{ row.billNo || '' }}</div>
-          <div class="summary-item summary-right">退库日期: {{ formatDateTime(row.auditDate || row.billDate) }}</div>
-          <div class="summary-item summary-left">仓库: {{ row.warehouseName || '' }}</div>
-          <div class="summary-item summary-center">申请时间: {{ formatDateTime(row.billDate) }}</div>
-          <div class="summary-item summary-right">单位: 元</div>
+          <div class="summary-item summary-left">
+            <span class="kv-label kv-label--l">科室</span><span class="kv-value">{{ row.departmentName || '' }}</span>
+          </div>
+          <div class="summary-item summary-center">
+            <span class="kv-label kv-label--c">单据号</span><span class="kv-value">{{ row.billNo || '' }}</span>
+          </div>
+          <div class="summary-item summary-right">
+            <span class="kv-label kv-label--r">退库日期</span><span class="kv-value">{{ formatDateTime(row.auditDate || row.billDate) }}</span>
+          </div>
+          <div class="summary-item summary-left">
+            <span class="kv-label kv-label--l">仓库</span><span class="kv-value">{{ row.warehouseName || '' }}</span>
+          </div>
+          <div class="summary-item summary-center">
+            <span class="kv-label kv-label--c">申请时间</span><span class="kv-value">{{ formatDateTime(row.billDate) }}</span>
+          </div>
+          <div class="summary-item summary-right">
+            <span class="kv-label kv-label--r">单位</span><span class="kv-value">元</span>
+          </div>
         </div>
 
         <table class="common-table">
@@ -29,25 +45,27 @@
           </colgroup>
           <thead>
             <tr>
-              <th>消耗品名称</th>
-              <th>规格型号</th>
-              <th>批号</th>
-              <th>数量</th>
-              <th>退库单价</th>
-              <th>金额</th>
+              <th><span class="th-text">消耗品名称</span></th>
+              <th><span class="th-text">规格型号</span></th>
+              <th><span class="th-text">批号</span></th>
+              <th><span class="th-text">数量</span></th>
+              <th><span class="th-text">退库单价</span></th>
+              <th><span class="th-text">金额</span></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(item, idx) in detailPage" :key="`${pageIndex}-${idx}`">
-              <td>{{ item.materialName || '' }}</td>
-              <td>{{ item.materialSpeci || '' }}</td>
-              <td>{{ item.batchNumber || '' }}</td>
+              <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ item.materialName || '' }}</span></td>
+              <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ item.materialSpeci || '' }}</span></td>
+              <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ item.batchNumber || '' }}</span></td>
               <td class="num-cell">{{ formatQty(item.qty) }}</td>
               <td class="num-cell">{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
               <td class="num-cell">{{ formatAmt(item.amt) }}</td>
             </tr>
             <tr v-if="pageIndex === detailPages.length - 1" class="total-row">
-              <td colspan="3" class="total-label">合计:</td>
+              <td colspan="3" class="total-label">
+                <span class="total-label-text">合计</span>
+              </td>
               <td class="num-cell">{{ formatQty(row.totalQty) }}</td>
               <td></td>
               <td class="num-cell">{{ formatAmt(row.totalAmt) }}</td>
@@ -56,8 +74,12 @@
         </table>
 
         <div v-if="pageIndex === detailPages.length - 1" class="amount-line">
-          <span>合计金额（大写）: {{ row.totalAmtConverter || '' }}</span>
-          <span>（小写）: {{ formatAmt(row.totalAmt) }}</span>
+          <span class="amount-item">
+            <span class="amount-k">合计金额（大写）</span><span class="amount-v">{{ row.totalAmtConverter || '' }}</span>
+          </span>
+          <span class="amount-item amount-item--right">
+            <span class="amount-k">（小写）</span><span class="amount-v">{{ formatAmt(row.totalAmt) }}</span>
+          </span>
         </div>
       </div>
 
@@ -65,9 +87,12 @@
 
       <div class="print-copy-block__footer">
         <div class="sign-block">
-          <span>退库操作员</span>
-          <span>退款人员</span>
-          <span>打印日期 {{ formatDateOnly(row.printDate || new Date()) }}</span>
+          <span class="sign-item"><span class="sign-label">退库操作员</span><span class="sign-value sign-value--blank"></span></span>
+          <span class="sign-item"><span class="sign-label">退款人员</span><span class="sign-value sign-value--blank"></span></span>
+          <span class="sign-item sign-item--wide">
+            <span class="sign-label">打印日期</span>
+            <span class="sign-value">{{ formatDateOnly(row.printDate || new Date()) }}</span>
+          </span>
         </div>
       </div>
     </div>
@@ -124,7 +149,7 @@ export default {
       return 1
     },
     pageSizeForPrint() {
-      return '200mm 140mm'
+      return this.isA4Paper ? 'A4' : '210mm 140mm'
     }
   },
   methods: {
@@ -163,12 +188,124 @@ export default {
       const n = Number(v)
       return isNaN(n) ? v : n.toFixed(2)
     },
+    removeMirrorNode(m) {
+      try {
+        if (m && m.parentNode) m.parentNode.removeChild(m)
+      } catch (e) {
+        // ignore
+      }
+    },
+    mmToPx(mm) {
+      const probe = document.createElement('div')
+      probe.style.position = 'absolute'
+      probe.style.left = '-100000px'
+      probe.style.top = '0'
+      probe.style.visibility = 'hidden'
+      probe.style.height = '0'
+      probe.style.width = `${mm}mm`
+      document.body.appendChild(probe)
+      const w = probe.getBoundingClientRect().width || 0
+      this.removeMirrorNode(probe)
+      return w
+    },
+    estimateTdInnerWidthPx(td, colRatios) {
+      const tdCs = window.getComputedStyle(td)
+      const padL = parseFloat(tdCs.paddingLeft || '0') || 0
+      const padR = parseFloat(tdCs.paddingRight || '0') || 0
+
+      const measured = Math.max(0, (td.clientWidth || td.getBoundingClientRect().width || 0) - padL - padR)
+      if (measured > 10) return measured
+
+      const pagePx = this.mmToPx(210) || 794
+      const tr = td.parentElement
+      if (!tr) return Math.max(120, pagePx * 0.26)
+
+      const tds = Array.from(tr.children || []).filter(n => n && n.tagName === 'TD')
+      const idx = tds.indexOf(td)
+      const ratios = colRatios && colRatios.length ? colRatios : tds.map(() => 1 / Math.max(1, tds.length))
+      const r = ratios[idx] != null ? ratios[idx] : (1 / Math.max(1, tds.length))
+      return Math.max(80, pagePx * r - padL - padR)
+    },
+    measureUnclampedTextHeightPx(el, fontPx, innerW) {
+      const cs = window.getComputedStyle(el)
+      const mirror = document.createElement('div')
+      mirror.textContent = el.textContent || ''
+
+      mirror.style.position = 'absolute'
+      mirror.style.left = '-100000px'
+      mirror.style.top = '0'
+      mirror.style.visibility = 'hidden'
+      mirror.style.pointerEvents = 'none'
+      mirror.style.boxSizing = 'border-box'
+      mirror.style.width = `${innerW}px`
+      mirror.style.whiteSpace = 'normal'
+      mirror.style.wordBreak = 'break-all'
+      mirror.style.overflow = 'visible'
+      mirror.style.lineHeight = '1.35'
+      mirror.style.fontFamily = cs.fontFamily
+      mirror.style.fontWeight = cs.fontWeight
+      mirror.style.fontStyle = cs.fontStyle
+      mirror.style.letterSpacing = cs.letterSpacing
+      mirror.style.fontSize = `${fontPx}px`
+
+      document.body.appendChild(mirror)
+      const h = mirror.scrollHeight
+      this.removeMirrorNode(mirror)
+      return h
+    },
+    applyPrintCellAutoFont() {
+      const root = this.$refs.receiptRefundDepotOrderPrintRef || this.$el
+      if (!root || typeof document === 'undefined') return
+
+      const cells = root.querySelectorAll('td.cell-textual .cell-text')
+      if (!cells || !cells.length) return
+
+      const colRatios = [0.26, 0.18, 0.14, 0.12, 0.14, 0.16]
+
+      const minPx = 8
+      const maxSteps = 48
+
+      Array.prototype.forEach.call(cells, (el) => {
+        if (!el || el.nodeType !== 1) return
+        const text = (el.textContent || '').trim()
+        if (!text) return
+
+        const td = el.closest('td')
+        if (!td) return
+
+        el.style.fontSize = ''
+        el.style.lineHeight = ''
+
+        const cs0 = window.getComputedStyle(el)
+        let fontPx = parseFloat(cs0.fontSize || '12') || 12
+        const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
+        const maxH = lineHeightPx * 2 + 1
+
+        const innerW = this.estimateTdInnerWidthPx(td, colRatios)
+
+        let step = 0
+        while (step < maxSteps) {
+          const h = this.measureUnclampedTextHeightPx(el, fontPx, innerW)
+          if (h <= maxH + 0.5 || fontPx <= minPx) {
+            el.style.fontSize = `${fontPx}px`
+            el.style.lineHeight = '1.35'
+            return
+          }
+          fontPx -= 0.5
+          step++
+        }
+
+        el.style.fontSize = `${Math.max(minPx, fontPx)}px`
+        el.style.lineHeight = '1.35'
+      })
+    },
     start() {
       // 确保医院名称已加载完成后再打印
       this.ensureHospitalNameLoaded().then(() => {
         // 等待Vue更新DOM并让浏览器完成一次布局后再触发打印
         this.$nextTick(() => {
           requestAnimationFrame(() => {
+            this.applyPrintCellAutoFont()
             this.$print(
               this.$refs.receiptRefundDepotOrderPrintRef,
               { injectPageSize: true, pageMargin: '0', waitForAssets: true, beforePrintDelay: 320 },
@@ -180,6 +317,7 @@ export default {
         // 即使加载失败也继续打印
         this.$nextTick(() => {
           requestAnimationFrame(() => {
+            this.applyPrintCellAutoFont()
             this.$print(
               this.$refs.receiptRefundDepotOrderPrintRef,
               { injectPageSize: true, pageMargin: '0', waitForAssets: true, beforePrintDelay: 320 },
@@ -193,10 +331,164 @@ export default {
 }
 </script>
 
+<style lang="stylus" scoped>
+.print-copy-block
+  position relative
+
+.page-meta
+  position absolute
+  top 2mm
+  right 3mm
+  z-index 3
+
+.page-index
+  font-size 12px
+  line-height 1
+  letter-spacing 0.5px
+  color #333
+
+.doc-title
+  padding-top 7mm
+
+.summary-item
+  display flex
+  align-items center
+  min-width 0
+
+.kv-label
+  flex 0 0 auto
+  white-space nowrap
+  &::after
+    content '：'
+
+/* 三列摘要：左/中/右各自对齐冒号 */
+.kv-label--l
+  flex-basis 4.6em
+  max-width 4.6em
+  text-align right
+
+.kv-label--c
+  flex-basis 5.0em
+  max-width 5.0em
+  text-align right
+
+.kv-label--r
+  flex-basis 5.6em
+  max-width 5.6em
+  text-align right
+
+.kv-value
+  flex 1 1 auto
+  min-width 0
+  margin-left 6px
+  overflow hidden
+  text-overflow clip
+  white-space nowrap
+
+.common-table th .th-text
+  display inline-flex
+  align-items center
+  justify-content center
+  max-width 100%
+  white-space nowrap
+
+.common-table td.cell-textual
+  text-align left
+  vertical-align top
+  white-space normal
+  word-break break-all
+
+.common-table td.cell-textual .cell-text
+  display -webkit-box
+  -webkit-box-orient vertical
+  -webkit-line-clamp 2
+  line-clamp 2
+  overflow hidden
+  word-break break-all
+  white-space normal
+  line-height 1.35
+
+.print-line-clamp-2
+  display -webkit-box
+  -webkit-box-orient vertical
+  -webkit-line-clamp 2
+  line-clamp 2
+  overflow hidden
+  word-break break-all
+  white-space normal
+
+.total-label
+  display flex
+  align-items center
+
+.total-label-text
+  flex 0 0 auto
+  text-align right
+  white-space nowrap
+  &::after
+    content '：'
+
+.amount-line
+  display flex
+  justify-content space-between
+  gap 10px
+
+.amount-item
+  display inline-flex
+  align-items baseline
+  min-width 0
+
+.amount-item--right
+  justify-content flex-end
+
+.amount-k
+  flex 0 0 auto
+  white-space nowrap
+  &::after
+    content '：'
+
+.amount-v
+  flex 1 1 auto
+  min-width 0
+  margin-left 6px
+  white-space normal
+  word-break break-all
+
+.sign-block
+  display flex
+  justify-content space-between
+  align-items flex-start
+
+.sign-item
+  display inline-flex
+  align-items center
+  flex 0 0 28%
+  min-width 0
+
+.sign-item--wide
+  flex 0 0 40%
+
+.sign-label
+  flex 0 0 auto
+  text-align right
+  white-space nowrap
+  &::after
+    content '：'
+
+.sign-value
+  flex 1 1 auto
+  min-width 0
+  margin-left 6px
+  white-space nowrap
+  overflow hidden
+  text-overflow ellipsis
+
+.sign-value--blank
+  min-height 1em
+</style>
 
 <style lang="stylus" media="print">
 @page
-  size 200mm 140mm
   margin 0
 
 @media print
@@ -204,8 +496,8 @@ export default {
     color #000 !important
 
   .refund-depot-order-print
-    width 200mm !important
-    max-width 200mm !important
+    width 210mm !important
+    max-width 210mm !important
     /* 针式机左右容易裁切：给内容区留安全边 */
     padding 0 7mm !important
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
@@ -216,10 +508,34 @@ export default {
     font-size 17px !important
     line-height 1.6 !important
 
+  .page-meta
+    position absolute !important
+    top 2mm !important
+    right 3mm !important
+    z-index 5 !important
+
+  .page-index
+    font-size 12px !important
+    line-height 1 !important
+    letter-spacing 0.5px !important
+
   .doc-title
     font-size 20px !important
     line-height 1.7 !important
     margin-top 5mm !important
+    padding-top 7mm !important
+
+  .kv-label--l
+    flex-basis 5.0em !important
+    max-width 5.0em !important
+
+  .kv-label--c
+    flex-basis 5.4em !important
+    max-width 5.4em !important
+
+  .kv-label--r
+    flex-basis 6.0em !important
+    max-width 6.0em !important
 
   /* 列名、明细数据行较原设置缩小 1 号；表格内「合计」行保持原字号 */
   .common-table thead th
@@ -251,6 +567,30 @@ export default {
     font-weight normal !important
     -webkit-print-color-adjust economy
     print-color-adjust economy
+
+  /* 表格列标题不加冒号 */
+  .common-table th .th-text
+    display inline-flex !important
+    align-items center !important
+    justify-content center !important
+    max-width 100% !important
+    white-space nowrap !important
+
+  .common-table td.cell-textual
+    text-align left !important
+    vertical-align top !important
+    white-space normal !important
+    word-break break-all !important
+
+  .common-table td.cell-textual .cell-text
+    display -webkit-box !important
+    -webkit-box-orient vertical !important
+    -webkit-line-clamp 2 !important
+    line-clamp 2 !important
+    overflow hidden !important
+    white-space normal !important
+    word-break break-all !important
+    line-height 1.35 !important
 
   /* 整张纸上下各 5mm 安全区；签字行贴内底，避免被裁切 */
   .print-copy-block
@@ -326,6 +666,9 @@ export default {
   font-size 14px
   line-height 1.55
   padding 2px 0
+  display flex
+  align-items center
+  min-width 0
   white-space nowrap
   overflow hidden
   text-overflow clip
@@ -395,13 +738,11 @@ export default {
   text-align center
   font-weight normal
 
-.common-table td:nth-child(1),
-.common-table td:nth-child(2),
-.common-table td:nth-child(3)
+.common-table td.cell-textual
   text-align left
-  white-space nowrap
-  overflow hidden
-  text-overflow clip
+  vertical-align top
+  white-space normal
+  word-break break-all
 
 .num-cell
   text-align right
@@ -413,8 +754,6 @@ export default {
   text-align left
 
 .amount-line
-  display flex
-  justify-content space-between
   margin-top 8px
   margin-bottom 0
   font-size 14px
@@ -424,9 +763,6 @@ export default {
   margin-right auto
 
 .sign-block
-  display flex
-  justify-content space-between
-  align-items flex-start
   font-size 14px
   line-height 1.55
   width 94%
@@ -434,19 +770,4 @@ export default {
   margin-right auto
   margin-top 0
   padding-bottom 0
-
-.sign-block span
-  flex 1 1 0
-  min-width 0
-  padding 0 4px
-  box-sizing border-box
-
-.sign-block span:nth-child(1)
-  text-align left
-
-.sign-block span:nth-child(2)
-  text-align center
-
-.sign-block span:nth-child(3)
-  text-align right
 </style>
