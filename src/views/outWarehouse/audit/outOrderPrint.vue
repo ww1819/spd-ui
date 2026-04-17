@@ -11,17 +11,21 @@
       class="print-copy-block"
       :class="{ 'is-third-split-copy': isThirdSplitPaper, 'print-page-break': pageIndex < detailPages.length - 1 }"
     >
+      <div class="page-meta">
+        <span class="page-index">{{ pageIndex + 1 }}/{{ detailPages.length }}</span>
+      </div>
+
       <div class="doc-title">
         <span v-if="hospitalName">{{ hospitalName }}</span>物资出库单
       </div>
       <div class="info-row print-head-info">
-        <span class="info-label">发往科</span>
+        <span class="info-label info-label--w1">发往科</span>
         <span class="info-value">{{ row.departmentName || '' }}</span>
-        <span class="info-label info-gap">单据号</span>
+        <span class="info-label info-label--w2 info-gap">单据号</span>
         <span class="info-value">{{ row.billNo || '' }}</span>
-        <span class="info-label info-gap">出库日期（审核）</span>
+        <span class="info-label info-label--w3 info-gap">出库日期（审核）</span>
         <span class="info-value">{{ formatOutboundDate(row.auditDate || row.billDate) }}</span>
-        <span class="info-label info-gap">资金来源</span>
+        <span class="info-label info-label--w4 info-gap">资金来源</span>
         <span class="info-value">{{ row.fundSource || '' }}</span>
       </div>
       <table class="detail-table" :style="tableStyle">
@@ -39,32 +43,34 @@
         <!-- 页眉：标题 + 发往科室等（thead 在打印时每页重复） -->
         <thead>
           <tr>
-            <th>消耗品名称</th>
-            <th>规格型号</th>
-            <th>数量</th>
-            <th>单位</th>
-            <th>采购价</th>
-            <th>采购金额</th>
-            <th>产地</th>
-            <th>批号</th>
-            <th>效期</th>
+            <th><span class="th-text">消耗品名称</span></th>
+            <th><span class="th-text">规格型号</span></th>
+            <th><span class="th-text">数量</span></th>
+            <th><span class="th-text">单位</span></th>
+            <th><span class="th-text">采购价</span></th>
+            <th><span class="th-text">采购金额</span></th>
+            <th><span class="th-text">产地</span></th>
+            <th><span class="th-text">批号</span></th>
+            <th><span class="th-text">效期</span></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(item, idx) in detailPage" :key="`${pageIndex}-${idx}`">
-            <td class="cell-name-batch"><span class="print-line-clamp-2">{{ item.materialName || '' }}</span></td>
-            <td>{{ formatSpecModel(item) }}</td>
+            <td class="cell-textual cell-name-batch"><span class="cell-text print-line-clamp-2">{{ item.materialName || '' }}</span></td>
+            <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ formatSpecModel(item) }}</span></td>
             <td>{{ formatNum(item.qty) }}</td>
-            <td>{{ item.unitName || '' }}</td>
+            <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ item.unitName || '' }}</span></td>
             <td>{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
             <td>{{ formatAmt(item.amt) }}</td>
-            <td>{{ item.factoryName || '' }}</td>
-            <td class="cell-name-batch"><span class="print-line-clamp-2">{{ item.batchNumber || '' }}</span></td>
-            <td>{{ formatValidDate(item.endTime || item.periodDate) }}</td>
+            <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ item.factoryName || '' }}</span></td>
+            <td class="cell-textual cell-name-batch"><span class="cell-text print-line-clamp-2">{{ item.batchNumber || '' }}</span></td>
+            <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ formatValidDate(item.endTime || item.periodDate) }}</span></td>
           </tr>
           <!-- 合计：大写占前四列；小写金额横跨采购价、采购金额两列 -->
           <tr v-if="pageIndex === detailPages.length - 1" class="print-total-row">
-            <td colspan="4" class="total-label-cell">合计: {{ row.totalAmtConverter || '' }}</td>
+            <td colspan="4" class="total-label-cell">
+              <span class="total-label">合计</span><span class="total-value">{{ row.totalAmtConverter || '' }}</span>
+            </td>
             <td colspan="2" class="total-amt-span">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</td>
             <td colspan="3" class="total-tail-cells"></td>
           </tr>
@@ -73,9 +79,12 @@
 
       <div class="print-sign-footer-fixed">
         <div class="sign-block">
-          <span class="sign-item">领用人</span>
-          <span class="sign-item">保管</span>
-          <span class="sign-item">出库操作员 {{ row.outboundOperator || row.createBy || '' }}</span>
+          <span class="sign-item"><span class="sign-label">领用人</span><span class="sign-value sign-value--blank"></span></span>
+          <span class="sign-item"><span class="sign-label">保管</span><span class="sign-value sign-value--blank"></span></span>
+          <span class="sign-item sign-item--wide">
+            <span class="sign-label">出库操作员</span>
+            <span class="sign-value">{{ row.outboundOperator || row.createBy || '' }}</span>
+          </span>
         </div>
       </div>
     </div>
@@ -147,9 +156,9 @@ export default {
     renderCopies() {
       return 1
     },
-    /** 纸张尺寸：A4 模式整页；三等分模式 99mm 高条带 */
+    /** 纸张尺寸：三等分联默认 210×140；A4 走系统纸张关键字 */
     pageSizeForPrint() {
-      return '200mm 140mm'
+      return this.isA4Paper ? 'A4' : '210mm 140mm'
     },
     printStyle() {
       const m = this.printSetting
@@ -238,6 +247,119 @@ export default {
       if (!a && !b) return ''
       return [a, b].filter(Boolean).join(' ')
     },
+    removeMirrorNode(m) {
+      try {
+        if (m && m.parentNode) m.parentNode.removeChild(m)
+      } catch (e) {
+        // ignore
+      }
+    },
+    mmToPx(mm) {
+      const probe = document.createElement('div')
+      probe.style.position = 'absolute'
+      probe.style.left = '-100000px'
+      probe.style.top = '0'
+      probe.style.visibility = 'hidden'
+      probe.style.height = '0'
+      probe.style.width = `${mm}mm`
+      document.body.appendChild(probe)
+      const w = probe.getBoundingClientRect().width || 0
+      this.removeMirrorNode(probe)
+      return w
+    },
+    estimateTdInnerWidthPx(td, colRatios) {
+      const tdCs = window.getComputedStyle(td)
+      const padL = parseFloat(tdCs.paddingLeft || '0') || 0
+      const padR = parseFloat(tdCs.paddingRight || '0') || 0
+
+      const measured = Math.max(0, (td.clientWidth || td.getBoundingClientRect().width || 0) - padL - padR)
+      if (measured > 10) return measured
+
+      const pagePx = this.mmToPx(210) || 794
+      const tr = td.parentElement
+      if (!tr) return Math.max(120, pagePx * 0.14)
+
+      const tds = Array.from(tr.children || []).filter(n => n && n.tagName === 'TD')
+      const idx = tds.indexOf(td)
+      const ratios = colRatios && colRatios.length ? colRatios : tds.map(() => 1 / Math.max(1, tds.length))
+      const r = ratios[idx] != null ? ratios[idx] : (1 / Math.max(1, tds.length))
+      return Math.max(80, pagePx * r - padL - padR)
+    },
+    measureUnclampedTextHeightPx(el, fontPx, innerW) {
+      const cs = window.getComputedStyle(el)
+      const mirror = document.createElement('div')
+      mirror.textContent = el.textContent || ''
+
+      mirror.style.position = 'absolute'
+      mirror.style.left = '-100000px'
+      mirror.style.top = '0'
+      mirror.style.visibility = 'hidden'
+      mirror.style.pointerEvents = 'none'
+      mirror.style.boxSizing = 'border-box'
+      mirror.style.width = `${innerW}px`
+      mirror.style.whiteSpace = 'normal'
+      mirror.style.wordBreak = 'break-all'
+      mirror.style.overflow = 'visible'
+      mirror.style.lineHeight = '1.35'
+      mirror.style.fontFamily = cs.fontFamily
+      mirror.style.fontWeight = cs.fontWeight
+      mirror.style.fontStyle = cs.fontStyle
+      mirror.style.letterSpacing = cs.letterSpacing
+      mirror.style.fontSize = `${fontPx}px`
+
+      document.body.appendChild(mirror)
+      const h = mirror.scrollHeight
+      this.removeMirrorNode(mirror)
+      return h
+    },
+    /** 明细“文本列”最多两行；两行仍装不下则缩小字号（与入库打印一致） */
+    applyPrintCellAutoFont() {
+      const root = this.$refs.receiptOrderPrintRef || this.$el
+      if (!root || typeof document === 'undefined') return
+
+      const cells = root.querySelectorAll('td.cell-textual .cell-text')
+      if (!cells || !cells.length) return
+
+      // 与 colgroup 宽度比例一致（总和不必为 1，这里用相对比例即可）
+      const colRatios = [0.14, 0.12, 0.07, 0.04, 0.13, 0.13, 0.08, 0.13, 0.08]
+
+      const minPx = 8
+      const maxSteps = 48
+
+      Array.prototype.forEach.call(cells, (el) => {
+        if (!el || el.nodeType !== 1) return
+        const text = (el.textContent || '').trim()
+        if (!text) return
+
+        const td = el.closest('td')
+        if (!td) return
+
+        el.style.fontSize = ''
+        el.style.lineHeight = ''
+
+        const cs0 = window.getComputedStyle(el)
+        let fontPx = parseFloat(cs0.fontSize || '12') || 12
+        const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
+        const maxH = lineHeightPx * 2 + 1
+
+        const innerW = this.estimateTdInnerWidthPx(td, colRatios)
+
+        let step = 0
+        while (step < maxSteps) {
+          const h = this.measureUnclampedTextHeightPx(el, fontPx, innerW)
+          if (h <= maxH + 0.5 || fontPx <= minPx) {
+            el.style.fontSize = `${fontPx}px`
+            el.style.lineHeight = '1.35'
+            return
+          }
+          fontPx -= 0.5
+          step++
+        }
+
+        el.style.fontSize = `${Math.max(minPx, fontPx)}px`
+        el.style.lineHeight = '1.35'
+      })
+    },
     /**
      * 触发浏览器打印。三等分纸高度约 99mm（A4 纵向 297mm 的 1/3）。
      */
@@ -251,6 +373,7 @@ export default {
               return
             }
             const pageSize = this.pageSizeForPrint
+            this.applyPrintCellAutoFont()
             try {
               if (typeof this.$print === 'function') {
                 this.$print(el, {
@@ -321,10 +444,24 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   height 140mm
   overflow hidden
 
+.page-meta
+  position absolute
+  top 2mm
+  right 3mm
+  z-index 3
+
+.page-index
+  font-size 12px
+  line-height 1
+  letter-spacing 0.5px
+  color #333
+
 .doc-title
   font-size 15px
   font-weight bold
   text-align center
+  /* 预留右上角页码空间 */
+  padding-top 7mm
   margin-bottom 3px
   line-height 1.25
 
@@ -349,11 +486,34 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   padding 0
 
 .info-label
-  min-width 56px
+  flex 0 0 auto
   flex-shrink 0
+  box-sizing border-box
+  text-align right
+  white-space nowrap
+  &::after
+    content '：'
+
+/* 出库抬头字段较多：用固定宽度列保证冒号竖线对齐 */
+.info-label--w1
+  flex-basis 4.2em
+  max-width 4.2em
+
+.info-label--w2
+  flex-basis 4.0em
+  max-width 4.0em
+
+.info-label--w3
+  flex-basis 9.2em
+  max-width 9.2em
+
+.info-label--w4
+  flex-basis 5.2em
+  max-width 5.2em
 
 .info-value
-  min-width 88px
+  flex 1 1 auto
+  min-width 0
   margin-right 10px
 
 .info-gap
@@ -407,12 +567,12 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   background #f5f5f5
   text-align center
 
-.detail-table tbody td:nth-child(1),
-.detail-table tbody td:nth-child(2),
-.detail-table tbody td:nth-child(7),
-.detail-table tbody td:nth-child(8),
-.detail-table tbody td:nth-child(9)
-  text-align left
+.detail-table th .th-text
+  display inline-flex
+  align-items center
+  justify-content center
+  max-width 100%
+  white-space nowrap
 
 .detail-table tbody td:nth-child(3),
 .detail-table tbody td:nth-child(5),
@@ -422,12 +582,22 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .detail-table tbody td:nth-child(4)
   text-align center
   padding 2px 2px
-  white-space nowrap
 
-.detail-table tbody td:nth-child(7)
-  white-space nowrap
+.detail-table td.cell-textual
+  text-align left
+  vertical-align top
+  white-space normal
+  word-break break-all
+
+.detail-table td.cell-textual .cell-text
+  display -webkit-box
+  -webkit-box-orient vertical
+  -webkit-line-clamp 2
+  line-clamp 2
   overflow hidden
-  text-overflow ellipsis
+  word-break break-all
+  white-space normal
+  line-height 1.35
 
 /* 名称、批号：td 保持 table-cell 以与整行底边对齐；两行截断在内层 span */
 .print-line-clamp-2
@@ -444,9 +614,6 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   overflow hidden
 
 .detail-table tbody tr:not(.print-total-row) td:nth-child(2)
-  white-space nowrap
-  overflow hidden
-  text-overflow clip
   vertical-align top
 
 /* 合计行：小写横跨采购价+采购金额两列 */
@@ -460,6 +627,19 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   text-align left
   font-weight normal
 
+.detail-table tbody tr.print-total-row .total-label
+  display inline-block
+  text-align right
+  white-space nowrap
+  &::after
+    content '：'
+
+.detail-table tbody tr.print-total-row .total-value
+  display inline
+  margin-left 6px
+  white-space normal
+  word-break break-all
+
 .detail-table tbody tr.print-total-row td.total-amt-span
   text-align right
   font-weight normal
@@ -468,12 +648,36 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .sign-block
   display flex
   justify-content space-between
-  padding-right 12%
+  padding-right 10%
   font-size 11px
   font-family $font-song
 
 .sign-item
-  min-width 72px
+  display inline-flex
+  align-items center
+  flex 0 0 22%
+  min-width 0
+
+.sign-item--wide
+  flex 0 0 50%
+
+.sign-label
+  flex 0 0 auto
+  text-align right
+  white-space nowrap
+  &::after
+    content '：'
+
+.sign-value
+  flex 1 1 auto
+  min-width 0
+  margin-left 6px
+  white-space nowrap
+  overflow hidden
+  text-overflow ellipsis
+
+.sign-value--blank
+  min-height 1em
 
 /* 屏上不占用视口；打印时在复制块内展示 */
 .print-sign-footer-fixed
@@ -483,10 +687,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 </style>
 
 <style lang="stylus" media="print">
-/* 不强制纸张 size：允许用户在浏览器里选择 A4；
-   组件本身按 99mm 高度排版，A4 下可自然一页容纳 3 条 */
+/* @page 的纸张尺寸由 $print(injectPageSize) 注入（三等分 210×140；A4 为 A4），这里只统一边距 */
 @page
-  size 200mm 140mm
   margin 0
 
 @media print
@@ -528,10 +730,22 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     break-after page !important
     page-break-after always !important
 
+  .page-meta
+    position absolute !important
+    top 2mm !important
+    right 3mm !important
+    z-index 5 !important
+
+  .page-index
+    font-size 12px !important
+    line-height 1 !important
+    letter-spacing 0.5px !important
+
   .doc-title
     font-size 19px !important
     font-weight normal !important
-    padding-top 2mm !important
+    /* 预留右上角页码 */
+    padding-top 7mm !important
     padding-bottom 0 !important
     margin-top 0 !important
     margin-bottom 0 !important
@@ -549,6 +763,23 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     padding 0 !important
     font-size 16px !important
     line-height 1.55 !important
+
+  /* 打印字号更大：略加宽标签列，保证冒号竖线仍对齐 */
+  .info-label--w1
+    flex-basis 4.6em !important
+    max-width 4.6em !important
+
+  .info-label--w2
+    flex-basis 4.4em !important
+    max-width 4.4em !important
+
+  .info-label--w3
+    flex-basis 10.0em !important
+    max-width 10.0em !important
+
+  .info-label--w4
+    flex-basis 5.6em !important
+    max-width 5.6em !important
 
   .detail-table
     width 96% !important
@@ -571,6 +802,14 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     white-space nowrap !important
     padding-top 2px !important
     padding-bottom 2px !important
+
+  /* 表格列标题不加冒号 */
+  .detail-table th .th-text
+    display inline-flex !important
+    align-items center !important
+    justify-content center !important
+    max-width 100% !important
+    white-space nowrap !important
 
   .detail-table tbody tr:not(.print-total-row) td:nth-child(2)
     vertical-align top !important
@@ -601,10 +840,21 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   .detail-table thead tr.print-doc-header td
     border none !important
 
-  .detail-table tbody td:nth-child(7)
-    white-space nowrap !important
+  .detail-table td.cell-textual
+    text-align left !important
+    vertical-align top !important
+    white-space normal !important
+    word-break break-all !important
+
+  .detail-table td.cell-textual .cell-text
+    display -webkit-box !important
+    -webkit-box-orient vertical !important
+    -webkit-line-clamp 2 !important
+    line-clamp 2 !important
     overflow hidden !important
-    text-overflow ellipsis !important
+    white-space normal !important
+    word-break break-all !important
+    line-height 1.35 !important
 
   .detail-table th
     background transparent !important
@@ -621,6 +871,10 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     text-align right !important
     font-weight normal !important
     white-space nowrap !important
+
+  .detail-table tbody tr.print-total-row .total-label
+    &::after
+      content '：' !important
 
   /* 每联底部签字 */
   .print-sign-footer-fixed
