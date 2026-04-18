@@ -11,12 +11,14 @@
       class="print-copy-block"
       :class="{ 'is-third-split-copy': isThirdSplitPaper, 'print-page-break': pageIndex < detailPages.length - 1 }"
     >
-      <div class="page-meta">
-        <span class="page-index">{{ pageIndex + 1 }}/{{ detailPages.length }}</span>
-      </div>
-
-      <div class="doc-title">
-        <span v-if="hospitalName">{{ hospitalName }}</span>物资出库单
+      <div class="doc-header">
+        <div class="doc-header-spacer" aria-hidden="true"></div>
+        <div class="doc-title">
+          <span v-if="hospitalName">{{ hospitalName }}</span>物资出库单
+        </div>
+        <div class="page-meta">
+          <span class="page-index">{{ pageIndex + 1 }}/{{ detailPages.length }}</span>
+        </div>
       </div>
       <div class="info-row print-head-info">
         <span class="info-label info-label--w1">发往科</span>
@@ -427,6 +429,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   font-family $font-song
   min-height 99mm
   box-sizing border-box
+  /* 左右各缩进约 1 个汉字宽度 */
+  padding-left 1ch
+  padding-right 1ch
   break-inside avoid
   page-break-inside avoid
 
@@ -444,11 +449,19 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   height 140mm
   overflow hidden
 
+.doc-header
+  display grid
+  grid-template-columns 92px 1fr 92px
+  align-items center
+  column-gap 6px
+  margin-bottom 3px
+
+.doc-header-spacer
+  width 92px
+
 .page-meta
-  position absolute
-  top 2mm
-  right 3mm
-  z-index 3
+  justify-self end
+  align-self center
 
 .page-index
   font-size 12px
@@ -460,9 +473,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   font-size 15px
   font-weight bold
   text-align center
-  /* 预留右上角页码空间 */
-  padding-top 7mm
-  margin-bottom 3px
+  margin 0
   line-height 1.25
 
 .header-cell
@@ -707,6 +718,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     width 100% !important
     max-width none
     padding 0
+    box-sizing border-box !important
+    padding-left 1ch !important
+    padding-right 1ch !important
     min-height auto !important
     /* Epson LQ-690K：等宽+固定字号，减少模糊差异 */
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
@@ -730,11 +744,19 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     break-after page !important
     page-break-after always !important
 
+  .doc-header
+    display grid !important
+    grid-template-columns 92px 1fr 92px !important
+    align-items center !important
+    column-gap 6px !important
+    margin-bottom 3px !important
+
+  .doc-header-spacer
+    width 92px !important
+
   .page-meta
-    position absolute !important
-    top 2mm !important
-    right 3mm !important
-    z-index 5 !important
+    justify-self end !important
+    align-self center !important
 
   .page-index
     font-size 12px !important
@@ -744,11 +766,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   .doc-title
     font-size 19px !important
     font-weight normal !important
-    /* 预留右上角页码 */
-    padding-top 7mm !important
-    padding-bottom 0 !important
-    margin-top 0 !important
-    margin-bottom 0 !important
+    padding 0 !important
+    margin 0 !important
     line-height 1.65 !important
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     page-break-inside avoid !important
