@@ -6,12 +6,14 @@
       class="print-copy-block"
       :class="{ 'is-third-split-copy': isThirdSplitPaper, 'print-page-break': pageIndex < detailPages.length - 1 }"
     >
-      <div class="page-meta">
-        <span class="page-index">{{ pageIndex + 1 }}/{{ detailPages.length }}</span>
-      </div>
-
       <div class="print-copy-block__top">
-        <div class="doc-title">{{ displayHospitalName }}科室退库单</div>
+        <div class="doc-header">
+          <div class="doc-header-spacer" aria-hidden="true"></div>
+          <div class="doc-title">{{ displayHospitalName }}科室退库单</div>
+          <div class="page-meta">
+            <span class="page-index">{{ pageIndex + 1 }}/{{ detailPages.length }}</span>
+          </div>
+        </div>
 
         <div class="summary">
           <div class="summary-item summary-left">
@@ -335,11 +337,19 @@ export default {
 .print-copy-block
   position relative
 
+.doc-header
+  display grid
+  grid-template-columns 92px 1fr 92px
+  align-items center
+  column-gap 6px
+  margin-bottom 6px
+
+.doc-header-spacer
+  width 92px
+
 .page-meta
-  position absolute
-  top 2mm
-  right 3mm
-  z-index 3
+  justify-self end
+  align-self center
 
 .page-index
   font-size 12px
@@ -348,7 +358,9 @@ export default {
   color #333
 
 .doc-title
-  padding-top 7mm
+  margin 0
+  padding 0
+  text-align center
 
 .summary-item
   display flex
@@ -499,7 +511,8 @@ export default {
     width 210mm !important
     max-width 210mm !important
     /* 针式机左右容易裁切：给内容区留安全边 */
-    padding 0 7mm !important
+    padding 0 calc(7mm + 1ch) !important
+    box-sizing border-box !important
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     font-size 16px !important
 
@@ -508,11 +521,19 @@ export default {
     font-size 17px !important
     line-height 1.6 !important
 
+  .doc-header
+    display grid !important
+    grid-template-columns 92px 1fr 92px !important
+    align-items center !important
+    column-gap 6px !important
+    margin-bottom 6px !important
+
+  .doc-header-spacer
+    width 92px !important
+
   .page-meta
-    position absolute !important
-    top 2mm !important
-    right 3mm !important
-    z-index 5 !important
+    justify-self end !important
+    align-self center !important
 
   .page-index
     font-size 12px !important
@@ -522,8 +543,9 @@ export default {
   .doc-title
     font-size 20px !important
     line-height 1.7 !important
-    margin-top 5mm !important
-    padding-top 7mm !important
+    margin 0 !important
+    padding 0 !important
+    text-align center !important
 
   .kv-label--l
     flex-basis 5.0em !important
@@ -603,7 +625,8 @@ export default {
     padding-bottom 0 !important
 
 .refund-depot-order-print
-  padding 6px 6mm 0
+  padding 6px calc(6mm + 1ch) 0
+  box-sizing border-box
   line-height 1.45
   font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   font-size 14px
@@ -649,10 +672,8 @@ export default {
   text-align center
   font-size 18px
   line-height 1.65
-  padding-top 2mm
-  padding-bottom 2mm
-  margin-top 0
-  margin-bottom 4px
+  padding 0
+  margin 0
   font-weight normal
   font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 

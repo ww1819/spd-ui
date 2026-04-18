@@ -6,13 +6,15 @@
       class="print-page"
       :style="printStyle"
     >
-      <div class="page-meta">
-        <span class="page-index">{{ pageIndex + 1 }}/{{ pagedDetailList.length }}</span>
-      </div>
-
-      <!-- 标题：医院名称 + 物资入库单 -->
-      <div class="doc-title">
-        <span v-if="hospitalName">{{ hospitalName }}</span>物资入库单
+      <!-- 标题行：标题居中 + 右上角页码与标题同一基线 -->
+      <div class="doc-header">
+        <div class="doc-header-spacer" aria-hidden="true"></div>
+        <div class="doc-title">
+          <span v-if="hospitalName">{{ hospitalName }}</span>物资入库单
+        </div>
+        <div class="page-meta">
+          <span class="page-index">{{ pageIndex + 1 }}/{{ pagedDetailList.length }}</span>
+        </div>
       </div>
 
       <!-- 基本信息区：单据号、供货商、入库日期、资金来源账户 -->
@@ -381,11 +383,16 @@ export default {
   width 210mm
   max-width 210mm
   margin 0 auto
+  box-sizing border-box
+  /* 左右各缩进约 1 个汉字宽度（ch 在中文等宽字体下≈1字宽） */
+  padding-left 1ch
+  padding-right 1ch
   font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .print-page
   position relative
-  width 210mm
+  width 100%
+  max-width 100%
   min-height 140mm
   box-sizing border-box
   display flex
@@ -399,11 +406,19 @@ export default {
 .print-page:last-child
   page-break-after auto
 
+.doc-header
+  display grid
+  grid-template-columns 92px 1fr 92px
+  align-items center
+  column-gap 6px
+  margin-bottom 6px
+
+.doc-header-spacer
+  width 92px
+
 .page-meta
-  position absolute
-  top 2mm
-  right 3mm
-  z-index 2
+  justify-self end
+  align-self center
 
 .page-index
   font-size 12px
@@ -415,10 +430,8 @@ export default {
   font-size 20px
   font-weight normal
   text-align center
-  /* 预留右上角页码空间，避免与标题挤在一起 */
-  padding-top 8mm
   line-height 1.1
-  margin-bottom 6px
+  margin 0
 
 .info-block
   margin-bottom 6px
@@ -590,6 +603,9 @@ export default {
   .receipt-print
     width 210mm !important
     max-width 210mm !important
+    box-sizing border-box !important
+    padding-left 1ch !important
+    padding-right 1ch !important
     /* Epson LQ-690K 点阵打印：等宽+固定字号，减少模糊/字形差异 */
     font-size 16px !important
     font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
@@ -601,7 +617,8 @@ export default {
     print-color-adjust exact
 
   .print-page
-    width 210mm !important
+    width 100% !important
+    max-width 100% !important
     min-height 140mm !important
     // 避免某些浏览器在打印模式对 max-height 裁切到标题区域
     max-height none !important
@@ -616,17 +633,27 @@ export default {
   .print-page:last-child
     page-break-after auto
 
+  .doc-header
+    display grid !important
+    grid-template-columns 92px 1fr 92px !important
+    align-items center !important
+    column-gap 6px !important
+    margin-bottom 6px !important
+
+  .doc-header-spacer
+    width 92px !important
+
+  .page-meta
+    justify-self end !important
+    align-self center !important
+
   .doc-title
     display block !important
     /* 标题字号收小，避免在点阵纸高度/行高估算下出现半截或空白 */
     font-size 18px !important
     font-weight normal !important
-    /* 标题字形上半部被裁切：增加标题内部安全区并放宽行框 */
-    /* 预留右上角页码空间 */
-    padding-top 7mm !important
-    padding-bottom 1mm !important
-    margin-top 0 !important
-    margin-bottom 2px !important
+    padding 0 !important
+    margin 0 !important
     line-height 1.7 !important
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     overflow visible !important
