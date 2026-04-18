@@ -304,6 +304,11 @@
                     <span>{{ scope.row.amt || '--' }}</span>
                   </template>
                 </el-table-column>
+                <el-table-column label="剩余可用库存" prop="availableStockQty" width="118" align="right" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ fmtQty(scope.row.availableStockQty) }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="120" show-overflow-tooltip resizable/>
                 <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
@@ -568,7 +573,13 @@ export default {
       });
       return sums;
     },
-    
+    fmtQty(v) {
+      if (v === null || v === undefined || v === '') {
+        return '—';
+      }
+      return v;
+    },
+
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;

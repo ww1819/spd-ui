@@ -289,11 +289,6 @@
                     <span>{{ (scope.row.stockWarehouse && scope.row.stockWarehouse.name) ? scope.row.stockWarehouse.name : '—' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="本仓可用" prop="availableStockQty" width="100" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.availableStockQty != null && scope.row.availableStockQty !== '' ? scope.row.availableStockQty : '—' }}</span>
-                  </template>
-                </el-table-column>
                 <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.unitPrice || '--' }}</span>
@@ -317,6 +312,11 @@
                 <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.amt || '--' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="剩余可用库存" prop="availableStockQty" width="118" align="right" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ fmtQty(scope.row.availableStockQty) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column v-if="!action" label="待出库数量" prop="pendingOutboundQty" width="100" align="right" show-overflow-tooltip resizable>
