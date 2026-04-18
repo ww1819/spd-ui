@@ -173,17 +173,18 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改跟台管理对话框 -->
+    <!-- 添加或修改跟台管理对话框（顶栏 + 明细区与到货验收新增弹窗一致） -->
     <transition name="modal-fade">
       <div v-if="open" class="local-modal-mask">
         <transition name="modal-zoom">
           <div v-if="open" class="local-modal-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
+              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
+              <div class="form-fields-container">
               <el-row :gutter="8">
                 <el-col :span="4">
                   <el-form-item label="跟台单号" prop="orderNo">
@@ -246,28 +247,35 @@
                   </el-form-item>
                 </el-col>
               </el-row>
+              </div>
 
-              <el-row :gutter="10" class="mb8">
+              <div class="modal-detail-section">
+              <el-row :gutter="10" type="flex" align="middle" class="detail-toolbar-row">
                 <el-col :span="1.5">
                   <span>跟台明细信息</span>
                 </el-col>
-
-                <div v-show="action">
+                <template v-if="action">
                   <el-col :span="1.5">
                     <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId">添加</el-button>
                   </el-col>
                   <el-col :span="1.5">
                     <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry">删除</el-button>
                   </el-col>
-                </div>
+                  <el-col :span="1.5">
+                    <el-button size="small" @click="cancel">取 消</el-button>
+                  </el-col>
+                  <el-col :span="1.5">
+                    <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
+                  </el-col>
+                </template>
               </el-row>
               <div class="table-wrapper">
-                <el-table :data="gzOrderEntryList" :row-class-name="rowGzOrderEntryIndex"
+                <el-table :data="pagedGzOrderEntryList" :row-class-name="rowGzOrderEntryIndex"
                           @selection-change="handleGzOrderEntrySelectionChange"
                           ref="gzOrderEntry"
                           border
-                          height="48vh">
-                  <el-table-column type="selection" width="60" align="center" />
+                          :height="detailTableHeight">
+                  <el-table-column type="selection" width="60" align="center" fixed="left" />
                   <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
                   <el-table-column label="耗材" prop="materialName" width="120" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
@@ -343,11 +351,16 @@
                   </el-table-column>
                 </el-table>
               </div>
+                <pagination
+                  class="modal-entry-pagination"
+                  :total="gzOrderEntryList.length"
+                  :page.sync="entryPageNum"
+                  :limit.sync="entryPageSize"
+                  :hide-on-single-page="false"
+                  @pagination="handleEntryPagination"
+                />
+              </div>
             </el-form>
-            <div v-show="action" class="modal-footer">
-              <el-button @click="cancel">取 消</el-button>
-              <el-button type="primary" @click="submitForm">确 定</el-button>
-            </div>
           </div>
         </transition>
       </div>
@@ -374,7 +387,6 @@ import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
-import item from "@/layout/components/Sidebar/Item.vue";
 
 export default {
   name: "Follow",
@@ -413,6 +425,9 @@ export default {
       orderList: [],
       // 高值退货明细表格数据
       gzOrderEntryList: [],
+      /** 弹窗内明细表分页（与到货验收弹窗底部翻页一致展示） */
+      entryPageNum: 1,
+      entryPageSize: 10,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -442,14 +457,33 @@ export default {
         supplerId: [
           { required: true, message: "供应商不能为空", trigger: "blur" }
         ],
-        orderDate: [
-          { required: true, message: "制单日期不能为空", trigger: "blur" }
-        ],
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
         ],
       }
     };
+  },
+  computed: {
+    /** 明细表占剩余高度但封顶，避免挤掉底部分页与工具栏按钮 */
+    detailTableHeight() {
+      return "clamp(220px, calc(100vh - 440px), 560px)";
+    },
+    pagedGzOrderEntryList() {
+      const start = (this.entryPageNum - 1) * this.entryPageSize;
+      return this.gzOrderEntryList.slice(start, start + this.entryPageSize);
+    }
+  },
+  watch: {
+    gzOrderEntryList: {
+      handler(list) {
+        const len = list ? list.length : 0;
+        const maxPage = Math.max(1, Math.ceil(len / this.entryPageSize) || 1);
+        if (this.entryPageNum > maxPage) {
+          this.entryPageNum = maxPage;
+        }
+      },
+      deep: true
+    }
   },
   created() {
     // 跟台管理：不设置特定 orderType，通过过滤单号前缀来区分
@@ -491,6 +525,7 @@ export default {
           obj.supplierId = this.form.supplerId || item.supplierId || (item.supplier && item.supplier.id) || null;
           this.gzOrderEntryList.push(obj);
         });
+        this.entryPageNum = Math.max(1, Math.ceil(this.gzOrderEntryList.length / this.entryPageSize));
       });
     }
     ,sm2(){
@@ -500,10 +535,12 @@ export default {
       } else {
         const obj=jxFtm(this.form.ftm);
         for (let i = 0; i < length; i++) {
-          const index = this.checkedGzOrderEntry[i];
-          this.gzOrderEntryList[index].batchNo = obj.batchNo;
-          this.gzOrderEntryList[index].secondaryBarcode = obj.ftm;
-          this.gzOrderEntryList[index].endTime = obj.yxq;
+          const idx = this.checkedGzOrderEntry[i] - 1;
+          if (idx >= 0 && idx < this.gzOrderEntryList.length) {
+            this.gzOrderEntryList[idx].batchNo = obj.batchNo;
+            this.gzOrderEntryList[idx].secondaryBarcode = obj.ftm;
+            this.gzOrderEntryList[idx].endTime = obj.yxq;
+          }
         }
       }
     }
@@ -560,6 +597,7 @@ export default {
         obj.udiNo = item.udiNo || ""; // 保存UDI码
         this.gzOrderEntryList.push(obj);
       });
+      this.entryPageNum = Math.max(1, Math.ceil(this.gzOrderEntryList.length / this.entryPageSize));
     },
     //当天日期
     getOrderDate(){
@@ -597,6 +635,8 @@ export default {
 
       };
       this.gzOrderEntryList = [];
+      this.entryPageNum = 1;
+      this.entryPageSize = 10;
       this.resetForm("form");
     },
     //数量改变事件
@@ -705,6 +745,7 @@ export default {
         // 设置制单人和审核人姓名
         this.form.creatorName = this.getCreatorName(this.form);
         this.form.auditorName = this.getAuditorName(this.form);
+        this.entryPageNum = 1;
         this.open = true;
         this.action = false;
         this.form.orderStatus = '1';
@@ -1030,6 +1071,7 @@ export default {
         this.form.orderStatus = '1';
         this.form.orderType = '401'; // 跟台类型，使用401生成GT开头的单号
         this.gzOrderEntryList = response.data.gzOrderEntryList;
+        this.entryPageNum = 1;
         this.open = true;
         this.title = "修改跟台管理";
         this.action = true;
@@ -1101,9 +1143,14 @@ export default {
         });
       }).catch(() => {});
     },
-	/** 高值退货明细序号 */
+    handleEntryPagination({ page, limit }) {
+      if (page != null) this.entryPageNum = page;
+      if (limit != null) this.entryPageSize = limit;
+    },
+	/** 高值退货明细序号（全局序号，便于跨页选择与 sm2 按行更新） */
     rowGzOrderEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
+      const base = (this.entryPageNum - 1) * this.entryPageSize;
+      row.index = base + rowIndex + 1;
     },
     /** 高值退货明细添加按钮操作 */
     handleAddGzOrderEntry() {
@@ -1130,6 +1177,12 @@ export default {
         const checkedGzOrderEntry = this.checkedGzOrderEntry;
         this.gzOrderEntryList = gzOrderEntryList.filter(function(item) {
           return checkedGzOrderEntry.indexOf(item.index) == -1
+        });
+        this.checkedGzOrderEntry = [];
+        this.$nextTick(() => {
+          if (this.$refs.gzOrderEntry) {
+            this.$refs.gzOrderEntry.clearSelection();
+          }
         });
       }
     },
@@ -1302,6 +1355,7 @@ export default {
   padding: 12px 20px;
   border-bottom: 1px solid #EBEEF5;
   background: #F5F7FA;
+  flex-shrink: 0;
   min-height: 48px;
 }
 
@@ -1321,27 +1375,65 @@ export default {
   background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-footer {
-  padding: 16px 24px;
-  text-align: right;
-  border-top: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  margin-top: 10px;
-}
-
-.modal-footer .el-button {
-  margin-left: 12px;
-}
-
 .local-modal-content .el-form {
   flex: 1;
   overflow: visible;
-  padding: 24px;
+  padding: 6px 20px 4px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* 弹窗内顶部字段区：与到货验收一致 */
+.local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 8px 16px 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  border: 1px solid #ebeef5;
+}
+
+.local-modal-content .form-fields-container .el-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 弹窗内明细区：高度随内容，避免分页下方被 flex 撑出大块留白 */
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 10px;
+  padding-bottom: 6px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .modal-detail-section .table-wrapper {
+  margin-top: 4px;
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+
+.local-modal-content .modal-detail-section .modal-entry-pagination {
+  flex-shrink: 0;
+  margin-top: -2px;
 }
 
 /* 弹窗动画效果 */
@@ -1426,21 +1518,17 @@ export default {
   font-size: 13px;
 }
 
-/* 弹窗内表格样式 - 高度调到确定按钮上面一点 */
+/* 弹窗内明细表容器：高度由 el-table :height 控制；分页在外层，勿整块滚动 */
 .local-modal-content .table-wrapper {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   margin-top: 10px;
+  padding-bottom: 0;
 }
 
-.local-modal-content .el-table {
-  height: 48vh;
-  max-height: 48vh;
-}
-
-.local-modal-content .el-table__body-wrapper {
-  max-height: calc(48vh - 48px);
-  overflow-y: auto;
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
 }
 </style>
 
@@ -1534,5 +1622,10 @@ export default {
   background: #f1f1f1 !important;
   border-radius: 10px !important;
   border: 1px solid #e4e7ed !important;
+}
+
+/* 跟台弹窗内分页：覆盖 Pagination 组件默认大 padding，上移并去掉底部留白 */
+.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .pagination-container.modal-entry-pagination {
+  padding: 2px 16px 0 !important;
 }
 </style>

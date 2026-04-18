@@ -1,5 +1,6 @@
 <template>
   <el-select v-model="warehouseCategory"
+             size="small"
              filterable
              :filter-method="filterMethod"
              clearable
