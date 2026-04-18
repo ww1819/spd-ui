@@ -1,0 +1,78 @@
+import request from '@/utils/request'
+
+export function listInpatientMirror(query) {
+  return request({
+    url: '/his/patientCharge/mirror/inpatient/list',
+    method: 'get',
+    params: query
+  })
+}
+
+export function listOutpatientMirror(query) {
+  return request({
+    url: '/his/patientCharge/mirror/outpatient/list',
+    method: 'get',
+    params: query
+  })
+}
+
+export function listChargeSummary(query) {
+  return request({
+    url: '/his/patientCharge/summary/list',
+    method: 'get',
+    params: query
+  })
+}
+
+export function fetchInpatientMirror(data) {
+  return request({
+    url: '/his/patientCharge/mirror/fetch/inpatient',
+    method: 'post',
+    timeout: 120000,
+    data
+  })
+}
+
+export function fetchOutpatientMirror(data) {
+  return request({
+    url: '/his/patientCharge/mirror/fetch/outpatient',
+    method: 'post',
+    timeout: 120000,
+    data
+  })
+}
+
+export function listHisFetchBatch(limit) {
+  return request({
+    url: '/his/patientCharge/fetchBatch/list',
+    method: 'get',
+    params: { limit }
+  })
+}
+
+export function processMirrorLowValue(data) {
+  return request({
+    url: '/his/patientCharge/mirror/processLowValue',
+    method: 'post',
+    timeout: 120000,
+    data
+  })
+}
+
+export function scanMirrorHighBarcode(data) {
+  return request({
+    url: '/his/patientCharge/mirror/scanHighBarcode',
+    method: 'post',
+    timeout: 60000,
+    data
+  })
+}
+
+export function applyMirrorHighConsume(data) {
+  return request({
+    url: '/his/patientCharge/mirror/applyHighConsume',
+    method: 'post',
+    timeout: 120000,
+    data
+  })
+}
