@@ -1,9 +1,9 @@
 <template>
-  <el-select v-model="department" 
+  <el-select v-model="department"
              filterable
              :filter-method="filterMethod"
              clearable
-             placeholder="编码/名称/简码搜索"
+             :placeholder="selectPlaceholder"
              :disabled="value2"
   >
     <el-option
@@ -21,7 +21,18 @@ import { pinyin } from 'pinyin-pro';
 
 export default {
   // props: ['value','size'],
-  props: ['value','value2'],
+  props: {
+    value: {},
+    value2: {},
+    /**
+     * 空态占位文案；不传则固定为「编码/名称/简码搜索」。
+     * 使用独立 prop 名，避免与 DOM attribute `placeholder` 在部分场景下冲突。
+     */
+    fieldPlaceholder: {
+      type: String,
+      default: ''
+    }
+  },
   data() {
     return {
       // 科室选项（当前显示的选项）
@@ -33,6 +44,10 @@ export default {
     }
   },
   computed: {
+    selectPlaceholder() {
+      const t = this.fieldPlaceholder != null ? String(this.fieldPlaceholder).trim() : '';
+      return t || '编码/名称/简码搜索';
+    },
     department: {
       get() {
         // 确保返回的值类型与选项中的value类型一致（都是数字或都是字符串）

@@ -4,35 +4,47 @@
       <!-- 左侧搜索和列表区域 -->
       <div class="left-panel">
         <el-card class="search-card">
-          <div slot="header" class="card-header">
-            <span>搜索条件</span>
-      </div>
-          <el-form :model="queryParams" ref="queryForm" size="small" label-width="80px" class="query-form">
-            <el-form-item>
-              <div style="display: flex; align-items: center; gap: 8px;">
-              <el-input 
-                  v-model="queryParams.hospitalNumber"
-                  placeholder="住院号"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                  style="width: 60%"
-                />
-                <el-button type="primary" size="small" @click="handleQuery" style="width: 35%">
-                  搜索
-                </el-button>
-              </div>
+          <div slot="header" class="search-card-header">
+            <span class="card-header-title">搜索条件</span>
+            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+          </div>
+          <el-form :model="queryParams" ref="queryForm" size="small" label-width="0" class="query-form search-query-form">
+            <el-form-item class="search-form-item-row">
+              <el-row :gutter="8" type="flex" align="middle">
+                <el-col :span="12">
+                  <el-input
+                    v-model="queryParams.hospitalNumber"
+                    placeholder="住院号"
+                    clearable
+                    class="search-field-block"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </el-col>
+                <el-col :span="12">
+                  <el-select v-model="queryParams.auditStatus" placeholder="审核状态" clearable class="search-field-block">
+                    <el-option label="未审核" value="1" />
+                    <el-option label="已审核" value="2" />
+                  </el-select>
+                </el-col>
+              </el-row>
             </el-form-item>
-            <el-form-item>
-              <el-select v-model="queryParams.auditStatus" placeholder="审核状态" clearable style="width: 60%">
-                <el-option label="未审核" value="1" />
-                <el-option label="已审核" value="2" />
-              </el-select>
-            </el-form-item>
-            <el-form-item>
-              <SelectDepartment v-model="queryParams.execDeptId" style="width: 60%" />
-            </el-form-item>
-            <el-form-item>
-              <SelectDepartment v-model="queryParams.applyDeptId" style="width: 60%" />
+            <el-form-item class="search-form-item-row">
+              <el-row :gutter="8" type="flex" align="middle" class="search-dept-pair-row">
+                <el-col :span="12" class="search-dept-col">
+                  <SelectDepartment
+                    v-model="queryParams.applyDeptId"
+                    field-placeholder="申请科室"
+                    class="search-field-block search-dept-select"
+                  />
+                </el-col>
+                <el-col :span="12" class="search-dept-col">
+                  <SelectDepartment
+                    v-model="queryParams.execDeptId"
+                    field-placeholder="执行科室"
+                    class="search-field-block search-dept-select"
+                  />
+                </el-col>
+              </el-row>
             </el-form-item>
             <el-form-item>
               <div style="display: flex; align-items: center; width: 100%; gap: 4px; justify-content: flex-start;">
@@ -158,116 +170,83 @@
           <div slot="header" class="card-header">
             <span>患者信息</span>
           </div>
-          <el-form :model="form" ref="form" label-width="100px" size="small">
-            <el-row :gutter="0" class="compact-row">
-              <el-col :span="4" class="compact-col">
-                <el-form-item label="姓名">
-                  <el-input v-model="form.name" disabled style="width: 140px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="4" class="compact-col">
-                <el-form-item label="性别">
-                  <el-input v-model="form.sex" disabled style="width: 80px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="4" class="compact-col">
-                <el-form-item label="年龄">
-                  <el-input v-model="form.age" disabled style="width: 80px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="4" class="compact-col">
-                <el-form-item label="住院号">
-                  <el-input v-model="form.hospitalNumber" disabled style="width: 100px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="4" class="compact-col">
-                <el-form-item label="病区">
-                  <el-input v-model="form.ward" disabled style="width: 100px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="4" class="compact-col">
-                <el-form-item label="病房号">
-                  <el-input v-model="form.wardNo" disabled style="width: 100px" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-            <el-row :gutter="0" class="dept-row">
-              <el-col :span="3.4" class="dept-col">
-                <el-form-item label="申请科室" class="dept-form-item">
-                  <SelectDepartment v-model="form.applyDeptId" style="width: 90px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="3.4" class="dept-col">
-                <el-form-item label="执行科室" class="dept-form-item">
-                  <SelectDepartment v-model="form.execDeptId" style="width: 90px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="3.4" class="dept-col">
-                <el-form-item label="病床号" class="dept-form-item">
-                  <el-input v-model="form.bedNo" disabled style="width: 90px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="3.4" class="dept-col">
-                <el-form-item label="住院日期" class="dept-form-item">
-                  <el-date-picker
-                    v-model="form.hospitalDate"
-                    type="date"
-                    value-format="yyyy-MM-dd"
-                    disabled
-                    style="width: 90px"
-                  />
-            </el-form-item>
-          </el-col>
-              <el-col :span="3.4" class="dept-col">
-                <el-form-item label="联系电话" class="dept-form-item">
-                  <el-input v-model="form.contactPhone" disabled style="width: 90px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="3.4" class="dept-col">
-                <el-form-item label="主刀医生" class="dept-form-item">
-                  <el-input v-model="form.chiefSurgeon" disabled style="width: 90px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="3.6" class="dept-col">
-                <el-form-item label="手术日期" class="dept-form-item">
-                  <el-date-picker
-                    v-model="form.surgeryDate"
-                    type="date"
-                    value-format="yyyy-MM-dd"
-                    disabled
-                    style="width: 90px"
-                  />
-            </el-form-item>
-          </el-col>
-            </el-row>
-            <el-row :gutter="12">
-              <el-col :span="4.8">
-                <el-form-item label="手术名称">
-                  <el-input v-model="form.surgeryName" disabled style="width: 140px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="4.8">
-                <el-form-item label="入院诊断">
-                  <el-input v-model="form.admissionDiagnosis" disabled style="width: 140px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="4.8">
-                <el-form-item label="手术ID">
-                  <el-input v-model="form.surgeryId" disabled style="width: 100px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="4.8">
-                <el-form-item label="联系地址">
-                  <el-input v-model="form.contactAddress" disabled style="width: 140px" />
-            </el-form-item>
-          </el-col>
-              <el-col :span="4.8">
-                <el-form-item label="备注">
-                  <el-input v-model="form.remark" style="width: 140px" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+          <!-- 纵向多条「横带」流式排布，字段宽度各自定义，不用 el-row/el-col 栅格 -->
+          <el-form :model="form" ref="form" label-width="0" size="small" class="patient-form-flow">
+            <div class="patient-form-band">
+              <el-form-item label="姓名" class="pf-item">
+                <el-input v-model="form.name" disabled class="pf-input pf-input--name" />
+              </el-form-item>
+              <el-form-item label="性别" class="pf-item">
+                <el-input v-model="form.sex" disabled class="pf-input pf-input--sex" />
+              </el-form-item>
+              <el-form-item label="年龄" class="pf-item">
+                <el-input v-model="form.age" disabled class="pf-input pf-input--age" />
+              </el-form-item>
+              <el-form-item label="住院号" class="pf-item">
+                <el-input v-model="form.hospitalNumber" disabled class="pf-input pf-input--hospno" />
+              </el-form-item>
+              <el-form-item label="病区" class="pf-item">
+                <el-input v-model="form.ward" disabled class="pf-input pf-input--ward" />
+              </el-form-item>
+              <el-form-item label="病房号" class="pf-item">
+                <el-input v-model="form.wardNo" disabled class="pf-input pf-input--room" />
+              </el-form-item>
+            </div>
+            <div class="patient-form-band">
+              <el-form-item label="申请科室" class="pf-item pf-item--dept">
+                <SelectDepartment v-model="form.applyDeptId" class="patient-dept-select pf-dept-select" />
+              </el-form-item>
+              <el-form-item label="执行科室" class="pf-item pf-item--dept">
+                <SelectDepartment v-model="form.execDeptId" class="patient-dept-select pf-dept-select" />
+              </el-form-item>
+            </div>
+            <div class="patient-form-band">
+              <el-form-item label="病床号" class="pf-item">
+                <el-input v-model="form.bedNo" disabled class="pf-input pf-input--bed" />
+              </el-form-item>
+              <el-form-item label="住院日期" class="pf-item">
+                <el-date-picker
+                  v-model="form.hospitalDate"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  disabled
+                  class="pf-input pf-input--date"
+                />
+              </el-form-item>
+              <el-form-item label="联系电话" class="pf-item">
+                <el-input v-model="form.contactPhone" disabled class="pf-input pf-input--phone" />
+              </el-form-item>
+              <el-form-item label="主刀医生" class="pf-item">
+                <el-input v-model="form.chiefSurgeon" disabled class="pf-input pf-input--doctor" />
+              </el-form-item>
+              <el-form-item label="手术日期" class="pf-item">
+                <el-date-picker
+                  v-model="form.surgeryDate"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  disabled
+                  class="pf-input pf-input--date"
+                />
+              </el-form-item>
+            </div>
+            <div class="patient-form-band">
+              <el-form-item label="手术名称" class="pf-item">
+                <el-input v-model="form.surgeryName" disabled class="pf-input pf-input--surgeryname" />
+              </el-form-item>
+              <el-form-item label="入院诊断" class="pf-item">
+                <el-input v-model="form.admissionDiagnosis" disabled class="pf-input pf-input--diag" />
+              </el-form-item>
+              <el-form-item label="手术ID" class="pf-item">
+                <el-input v-model="form.surgeryId" disabled class="pf-input pf-input--surgeryid" />
+              </el-form-item>
+              <el-form-item label="联系地址" class="pf-item">
+                <el-input v-model="form.contactAddress" disabled class="pf-input pf-input--addr" />
+              </el-form-item>
+              <el-form-item label="备注" class="pf-item">
+                <el-input v-model="form.remark" class="pf-input pf-input--remark" />
+              </el-form-item>
+            </div>
+          </el-form>
     </el-card>
 
         <!-- 扫描条码号 -->
@@ -1189,7 +1168,8 @@ export default {
 <style lang="scss" scoped>
 .hospital-scan-page {
   height: calc(100vh - 84px);
-  padding: 20px 20px 20px 15px;
+  /* 顶边留白略大，左侧略收，避免与右栏之间留白过大 */
+  padding: 16px 20px 20px 10px;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -1197,7 +1177,7 @@ export default {
 .page-layout {
   display: flex;
   height: 100%;
-  gap: 16px;
+  gap: 12px;
   margin-left: -5px;
 }
 
@@ -1205,27 +1185,38 @@ export default {
   width: 400px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-    flex-shrink: 0;
+  gap: 12px;
+  flex-shrink: 0;
 }
     
 .right-panel {
   flex: 1;
-      display: flex;
+  display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   min-width: 0;
   margin-left: -8px;
   flex-grow: 1;
 }
 
+/* 与到货验收页「搜索框」白底容器一致：边框 #c0c4cc、圆角 8px、浅阴影 */
 .search-card,
 .list-card,
 .form-card,
-.scan-card,
 .detail-card {
+  border: 1px solid #c0c4cc;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  background: #fff;
+
+  ::v-deep .el-card__header {
+    border-bottom: 1px solid #ebeef5;
+    padding: 12px 20px;
+    background: #fff;
+  }
+
   ::v-deep .el-card__body {
-    padding: 16px;
+    padding: 16px 20px;
   }
 }
 
@@ -1235,23 +1226,90 @@ export default {
 }
 
 .search-card {
-    flex-shrink: 0;
+  flex-shrink: 0;
+  /* 与右侧 .action-bar 同幅上移，顶边与操作按钮行对齐 */
   margin-top: -10px;
+
+  /* 首行查询与「搜索」整体上移，缩小与标题区留白 */
+  ::v-deep .el-card__header {
+    padding-top: 10px;
+    padding-bottom: 8px;
+  }
+
+  ::v-deep .el-card__body {
+    padding-top: 8px;
+  }
+
+  /* 标题行：「搜索条件」+ 搜索按钮固定同排 */
+  ::v-deep .search-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  ::v-deep .search-card-header .card-header-title {
+    font-weight: 500;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  ::v-deep .search-card-header .el-button {
+    flex-shrink: 0;
+  }
+
+  ::v-deep .search-query-form .el-form-item {
+    margin-bottom: 8px;
+  }
+
+  ::v-deep .search-query-form .el-form-item:last-child {
+    margin-bottom: 0;
+  }
+
+  ::v-deep .search-field-block {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  ::v-deep .search-field-block.el-select .el-input__inner {
+    max-width: 100%;
+  }
+
+  ::v-deep .search-dept-select.el-select {
+    display: block;
+    width: 100%;
+  }
+
+  /* 仅搜索条件内：两科室与住院号行同宽节奏，避免下拉被撑得过宽 */
+  ::v-deep .search-dept-pair-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  ::v-deep .search-dept-pair-row .search-dept-col {
+    min-width: 0;
+  }
+
+  ::v-deep .search-dept-pair-row .search-dept-col .el-select {
+    width: 100% !important;
+    max-width: 100%;
+  }
 }
     
 .list-card {
   flex: 1;
-      display: flex;
+  display: flex;
   flex-direction: column;
   min-height: 0;
-  margin-top: -8px;
-  
+
   ::v-deep .el-card__body {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: 16px;
+    padding: 16px 20px;
   }
 }
     
@@ -1266,117 +1324,131 @@ export default {
 .scan-medical-record,
 .scan-barcode {
   flex-shrink: 0;
-  padding: 8px 0;
-        display: flex;
-        align-items: center;
+  display: flex;
+  align-items: center;
   width: 100%;
-  margin-top: -16px !important;
+  box-sizing: border-box;
+  margin-top: -8px !important;
   margin-bottom: 0 !important;
+  padding: 4px 0;
 }
 
 .form-card {
   flex-shrink: 0;
   margin-top: -10px;
+  /* 略增宽且仅向右侧伸展，左缘不动（与明细卡左对齐） */
+  width: calc(100% + 12px);
+  max-width: calc(100% + 12px);
+  margin-left: 0;
+  margin-right: -12px;
+  box-sizing: border-box;
   
-  ::v-deep .el-form-item {
-    margin-bottom: 12px;
-    display: block;
+  /* ========= 患者信息：纵向横带 + 流式 flex（非栅格、非绝对坐标）========= */
+  ::v-deep .patient-form-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
-  
-  ::v-deep .el-form-item__label {
+
+  ::v-deep .patient-form-band {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 6px 12px;
+    margin-bottom: 4px;
+  }
+
+  ::v-deep .patient-form-flow .pf-item.el-form-item {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 0;
+    margin-right: 0;
+    vertical-align: middle;
+  }
+
+  ::v-deep .patient-form-flow .pf-item .el-form-item__label {
+    float: none;
+    width: auto !important;
+    min-width: 56px;
+    max-width: 84px;
     padding-right: 6px;
     font-size: 13px;
-    white-space: nowrap;
-    float: left;
-    width: 100px;
     text-align: right;
     line-height: 32px;
+    white-space: nowrap;
   }
-  
-  ::v-deep .el-form-item__content {
-    margin-left: 100px !important;
+
+  ::v-deep .patient-form-flow .pf-item .el-form-item__content {
+    margin-left: 0 !important;
     line-height: 32px;
   }
-  
-  ::v-deep .el-row {
-    display: flex;
-    flex-wrap: nowrap;
-    width: 100%;
+
+  ::v-deep .patient-form-flow .pf-item--dept .el-form-item__label {
+    min-width: 64px;
   }
-  
-  ::v-deep .el-col {
-    flex-shrink: 0;
+
+  /* 各输入宽度按语义单独设定（可继续微调数值） */
+  ::v-deep .pf-input--name.el-input {
+    width: 168px;
   }
-  
-  ::v-deep .compact-row {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+
+  ::v-deep .pf-input--sex.el-input {
+    width: 52px;
   }
-  
-  ::v-deep .compact-row > .compact-col:first-child {
-    padding-left: 0 !important;
-    padding-right: 4px !important;
+
+  ::v-deep .pf-input--age.el-input {
+    width: 56px;
   }
-  
-  ::v-deep .compact-row > .compact-col:nth-child(2) {
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+
+  ::v-deep .pf-input--hospno.el-input {
+    width: 118px;
   }
-  
-  ::v-deep .compact-row > .compact-col:nth-child(3) {
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+
+  ::v-deep .pf-input--ward.el-input,
+  ::v-deep .pf-input--room.el-input {
+    width: 96px;
   }
-  
-  ::v-deep .compact-row > .compact-col:nth-child(4) {
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+
+  ::v-deep .pf-dept-select.el-select {
+    width: 200px;
+    max-width: 100%;
   }
-  
-  ::v-deep .compact-row > .compact-col:nth-child(5) {
-    padding-left: 4px !important;
-    padding-right: 4px !important;
+
+  ::v-deep .pf-input--bed.el-input {
+    width: 88px;
   }
-  
-  ::v-deep .compact-row > .compact-col:nth-child(6) {
-    padding-left: 4px !important;
-    padding-right: 0 !important;
+
+  ::v-deep .pf-input--date.el-date-editor {
+    width: 128px;
   }
-  
-  ::v-deep .dept-row {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+
+  ::v-deep .pf-input--phone.el-input {
+    width: 132px;
   }
-  
-  ::v-deep .dept-row > .dept-col {
-    padding-left: 2px !important;
-    padding-right: 2px !important;
+
+  ::v-deep .pf-input--doctor.el-input {
+    width: 120px;
   }
-  
-  ::v-deep .dept-row > .dept-col:first-child {
-    padding-left: 0 !important;
-    padding-right: 2px !important;
+
+  ::v-deep .pf-input--surgeryname.el-input {
+    width: 168px;
   }
-  
-  ::v-deep .dept-row > .dept-col:last-child {
-    padding-left: 2px !important;
-    padding-right: 0 !important;
+
+  ::v-deep .pf-input--diag.el-input {
+    width: 168px;
   }
-  
-  ::v-deep .dept-form-item .el-form-item__label {
-    width: 80px !important;
-    font-size: 12px !important;
-    padding-right: 4px !important;
+
+  ::v-deep .pf-input--surgeryid.el-input {
+    width: 96px;
   }
-  
-  ::v-deep .dept-form-item .el-form-item__content {
-    margin-left: 80px !important;
+
+  ::v-deep .pf-input--addr.el-input {
+    width: 200px;
   }
-  
-  ::v-deep .el-input,
-  ::v-deep .el-date-picker,
-  ::v-deep .el-select {
-    width: 100%;
+
+  ::v-deep .pf-input--remark.el-input {
+    width: 160px;
   }
 }
 
@@ -1386,24 +1458,30 @@ export default {
   flex-direction: column;
   min-height: 0;
   margin-top: -16px !important;
-    
-    ::v-deep .el-card__body {
+  /* 与患者信息卡同幅略向右伸展，左右缘对齐 */
+  width: calc(100% + 12px);
+  max-width: calc(100% + 12px);
+  margin-left: 0;
+  margin-right: -12px;
+  box-sizing: border-box;
+
+  ::v-deep .el-card__body {
     flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 16px 20px;
   }
-    }
-    
-    ::v-deep .el-table {
-      flex: 1;
-      overflow: auto;
-    }
-    
-    ::v-deep .el-table__body-wrapper {
-      overflow-y: auto;
-    }
+
+  ::v-deep .el-table {
+    flex: 1;
+    overflow: auto;
+  }
+
+  ::v-deep .el-table__body-wrapper {
+    overflow-y: auto;
+  }
+}
 
 /* 增粗底部滚动条 */
 ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
