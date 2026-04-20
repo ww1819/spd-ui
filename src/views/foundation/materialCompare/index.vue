@@ -78,6 +78,13 @@
                 @click="handleQuery"
               >搜索</el-button>
             </el-col>
+            <el-col :span="1.5">
+              <el-button
+                type="warning"
+                size="medium"
+                @click="handleFetchHisChargeItems"
+              >抓取收费项目</el-button>
+            </el-col>
           </el-row>
 
           <!-- 明细表格 -->
@@ -100,7 +107,7 @@
                 </template>
               </el-table-column>
               <el-table-column label="HRP编码" align="center" prop="hrpCode" width="120" show-overflow-tooltip />
-              <el-table-column label="HIS编码" align="center" prop="hisCode" width="120" show-overflow-tooltip />
+              <el-table-column label="HIS编码" align="center" prop="hisId" width="120" show-overflow-tooltip />
               <el-table-column label="供应商" align="center" width="150" show-overflow-tooltip>
                 <template slot-scope="scope">
                   <span>{{ (scope.row.supplier && scope.row.supplier.name) || scope.row.supplierName || '--' }}</span>
@@ -308,7 +315,7 @@
 </template>
 
 <script>
-import { listMaterial, listHisChargeItem, bindMaterialHisChargeItem, unbindMaterialHisChargeItem } from "@/api/foundation/material";
+import { listMaterial, listHisChargeItem, fetchHisChargeItemMirror, bindMaterialHisChargeItem, unbindMaterialHisChargeItem } from "@/api/foundation/material";
 import { listSupplierAll } from "@/api/foundation/supplier";
 
 export default {
@@ -423,6 +430,23 @@ export default {
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
+    },
+    /** 抓取 HIS 收费项目镜像 */
+    handleFetchHisChargeItems() {
+      this.loading = true;
+      fetchHisChargeItemMirror().then(response => {
+        const data = (response && response.data) || {};
+        const fetched = data.fetchedRows != null ? data.fetchedRows : 0;
+        this.$modal.msgSuccess(`抓取成功，本次抓取 ${fetched} 条`);
+        if (this.hisDialogVisible) {
+          this.hisQueryParams.pageNum = 1;
+          this.getHisList();
+        }
+      }).catch(() => {
+        this.$modal.msgError("抓取失败，请稍后重试");
+      }).finally(() => {
+        this.loading = false;
+      });
     },
     /** 重置按钮操作 */
     resetQuery() {

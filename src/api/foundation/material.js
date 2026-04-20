@@ -48,6 +48,14 @@ export function listHisChargeItem(query) {
   })
 }
 
+// 抓取 HIS 收费项目到本地镜像
+export function fetchHisChargeItemMirror() {
+  return request({
+    url: '/foundation/material/hisChargeItem/fetch',
+    method: 'post'
+  })
+}
+
 // 绑定耗材与 HIS 收费项目（his_id = charge_item_id）
 export function bindMaterialHisChargeItem(data) {
   return request({
