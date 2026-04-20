@@ -49,12 +49,34 @@ Print.prototype = {
     str += "<style>html,body,div{height: auto!important;}</style>";
 
     str = str.replace('size: A5', `size: ${pageSize}`);
-    // 自定义纸张（如三等分 210mm×99mm）：注入 @page，避免仅依赖页面内 style 的替换
+    // 自定义纸张（如 210mm×140mm）：注入 @page，避免仅依赖页面内 style 的替换
+    // 注意：浏览器预览≠打印机物理可打印区；仅设置 size 时，左右边框仍可能被硬件边距裁切。
+    // 因此默认给左右各留一点安全边距（可用 options.pageMargin 覆盖）。
     if (this.options.injectPageSize !== false && pageSize && String(pageSize).indexOf('mm') !== -1) {
-      str += "<style>@page { size: " + pageSize + " !important; }</style>";
+      var pageMargin = this.options.pageMargin && String(this.options.pageMargin).trim()
+        ? String(this.options.pageMargin).trim()
+        : (function () {
+          // 小标签纸（如条码）通常需要尽量贴边；宽票据（>=120mm）更容易遇到左右物理不可打印区裁切
+          var s = String(pageSize)
+          var m = s.match(/(\d+(?:\.\d+)?)\s*mm/gi)
+          var maxMm = 0
+          if (m && m.length) {
+            for (var i = 0; i < m.length; i++) {
+              var v = parseFloat(String(m[i]).replace(/mm/gi, ''))
+              if (!isNaN(v)) maxMm = Math.max(maxMm, v)
+            }
+          }
+          return maxMm >= 120 ? '0 4mm' : '0'
+        })()
+      str += "<style>@page { size: " + pageSize + " !important; margin: " + pageMargin + " !important; }</style>";
     }
+    // pageMargin 已在自定义 mm 纸张的 @page 中合并注入；这里仅处理非 mm 纸张或关闭 injectPageSize 的场景
     if (this.options.pageMargin && String(this.options.pageMargin).trim()) {
-      str += "<style>@page { margin: " + this.options.pageMargin + " !important; }</style>";
+      var ps = pageSize && String(pageSize);
+      var mergedMm = this.options.injectPageSize !== false && ps && ps.indexOf('mm') !== -1;
+      if (!mergedMm) {
+        str += "<style>@page { margin: " + this.options.pageMargin + " !important; }</style>";
+      }
     }
 
     return str;

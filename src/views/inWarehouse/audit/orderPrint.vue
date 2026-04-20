@@ -180,17 +180,18 @@ export default {
       const n = Number(v)
       return isNaN(n) ? 0 : n
     },
-    /** 入库日期格式：yyyyMMddHH:mm:ss，与样张一致 */
+    /** 入库日期：yyyy-MM-dd HH:mm:ss */
     formatInboundDate(val) {
       if (!val) return ''
       const d = new Date(val)
+      if (isNaN(d.getTime())) return val
       const y = d.getFullYear()
       const m = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
       const h = String(d.getHours()).padStart(2, '0')
       const min = String(d.getMinutes()).padStart(2, '0')
       const s = String(d.getSeconds()).padStart(2, '0')
-      return `${y}${m}${day}${h}:${min}:${s}`
+      return `${y}-${m}-${day} ${h}:${min}:${s}`
     },
     formatNum(v) {
       if (v == null || v === '') return ''
@@ -353,8 +354,8 @@ export default {
             if (typeof this.$print === 'function') {
               this.$print(el, {
                 injectPageSize: true,
-                // 保持与页面高度一致，避免可打印区被压缩后从一页变两页
-                pageMargin: '0',
+                // 左右留安全边距：针式机物理不可打印区会裁掉贴边边框；上下保持 0，避免把一页“挤”成两页
+                pageMargin: '0 4mm',
                 waitForAssets: true,
                 beforePrintDelay: 320
               }, pageSize)
@@ -589,8 +590,8 @@ export default {
 
 <style lang="stylus" media="print">
 @page
-  size 210mm 140mm
-  margin 0
+  size 210mm 140mm !important
+  margin 0 4mm !important
 
 @media print
   html,body
@@ -601,11 +602,11 @@ export default {
     color #000 !important
 
   .receipt-print
-    width 210mm !important
-    max-width 210mm !important
+    width 100% !important
+    max-width none !important
     box-sizing border-box !important
-    padding-left 1ch !important
-    padding-right 1ch !important
+    padding-left 0 !important
+    padding-right 0 !important
     /* Epson LQ-690K 点阵打印：等宽+固定字号，减少模糊/字形差异 */
     font-size 16px !important
     font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
