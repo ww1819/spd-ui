@@ -156,16 +156,21 @@
       <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="价格" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="价格" align="right" prop="unitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
+          <span v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined">{{ formatAmount(scope.row.unitPrice) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" align="center" prop="materialQty" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="数量" align="right" prop="materialQty" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
+          <span v-if="scope.row.materialQty !== null && scope.row.materialQty !== undefined">{{ formatQty(scope.row.materialQty) }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="金额" align="right" prop="materialAmt" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.materialAmt !== null && scope.row.materialAmt !== undefined">{{ formatAmount(scope.row.materialAmt) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -210,7 +215,7 @@
 
     <div class="pagination-wrapper">
       <div class="pagination-summary">
-        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额: {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额: {{ pageTotalAmtFormatted }}
+        <span class="summary-label">合计：</span>总数量: {{ formatQty(totalInfo.totalQty) }}，总金额: {{ formatAmount(totalInfo.totalAmt) }}，当前页数量: {{ pageTotalQtyFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
       <div class="pagination-container">
         <el-pagination
@@ -321,31 +326,44 @@ export default {
     pageTotalQty() {
       return (this.warehouseList || []).reduce((s, r) => s + Number(r.materialQty || 0), 0);
     },
+    pageTotalQtyFormatted() {
+      return this.formatQty(this.pageTotalQty);
+    },
     /** 当前页金额合计（格式化） */
     pageTotalAmtFormatted() {
       const amt = (this.warehouseList || []).reduce((s, r) => s + Number(r.materialAmt || 0), 0);
-      return this.$options.filters && this.$options.filters.formatCurrency
-        ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+      return this.formatAmount(amt);
     },
   },
   created() {
     this.getList();
   },
   methods: {
+    formatNumber(value, scale) {
+      const num = Number(value);
+      if (Number.isNaN(num)) {
+        return (0).toFixed(scale);
+      }
+      return num.toFixed(scale);
+    },
+    formatQty(value) {
+      return this.formatNumber(value, 2);
+    },
+    formatAmount(value) {
+      return this.formatNumber(value, 4);
+    },
     getTotalSummaries(param) {
       const { columns, data } = param;
       const sums = Array(columns.length).fill('');
       if (sums.length > 0) sums[0] = '合计';
       const totalQty = (data || []).reduce((acc, r) => acc + Number(r.materialQty || 0), 0);
       const totalAmt = (data || []).reduce((acc, r) => acc + Number(r.materialAmt || 0), 0);
-      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
       columns.forEach((column, index) => {
         if (column.property === 'materialQty') {
-          sums[index] = totalQty.toFixed(2);
+          sums[index] = this.formatQty(totalQty);
         }
         if (column.property === 'materialAmt') {
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
+          sums[index] = this.formatAmount(totalAmt);
         }
       });
       return sums;

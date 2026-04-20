@@ -107,7 +107,7 @@
                 </template>
               </el-table-column>
               <el-table-column label="HRP编码" align="center" prop="hrpCode" width="120" show-overflow-tooltip />
-              <el-table-column label="HIS编码" align="center" prop="hisId" width="120" show-overflow-tooltip />
+              <el-table-column label="HIS收费项目ID" align="center" prop="hisChargeItemId" width="140" show-overflow-tooltip />
               <el-table-column label="供应商" align="center" width="150" show-overflow-tooltip>
                 <template slot-scope="scope">
                   <span>{{ (scope.row.supplier && scope.row.supplier.name) || scope.row.supplierName || '--' }}</span>
@@ -158,6 +158,14 @@
         <span>HIS对照</span>
         <el-button type="text" @click="hisDialogVisible = false" style="padding: 0;">关闭</el-button>
       </div>
+      <div class="his-current-bind-box">
+        <span class="his-current-bind-title">当前对照收费项目：</span>
+        <span v-if="currentHisChargeItem">
+          {{ currentHisChargeItem.chargeCode || '--' }} / {{ currentHisChargeItem.chargeName || '--' }}
+          / {{ currentHisChargeItem.chargeSpeci || '--' }} / {{ formatCurrency(currentHisChargeItem.chargePrice) }}
+        </span>
+        <span v-else>未绑定</span>
+      </div>
       
       <!-- 搜索框 -->
       <div class="his-query-container">
@@ -167,7 +175,7 @@
               <el-form-item label="名称" prop="name" class="query-item-inline">
                 <el-input
                   v-model="hisQueryParams.name"
-                  placeholder="名称"
+                  placeholder="名称/编码/ID/拼音简码"
                   clearable
                   @keyup.enter.native="handleHisQuery"
                   style="width: 200px"
@@ -360,6 +368,7 @@ export default {
         name: null,
         speci: null
       },
+      currentHisChargeItem: null,
       // HRP弹窗相关
       hrpDialogVisible: false,
       hrpLoading: false,
@@ -465,7 +474,22 @@ export default {
       this.currentMaterialRow = row;
       this.hisDialogVisible = true;
       this.hisQueryParams.pageNum = 1;
+      this.loadCurrentHisChargeItem();
       this.getHisList();
+    },
+    /** 加载当前耗材已对照收费项目 */
+    loadCurrentHisChargeItem() {
+      const chargeItemId = this.currentMaterialRow && this.currentMaterialRow.hisChargeItemId;
+      if (!chargeItemId) {
+        this.currentHisChargeItem = null;
+        return;
+      }
+      listHisChargeItem({ chargeItemId, pageNum: 1, pageSize: 1 }).then(response => {
+        const rows = (response && response.rows) || [];
+        this.currentHisChargeItem = rows.length > 0 ? rows[0] : null;
+      }).catch(() => {
+        this.currentHisChargeItem = null;
+      });
     },
     /** HIS搜索 */
     handleHisQuery() {
@@ -487,7 +511,7 @@ export default {
       if (!this.currentMaterialRow || !row) {
         return false;
       }
-      return String(this.currentMaterialRow.hisId || '') === String(row.chargeItemId || '');
+      return String(this.currentMaterialRow.hisChargeItemId || '') === String(row.chargeItemId || '');
     },
     /** 绑定 HIS 收费项目 */
     handleBindHis(row) {
@@ -504,8 +528,9 @@ export default {
         chargeItemId: row.chargeItemId
       }).then(() => {
         this.$modal.msgSuccess("绑定成功");
-        this.currentMaterialRow.hisId = row.chargeItemId;
+        this.currentMaterialRow.hisChargeItemId = row.chargeItemId;
         this.currentMaterialRow.hisCode = row.chargeCode;
+        this.currentHisChargeItem = row;
         this.hisDialogVisible = false;
         this.getList();
       });
@@ -520,8 +545,9 @@ export default {
         materialId: this.currentMaterialRow.id
       }).then(() => {
         this.$modal.msgSuccess("解绑成功");
-        this.currentMaterialRow.hisId = null;
+        this.currentMaterialRow.hisChargeItemId = null;
         this.currentMaterialRow.hisCode = null;
+        this.currentHisChargeItem = null;
         this.getHisList();
         this.getList();
       });
@@ -686,6 +712,21 @@ export default {
   background: #fafafa;
   border-radius: 4px;
   border: 1px solid #EBEEF5;
+}
+
+.his-current-bind-box {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid #EBEEF5;
+  border-radius: 4px;
+  background: #f8fbff;
+  color: #606266;
+}
+
+.his-current-bind-title {
+  color: #303133;
+  font-weight: 600;
+  margin-right: 6px;
 }
 
 .his-table-container {
