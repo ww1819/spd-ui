@@ -23,6 +23,8 @@
       <div class="info-row print-head-info">
         <span class="info-label info-label--w1">发往科</span>
         <span class="info-value">{{ row.departmentName || '' }}</span>
+        <span class="info-label info-label--w2 info-gap">仓库</span>
+        <span class="info-value">{{ row.warehouseName || '' }}</span>
         <span class="info-label info-label--w2 info-gap">单据号</span>
         <span class="info-value">{{ row.billNo || '' }}</span>
         <span class="info-label info-label--w3 info-gap">出库日期（审核）</span>
