@@ -415,7 +415,7 @@
           <span style="margin-right: 10px;">纸张</span>
           <el-radio-group v-model="modalObj.form.paperType" size="small">
             <el-radio label="a4">A4</el-radio>
-            <el-radio label="third-split">三等分纸</el-radio>
+            <el-radio label="third-split">二等分纸（210×140mm）</el-radio>
           </el-radio-group>
         </div>
       </template>

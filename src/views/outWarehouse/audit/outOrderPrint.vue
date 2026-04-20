@@ -204,7 +204,7 @@ export default {
         }
       }).catch(() => {})
     },
-    /** 出库日期（审核）：yyyy-MM-dd HH:mm:ss */
+    /** 出库日期（审核）：yyyy-MM-dd */
     formatOutboundDate(val) {
       if (!val) return ''
       const d = new Date(val)
@@ -212,10 +212,7 @@ export default {
       const y = d.getFullYear()
       const m = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
-      const h = String(d.getHours()).padStart(2, '0')
-      const min = String(d.getMinutes()).padStart(2, '0')
-      const s = String(d.getSeconds()).padStart(2, '0')
-      return `${y}-${m}-${day} ${h}:${min}:${s}`
+      return `${y}-${m}-${day}`
     },
     formatNum(v) {
       if (v == null || v === '') return ''

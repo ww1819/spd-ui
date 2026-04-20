@@ -33,14 +33,8 @@
         <div class="info-row">
           <span class="info-label info-label--l1">仓库</span>
           <span class="info-value">{{ row.warehouseName || '' }}</span>
-          <span class="info-label info-label--l2 info-gap">申请时间</span>
-          <span class="info-value">{{ formatPrintDateTime(row.billDate) }}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label info-label--l1">审核时间</span>
+          <span class="info-label info-label--l2 info-gap">审核时间</span>
           <span class="info-value">{{ formatPrintDateTime(row.auditDate) }}</span>
-          <span class="info-label info-label--l2 info-gap">单位</span>
-          <span class="info-value">元</span>
         </div>
       </div>
 
@@ -280,6 +274,7 @@ export default {
       const n = Number(v)
       return isNaN(n) ? v : n.toFixed(2)
     },
+    /** 申请/审核/打印日期：yyyy-MM-dd */
     formatPrintDateTime(v) {
       if (!v) return ''
       const d = new Date(v)
@@ -287,10 +282,7 @@ export default {
       const y = d.getFullYear()
       const m = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
-      const h = String(d.getHours()).padStart(2, '0')
-      const mi = String(d.getMinutes()).padStart(2, '0')
-      const s = String(d.getSeconds()).padStart(2, '0')
-      return `${y}-${m}-${day} ${h}:${mi}:${s}`
+      return `${y}-${m}-${day}`
     }
   }
 }

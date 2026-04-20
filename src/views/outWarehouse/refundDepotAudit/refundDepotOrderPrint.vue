@@ -8,7 +8,11 @@
       v-for="(detailPage, pageIndex) in detailPages"
       :key="`page-${pageIndex}`"
       class="print-copy-block"
-      :class="{ 'is-third-split-copy': isThirdSplitPaper, 'print-page-break': pageIndex < detailPages.length - 1 }"
+      :class="{
+        'is-third-split-copy': isThirdSplitPaper,
+        /* 勿用 :last-child 控制分页：根节点末尾空白文本会导致最后一联匹配不到 :last-child，尾联仍带 break-after 多吐一页 */
+        'print-slip-page-break-after': pageIndex < detailPages.length - 1
+      }"
     >
       <div class="doc-header">
         <div class="doc-header-spacer" aria-hidden="true"></div>
@@ -25,16 +29,12 @@
         <span class="info-value">{{ row.departmentName || '' }}</span>
         <span class="info-label info-label--w2 info-gap">单据号</span>
         <span class="info-value">{{ row.billNo || '' }}</span>
-        <span class="info-label info-label--w3 info-gap">退库日期（审核）</span>
-        <span class="info-value">{{ formatDateTime(row.auditDate || row.billDate) }}</span>
       </div>
       <div class="info-row print-head-info">
         <span class="info-label info-label--w1">仓库</span>
         <span class="info-value">{{ row.warehouseName || '' }}</span>
-        <span class="info-label info-label--w2 info-gap">申请时间</span>
-        <span class="info-value">{{ formatDateTime(row.billDate) }}</span>
-        <span class="info-label info-label--w4 info-gap">单位</span>
-        <span class="info-value">元</span>
+        <span class="info-label info-label--w3 info-gap">审核时间</span>
+        <span class="info-value">{{ formatDateTime(row.auditDate || row.billDate) }}</span>
       </div>
 
       <table class="detail-table">
@@ -104,6 +104,7 @@ export default {
       type: String,
       default: 'landscape'
     },
+    /** third-split：二等分凭证纸 210×140mm（与入/出库单一致）；a4：A4 */
     paperType: {
       type: String,
       default: 'third-split'
@@ -125,7 +126,8 @@ export default {
     detailPages() {
       const list = (this.row && Array.isArray(this.row.detailList)) ? this.row.detailList : []
       if (!list.length) return [[]]
-      const pageSize = 7
+      /* 与出库单 outOrderPrint 一致，避免单联内容过高触发多吐空白页 */
+      const pageSize = 6
       const pages = []
       for (let i = 0; i < list.length; i += pageSize) {
         pages.push(list.slice(i, i + pageSize))
@@ -135,12 +137,13 @@ export default {
     renderCopies() {
       return 1
     },
+    /** 二等分/凭证联：210mm×140mm，与 $print inject 一致 */
     pageSizeForPrint() {
       return this.isA4Paper ? 'A4' : '210mm 140mm'
     }
   },
   methods: {
-    /** 表头日期时间：yyyy-MM-dd HH:mm:ss */
+    /** 表头/打印日期：yyyy-MM-dd */
     formatDateTime(v) {
       if (!v) return ''
       const d = new Date(v)
@@ -148,10 +151,7 @@ export default {
       const y = d.getFullYear()
       const m = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
-      const h = String(d.getHours()).padStart(2, '0')
-      const mm = String(d.getMinutes()).padStart(2, '0')
-      const s = String(d.getSeconds()).padStart(2, '0')
-      return `${y}-${m}-${day} ${h}:${mm}:${s}`
+      return `${y}-${m}-${day}`
     },
     formatQty(v) {
       if (v == null || v === '') return ''
@@ -319,7 +319,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   left -9999px
   top 0
   width 210mm
-  max-width 900px
+  max-width 210mm
   z-index -1
   visibility visible
 
@@ -327,17 +327,17 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   width 297mm
   max-width 1100px
 
+/* 与入库 orderPrint .receipt-print：宽度 210mm */
 .receipt-print
   line-height 1.35
-  max-width 900px
+  width 210mm
+  max-width 210mm
   margin 0 auto
   font-family $font-song
   min-height 99mm
   box-sizing border-box
   padding-left 1ch
   padding-right 1ch
-  break-inside avoid
-  page-break-inside avoid
 
 .print-copy-block
   position relative
@@ -346,8 +346,6 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   display flex
   flex-direction column
   justify-content flex-start
-  break-inside avoid
-  page-break-inside avoid
 
 .print-copy-block.is-third-split-copy
   height 140mm
@@ -564,10 +562,15 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 </style>
 
 <style lang="stylus" media="print">
+/* 边距与入/出库一致；二等分 210×140 的 size 由 $print(injectPageSize) 注入，避免选 A4 时被写死 */
 @page
   margin 0 4mm !important
 
 @media print
+  html,body
+    margin 0 !important
+    padding 0 !important
+
   *
     color #000 !important
 
@@ -582,10 +585,17 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   .refund-depot-order-print.receipt-print
     width 100% !important
     max-width none !important
-    padding 6px 0 0 !important
+    /* 与出库 outOrderPrint 一致：根上勿加 padding，下移靠联内 padding-top 6mm */
+    padding 0 !important
     box-sizing border-box !important
     padding-left 0 !important
     padding-right 0 !important
+    margin 0 !important
+    /* 与出库单一致：避免 scoped 里 min-height:99mm + avoid 把多联当成整块，触发多出一页 */
+    min-height auto !important
+    height auto !important
+    break-inside auto !important
+    page-break-inside auto !important
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     font-size 16px !important
 
@@ -599,9 +609,10 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     height 140mm !important
     overflow hidden !important
 
-  .print-page-break
-    break-after page !important
+  /* 仅非末联加分页（见模板 :class 注释），避免 :last-child 被末尾空白文本节点破坏 */
+  .refund-depot-order-print .print-slip-page-break-after
     page-break-after always !important
+    break-after page !important
 
   .doc-header
     display grid !important
@@ -660,6 +671,12 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     margin-right auto !important
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     font-size 14px !important
+
+  /* flex 子项 table 默认 min-height:auto 会按内容撑高，打印时可能超出 140mm 产生幽灵页 */
+  .refund-depot-order-print .print-copy-block.is-third-split-copy .detail-table
+    flex 1 1 auto !important
+    min-height 0 !important
+    max-height 100% !important
 
   .detail-table th,
   .detail-table td
