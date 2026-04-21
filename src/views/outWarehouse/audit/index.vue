@@ -95,6 +95,14 @@
           v-hasPermi="['outWarehouse:apply:audit']"
         >审核</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="warning"
+          size="medium"
+          @click="handleExport"
+          v-hasPermi="['outWarehouse:audit:export']"
+        >导出</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
