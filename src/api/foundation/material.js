@@ -39,6 +39,41 @@ export function listMaterialDeptSafe(query) {
   })
 }
 
+// HIS 收费项目视图列表（v_charge_item）
+export function listHisChargeItem(query) {
+  return request({
+    url: '/foundation/material/hisChargeItem/list',
+    method: 'get',
+    params: query
+  })
+}
+
+// 抓取 HIS 收费项目到本地镜像
+export function fetchHisChargeItemMirror() {
+  return request({
+    url: '/foundation/material/hisChargeItem/fetch',
+    method: 'post'
+  })
+}
+
+// 绑定耗材与 HIS 收费项目（his_id = charge_item_id）
+export function bindMaterialHisChargeItem(data) {
+  return request({
+    url: '/foundation/material/bindHisChargeItem',
+    method: 'post',
+    data: data
+  })
+}
+
+// 解绑耗材与 HIS 收费项目
+export function unbindMaterialHisChargeItem(data) {
+  return request({
+    url: '/foundation/material/unbindHisChargeItem',
+    method: 'post',
+    data: data
+  })
+}
+
 // 查询耗材产品详细
 export function getMaterial(id) {
   return request({

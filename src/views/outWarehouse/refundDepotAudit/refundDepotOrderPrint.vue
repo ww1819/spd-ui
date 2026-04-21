@@ -1,42 +1,43 @@
 <template>
-  <div class="refund-depot-order-print print-root-offscreen" ref="receiptRefundDepotOrderPrintRef" :class="rootOrientationClass">
+  <div
+    class="refund-depot-order-print receipt-print print-root-offscreen"
+    ref="receiptRefundDepotOrderPrintRef"
+    :class="rootOrientationClass"
+  >
     <div
       v-for="(detailPage, pageIndex) in detailPages"
       :key="`page-${pageIndex}`"
       class="print-copy-block"
-      :class="{ 'is-third-split-copy': isThirdSplitPaper, 'print-page-break': pageIndex < detailPages.length - 1 }"
+      :class="{
+        'is-third-split-copy': isThirdSplitPaper,
+        /* 勿用 :last-child 控制分页：根节点末尾空白文本会导致最后一联匹配不到 :last-child，尾联仍带 break-after 多吐一页 */
+        'print-slip-page-break-after': pageIndex < detailPages.length - 1
+      }"
     >
-      <div class="print-copy-block__top">
-        <div class="doc-header">
-          <div class="doc-header-spacer" aria-hidden="true"></div>
-          <div class="doc-title">{{ displayHospitalName }}科室退库单</div>
-          <div class="page-meta">
-            <span class="page-index">{{ pageIndex + 1 }}/{{ detailPages.length }}</span>
-          </div>
+      <div class="doc-header">
+        <div class="doc-header-spacer" aria-hidden="true"></div>
+        <div class="doc-title">
+          <span v-if="hospitalName">{{ hospitalName }}</span>科室退库单
         </div>
-
-        <div class="summary">
-          <div class="summary-item summary-left">
-            <span class="kv-label kv-label--l">科室</span><span class="kv-value">{{ row.departmentName || '' }}</span>
-          </div>
-          <div class="summary-item summary-center">
-            <span class="kv-label kv-label--c">单据号</span><span class="kv-value">{{ row.billNo || '' }}</span>
-          </div>
-          <div class="summary-item summary-right">
-            <span class="kv-label kv-label--r">退库日期</span><span class="kv-value">{{ formatDateTime(row.auditDate || row.billDate) }}</span>
-          </div>
-          <div class="summary-item summary-left">
-            <span class="kv-label kv-label--l">仓库</span><span class="kv-value">{{ row.warehouseName || '' }}</span>
-          </div>
-          <div class="summary-item summary-center">
-            <span class="kv-label kv-label--c">申请时间</span><span class="kv-value">{{ formatDateTime(row.billDate) }}</span>
-          </div>
-          <div class="summary-item summary-right">
-            <span class="kv-label kv-label--r">单位</span><span class="kv-value">元</span>
-          </div>
+        <div class="page-meta">
+          <span class="page-index">{{ pageIndex + 1 }}/{{ detailPages.length }}</span>
         </div>
+      </div>
 
-        <table class="common-table">
+      <div class="info-row print-head-info">
+        <span class="info-label info-label--w1">科室</span>
+        <span class="info-value">{{ row.departmentName || '' }}</span>
+        <span class="info-label info-label--w2 info-gap">单据号</span>
+        <span class="info-value">{{ row.billNo || '' }}</span>
+      </div>
+      <div class="info-row print-head-info">
+        <span class="info-label info-label--w1">仓库</span>
+        <span class="info-value">{{ row.warehouseName || '' }}</span>
+        <span class="info-label info-label--w3 info-gap">审核时间</span>
+        <span class="info-value">{{ formatDateTime(row.auditDate || row.billDate) }}</span>
+      </div>
+
+      <table class="detail-table">
           <colgroup>
             <col class="col-name" />
             <col class="col-spec" />
@@ -64,36 +65,24 @@
               <td class="num-cell">{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
               <td class="num-cell">{{ formatAmt(item.amt) }}</td>
             </tr>
-            <tr v-if="pageIndex === detailPages.length - 1" class="total-row">
-              <td colspan="3" class="total-label">
-                <span class="total-label-text">合计</span>
+            <tr v-if="pageIndex === detailPages.length - 1" class="print-total-row">
+              <td colspan="3" class="total-label-cell">
+                <span class="total-label">合计</span><span class="total-value">{{ row.totalAmtConverter || '' }}</span>
               </td>
               <td class="num-cell">{{ formatQty(row.totalQty) }}</td>
               <td></td>
-              <td class="num-cell">{{ formatAmt(row.totalAmt) }}</td>
+              <td class="num-cell total-amt-span">{{ formatAmt(row.totalAmt) }}</td>
             </tr>
           </tbody>
         </table>
 
-        <div v-if="pageIndex === detailPages.length - 1" class="amount-line">
-          <span class="amount-item">
-            <span class="amount-k">合计金额（大写）</span><span class="amount-v">{{ row.totalAmtConverter || '' }}</span>
-          </span>
-          <span class="amount-item amount-item--right">
-            <span class="amount-k">（小写）</span><span class="amount-v">{{ formatAmt(row.totalAmt) }}</span>
-          </span>
-        </div>
-      </div>
-
-      <div class="print-copy-block__grow" aria-hidden="true" />
-
-      <div class="print-copy-block__footer">
+      <div class="print-sign-footer-fixed">
         <div class="sign-block">
           <span class="sign-item"><span class="sign-label">退库操作员</span><span class="sign-value sign-value--blank"></span></span>
           <span class="sign-item"><span class="sign-label">退款人员</span><span class="sign-value sign-value--blank"></span></span>
           <span class="sign-item sign-item--wide">
             <span class="sign-label">打印日期</span>
-            <span class="sign-value">{{ formatDateOnly(row.printDate || new Date()) }}</span>
+            <span class="sign-value">{{ formatDateTime(row.printDate || new Date()) }}</span>
           </span>
         </div>
       </div>
@@ -115,16 +104,13 @@ export default {
       type: String,
       default: 'landscape'
     },
+    /** third-split：二等分凭证纸 210×140mm（与入/出库单一致）；a4：A4 */
     paperType: {
       type: String,
       default: 'third-split'
     }
   },
   computed: {
-    // 默认样式按衡水市第三人民医院版式渲染
-    displayHospitalName() {
-      return this.hospitalName || '衡水市第三人民医院'
-    },
     effectiveOrientation() {
       return this.printOrientation === 'portrait' ? 'portrait' : 'landscape'
     },
@@ -140,7 +126,8 @@ export default {
     detailPages() {
       const list = (this.row && Array.isArray(this.row.detailList)) ? this.row.detailList : []
       if (!list.length) return [[]]
-      const pageSize = 7
+      /* 与出库单 outOrderPrint 一致，避免单联内容过高触发多吐空白页 */
+      const pageSize = 6
       const pages = []
       for (let i = 0; i < list.length; i += pageSize) {
         pages.push(list.slice(i, i + pageSize))
@@ -150,23 +137,14 @@ export default {
     renderCopies() {
       return 1
     },
+    /** 二等分/凭证联：210mm×140mm，与 $print inject 一致 */
     pageSizeForPrint() {
       return this.isA4Paper ? 'A4' : '210mm 140mm'
     }
   },
   methods: {
+    /** 表头/打印日期：yyyy-MM-dd */
     formatDateTime(v) {
-      if (!v) return ''
-      const d = new Date(v)
-      if (isNaN(d.getTime())) return v
-      const y = d.getFullYear()
-      const m = String(d.getMonth() + 1).padStart(2, '0')
-      const day = String(d.getDate()).padStart(2, '0')
-      const h = String(d.getHours()).padStart(2, '0')
-      const mm = String(d.getMinutes()).padStart(2, '0')
-      return `${y}${m}${day}${h}:${mm}`
-    },
-    formatDateOnly(v) {
       if (!v) return ''
       const d = new Date(v)
       if (isNaN(d.getTime())) return v
@@ -310,7 +288,7 @@ export default {
             this.applyPrintCellAutoFont()
             this.$print(
               this.$refs.receiptRefundDepotOrderPrintRef,
-              { injectPageSize: true, pageMargin: '0', waitForAssets: true, beforePrintDelay: 320 },
+              { injectPageSize: true, pageMargin: '0 4mm', waitForAssets: true, beforePrintDelay: 320 },
               this.pageSizeForPrint
             )
           })
@@ -322,7 +300,7 @@ export default {
             this.applyPrintCellAutoFont()
             this.$print(
               this.$refs.receiptRefundDepotOrderPrintRef,
-              { injectPageSize: true, pageMargin: '0', waitForAssets: true, beforePrintDelay: 320 },
+              { injectPageSize: true, pageMargin: '0 4mm', waitForAssets: true, beforePrintDelay: 320 },
               this.pageSizeForPrint
             )
           })
@@ -334,15 +312,51 @@ export default {
 </script>
 
 <style lang="stylus" scoped>
+$font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
+
+.print-root-offscreen
+  position fixed
+  left -9999px
+  top 0
+  width 210mm
+  max-width 210mm
+  z-index -1
+  visibility visible
+
+.refund-depot-order-print.page-slip-landscape.print-root-offscreen
+  width 297mm
+  max-width 1100px
+
+/* 与入库 orderPrint .receipt-print：宽度 210mm */
+.receipt-print
+  line-height 1.35
+  width 210mm
+  max-width 210mm
+  margin 0 auto
+  font-family $font-song
+  min-height 99mm
+  box-sizing border-box
+  padding-left 1ch
+  padding-right 1ch
+
 .print-copy-block
   position relative
+  min-height 140mm
+  box-sizing border-box
+  display flex
+  flex-direction column
+  justify-content flex-start
+
+.print-copy-block.is-third-split-copy
+  height 140mm
+  overflow hidden
 
 .doc-header
   display grid
   grid-template-columns 92px 1fr 92px
   align-items center
   column-gap 6px
-  margin-bottom 6px
+  margin-bottom 3px
 
 .doc-header-spacer
   width 92px
@@ -358,59 +372,109 @@ export default {
   color #333
 
 .doc-title
-  margin 0
-  padding 0
+  font-size 15px
+  font-weight bold
   text-align center
+  margin 0
+  line-height 1.25
 
-.summary-item
+.info-row
   display flex
   align-items center
-  min-width 0
+  flex-wrap wrap
+  margin-bottom 1px
+  font-size 10px
 
-.kv-label
+.print-head-info
+  width 94%
+  margin 0 auto 3px
+  padding 0
+
+.info-label
   flex 0 0 auto
+  flex-shrink 0
+  box-sizing border-box
+  text-align right
   white-space nowrap
   &::after
     content '：'
 
-/* 三列摘要：左/中/右各自对齐冒号 */
-.kv-label--l
-  flex-basis 4.6em
-  max-width 4.6em
-  text-align right
+.info-label--w1
+  flex-basis 4.2em
+  max-width 4.2em
 
-.kv-label--c
-  flex-basis 5.0em
-  max-width 5.0em
-  text-align right
+.info-label--w2
+  flex-basis 4.0em
+  max-width 4.0em
 
-.kv-label--r
-  flex-basis 5.6em
-  max-width 5.6em
-  text-align right
+.info-label--w3
+  flex-basis 9.2em
+  max-width 9.2em
 
-.kv-value
+.info-label--w4
+  flex-basis 5.2em
+  max-width 5.2em
+
+.info-value
   flex 1 1 auto
   min-width 0
-  margin-left 6px
-  overflow hidden
-  text-overflow clip
-  white-space nowrap
+  margin-right 10px
 
-.common-table th .th-text
+.info-gap
+  margin-left 10px
+
+.detail-table
+  width 94%
+  table-layout fixed
+  border-collapse collapse
+  border 1px solid #000
+  margin 0 auto 0
+  font-family $font-song
+
+.detail-table .col-name
+  width 26%
+.detail-table .col-spec
+  width 18%
+.detail-table .col-batch
+  width 14%
+.detail-table .col-qty
+  width 12%
+.detail-table .col-price
+  width 14%
+.detail-table .col-amt
+  width 16%
+
+.detail-table th,
+.detail-table td
+  border 1px solid #000
+  padding 1px 3px
+  vertical-align middle
+  font-size inherit
+
+.detail-table th
+  font-weight bold
+  background #f5f5f5
+  text-align center
+
+.detail-table th .th-text
   display inline-flex
   align-items center
   justify-content center
   max-width 100%
   white-space nowrap
 
-.common-table td.cell-textual
+.detail-table tbody td:nth-child(4),
+.detail-table tbody td:nth-child(5),
+.detail-table tbody td:nth-child(6)
+  text-align right
+
+.detail-table td.cell-textual
   text-align left
   vertical-align top
   white-space normal
   word-break break-all
 
-.common-table td.cell-textual .cell-text
+.detail-table td.cell-textual .cell-text
   display -webkit-box
   -webkit-box-orient vertical
   -webkit-line-clamp 2
@@ -429,56 +493,54 @@ export default {
   word-break break-all
   white-space normal
 
-.total-label
-  display flex
-  align-items center
+.detail-table tbody tr.print-total-row td
+  border 1px solid #000
+  padding 4px 4px 6px
+  font-size 11px
+  vertical-align middle
 
-.total-label-text
-  flex 0 0 auto
+.detail-table tbody tr.print-total-row td.total-label-cell
+  text-align left
+  font-weight normal
+
+.detail-table tbody tr.print-total-row .total-label
+  display inline-block
   text-align right
   white-space nowrap
   &::after
     content '：'
 
-.amount-line
-  display flex
-  justify-content space-between
-  gap 10px
-
-.amount-item
-  display inline-flex
-  align-items baseline
-  min-width 0
-
-.amount-item--right
-  justify-content flex-end
-
-.amount-k
-  flex 0 0 auto
-  white-space nowrap
-  &::after
-    content '：'
-
-.amount-v
-  flex 1 1 auto
-  min-width 0
+.detail-table tbody tr.print-total-row .total-value
+  display inline
   margin-left 6px
   white-space normal
   word-break break-all
 
+.detail-table tbody tr.print-total-row td.total-amt-span
+  text-align right
+  font-weight normal
+  white-space nowrap
+
+.print-sign-footer-fixed
+  display none
+  width 94%
+  margin 0 auto
+
 .sign-block
   display flex
   justify-content space-between
-  align-items flex-start
+  padding-right 10%
+  font-size 11px
+  font-family $font-song
 
 .sign-item
   display inline-flex
   align-items center
-  flex 0 0 28%
+  flex 0 0 22%
   min-width 0
 
 .sign-item--wide
-  flex 0 0 40%
+  flex 0 0 50%
 
 .sign-label
   flex 0 0 auto
@@ -500,33 +562,64 @@ export default {
 </style>
 
 <style lang="stylus" media="print">
+/* 边距与入/出库一致；二等分 210×140 的 size 由 $print(injectPageSize) 注入，避免选 A4 时被写死 */
 @page
-  margin 0
+  margin 0 4mm !important
 
 @media print
+  html,body
+    margin 0 !important
+    padding 0 !important
+
   *
     color #000 !important
 
-  .refund-depot-order-print
-    width 210mm !important
-    max-width 210mm !important
-    /* 针式机左右容易裁切：给内容区留安全边 */
-    padding 0 calc(7mm + 1ch) !important
+  .print-root-offscreen
+    position relative !important
+    left auto !important
+    top auto !important
+    z-index auto !important
+    width 100% !important
+    padding-bottom 0 !important
+
+  .refund-depot-order-print.receipt-print
+    width 100% !important
+    max-width none !important
+    /* 与出库 outOrderPrint 一致：根上勿加 padding，下移靠联内 padding-top 6mm */
+    padding 0 !important
     box-sizing border-box !important
+    padding-left 0 !important
+    padding-right 0 !important
+    margin 0 !important
+    /* 与出库单一致：避免 scoped 里 min-height:99mm + avoid 把多联当成整块，触发多出一页 */
+    min-height auto !important
+    height auto !important
+    break-inside auto !important
+    page-break-inside auto !important
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     font-size 16px !important
 
-  /* 表头信息（科室/仓库/单据号/日期等）+3号 */
-  .summary-item
-    font-size 17px !important
-    line-height 1.6 !important
+  .print-copy-block
+    min-height 140mm !important
+    box-sizing border-box
+    padding 6mm 0 0 0 !important
+    justify-content flex-start !important
+
+  .print-copy-block.is-third-split-copy
+    height 140mm !important
+    overflow hidden !important
+
+  /* 仅非末联加分页（见模板 :class 注释），避免 :last-child 被末尾空白文本节点破坏 */
+  .refund-depot-order-print .print-slip-page-break-after
+    page-break-after always !important
+    break-after page !important
 
   .doc-header
     display grid !important
     grid-template-columns 92px 1fr 92px !important
     align-items center !important
     column-gap 6px !important
-    margin-bottom 6px !important
+    margin-bottom 3px !important
 
   .doc-header-spacer
     width 92px !important
@@ -541,70 +634,92 @@ export default {
     letter-spacing 0.5px !important
 
   .doc-title
-    font-size 20px !important
-    line-height 1.7 !important
-    margin 0 !important
+    font-size 19px !important
+    font-weight normal !important
     padding 0 !important
-    text-align center !important
+    margin 0 !important
+    line-height 1.65 !important
+    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    page-break-inside avoid !important
 
-  .kv-label--l
-    flex-basis 5.0em !important
-    max-width 5.0em !important
-
-  .kv-label--c
-    flex-basis 5.4em !important
-    max-width 5.4em !important
-
-  .kv-label--r
-    flex-basis 6.0em !important
-    max-width 6.0em !important
-
-  /* 列名、明细数据行较原设置缩小 1 号；表格内「合计」行保持原字号 */
-  .common-table thead th
-    font-size 18px !important
-    line-height 1.55 !important
-
-  .common-table tbody tr:not(.total-row) td
+  .print-head-info
+    width 94% !important
+    margin 0 auto 1px !important
+    padding 0 !important
     font-size 16px !important
     line-height 1.55 !important
 
-  .common-table tbody tr:not(.total-row) td:nth-child(4),
-  .common-table tbody tr:not(.total-row) td:nth-child(5),
-  .common-table tbody tr:not(.total-row) td:nth-child(6)
+  .info-label--w1
+    flex-basis 4.6em !important
+    max-width 4.6em !important
+
+  .info-label--w2
+    flex-basis 4.4em !important
+    max-width 4.4em !important
+
+  .info-label--w3
+    flex-basis 10.0em !important
+    max-width 10.0em !important
+
+  .info-label--w4
+    flex-basis 5.6em !important
+    max-width 5.6em !important
+
+  .detail-table
+    width 94% !important
+    margin-left auto !important
+    margin-right auto !important
+    font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     font-size 14px !important
 
-  .common-table tbody tr:not(.total-row) td:nth-child(1),
-  .common-table tbody tr:not(.total-row) td:nth-child(2),
-  .common-table tbody tr:not(.total-row) td:nth-child(3)
-    font-size 15px !important
+  /* flex 子项 table 默认 min-height:auto 会按内容撑高，打印时可能超出 140mm 产生幽灵页 */
+  .refund-depot-order-print .print-copy-block.is-third-split-copy .detail-table
+    flex 1 1 auto !important
+    min-height 0 !important
+    max-height 100% !important
 
-  /* 合计信息（含大写/小写）+ 表格内合计行 */
-  .amount-line,
-  .common-table .total-row td
-    font-size 17px !important
-    line-height 1.6 !important
+  .detail-table th,
+  .detail-table td
+    border 1px solid #000
+    padding 3px 5px !important
+    overflow hidden
+    text-overflow clip !important
+    line-height 1.45 !important
 
-  .common-table th
+  .detail-table th
+    line-height 1.35 !important
+    white-space nowrap !important
+    padding-top 2px !important
+    padding-bottom 2px !important
     background transparent !important
     font-weight normal !important
     -webkit-print-color-adjust economy
     print-color-adjust economy
 
-  /* 表格列标题不加冒号 */
-  .common-table th .th-text
+  .detail-table th .th-text
     display inline-flex !important
     align-items center !important
     justify-content center !important
     max-width 100% !important
     white-space nowrap !important
 
-  .common-table td.cell-textual
+  .detail-table tbody tr:not(.print-total-row) td:nth-child(4),
+  .detail-table tbody tr:not(.print-total-row) td:nth-child(5),
+  .detail-table tbody tr:not(.print-total-row) td:nth-child(6)
+    font-size 13px !important
+
+  .detail-table tbody tr:not(.print-total-row) td:nth-child(1),
+  .detail-table tbody tr:not(.print-total-row) td:nth-child(2),
+  .detail-table tbody tr:not(.print-total-row) td:nth-child(3)
+    font-size 15px !important
+
+  .detail-table td.cell-textual
     text-align left !important
     vertical-align top !important
     white-space normal !important
     word-break break-all !important
 
-  .common-table td.cell-textual .cell-text
+  .detail-table td.cell-textual .cell-text
     display -webkit-box !important
     -webkit-box-orient vertical !important
     -webkit-line-clamp 2 !important
@@ -614,181 +729,34 @@ export default {
     word-break break-all !important
     line-height 1.35 !important
 
-  /* 整张纸上下各 5mm 安全区；签字行贴内底，避免被裁切 */
-  .print-copy-block
-    padding-top 5mm !important
-    padding-bottom 5mm !important
+  .detail-table tbody tr.print-total-row td
+    border 1px solid #000 !important
+    font-size 14px !important
+    line-height 1.45 !important
+
+  .detail-table tbody tr.print-total-row td.total-amt-span
+    text-align right !important
+    font-weight normal !important
+    white-space nowrap !important
+
+  .detail-table tbody tr.print-total-row .total-label
+    &::after
+      content '：' !important
+
+  .print-sign-footer-fixed
+    display block !important
+    position absolute !important
+    left 2% !important
+    right 2% !important
+    bottom 3mm !important
     box-sizing border-box !important
+    padding 0
+    border-top none
+    background transparent
+    font-size 17px
+    line-height 1.55 !important
+    font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
 
-  .sign-block
-    margin-bottom 0 !important
-    padding-bottom 0 !important
-
-.refund-depot-order-print
-  padding 6px calc(6mm + 1ch) 0
-  box-sizing border-box
-  line-height 1.45
-  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
-  font-size 14px
-  break-inside avoid
-  page-break-inside avoid
-
-.print-copy-block
-  min-height 140mm
-  height 140mm
-  padding-top 5mm
-  padding-bottom 5mm
-  box-sizing border-box
-  display flex
-  flex-direction column
-  justify-content flex-start
-  align-items stretch
-  break-inside avoid
-  page-break-inside avoid
-
-.print-copy-block__top
-  flex 0 0 auto
-
-/* 中间占位：把签字区顶到纸张底部；合计大写/小写已在表格下方 */
-.print-copy-block__grow
-  flex 1 1 auto
-  min-height 4mm
-
-/* 仅签字区；距底边由 print-copy-block padding-bottom 5mm 控制 */
-.print-copy-block__footer
-  flex 0 0 auto
-  width 100%
-  box-sizing border-box
-
-.print-copy-block.is-third-split-copy
-  height 140mm
-  overflow hidden
-
-  .print-page-break
-    break-after page !important
-    page-break-after always !important
-
-.doc-title
-  text-align center
-  font-size 18px
-  line-height 1.65
-  padding 0
-  margin 0
-  font-weight normal
-  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
-
-.summary
-  display flex
-  flex-wrap wrap
-  margin-bottom 8px
-
-.summary-item
-  box-sizing border-box
-  font-size 14px
-  line-height 1.55
-  padding 2px 0
-  display flex
-  align-items center
-  min-width 0
-  white-space nowrap
-  overflow hidden
-  text-overflow clip
-
-.summary-left
-  width 34%
-
-.summary-center
-  width 31%
-
-.summary-right
-  width 35%
-  text-align right
-
-.common-table
-  width 94%
-  margin-left auto
-  margin-right auto
-  table-layout fixed
-  border-collapse collapse
-  border-spacing 0
-
-.common-table .col-name
-  width 26%
-
-.common-table .col-spec
-  width 18%
-
-.common-table .col-batch
-  width 14%
-
-.common-table .col-qty
-  width 12%
-
-.common-table .col-price
-  width 14%
-
-.common-table .col-amt
-  width 16%
-
-.common-table th,
-.common-table td
-  border 1px solid #000
-  padding 5px 6px
-  font-size 17px
-  line-height 1.6
-
-.common-table thead th
-  font-size 16px
-  line-height 1.55
-
-.common-table tbody tr:not(.total-row) td
-  font-size 16px
-  line-height 1.55
-
-.common-table tbody tr:not(.total-row) td:nth-child(4),
-.common-table tbody tr:not(.total-row) td:nth-child(5),
-.common-table tbody tr:not(.total-row) td:nth-child(6)
-  font-size 14px
-
-.common-table tbody tr:not(.total-row) td:nth-child(1),
-.common-table tbody tr:not(.total-row) td:nth-child(2),
-.common-table tbody tr:not(.total-row) td:nth-child(3)
-  font-size 15px
-
-.common-table th
-  text-align center
-  font-weight normal
-
-.common-table td.cell-textual
-  text-align left
-  vertical-align top
-  white-space normal
-  word-break break-all
-
-.num-cell
-  text-align right
-
-.total-row td
-  font-weight normal
-
-.total-label
-  text-align left
-
-.amount-line
-  margin-top 8px
-  margin-bottom 0
-  font-size 14px
-  line-height 1.55
-  width 94%
-  margin-left auto
-  margin-right auto
-
-.sign-block
-  font-size 14px
-  line-height 1.55
-  width 94%
-  margin-left auto
-  margin-right auto
-  margin-top 0
-  padding-bottom 0
+  .print-sign-footer-fixed .sign-block
+    padding-right 8%
 </style>

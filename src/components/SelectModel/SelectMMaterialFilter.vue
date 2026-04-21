@@ -541,9 +541,8 @@ export default {
           console.log('过滤后数量:', materialList.length);
           console.log('匹配到的产品:', matchedItems);
         } else if (this.warehouseValue && this.fixedNumberMaterialIds.length === 0) {
-          // 如果仓库有值但没有定数监测产品，显示空列表
-          materialList = [];
-          console.log('仓库有值但没有定数监测产品，显示空列表');
+          // 生产环境常见：本地没有定数缓存。此时应回退显示接口返回结果，而不是清空列表。
+          console.log('仓库有值但无定数监测缓存，回退显示接口返回结果');
         } else if (!this.warehouseValue) {
           console.log('没有仓库ID，显示所有耗材');
         }

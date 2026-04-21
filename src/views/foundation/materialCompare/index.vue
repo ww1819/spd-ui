@@ -78,6 +78,13 @@
                 @click="handleQuery"
               >搜索</el-button>
             </el-col>
+            <el-col :span="1.5">
+              <el-button
+                type="warning"
+                size="medium"
+                @click="handleFetchHisChargeItems"
+              >抓取收费项目</el-button>
+            </el-col>
           </el-row>
 
           <!-- 明细表格 -->
@@ -100,7 +107,7 @@
                 </template>
               </el-table-column>
               <el-table-column label="HRP编码" align="center" prop="hrpCode" width="120" show-overflow-tooltip />
-              <el-table-column label="HIS编码" align="center" prop="hisCode" width="120" show-overflow-tooltip />
+              <el-table-column label="HIS收费项目ID" align="center" prop="hisChargeItemId" width="140" show-overflow-tooltip />
               <el-table-column label="供应商" align="center" width="150" show-overflow-tooltip>
                 <template slot-scope="scope">
                   <span>{{ (scope.row.supplier && scope.row.supplier.name) || scope.row.supplierName || '--' }}</span>
@@ -151,6 +158,14 @@
         <span>HIS对照</span>
         <el-button type="text" @click="hisDialogVisible = false" style="padding: 0;">关闭</el-button>
       </div>
+      <div class="his-current-bind-box">
+        <span class="his-current-bind-title">当前对照收费项目：</span>
+        <span v-if="currentHisChargeItem">
+          {{ currentHisChargeItem.chargeCode || '--' }} / {{ currentHisChargeItem.chargeName || '--' }}
+          / {{ currentHisChargeItem.chargeSpeci || '--' }} / {{ formatCurrency(currentHisChargeItem.chargePrice) }}
+        </span>
+        <span v-else>未绑定</span>
+      </div>
       
       <!-- 搜索框 -->
       <div class="his-query-container">
@@ -160,7 +175,7 @@
               <el-form-item label="名称" prop="name" class="query-item-inline">
                 <el-input
                   v-model="hisQueryParams.name"
-                  placeholder="名称"
+                  placeholder="名称/编码/ID/拼音简码"
                   clearable
                   @keyup.enter.native="handleHisQuery"
                   style="width: 200px"
@@ -202,6 +217,18 @@
           <el-table-column label="收费单价" align="center" prop="chargePrice" width="120">
             <template slot-scope="scope">
               <span>{{ formatCurrency(scope.row.chargePrice) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" align="center" width="100">
+            <template slot-scope="scope">
+              <el-tag v-if="isBoundHis(scope.row)" type="success" size="mini">已绑定</el-tag>
+              <el-tag v-else size="mini">未绑定</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" align="center" width="100">
+            <template slot-scope="scope">
+              <el-button v-if="isBoundHis(scope.row)" type="text" size="mini" @click="handleUnbindHis()">解绑</el-button>
+              <el-button v-else type="text" size="mini" @click="handleBindHis(scope.row)">绑定</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -296,7 +323,7 @@
 </template>
 
 <script>
-import { listMaterial } from "@/api/foundation/material";
+import { listMaterial, listHisChargeItem, fetchHisChargeItemMirror, bindMaterialHisChargeItem, unbindMaterialHisChargeItem } from "@/api/foundation/material";
 import { listSupplierAll } from "@/api/foundation/supplier";
 
 export default {
@@ -341,6 +368,7 @@ export default {
         name: null,
         speci: null
       },
+      currentHisChargeItem: null,
       // HRP弹窗相关
       hrpDialogVisible: false,
       hrpLoading: false,
@@ -412,6 +440,23 @@ export default {
       this.queryParams.pageNum = 1;
       this.getList();
     },
+    /** 抓取 HIS 收费项目镜像 */
+    handleFetchHisChargeItems() {
+      this.loading = true;
+      fetchHisChargeItemMirror().then(response => {
+        const data = (response && response.data) || {};
+        const fetched = data.fetchedRows != null ? data.fetchedRows : 0;
+        this.$modal.msgSuccess(`抓取成功，本次抓取 ${fetched} 条`);
+        if (this.hisDialogVisible) {
+          this.hisQueryParams.pageNum = 1;
+          this.getHisList();
+        }
+      }).catch(() => {
+        this.$modal.msgError("抓取失败，请稍后重试");
+      }).finally(() => {
+        this.loading = false;
+      });
+    },
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
@@ -429,7 +474,22 @@ export default {
       this.currentMaterialRow = row;
       this.hisDialogVisible = true;
       this.hisQueryParams.pageNum = 1;
+      this.loadCurrentHisChargeItem();
       this.getHisList();
+    },
+    /** 加载当前耗材已对照收费项目 */
+    loadCurrentHisChargeItem() {
+      const chargeItemId = this.currentMaterialRow && this.currentMaterialRow.hisChargeItemId;
+      if (!chargeItemId) {
+        this.currentHisChargeItem = null;
+        return;
+      }
+      listHisChargeItem({ chargeItemId, pageNum: 1, pageSize: 1 }).then(response => {
+        const rows = (response && response.rows) || [];
+        this.currentHisChargeItem = rows.length > 0 ? rows[0] : null;
+      }).catch(() => {
+        this.currentHisChargeItem = null;
+      });
     },
     /** HIS搜索 */
     handleHisQuery() {
@@ -439,13 +499,58 @@ export default {
     /** 查询HIS列表 */
     getHisList() {
       this.hisLoading = true;
-      // TODO: 调用HIS接口
-      // 这里先模拟数据
-      setTimeout(() => {
-        this.hisList = [];
-        this.hisTotal = 0;
+      listHisChargeItem(this.hisQueryParams).then(response => {
+        this.hisList = response.rows || [];
+        this.hisTotal = response.total || 0;
         this.hisLoading = false;
-      }, 500);
+      }).catch(() => {
+        this.hisLoading = false;
+      });
+    },
+    isBoundHis(row) {
+      if (!this.currentMaterialRow || !row) {
+        return false;
+      }
+      return String(this.currentMaterialRow.hisChargeItemId || '') === String(row.chargeItemId || '');
+    },
+    /** 绑定 HIS 收费项目 */
+    handleBindHis(row) {
+      if (!this.currentMaterialRow || !this.currentMaterialRow.id) {
+        this.$modal.msgError("未找到当前耗材");
+        return;
+      }
+      if (!row || !row.chargeItemId) {
+        this.$modal.msgError("未找到收费项目ID");
+        return;
+      }
+      bindMaterialHisChargeItem({
+        materialId: this.currentMaterialRow.id,
+        chargeItemId: row.chargeItemId
+      }).then(() => {
+        this.$modal.msgSuccess("绑定成功");
+        this.currentMaterialRow.hisChargeItemId = row.chargeItemId;
+        this.currentMaterialRow.hisCode = row.chargeCode;
+        this.currentHisChargeItem = row;
+        this.hisDialogVisible = false;
+        this.getList();
+      });
+    },
+    /** 解绑 HIS 收费项目 */
+    handleUnbindHis() {
+      if (!this.currentMaterialRow || !this.currentMaterialRow.id) {
+        this.$modal.msgError("未找到当前耗材");
+        return;
+      }
+      unbindMaterialHisChargeItem({
+        materialId: this.currentMaterialRow.id
+      }).then(() => {
+        this.$modal.msgSuccess("解绑成功");
+        this.currentMaterialRow.hisChargeItemId = null;
+        this.currentMaterialRow.hisCode = null;
+        this.currentHisChargeItem = null;
+        this.getHisList();
+        this.getList();
+      });
     },
     /** HRP按钮操作 */
     handleHrp(row) {
@@ -607,6 +712,21 @@ export default {
   background: #fafafa;
   border-radius: 4px;
   border: 1px solid #EBEEF5;
+}
+
+.his-current-bind-box {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid #EBEEF5;
+  border-radius: 4px;
+  background: #f8fbff;
+  color: #606266;
+}
+
+.his-current-bind-title {
+  color: #303133;
+  font-weight: 600;
+  margin-right: 6px;
 }
 
 .his-table-container {

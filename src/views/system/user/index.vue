@@ -127,7 +127,12 @@
           <el-table-column label="用户姓名" align="center" key="nickName" prop="nickName" v-if="columns[2].visible" :show-overflow-tooltip="true" />
           <el-table-column label="工作组" align="center" key="deptName" prop="postName" v-if="columns[3].visible" :show-overflow-tooltip="true" />
           <el-table-column label="手机号码" align="center" key="phonenumber" prop="phonenumber" v-if="columns[4].visible" width="120" />
-          <el-table-column label="状态" align="center" key="status" v-if="columns[5].visible">
+          <el-table-column label="用户所属科室" align="center" key="departmentNames" v-if="columns[5].visible" :show-overflow-tooltip="true">
+            <template slot-scope="scope">
+              <span>{{ scope.row.departmentNames || (scope.row.dept && scope.row.dept.deptName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" align="center" key="status" v-if="columns[6].visible">
             <template slot-scope="scope">
               <el-switch
                 v-if="canChangeUserStatus"
@@ -139,7 +144,7 @@
               <dict-tag v-else :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" v-if="columns[6].visible" width="160">
+          <el-table-column label="创建时间" align="center" prop="createTime" v-if="columns[7].visible" width="160">
             <template slot-scope="scope">
               <span>{{ parseTime(scope.row.createTime) }}</span>
             </template>
@@ -689,8 +694,9 @@ export default {
         { key: 2, label: `用户姓名`, visible: true },
         { key: 3, label: `工作组`, visible: true },
         { key: 4, label: `手机号码`, visible: true },
-        { key: 5, label: `状态`, visible: true },
-        { key: 6, label: `创建时间`, visible: true }
+        { key: 5, label: `用户所属科室`, visible: true },
+        { key: 6, label: `状态`, visible: true },
+        { key: 7, label: `创建时间`, visible: true }
       ],
       // 表单校验
       rules: {

@@ -29,7 +29,10 @@ const Print = function (dom, options, pageSize) {
 };
 Print.prototype = {
   init: function (pageSize) {
-    var content = this.getStyle(pageSize) + this.getHtml();
+    var headHtml = this.getStyle(pageSize);
+    var bodyHtml = this.getHtml();
+    /* 完整文档结构：避免各浏览器对「仅 style+div」碎片 write 的解析差异；link 进 head 便于统一等样式加载 */
+    var content = '<!DOCTYPE html><html><head><meta charset="utf-8">' + headHtml + '</head><body>' + bodyHtml + '</body></html>';
     this.writeIframe(content);
   },
   extend: function (obj, obj2) {
@@ -47,14 +50,38 @@ Print.prototype = {
     }
     str += "<style>" + (this.options.noPrint ? this.options.noPrint : '.no-print') + "{display:none;}</style>";
     str += "<style>html,body,div{height: auto!important;}</style>";
+    /* 避免 body 默认 8px 边距、或布局里 min-height:100vh 等在打印 iframe 里撑出多一页空白 */
+    str += "<style>html,body{margin:0!important;padding:0!important;min-height:0!important;}</style>";
 
     str = str.replace('size: A5', `size: ${pageSize}`);
-    // 自定义纸张（如三等分 210mm×99mm）：注入 @page，避免仅依赖页面内 style 的替换
+    // 自定义纸张（如 210mm×140mm）：注入 @page，避免仅依赖页面内 style 的替换
+    // 注意：浏览器预览≠打印机物理可打印区；仅设置 size 时，左右边框仍可能被硬件边距裁切。
+    // 因此默认给左右各留一点安全边距（可用 options.pageMargin 覆盖）。
     if (this.options.injectPageSize !== false && pageSize && String(pageSize).indexOf('mm') !== -1) {
-      str += "<style>@page { size: " + pageSize + " !important; }</style>";
+      var pageMargin = this.options.pageMargin && String(this.options.pageMargin).trim()
+        ? String(this.options.pageMargin).trim()
+        : (function () {
+          // 小标签纸（如条码）通常需要尽量贴边；宽票据（>=120mm）更容易遇到左右物理不可打印区裁切
+          var s = String(pageSize)
+          var m = s.match(/(\d+(?:\.\d+)?)\s*mm/gi)
+          var maxMm = 0
+          if (m && m.length) {
+            for (var i = 0; i < m.length; i++) {
+              var v = parseFloat(String(m[i]).replace(/mm/gi, ''))
+              if (!isNaN(v)) maxMm = Math.max(maxMm, v)
+            }
+          }
+          return maxMm >= 120 ? '0 4mm' : '0'
+        })()
+      str += "<style>@page { size: " + pageSize + " !important; margin: " + pageMargin + " !important; }</style>";
     }
+    // pageMargin 已在自定义 mm 纸张的 @page 中合并注入；这里仅处理非 mm 纸张或关闭 injectPageSize 的场景
     if (this.options.pageMargin && String(this.options.pageMargin).trim()) {
-      str += "<style>@page { margin: " + this.options.pageMargin + " !important; }</style>";
+      var ps = pageSize && String(pageSize);
+      var mergedMm = this.options.injectPageSize !== false && ps && ps.indexOf('mm') !== -1;
+      if (!mergedMm) {
+        str += "<style>@page { margin: " + this.options.pageMargin + " !important; }</style>";
+      }
     }
 
     return str;
@@ -113,7 +140,7 @@ Print.prototype = {
     var _this = this;
     var iframe = document.createElement('iframe');
     document.body.appendChild(iframe);
-    iframe.id = "myIframe";
+    iframe.id = 'print-iframe-' + String(Date.now()) + '-' + String(Math.random()).slice(2, 8);
     iframe.setAttribute('style', 'position:absolute;width:0;height:0;top:-10px;left:-10px;');
     var w = iframe.contentWindow || iframe.contentDocument;
     var doc = iframe.contentDocument || iframe.contentWindow.document;
@@ -147,20 +174,78 @@ Print.prototype = {
     setTimeout(finishAndPrint, 300);
   },
 
+  /** 等待打印 iframe 内外链样式表就绪，避免偶发「预览全白」（样式未加载完就 print，清缓存后易复现） */
+  waitStylesheetsInFrame: function (frameWindow) {
+    return new Promise(function (resolve) {
+      try {
+        var doc = frameWindow && frameWindow.document;
+        if (!doc) {
+          resolve();
+          return;
+        }
+        var links = doc.querySelectorAll('link[rel="stylesheet"]');
+        if (!links || !links.length) {
+          resolve();
+          return;
+        }
+        var waits = [];
+        for (var i = 0; i < links.length; i++) {
+          (function (link) {
+            if (!link || !link.href) return;
+            try {
+              if (link.sheet) return;
+            } catch (e) {
+              /* 跨域样式表访问 sheet 可能抛错，仍等待 load/error */
+            }
+            waits.push(new Promise(function (r) {
+              var done = false;
+              function fin() {
+                if (done) return;
+                done = true;
+                r();
+              }
+              link.addEventListener('load', fin, { once: true });
+              link.addEventListener('error', fin, { once: true });
+              setTimeout(fin, 4000);
+            }));
+          })(links[i]);
+        }
+        if (!waits.length) {
+          resolve();
+          return;
+        }
+        Promise.all(waits).then(function () { resolve(); }).catch(function () { resolve(); });
+      } catch (e) {
+        resolve();
+      }
+    });
+  },
   prepareAndPrint: function (frameWindow, options) {
     var _this = this;
-    var tasks = [];
-    if (options.waitForAssets !== false) {
-      tasks.push(this.waitFontsReady(frameWindow));
-      tasks.push(this.waitImagesReady(frameWindow));
-    }
-    return Promise.all(tasks).catch(function () {}).then(function () {
+    if (options.waitForAssets === false) {
       return new Promise(function (resolve) {
         setTimeout(function () {
           _this.toPrint(frameWindow, options, resolve);
         }, options.beforePrintDelay || 260);
       });
-    });
+    }
+    /* 先等外链 CSS，再等字体/图，避免 fonts.ready 早于样式表导致排版仍空白 */
+    return this.waitStylesheetsInFrame(frameWindow)
+      .catch(function () {})
+      .then(function () {
+        return Promise.all([
+          _this.waitFontsReady(frameWindow),
+          _this.waitImagesReady(frameWindow)
+        ]);
+      })
+      .catch(function () {})
+      .then(function () {
+        return new Promise(function (resolve) {
+          setTimeout(function () {
+            _this.toPrint(frameWindow, options, resolve);
+          }, options.beforePrintDelay || 260);
+        });
+      });
   },
   waitFontsReady: function (frameWindow) {
     try {

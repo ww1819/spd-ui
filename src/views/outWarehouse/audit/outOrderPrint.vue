@@ -23,6 +23,8 @@
       <div class="info-row print-head-info">
         <span class="info-label info-label--w1">发往科</span>
         <span class="info-value">{{ row.departmentName || '' }}</span>
+        <span class="info-label info-label--w2 info-gap">仓库</span>
+        <span class="info-value">{{ row.warehouseName || '' }}</span>
         <span class="info-label info-label--w2 info-gap">单据号</span>
         <span class="info-value">{{ row.billNo || '' }}</span>
         <span class="info-label info-label--w3 info-gap">出库日期（审核）</span>
@@ -204,16 +206,15 @@ export default {
         }
       }).catch(() => {})
     },
+    /** 出库日期（审核）：yyyy-MM-dd */
     formatOutboundDate(val) {
       if (!val) return ''
       const d = new Date(val)
+      if (isNaN(d.getTime())) return val
       const y = d.getFullYear()
       const m = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
-      const h = String(d.getHours()).padStart(2, '0')
-      const min = String(d.getMinutes()).padStart(2, '0')
-      const s = String(d.getSeconds()).padStart(2, '0')
-      return `${y}${m}${day}${h}:${min}:${s}`
+      return `${y}-${m}-${day}`
     },
     formatNum(v) {
       if (v == null || v === '') return ''
@@ -380,7 +381,7 @@ export default {
               if (typeof this.$print === 'function') {
                 this.$print(el, {
                   injectPageSize: true,
-                  pageMargin: '0',
+                  pageMargin: '0 4mm',
                   waitForAssets: true,
                   beforePrintDelay: 320
                 }, pageSize)
@@ -492,7 +493,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   font-size 10px
 
 .print-head-info
-  width 96%
+  width 94%
   margin 0 auto 3px
   padding 0
 
@@ -531,7 +532,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   margin-left 10px
 
 .detail-table
-  width 96%
+  width 94%
   table-layout fixed
   border-collapse collapse
   border 1px solid #000
@@ -693,14 +694,14 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 /* 屏上不占用视口；打印时在复制块内展示 */
 .print-sign-footer-fixed
   display none
-  width 96%
+  width 94%
   margin 0 auto
 </style>
 
 <style lang="stylus" media="print">
 /* @page 的纸张尺寸由 $print(injectPageSize) 注入（三等分 210×140；A4 为 A4），这里只统一边距 */
 @page
-  margin 0
+  margin 0 4mm !important
 
 @media print
   *
@@ -719,8 +720,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     max-width none
     padding 0
     box-sizing border-box !important
-    padding-left 1ch !important
-    padding-right 1ch !important
+    padding-left 0 !important
+    padding-right 0 !important
     min-height auto !important
     /* Epson LQ-690K：等宽+固定字号，减少模糊差异 */
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
@@ -777,7 +778,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     padding 2px 2px 2px !important
 
   .print-head-info
-    width 96% !important
+    width 94% !important
     margin 0 auto 1px !important
     padding 0 !important
     font-size 16px !important
@@ -801,7 +802,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     max-width 5.6em !important
 
   .detail-table
-    width 96% !important
+    width 94% !important
     margin-left auto !important
     margin-right auto !important
     /* 点阵打印：固定字号/等宽，降低模糊 */
