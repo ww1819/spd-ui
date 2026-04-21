@@ -19,17 +19,27 @@
 
       <!-- 基本信息区：单据号、供货商、入库日期、资金来源账户 -->
       <div class="info-block" :style="tableStyle">
-        <div class="info-row">
-          <span class="info-label info-label--l1">单据号</span>
-          <span class="info-value">{{ row.billNo || '' }}</span>
-          <span class="info-label info-label--l2 info-gap">供货商</span>
-          <span class="info-value info-value-wide">{{ row.supplierName || '' }}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label info-label--l1">入库日期</span>
-          <span class="info-value">{{ formatInboundDate(row.billDate) }}</span>
-          <span class="info-label info-label--l2 info-gap">资金来源账户</span>
-          <span class="info-value">{{ row.fundSourceAccount || '' }}</span>
+        <div class="info-grid">
+          <div class="info-cell">
+            <span class="info-label info-label--l1">单据号</span>
+            <span class="info-value">{{ row.billNo || '' }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label info-label--l1">仓库</span>
+            <span class="info-value">{{ row.warehouseName || '' }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label info-label--l3">入库日期</span>
+            <span class="info-value">{{ formatInboundDate(row.billDate) }}</span>
+          </div>
+          <div class="info-cell info-cell--span2">
+            <span class="info-label info-label--l1">供货商</span>
+            <span class="info-value">{{ row.supplierName || '' }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label info-label--l3">资金来源账户</span>
+            <span class="info-value">{{ row.fundSourceAccount || '' }}</span>
+          </div>
         </div>
       </div>
 
@@ -73,25 +83,28 @@
               <span class="cell-text">{{ item.factoryName || '' }}</span>
             </td>
           </tr>
+          <tr v-if="pageIndex === pagedDetailList.length - 1" class="print-total-row">
+            <td colspan="5" class="total-label-cell">
+              <span class="total-label">合计</span><span class="total-value">{{ row.totalAmtConverter || '' }}</span>
+            </td>
+            <td class="total-amt-cell">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</td>
+            <td></td>
+          </tr>
         </tbody>
       </table>
 
-      <!-- 合计：仅最后一页显示 -->
-      <div v-if="pageIndex === pagedDetailList.length - 1" class="total-row" :style="tableStyle">
-        <span class="total-left">
-          <span class="total-label">合计</span><span class="total-value">{{ row.totalAmtConverter || '' }}</span>
-        </span>
-        <span class="total-num">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</span>
-      </div>
-
       <!-- 签字区：每一页都显示，固定在页尾 -->
       <div class="sign-block" :style="tableStyle">
-        <span class="sign-item"><span class="sign-label">采购</span><span class="sign-value sign-value--blank"></span></span>
-        <span class="sign-item"><span class="sign-label">保管</span><span class="sign-value sign-value--blank"></span></span>
-        <span class="sign-item sign-item--wide">
+        <div class="sign-item">
+          <span class="sign-label">采购</span><span class="sign-value sign-value--blank"></span>
+        </div>
+        <div class="sign-item">
+          <span class="sign-label">保管</span><span class="sign-value sign-value--blank"></span>
+        </div>
+        <div class="sign-item sign-item--wide">
           <span class="sign-label">入库操作员</span>
           <span class="sign-value">{{ row.inboundOperator || row.createBy || '' }}</span>
-        </span>
+        </div>
       </div>
     </div>
   </div>
@@ -434,11 +447,29 @@ export default {
 .info-block
   margin-bottom 6px
 
-.info-row
+.info-grid
+  display grid
+  grid-template-columns 1.2fr 0.8fr 1.1fr
+  column-gap 18px
+  row-gap 2px
+
+.info-cell
   display flex
   align-items center
-  flex-wrap wrap
-  margin-bottom 2px
+  min-width 0
+
+.info-cell--span2
+  grid-column 1 / span 2
+
+.info-grid .info-label
+  text-align left
+  flex-basis auto
+  max-width none
+  margin-right 0
+
+.info-grid .info-label::after
+  content ':' 
+  margin-right 2px
 
 .info-label
   flex 0 0 auto
@@ -451,8 +482,13 @@ export default {
 
 /* 左列标签（单据号/入库日期）宽度一致，冒号竖线对齐 */
 .info-label--l1
-  flex-basis 5.6em
-  max-width 5.6em
+  flex-basis 4.4em
+  max-width 4.4em
+
+/* 第三列标签宽度统一并左对齐，保证“入库日期/资金来源账户”前沿一致 */
+.info-label--l3
+  flex-basis 5.8em
+  max-width 5.8em
 
 /* 右列标签（供货商/资金来源账户）宽度一致，冒号竖线对齐 */
 .info-label--l2
@@ -462,14 +498,6 @@ export default {
 .info-value
   flex 1 1 auto
   min-width 0
-  margin-right 18px
-
-.info-value-wide
-  flex 2 1 0
-  min-width 0
-
-.info-gap
-  margin-left 18px
 
 .detail-table
   width 100%
@@ -521,6 +549,18 @@ export default {
 .detail-table td:nth-child(6)
   text-align right
 
+.detail-table tbody tr.print-total-row td
+  border 1px solid #000
+  padding 4px 6px
+  vertical-align middle
+
+.detail-table tbody tr.print-total-row td.total-label-cell
+  text-align left
+
+.detail-table tbody tr.print-total-row td.total-amt-cell
+  text-align right
+  white-space nowrap
+
 .total-row
   display flex
   justify-content space-between
@@ -552,19 +592,18 @@ export default {
   text-align right
 
 .sign-block
-  display flex
-  justify-content space-between
-  padding-right 12%
-  margin-top auto
+  display grid
+  grid-template-columns 1fr 1fr 1fr
+  column-gap 12px
+  margin-top 2px
 
 .sign-item
-  display inline-flex
+  display flex
   align-items center
-  flex 0 0 18%
   min-width 0
 
 .sign-item--wide
-  flex 0 0 44%
+  min-width 0
 
 .sign-label
   flex 0 0 auto
@@ -662,7 +701,7 @@ export default {
     margin-bottom 3px !important
     font-size 17px !important
 
-  .info-row
+  .info-grid
     font-size 17px !important
 
   /* 信息区：标签列固定宽度，冒号竖线对齐（打印字号更大时略加宽） */
@@ -673,6 +712,17 @@ export default {
   .info-label--l2
     flex-basis 10.2em !important
     max-width 10.2em !important
+
+  /* info-grid 下取消固定标签宽度，避免“冒号到内容”被拉开 */
+  .info-grid .info-label
+    flex-basis auto !important
+    max-width none !important
+    margin-right 0 !important
+    text-align left !important
+
+  .info-grid .info-label::after
+    content ':' !important
+    margin-right 2px !important
 
   .detail-table
     margin-bottom 6px !important
@@ -687,16 +737,15 @@ export default {
 
   /* 签字区上移一点，避开针式机底部不可打印区域 */
   .sign-block
-    margin-top auto !important
+    margin-top 2px !important
     padding-bottom 3mm !important
     font-size 17px !important
-    padding-right 10% !important
+    display grid !important
+    grid-template-columns 1fr 1fr 1fr !important
+    column-gap 12px !important
 
   .sign-item
-    flex-basis 20% !important
-
-  .sign-item--wide
-    flex-basis 46% !important
+    min-width 0 !important
 
   .detail-table
     width 100% !important
