@@ -72,14 +72,15 @@
 
         <el-card class="list-card">
           <div slot="header" class="card-header">
-            <span>订单列表</span>
+            <span>计费列表</span>
           </div>
+          <div class="list-table-wrap">
           <el-table
             :data="orderList"
             v-loading="loading"
             border
             stripe
-            height="calc(100vh - 380px)"
+            height="calc(min(565px, 100vh - 250px))"
             highlight-current-row
             @current-change="handleRowClick"
             @row-click="handleRowClick"
@@ -134,6 +135,7 @@
               </template>
             </el-table-column>
           </el-table>
+          </div>
         </el-card>
       </div>
 
@@ -172,8 +174,8 @@
           </div>
           <!-- 纵向多条「横带」流式排布，字段宽度各自定义，不用 el-row/el-col 栅格 -->
           <el-form :model="form" ref="form" label-width="0" size="small" class="patient-form-flow">
-            <div class="patient-form-band">
-              <el-form-item label="姓名" class="pf-item">
+            <div class="patient-form-band patient-form-band--primary">
+              <el-form-item label="姓名" class="pf-item pf-label-red">
                 <el-input v-model="form.name" disabled class="pf-input pf-input--name" />
               </el-form-item>
               <el-form-item label="性别" class="pf-item">
@@ -182,25 +184,15 @@
               <el-form-item label="年龄" class="pf-item">
                 <el-input v-model="form.age" disabled class="pf-input pf-input--age" />
               </el-form-item>
-              <el-form-item label="住院号" class="pf-item">
+              <el-form-item label="住院号" class="pf-item pf-label-red">
                 <el-input v-model="form.hospitalNumber" disabled class="pf-input pf-input--hospno" />
               </el-form-item>
-              <el-form-item label="病区" class="pf-item">
+              <el-form-item label="病区" class="pf-item pf-label-red">
                 <el-input v-model="form.ward" disabled class="pf-input pf-input--ward" />
               </el-form-item>
               <el-form-item label="病房号" class="pf-item">
                 <el-input v-model="form.wardNo" disabled class="pf-input pf-input--room" />
               </el-form-item>
-            </div>
-            <div class="patient-form-band">
-              <el-form-item label="申请科室" class="pf-item pf-item--dept">
-                <SelectDepartment v-model="form.applyDeptId" class="patient-dept-select pf-dept-select" />
-              </el-form-item>
-              <el-form-item label="执行科室" class="pf-item pf-item--dept">
-                <SelectDepartment v-model="form.execDeptId" class="patient-dept-select pf-dept-select" />
-              </el-form-item>
-            </div>
-            <div class="patient-form-band">
               <el-form-item label="病床号" class="pf-item">
                 <el-input v-model="form.bedNo" disabled class="pf-input pf-input--bed" />
               </el-form-item>
@@ -212,6 +204,14 @@
                   disabled
                   class="pf-input pf-input--date"
                 />
+              </el-form-item>
+            </div>
+            <div class="patient-form-band patient-form-band--dept-line">
+              <el-form-item label="申请科室" class="pf-item pf-item--dept pf-label-red">
+                <SelectDepartment v-model="form.applyDeptId" class="patient-dept-select pf-dept-select" />
+              </el-form-item>
+              <el-form-item label="执行科室" class="pf-item pf-item--dept pf-label-red">
+                <SelectDepartment v-model="form.execDeptId" class="patient-dept-select pf-dept-select" />
               </el-form-item>
               <el-form-item label="联系电话" class="pf-item">
                 <el-input v-model="form.contactPhone" disabled class="pf-input pf-input--phone" />
@@ -225,8 +225,11 @@
                   type="date"
                   value-format="yyyy-MM-dd"
                   disabled
-                  class="pf-input pf-input--date"
+                  class="pf-input pf-input--date pf-input--date-surgery"
                 />
+              </el-form-item>
+              <el-form-item label="手术ID" class="pf-item">
+                <el-input v-model="form.surgeryId" disabled class="pf-input pf-input--surgeryid" />
               </el-form-item>
             </div>
             <div class="patient-form-band">
@@ -235,9 +238,6 @@
               </el-form-item>
               <el-form-item label="入院诊断" class="pf-item">
                 <el-input v-model="form.admissionDiagnosis" disabled class="pf-input pf-input--diag" />
-              </el-form-item>
-              <el-form-item label="手术ID" class="pf-item">
-                <el-input v-model="form.surgeryId" disabled class="pf-input pf-input--surgeryid" />
               </el-form-item>
               <el-form-item label="联系地址" class="pf-item">
                 <el-input v-model="form.contactAddress" disabled class="pf-input pf-input--addr" />
@@ -750,6 +750,32 @@ export default {
         }
       }).catch(() => {});
     },
+    /** 本地联调：病历号 ceshi 回车带出完整测试患者（不依赖库表） */
+    fillCeshiMockPatient() {
+      this.form.id = null;
+      this.form.orderStatus = null;
+      this.form.medicalRecordNo = 'ceshi';
+      this.form.name = '测试患者';
+      this.form.sex = '男';
+      this.form.age = '35';
+      this.form.hospitalNumber = 'ZY20240001';
+      this.form.ward = '骨科一病区';
+      this.form.wardNo = '301';
+      this.form.bedNo = '12';
+      this.form.hospitalDate = '2024-04-18';
+      this.form.applyDeptId = null;
+      this.form.execDeptId = null;
+      this.form.contactPhone = '13800138000';
+      this.form.contactAddress = '测试市汉寿县测试路1号';
+      this.form.chiefSurgeon = '张主任';
+      this.form.surgeryDate = '2024-04-20';
+      this.form.surgeryName = '膝关节置换术';
+      this.form.admissionDiagnosis = '膝关节骨关节炎';
+      this.form.surgeryId = 'OP20240001';
+      this.form.remark = '病历号 ceshi 本地测试数据';
+      this.materialDetailList = [];
+      this.$message.success('已加载测试患者（ceshi）；保存前请在患者信息中选择申请科室、执行科室');
+    },
     /** 扫描/输入病历号 */
     handleMedicalRecordScan() {
       if (!this.form.medicalRecordNo || this.form.medicalRecordNo.trim() === '') {
@@ -757,6 +783,10 @@ export default {
         return;
       }
       const medicalRecordNo = this.form.medicalRecordNo.trim();
+      if (medicalRecordNo.toLowerCase() === 'ceshi') {
+        this.fillCeshiMockPatient();
+        return;
+      }
       getPatientByMedicalRecordNo(medicalRecordNo).then(response => {
         if (response.code === 200 && response.data) {
           const patient = response.data;
@@ -1176,6 +1206,7 @@ export default {
 
 .page-layout {
   display: flex;
+  align-items: stretch;
   height: 100%;
   gap: 12px;
   margin-left: -5px;
@@ -1183,10 +1214,14 @@ export default {
 
 .left-panel {
   width: 400px;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  /* 两卡略收紧，订单列表更靠近搜索条件 */
+  gap: 6px;
   flex-shrink: 0;
+  min-height: 0;
+  align-self: stretch;
 }
     
 .right-panel {
@@ -1298,18 +1333,38 @@ export default {
   }
 }
     
-.list-card {
-  flex: 1;
+/* 订单列表：按耗材明细同款方式固定容器高度，确保视觉稳定 */
+.list-card.el-card {
+  flex: 0 0 auto;
+  height: min(620px, calc(100vh - 220px));
+  max-height: min(620px, calc(100vh - 220px));
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  overflow: hidden;
+  margin-top: -3px;
+}
 
+.list-card {
   ::v-deep .el-card__body {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: 16px 20px;
+    padding: 12px 16px;
+  }
+
+  ::v-deep .list-table-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  ::v-deep .list-table-wrap > .el-table {
+    width: 100%;
   }
 }
     
@@ -1331,6 +1386,13 @@ export default {
   margin-top: -8px !important;
   margin-bottom: 0 !important;
   padding: 4px 0;
+}
+
+/* 扫描条码号行：轻微上移，并让上下间距一致 */
+.scan-barcode {
+  margin-top: -10px !important;
+  margin-bottom: 0 !important;
+  padding: 0;
 }
 
 .form-card {
@@ -1356,6 +1418,17 @@ export default {
     align-items: center;
     gap: 6px 12px;
     margin-bottom: 4px;
+  }
+
+  /* 首行：不换行，横向滚动，避免「住院日期」单独掉到下一行占满宽 */
+  ::v-deep .patient-form-band--primary {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  ::v-deep .patient-form-band--primary .pf-input--date.el-date-editor {
+    width: 118px !important;
   }
 
   ::v-deep .patient-form-flow .pf-item.el-form-item {
@@ -1388,9 +1461,14 @@ export default {
     min-width: 64px;
   }
 
+  ::v-deep .patient-form-flow .pf-label-red .el-form-item__label {
+    color: #f56c6c !important;
+  }
+
   /* 各输入宽度按语义单独设定（可继续微调数值） */
+  /* 与病区同宽 */
   ::v-deep .pf-input--name.el-input {
-    width: 168px;
+    width: 96px;
   }
 
   ::v-deep .pf-input--sex.el-input {
@@ -1410,9 +1488,21 @@ export default {
     width: 96px;
   }
 
+  /* 与姓名输入框同宽 */
   ::v-deep .pf-dept-select.el-select {
-    width: 200px;
-    max-width: 100%;
+    width: 96px;
+    max-width: 96px;
+  }
+
+  /* 科室 + 电话 + 主刀 + 手术日期：单行优先，窄屏横向滚动 */
+  ::v-deep .patient-form-band--dept-line {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  ::v-deep .patient-form-band--dept-line .pf-input--date-surgery.el-date-editor {
+    width: 118px !important;
   }
 
   ::v-deep .pf-input--bed.el-input {
@@ -1453,11 +1543,13 @@ export default {
 }
 
 .detail-card {
-  flex: 1;
+  flex: 0 0 auto;
+  height: min(530px, calc(100vh - 300px));
+  max-height: min(530px, calc(100vh - 300px));
   display: flex;
   flex-direction: column;
   min-height: 0;
-  margin-top: -16px !important;
+  margin-top: -8px !important;
   /* 与患者信息卡同幅略向右伸展，左右缘对齐 */
   width: calc(100% + 12px);
   max-width: calc(100% + 12px);
