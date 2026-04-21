@@ -23,17 +23,21 @@
         </div>
       </div>
 
-      <div class="info-block">
-        <div class="info-row">
-          <span class="info-label info-label--l1">单据号</span>
+      <div class="info-block print-head-grid">
+        <div class="print-head-cell">
+          <span class="info-label">单据号</span>
           <span class="info-value">{{ row.billNo || '' }}</span>
-          <span class="info-label info-label--l2 info-gap">供应商</span>
-          <span class="info-value info-value-wide">{{ row.supplierName || '' }}</span>
         </div>
-        <div class="info-row">
-          <span class="info-label info-label--l1">仓库</span>
+        <div class="print-head-cell">
+          <span class="info-label">供应商</span>
+          <span class="info-value">{{ row.supplierName || '' }}</span>
+        </div>
+        <div class="print-head-cell">
+          <span class="info-label">仓库</span>
           <span class="info-value">{{ row.warehouseName || '' }}</span>
-          <span class="info-label info-label--l2 info-gap">审核时间</span>
+        </div>
+        <div class="print-head-cell">
+          <span class="info-label">审核时间</span>
           <span class="info-value">{{ formatPrintDateTime(row.auditDate) }}</span>
         </div>
       </div>
@@ -77,23 +81,23 @@
               <span class="cell-text">{{ item.batchNumber || '' }}</span>
             </td>
           </tr>
+          <tr v-if="pageIndex === detailPages.length - 1" class="print-total-row">
+            <td colspan="5" class="total-label-cell">
+              <span class="total-label">合计</span><span class="total-value">{{ row.totalAmtConverter || '' }}</span>
+            </td>
+            <td class="total-amt-cell">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</td>
+            <td></td>
+          </tr>
         </tbody>
       </table>
 
-      <div v-if="pageIndex === detailPages.length - 1" class="total-row">
-        <span class="total-left">
-          <span class="total-label">合计</span><span class="total-value">{{ row.totalAmtConverter || '' }}</span>
-        </span>
-        <span class="total-num">{{ row.totalAmt != null ? formatAmt(row.totalAmt) : '' }}</span>
-      </div>
-
       <div class="sign-block">
-        <span class="sign-item"><span class="sign-label">操作员</span><span class="sign-value sign-value--blank"></span></span>
-        <span class="sign-item"><span class="sign-label">保管</span><span class="sign-value sign-value--blank"></span></span>
-        <span class="sign-item sign-item--wide">
+        <div class="sign-item"><span class="sign-label">操作员</span><span class="sign-value sign-value--blank"></span></div>
+        <div class="sign-item"><span class="sign-label">保管</span><span class="sign-value sign-value--blank"></span></div>
+        <div class="sign-item">
           <span class="sign-label">打印日期</span>
           <span class="sign-value">{{ formatPrintDateTime(row.printDate || new Date()) }}</span>
-        </span>
+        </div>
       </div>
     </div>
   </div>
@@ -347,7 +351,7 @@ export default {
   grid-template-columns 92px 1fr 92px
   align-items center
   column-gap 6px
-  margin-bottom 6px
+  margin-bottom 2px
 
 .doc-header-spacer
   width 92px
@@ -370,42 +374,33 @@ export default {
   margin 0
 
 .info-block
-  margin-bottom 6px
+  margin-bottom 3px
 
-.info-row
+.print-head-grid
+  display grid
+  grid-template-columns 1fr 1fr
+  column-gap 8px
+  row-gap 1px
+
+.print-head-cell
   display flex
   align-items center
-  flex-wrap wrap
-  margin-bottom 2px
+  min-width 0
 
 .info-label
   flex 0 0 auto
   flex-shrink 0
   box-sizing border-box
-  text-align right
+  text-align left
   white-space nowrap
   &::after
-    content '：'
-
-.info-label--l1
-  flex-basis 5.6em
-  max-width 5.6em
-
-.info-label--l2
-  flex-basis 9.6em
-  max-width 9.6em
+    content ':'
+    margin-right 2px
 
 .info-value
   flex 1 1 auto
   min-width 0
-  margin-right 18px
-
-.info-value-wide
-  flex 2 1 0
-  min-width 0
-
-.info-gap
-  margin-left 18px
+  margin-right 8px
 
 .detail-table
   width 100%
@@ -469,50 +464,28 @@ export default {
 .detail-table td:nth-child(6)
   text-align right
 
-.total-row
-  display flex
-  justify-content space-between
-  align-items center
-  margin-bottom 14px
+.detail-table tbody tr.print-total-row td
+  border 1px solid #000
+  padding 4px 6px
+  vertical-align middle
 
-.total-left
-  flex-shrink 0
-  display inline-flex
-  align-items baseline
-  max-width 72%
+.detail-table tbody tr.print-total-row td.total-label-cell
+  text-align left
 
-.total-label
-  flex 0 0 auto
+.detail-table tbody tr.print-total-row td.total-amt-cell
   text-align right
   white-space nowrap
-  &::after
-    content '：'
-
-.total-value
-  flex 1 1 auto
-  min-width 0
-  margin-left 6px
-  white-space normal
-  word-break break-word
-
-.total-num
-  min-width 80px
-  text-align right
 
 .sign-block
-  display flex
-  justify-content space-between
-  padding-right 12%
-  margin-top auto
+  display grid
+  grid-template-columns 1fr 1fr 1fr
+  column-gap 12px
+  margin-top 2px
 
 .sign-item
-  display inline-flex
+  display flex
   align-items center
-  flex 0 0 18%
   min-width 0
-
-.sign-item--wide
-  flex 0 0 44%
 
 .sign-label
   flex 0 0 auto
@@ -597,7 +570,7 @@ export default {
     grid-template-columns 92px 1fr 92px !important
     align-items center !important
     column-gap 6px !important
-    margin-bottom 6px !important
+    margin-bottom 2px !important
 
   .doc-header-spacer
     width 92px !important
@@ -621,16 +594,27 @@ export default {
     margin-bottom 3px !important
     font-size 17px !important
 
-  .info-row
+  .print-head-grid
+    display grid !important
+    grid-template-columns 1fr 1fr !important
+    column-gap 8px !important
+    row-gap 1px !important
     font-size 17px !important
 
-  .info-label--l1
-    flex-basis 6.0em !important
-    max-width 6.0em !important
+  .print-head-cell
+    display flex !important
+    align-items center !important
+    min-width 0 !important
 
-  .info-label--l2
-    flex-basis 10.2em !important
-    max-width 10.2em !important
+  .info-label
+    text-align left !important
+    margin-right 0 !important
+  .info-label::after
+    content ':' !important
+    margin-right 2px !important
+
+  .info-value
+    margin-right 8px !important
 
   .detail-table
     margin-bottom 6px !important
@@ -682,19 +666,11 @@ export default {
   .detail-table td:nth-child(6)
     text-align right !important
 
-  .total-row
-    margin-bottom 8px !important
-    font-size 17px !important
-
   .sign-block
-    margin-top auto !important
+    margin-top 2px !important
     padding-bottom 3mm !important
     font-size 17px !important
-    padding-right 10% !important
-
-  .sign-item
-    flex-basis 20% !important
-
-  .sign-item--wide
-    flex-basis 46% !important
+    display grid !important
+    grid-template-columns 1fr 1fr 1fr !important
+    column-gap 12px !important
 </style>

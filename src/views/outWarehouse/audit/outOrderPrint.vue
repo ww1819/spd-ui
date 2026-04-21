@@ -20,17 +20,27 @@
           <span class="page-index">{{ pageIndex + 1 }}/{{ detailPages.length }}</span>
         </div>
       </div>
-      <div class="info-row print-head-info">
-        <span class="info-label info-label--w1">发往科</span>
-        <span class="info-value">{{ row.departmentName || '' }}</span>
-        <span class="info-label info-label--w2 info-gap">仓库</span>
-        <span class="info-value">{{ row.warehouseName || '' }}</span>
-        <span class="info-label info-label--w2 info-gap">单据号</span>
-        <span class="info-value">{{ row.billNo || '' }}</span>
-        <span class="info-label info-label--w3 info-gap">出库日期（审核）</span>
-        <span class="info-value">{{ formatOutboundDate(row.auditDate || row.billDate) }}</span>
-        <span class="info-label info-label--w4 info-gap">资金来源</span>
-        <span class="info-value">{{ row.fundSource || '' }}</span>
+      <div class="print-head-info print-head-grid">
+        <div class="print-head-cell">
+          <span class="info-label">发往科</span>
+          <span class="info-value">{{ row.departmentName || '' }}</span>
+        </div>
+        <div class="print-head-cell">
+          <span class="info-label">仓库</span>
+          <span class="info-value">{{ row.warehouseName || '' }}</span>
+        </div>
+        <div class="print-head-cell">
+          <span class="info-label">单据号</span>
+          <span class="info-value">{{ row.billNo || '' }}</span>
+        </div>
+        <div class="print-head-cell">
+          <span class="info-label">出库日期（审核）</span>
+          <span class="info-value">{{ formatOutboundDate(row.auditDate || row.billDate) }}</span>
+        </div>
+        <div class="print-head-cell print-head-cell--span2">
+          <span class="info-label">资金来源</span>
+          <span class="info-value">{{ row.fundSource || '' }}</span>
+        </div>
       </div>
       <table class="detail-table" :style="tableStyle">
         <colgroup>
@@ -83,12 +93,12 @@
 
       <div class="print-sign-footer-fixed">
         <div class="sign-block">
-          <span class="sign-item"><span class="sign-label">领用人</span><span class="sign-value sign-value--blank"></span></span>
-          <span class="sign-item"><span class="sign-label">保管</span><span class="sign-value sign-value--blank"></span></span>
-          <span class="sign-item sign-item--wide">
+          <div class="sign-item"><span class="sign-label">领用人</span><span class="sign-value sign-value--blank"></span></div>
+          <div class="sign-item"><span class="sign-label">保管</span><span class="sign-value sign-value--blank"></span></div>
+          <div class="sign-item">
             <span class="sign-label">出库操作员</span>
             <span class="sign-value">{{ row.outboundOperator || row.createBy || '' }}</span>
-          </span>
+          </div>
         </div>
       </div>
     </div>
@@ -455,7 +465,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   grid-template-columns 92px 1fr 92px
   align-items center
   column-gap 6px
-  margin-bottom 3px
+  margin-bottom 2px
 
 .doc-header-spacer
   width 92px
@@ -485,51 +495,41 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .print-doc-header + tr th
   border-top 1px solid #000
 
-.info-row
-  display flex
-  align-items center
-  flex-wrap wrap
-  margin-bottom 1px
-  font-size 10px
-
 .print-head-info
   width 94%
-  margin 0 auto 3px
+  margin 0 auto 2px
   padding 0
+
+.print-head-grid
+  display grid
+  grid-template-columns 1.2fr 0.9fr 1.2fr
+  column-gap 8px
+  row-gap 1px
+  font-size 10px
+
+.print-head-cell
+  display flex
+  align-items center
+  min-width 0
+
+.print-head-cell--span2
+  grid-column 2 / span 2
 
 .info-label
   flex 0 0 auto
   flex-shrink 0
   box-sizing border-box
-  text-align right
+  text-align left
+  margin-right 0
   white-space nowrap
   &::after
-    content '：'
-
-/* 出库抬头字段较多：用固定宽度列保证冒号竖线对齐 */
-.info-label--w1
-  flex-basis 4.2em
-  max-width 4.2em
-
-.info-label--w2
-  flex-basis 4.0em
-  max-width 4.0em
-
-.info-label--w3
-  flex-basis 9.2em
-  max-width 9.2em
-
-.info-label--w4
-  flex-basis 5.2em
-  max-width 5.2em
+    content ':'
+    margin-right 2px
 
 .info-value
   flex 1 1 auto
   min-width 0
-  margin-right 10px
-
-.info-gap
-  margin-left 10px
+  margin-right 8px
 
 .detail-table
   width 94%
@@ -658,20 +658,17 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   white-space nowrap
 
 .sign-block
-  display flex
-  justify-content space-between
-  padding-right 10%
+  display grid
+  grid-template-columns 1fr 1fr 1fr
+  column-gap 12px
+  margin-top 2px
   font-size 11px
   font-family $font-song
 
 .sign-item
-  display inline-flex
+  display flex
   align-items center
-  flex 0 0 22%
   min-width 0
-
-.sign-item--wide
-  flex 0 0 50%
 
 .sign-label
   flex 0 0 auto
@@ -750,7 +747,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     grid-template-columns 92px 1fr 92px !important
     align-items center !important
     column-gap 6px !important
-    margin-bottom 3px !important
+    margin-bottom 2px !important
 
   .doc-header-spacer
     width 92px !important
@@ -784,22 +781,30 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     font-size 16px !important
     line-height 1.55 !important
 
-  /* 打印字号更大：略加宽标签列，保证冒号竖线仍对齐 */
-  .info-label--w1
-    flex-basis 4.6em !important
-    max-width 4.6em !important
+  .print-head-grid
+    display grid !important
+    grid-template-columns 1.2fr 0.9fr 1.2fr !important
+    column-gap 8px !important
+    row-gap 1px !important
 
-  .info-label--w2
-    flex-basis 4.4em !important
-    max-width 4.4em !important
+  .print-head-cell
+    display flex !important
+    align-items center !important
+    min-width 0 !important
 
-  .info-label--w3
-    flex-basis 10.0em !important
-    max-width 10.0em !important
+  .print-head-cell--span2
+    grid-column 2 / span 2 !important
 
-  .info-label--w4
-    flex-basis 5.6em !important
-    max-width 5.6em !important
+  .print-head-info .info-label
+    text-align left !important
+    margin-right 0 !important
+
+  .print-head-info .info-label::after
+    content ':' !important
+    margin-right 2px !important
+
+  .print-head-info .info-value
+    margin-right 8px !important
 
   .detail-table
     width 94% !important
@@ -899,10 +904,10 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   /* 每联底部签字 */
   .print-sign-footer-fixed
     display block !important
-    position absolute !important
-    left 2% !important
-    right 2% !important
-    bottom 3mm !important
+    position static !important
+    left auto !important
+    right auto !important
+    bottom auto !important
     box-sizing border-box !important
     padding 0
     border-top none
@@ -912,5 +917,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
 
   .print-sign-footer-fixed .sign-block
-    padding-right 8%
+    display grid !important
+    grid-template-columns 1fr 1fr 1fr !important
+    column-gap 12px !important
+    margin-top 2px !important
+    padding-right 0 !important
 </style>
