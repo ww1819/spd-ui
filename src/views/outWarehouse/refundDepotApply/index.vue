@@ -441,17 +441,6 @@
 
     </SelectCkApply>
 
-    <!-- 隐藏打印组件（用于直接打印，不显示弹窗） -->
-    <div v-show="false">
-      <refund-depot-order-print
-        v-if="printRowData"
-        :row="printRowData"
-        print-orientation="portrait"
-        paper-type="a4"
-        ref="receiptRefundDepotOrderPrintRefAuto"
-      />
-    </div>
-
   </div>
 </template>
 
@@ -473,7 +462,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
 import SelectCkApply from "@/components/SelectModel/SelectCkApply";
 import refundDepotOrderPrint from "@/views/outWarehouse/refundDepotAudit/refundDepotOrderPrint.vue";
-import RMBConverter from "@/utils/tools";
+import { buildRefundDepotPrintRowFromDetail } from '@/views/warehouse/print/refundDepotPrintRow'
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 
 export default {
@@ -509,7 +498,6 @@ export default {
       // 退库明细表格数据
       stkIoBillEntryList: [],
       // 打印数据（用于隐藏打印组件）
-      printRowData: null,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -912,59 +900,23 @@ export default {
       }).catch(() => {});
     },
     /** 打印按钮操作 */
-    handlePrint(row, print) {
-      this.getRefundDepotDetail(row).then(res => {
-        this.printRowData = res
-        this.$nextTick(() => {
-          const ref = this.$refs['receiptRefundDepotOrderPrintRefAuto']
-          if (ref && typeof ref.start === 'function') {
-            ref.start()
-          } else {
-            setTimeout(() => {
-              this.$refs['receiptRefundDepotOrderPrintRefAuto']?.start?.()
-            }, 100)
-          }
-        })
+    handlePrint(row) {
+      if (!row || row.id == null) {
+        this.$modal.msgWarning('缺少单据信息，无法打印')
+        return
+      }
+      this.$router.push({
+        path: '/print/refund-depot',
+        query: {
+          id: String(row.id),
+          from: encodeURIComponent(this.$route.fullPath)
+        }
       })
     },
     // 组装打印信息
     getRefundDepotDetail(row) {
       return getTkInventory(row.id).then(response => {
-        const details = response.data.stkIoBillEntryList
-        const materiaDetails = response.data.materialList
-        const map = {}
-        ;(materiaDetails || []).forEach(it => {
-          if (it && it.id != null) map[it.id] = it
-        })
-
-        let detailList = []
-        let totalAmt = 0
-        let totalQty = 0
-        ;(details || []).forEach(item => {
-          totalAmt += item.amt || 0
-          totalQty += item.qty || 0
-          const prod = map[item.materialId] || {}
-          detailList.push({
-            batchNumber: item.batchNumber,
-            amt: item.amt,
-            qty: item.qty,
-            price: item.unitPrice,
-            materialName: prod.name || '',
-            materialSpeci: prod.speci || ''
-          })
-        })
-
-        return {
-          billNo: row.billNo,
-          departmentName: (row.department && row.department.name) || '',
-          warehouseName: (row.warehouse && row.warehouse.name) || '',
-          billDate: row.billDate,
-          auditDate: row.auditDate,
-          totalAmt: totalAmt,
-          totalQty: totalQty,
-          totalAmtConverter: RMBConverter.numberToChinese(totalAmt),
-          detailList: detailList
-        }
+        return buildRefundDepotPrintRowFromDetail(row, response.data)
       })
     },
     /** 退库明细序号 */

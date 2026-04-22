@@ -1336,7 +1336,7 @@ export default {
               callback();
               return;
             }
-            listMaterial({ code: value, pageNum: 1, pageSize: 1 }).then(response => {
+            listMaterial({ code: value, pageNum: 1, pageSize: 1, includeDisabledInList: true }).then(response => {
               if (response.rows && response.rows.length > 0) {
                 const existingMaterial = response.rows[0];
                 if (!this.form.id || existingMaterial.id !== this.form.id) {
@@ -1473,11 +1473,13 @@ export default {
       const derived = this.deriveNameSearchParams(keyword);
 
       // 用派生后的 name/code/nameSearch 覆盖请求参数，避免把输入框值直接当 name 传给后端
+      // 档案列表允许在未选「使用状态」时查到停用记录以便启用；选定 isUse 时仍由后端按 isUse 过滤
       const merged = {
         ...base,
         code: derived.code,
         name: derived.name,
         nameSearch: derived.nameSearch,
+        includeDisabledInList: true
       };
 
       if (!includePagination) {
@@ -1693,7 +1695,7 @@ export default {
           const wc = wcResp && wcResp.data ? wcResp.data : null;
           const prefix = this.resolveHsPrefixByWarehouseName(wc && wc.warehouseCategoryName ? wc.warehouseCategoryName : '');
           if (prefix) {
-            const response = await listMaterialAll({});
+            const response = await listMaterialAll({ includeDisabledInList: true });
             const materialList = response.rows || response.data || [];
             const reg = new RegExp("^" + prefix + "(\\d{5})$");
             let max = 0;
@@ -1715,7 +1717,7 @@ export default {
 
       // 查询所有耗材编码，找出最大的6位数字编码
       try {
-        const response = await listMaterialAll({});
+        const response = await listMaterialAll({ includeDisabledInList: true });
         const materialList = response.rows || response.data || [];
         const codes = materialList
           .map(item => item.code)

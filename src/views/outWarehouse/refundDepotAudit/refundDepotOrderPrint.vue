@@ -1,8 +1,9 @@
 <template>
   <div
-    class="refund-depot-order-print receipt-print print-root-offscreen"
+    class="refund-depot-order-print receipt-print browser-print-root"
     ref="receiptRefundDepotOrderPrintRef"
-    :class="rootOrientationClass"
+    :class="[rootOrientationClass, { 'print-root-offscreen': !embedPreview }]"
+    :style="printStyle"
   >
     <div
       v-for="(detailPage, pageIndex) in detailPages"
@@ -43,7 +44,7 @@
         </div>
       </div>
 
-      <table class="detail-table">
+      <table class="detail-table" :style="tableStyle">
           <colgroup>
             <col class="col-name" />
             <col class="col-spec" />
@@ -106,6 +107,10 @@ export default {
       type: Object,
       default: () => ({})
     },
+    rowsPerPage: {
+      type: Number,
+      default: undefined
+    },
     printOrientation: {
       type: String,
       default: 'landscape'
@@ -114,6 +119,19 @@ export default {
     paperType: {
       type: String,
       default: 'third-split'
+    },
+    embedPreview: {
+      type: Boolean,
+      default: false
+    }
+  },
+  data() {
+    return {
+      /** 与入库/出库独立预览页一致，屏上默认可读 */
+      printSetting: {
+        fontSize: 21,
+        tableFontSize: 12
+      }
     }
   },
   computed: {
@@ -129,11 +147,17 @@ export default {
     isThirdSplitPaper() {
       return this.paperType === 'third-split'
     },
+    effectiveRowsPerPage() {
+      const n = Number(this.rowsPerPage)
+      if (Number.isFinite(n) && n >= 1) {
+        return Math.min(100, Math.max(1, Math.round(n)))
+      }
+      return 6
+    },
     detailPages() {
       const list = (this.row && Array.isArray(this.row.detailList)) ? this.row.detailList : []
       if (!list.length) return [[]]
-      /* 与出库单 outOrderPrint 一致，避免单联内容过高触发多吐空白页 */
-      const pageSize = 6
+      const pageSize = this.effectiveRowsPerPage
       const pages = []
       for (let i = 0; i < list.length; i += pageSize) {
         pages.push(list.slice(i, i + pageSize))
@@ -146,6 +170,24 @@ export default {
     /** 二等分/凭证联：210mm×140mm，与 $print inject 一致 */
     pageSizeForPrint() {
       return this.isA4Paper ? 'A4' : '210mm 140mm'
+    },
+    printStyle() {
+      const m = this.printSetting
+      const wide = this.effectiveOrientation === 'landscape'
+      return {
+        padding: '0mm',
+        fontSize: Math.round(m.fontSize || 14) + 'px',
+        fontFamily: '"Courier New", "Consolas", "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif',
+        width: wide ? '297mm' : '210mm',
+        maxWidth: wide ? '297mm' : '210mm'
+      }
+    },
+    tableStyle() {
+      const px = this.printSetting.tableFontSize || 12
+      return {
+        fontSize: px + 'px',
+        fontFamily: '"Courier New", "Consolas", "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif'
+      }
     }
   },
   methods: {
@@ -331,9 +373,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .refund-depot-order-print.page-slip-landscape.print-root-offscreen
   width 297mm
-  max-width 1100px
+  max-width 297mm
 
-/* 与入库 orderPrint .receipt-print：宽度 210mm */
+/* 与入库 orderPrint：纸张宽度；具体 width 由根上 printStyle 覆盖横/纵 */
 .receipt-print
   line-height 1.35
   width 210mm
@@ -344,6 +386,10 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   box-sizing border-box
   padding-left 1ch
   padding-right 1ch
+
+.refund-depot-order-print.page-slip-landscape.receipt-print
+  width 297mm
+  max-width 297mm
 
 .print-copy-block
   position relative
@@ -362,7 +408,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   grid-template-columns 92px 1fr 92px
   align-items center
   column-gap 6px
-  margin-bottom 2px
+  margin-bottom 6px
 
 .doc-header-spacer
   width 92px
@@ -378,15 +424,15 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   color #333
 
 .doc-title
-  font-size 15px
-  font-weight bold
+  font-size 20px
+  font-weight normal
   text-align center
   margin 0
-  line-height 1.25
+  line-height 1.1
 
 .print-head-info
-  width 94%
-  margin 0 auto 2px
+  width 100%
+  margin 0 auto 6px
   padding 0
 
 .print-head-grid
@@ -394,7 +440,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   grid-template-columns 1fr 1fr
   column-gap 8px
   row-gap 1px
-  font-size 10px
+  font-size 12px
 
 .print-head-cell
   display flex
@@ -418,11 +464,11 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   margin-right 8px
 
 .detail-table
-  width 94%
+  width 100%
   table-layout fixed
   border-collapse collapse
   border 1px solid #000
-  margin 0 auto 0
+  margin 0 auto 6px
   font-family $font-song
 
 .detail-table .col-name
@@ -441,7 +487,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .detail-table th,
 .detail-table td
   border 1px solid #000
-  padding 1px 3px
+  padding 4px 6px
   vertical-align middle
   font-size inherit
 
@@ -490,7 +536,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .detail-table tbody tr.print-total-row td
   border 1px solid #000
   padding 4px 4px 6px
-  font-size 11px
+  font-size 12px
   vertical-align middle
 
 .detail-table tbody tr.print-total-row td.total-label-cell
@@ -515,10 +561,20 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   font-weight normal
   white-space nowrap
 
+/* 列表内直打：屏外不占视口；非屏外（独立页/弹窗）展示签字区 */
 .print-sign-footer-fixed
   display none
   width 94%
   margin 0 auto
+
+.refund-depot-order-print:not(.print-root-offscreen) .print-sign-footer-fixed
+  display block
+  width 100%
+  margin-top 8px
+  box-sizing border-box
+
+.refund-depot-order-print:not(.print-root-offscreen) .print-sign-footer-fixed .sign-block
+  font-size 12px
 
 .sign-block
   display grid
@@ -565,7 +621,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   *
     color #000 !important
 
-  .print-root-offscreen
+  .print-root-offscreen,
+  .browser-print-root
     position relative !important
     left auto !important
     top auto !important

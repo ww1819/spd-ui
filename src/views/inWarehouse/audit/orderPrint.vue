@@ -119,6 +119,11 @@ export default {
   props: {
     row: Object,
     billType: [String, Number],
+    /** 每页明细行数；未传时默认 6 */
+    rowsPerPage: {
+      type: Number,
+      default: undefined
+    },
     printOrientation: {
       type: String,
       default: ''
@@ -142,7 +147,7 @@ export default {
   computed: {
     pagedDetailList() {
       const details = (this.row && this.row.detailList) || []
-      const pageRows = this.maxRowsPerPage
+      const pageRows = this.effectiveRowsPerPage
       if (!details.length) return [[]]
       const result = []
       for (let i = 0; i < details.length; i += pageRows) {
@@ -150,9 +155,12 @@ export default {
       }
       return result
     },
-    maxRowsPerPage() {
-      // 业务要求：入库单明细固定每页 9 行
-      return 9
+    effectiveRowsPerPage() {
+      const n = Number(this.rowsPerPage)
+      if (Number.isFinite(n) && n >= 1) {
+        return Math.min(100, Math.max(1, Math.round(n)))
+      }
+      return 6
     },
     effectiveOrientation() {
       const p = this.printOrientation

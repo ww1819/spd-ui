@@ -443,6 +443,7 @@
           :row="modalObj.form.row"
           :print-orientation="modalObj.form.printOrientation || 'portrait'"
           :paper-type="modalObj.form.paperType || 'a4'"
+          :embed-preview="true"
           ref="receiptOrderPrintRef"
         ></out-order-print>
       </div>
@@ -451,16 +452,6 @@
         <el-button @click="modalObj.ok" type="primary">确认</el-button>
       </template>
     </el-dialog>
-    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
-    <div v-show="false">
-      <out-order-print
-        v-if="printRowData"
-        :row="printRowData"
-        print-orientation="portrait"
-        paper-type="a4"
-        ref="receiptOrderPrintRefAuto"
-      ></out-order-print>
-    </div>
 
     <!-- 3、使用组件 -->
     <SelectInventory
@@ -485,7 +476,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import outOrderPrint from "@/views/outWarehouse/audit/outOrderPrint";
-import RMBConverter from "@/utils/tools";
+import { buildOutboundPrintRowFromDetail } from '@/views/warehouse/print/outboundPrintRow'
 import {STOCK_OUT_TEMPLATE} from '@/utils/printData'
 
 export default {
@@ -515,8 +506,6 @@ export default {
         cancel: () => {
         }
       },
-      // 打印数据（用于隐藏的打印组件）
-      printRowData: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -919,49 +908,17 @@ export default {
       })
     },
     /** 打印按钮操作 */
-    handlePrint(row, print){
-      // 审核页点击打印：直接打开浏览器打印预览
-      this.windowPrintOut(row, true, 'portrait', 'a4')
-    },
-    windowPrintOut(row, print, printOrientation, paperType) {
-      const orient = printOrientation || 'portrait'
-      const pType = paperType || 'a4'
-      this.getOutWarehouseDetail(row).then(res => {
-        if (print) {
-          this.printRowData = res
-          this.$nextTick(() => {
-            const ref = this.$refs['receiptOrderPrintRefAuto']
-            if (ref && typeof ref.start === 'function') {
-              ref.start()
-            } else {
-              setTimeout(() => {
-                this.$refs['receiptOrderPrintRefAuto']?.start?.()
-              }, 100)
-            }
-          })
-          return
+    handlePrint(row) {
+      if (!row || row.id == null) {
+        this.$modal.msgWarning('缺少单据信息，无法打印')
+        return
+      }
+      this.$router.push({
+        path: '/print/outbound',
+        query: {
+          id: String(row.id),
+          from: encodeURIComponent(this.$route.fullPath)
         }
-        this.$nextTick(() => {
-          this.modalObj = {
-            show: true,
-            title: '浏览器打印预览',
-            width: '960px',
-            component: 'window-print-preview',
-            form: {
-              value: 2,
-              row: res,
-              print,
-              printOrientation: orient,
-              paperType: pType
-            },
-            ok: () => {
-              this.modalObj.show = false
-            },
-            cancel: () => {
-              this.modalObj.show = false
-            }
-          }
-        })
       })
     },
     doPrintOut(row, print) {
@@ -975,73 +932,8 @@ export default {
     },
     //组装打印信息
     getOutWarehouseDetail(row) {
-      //查询详情
       return getOutWarehouse(row.id).then(response => {
-        const data = response.data
-        const details = data.stkIoBillEntryList
-        const materiaDetails = data.materialList
-        const map = {};
-
-        (materiaDetails || []).forEach(it => {
-          if (it == null || it.id == null) return
-          map[it.id] = it
-        })
-
-        let detailList = [], totalAmt = 0, totalQty = 0
-
-        ;(details || []).forEach(item => {
-          if (item == null) return
-          totalAmt += Number(item.amt) || 0
-          totalQty += Number(item.qty) || 0
-
-          // 产品档案优先：materialList 与明细行上的 material 合并，档案字段覆盖
-          const emb = item.material || {}
-          const arch = map[item.materialId] || {}
-          const prod = Object.assign({}, emb, arch)
-          const fdFactory = prod.fdFactory != null ? prod.fdFactory : null
-          const fdWarehouseCategory = prod.fdWarehouseCategory != null ? prod.fdWarehouseCategory : null
-          const fdUnit = prod.fdUnit != null ? prod.fdUnit : null
-
-          const nameFromSnap = item.materialName != null && String(item.materialName).trim() !== ''
-          const specFromSnap = item.materialSpeci != null && String(item.materialSpeci).trim() !== ''
-          const modelFromSnap = item.materialModel != null && String(item.materialModel).trim() !== ''
-          detailList.push({
-            batchNumber: item.batchNumber,
-            amt: item.amt,
-            qty: item.qty,
-            unitPrice: item.unitPrice,
-            price: item.unitPrice,
-            materialCode: (prod && prod.code) || '',
-            materialName: nameFromSnap ? item.materialName : ((prod && prod.name) || ''),
-            materialSpeci: specFromSnap ? item.materialSpeci : ((prod && prod.speci) || ''),
-            materialModel: modelFromSnap ? item.materialModel : ((prod && prod.model) || ''),
-            periodDate: (prod && prod.periodDate) || '',
-            factoryName: (fdFactory && fdFactory.factoryName) || '',
-            warehouseCategoryName: (fdWarehouseCategory && fdWarehouseCategory.warehouseCategoryName) || '',
-            unitName: (fdUnit && fdUnit.unitName) || '',
-            supplierId: (prod && prod.supplierId) || '',
-            beginTime: (prod && prod.beginTime) || '',
-            endTime: item.endTime != null ? item.endTime : (prod && prod.endTime) || (prod && prod.periodDate) || ''
-          })
-
-        })
-
-        let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
-
-        return {
-          billNo: data.billNo || row.billNo,
-          departmentName: (data.department && data.department.name) || (row.department && row.department.name) || '',
-          warehouseName: (data.warehouse && data.warehouse.name) || (row.warehouse && row.warehouse.name) || '',
-          billDate: data.billDate || row.billDate,
-          auditDate: data.auditDate || row.auditDate,
-          totalAmt: totalAmt,
-          totalQty: totalQty,
-          totalAmtConverter: totalAmtConverter,
-          detailList: detailList,
-          fundSource: (data.fundSource != null ? data.fundSource : row.fundSource) || '',
-          createBy: (data.createBy != null ? data.createBy : row.createBy) || '',
-          outboundOperator: (data.creater && data.creater.nickName) || (row.creater && row.creater.nickName) || (data.outboundOperator != null ? data.outboundOperator : row.outboundOperator) || (data.createBy != null ? data.createBy : row.createBy) || '',
-        }
+        return buildOutboundPrintRowFromDetail(row, response.data)
       })
     },
     /** 删除按钮操作 */
