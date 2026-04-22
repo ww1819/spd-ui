@@ -131,7 +131,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="planStatus" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="planStatus" width="110" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.plan_status" :value="scope.row.planStatus"/>
         </template>

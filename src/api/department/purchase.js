@@ -17,6 +17,16 @@ export function getPurchase(id) {
   })
 }
 
+/** 汇总申购明细数量（首页今日统计等） */
+export function sumPurchaseEntryQty(query) {
+  return request({
+    url: '/department/purchase/stats/todayEntryQtySum',
+    method: 'get',
+    params: query,
+    headers: { hideError: true }
+  })
+}
+
 // 新增科室申购
 export function addPurchase(data) {
   return request({

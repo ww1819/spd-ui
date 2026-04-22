@@ -219,9 +219,10 @@
           <div v-if="open" class="local-modal-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
+              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
+              <div class="form-fields-container">
               <el-row :gutter="8">
                 <el-col :span="4">
                   <el-form-item label="单号" prop="planNo">
@@ -286,28 +287,9 @@
                   </el-form-item>
                 </el-col>
               </el-row>
-
-              <el-row :gutter="8">
-                <el-col :span="8">
-                  <el-form-item label="计划来源" prop="planSource">
-                    <el-input :value="planSourceDisplay" disabled placeholder="由明细聚合" style="width: 100%;" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="8">
-                  <el-form-item label="计划明细生成方式" prop="planEntryMode">
-                    <el-input :value="planEntryModeDisplay" disabled style="width: 100%;" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="8">
-                  <el-form-item label="引用申购单号" prop="referenceBillNo">
-                    <el-button type="primary" link @click="handleShowApplyBillNoList">
-                      {{ (form.referenceBillNo && form.referenceBillNo.trim()) ? '查看引用申购单号' : '无' }}
-                    </el-button>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
-              <el-row :gutter="10" class="mb8">
+              </div>
+              <div class="modal-detail-section">
+              <el-row :gutter="10" class="mb8 detail-toolbar-row">
                 <el-col :span="1.5">
                   <span>计划明细信息</span>
                 </el-col>
@@ -316,7 +298,7 @@
                 <el-table :data="stkIoBillEntryList"
                           show-summary :summary-method="getSummaries"
                           border
-                          height="48vh"
+                          :height="detailTableHeight"
                 >
           <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -390,6 +372,7 @@
             </template>
           </el-table-column>
                 </el-table>
+              </div>
               </div>
             </el-form>
             <div class="modal-footer">
@@ -534,6 +517,10 @@ export default {
     this.getUserList();
   },
   computed: {
+    /** 与到货验收「查看入库」弹窗明细表高度一致 */
+    detailTableHeight() {
+      return 'max(260px, calc(100vh - 368px))';
+    },
     // 操作人姓名
     operatorName() {
       if (this.form.creater && this.form.creater.nickName) {
@@ -949,11 +936,11 @@ export default {
 /* 内部弹窗样式 */
 .local-modal-mask {
   position: absolute;
-  top: 0;
   left: 0;
+  top: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0,0,0,0.3);
   z-index: 1000;
   display: flex;
   align-items: stretch;
@@ -965,26 +952,29 @@ export default {
   width: 100%;
   height: 100%;
   min-height: 95vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  padding-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  min-height: 48px;
+  background: #EBEEF5;
+  min-height: 40px;
 }
 
 .modal-title {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   color: #303133;
-  margin: 0;
+  line-height: 1.4;
 }
 
 .close-btn {
@@ -1011,7 +1001,7 @@ export default {
 .local-modal-content .el-form {
   flex: 1;
   overflow: visible;
-  padding: 24px;
+  padding: 6px 20px 12px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
@@ -1019,9 +1009,48 @@ export default {
   flex-direction: column;
 }
 
+/* 弹窗内顶部字段区：与到货验收查看入库一致 */
+.local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 8px 16px 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  border: 1px solid #EBEEF5;
+}
+
+.local-modal-content .form-fields-container .el-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 弹窗内明细区：与到货验收查看入库一致 */
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
+
 /* 弹窗内表单紧凑布局 */
 .local-modal-content .modal-form-compact .el-row {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .local-modal-content .modal-form-compact .el-form-item {
@@ -1038,18 +1067,36 @@ export default {
 /* 弹窗内表格样式 - 高度调到确定按钮上面一点 */
 .local-modal-content .table-wrapper {
   flex: 1;
-  overflow: hidden;
+  min-height: 0;
+  overflow: auto;
   margin-top: 10px;
+  padding-bottom: 4px;
 }
 
-.local-modal-content .el-table {
-  height: 48vh;
-  max-height: 48vh;
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
 }
 
-.local-modal-content .el-table__body-wrapper {
-  max-height: calc(48vh - 48px);
-  overflow-y: auto;
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+  position: relative;
+  z-index: 10 !important;
+  background-color: #fff !important;
+  margin-top: 0;
+  box-shadow: 0 -1px 0 #ebeef5;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+  z-index: 11 !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  background-color: #fff !important;
 }
 
 .modal-footer .el-button {

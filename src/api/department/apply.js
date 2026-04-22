@@ -17,6 +17,16 @@ export function getApply(id) {
   })
 }
 
+/** 汇总申领明细数量（首页今日统计等） */
+export function sumApplyEntryQty(query) {
+  return request({
+    url: '/department/apply/stats/todayEntryQtySum',
+    method: 'get',
+    params: query,
+    headers: { hideError: true }
+  })
+}
+
 /** 科室申领操作人下拉（科室数据权限；有申请科室时仅该科室关联用户） */
 export function listDeptApplyOperatorOptions(departmentId) {
   return request({

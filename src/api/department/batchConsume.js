@@ -86,3 +86,23 @@ export function reverseConsume(data) {
     data: data
   })
 }
+
+/** 已审核科室消耗汇总（与「科室消耗追溯」汇总口径一致，含 totalInfo） */
+export function listAuditedConsumeSummary(query) {
+  return request({
+    url: '/department/batchConsume/auditedSummaryList',
+    method: 'get',
+    params: query,
+    headers: { hideError: true }
+  })
+}
+
+/** 仅合计数量/金额（首页科室图；仅需登录，口径同 auditedSummaryList 的 totalInfo） */
+export function getAuditedConsumeReportTotal(query) {
+  return request({
+    url: '/department/batchConsume/auditedReportTotal',
+    method: 'get',
+    params: query,
+    headers: { hideError: true }
+  })
+}
