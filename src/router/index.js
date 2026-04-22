@@ -62,6 +62,30 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/print/inbound',
+    component: () => import('@/views/inWarehouse/audit/InboundPrintPage'),
+    hidden: true,
+    meta: { title: '入库单打印' }
+  },
+  {
+    path: '/print/outbound',
+    component: () => import('@/views/warehouse/print/StockDocPrintPage'),
+    hidden: true,
+    meta: { title: '出库单打印' }
+  },
+  {
+    path: '/print/refund-depot',
+    component: () => import('@/views/warehouse/print/StockDocPrintPage'),
+    hidden: true,
+    meta: { title: '退库单打印' }
+  },
+  {
+    path: '/print/refund-goods',
+    component: () => import('@/views/warehouse/print/StockDocPrintPage'),
+    hidden: true,
+    meta: { title: '退货单打印' }
+  },
+  {
     path: '',
     component: Layout,
     redirect: 'index',

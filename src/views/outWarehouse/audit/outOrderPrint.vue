@@ -1,8 +1,8 @@
 <template>
   <div
-    class="out-order-print receipt-print print-root-offscreen"
+    class="out-order-print receipt-print browser-print-root"
     ref="receiptOrderPrintRef"
-    :class="rootOrientationClass"
+    :class="[rootOrientationClass, { 'print-root-offscreen': !embedPreview }]"
     :style="printStyle"
   >
     <div
@@ -33,7 +33,7 @@
           <span class="info-label">单据号</span>
           <span class="info-value">{{ row.billNo || '' }}</span>
         </div>
-        <div class="print-head-cell">
+        <div class="print-head-cell print-head-cell--audit-date">
           <span class="info-label">出库日期（审核）</span>
           <span class="info-value">{{ formatOutboundDate(row.auditDate || row.billDate) }}</span>
         </div>
@@ -114,6 +114,11 @@ export default {
   props: {
     row: Object,
     billType: [String, Number],
+    /** 每页明细行数；未传时默认 6 */
+    rowsPerPage: {
+      type: Number,
+      default: undefined
+    },
     /** 预览/打印方向：landscape 横向 | portrait 纵向；空则读打印模板或默认横向 */
     printOrientation: {
       type: String,
@@ -123,6 +128,11 @@ export default {
     paperType: {
       type: String,
       default: 'third-split'
+    },
+    /** true：嵌入独立打印页时在视区内预览；false：列表内直打时屏外占位（默认） */
+    embedPreview: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -130,8 +140,9 @@ export default {
       /** 与耗材出库默认模板（bill_type=201）一致：正文略小、表体统一字号 */
       printSetting: {
         orientation: 'landscape',
-        fontSize: 16,
-        tableFontSize: 11,
+        /** 与入库 orderPrint 一致：屏上预览默认可读；仍可由打印模板覆盖 */
+        fontSize: 21,
+        tableFontSize: 12,
         marginTop: 0,
         marginBottom: 0,
         marginLeft: 0,
@@ -157,10 +168,17 @@ export default {
     isThirdSplitPaper() {
       return this.paperType === 'third-split'
     },
+    effectiveRowsPerPage() {
+      const n = Number(this.rowsPerPage)
+      if (Number.isFinite(n) && n >= 1) {
+        return Math.min(100, Math.max(1, Math.round(n)))
+      }
+      return 6
+    },
     detailPages() {
       const list = (this.row && Array.isArray(this.row.detailList)) ? this.row.detailList : []
       if (!list.length) return [[]]
-      const pageSize = 6
+      const pageSize = this.effectiveRowsPerPage
       const pages = []
       for (let i = 0; i < list.length; i += pageSize) {
         pages.push(list.slice(i, i + pageSize))
@@ -182,7 +200,7 @@ export default {
       const wide = this.effectiveOrientation === 'landscape'
       return {
         padding: margin,
-        fontSize: (m.fontSize || 16) + 'px',
+        fontSize: Math.round(m.fontSize || 14) + 'px',
         // 点阵机更适合等宽字体，减少字形/宽度差异导致的糊边
         fontFamily: '"Courier New", "Consolas", "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif',
         width: wide ? '297mm' : '210mm',
@@ -190,7 +208,7 @@ export default {
       }
     },
     tableStyle() {
-      const px = this.printSetting.tableFontSize || 11
+      const px = this.printSetting.tableFontSize || 12
       return {
         fontSize: px + 'px',
         fontFamily: '"Courier New", "Consolas", "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif'
@@ -206,8 +224,11 @@ export default {
       getDefaultTemplate(billType).then(response => {
         if (response.data) {
           const data = response.data
-          if (data.fontSize != null) this.printSetting.fontSize = data.fontSize
-          if (data.tableFontSize != null) this.printSetting.tableFontSize = data.tableFontSize
+          // 与入库 orderPrint 一致：相对后台模板整体放大三号，屏上预览与列表直打更统一
+          if (data.fontSize != null) this.printSetting.fontSize = Math.round(Number(data.fontSize)) + 3
+          if (data.tableFontSize != null) {
+            this.printSetting.tableFontSize = Math.round(Number(data.tableFontSize)) + 3
+          }
           if (data.orientation) this.printSetting.orientation = data.orientation
           if (data.marginTop != null) this.printSetting.marginTop = data.marginTop
           if (data.marginBottom != null) this.printSetting.marginBottom = data.marginBottom
@@ -425,17 +446,19 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   left -9999px
   top 0
   width 210mm
-  max-width 900px
+  max-width 210mm
   z-index -1
   visibility visible
 
 .out-order-print.page-slip-landscape.print-root-offscreen
   width 297mm
-  max-width 1100px
+  max-width 297mm
 
 .receipt-print
   line-height 1.35
-  max-width 900px
+  /* 与入库 orderPrint：按纸张宽度占满，避免屏上像“缩在一角” */
+  width 210mm
+  max-width 210mm
   margin 0 auto
   font-family $font-song
   min-height 99mm
@@ -445,6 +468,10 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   padding-right 1ch
   break-inside avoid
   page-break-inside avoid
+
+.out-order-print.page-slip-landscape.receipt-print
+  width 297mm
+  max-width 297mm
 
 .print-copy-block
   min-height 140mm
@@ -465,7 +492,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   grid-template-columns 92px 1fr 92px
   align-items center
   column-gap 6px
-  margin-bottom 2px
+  margin-bottom 6px
 
 .doc-header-spacer
   width 92px
@@ -481,11 +508,12 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   color #333
 
 .doc-title
-  font-size 15px
-  font-weight bold
+  /* 与入库物资入库单标题一致，屏上更醒目 */
+  font-size 20px
+  font-weight normal
   text-align center
   margin 0
-  line-height 1.25
+  line-height 1.1
 
 .header-cell
   padding 4px 2px 6px
@@ -496,16 +524,17 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   border-top 1px solid #000
 
 .print-head-info
-  width 94%
-  margin 0 auto 2px
+  width 100%
+  margin 0 auto 6px
   padding 0
 
+/* 第一列放「发往科 + 出库日期（审核）」：首列再宽、中列再窄，中列整体更靠右 */
 .print-head-grid
   display grid
-  grid-template-columns 1.2fr 0.9fr 1.2fr
+  grid-template-columns 1.72fr 0.62fr 0.96fr
   column-gap 8px
   row-gap 1px
-  font-size 10px
+  font-size 12px
 
 .print-head-cell
   display flex
@@ -514,6 +543,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
 .print-head-cell--span2
   grid-column 2 / span 2
+
+.print-head-cell--audit-date .info-value
+  white-space nowrap
 
 .info-label
   flex 0 0 auto
@@ -532,13 +564,11 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   margin-right 8px
 
 .detail-table
-  width 94%
+  width 100%
   table-layout fixed
   border-collapse collapse
   border 1px solid #000
-  margin-bottom 0
-  margin-left auto
-  margin-right auto
+  margin-bottom 6px
   font-family $font-song
 
 /* 消耗品名称 14%（最多两行截断）；产地 8% */
@@ -564,7 +594,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .detail-table th,
 .detail-table td
   border 1px solid #000
-  padding 1px 3px
+  padding 4px 6px
   vertical-align middle
   font-size inherit
 
@@ -688,11 +718,21 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .sign-value--blank
   min-height 1em
 
-/* 屏上不占用视口；打印时在复制块内展示 */
+/* 列表内直打：屏上不占用视口；独立打印页 embedPreview 时见下方修饰类 */
 .print-sign-footer-fixed
   display none
   width 94%
   margin 0 auto
+
+/* 非屏外直打（独立打印页、弹窗预览）：展示签字区 */
+.out-order-print:not(.print-root-offscreen) .print-sign-footer-fixed
+  display block
+  width 100%
+  margin-top 8px
+  box-sizing border-box
+
+.out-order-print:not(.print-root-offscreen) .print-sign-footer-fixed .sign-block
+  font-size 12px
 </style>
 
 <style lang="stylus" media="print">
@@ -704,7 +744,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   *
     color #000 !important
 
-  .print-root-offscreen
+  .print-root-offscreen,
+  .browser-print-root
     position relative !important
     left auto !important
     top auto !important
@@ -783,7 +824,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
   .print-head-grid
     display grid !important
-    grid-template-columns 1.2fr 0.9fr 1.2fr !important
+    grid-template-columns 1.72fr 0.62fr 0.96fr !important
     column-gap 8px !important
     row-gap 1px !important
 
@@ -794,6 +835,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 
   .print-head-cell--span2
     grid-column 2 / span 2 !important
+
+  .print-head-cell--audit-date .info-value
+    white-space nowrap !important
 
   .print-head-info .info-label
     text-align left !important

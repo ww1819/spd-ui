@@ -468,10 +468,6 @@
     >
 
     </SelectTkApply>
-    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
-    <div v-show="false">
-      <refund-goods-order-print v-if="printRowData" :row="printRowData" ref="receiptRefundGoodsPrintRefAuto"></refund-goods-order-print>
-    </div>
   </div>
 </template>
 
@@ -498,7 +494,7 @@ import SelectRkApply from "@/components/SelectModel/SelectRkApply";
 import SelectTkApply from "@/components/SelectModel/SelectTkApply";
 import {createEntriesByDApply} from "@/api/warehouse/outWarehouse";
 import refundGoodsOrderPrint from "@/views/inWarehouse/refundGoodsAudit/refundGoodsOrderPrint.vue";
-import RMBConverter from "@/utils/tools";
+import { buildRefundGoodsPrintRowFromDetail } from '@/views/warehouse/print/refundGoodsPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData';
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 
@@ -560,7 +556,6 @@ export default {
       // 表单参数
       form: {},
       // 打印数据（用于隐藏的打印组件）
-      printRowData: null,
       // 表单校验
       rules: {
         supplerId: [
@@ -932,78 +927,26 @@ export default {
       }).catch(() => {});
     },
     /** 打印按钮操作 */
-    handlePrint(row, print){
-      // 如果传入 print 参数为 true，直接执行打印（与退货审核页面一致）
+    handlePrint(row, print) {
       if (print === true) {
-        // 直接获取数据并触发打印
-        this.getRefundGoodsDetail(row).then(res => {
-          // 设置打印数据
-          this.printRowData = res
-          // 等待组件渲染后调用 start()
-          this.$nextTick(() => {
-            if (this.$refs['receiptRefundGoodsPrintRefAuto']) {
-              // start() 方法会直接触发浏览器打印对话框
-              this.$refs['receiptRefundGoodsPrintRefAuto'].start()
-            }
-          })
+        if (!row || row.id == null) {
+          this.$modal.msgWarning('缺少单据信息，无法打印')
+          return
+        }
+        this.$router.push({
+          path: '/print/refund-goods',
+          query: {
+            id: String(row.id),
+            from: encodeURIComponent(this.$route.fullPath)
+          }
         })
         return
       }
     },
     //组装打印信息（与退货审核页面完全一致）
     getRefundGoodsDetail(row) {
-      //查询详情
       return getThInventory(row.id).then(response => {
-        const details = response.data.stkIoBillEntryList
-        const materiaDetails = response.data.materialList
-        const map = {};
-
-        (materiaDetails || []).forEach(it => {
-          map[it.id] = it
-        })
-
-        let detailList = [], totalAmt = 0, totalQty = 0
-
-        details && details.forEach(item => {
-          totalAmt += item.amt
-          totalQty += item.qty
-
-          const prod = map[item.materialId] || {}
-          const fdFactory = prod.fdFactory != null ? prod.fdFactory : null
-          const fdWarehouseCategory = prod.fdWarehouseCategory != null ? prod.fdWarehouseCategory : null
-
-          detailList.push({
-            batchNumber: item.batchNumber,
-            amt: item.amt,
-            qty: item.qty,
-            unitPrice: item.unitPrice,
-            price: item.unitPrice, // 打印组件需要 price 字段
-            unitName: (prod.fdUnit && prod.fdUnit.unitName) || (item.material && item.material.fdUnit && item.material.fdUnit.unitName) || '',
-            materialCode: (prod && prod.code) || '',
-            materialName: (prod && prod.name) || '',
-            materialSpeci: (prod && prod.speci) || '',
-            periodDate: (prod && prod.periodDate) || '',
-            factoryName: (fdFactory && fdFactory.factoryName) || '',
-            warehouseCategoryName: (fdWarehouseCategory && fdWarehouseCategory.warehouseCategoryName) || '',
-          })
-
-        })
-
-        let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
-
-        // 与退货审核页面完全一致的数据结构
-        return {
-          billNo: row.billNo,
-          supplierName: (row.supplier && row.supplier.name) || '',
-          warehouseName: (row.warehouse && row.warehouse.name) || '',
-          billDate: row.billDate,
-          auditDate: row.auditDate,
-          printDate: row.printDate,
-          totalAmt: totalAmt,
-          totalQty: totalQty,
-          totalAmtConverter: totalAmtConverter,
-          detailList: detailList
-        }
+        return buildRefundGoodsPrintRowFromDetail(row, response.data)
       })
     },
     /** 退货明细序号 */

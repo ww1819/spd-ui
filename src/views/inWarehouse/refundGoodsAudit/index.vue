@@ -464,16 +464,6 @@
         <el-button @click=" modalObj.ok " type="primary">确认</el-button>
       </template>
     </el-dialog>
-    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
-    <div v-show="false">
-      <refund-goods-order-print
-        v-if="printRowData"
-        :row="printRowData"
-        print-orientation="portrait"
-        paper-type="third-split"
-        ref="receiptRefundGoodsPrintRefAuto"
-      ></refund-goods-order-print>
-    </div>
     <!-- 3、使用组件 -->
     <SelectInventory
       v-if="DialogComponentShow"
@@ -499,15 +489,13 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectInventory from "@/components/SelectModel/SelectInventory";
 import refundGoodsOrderPrint from "@/views/inWarehouse/refundGoodsAudit/refundGoodsOrderPrint.vue";
-import RMBConverter from "@/utils/tools";
+import { buildRefundGoodsPrintRowFromDetail } from '@/views/warehouse/print/refundGoodsPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
-import OrderPrint from "@/views/inWarehouse/audit/orderPrint.vue";
 
 export default {
   name: "InWarehouseGoodsAudit",
   dicts: ['biz_status','bill_type','way_status'],
   components: {
-    OrderPrint,
     refundGoodsOrderPrint, SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory},
   data() {
     return {
@@ -533,8 +521,6 @@ export default {
         cancel: () => {
         }
       },
-      // 打印数据（用于隐藏的打印组件）
-      printRowData: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -933,49 +919,17 @@ export default {
       })
     },
     /** 打印按钮操作 */
-    handlePrint(row, print){
-      // 审核页点击打印：直接打开浏览器打印预览
-      this.windowPrintOut(row, true, 'portrait', 'a4')
-    },
-    windowPrintOut(row, print, printOrientation, paperType) {
-      const orient = printOrientation || 'portrait'
-      const pType = paperType || 'a4'
-      this.getRefundGoodsDetail(row).then(res => {
-        if (print) {
-          this.printRowData = res
-          this.$nextTick(() => {
-            const ref = this.$refs['receiptRefundGoodsPrintRefAuto']
-            if (ref && typeof ref.start === 'function') {
-              ref.start()
-            } else {
-              setTimeout(() => {
-                this.$refs['receiptRefundGoodsPrintRefAuto']?.start?.()
-              }, 100)
-            }
-          })
-          return
+    handlePrint(row) {
+      if (!row || row.id == null) {
+        this.$modal.msgWarning('缺少单据信息，无法打印')
+        return
+      }
+      this.$router.push({
+        path: '/print/refund-goods',
+        query: {
+          id: String(row.id),
+          from: encodeURIComponent(this.$route.fullPath)
         }
-        this.$nextTick(() => {
-          this.modalObj = {
-            show: true,
-            title: '浏览器打印预览',
-            width: '800px',
-            component: 'window-print-preview',
-            form: {
-              value: 2,
-              row: res,
-              print,
-              printOrientation: orient,
-              paperType: pType
-            },
-            ok: () => {
-              this.modalObj.show = false
-            },
-            cancel: () => {
-              this.modalObj.show = false
-            }
-          }
-        })
       })
     },
     doPrintOut(row, print) {
@@ -989,56 +943,8 @@ export default {
     },
     //组装打印信息
     getRefundGoodsDetail(row) {
-      //查询详情
       return getThInventory(row.id).then(response => {
-        const details = response.data.stkIoBillEntryList
-        const materiaDetails = response.data.materialList
-        const map = {};
-
-        (materiaDetails || []).forEach(it => {
-          map[it.id] = it
-        })
-
-        let detailList = [], totalAmt = 0, totalQty = 0
-
-        details && details.forEach(item => {
-          totalAmt += item.amt
-          totalQty += item.qty
-
-          const prod = map[item.materialId] || {}
-          const fdFactory = prod.fdFactory != null ? prod.fdFactory : null
-          const fdWarehouseCategory = prod.fdWarehouseCategory != null ? prod.fdWarehouseCategory : null
-
-          detailList.push({
-            batchNumber: item.batchNumber,
-            amt: item.amt,
-            qty: item.qty,
-            unitPrice: item.unitPrice,
-            unitName: (prod.fdUnit && prod.fdUnit.unitName) || (item.material && item.material.fdUnit && item.material.fdUnit.unitName) || '',
-            materialCode: (prod && prod.code) || '',
-            materialName: (prod && prod.name) || '',
-            materialSpeci: (prod && prod.speci) || '',
-            periodDate: (prod && prod.periodDate) || '',
-            factoryName: (fdFactory && fdFactory.factoryName) || '',
-            warehouseCategoryName: (fdWarehouseCategory && fdWarehouseCategory.warehouseCategoryName) || '',
-          })
-
-        })
-
-        let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
-
-        return {
-          billNo: row.billNo,
-          supplierName: (row.supplier && row.supplier.name) || '',
-          warehouseName: (row.warehouse && row.warehouse.name) || '',
-          billDate: row.billDate,
-          auditDate: row.auditDate,
-          printDate: row.printDate,
-          totalAmt: totalAmt,
-          totalQty: totalQty,
-          totalAmtConverter: totalAmtConverter,
-          detailList:detailList
-        }
+        return buildRefundGoodsPrintRowFromDetail(row, response.data)
       })
     },
     /** 删除按钮操作 */

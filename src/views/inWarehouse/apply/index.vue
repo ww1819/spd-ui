@@ -687,11 +687,6 @@
         <el-button @click="modalObj.ok" type="primary">确认</el-button>
       </template>
     </el-dialog>
-    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
-    <div v-show="false">
-      <order-print v-if="printRowData" :row="printRowData" ref="receiptOrderPrintRefAuto"></order-print>
-    </div>
-
   </div>
 </template>
 
@@ -742,8 +737,6 @@ export default {
         },
         show: false
       },
-      // 打印数据（用于隐藏的打印组件）
-      printRowData: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -1165,19 +1158,18 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
-      // 如果传入 print 参数为 true，直接执行打印
+      // 与到货验收 audit 页一致：跳独立打印页（不再隐藏组件里直接 window.print）
       if (print === true) {
-        // 直接获取数据并触发打印
-        this.getInWarehouseDetail(row).then(res => {
-          // 设置打印数据
-          this.printRowData = res
-          // 等待组件渲染后调用 start()
-          this.$nextTick(() => {
-            if (this.$refs['receiptOrderPrintRefAuto']) {
-              // start() 方法会直接触发浏览器打印对话框
-              this.$refs['receiptOrderPrintRefAuto'].start()
-            }
-          })
+        if (!row || row.id == null) {
+          this.$modal.msgWarning('缺少单据信息，无法打印')
+          return
+        }
+        this.$router.push({
+          path: '/print/inbound',
+          query: {
+            id: String(row.id),
+            from: encodeURIComponent(this.$route.fullPath)
+          }
         })
         return
       }
@@ -1207,13 +1199,15 @@ export default {
     windowPrintOut(row, print) {
       this.getInWarehouseDetail(row).then(res => {
         if (print) {
-          // 与入库审核页面完全一致：只更新 modalObj.form.row，然后直接调用打印
-          // 注意：对话框已经在 handlePrint 中打开了
-          this.modalObj.form.row = res
-          this.$nextTick(() => {
-            if (this.$refs['receiptOrderPrintRef']) {
-              // start() 方法会直接触发浏览器打印对话框，不需要显示预览对话框
-              this.$refs['receiptOrderPrintRef'].start()
+          if (!row || row.id == null) {
+            this.$modal.msgWarning('缺少单据信息，无法打印')
+            return
+          }
+          this.$router.push({
+            path: '/print/inbound',
+            query: {
+              id: String(row.id),
+              from: encodeURIComponent(this.$route.fullPath)
             }
           })
           return

@@ -1,8 +1,8 @@
 <template>
   <div
-    class="refund-goods-print order-print receipt-print print-root-offscreen"
+    class="refund-goods-print order-print receipt-print browser-print-root"
     ref="receiptRefundGoodsPrintRef"
-    :class="[rootOrientationClass, { 'is-a4-print': isA4Paper }]"
+    :class="[rootOrientationClass, { 'is-a4-print': isA4Paper }, { 'print-root-offscreen': !embedPreview }]"
   >
     <div
       v-for="(detailPage, pageIndex) in detailPages"
@@ -113,6 +113,10 @@ export default {
       type: Object,
       default: () => ({})
     },
+    rowsPerPage: {
+      type: Number,
+      default: undefined
+    },
     printOrientation: {
       type: String,
       default: 'landscape'
@@ -120,6 +124,10 @@ export default {
     paperType: {
       type: String,
       default: 'third-split'
+    },
+    embedPreview: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
@@ -135,10 +143,17 @@ export default {
     isThirdSplitPaper() {
       return this.paperType === 'third-split'
     },
+    effectiveRowsPerPage() {
+      const n = Number(this.rowsPerPage)
+      if (Number.isFinite(n) && n >= 1) {
+        return Math.min(100, Math.max(1, Math.round(n)))
+      }
+      return 7
+    },
     detailPages() {
       const list = (this.row && Array.isArray(this.row.detailList)) ? this.row.detailList : []
       if (!list.length) return [[]]
-      const pageSize = 7
+      const pageSize = this.effectiveRowsPerPage
       const pages = []
       for (let i = 0; i < list.length; i += pageSize) {
         pages.push(list.slice(i, i + pageSize))
@@ -519,7 +534,8 @@ export default {
   *
     color #000 !important
 
-  .print-root-offscreen
+  .print-root-offscreen,
+  .browser-print-root
     position relative !important
     left auto !important
     top auto !important

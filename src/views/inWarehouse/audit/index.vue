@@ -534,15 +534,6 @@
         <el-button @click=" modalObj.ok " type="primary">确认</el-button>
       </template>
     </el-dialog>
-    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
-    <div v-show="false">
-      <order-print
-        v-if="printRowData"
-        :row="printRowData"
-        print-orientation="landscape"
-        ref="receiptOrderPrintRefAuto"
-      ></order-print>
-    </div>
 
     <!-- 3、使用组件 -->
     <SelectMaterialFilter
@@ -571,7 +562,7 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMaterialFilter from "@/components/SelectModel/SelectMaterialFilter";
 import orderPrint from "@/views/inWarehouse/audit/orderPrint";
-import RMBConverter from "@/utils/tools";
+import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
 
 export default {
@@ -600,8 +591,6 @@ export default {
         cancel: () => {
         }
       },
-      // 打印数据（用于隐藏的打印组件）
-      printRowData: null,
       // 选中数组
       ids: [],
       // 选中的行（含 billStatus，用于审核前过滤已审核）
@@ -1013,47 +1002,13 @@ export default {
       });
     },
     /** 打印按钮操作 */
-    handlePrint(row, print){
-      // 审核页点击打印：直接打开浏览器打印预览
-      this.windowPrintOut(row, true, 'portrait')
-    },
-    windowPrintOut(row, print, printOrientation) {
-      const orient = printOrientation || 'portrait'
-      this.getInWarehouseDetail(row).then(res => {
-        if (print) {
-          this.printRowData = res
-          this.$nextTick(() => {
-            const ref = this.$refs['receiptOrderPrintRefAuto']
-            if (ref && typeof ref.start === 'function') {
-              ref.start()
-            } else {
-              setTimeout(() => {
-                this.$refs['receiptOrderPrintRefAuto']?.start?.()
-              }, 100)
-            }
-          })
-          return
+    handlePrint(row) {
+      this.$router.push({
+        path: '/print/inbound',
+        query: {
+          id: String(row.id),
+          from: encodeURIComponent(this.$route.fullPath)
         }
-        this.$nextTick(() => {
-          this.modalObj = {
-            show: true,
-            title: '浏览器打印预览',
-            width: '800px',
-            component: 'window-print-preview',
-            form: {
-              value: 2,
-              row: res,
-              print,
-              printOrientation: orient
-            },
-            ok: () => {
-              this.modalObj.show = false
-            },
-            cancel: () => {
-              this.modalObj.show = false
-            }
-          }
-        })
       })
     },
     doPrintOut(row, print) {
@@ -1067,60 +1022,8 @@ export default {
     },
     //组装打印信息
     getInWarehouseDetail(row) {
-      //查询详情
       return getInWarehouse(row.id).then(response => {
-        const details = response.data.stkIoBillEntryList
-        const materiaDetails = response.data.materialList
-        const map = {};
-
-        (materiaDetails || []).forEach(it => {
-          map[it.id] = it
-        })
-
-        let detailList = [], totalAmt = 0, totalQty = 0
-
-        details && details.forEach(item => {
-          totalAmt += item.amt
-          totalQty += item.qty
-
-          const prod = map[item.materialId] || {}
-          const fdFactory = prod.fdFactory != null ? prod.fdFactory : null
-          const fdWarehouseCategory = prod.fdWarehouseCategory != null ? prod.fdWarehouseCategory : null
-          const fdUnit = prod.fdUnit != null ? prod.fdUnit : null
-
-          detailList.push({
-            batchNumber: item.batchNumber,
-            amt: item.amt,
-            qty: item.qty,
-            unitPrice: item.unitPrice,
-            price: item.unitPrice,
-            materialCode: (prod && prod.code) || '',
-            materialName: (prod && prod.name) || '',
-            materialSpeci: (prod && prod.speci) || '',
-            periodDate: (prod && prod.periodDate) || '',
-            factoryName: (fdFactory && fdFactory.factoryName) || '',
-            warehouseCategoryName: (fdWarehouseCategory && fdWarehouseCategory.warehouseCategoryName) || '',
-            unitName: (fdUnit && fdUnit.unitName) || '',
-          })
-
-        })
-
-        let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
-
-        return {
-          billNo: row.billNo,
-          supplierName: (row.supplier && row.supplier.name) || '',
-          warehouseName: (row.warehouse && row.warehouse.name) || '',
-          billDate: row.billDate,
-          auditDate: row.auditDate,
-          totalAmt: totalAmt,
-          totalQty: totalQty,
-          totalAmtConverter: totalAmtConverter,
-          detailList: detailList,
-          fundSourceAccount: (row.fundSourceAccount != null ? row.fundSourceAccount : '') || '',
-          createBy: (row.createBy != null ? row.createBy : '') || '',
-          inboundOperator: (row.creater && row.creater.nickName) || (row.inboundOperator != null ? row.inboundOperator : row.createBy) || '',
-        }
+        return buildInboundPrintRowFromDetail(row, response.data)
       })
     },
     /** 删除按钮操作 */
