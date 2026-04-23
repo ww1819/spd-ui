@@ -17,21 +17,23 @@ export function getPurchasePlan(id) {
   })
 }
 
-// 新增采购计划
-export function addPurchasePlan(data) {
+// 新增采购计划（可选 axios 配置，如 headers.repeatSubmit）
+export function addPurchasePlan(data, axiosConfig) {
   return request({
     url: '/caigou/jihua',
     method: 'post',
-    data: data
+    data: data,
+    ...(axiosConfig || {})
   })
 }
 
-// 修改采购计划
-export function updatePurchasePlan(data) {
+// 修改采购计划（可选 axios 配置）
+export function updatePurchasePlan(data, axiosConfig) {
   return request({
     url: '/caigou/jihua',
     method: 'put',
-    data: data
+    data: data,
+    ...(axiosConfig || {})
   })
 }
 

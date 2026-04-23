@@ -456,6 +456,7 @@
       :DialogComponentShow="DialogComponentShow"
       :supplierValue="supplierValue"
       :warehouseValue="form.warehouseId"
+      :excludeMaterialIds="purchasePlanExcludeMaterialIds"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMMaterialFilter>
@@ -768,6 +769,9 @@ export default {
       isShow: true,
       // 防抖定时器
       qtyChangeTimer: null,
+      /** 添加明细后自动保存草稿 */
+      planAutoSaveTimer: null,
+      planDraftSaving: false,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -912,6 +916,9 @@ export default {
     if (this.qtyChangeTimer) {
       clearTimeout(this.qtyChangeTimer);
     }
+    if (this.planAutoSaveTimer) {
+      clearTimeout(this.planAutoSaveTimer);
+    }
   },
   computed: {
     // 引用申购单弹窗表格高度
@@ -980,6 +987,23 @@ export default {
     /** 与到货验收 inWarehouse/audit 弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
+    },
+    /** 当前计划已有明细中的产品档案 id，选耗材时用 excludeMaterialIds 排除，避免重复 */
+    purchasePlanExcludeMaterialIds() {
+      const list = this.stkIoBillEntryList || [];
+      const ids = [];
+      list.forEach(row => {
+        const mid =
+          row.materialId != null && row.materialId !== ""
+            ? row.materialId
+            : row.material && row.material.id != null
+              ? row.material.id
+              : null;
+        if (mid != null && mid !== "") {
+          ids.push(mid);
+        }
+      });
+      return [...new Set(ids)];
     }
   },
   watch: {
@@ -1130,14 +1154,15 @@ export default {
     selectData(lightRows) {
       console.time('[Plan] selectData total');
       const t0 = performance.now();
-      const toAppend = []
+      const toAppend = [];
       const list = lightRows || [];
       list.forEach((item) => {
+        const defQty = this.getDefaultPurchaseQtyFromMaterial(item);
         toAppend.push({
           materialId: item.id,
           supplierId: item.supplierId || (item.supplier && item.supplier.id) || null,
           applyQty: null,
-          qty: "",
+          qty: String(defQty),
           price: item.price,
           amt: "",
           speci: item.speci,
@@ -1147,8 +1172,8 @@ export default {
           endTime: "",
           remark: "",
           material: Object.freeze(item),
-        })
-      })
+        });
+      });
       const t1 = performance.now();
       console.log('[Plan] select rows=', list.length, 'build objects(ms)=', (t1 - t0).toFixed(1));
       if (!toAppend.length) {
@@ -1156,13 +1181,19 @@ export default {
         return;
       }
 
+      const afterAppend = () => {
+        toAppend.forEach((row) => this.qtyChange(row));
+        this.debouncedAutoSavePlan();
+        console.timeEnd('[Plan] selectData total');
+      };
+
       // 小批量（<=30）直接同步合并，避免 rAF 等待造成 1s+ 延迟
       if (toAppend.length <= 30) {
         const t2 = performance.now();
-        this.stkIoBillEntryList = this.stkIoBillEntryList.concat(toAppend)
+        this.stkIoBillEntryList = this.stkIoBillEntryList.concat(toAppend);
         const t3 = performance.now();
         console.log('[Plan] concat small size=', toAppend.length, 'concat(ms)=', (t3 - t2).toFixed(1));
-        console.timeEnd('[Plan] selectData total');
+        this.$nextTick(afterAppend);
         return;
       }
 
@@ -1171,12 +1202,139 @@ export default {
         const t2 = performance.now();
         requestAnimationFrame(() => {
           const t3 = performance.now();
-          this.stkIoBillEntryList = this.stkIoBillEntryList.concat(toAppend)
+          this.stkIoBillEntryList = this.stkIoBillEntryList.concat(toAppend);
           const t4 = performance.now();
           console.log('[Plan] concat large size=', toAppend.length, 'raf wait(ms)=', (t3 - t2).toFixed(1), 'concat(ms)=', (t4 - t3).toFixed(1));
-          console.timeEnd('[Plan] selectData total');
-        })
-      })
+          this.$nextTick(afterAppend);
+        });
+      });
+    },
+    /**
+     * 从产品档案取默认采购数量：最小包装数量；为空/0/无效则 1。
+     * 优先数值字段 minPackageQty 等；否则尝试 packageSpeci 中的首个正数。
+     */
+    getDefaultPurchaseQtyFromMaterial(m) {
+      if (!m || typeof m !== "object") {
+        return 1;
+      }
+      const tryPositiveInt = (v) => {
+        if (v === null || v === undefined || v === "") {
+          return null;
+        }
+        const n = Number(v);
+        if (!Number.isFinite(n) || n <= 0) {
+          return null;
+        }
+        return Math.max(1, Math.floor(n));
+      };
+      for (const k of ["minPackageQty", "minPackQty", "minimumPackageQty", "min_package_qty"]) {
+        const n = tryPositiveInt(m[k]);
+        if (n != null) {
+          return n;
+        }
+      }
+      const ps = m.packageSpeci;
+      if (ps != null && String(ps).trim() !== "") {
+        const s = String(ps).trim();
+        const pure = Number(s);
+        if (Number.isFinite(pure) && pure > 0) {
+          return Math.max(1, Math.floor(pure));
+        }
+        const mch = s.match(/\d+(?:\.\d+)?/);
+        if (mch) {
+          const n = Number(mch[0]);
+          if (Number.isFinite(n) && n > 0) {
+            return Math.max(1, Math.floor(n));
+          }
+        }
+      }
+      return 1;
+    },
+    /** 表头校验需要供应商时，用首条已选明细的供应商兜底 */
+    syncHeaderSupplierForValidate() {
+      const list = this.stkIoBillEntryList || [];
+      if ((this.form.supplierId == null || this.form.supplierId === "") && list.length) {
+        const row = list.find((r) => r.supplierId != null && r.supplierId !== "");
+        if (row) {
+          this.$set(this.form, "supplierId", row.supplierId);
+        }
+      }
+    },
+    debouncedAutoSavePlan() {
+      if (!this.open || !this.action) {
+        return;
+      }
+      if (this.planAutoSaveTimer) {
+        clearTimeout(this.planAutoSaveTimer);
+      }
+      this.planAutoSaveTimer = setTimeout(() => {
+        this.planAutoSaveTimer = null;
+        this.savePlanDraftSilently();
+      }, 500);
+    },
+    /** 添加明细后静默落库，避免切换页面丢失（不关闭弹窗、不打断操作） */
+    savePlanDraftSilently() {
+      if (!this.open || !this.action || this.planDraftSaving) {
+        return;
+      }
+      const list = this.stkIoBillEntryList || [];
+      if (!list.length || !this.form.warehouseId) {
+        return;
+      }
+      const invalidQty = list.filter(
+        (e) => e.materialId && (e.qty == null || e.qty === "" || Number(e.qty) <= 0)
+      );
+      if (invalidQty.length) {
+        return;
+      }
+      const noSupplier = list.filter(
+        (e) => e.materialId && (e.supplierId == null || e.supplierId === "")
+      );
+      if (noSupplier.length) {
+        return;
+      }
+      if (!this.$refs.form) {
+        return;
+      }
+      this.syncHeaderSupplierForValidate();
+      this.$refs.form.validate((valid) => {
+        if (!valid) {
+          return;
+        }
+        this.planDraftSaving = true;
+        this.form.purchasePlanEntryList = list;
+        if (this.form.id == null && (this.form.planStatus == null || this.form.planStatus === "")) {
+          this.form.planStatus = "0";
+        }
+        const ax = { headers: { repeatSubmit: false, hideError: true } };
+        const done = () => {
+          this.planDraftSaving = false;
+        };
+        if (this.form.id != null) {
+          updatePurchasePlan(this.form, ax)
+            .then(() => {})
+            .catch(() => {})
+            .finally(done);
+        } else {
+          addPurchasePlan(this.form, ax)
+            .then((res) => {
+              const d = res && res.data;
+              const nid = d && typeof d === "object" ? d.id : d;
+              const pno = d && typeof d === "object" ? d.planNo : null;
+              if (nid != null) {
+                this.$set(this.form, "id", Number(nid));
+                if (pno) {
+                  this.$set(this.form, "planNo", pno);
+                }
+                if (this.title === "添加计划") {
+                  this.title = "修改计划";
+                }
+              }
+            })
+            .catch(() => {})
+            .finally(done);
+        }
+      });
     },
     getStatDate(){
       // 当前日期往前推5天

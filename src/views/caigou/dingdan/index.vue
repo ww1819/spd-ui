@@ -394,6 +394,7 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :supplierValue="supplierValue"
+      :excludeMaterialIds="purchaseOrderExcludeMaterialIds"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMMaterialFilter>
@@ -497,6 +498,19 @@ export default {
         ],
       }
     };
+  },
+  computed: {
+    /** 当前订单明细中已选产品 id，选耗材时排除 */
+    purchaseOrderExcludeMaterialIds() {
+      const list = this.purchaseOrderEntryList || [];
+      const ids = [];
+      list.forEach(row => {
+        if (row.materialId != null && row.materialId !== "") {
+          ids.push(row.materialId);
+        }
+      });
+      return [...new Set(ids)];
+    }
   },
   created() {
     this.getList();
