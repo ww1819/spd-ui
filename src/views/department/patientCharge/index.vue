@@ -21,14 +21,45 @@
               @keyup.enter.native="handleDetailQuery"
             />
           </el-form-item>
+          <el-form-item label="科室">
+            <el-select
+              v-model="detailQuery.departmentId"
+              placeholder="按权限科室"
+              clearable
+              filterable
+              style="width:200px"
+            >
+              <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="是否处理">
+            <el-select v-model="detailQuery.processed" placeholder="全部" clearable style="width:110px">
+              <el-option label="已处理" value="Y" />
+              <el-option label="未处理" value="N" />
+            </el-select>
+          </el-form-item>
           <el-form-item label="计费日期">
             <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
             <span style="margin:0 6px">至</span>
             <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
           </el-form-item>
+          <el-form-item label="处理时间">
+            <el-date-picker v-model="detailQuery.beginProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
+            <span style="margin:0 6px">至</span>
+            <el-date-picker v-model="detailQuery.endProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
+          </el-form-item>
           <el-form-item>
             <el-button type="primary" icon="el-icon-search" @click="handleDetailQuery">查询</el-button>
             <el-button icon="el-icon-refresh" @click="resetDetailQuery">重置</el-button>
+          </el-form-item>
+          <el-form-item>
+            <el-button
+              type="warning"
+              plain
+              :disabled="detailSelection.length === 0"
+              v-hasPermi="['department:patientCharge:generateConsume','department:patientCharge:processMirrorLow']"
+              @click="batchProcessLowValue"
+            >批量低值核销</el-button>
           </el-form-item>
           <el-form-item>
             <el-button
@@ -46,7 +77,14 @@
           </el-form-item>
         </el-form>
 
-        <el-table v-loading="detailLoading" :data="detailList" border stripe>
+        <el-table
+          v-loading="detailLoading"
+          :data="detailList"
+          border
+          stripe
+          @selection-change="rows => (detailSelection = rows)"
+        >
+          <el-table-column type="selection" width="48" align="center" :selectable="row => row.processStatus === 'PENDING_CONSUME'" />
           <template v-if="detailVisitType === 'IN'">
             <el-table-column label="住院号" prop="inpatientNo" width="120" show-overflow-tooltip />
             <el-table-column label="科室" prop="deptName" min-width="120" show-overflow-tooltip />
@@ -62,7 +100,18 @@
           <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
           <el-table-column label="数量" prop="quantity" width="90" align="right" />
           <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
-          <el-table-column label="处理状态" prop="processStatus" width="140" />
+          <el-table-column label="处理状态" prop="processStatus" width="120" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ processStatusText(scope.row.processStatus) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="处理类型" prop="processType" width="120" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ processTypeText(scope.row.processType) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
+          <el-table-column label="处理人" prop="processBy" width="100" show-overflow-tooltip />
           <el-table-column label="本地入库" prop="createTime" width="160" />
           <el-table-column label="操作" align="center" width="160" fixed="right">
             <template slot-scope="scope">
@@ -181,6 +230,7 @@
 </template>
 
 <script>
+import { listdepartAll } from '@/api/foundation/depart'
 import {
   listInpatientMirror,
   listOutpatientMirror,
@@ -188,6 +238,7 @@ import {
   fetchInpatientMirror,
   fetchOutpatientMirror,
   processMirrorLowValue,
+  processMirrorLowValueBatch,
   scanMirrorHighBarcode,
   applyMirrorHighConsume
 } from '@/api/department/patientCharge'
@@ -201,13 +252,19 @@ export default {
       detailLoading: false,
       detailList: [],
       detailTotal: 0,
+      detailSelection: [],
+      deptOptions: [],
       detailQuery: {
         pageNum: 1,
         pageSize: 10,
         patientName: undefined,
         visitNo: undefined,
+        departmentId: undefined,
+        processed: undefined,
         beginChargeDate: undefined,
-        endChargeDate: undefined
+        endChargeDate: undefined,
+        beginProcessTime: undefined,
+        endProcessTime: undefined
       },
       summaryLoading: false,
       summaryList: [],
@@ -239,9 +296,43 @@ export default {
     }
   },
   created() {
+    this.loadDeptOptions()
     this.loadDetailList()
   },
   methods: {
+    loadDeptOptions() {
+      const uid = this.$store.getters.userId
+      if (!uid) {
+        return
+      }
+      listdepartAll(uid).then(res => {
+        this.deptOptions = res.data || []
+      })
+    },
+    toQueryDayStart(s) {
+      if (!s) return undefined
+      const t = String(s).trim()
+      if (t.length > 10) return t
+      return `${t} 00:00:00`
+    },
+    toQueryDayEnd(s) {
+      if (!s) return undefined
+      const t = String(s).trim()
+      if (t.length > 10) return t
+      return `${t} 23:59:59`
+    },
+    processStatusText(v) {
+      const m = {
+        PENDING_CONSUME: '待处理',
+        PARTIALLY_CONSUMED: '部分消耗',
+        CONSUMED: '已处理'
+      }
+      return m[v] || v || ''
+    },
+    processTypeText(v) {
+      const m = { LOW_VALUE: '低值耗材', HIGH_VALUE: '高值耗材' }
+      return m[v] || v || ''
+    },
     onMainTabClick(tab) {
       if (tab.name === 'summary' && this.summaryList.length === 0 && this.summaryQuery.beginChargeDate) {
         this.loadSummary()
@@ -257,14 +348,23 @@ export default {
         pageSize: 10,
         patientName: undefined,
         visitNo: undefined,
+        departmentId: undefined,
+        processed: undefined,
         beginChargeDate: undefined,
-        endChargeDate: undefined
+        endChargeDate: undefined,
+        beginProcessTime: undefined,
+        endProcessTime: undefined
       }
+      this.detailSelection = []
       this.loadDetailList()
     },
     loadDetailList() {
       this.detailLoading = true
       const q = { ...this.detailQuery }
+      q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
+      q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
+      q.beginProcessTime = this.toQueryDayStart(q.beginProcessTime)
+      q.endProcessTime = this.toQueryDayEnd(q.endProcessTime)
       if (this.detailVisitType === 'IN') {
         q.inpatientNo = q.visitNo
         delete q.visitNo
@@ -315,6 +415,32 @@ export default {
         )
         this.handleDetailQuery()
       }).catch(() => {})
+    },
+    batchProcessLowValue() {
+      if (!this.detailSelection.length) {
+        this.$modal.msgWarning('请先勾选待处理的计费明细')
+        return
+      }
+      const ids = this.detailSelection.map(r => r.id)
+      this.$modal
+        .confirm(`将对勾选的 ${ids.length} 条明细逐条执行低值核销；单条失败不影响其它条（失败原因将汇总提示）。是否继续？`)
+        .then(() => {
+          return processMirrorLowValueBatch({ visitKind: this.currentVisitKind, mirrorRowIds: ids })
+        })
+        .then(res => {
+          const d = res.data || {}
+          const ok = d.successCount != null ? d.successCount : 0
+          const fail = d.failCount != null ? d.failCount : 0
+          const lines = (d.failMessages || []).slice(0, 8)
+          let extra = lines.length ? `；失败示例：${lines.join('；')}` : ''
+          if ((d.failMessages || []).length > lines.length) {
+            extra += '…'
+          }
+          this.$modal.msgSuccess(`完成：成功 ${ok} 条，失败 ${fail} 条${extra}`)
+          this.detailSelection = []
+          this.handleDetailQuery()
+        })
+        .catch(() => {})
     },
     openHighDialog(row) {
       this.highMirrorRow = row

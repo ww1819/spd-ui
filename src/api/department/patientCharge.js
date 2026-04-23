@@ -59,6 +59,15 @@ export function processMirrorLowValue(data) {
   })
 }
 
+export function processMirrorLowValueBatch(data) {
+  return request({
+    url: '/his/patientCharge/mirror/processLowValueBatch',
+    method: 'post',
+    timeout: 300000,
+    data
+  })
+}
+
 export function scanMirrorHighBarcode(data) {
   return request({
     url: '/his/patientCharge/mirror/scanHighBarcode',

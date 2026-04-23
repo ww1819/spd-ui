@@ -147,6 +147,17 @@
             </el-select>
           </el-form-item>
 
+              <el-form-item prop="isProcure" class="query-item-inline query-item-compact">
+                <el-select v-model="queryParams.isProcure" placeholder="集采" style="width: 100px" clearable>
+                  <el-option
+                    v-for="dict in dict.type.is_yes_no"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  ></el-option>
+                </el-select>
+              </el-form-item>
+
               <el-form-item prop="isBilling" class="query-item-inline query-item-compact">
                 <el-select v-model="queryParams.isBilling" placeholder="计费" style="width: 100px" clearable>
                   <el-option
@@ -325,6 +336,11 @@
       <el-table-column label="跟台" align="center" prop="isFollow" width="80" key="isFollow" v-if="columns[14].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.is_yes_no" :value="scope.row.isFollow"/>
+        </template>
+      </el-table-column>
+      <el-table-column label="集采" align="center" prop="isProcure" width="80" key="isProcure" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.is_yes_no" :value="scope.row.isProcure"/>
         </template>
       </el-table-column>
       <el-table-column label="计费" align="center" prop="isBilling" width="80" key="isBilling" v-if="columns[19].visible" show-overflow-tooltip resizable>
@@ -748,9 +764,9 @@
                   </el-form-item>
                   <el-form-item label="" prop="isCentralizedProcurement" class="switch-form-item">
                     <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isCentralizedProcurement === '1' }">集采</span>
+                      <span class="switch-label" :class="{ 'active': form.isProcure === '1' }">集采</span>
                       <el-switch
-                        v-model="form.isCentralizedProcurement"
+                        v-model="form.isProcure"
                         :active-value="'1'"
                         :inactive-value="'2'"
                       ></el-switch>
@@ -1277,6 +1293,7 @@ export default {
         factoryId: undefined,
         locationId: undefined,
         isFollow: '', // 默认全部
+        isProcure: '', // 默认全部
         isBilling: '', // 默认全部
         isUse: '1', // 默认启用
         udiNo: undefined,
@@ -1312,7 +1329,7 @@ export default {
         { key: 13, label: `高值`, visible: true },
         { key: 14, label: `跟台`, visible: true },
         { key: 15, label: `重点监测`, visible: false },
-        { key: 16, label: `集采`, visible: false },
+        { key: 16, label: `集采`, visible: true },
         { key: 17, label: `阳采`, visible: false },
         { key: 18, label: `临购`, visible: false },
         { key: 19, label: `计费`, visible: true },
@@ -1503,9 +1520,8 @@ export default {
       this.open = false;
       this.reset();
     },
-    // 表单重置
-    reset() {
-      this.form = {
+    createDefaultForm() {
+      return {
         id: null,
         code: null,
         name: null,
@@ -1521,7 +1537,8 @@ export default {
         isBilling: '2', // 默认否
         isFollow: '2', // 默认否
         isMonitor: '2', // 默认否
-        isCentralizedProcurement: '2', // 默认否
+        isProcure: '2', // 集采（后端字段）
+        isCentralizedProcurement: '2', // 仅兼容旧数据
         isSunshineProcurement: '2', // 默认否
         isTemporaryPurchase: '2', // 默认否
         isServiceFee: '2', // 默认否
@@ -1563,11 +1580,35 @@ export default {
         sunshineCoefficient: null,
         selectionReason: null
       };
+    },
+    // 表单重置
+    reset() {
+      this.form = this.createDefaultForm();
       this.originalIsUse = null;
       this.statusLogList = [];
       this.changeLogList = [];
       this.timelineList = [];
       this.resetForm("form");
+    },
+    normalizeSwitchValue(val, defaultVal = '2') {
+      if (val === null || val === undefined || val === '') return defaultVal;
+      return String(val);
+    },
+    hydrateMaterialForm(row) {
+      const merged = { ...this.createDefaultForm(), ...(row || {}) };
+      merged.isUse = this.normalizeSwitchValue(merged.isUse);
+      merged.isGz = this.normalizeSwitchValue(merged.isGz);
+      merged.isBilling = this.normalizeSwitchValue(merged.isBilling);
+      merged.isFollow = this.normalizeSwitchValue(merged.isFollow);
+      merged.isMonitor = this.normalizeSwitchValue(merged.isMonitor);
+      merged.isProcure = this.normalizeSwitchValue(
+        merged.isProcure != null ? merged.isProcure : merged.isCentralizedProcurement
+      );
+      merged.isCentralizedProcurement = merged.isProcure;
+      merged.isSunshineProcurement = this.normalizeSwitchValue(merged.isSunshineProcurement);
+      merged.isTemporaryPurchase = this.normalizeSwitchValue(merged.isTemporaryPurchase);
+      merged.isServiceFee = this.normalizeSwitchValue(merged.isServiceFee);
+      return merged;
     },
     nameChange(val){
       if (!val || val.trim() === '') {
@@ -1597,6 +1638,7 @@ export default {
       this.queryParams.isUse = '1'; // 重置为启用
       this.queryParams.isGz = '';
       this.queryParams.isFollow = '';
+      this.queryParams.isProcure = '';
       this.queryParams.isBilling = '';
       // 清空派生搜索参数，避免残留影响查询/导出
       this.queryParams.code = undefined;
@@ -1841,61 +1883,7 @@ export default {
       this.isDisabled = true; // 修改模式下，耗材编码不可修改
       const id = row.id || this.ids
       getMaterial(id).then(response => {
-        this.form = response.data;
-        // 确保 isUse 是字符串类型，以便开关组件正常工作
-        if (this.form.isUse !== null && this.form.isUse !== undefined) {
-          this.form.isUse = String(this.form.isUse);
-        } else {
-          this.form.isUse = '2'; // 默认为停用
-        }
-        // 确保 isGz 是字符串类型，以便开关组件正常工作
-        if (this.form.isGz !== null && this.form.isGz !== undefined) {
-          this.form.isGz = String(this.form.isGz);
-        } else {
-          this.form.isGz = '2'; // 默认为否
-        }
-        // 确保 isBilling 是字符串类型，以便开关组件正常工作
-        if (this.form.isBilling !== null && this.form.isBilling !== undefined) {
-          this.form.isBilling = String(this.form.isBilling);
-        } else {
-          this.form.isBilling = '2'; // 默认为否
-        }
-        // 确保 isFollow 是字符串类型，以便开关组件正常工作
-        if (this.form.isFollow !== null && this.form.isFollow !== undefined) {
-          this.form.isFollow = String(this.form.isFollow);
-        } else {
-          this.form.isFollow = '2'; // 默认为否
-        }
-        // 确保 isMonitor 是字符串类型，以便开关组件正常工作
-        if (this.form.isMonitor !== null && this.form.isMonitor !== undefined) {
-          this.form.isMonitor = String(this.form.isMonitor);
-        } else {
-          this.form.isMonitor = '2'; // 默认为否
-        }
-        // 确保 isCentralizedProcurement 是字符串类型，以便开关组件正常工作
-        if (this.form.isCentralizedProcurement !== null && this.form.isCentralizedProcurement !== undefined) {
-          this.form.isCentralizedProcurement = String(this.form.isCentralizedProcurement);
-        } else {
-          this.form.isCentralizedProcurement = '2'; // 默认为否
-        }
-        // 确保 isSunshineProcurement 是字符串类型，以便开关组件正常工作
-        if (this.form.isSunshineProcurement !== null && this.form.isSunshineProcurement !== undefined) {
-          this.form.isSunshineProcurement = String(this.form.isSunshineProcurement);
-        } else {
-          this.form.isSunshineProcurement = '2'; // 默认为否
-        }
-        // 确保 isTemporaryPurchase 是字符串类型，以便开关组件正常工作
-        if (this.form.isTemporaryPurchase !== null && this.form.isTemporaryPurchase !== undefined) {
-          this.form.isTemporaryPurchase = String(this.form.isTemporaryPurchase);
-        } else {
-          this.form.isTemporaryPurchase = '2'; // 默认为否
-        }
-        // 确保 isServiceFee 是字符串类型，以便开关组件正常工作
-        if (this.form.isServiceFee !== null && this.form.isServiceFee !== undefined) {
-          this.form.isServiceFee = String(this.form.isServiceFee);
-        } else {
-          this.form.isServiceFee = '2'; // 默认为否
-        }
+        this.form = this.hydrateMaterialForm(response.data);
         this.originalIsUse = this.form.isUse;
         this.open = true;
         this.isDisabled = true;
@@ -1909,16 +1897,7 @@ export default {
       this.isDisabled = true;
       const id = row.id || this.ids;
       getMaterial(id).then(response => {
-        this.form = response.data;
-        if (this.form.isUse !== null && this.form.isUse !== undefined) this.form.isUse = String(this.form.isUse); else this.form.isUse = '2';
-        if (this.form.isGz !== null && this.form.isGz !== undefined) this.form.isGz = String(this.form.isGz); else this.form.isGz = '2';
-        if (this.form.isBilling !== null && this.form.isBilling !== undefined) this.form.isBilling = String(this.form.isBilling); else this.form.isBilling = '2';
-        if (this.form.isFollow !== null && this.form.isFollow !== undefined) this.form.isFollow = String(this.form.isFollow); else this.form.isFollow = '2';
-        if (this.form.isMonitor !== null && this.form.isMonitor !== undefined) this.form.isMonitor = String(this.form.isMonitor); else this.form.isMonitor = '2';
-        if (this.form.isCentralizedProcurement !== null && this.form.isCentralizedProcurement !== undefined) this.form.isCentralizedProcurement = String(this.form.isCentralizedProcurement); else this.form.isCentralizedProcurement = '2';
-        if (this.form.isSunshineProcurement !== null && this.form.isSunshineProcurement !== undefined) this.form.isSunshineProcurement = String(this.form.isSunshineProcurement); else this.form.isSunshineProcurement = '2';
-        if (this.form.isTemporaryPurchase !== null && this.form.isTemporaryPurchase !== undefined) this.form.isTemporaryPurchase = String(this.form.isTemporaryPurchase); else this.form.isTemporaryPurchase = '2';
-        if (this.form.isServiceFee !== null && this.form.isServiceFee !== undefined) this.form.isServiceFee = String(this.form.isServiceFee); else this.form.isServiceFee = '2';
+        this.form = this.hydrateMaterialForm(response.data);
         this.originalIsUse = this.form.isUse;
         this.open = true;
         this.title = "查看详情";
@@ -2050,11 +2029,16 @@ export default {
       });
     },
     buildUpdatePayload(form) {
+      const draft = { ...form };
+      // 前端“集采”开关与后端字段对齐
+      draft.isProcure = this.normalizeSwitchValue(
+        draft.isProcure != null ? draft.isProcure : draft.isCentralizedProcurement
+      );
       const allowFields = [
         'id', 'code', 'name', 'referredName', 'supplierId', 'factoryId', 'speci', 'model', 'price', 'producer',
         'useName', 'registerName', 'registerNo', 'storeroomId', 'financeCategoryId', 'medicalNo', 'medicalName',
         'salePrice', 'successfulPrice', 'successfulNo', 'successfulType', 'selectionReason', 'packageSpeci',
-        'unitId', 'isUse', 'isGz', 'isFollow', 'isMonitor', 'isCentralizedProcurement', 'isSunshineProcurement',
+        'unitId', 'isUse', 'isGz', 'isFollow', 'isMonitor', 'isProcure', 'isSunshineProcurement',
         'isTemporaryPurchase', 'isServiceFee', 'isBilling', 'materialLevel', 'registerLevel', 'riskLevel',
         'firstaidLevel', 'doctorLevel', 'brand', 'useto', 'quality', 'function', 'isWay', 'locationId', 'udiNo',
         'sunshineCode', 'countryNo', 'permitNo', 'description', 'countryName', 'periodDate', 'imageUrl',
@@ -2062,8 +2046,8 @@ export default {
       ];
       const payload = {};
       allowFields.forEach(k => {
-        if (Object.prototype.hasOwnProperty.call(form, k)) {
-          payload[k] = form[k];
+        if (Object.prototype.hasOwnProperty.call(draft, k)) {
+          payload[k] = draft[k];
         }
       });
       return payload;

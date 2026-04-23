@@ -130,6 +130,12 @@
                       <SelectWarehouse v-model="queryParams.warehouseId"/>
                     </div>
                   </el-form-item>
+                  <el-form-item label="集采" prop="isProcure" class="query-item-inline">
+                    <el-select v-model="queryParams.isProcure" clearable placeholder="全部" style="width: 120px">
+                      <el-option label="是" value="1" />
+                      <el-option label="否" value="2" />
+                    </el-select>
+                  </el-form-item>
                 </el-col>
               </el-row>
             </el-form>
@@ -205,6 +211,13 @@
       <el-table-column label="单价" align="center" prop="price" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.price">{{ scope.row.price }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="集采" align="center" prop="isProcure" width="90" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.isProcure === '1' || scope.row.isProcure === 1">是</span>
+          <span v-else-if="scope.row.isProcure === '2' || scope.row.isProcure === 2">否</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -481,6 +494,13 @@
                     <span v-else>--</span>
                   </template>
                 </el-table-column>
+                <el-table-column label="集采" align="center" prop="isProcure" width="100" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span v-if="scope.row.isProcure === '1' || scope.row.isProcure === 1">是</span>
+                    <span v-else-if="scope.row.isProcure === '2' || scope.row.isProcure === 2">否</span>
+                    <span v-else>--</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="150" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span v-if="scope.row.fdFactory && scope.row.fdFactory.factoryName">{{ scope.row.fdFactory.factoryName }}</span>
@@ -573,7 +593,8 @@ export default {
         pageSize: 10,
         supplierId: null,
         materialName: null,
-        speci: null
+        speci: null,
+        isProcure: null
       },
       // 查询参数
       queryParams: {
@@ -585,6 +606,7 @@ export default {
         supplierId: null,
         warehouseId: null,
         departmentId: null,
+        isProcure: null,
         fixedNumberType: '1' // 默认为仓库定数监测
       },
       // 表单参数
@@ -1142,7 +1164,8 @@ export default {
       const query = {
         materialName: this.addQueryParams.materialName,
         speci: this.addQueryParams.speci,
-        supplierId: this.addQueryParams.supplierId
+        supplierId: this.addQueryParams.supplierId,
+        isProcure: this.addQueryParams.isProcure
       };
       if (this.addQueryParams.materialName) {
         query.name = this.addQueryParams.materialName;
@@ -1186,7 +1209,8 @@ export default {
         pageSize: 10,
         supplierId: null,
         materialName: null,
-        speci: null
+        speci: null,
+        isProcure: null
       };
       this.addMaterialList = [];
       this.addSelectedMaterials = [];
