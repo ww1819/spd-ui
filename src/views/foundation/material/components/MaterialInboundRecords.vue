@@ -31,6 +31,30 @@
               <el-option label="按供应商编码+审核时间降序" value="SUPPLIER_AUDIT_DESC" />
             </el-select>
           </div>
+          <div class="filter-row">
+            <SelectWarehouse
+              v-model="filters.warehouseId"
+              placeholder="仓库"
+            />
+            <el-date-picker
+              v-model="filters.auditBeginTime"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              format="yyyy-MM-dd HH:mm:ss"
+              placeholder="审核起始时间"
+              clearable
+            />
+            <el-date-picker
+              v-model="filters.auditEndTime"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              format="yyyy-MM-dd HH:mm:ss"
+              placeholder="审核截止时间"
+              clearable
+            />
+            <el-button size="mini" type="primary" @click="handleQuery">查询</el-button>
+            <el-button size="mini" @click="handleReset">重置</el-button>
+          </div>
           <el-table :data="records" border size="mini" max-height="360" v-loading="loading">
             <el-table-column label="入库单号" prop="billNo" min-width="130">
               <template slot-scope="scope">
@@ -48,9 +72,9 @@
             <el-table-column label="数量" prop="qty" min-width="90" align="right" />
             <el-table-column label="单价" prop="unitPrice" min-width="90" align="right" />
             <el-table-column label="金额" prop="amt" min-width="90" align="right" />
-            <el-table-column label="批号" prop="batchNo" min-width="110" show-overflow-tooltip />
+            <el-table-column label="批号" prop="batchNumber" min-width="110" show-overflow-tooltip />
             <el-table-column label="有效期" prop="endTime" min-width="120" />
-            <el-table-column label="批次号" prop="batchNumber" min-width="110" show-overflow-tooltip />
+            <el-table-column label="批次号" prop="batchNo" min-width="110" show-overflow-tooltip />
           </el-table>
         </div>
       </el-col>
@@ -61,9 +85,11 @@
 <script>
 import { getMaterialInboundSuppliers, getMaterialInboundRecords } from "@/api/foundation/material";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
+import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 
 export default {
   name: "MaterialInboundRecords",
+  components: { SelectWarehouse },
   props: {
     materialId: {
       type: [Number, String],
@@ -76,10 +102,57 @@ export default {
       orderMode: "AUDIT_DESC",
       selectedSupplierId: null,
       supplierTree: [{ id: "ALL", supplierId: null, label: "供应商" }],
-      records: []
+      records: [],
+      filters: {
+        warehouseId: null,
+        auditBeginTime: "",
+        auditEndTime: ""
+      }
     };
   },
+  created() {
+    this.initDefaultAuditRange();
+  },
   methods: {
+    pad2(n) {
+      return String(n).padStart(2, "0");
+    },
+    formatDateTime(d) {
+      const y = d.getFullYear();
+      const m = this.pad2(d.getMonth() + 1);
+      const day = this.pad2(d.getDate());
+      const h = this.pad2(d.getHours());
+      const mm = this.pad2(d.getMinutes());
+      const s = this.pad2(d.getSeconds());
+      return `${y}-${m}-${day} ${h}:${mm}:${s}`;
+    },
+    initDefaultAuditRange() {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      this.filters.auditBeginTime = this.formatDateTime(monthStart);
+      this.filters.auditEndTime = this.formatDateTime(todayEnd);
+    },
+    normalizeAuditEndTime(v) {
+      if (!v) return "";
+      const s = String(v).trim();
+      if (!s) return "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        return `${s} 23:59:59`;
+      }
+      if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/.test(s)) {
+        return `${s}:59`;
+      }
+      return s;
+    },
+    handleQuery() {
+      this.loadRecords();
+    },
+    handleReset() {
+      this.filters.warehouseId = null;
+      this.initDefaultAuditRange();
+      this.loadRecords();
+    },
     async loadData() {
       if (!this.materialId) return;
       this.loading = true;
@@ -105,6 +178,9 @@ export default {
       try {
         const res = await getMaterialInboundRecords(this.materialId, {
           supplierId: this.selectedSupplierId,
+          warehouseId: this.filters.warehouseId || undefined,
+          auditBeginTime: this.filters.auditBeginTime || undefined,
+          auditEndTime: this.normalizeAuditEndTime(this.filters.auditEndTime) || undefined,
           orderMode: this.orderMode
         });
         this.records = (res && res.data) || [];
@@ -141,4 +217,6 @@ export default {
 .panel-title { font-weight: 600; color: #303133; }
 .left-panel, .right-panel { border: 1px solid #ebeef5; border-radius: 4px; padding: 8px; background: #fff; }
 .custom-tree-node { font-size: 12px; line-height: 1.6; }
+.filter-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.filter-row .el-date-editor { width: 188px; }
 </style>

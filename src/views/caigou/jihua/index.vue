@@ -237,7 +237,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" excludeWarehouseType="设备,高值"/>
+                      <SelectWarehouse v-model="form.warehouseId" :disabled="isPlanWarehouseLocked" excludeWarehouseType="设备,高值"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -1004,6 +1004,10 @@ export default {
         }
       });
       return [...new Set(ids)];
+    },
+    /** 采购计划：打开新增明细后或已有明细时锁定仓库，避免跨仓混入明细 */
+    isPlanWarehouseLocked() {
+      return this.DialogComponentShow || (this.stkIoBillEntryList || []).length > 0;
     }
   },
   watch: {
@@ -1156,7 +1160,15 @@ export default {
       const t0 = performance.now();
       const toAppend = [];
       const list = lightRows || [];
+      const existsSet = new Set((this.purchasePlanExcludeMaterialIds || []).map(id => String(id)));
+      let skippedCount = 0;
       list.forEach((item) => {
+        const materialId = item && item.id != null ? String(item.id) : null;
+        if (!materialId || existsSet.has(materialId)) {
+          skippedCount++;
+          return;
+        }
+        existsSet.add(materialId);
         const defQty = this.getDefaultPurchaseQtyFromMaterial(item);
         toAppend.push({
           materialId: item.id,
@@ -1174,6 +1186,9 @@ export default {
           material: Object.freeze(item),
         });
       });
+      if (skippedCount > 0) {
+        this.$modal.msgWarning(`已过滤 ${skippedCount} 条重复产品档案明细`);
+      }
       const t1 = performance.now();
       console.log('[Plan] select rows=', list.length, 'build objects(ms)=', (t1 - t0).toFixed(1));
       if (!toAppend.length) {

@@ -543,6 +543,7 @@
       :warehouseValue="form.warehouseId"
       :useStkInventory="true"
       :useFixedNumberMaterialArchive="true"
+      :excludeMaterialIds="inWarehouseExcludeMaterialIds"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>
@@ -667,6 +668,23 @@ export default {
       const m = this.modalObj
       if (!m || !m.form) return false
       return Number(m.form.value) === 2 || m.component === 'window-print-preview'
+    },
+    /** 入库单已存在的产品档案 id（用于后端排除重复明细） */
+    inWarehouseExcludeMaterialIds() {
+      const list = this.stkIoBillEntryList || [];
+      const ids = [];
+      list.forEach(row => {
+        const mid =
+          row.materialId != null && row.materialId !== ""
+            ? row.materialId
+            : row.material && row.material.id != null
+              ? row.material.id
+              : null;
+        if (mid != null && mid !== "") {
+          ids.push(mid);
+        }
+      });
+      return [...new Set(ids)];
     }
   },
   created() {
@@ -786,8 +804,16 @@ export default {
     selectData(val) {
       //监听“弹窗组件”返回的数据
       this.selectRow = val;
+      const existsSet = new Set((this.inWarehouseExcludeMaterialIds || []).map(id => String(id)));
+      let skippedCount = 0;
 
       this.selectRow.forEach((item, index) => {
+        const materialId = item && item.id != null ? String(item.id) : null;
+        if (!materialId || existsSet.has(materialId)) {
+          skippedCount++;
+          return;
+        }
+        existsSet.add(materialId);
         let obj = {};
         obj.materialId = item.id;
         obj.qty = "";
@@ -802,6 +828,9 @@ export default {
 
         this.stkIoBillEntryList.push(obj);
       });
+      if (skippedCount > 0) {
+        this.$message({ message: `已过滤 ${skippedCount} 条重复产品档案明细`, type: 'warning' });
+      }
     },
     getStatDate(){
       // 获取前5天日期

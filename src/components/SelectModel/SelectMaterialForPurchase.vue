@@ -161,7 +161,11 @@ export default {
   components: { SelectSupplier },
   props: {
     DialogComponentShow: Boolean,
-    warehouseValue: [Number, String]
+    warehouseValue: [Number, String],
+    excludeMaterialIds: {
+      type: Array,
+      default: () => []
+    }
   },
   data() {
     return {
@@ -187,7 +191,6 @@ export default {
         isGz: "2"
       },
       form: {},
-      fixedNumberMaterialIds: [],
       allFilteredMaterials: []
     };
   },
@@ -196,53 +199,22 @@ export default {
       this.show = newVal;
       if (newVal) {
         this.queryParams.pageNum = 1;
-        if (this.warehouseValue) {
-          this.loadFixedNumberMaterials(this.warehouseValue);
-        }
         this.getList();
       }
     },
     warehouseValue(newVal) {
-      if (newVal) {
-        this.loadFixedNumberMaterials(newVal);
-        this.getList();
-      } else {
-        this.fixedNumberMaterialIds = [];
-        this.getList();
-      }
+      this.getList();
+    },
+    excludeMaterialIds() {
+      this.getList();
     }
   },
   mounted() {
     this.show = this.DialogComponentShow;
-    if (this.warehouseValue) {
-      this.loadFixedNumberMaterials(this.warehouseValue);
-    }
     this.getList();
   },
   created() {},
   methods: {
-    loadFixedNumberMaterials(warehouseId) {
-      if (!warehouseId) {
-        this.fixedNumberMaterialIds = [];
-        return;
-      }
-      try {
-        const storageKey = `fixedNumber_1_${warehouseId}`;
-        const savedData = localStorage.getItem(storageKey);
-        if (savedData) {
-          const fixedNumberList = JSON.parse(savedData);
-          this.fixedNumberMaterialIds = fixedNumberList
-            .filter(item => item.material && item.material.id)
-            .map(item => item.material.id)
-            .filter(id => id);
-        } else {
-          this.fixedNumberMaterialIds = [];
-        }
-      } catch (error) {
-        console.error("加载定数监测数据失败:", error);
-        this.fixedNumberMaterialIds = [];
-      }
-    },
     buildPurchaseQueryParams() {
       const q = {
         warehouseId: this.warehouseValue,
@@ -252,6 +224,9 @@ export default {
       };
       if (this.queryParams.speci) {
         q["material.speci"] = this.queryParams.speci;
+      }
+      if (this.excludeMaterialIds && this.excludeMaterialIds.length > 0) {
+        q.excludeMaterialIds = this.excludeMaterialIds.join(",");
       }
       return q;
     },
@@ -292,6 +267,8 @@ export default {
             const okSupplier = !supplierId || String(item.supplierId) === String(supplierId);
             return okCode && okName && okSpec && okBrand && okSupplier;
           });
+          const excludes = new Set((this.excludeMaterialIds || []).map(id => String(id)));
+          materialList = materialList.filter(item => !excludes.has(String(item.id)));
           this.allFilteredMaterials = materialList;
           this.total = materialList.length;
           const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize;

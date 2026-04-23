@@ -10,6 +10,42 @@
                 <SelectMaterial v-model="queryParams.materialId" />
               </div>
             </el-form-item>
+            <el-form-item prop="materialNameLike" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialNameLike"
+                placeholder="耗材编码/名称/简码"
+                clearable
+                style="width: 180px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item prop="materialSpeciLike" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialSpeciLike"
+                placeholder="规格"
+                clearable
+                style="width: 180px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item prop="materialModelLike" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialModelLike"
+                placeholder="型号"
+                clearable
+                style="width: 180px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item prop="supplierKeyword" class="query-item-inline">
+              <el-input
+                v-model="queryParams.supplierKeyword"
+                placeholder="供应商编码/名称"
+                clearable
+                style="width: 180px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
             <el-form-item prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
@@ -196,6 +232,10 @@ export default {
         billNo: null,
         supplerId: null,
         billDate: null,
+        materialNameLike: null,
+        materialSpeciLike: null,
+        materialModelLike: null,
+        supplierKeyword: null,
         warehouseId: null,
         departmentId: null,
         billStatus: null,
@@ -395,6 +435,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.supplierKeyword = null;
       this.handleQuery();
     },
     // 多选框选中数据

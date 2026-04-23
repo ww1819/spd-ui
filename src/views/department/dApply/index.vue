@@ -811,6 +811,9 @@ export default {
       columnList: [],
       //是否显示
       action: true,
+      // 新增明细后静默自动保存
+      applyAutoSaveTimer: null,
+      applyDraftSaving: false,
       /** 查看关联出库单弹窗 */
       outboundRefDialogVisible: false,
       /** null=整单全部明细；有值=仅该 bas_apply_entry.id */
@@ -1315,8 +1318,10 @@ export default {
           })
         })
       } else {
+        let addedCount = 0;
         val.forEach(item => {
           const unitPrice = item.unitPrice != null ? Number(item.unitPrice) : null
+          const defaultQty = this.getDefaultApplyQtyFromMaterial(item)
           const row = {
             materialId: item.materialId,
             stockWarehouseId: item.warehouseId != null ? item.warehouseId : null,
@@ -1333,6 +1338,9 @@ export default {
               model: item.materialModel,
               registerNo: item.registerNo,
               packageSpeci: item.packageSpeci,
+              minPackageQty: item.minPackageQty,
+              minPackQty: item.minPackQty,
+              minimumPackageQty: item.minimumPackageQty,
               isWay: item.isWay,
               fdUnit: item.unitName ? { unitName: item.unitName } : null,
               fdFactory: item.factoryName ? { factoryName: item.factoryName } : null,
@@ -1340,7 +1348,7 @@ export default {
               fdFinanceCategory: item.financeCategoryName ? { financeCategoryName: item.financeCategoryName } : null
             },
             unitPrice: unitPrice,
-            qty: '',
+            qty: String(defaultQty),
             amt: '0',
             availableStockQty: item.availableQty != null ? item.availableQty : null,
             batchNo: null,
@@ -1350,8 +1358,111 @@ export default {
             remark: null
           }
           this.basApplyEntryList.push(row)
+          if (row.qty && row.unitPrice) {
+            this.qtyChange(row);
+          }
+          addedCount++;
         })
         this.calculateTotals()
+        if (addedCount > 0) {
+          this.debouncedAutoSaveApply();
+        }
+      }
+    },
+    /**
+     * 科室申请默认数量：优先最小包装数；为空/空白/0/无效时返回 1。
+     * 支持库存行字段、material 字段和 packageSpeci 文本提取。
+     */
+    getDefaultApplyQtyFromMaterial(item) {
+      const src = item && typeof item === "object" ? item : {};
+      const m = src.material && typeof src.material === "object" ? src.material : {};
+      const toPositiveInt = (v) => {
+        if (v == null || String(v).trim() === "") {
+          return null;
+        }
+        const n = Number(v);
+        if (!Number.isFinite(n) || n <= 0) {
+          return null;
+        }
+        return Math.max(1, Math.floor(n));
+      };
+      const keys = ["minPackageQty", "minPackQty", "minimumPackageQty", "min_package_qty"];
+      for (const key of keys) {
+        const n = toPositiveInt(src[key]);
+        if (n != null) return n;
+      }
+      for (const key of keys) {
+        const n = toPositiveInt(m[key]);
+        if (n != null) return n;
+      }
+      const packageSpeci = src.packageSpeci != null ? src.packageSpeci : m.packageSpeci;
+      if (packageSpeci != null && String(packageSpeci).trim() !== "") {
+        const txt = String(packageSpeci).trim();
+        const pure = toPositiveInt(txt);
+        if (pure != null) return pure;
+        const mch = txt.match(/\d+(?:\.\d+)?/);
+        if (mch) {
+          const n = toPositiveInt(mch[0]);
+          if (n != null) return n;
+        }
+      }
+      return 1;
+    },
+    // 新增明细后防抖自动保存草稿
+    debouncedAutoSaveApply() {
+      if (this.applyAutoSaveTimer) {
+        clearTimeout(this.applyAutoSaveTimer);
+      }
+      this.applyAutoSaveTimer = setTimeout(() => {
+        this.applyAutoSaveTimer = null;
+        this.saveApplyDraftSilently();
+      }, 500);
+    },
+    // 科室申请静默保存（不关闭页面，不提示成功）
+    saveApplyDraftSilently() {
+      if (!this.open || !this.action || this.applyDraftSaving) {
+        return;
+      }
+      if (!this.form.departmentId) {
+        return;
+      }
+      const list = (this.basApplyEntryList || []).filter(item => item && item.materialId);
+      if (!list.length) {
+        return;
+      }
+      const invalidQty = list.some(item => item.qty == null || item.qty === '' || Number(item.qty) <= 0);
+      if (invalidQty) {
+        return;
+      }
+      this.form.basApplyEntryList = this.basApplyEntryList;
+      let totalAmt = 0;
+      this.basApplyEntryList.forEach(item => {
+        if (item.amt && !isNaN(item.amt)) {
+          totalAmt += parseFloat(item.amt);
+        }
+      });
+      this.form.totalAmount = totalAmt.toFixed(2);
+      this.applyDraftSaving = true;
+      const ax = { headers: { repeatSubmit: false, hideError: true } };
+      const done = () => {
+        this.applyDraftSaving = false;
+      };
+      if (this.form.id != null) {
+        updateApply(this.form, ax).then(() => {}).catch(() => {}).finally(done);
+      } else {
+        addApply(this.form, ax).then((response) => {
+          if (response && response.data) {
+            if (response.data.id) {
+              this.form.id = response.data.id;
+            }
+            if (response.data.applyBillNo) {
+              this.form.applyBillNo = response.data.applyBillNo;
+            }
+            if (this.title === "添加科室申领") {
+              this.title = "修改科室申领";
+            }
+          }
+        }).catch(() => {}).finally(done);
       }
     },
     //当天日期
@@ -1364,6 +1475,10 @@ export default {
     },
     // 取消按钮
     cancel() {
+      if (this.applyAutoSaveTimer) {
+        clearTimeout(this.applyAutoSaveTimer);
+        this.applyAutoSaveTimer = null;
+      }
       this.open = false;
       this.reset();
     },

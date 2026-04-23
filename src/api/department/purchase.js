@@ -28,20 +28,22 @@ export function sumPurchaseEntryQty(query) {
 }
 
 // 新增科室申购
-export function addPurchase(data) {
+export function addPurchase(data, config = {}) {
   return request({
     url: '/department/purchase',
     method: 'post',
-    data: data
+    data: data,
+    ...config
   })
 }
 
 // 修改科室申购
-export function updatePurchase(data) {
+export function updatePurchase(data, config = {}) {
   return request({
     url: '/department/purchase',
     method: 'put',
-    data: data
+    data: data,
+    ...config
   })
 }
 

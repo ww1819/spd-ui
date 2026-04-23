@@ -224,6 +224,11 @@ export default {
     useFixedNumberMaterialArchive: { // 入库新增明细：列出该仓库下定数检测的产品档案（来自定数数据，非库存接口）
       type: Boolean,
       default: false
+    },
+    /** 当前单据明细中已存在的产品档案 id，用于后端排除，避免重复添加 */
+    excludeMaterialIds: {
+      type: Array,
+      default: () => []
     }
   },
   data() {
@@ -327,6 +332,15 @@ export default {
       // 当父组件传递的科室值变化时，更新查询参数
       if (this.useDepInventory && newVal) {
         this.queryParams.departmentId = newVal;
+      }
+    },
+    excludeMaterialIds: {
+      deep: true,
+      handler() {
+        if (this.show) {
+          this.queryParams.pageNum = 1;
+          this.getList();
+        }
       }
     }
   },
@@ -438,6 +452,9 @@ export default {
         }
         if (this.queryParams.factoryId) {
           params.factoryId = this.queryParams.factoryId;
+        }
+        if (this.excludeMaterialIds && this.excludeMaterialIds.length > 0) {
+          params.excludeMaterialIds = this.excludeMaterialIds.join(",");
         }
         listFixedNumber(params).then(response => {
           const rows = Array.isArray(response.rows)

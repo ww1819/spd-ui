@@ -1449,10 +1449,9 @@ export default {
   },
   methods: {
     /**
-     * 将“耗材产品”输入框内容转换为后端筛选参数（不改写输入框本身的值）
-     * - 数字/字母数字：按编码 `code` 查
-     * - 中文：按名称 `name` 模糊查，同时生成首字母 `nameSearch`
-     * - 纯字母：按首字母 `nameSearch` 查
+     * 将“耗材名称”输入转换为后端筛选参数（不改写输入框本身的值）
+     * - 含中文：按名称 `name` 查，同时带 `nameSearch`（首字母）
+     * - 不含中文：统一按 `code` 查（SQL 已覆盖 code/name/referred_name），兼容下划线/短横线等编码格式
      */
     deriveNameSearchParams(keyword) {
       const nameValue = keyword;
@@ -1461,7 +1460,6 @@ export default {
       }
 
       const trimmedValue = String(nameValue).trim();
-      const isCodePattern = /^[A-Za-z0-9]+$/.test(trimmedValue);
       const hasChinese = /[\u4e00-\u9fa5]/.test(trimmedValue);
       const isLetterOnly = /^[A-Za-z]+$/.test(trimmedValue);
 
@@ -1477,7 +1475,7 @@ export default {
       }
 
       return {
-        code: (isCodePattern && !hasChinese) ? trimmedValue : undefined,
+        code: !hasChinese ? trimmedValue : undefined,
         name: hasChinese ? trimmedValue : undefined,
         nameSearch: pinyinCode || undefined
       };
@@ -1488,6 +1486,8 @@ export default {
       const base = { ...this.queryParams };
       const keyword = base.name; // 输入框绑定字段：用户看到的原始输入
       const derived = this.deriveNameSearchParams(keyword);
+      const beginDate = base.beginDate && String(base.beginDate).length === 10 ? `${base.beginDate} 00:00:00` : base.beginDate;
+      const endDate = base.endDate && String(base.endDate).length === 10 ? `${base.endDate} 23:59:59` : base.endDate;
 
       // 用派生后的 name/code/nameSearch 覆盖请求参数，避免把输入框值直接当 name 传给后端
       // 档案列表允许在未选「使用状态」时查到停用记录以便启用；选定 isUse 时仍由后端按 isUse 过滤
@@ -1496,6 +1496,8 @@ export default {
         code: derived.code,
         name: derived.name,
         nameSearch: derived.nameSearch,
+        beginDate,
+        endDate,
         includeDisabledInList: true
       };
 
