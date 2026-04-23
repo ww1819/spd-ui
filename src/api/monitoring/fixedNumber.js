@@ -56,6 +56,15 @@ export function delFixedNumber(id) {
   })
 }
 
+// 批量删除定数监测
+export function delFixedNumberBatch(ids) {
+  return request({
+    url: '/monitoring/fixedNumber/batchDelete',
+    method: 'post',
+    data: { ids }
+  })
+}
+
 // 导出定数监测
 export function exportFixedNumber(query) {
   return request({

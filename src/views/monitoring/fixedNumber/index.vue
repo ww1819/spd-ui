@@ -163,6 +163,15 @@
           </el-col>
           <el-col :span="1.5">
                 <el-button
+                  type="danger"
+                  icon="el-icon-delete"
+              size="medium"
+                  :disabled="multiple"
+                  @click="handleBatchDelete"
+                >删除</el-button>
+          </el-col>
+          <el-col :span="1.5">
+                <el-button
                   type="primary"
                   icon="el-icon-search"
               size="medium"
@@ -364,6 +373,7 @@
               :total="total"
               :page.sync="queryParams.pageNum"
               :limit.sync="queryParams.pageSize"
+              :page-sizes="[10, 20, 30, 50, 100, 500, 1000]"
               @pagination="getList"
             />
           </div>
@@ -533,7 +543,7 @@
 
 <script>
 import { pinyin } from "pinyin-pro";
-import { listFixedNumber, addFixedNumber, delFixedNumber } from "@/api/monitoring/fixedNumber";
+import { listFixedNumber, addFixedNumber, delFixedNumber, delFixedNumberBatch } from "@/api/monitoring/fixedNumber";
 import { listMaterialPost } from "@/api/foundation/material";
 import { listLocationAll } from "@/api/foundation/location";
 import { listWarehouse } from "@/api/foundation/warehouse";
@@ -555,6 +565,8 @@ export default {
       loading: true,
       // 选中数组
       ids: [],
+      // 选中行（用于批量删除校验）
+      selectedRows: [],
       // 非单个禁用
       single: true,
       // 非多个禁用
@@ -1420,9 +1432,39 @@ export default {
     },
     /** 多选框选中数据 */
     handleSelectionChange(selection) {
+      this.selectedRows = selection || [];
       this.ids = selection.map(item => item.id);
       this.single = selection.length !== 1;
       this.multiple = !selection.length;
+    },
+    /** 批量删除 */
+    async handleBatchDelete() {
+      if (!this.selectedRows || this.selectedRows.length === 0) {
+        this.$modal.msgWarning("请先勾选要删除的记录");
+        return;
+      }
+      const blocked = this.selectedRows.filter(r => r && r.hasInventoryRecord);
+      if (blocked.length > 0) {
+        this.$modal.msgWarning("选中记录中包含已有入库记录的数据，不能批量删除");
+        return;
+      }
+      const ids = this.selectedRows.map(r => r.id).filter(Boolean);
+      if (ids.length === 0) {
+        this.$modal.msgWarning("未找到可删除的记录ID");
+        return;
+      }
+      try {
+        await this.$modal.confirm(`是否确认删除选中的 ${ids.length} 条定数记录？`);
+        await delFixedNumberBatch(ids);
+        this.$modal.msgSuccess("批量删除成功");
+        this.ids = [];
+        this.selectedRows = [];
+        this.single = true;
+        this.multiple = true;
+        this.getList();
+      } catch (e) {
+        // 用户取消或请求失败时由全局提示处理
+      }
     },
     fixedNumberListIndex({ row, rowIndex }) {
       return 'fixed-number-row-' + rowIndex;
