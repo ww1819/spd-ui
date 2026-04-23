@@ -28,7 +28,18 @@
                   <SelectMaterial v-model="queryParams.materialId" />
                 </el-form-item>
               </el-col>
-              <el-col :span="12" />
+              <el-col :span="6">
+                <el-form-item label="关键字" prop="materialKeyword" label-width="100px">
+                  <el-input
+                    v-model="queryParams.materialKeyword"
+                    placeholder="耗材编码/名称/简码"
+                    clearable
+                    size="small"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="6" />
             </el-row>
             <el-row :gutter="12" class="query-form-row">
               <el-col :span="6">
@@ -174,6 +185,7 @@ export default {
         departmentId: null,
         warehouseId: null,
         materialId: null,
+        materialKeyword: null,
         batchNo: null
       },
       form: {}

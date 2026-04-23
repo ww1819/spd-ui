@@ -17,7 +17,7 @@
             <el-form-item label="耗材" prop="materialKeyword" class="query-item-inline">
               <el-input
                 v-model="queryParams.materialKeyword"
-                placeholder="耗材名称/编码"
+                placeholder="耗材编码/名称/简码"
                 clearable
                 class="query-select-wrapper"
                 @keyup.enter.native="handleQuery"
