@@ -4,6 +4,7 @@ export function listInpatientMirror(query) {
   return request({
     url: '/his/patientCharge/mirror/inpatient/list',
     method: 'get',
+    timeout: 30000,
     params: query
   })
 }
@@ -12,6 +13,16 @@ export function listOutpatientMirror(query) {
   return request({
     url: '/his/patientCharge/mirror/outpatient/list',
     method: 'get',
+    timeout: 30000,
+    params: query
+  })
+}
+
+export function listAllMirror(query) {
+  return request({
+    url: '/his/patientCharge/mirror/all/list',
+    method: 'get',
+    timeout: 30000,
     params: query
   })
 }
