@@ -420,6 +420,19 @@
                         />
                       </el-form-item>
                     </el-col>
+                    <el-col :span="6">
+                      <el-form-item label="是否集采" prop="isProcure">
+                        <el-select
+                          v-model="addQueryParams.isProcure"
+                          clearable
+                          placeholder="全部"
+                          style="width: 100%"
+                        >
+                          <el-option label="是" value="1" />
+                          <el-option label="否" value="2" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
                   </el-row>
                 </el-form>
               </div>
@@ -543,8 +556,7 @@
 
 <script>
 import { pinyin } from "pinyin-pro";
-import { listFixedNumber, addFixedNumber, delFixedNumber, delFixedNumberBatch } from "@/api/monitoring/fixedNumber";
-import { listMaterialPost } from "@/api/foundation/material";
+import { listFixedNumber, addFixedNumber, delFixedNumber, delFixedNumberBatch, listFixedNumberMaterialDetailPick } from "@/api/monitoring/fixedNumber";
 import { listLocationAll } from "@/api/foundation/location";
 import { listWarehouse } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
@@ -1206,7 +1218,7 @@ export default {
         pageSize: this.addQueryParams.pageSize,
         query: query
       };
-      listMaterialPost(postData).then(response => {
+      listFixedNumberMaterialDetailPick(postData).then(response => {
         this.addMaterialList = (response && response.rows) || [];
         this.addTotal = (response && response.total !== undefined) ? response.total : 0;
         this.addTableLoading = false;

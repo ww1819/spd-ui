@@ -79,13 +79,11 @@
 </style>
 <script>
   import * as echarts from "echarts";
-  import { listRTHWarehouse } from "@/api/warehouse/warehouse";
-  import { listCTKWarehouse } from "@/api/warehouse/outWarehouse";
-  import { getOptionselect } from "@/api/foundation/warehouse";
-  import { getAuditedConsumeReportTotal } from "@/api/department/batchConsume";
-  import { sumApplyEntryQty } from "@/api/department/apply";
-  import { sumPurchaseEntryQty } from "@/api/department/purchase";
-  import { listInventory } from "@/api/warehouse/inventory";
+  import {
+    fetchHomeWarehousePurchase,
+    fetchHomeDepartmentUsage,
+    fetchHomeTodayStats
+  } from "@/api/dashboard/home";
 export default {
   name: "Index",
   data() {
@@ -155,19 +153,6 @@ export default {
       const endDate = `${year}-${mm}-${String(endDay).padStart(2, "0")} 23:59:59`;
       return { beginDate, endDate, label: `${month}月` };
     },
-    monthDateRangePureDate(year, month) {
-      const mm = String(month).padStart(2, "0");
-      const endDay = new Date(year, month, 0).getDate();
-      return {
-        beginDate: `${year}-${mm}-01`,
-        endDate: `${year}-${mm}-${String(endDay).padStart(2, "0")}`,
-        label: `${month}月`
-      };
-    },
-    safeNumber(val) {
-      const num = Number(val || 0);
-      return Number.isFinite(num) ? num : 0;
-    },
     chartCacheKeyCk(year) {
       return `spd_index_ck_${year}`;
     },
@@ -233,20 +218,6 @@ export default {
         { name: "消耗金额", type: "line", data: [...z] }
       ];
     },
-    async pooledMap(array, concurrency, mapper) {
-      const results = new Array(array.length);
-      let cursor = 0;
-      const worker = async () => {
-        while (true) {
-          const i = cursor++;
-          if (i >= array.length) break;
-          results[i] = await mapper(array[i], i);
-        }
-      };
-      const n = Math.min(Math.max(1, concurrency), Math.max(1, array.length));
-      await Promise.all(Array.from({ length: n }, () => worker()));
-      return results;
-    },
     paintCkZeroShell(warehouses) {
       const z = new Array(12).fill(0);
       this.CKtitle = warehouses.map(w => w.name);
@@ -261,12 +232,17 @@ export default {
     async loadWarehousePurchaseChart() {
       try {
         const year = new Date().getFullYear();
-        const months = Array.from({ length: 12 }, (_, idx) => this.monthDateRangePureDate(year, idx + 1));
-        this.CKxData = months.map(item => item.label);
-
-        const warehouseResp = await getOptionselect();
-        const warehouseRows = (warehouseResp && warehouseResp.data) || [];
-        const warehouses = warehouseRows.filter(item => item && item.id && item.name);
+        const res = await fetchHomeWarehousePurchase(year);
+        const d = res && res.data;
+        if (!d) {
+          this.CKtitle = [];
+          this.CKyData = [];
+          this.ckQtyMap = {};
+          this.initCk();
+          return;
+        }
+        this.CKxData = d.monthLabels || [];
+        const warehouses = (d.warehouses || []).filter(item => item && item.id && item.name);
         if (!warehouses.length) {
           this.CKtitle = [];
           this.CKyData = [];
@@ -274,7 +250,6 @@ export default {
           this.initCk();
           return;
         }
-
         const cachedIds = this.readCkWarehouseIdsFromCache(year);
         const currentIds = warehouses.map(w => w.id).join(",");
         const hadChart = Array.isArray(this.CKyData) && this.CKyData.length > 0;
@@ -283,64 +258,17 @@ export default {
         if (needCkPlaceholder) {
           this.paintCkZeroShell(warehouses);
         }
-
-        const whCount = warehouses.length;
-        const monthAmtMatrix = Array.from({ length: whCount }, () => new Array(12).fill(0));
-        const monthQtyMatrix = Array.from({ length: whCount }, () => new Array(12).fill(0));
-
-        const tasks = [];
-        for (let mi = 0; mi < 12; mi++) {
-          for (let wi = 0; wi < whCount; wi++) {
-            tasks.push({ mi, wi, wh: warehouses[wi], monthInfo: months[mi] });
-          }
-        }
-
-        const flat = await this.pooledMap(tasks, 24, async t => {
-          const [rthRes, ctkRes] = await Promise.all([
-            listRTHWarehouse({
-              pageNum: 1,
-              pageSize: 1,
-              warehouseId: t.wh.id,
-              beginDate: t.monthInfo.beginDate,
-              endDate: t.monthInfo.endDate
-            }),
-            listCTKWarehouse({
-              pageNum: 1,
-              pageSize: 1,
-              warehouseId: t.wh.id,
-              beginDate: t.monthInfo.beginDate,
-              endDate: t.monthInfo.endDate
-            })
-          ]);
-          const rthTotal = (rthRes && rthRes.totalInfo) || {};
-          const ctkTotal = (ctkRes && ctkRes.totalInfo) || {};
-          const amount =
-            Math.abs(this.safeNumber(rthTotal.totalAmt)) + Math.abs(this.safeNumber(ctkTotal.totalAmt));
-          const qty =
-            Math.abs(this.safeNumber(rthTotal.totalQty)) + Math.abs(this.safeNumber(ctkTotal.totalQty));
-          return {
-            mi: t.mi,
-            wi: t.wi,
-            amount: Number(amount.toFixed(2)),
-            qty: Number(qty.toFixed(2))
-          };
-        });
-        flat.forEach(r => {
-          monthAmtMatrix[r.wi][r.mi] = r.amount;
-          monthQtyMatrix[r.wi][r.mi] = r.qty;
-        });
-
-        const seriesList = warehouses.map((wh, wi) => ({
-          name: wh.name,
+        const series = d.series || [];
+        this.CKtitle = series.map(s => s.warehouseName);
+        this.CKyData = series.map(s => ({
+          name: s.warehouseName,
           type: "line",
-          data: monthAmtMatrix[wi]
+          data: (s.amounts || []).map(v => Number(v))
         }));
         const qtyMap = {};
-        warehouses.forEach((wh, wi) => {
-          qtyMap[wh.name] = monthQtyMatrix[wi];
+        series.forEach(s => {
+          qtyMap[s.warehouseName] = (s.qtys || []).map(v => Number(v));
         });
-
-        this.CKyData = seriesList;
         this.ckQtyMap = qtyMap;
         this.initCk();
         try {
@@ -378,59 +306,23 @@ export default {
     async loadDepartmentUsageChart() {
       try {
         const year = new Date().getFullYear();
-        const months = Array.from({ length: 12 }, (_, idx) => this.monthDateRange(year, idx + 1));
-        const monthsPure = Array.from({ length: 12 }, (_, idx) => this.monthDateRangePureDate(year, idx + 1));
-        this.KSxData = months.map(item => item.label);
-
-        // 12 个月并行请求，避免逐月串行
-        // 领用：出库至科室（listCTKWarehouse）；消耗：已审核科室批量消耗（与「科室消耗追溯」同一 totalInfo 口径，按 consume_bill_date）
-        const monthRows = await Promise.all(
-          months.map(async (monthInfo, index) => {
-            const pure = monthsPure[index];
-            let ctkRes = {};
-            let consumeRes = {};
-            try {
-              ctkRes = (await listCTKWarehouse({
-                pageNum: 1,
-                pageSize: 1,
-                beginDate: monthInfo.beginDate,
-                endDate: monthInfo.endDate
-              })) || {};
-            } catch (err) {
-              console.warn("科室图领用请求失败", index + 1, err);
-            }
-            try {
-              const raw = await getAuditedConsumeReportTotal({
-                beginDate: pure.beginDate,
-                endDate: pure.endDate
-              });
-              const body = raw && raw.data != null ? raw.data : raw;
-              consumeRes = body && (body.totalQty != null || body.totalAmt != null) ? { totalInfo: body } : {};
-            } catch (err) {
-              console.warn("科室图消耗合计请求失败", index + 1, err);
-            }
-            const ctkTotal = (ctkRes && ctkRes.totalInfo) || {};
-            const consumeTotal = (consumeRes && consumeRes.totalInfo) || {};
-            return {
-              index,
-              receiveQty: Number(Math.abs(this.safeNumber(ctkTotal.totalQty)).toFixed(2)),
-              receiveAmt: Number(Math.abs(this.safeNumber(ctkTotal.totalAmt)).toFixed(2)),
-              consumeQty: Number(this.safeNumber(consumeTotal.totalQty).toFixed(2)),
-              consumeAmt: Number(this.safeNumber(consumeTotal.totalAmt).toFixed(2))
-            };
-          })
-        );
-        monthRows.sort((a, b) => a.index - b.index);
-        const receiveQtyData = monthRows.map(r => r.receiveQty);
-        const receiveAmtData = monthRows.map(r => r.receiveAmt);
-        const consumeQtyData = monthRows.map(r => r.consumeQty);
-        const consumeAmtData = monthRows.map(r => r.consumeAmt);
-
+        const res = await fetchHomeDepartmentUsage(year);
+        const d = res && res.data;
+        if (!d) {
+          this.primeKsShell(year);
+          this.initKs();
+          return;
+        }
+        this.KSxData = d.monthLabels || [];
+        const rq = (d.receiveQty || []).map(v => Number(v));
+        const ra = (d.receiveAmt || []).map(v => Number(v));
+        const cq = (d.consumeQty || []).map(v => Number(v));
+        const ca = (d.consumeAmt || []).map(v => Number(v));
         this.KSyData = [
-          { name: '领用数量', type: 'line', data: receiveQtyData },
-          { name: '领用金额', type: 'line', data: receiveAmtData },
-          { name: '消耗数量', type: 'line', data: consumeQtyData },
-          { name: '消耗金额', type: 'line', data: consumeAmtData }
+          { name: "领用数量", type: "line", data: rq },
+          { name: "领用金额", type: "line", data: ra },
+          { name: "消耗数量", type: "line", data: cq },
+          { name: "消耗金额", type: "line", data: ca }
         ];
         this.initKs();
         try {
@@ -470,76 +362,24 @@ export default {
         endDateTime: `${today} 23:59:59`
       };
     },
-    /** AjaxResult 数字汇总接口返回值 */
-    parseEntryQtySumResponse(res) {
-      if (!res) return 0;
-      if (typeof res === "number") return Number.isFinite(res) ? res : 0;
-      const raw = res.data != null ? res.data : res;
-      const n = Number(raw);
-      return Number.isFinite(n) ? n : 0;
-    },
-    /** TableDataInfo：totalInfo 总数量（兼容 totalQty / subTotalQty） */
-    tableTotalQtyFromResponse(resp) {
-      if (!resp || !resp.totalInfo) return 0;
-      const ti = resp.totalInfo;
-      const raw = ti.totalQty != null && ti.totalQty !== "" ? ti.totalQty : ti.subTotalQty;
-      const n = Number(raw);
-      return Number.isFinite(n) ? n : 0;
-    },
     formatStatQty(val) {
       const num = Number(val || 0);
       return Number.isFinite(num) ? num.toLocaleString("zh-CN", { maximumFractionDigits: 2 }) : "0";
     },
     async loadTodayStats() {
-      const { day, beginDateTime, endDateTime } = this.buildTodayRange();
+      const { day } = this.buildTodayRange();
       try {
-        const settled = await Promise.allSettled([
-          listRTHWarehouse({
-            pageNum: 1,
-            pageSize: 1,
-            beginDate: beginDateTime,
-            endDate: endDateTime,
-            billType: 101
-          }),
-          listCTKWarehouse({
-            pageNum: 1,
-            pageSize: 1,
-            beginDate: beginDateTime,
-            endDate: endDateTime,
-            billType: 201
-          }),
-          listCTKWarehouse({
-            pageNum: 1,
-            pageSize: 1,
-            beginDate: beginDateTime,
-            endDate: endDateTime,
-            billType: 401
-          }),
-          sumApplyEntryQty({
-            applyBillDate: day,
-            billType: 1,
-            applyBillStatus: 2
-          }),
-          sumPurchaseEntryQty({
-            purchaseBillDate: day,
-            purchaseBillStatus: 2
-          }),
-          listInventory({ pageNum: 1, pageSize: 1 })
-        ]);
-        const pick = i =>
-          settled[i] && settled[i].status === "fulfilled" ? settled[i].value : null;
-        if (settled.some(s => s.status === "rejected")) {
-          console.warn(
-            "今日统计部分接口失败（仍展示已成功项）",
-            settled.map((s, i) => (s.status === "rejected" ? { index: i, reason: s.reason } : null)).filter(Boolean)
-          );
+        const res = await fetchHomeTodayStats(day);
+        const d = res && res.data;
+        if (!d) {
+          return;
         }
-        this.todayStats.inCount = this.tableTotalQtyFromResponse(pick(0));
-        this.todayStats.outCount = this.tableTotalQtyFromResponse(pick(1));
-        this.todayStats.returnCount = Math.abs(this.tableTotalQtyFromResponse(pick(2)));
-        this.todayStats.applyCount = this.parseEntryQtySumResponse(pick(3));
-        this.todayStats.purchaseCount = this.parseEntryQtySumResponse(pick(4));
-        this.todayStats.inventoryQty = this.tableTotalQtyFromResponse(pick(5));
+        this.todayStats.inCount = Number(d.inCount) || 0;
+        this.todayStats.outCount = Number(d.outCount) || 0;
+        this.todayStats.returnCount = Number(d.returnCount) || 0;
+        this.todayStats.applyCount = Number(d.applyCount) || 0;
+        this.todayStats.purchaseCount = Number(d.purchaseCount) || 0;
+        this.todayStats.inventoryQty = Number(d.inventoryQty) || 0;
         try {
           sessionStorage.setItem(
             this.todayStatsCacheKey(day),
