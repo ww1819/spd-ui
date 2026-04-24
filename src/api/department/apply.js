@@ -37,20 +37,22 @@ export function listDeptApplyOperatorOptions(departmentId) {
 }
 
 // 新增科室申领
-export function addApply(data) {
+export function addApply(data, config = {}) {
   return request({
     url: '/department/apply',
     method: 'post',
-    data: data
+    data: data,
+    ...config
   })
 }
 
 // 修改科室申领
-export function updateApply(data) {
+export function updateApply(data, config = {}) {
   return request({
     url: '/department/apply',
     method: 'put',
-    data: data
+    data: data,
+    ...config
   })
 }
 

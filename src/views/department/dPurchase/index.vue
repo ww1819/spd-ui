@@ -202,7 +202,7 @@
                 <el-row :gutter="8">
                   <el-col :span="4">
                     <el-form-item label="科室" prop="departmentId">
-                      <SelectDepartment v-model="form.departmentId" :disabled="!action" filterable/>
+                      <SelectDepartment v-model="form.departmentId" :disabled="!action || isDeptWhLocked" filterable/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -243,7 +243,7 @@
                 <el-row :gutter="8">
                   <el-col :span="4">
                     <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action" exclude-warehouse-type="高值,设备"/>
+                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action || isDeptWhLocked" exclude-warehouse-type="高值,设备"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -398,6 +398,7 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="form.warehouseId"
+      :excludeMaterialIds="selectedMaterialIds"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialForPurchase>
@@ -446,6 +447,9 @@ export default {
       open: false,
       //是否显示
       action: true,
+      // 新增明细后静默自动保存
+      purchaseAutoSaveTimer: null,
+      purchaseDraftSaving: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -476,6 +480,16 @@ export default {
     /** 明细表固定高度：表体滚动，合计固定在表格最底部 */
     detailTableHeight() {
       return 'max(300px, calc(100vh - 320px))';
+    },
+    /** 新增明细后（或弹窗打开中）锁定仓库、科室，避免跨仓库/科室混入明细 */
+    isDeptWhLocked() {
+      return this.DialogComponentShow || (this.depPurchaseApplyEntryList && this.depPurchaseApplyEntryList.length > 0);
+    },
+    /** 当前明细已选耗材ID，用于选择弹窗过滤重复 */
+    selectedMaterialIds() {
+      return (this.depPurchaseApplyEntryList || [])
+        .map(item => item && item.materialId)
+        .filter(id => id !== null && id !== undefined && id !== '');
     }
   },
   created() {
@@ -501,6 +515,10 @@ export default {
     },
     // 取消按钮
     cancel() {
+      if (this.purchaseAutoSaveTimer) {
+        clearTimeout(this.purchaseAutoSaveTimer);
+        this.purchaseAutoSaveTimer = null;
+      }
       this.open = false;
       this.reset();
     },
@@ -797,19 +815,40 @@ export default {
     },
     /** 处理选择的耗材数据 */
     selectData(val) {
+      let addedCount = 0;
       if (val && val.length > 0) {
+        const exist = new Set((this.depPurchaseApplyEntryList || []).map(i => String(i.materialId)).filter(Boolean));
         if (this.currentRow) {
           // 单行修改模式
           const material = val[0]; // 只取第一个选择的耗材
+          if (material && material.id != null && exist.has(String(material.id))) {
+            this.$modal.msgWarning("该耗材已存在于申购明细中，请勿重复添加");
+            this.closeDialog();
+            return;
+          }
           this.fillMaterialData(this.currentRow, material);
+          addedCount = 1;
         } else {
           // 批量添加模式
+          let skip = 0;
           val.forEach(material => {
+            if (!material || material.id == null || exist.has(String(material.id))) {
+              skip++;
+              return;
+            }
             let obj = {};
             this.fillMaterialData(obj, material);
             this.depPurchaseApplyEntryList.push(obj);
+            exist.add(String(material.id));
+            addedCount++;
           });
+          if (skip > 0) {
+            this.$modal.msgWarning(`已自动过滤 ${skip} 条重复耗材明细`);
+          }
         }
+      }
+      if (addedCount > 0) {
+        this.debouncedAutoSavePurchase();
       }
       this.closeDialog();
     },
@@ -832,7 +871,10 @@ export default {
       row.producer = (material.fdFactory && material.fdFactory.factoryName) ||
                      material.producer ||
                      '';
-      row.qty = row.qty || '';
+      // 申购数量默认按最小包装数回填；为空/空白/0/无效时回填 1
+      if (row.qty == null || row.qty === '') {
+        row.qty = String(this.getDefaultPurchaseQtyFromMaterial(material));
+      }
       row.amt = row.amt || '';
       row.reason = row.reason || '';
       row.remark = row.remark || '';
@@ -840,6 +882,94 @@ export default {
       // 如果有数量，自动计算金额
       if (row.qty && row.unitPrice) {
         this.qtyChange(row);
+      }
+    },
+    /**
+     * 科室申购默认数量：优先最小包装数；为空/空白/0/无效时返回 1。
+     * 兼容常见字段名和 packageSpeci 中首个数字（如 "10支/盒" -> 10）。
+     */
+    getDefaultPurchaseQtyFromMaterial(material) {
+      if (!material || typeof material !== "object") {
+        return 1;
+      }
+      const toPositiveInt = (v) => {
+        if (v == null || String(v).trim() === "") {
+          return null;
+        }
+        const n = Number(v);
+        if (!Number.isFinite(n) || n <= 0) {
+          return null;
+        }
+        return Math.max(1, Math.floor(n));
+      };
+      for (const key of ["minPackageQty", "minPackQty", "minimumPackageQty", "min_package_qty"]) {
+        const n = toPositiveInt(material[key]);
+        if (n != null) {
+          return n;
+        }
+      }
+      const ps = material.packageSpeci;
+      if (ps != null && String(ps).trim() !== "") {
+        const txt = String(ps).trim();
+        const pure = toPositiveInt(txt);
+        if (pure != null) {
+          return pure;
+        }
+        const mch = txt.match(/\d+(?:\.\d+)?/);
+        if (mch) {
+          const n = toPositiveInt(mch[0]);
+          if (n != null) {
+            return n;
+          }
+        }
+      }
+      return 1;
+    },
+    // 新增明细后防抖自动保存草稿，避免频繁请求
+    debouncedAutoSavePurchase() {
+      if (this.purchaseAutoSaveTimer) {
+        clearTimeout(this.purchaseAutoSaveTimer);
+      }
+      this.purchaseAutoSaveTimer = setTimeout(() => {
+        this.purchaseAutoSaveTimer = null;
+        this.savePurchaseDraftSilently();
+      }, 500);
+    },
+    // 科室申购静默保存（不关闭页面，不弹成功提示）
+    savePurchaseDraftSilently() {
+      if (!this.open || !this.action || this.purchaseDraftSaving) {
+        return;
+      }
+      const list = (this.depPurchaseApplyEntryList || []).filter(item => item && item.materialId);
+      if (!list.length || !this.form.warehouseId || !this.form.departmentId) {
+        return;
+      }
+      const invalidQty = list.some(item => item.qty == null || item.qty === '' || Number(item.qty) <= 0);
+      if (invalidQty) {
+        return;
+      }
+      this.purchaseDraftSaving = true;
+      this.form.depPurchaseApplyEntryList = this.depPurchaseApplyEntryList;
+      const ax = { headers: { repeatSubmit: false, hideError: true } };
+      const done = () => {
+        this.purchaseDraftSaving = false;
+      };
+      if (this.form.id != null) {
+        updatePurchase(this.form, ax).then(() => {}).catch(() => {}).finally(done);
+      } else {
+        addPurchase(this.form, ax).then((response) => {
+          if (response && response.data) {
+            if (response.data.id) {
+              this.form.id = response.data.id;
+            }
+            if (response.data.purchaseBillNo) {
+              this.form.purchaseBillNo = response.data.purchaseBillNo;
+            }
+            if (this.title === "添加科室申购") {
+              this.title = "修改科室申购";
+            }
+          }
+        }).catch(() => {}).finally(done);
       }
     },
     /** 设置紧急程度文本显示 */

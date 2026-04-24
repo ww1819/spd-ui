@@ -46,7 +46,7 @@ export default {
   computed: {
     selectPlaceholder() {
       const t = this.fieldPlaceholder != null ? String(this.fieldPlaceholder).trim() : '';
-      return t || '编码/名称/简码搜索';
+      return t || '科室编码/名称/简码搜索';
     },
     department: {
       get() {
@@ -95,23 +95,23 @@ export default {
         this.departmentOptions = this.allDepartments;
         return;
       }
-      
+
       const queryUpper = query.toUpperCase();
       const queryLower = query.toLowerCase();
-      
+
       this.departmentOptions = this.allDepartments.filter(item => {
         if (!item.name) return false;
-        
+
         const name = item.name;
         const nameUpper = name.toUpperCase();
         const code = (item.code || '').toUpperCase();
         const referred = (item.referredName || '').toUpperCase();
-        
+
         // 1. 名称/编码/简码模糊匹配（不区分大小写）
         if (name.includes(query) || nameUpper.includes(queryUpper) || code.includes(queryUpper) || referred.includes(queryUpper)) {
           return true;
         }
-        
+
         // 2. 首字母匹配
         if (this.isPinyin(query)) {
           const pinyinInitials = this.getPinyinInitials(name);
@@ -119,7 +119,7 @@ export default {
             return true;
           }
         }
-        
+
         return false;
       });
     },

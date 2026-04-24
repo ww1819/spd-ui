@@ -4,7 +4,7 @@
              filterable
              :filter-method="filterMethod"
              clearable
-             :placeholder="placeholder || '编码/名称/简码搜索'"
+             :placeholder="placeholder || '财务分类编码/名称/简码搜索'"
              :disabled="value2"
   >
     <el-option
@@ -50,8 +50,8 @@ export default {
           // 如果value是字符串，转换为数字；如果是数字，保持原样
           const valueNum = typeof this.value === 'string' ? parseInt(this.value) : this.value;
           // 检查选项列表中是否存在该值
-          const exists = this.financeCategoryOptions.some(item => 
-            item.financeCategoryId === valueNum || 
+          const exists = this.financeCategoryOptions.some(item =>
+            item.financeCategoryId === valueNum ||
             item.financeCategoryId === this.value ||
             String(item.financeCategoryId) === String(this.value)
           );

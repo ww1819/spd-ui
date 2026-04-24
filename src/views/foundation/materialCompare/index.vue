@@ -47,11 +47,40 @@
                     <el-form-item prop="code" class="query-item-inline">
                       <el-input
                         v-model="queryParams.code"
-                        placeholder="耗材编码"
+                        placeholder="项目编码"
                         clearable
                         @keyup.enter.native="handleQuery"
-                        style="width: 200px"
+                        style="width: 160px"
                       />
+                    </el-form-item>
+                    <el-form-item prop="name" class="query-item-inline">
+                      <el-input
+                        v-model="queryParams.name"
+                        placeholder="名称"
+                        clearable
+                        @keyup.enter.native="handleQuery"
+                        style="width: 160px"
+                      />
+                    </el-form-item>
+                    <el-form-item prop="referredName" class="query-item-inline">
+                      <el-input
+                        v-model="queryParams.referredName"
+                        placeholder="拼音简码"
+                        clearable
+                        @keyup.enter.native="handleQuery"
+                        style="width: 160px"
+                      />
+                    </el-form-item>
+                    <el-form-item prop="hisBindStatus" class="query-item-inline">
+                      <el-select
+                        v-model="queryParams.hisBindStatus"
+                        placeholder="是否对照"
+                        clearable
+                        style="width: 140px"
+                      >
+                        <el-option label="已对照" value="1" />
+                        <el-option label="未对照" value="0" />
+                      </el-select>
                     </el-form-item>
 
                     <el-form-item prop="speci" class="query-item-inline">
@@ -158,13 +187,55 @@
         <span>HIS对照</span>
         <el-button type="text" @click="hisDialogVisible = false" style="padding: 0;">关闭</el-button>
       </div>
+      <div class="his-current-material-box">
+        <div class="his-current-material-title">当前产品档案基本信息：</div>
+        <div class="his-current-material-grid">
+          <div class="his-current-material-item"><span class="label">项目编码：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.code) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">名称：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.name) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">拼音简码：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.referredName) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">规格：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.speci) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">型号：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.model) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">单位：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.fdUnit && currentMaterialRow.fdUnit.unitName) || (currentMaterialRow && currentMaterialRow.unitName) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">价格：</span><span class="value">{{ formatCurrency(currentMaterialRow && currentMaterialRow.price) }}</span></div>
+          <div class="his-current-material-item"><span class="label">供应商：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.supplier && currentMaterialRow.supplier.name) || (currentMaterialRow && currentMaterialRow.supplierName) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">生产厂家：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.fdFactory && currentMaterialRow.fdFactory.factoryName) || (currentMaterialRow && currentMaterialRow.factoryName) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">HIS收费项目ID：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.hisChargeItemId) || '--' }}</span></div>
+        </div>
+      </div>
       <div class="his-current-bind-box">
-        <span class="his-current-bind-title">当前对照收费项目：</span>
-        <span v-if="currentHisChargeItem">
-          {{ currentHisChargeItem.chargeCode || '--' }} / {{ currentHisChargeItem.chargeName || '--' }}
-          / {{ currentHisChargeItem.chargeSpeci || '--' }} / {{ formatCurrency(currentHisChargeItem.chargePrice) }}
-        </span>
-        <span v-else>未绑定</span>
+        <div class="his-current-bind-title">当前对照收费项目：</div>
+        <el-table
+          :data="[currentHisChargeItem || {}]"
+          border
+          size="mini"
+          class="his-current-bind-table"
+        >
+          <el-table-column label="收费编码" min-width="120" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ scope.row.chargeCode || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="收费名称" min-width="220" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ scope.row.chargeName || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="收费规格" min-width="120" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ scope.row.chargeSpeci || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="收费型号" min-width="120" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ scope.row.chargeModel || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="收费单价" width="110" align="center">
+            <template slot-scope="scope">
+              <span>{{ scope.row.chargePrice != null ? formatCurrency(scope.row.chargePrice) : '--' }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
       
       <!-- 搜索框 -->
@@ -172,13 +243,31 @@
         <el-form :model="hisQueryParams" ref="hisQueryForm" size="small" :inline="true" label-width="80px">
           <el-row>
             <el-col :span="24">
+              <el-form-item label="项目编码" prop="itemCode" class="query-item-inline">
+                <el-input
+                  v-model="hisQueryParams.itemCode"
+                  placeholder="收费编码"
+                  clearable
+                  @keyup.enter.native="handleHisQuery"
+                  style="width: 180px"
+                />
+              </el-form-item>
               <el-form-item label="名称" prop="name" class="query-item-inline">
                 <el-input
                   v-model="hisQueryParams.name"
-                  placeholder="名称/编码/ID/拼音简码"
+                  placeholder="收费名称"
                   clearable
                   @keyup.enter.native="handleHisQuery"
-                  style="width: 200px"
+                  style="width: 180px"
+                />
+              </el-form-item>
+              <el-form-item label="拼音简码" prop="referredCode" class="query-item-inline">
+                <el-input
+                  v-model="hisQueryParams.referredCode"
+                  placeholder="拼音简码"
+                  clearable
+                  @keyup.enter.native="handleHisQuery"
+                  style="width: 180px"
                 />
               </el-form-item>
 
@@ -354,6 +443,9 @@ export default {
         pageNum: 1,
         pageSize: 10,
         code: null,
+        name: null,
+        referredName: null,
+        hisBindStatus: null,
         speci: null,
         supplierId: null
       },
@@ -365,7 +457,9 @@ export default {
       hisQueryParams: {
         pageNum: 1,
         pageSize: 10,
+        itemCode: null,
         name: null,
+        referredCode: null,
         speci: null
       },
       currentHisChargeItem: null,
@@ -726,7 +820,45 @@ export default {
 .his-current-bind-title {
   color: #303133;
   font-weight: 600;
-  margin-right: 6px;
+  margin-bottom: 8px;
+}
+
+.his-current-bind-table {
+  background: #fff;
+}
+
+.his-current-material-box {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid #EBEEF5;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.his-current-material-title {
+  color: #303133;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.his-current-material-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 20px;
+}
+
+.his-current-material-item {
+  min-width: 0;
+  color: #606266;
+  line-height: 20px;
+}
+
+.his-current-material-item .label {
+  color: #909399;
+}
+
+.his-current-material-item .value {
+  color: #303133;
 }
 
 .his-table-container {

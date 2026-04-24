@@ -260,6 +260,7 @@ export default {
     /** 采购计划选耗材：低敏分页接口请求体 */
     buildPurchasePlanPickBody() {
       const q = {
+        warehouseId: this.warehouseValue || undefined,
         storeroomId: this.queryParams.storeroomId,
         factoryId: this.queryParams.factoryId,
         name: this.queryParams.name,

@@ -5,6 +5,7 @@
         <el-form :model="detailQuery" inline size="small" class="mb8">
           <el-form-item label="类型">
             <el-radio-group v-model="detailVisitType" @change="handleDetailQuery">
+              <el-radio-button label="ALL">全部</el-radio-button>
               <el-radio-button label="IN">住院</el-radio-button>
               <el-radio-button label="OUT">门诊</el-radio-button>
             </el-radio-group>
@@ -21,14 +22,54 @@
               @keyup.enter.native="handleDetailQuery"
             />
           </el-form-item>
+          <el-form-item label="收费项ID">
+            <el-input
+              v-model="detailQuery.chargeItemId"
+              placeholder="收费项目编码"
+              clearable
+              style="width:160px"
+              @keyup.enter.native="handleDetailQuery"
+            />
+          </el-form-item>
+          <el-form-item label="科室">
+            <el-select
+              v-model="detailQuery.departmentId"
+              placeholder="按权限科室"
+              clearable
+              filterable
+              style="width:200px"
+            >
+              <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="是否处理">
+            <el-select v-model="detailQuery.processed" placeholder="全部" clearable style="width:110px">
+              <el-option label="已处理" value="Y" />
+              <el-option label="未处理" value="N" />
+            </el-select>
+          </el-form-item>
           <el-form-item label="计费日期">
             <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
             <span style="margin:0 6px">至</span>
             <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
           </el-form-item>
+          <el-form-item label="处理时间">
+            <el-date-picker v-model="detailQuery.beginProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
+            <span style="margin:0 6px">至</span>
+            <el-date-picker v-model="detailQuery.endProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
+          </el-form-item>
           <el-form-item>
             <el-button type="primary" icon="el-icon-search" @click="handleDetailQuery">查询</el-button>
             <el-button icon="el-icon-refresh" @click="resetDetailQuery">重置</el-button>
+          </el-form-item>
+          <el-form-item>
+            <el-button
+              type="warning"
+              plain
+              :disabled="detailSelection.length === 0"
+              v-hasPermi="['department:patientCharge:generateConsume','department:patientCharge:processMirrorLow']"
+              @click="batchProcessLowValue"
+            >批量低值核销</el-button>
           </el-form-item>
           <el-form-item>
             <el-button
@@ -46,14 +87,32 @@
           </el-form-item>
         </el-form>
 
-        <el-table v-loading="detailLoading" :data="detailList" border stripe>
+        <el-table
+          ref="detailTable"
+          v-loading="detailLoading"
+          :data="detailList"
+          border
+          stripe
+          @sort-change="handleDetailSort"
+          @selection-change="rows => (detailSelection = rows)"
+        >
+          <el-table-column type="selection" width="48" align="center" :selectable="row => row.processStatus === 'PENDING_CONSUME'" />
+          <el-table-column label="类型" prop="visitType" width="80">
+            <template slot-scope="scope">
+              <span>{{ scope.row.visitType === 'INPATIENT' ? '住院' : '门诊' }}</span>
+            </template>
+          </el-table-column>
           <template v-if="detailVisitType === 'IN'">
             <el-table-column label="住院号" prop="inpatientNo" width="120" show-overflow-tooltip />
             <el-table-column label="科室" prop="deptName" min-width="120" show-overflow-tooltip />
           </template>
-          <template v-else>
+          <template v-else-if="detailVisitType === 'OUT'">
             <el-table-column label="门诊号" prop="outpatientNo" width="120" show-overflow-tooltip />
             <el-table-column label="就诊" prop="clinicName" min-width="120" show-overflow-tooltip />
+          </template>
+          <template v-else>
+            <el-table-column label="号" prop="visitNo" width="120" show-overflow-tooltip />
+            <el-table-column label="科室/就诊" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
           </template>
           <el-table-column label="患者" prop="patientName" width="100" show-overflow-tooltip />
           <el-table-column label="收费项ID" prop="chargeItemId" width="120" show-overflow-tooltip />
@@ -62,7 +121,21 @@
           <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
           <el-table-column label="数量" prop="quantity" width="90" align="right" />
           <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
-          <el-table-column label="处理状态" prop="processStatus" width="140" />
+          <!-- 暂时隐藏：待科室库存能力完善后再恢复 -->
+          <!-- <el-table-column label="高值耗材库存数量" prop="highValueStockQty" width="150" align="right" sortable="custom" /> -->
+          <el-table-column label="低值耗材库存数量" prop="lowValueStockQty" width="150" align="right" sortable="custom" />
+          <el-table-column label="处理状态" prop="processStatus" width="120" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ processStatusText(scope.row.processStatus) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="处理类型" prop="processType" width="120" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ processTypeText(scope.row.processType) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
+          <el-table-column label="处理人" prop="processBy" width="100" show-overflow-tooltip />
           <el-table-column label="本地入库" prop="createTime" width="160" />
           <el-table-column label="操作" align="center" width="160" fixed="right">
             <template slot-scope="scope">
@@ -73,6 +146,8 @@
                 :disabled="scope.row.processStatus !== 'PENDING_CONSUME'"
                 @click="processLowValue(scope.row)"
               >低值</el-button>
+              <!-- 暂时隐藏：待科室库存能力完善后再恢复 -->
+              <!--
               <el-button
                 type="text"
                 size="mini"
@@ -80,6 +155,7 @@
                 :disabled="scope.row.processStatus === 'CONSUMED'"
                 @click="openHighDialog(scope.row)"
               >高值</el-button>
+              -->
             </template>
           </el-table-column>
         </el-table>
@@ -181,13 +257,16 @@
 </template>
 
 <script>
+import { listdepartAll } from '@/api/foundation/depart'
 import {
   listInpatientMirror,
   listOutpatientMirror,
+  listAllMirror,
   listChargeSummary,
   fetchInpatientMirror,
   fetchOutpatientMirror,
   processMirrorLowValue,
+  processMirrorLowValueBatch,
   scanMirrorHighBarcode,
   applyMirrorHighConsume
 } from '@/api/department/patientCharge'
@@ -201,13 +280,22 @@ export default {
       detailLoading: false,
       detailList: [],
       detailTotal: 0,
+      detailSelection: [],
+      deptOptions: [],
       detailQuery: {
         pageNum: 1,
         pageSize: 10,
         patientName: undefined,
         visitNo: undefined,
+        chargeItemId: undefined,
+        departmentId: undefined,
+        processed: undefined,
         beginChargeDate: undefined,
-        endChargeDate: undefined
+        endChargeDate: undefined,
+        beginProcessTime: undefined,
+        endProcessTime: undefined,
+        orderByColumn: undefined,
+        isAsc: undefined
       },
       summaryLoading: false,
       summaryList: [],
@@ -235,13 +323,52 @@ export default {
       return this.fetchKind === 'IN' ? '住院收费数据抓取' : '门诊收费数据抓取'
     },
     currentVisitKind() {
-      return this.detailVisitType === 'IN' ? 'INPATIENT' : 'OUTPATIENT'
+      if (this.detailVisitType === 'IN') return 'INPATIENT'
+      if (this.detailVisitType === 'OUT') return 'OUTPATIENT'
+      return ''
     }
   },
   created() {
+    this.loadDeptOptions()
     this.loadDetailList()
   },
   methods: {
+    loadDeptOptions() {
+      const uid = this.$store.getters.userId
+      if (!uid) {
+        return
+      }
+      listdepartAll(uid).then(res => {
+        // /foundation/depart/listAll 返回的是数组本体，这里兼容数组与 {data: []} 两种返回结构
+        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
+        // 仅保留可用于 HIS 科室映射的科室：his_inpatient_charge_mirror.dept_code = fd_department.his_id
+        this.deptOptions = list.filter(d => d && d.id != null && d.hisId != null && String(d.hisId).trim() !== '')
+      })
+    },
+    toQueryDayStart(s) {
+      if (!s) return undefined
+      const t = String(s).trim()
+      if (t.length > 10) return t
+      return `${t} 00:00:00`
+    },
+    toQueryDayEnd(s) {
+      if (!s) return undefined
+      const t = String(s).trim()
+      if (t.length > 10) return t
+      return `${t} 23:59:59`
+    },
+    processStatusText(v) {
+      const m = {
+        PENDING_CONSUME: '待处理',
+        PARTIALLY_CONSUMED: '部分消耗',
+        CONSUMED: '已处理'
+      }
+      return m[v] || v || ''
+    },
+    processTypeText(v) {
+      const m = { LOW_VALUE: '低值耗材', HIGH_VALUE: '高值耗材' }
+      return m[v] || v || ''
+    },
     onMainTabClick(tab) {
       if (tab.name === 'summary' && this.summaryList.length === 0 && this.summaryQuery.beginChargeDate) {
         this.loadSummary()
@@ -257,25 +384,63 @@ export default {
         pageSize: 10,
         patientName: undefined,
         visitNo: undefined,
+        chargeItemId: undefined,
+        departmentId: undefined,
+        processed: undefined,
         beginChargeDate: undefined,
-        endChargeDate: undefined
+        endChargeDate: undefined,
+        beginProcessTime: undefined,
+        endProcessTime: undefined,
+        orderByColumn: undefined,
+        isAsc: undefined
       }
+      this.detailSelection = []
+      if (this.$refs.detailTable && this.$refs.detailTable.clearSort) {
+        this.$refs.detailTable.clearSort()
+      }
+      this.loadDetailList()
+    },
+    handleDetailSort({ prop, order }) {
+      if (prop !== 'highValueStockQty' && prop !== 'lowValueStockQty') {
+        this.detailQuery.orderByColumn = undefined
+        this.detailQuery.isAsc = undefined
+      } else {
+        this.detailQuery.orderByColumn = prop
+        if (order === 'ascending') {
+          this.detailQuery.isAsc = 'asc'
+        } else if (order === 'descending') {
+          this.detailQuery.isAsc = 'desc'
+        } else {
+          this.detailQuery.isAsc = undefined
+          this.detailQuery.orderByColumn = undefined
+        }
+      }
+      this.detailQuery.pageNum = 1
       this.loadDetailList()
     },
     loadDetailList() {
       this.detailLoading = true
       const q = { ...this.detailQuery }
+      q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
+      q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
+      q.beginProcessTime = this.toQueryDayStart(q.beginProcessTime)
+      q.endProcessTime = this.toQueryDayEnd(q.endProcessTime)
       if (this.detailVisitType === 'IN') {
         q.inpatientNo = q.visitNo
         delete q.visitNo
         listInpatientMirror(q).then(res => {
-          this.detailList = res.rows || []
+          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'INPATIENT' }))
           this.detailTotal = res.total || 0
         }).finally(() => { this.detailLoading = false })
-      } else {
+      } else if (this.detailVisitType === 'OUT') {
         q.outpatientNo = q.visitNo
         delete q.visitNo
         listOutpatientMirror(q).then(res => {
+          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'OUTPATIENT' }))
+          this.detailTotal = res.total || 0
+        }).finally(() => { this.detailLoading = false })
+      } else {
+        listAllMirror(q).then(res => {
           this.detailList = res.rows || []
           this.detailTotal = res.total || 0
         }).finally(() => { this.detailLoading = false })
@@ -305,7 +470,7 @@ export default {
       this.fetchForm = { beginDate: undefined, endDate: undefined }
     },
     processLowValue(row) {
-      const visitKind = this.currentVisitKind
+      const visitKind = row && row.visitType ? row.visitType : this.currentVisitKind
       this.$modal.confirm('按低值一次性扣减：须一次满足整行计费数量的科室二级库库存；不足则不会生成消耗，本行仍为「待处理」。是否继续？').then(() => {
         return processMirrorLowValue({ visitKind, mirrorRowId: row.id })
       }).then(res => {
@@ -315,6 +480,36 @@ export default {
         )
         this.handleDetailQuery()
       }).catch(() => {})
+    },
+    batchProcessLowValue() {
+      if (!this.detailSelection.length) {
+        this.$modal.msgWarning('请先勾选待处理的计费明细')
+        return
+      }
+      if (this.detailVisitType === 'ALL') {
+        this.$modal.msgWarning('“全部”模式下批量低值核销请先切换到住院或门诊后分别执行')
+        return
+      }
+      const ids = this.detailSelection.map(r => r.id)
+      this.$modal
+        .confirm(`将对勾选的 ${ids.length} 条明细逐条执行低值核销；单条失败不影响其它条（失败原因将汇总提示）。是否继续？`)
+        .then(() => {
+          return processMirrorLowValueBatch({ visitKind: this.currentVisitKind, mirrorRowIds: ids })
+        })
+        .then(res => {
+          const d = res.data || {}
+          const ok = d.successCount != null ? d.successCount : 0
+          const fail = d.failCount != null ? d.failCount : 0
+          const lines = (d.failMessages || []).slice(0, 8)
+          let extra = lines.length ? `；失败示例：${lines.join('；')}` : ''
+          if ((d.failMessages || []).length > lines.length) {
+            extra += '…'
+          }
+          this.$modal.msgSuccess(`完成：成功 ${ok} 条，失败 ${fail} 条${extra}`)
+          this.detailSelection = []
+          this.handleDetailQuery()
+        })
+        .catch(() => {})
     },
     openHighDialog(row) {
       this.highMirrorRow = row
@@ -340,7 +535,7 @@ export default {
         return
       }
       scanMirrorHighBarcode({
-        visitKind: this.currentVisitKind,
+        visitKind: this.highMirrorRow && this.highMirrorRow.visitType ? this.highMirrorRow.visitType : this.currentVisitKind,
         mirrorRowId: this.highMirrorRow.id,
         inHospitalCode: code
       }).then(res => {
@@ -381,7 +576,7 @@ export default {
       }
       this.highSubmitting = true
       applyMirrorHighConsume({
-        visitKind: this.currentVisitKind,
+        visitKind: this.highMirrorRow && this.highMirrorRow.visitType ? this.highMirrorRow.visitType : this.currentVisitKind,
         mirrorRowId: this.highMirrorRow.id,
         lines: this.highLines.map(l => ({ gzDepInventoryId: l.gzDepInventoryId, qty: l.applyQty }))
       }).then(res => {

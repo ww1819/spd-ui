@@ -4,7 +4,7 @@
              filterable
              :filter-method="filterMethod"
              clearable
-             :placeholder="placeholder || '编码/名称/简码搜索'"
+             :placeholder="placeholder || '库房分类编码/名称/简码搜索'"
              :disabled="value2"
   >
     <el-option

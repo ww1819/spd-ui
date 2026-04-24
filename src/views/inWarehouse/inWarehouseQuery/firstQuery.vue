@@ -13,10 +13,37 @@
                         @keyup.enter.native="handleQuery"
               />
             </el-form-item>
-            <el-form-item prop="materialId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectMaterial v-model="queryParams.materialId" />
-              </div>
+            <el-form-item prop="materialNameLike" class="query-item-inline">
+              <el-input v-model="queryParams.materialNameLike"
+                        placeholder="耗材编码/名称/简码"
+                        clearable
+                        style="width: 180px"
+                        @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item prop="materialSpeciLike" class="query-item-inline">
+              <el-input v-model="queryParams.materialSpeciLike"
+                        placeholder="规格"
+                        clearable
+                        style="width: 180px"
+                        @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item prop="materialModelLike" class="query-item-inline">
+              <el-input v-model="queryParams.materialModelLike"
+                        placeholder="型号"
+                        clearable
+                        style="width: 180px"
+                        @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item prop="supplierKeyword" class="query-item-inline">
+              <el-input v-model="queryParams.supplierKeyword"
+                        placeholder="供应商编码/名称"
+                        clearable
+                        style="width: 180px"
+                        @keyup.enter.native="handleQuery"
+              />
             </el-form-item>
             <el-form-item prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
@@ -203,14 +230,13 @@
 <script>
 import { listRTHWarehouse} from "@/api/warehouse/warehouse";
 import { exportRTHWarehouseDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
-import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import RightToolbar from "@/components/RightToolbar";
 
 export default {
   name: "firstQuery",
   dicts: ['biz_status','bill_type','in_warehouse_bill_type','way_status'],
-  components: { SelectMaterial, SelectWarehouse, RightToolbar },
+  components: { SelectWarehouse, RightToolbar },
   data() {
       return {
         // 遮罩层
@@ -252,6 +278,10 @@ export default {
         billNo: null,
         supplerId: null,
         billDate: null,
+        materialNameLike: null,
+        materialSpeciLike: null,
+        materialModelLike: null,
+        supplierKeyword: null,
         warehouseId: null,
         departmentId: null,
         billStatus: null,
@@ -356,18 +386,7 @@ export default {
     /** 查询入/退货列表 */
     getList() {
       this.loading = true;
-      const queryParams = { ...this.queryParams };
-      if (!queryParams.beginDate || queryParams.beginDate === '') {
-        queryParams.beginDate = null;
-      }
-      if (!queryParams.endDate || queryParams.endDate === '') {
-        queryParams.endDate = null;
-      } else if (queryParams.endDate && queryParams.endDate.length === 10) {
-        queryParams.endDate = queryParams.endDate + ' 23:59:59';
-      }
-      Object.keys(queryParams).forEach(key => {
-        if (queryParams[key] === '') queryParams[key] = null;
-      });
+      const queryParams = this.buildListQueryParams();
       listRTHWarehouse(queryParams).then(response => {
         this.warehouseList = response.rows || [];
         this.total = response.total != null ? Number(response.total) : 0;
@@ -445,6 +464,10 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.materialNameLike = null;
+      this.queryParams.materialSpeciLike = null;
+      this.queryParams.materialModelLike = null;
+      this.queryParams.supplierKeyword = null;
       this.handleQuery();
     },
     handleSizeChange(val) {
@@ -468,18 +491,7 @@ export default {
     },
     /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
     async handleExport() {
-      const queryParams = { ...this.queryParams };
-      if (!queryParams.beginDate || queryParams.beginDate === '') {
-        queryParams.beginDate = null;
-      }
-      if (!queryParams.endDate || queryParams.endDate === '') {
-        queryParams.endDate = null;
-      } else if (queryParams.endDate && queryParams.endDate.length === 10) {
-        queryParams.endDate = `${queryParams.endDate} 23:59:59`;
-      }
-      Object.keys(queryParams).forEach(key => {
-        if (queryParams[key] === '') queryParams[key] = null;
-      });
+      const queryParams = this.buildListQueryParams();
       const requestParams = { ...queryParams, pageNum: 1, pageSize: 10000 };
       this.loading = true;
       try {
@@ -515,6 +527,21 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    buildListQueryParams() {
+      const queryParams = { ...this.queryParams };
+      if (!queryParams.beginDate || queryParams.beginDate === '') {
+        queryParams.beginDate = null;
+      }
+      if (!queryParams.endDate || queryParams.endDate === '') {
+        queryParams.endDate = null;
+      } else if (queryParams.endDate && queryParams.endDate.length === 10) {
+        queryParams.endDate = `${queryParams.endDate} 23:59:59`;
+      }
+      Object.keys(queryParams).forEach(key => {
+        if (queryParams[key] === '') queryParams[key] = null;
+      });
+      return queryParams;
     },
   }
 };

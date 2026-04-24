@@ -27,7 +27,7 @@ export default {
     includeWarehouseType: {},
     placeholder: {
       type: String,
-      default: '编码/名称/简码搜索'
+      default: '仓库编码/名称/简码搜索'
     }
   },
   data() {
@@ -75,7 +75,7 @@ export default {
         } else if (typeof this.excludeWarehouseType === 'string') {
           excludeTypes = this.excludeWarehouseType.split(',').map(t => t.trim());
         }
-        
+
         return this.warehouseOptions.filter(item => {
           // 如果仓库类型为空或不在排除列表中，则保留
           return !item.warehouseType || !excludeTypes.includes(item.warehouseType);
