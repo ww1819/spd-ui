@@ -9,6 +9,15 @@ export function listInventory(query) {
   })
 }
 
+/** 选库存明细弹窗等：仅需登录，数据范围与 list 一致，避免无 department:depInventory:list 时 403 */
+export function listInventoryPick(query) {
+  return request({
+    url: '/department/inventory/pick/list',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询科室库存详细
 export function getInventory(id) {
   return request({

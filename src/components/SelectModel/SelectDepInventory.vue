@@ -20,12 +20,12 @@
             <el-row :gutter="12" class="query-form-row">
               <el-col :span="6">
                 <el-form-item label="科室" prop="departmentId" label-width="100px">
-                  <SelectDepartment v-model="queryParams.departmentId" :value2="isShow" />
+                  <SelectDepartment v-model="queryParams.departmentId" :value2="isShow" :finance-pick-mode="true" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
                 <el-form-item label="耗材" prop="materialId" label-width="100px">
-                  <SelectMaterial v-model="queryParams.materialId" />
+                  <SelectMaterial v-model="queryParams.materialId" :use-dept-safe-list="true" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
@@ -155,7 +155,7 @@
 </template>
 
 <script>
-import { listInventory } from "@/api/department/depInventory";
+import { listInventoryPick } from "@/api/department/depInventory";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 
@@ -223,7 +223,7 @@ export default {
     },
     getList() {
       this.loading = true;
-      listInventory(this.queryParams)
+      listInventoryPick(this.queryParams)
         .then(response => {
           const rows = response.rows || [];
           if (this.selectedDetails && this.selectedDetails.length) {

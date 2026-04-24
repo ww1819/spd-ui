@@ -14,11 +14,18 @@
 </template>
 
 <script>
-import { listMaterialAll} from "@/api/foundation/material";
+import { listMaterialAll, listMaterialDeptSafe } from "@/api/foundation/material";
 
 export default {
-  // props: ['value','size','isShow'],
-  props: ['value','value2'],
+  props: {
+    value: {},
+    value2: {},
+    /** 为 true 时走 listDeptSafe（仅需登录、字段精简），用于科室库存选明细等弹窗 */
+    useDeptSafeList: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       // 耗材选项
@@ -44,9 +51,16 @@ export default {
     /** 查询耗材列表 */
     getList() {
       this.loading = true;
-      listMaterialAll().then(response => {
-        this.materialOptions = response;
-      });
+      const req = this.useDeptSafeList
+        ? listMaterialDeptSafe({})
+        : listMaterialAll();
+      req
+        .then(response => {
+          this.materialOptions = Array.isArray(response) ? response : (response && response.data) || [];
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
   }
 }

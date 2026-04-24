@@ -30,7 +30,8 @@
 </template>
 
 <script>
-import { listSupplierAll, listSupplier, getSupplier } from "@/api/foundation/supplier";
+import { listSupplierAll, listSupplier, getSupplier, listSupplierDeptSafe } from "@/api/foundation/supplier";
+import { fetchFinancePickSupplierById } from "@/api/finance/settlementSummary";
 import { pinyin } from 'pinyin-pro';
 import { isForbiddenError } from "@/utils/requestFallback";
 
@@ -41,6 +42,11 @@ export default {
     placeholder: {
       type: String,
       default: '供应商'
+    },
+    /** 为 true 时用科室低敏列表 + 财务 pick 详情，避免 foundation:supplier:list/query 权限不足 */
+    financePickMode: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -75,6 +81,10 @@ export default {
     }
   },
   created() {
+    if (this.financePickMode) {
+      this.loadFinancePickSupplierBase();
+      return;
+    }
     // 使用 remote 时，初始不加载数据，等待用户输入
     // 但需要预加载所有供应商用于首字母搜索
     this.loadAllSuppliers();
@@ -93,6 +103,22 @@ export default {
       if (!this.value) return;
       const exists = this.supplierOptions.some(item => item.id === this.value);
       if (exists) return;
+      if (this.financePickMode) {
+        const hit = (this.allSuppliers || []).find(item => item.id === this.value);
+        if (hit) {
+          this.supplierOptions = [hit, ...this.supplierOptions.filter(i => i.id !== hit.id)];
+          return;
+        }
+        fetchFinancePickSupplierById(this.value)
+          .then(res => {
+            const row = res && res.data ? res.data : null;
+            if (row && row.id != null) {
+              this.supplierOptions = [row, ...this.supplierOptions.filter(i => i.id !== row.id)];
+            }
+          })
+          .catch(() => {});
+        return;
+      }
       getSupplier(this.value).then(response => {
         const row = response && response.data ? response.data : null;
         if (row) {
@@ -102,8 +128,29 @@ export default {
         // 无详情权限时静默降级，避免表单报错
       });
     },
+    /** 财务页：低敏全量 + 首屏选项 */
+    loadFinancePickSupplierBase() {
+      this.loading = true;
+      listSupplierDeptSafe()
+        .then(response => {
+          const all = response || [];
+          this.allSuppliers = all;
+          this.supplierOptions = all.slice(0, 20);
+          this.ensureSelectedOption();
+        })
+        .catch(() => {
+          this.allSuppliers = [];
+          this.supplierOptions = [];
+        })
+        .finally(() => {
+          this.loading = false;
+        });
+    },
     /** 预加载所有供应商（用于首字母搜索） */
     loadAllSuppliers() {
+      if (this.financePickMode) {
+        return;
+      }
       listSupplierAll().then(response => {
         this.allSuppliers = response || [];
       }).catch(() => {
@@ -112,6 +159,9 @@ export default {
     },
     /** 加载初始数据（少量，用于确保下拉框可以正常打开） */
     loadInitialData() {
+      if (this.financePickMode) {
+        return;
+      }
       listSupplier({
         pageNum: 1,
         pageSize: 20
@@ -153,6 +203,11 @@ export default {
       
       // 如果输入为空，清空选项
       if (!query || query.trim() === '') {
+        if (this.financePickMode) {
+          this.supplierOptions = (this.allSuppliers || []).slice(0, 20);
+          this.loading = false;
+          return;
+        }
         this.supplierOptions = [];
         this.loading = false;
         return;
@@ -168,6 +223,18 @@ export default {
     },
     /** 执行搜索 */
     doSearch(query, upperQuery) {
+      if (this.financePickMode) {
+        this.loading = true;
+        listSupplierDeptSafe({ name: query })
+          .then(response => {
+            const rows = response || [];
+            this.filterSuppliers(query, upperQuery, rows);
+          })
+          .catch(() => {
+            this.filterSuppliers(query, upperQuery, []);
+          });
+        return;
+      }
       if (this.fallbackToListAll) {
         if (this.allSuppliers.length === 0) {
           listSupplierAll().then(allResponse => {
