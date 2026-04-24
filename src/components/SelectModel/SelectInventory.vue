@@ -205,7 +205,8 @@ export default {
         supplierId: null,
         batchNo: null
       },
-      form: {}
+      form: {},
+      selectedRowMap: {}
     };
   },
   mounted() {
@@ -220,6 +221,8 @@ export default {
     DialogComponentShow(newVal) {
       this.show = newVal;
       if (newVal) {
+        this.selectedRowMap = {};
+        this.selectRow = [];
         this.queryParams.pageNum = 1;
         this.applyHeaderSupplierFilter();
         this.getList();
@@ -243,6 +246,12 @@ export default {
   },
   created() {},
   methods: {
+    getRowKey(row) {
+      if (!row) return null;
+      if (row.id != null) return String(row.id);
+      if (row.materialId != null && row.batchNo) return `${row.materialId}__${row.batchNo}`;
+      return null;
+    },
     applyHeaderSupplierFilter() {
       if (this.hideSupplierQuery) {
         this.queryParams.supplierId = this.supplierValue;
@@ -284,13 +293,17 @@ export default {
         });
     },
     markSelectedItems() {
-      if (!this.selectedDetails || !this.selectedDetails.length || !this.inventoryList || !this.inventoryList.length) {
+      if (!this.inventoryList || !this.inventoryList.length || !this.$refs.singleTable) {
         return;
       }
-      if (this.$refs.singleTable) {
-        this.$refs.singleTable.clearSelection();
-      }
+      this.$refs.singleTable.clearSelection();
       const selectedRows = [];
+      this.inventoryList.forEach(inventoryItem => {
+        const key = this.getRowKey(inventoryItem);
+        if (key && this.selectedRowMap[key]) {
+          selectedRows.push(inventoryItem);
+        }
+      });
       this.inventoryList.forEach(inventoryItem => {
         const isSelected = this.selectedDetails.some(detail => {
           return detail.materialId === inventoryItem.materialId && detail.batchNo === inventoryItem.batchNo;
@@ -315,10 +328,26 @@ export default {
       this.handleQuery();
     },
     handleSelectionChange(val) {
-      this.selectRow = val;
+      const pageKeys = (this.inventoryList || [])
+        .map(row => this.getRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach(key => {
+        if (this.selectedRowMap[key]) {
+          delete this.selectedRowMap[key];
+        }
+      });
+      (val || []).forEach(row => {
+        const key = this.getRowKey(row);
+        if (key) {
+          this.selectedRowMap[key] = row;
+        }
+      });
+      this.selectRow = Object.values(this.selectedRowMap);
     },
     handleClose() {
       this.show = false;
+      this.selectedRowMap = {};
+      this.selectRow = [];
       this.$emit("closeDialog");
     },
     checkBtn() {

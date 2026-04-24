@@ -188,7 +188,8 @@ export default {
         materialKeyword: null,
         batchNo: null
       },
-      form: {}
+      form: {},
+      selectedRowMap: {}
     };
   },
   mounted() {
@@ -205,6 +206,8 @@ export default {
     DialogComponentShow(newVal) {
       this.show = newVal;
       if (newVal) {
+        this.selectedRowMap = {};
+        this.selectRow = [];
         this.queryParams.pageNum = 1;
         this.queryParams.departmentId = this.departmentValue;
         if (this.warehouseValue != null && this.warehouseValue !== "") {
@@ -216,6 +219,22 @@ export default {
   },
   created() {},
   methods: {
+    getRowKey(row) {
+      if (!row || row.id == null) return null;
+      return String(row.id);
+    },
+    restorePageSelection() {
+      if (!this.$refs.singleTable || !this.inventoryList || this.inventoryList.length === 0) {
+        return;
+      }
+      this.$refs.singleTable.clearSelection();
+      this.inventoryList.forEach(row => {
+        const key = this.getRowKey(row);
+        if (key && this.selectedRowMap[key]) {
+          this.$refs.singleTable.toggleRowSelection(row, true);
+        }
+      });
+    },
     handlePagination({ page, limit }) {
       if (page != null) this.queryParams.pageNum = page;
       if (limit != null) this.queryParams.pageSize = limit;
@@ -254,6 +273,7 @@ export default {
           }
           this.total = response.total != null ? Number(response.total) : 0;
           this.loading = false;
+          this.$nextTick(() => this.restorePageSelection());
         })
         .catch(() => {
           this.loading = false;
@@ -274,10 +294,26 @@ export default {
       this.handleQuery();
     },
     handleSelectionChange(val) {
-      this.selectRow = val;
+      const pageKeys = (this.inventoryList || [])
+        .map(row => this.getRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach(key => {
+        if (this.selectedRowMap[key]) {
+          delete this.selectedRowMap[key];
+        }
+      });
+      (val || []).forEach(row => {
+        const key = this.getRowKey(row);
+        if (key) {
+          this.selectedRowMap[key] = row;
+        }
+      });
+      this.selectRow = Object.values(this.selectedRowMap);
     },
     handleClose() {
       this.show = false;
+      this.selectedRowMap = {};
+      this.selectRow = [];
       this.$emit("closeDialog");
     },
     checkBtn() {

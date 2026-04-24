@@ -145,8 +145,10 @@ export default {
         materialName: null,
         materialSpeci: null,
         materialModel: null,
-        warehouseName: null
-      }
+        warehouseName: null,
+        excludeMaterialWarehousePairs: null
+      },
+      selectedRowMap: {}
     };
   },
   mounted() {
@@ -159,6 +161,8 @@ export default {
     DialogComponentShow(newVal) {
       this.show = newVal;
       if (newVal) {
+        this.selectedRowMap = {};
+        this.selectRow = [];
         this.queryParams.pageNum = 1;
         this.getList();
         this.$nextTick(() => this.markSelectedItems());
@@ -174,6 +178,10 @@ export default {
     }
   },
   methods: {
+    getRowKey(row) {
+      if (!row || row.materialId == null || row.warehouseId == null) return null;
+      return `${row.materialId}__${row.warehouseId}`;
+    },
     handlePagination({ page, limit }) {
       if (page != null) this.queryParams.pageNum = page;
       if (limit != null) this.queryParams.pageSize = limit;
@@ -181,25 +189,12 @@ export default {
     },
     getList() {
       this.loading = true;
+      this.queryParams.excludeMaterialWarehousePairs = this.buildExcludePairsParam();
       listDeptApplyAvailableStock(this.queryParams)
         .then(response => {
           const rows = response.rows || [];
-          if (this.selectedDetails && this.selectedDetails.length) {
-            const existed = new Set(
-              this.selectedDetails
-                .filter(d => d && d.materialId != null)
-                .map(d => {
-                  const wid = d.stockWarehouseId != null && d.stockWarehouseId !== "" ? d.stockWarehouseId : "x";
-                  return `${d.materialId}__${wid}`;
-                })
-            );
-            this.rowList = rows.filter(it => {
-              if (!it || it.materialId == null || it.warehouseId == null) return true;
-              return !existed.has(`${it.materialId}__${it.warehouseId}`);
-            });
-          } else {
-            this.rowList = rows;
-          }
+          // 保持查询结果完整展示；重复明细在父页面 selectData 阶段做去重拦截。
+          this.rowList = rows;
           this.total = response.total != null ? Number(response.total) : 0;
           this.loading = false;
           this.$nextTick(() => this.markSelectedItems());
@@ -219,15 +214,63 @@ export default {
         materialName: null,
         materialSpeci: null,
         materialModel: null,
-        warehouseName: null
+        warehouseName: null,
+        excludeMaterialWarehousePairs: null
       };
       this.getList();
     },
+    buildExcludePairsParam() {
+      const details = Array.isArray(this.selectedDetails) ? this.selectedDetails : [];
+      if (!details.length) {
+        return null;
+      }
+      const normalizeId = (v) => {
+        if (v == null) return null;
+        const s = String(v).trim();
+        return s === '' ? null : s;
+      };
+      const keys = details
+        .filter(d => d && d.materialId != null)
+        .map(d => {
+          const wid = normalizeId(
+            d.stockWarehouseId != null
+              ? d.stockWarehouseId
+              : (d.stockWarehouse && d.stockWarehouse.id != null
+                ? d.stockWarehouse.id
+                : (d.warehouseId != null ? d.warehouseId : null))
+          );
+          if (wid == null) return null;
+          const mid = normalizeId(d.materialId);
+          if (mid == null) return null;
+          return `${mid}__${wid}`;
+        })
+        .filter(Boolean);
+      if (!keys.length) {
+        return null;
+      }
+      return Array.from(new Set(keys)).join(",");
+    },
     handleSelectionChange(val) {
-      this.selectRow = val;
+      const pageKeys = (this.rowList || [])
+        .map(row => this.getRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach(key => {
+        if (this.selectedRowMap[key]) {
+          delete this.selectedRowMap[key];
+        }
+      });
+      (val || []).forEach(row => {
+        const key = this.getRowKey(row);
+        if (key) {
+          this.selectedRowMap[key] = row;
+        }
+      });
+      this.selectRow = Object.values(this.selectedRowMap);
     },
     handleClose() {
       this.show = false;
+      this.selectedRowMap = {};
+      this.selectRow = [];
       this.$emit("closeDialog");
     },
     checkBtn() {
@@ -245,6 +288,12 @@ export default {
     markSelectedItems() {
       if (!this.$refs.singleTable || !this.rowList || !this.rowList.length) return;
       this.$refs.singleTable.clearSelection();
+      this.rowList.forEach(row => {
+        const key = this.getRowKey(row);
+        if (key && this.selectedRowMap[key]) {
+          this.$refs.singleTable.toggleRowSelection(row, true);
+        }
+      });
     }
   }
 };

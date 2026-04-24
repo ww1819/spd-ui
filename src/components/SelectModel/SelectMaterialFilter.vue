@@ -278,6 +278,7 @@ export default {
       },
       // 表单参数
       form: {},
+      selectedRowMap: {},
     };
   },
   mounted() {
@@ -302,6 +303,8 @@ export default {
     DialogComponentShow(newVal) {
       this.show = newVal;
       if (newVal) {
+        this.selectedRowMap = {};
+        this.selectRow = [];
         this.queryParams.pageNum = 1;
         // 弹窗打开时更新仓库/科室并重新加载数据
         if (this.useDepInventory) {
@@ -348,6 +351,26 @@ export default {
     // this.getList();
   },
   methods: {
+    getRowKey(row) {
+      if (!row) return null;
+      if (row.id != null) return `id_${row.id}`;
+      if (row.material && row.material.id != null && row.batchNo) return `mb_${row.material.id}__${row.batchNo}`;
+      if (row.material && row.material.id != null) return `m_${row.material.id}`;
+      if (row.materialId != null && row.batchNo) return `ab_${row.materialId}__${row.batchNo}`;
+      return null;
+    },
+    restorePageSelection() {
+      if (!this.$refs.singleTable || !this.materialList || this.materialList.length === 0) {
+        return;
+      }
+      this.$refs.singleTable.clearSelection();
+      this.materialList.forEach(row => {
+        const key = this.getRowKey(row);
+        if (key && this.selectedRowMap[key]) {
+          this.$refs.singleTable.toggleRowSelection(row, true);
+        }
+      });
+    },
     async loadDeptSafeMaterialRows(query) {
       const safeRows = await listMaterialDeptSafe(query || {});
       const rows = Array.isArray(safeRows) ? safeRows : [];
@@ -365,6 +388,7 @@ export default {
       this.materialList = materialList.slice();
       this.total = materialList.length;
       this.loading = false;
+      this.$nextTick(() => this.restorePageSelection());
     },
     /** 分页组件回调：与后端分页参数同步后再拉数，避免 total 与当前页条数不一致 */
     handlePagination({ page, limit }) {
@@ -495,6 +519,7 @@ export default {
           this.materialList = materialList.slice();
           this.total = totalVal != null ? Number(totalVal) : materialList.length;
           this.loading = false;
+          this.$nextTick(() => this.restorePageSelection());
         }).catch(() => {
           this.loading = false;
         });
@@ -541,6 +566,7 @@ export default {
           this.materialList = materialList.slice();
           this.total = Number(totalVal) || 0;
           this.loading = false;
+          this.$nextTick(() => this.restorePageSelection());
         }).catch((err) => {
           if (isForbiddenError(err)) {
             this.loadDeptSafeMaterialRows(query).catch(() => {
@@ -628,6 +654,7 @@ export default {
         this.materialList = materialList.slice();
         this.total = materialList.length;
         this.loading = false;
+        this.$nextTick(() => this.restorePageSelection());
       }).catch(() => {
         this.loading = false;
       });
@@ -652,12 +679,27 @@ export default {
       // 如果需要实时搜索，可以调用 this.handleQuery()
     },
     handleSelectionChange(val) {
-      //获取选择的行数据
-      this.selectRow = val
+      const pageKeys = (this.materialList || [])
+        .map(row => this.getRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach(key => {
+        if (this.selectedRowMap[key]) {
+          delete this.selectedRowMap[key];
+        }
+      });
+      (val || []).forEach(row => {
+        const key = this.getRowKey(row);
+        if (key) {
+          this.selectedRowMap[key] = row;
+        }
+      });
+      this.selectRow = Object.values(this.selectedRowMap);
     },
     handleClose() {
       //关闭弹窗
       this.show = false
+      this.selectedRowMap = {};
+      this.selectRow = [];
       this.$emit('closeDialog')
     },
     async checkMaterialBtn() {

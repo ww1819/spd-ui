@@ -67,3 +67,54 @@ export function roleMenuTreeselectPost(postId) {
     method: 'get'
   })
 }
+
+/** 工作组菜单同步（后台异步） */
+export function syncPostMenuToUsers(postId, syncMode) {
+  return request({
+    url: '/system/post/sync/menu/' + postId,
+    method: 'post',
+    params: { syncMode }
+  })
+}
+
+/** 查询工作组菜单同步状态 */
+export function getPostMenuSyncStatus(postId) {
+  return request({
+    url: '/system/post/sync/menu/status/' + postId,
+    method: 'get'
+  })
+}
+
+/** 工作组科室同步（后台异步） */
+export function syncPostDepartmentToUsers(postId, syncMode) {
+  return request({
+    url: '/system/post/sync/department/' + postId,
+    method: 'post',
+    params: { syncMode }
+  })
+}
+
+/** 查询工作组科室同步状态 */
+export function getPostDepartmentSyncStatus(postId) {
+  return request({
+    url: '/system/post/sync/department/status/' + postId,
+    method: 'get'
+  })
+}
+
+/** 工作组仓库同步（后台异步） */
+export function syncPostWarehouseToUsers(postId, syncMode) {
+  return request({
+    url: '/system/post/sync/warehouse/' + postId,
+    method: 'post',
+    params: { syncMode }
+  })
+}
+
+/** 查询工作组仓库同步状态 */
+export function getPostWarehouseSyncStatus(postId) {
+  return request({
+    url: '/system/post/sync/warehouse/status/' + postId,
+    method: 'get'
+  })
+}
