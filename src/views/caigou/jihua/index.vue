@@ -96,6 +96,14 @@
         <el-button
           type="primary"
           size="medium"
+          @click="handleExportSummary"
+          v-hasPermi="['caigou:jihua:export']"
+        >导出汇总</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="medium"
           :disabled="multiple"
           @click="handleBatchSubmit"
           v-hasPermi="['caigou:jihua:edit']"
@@ -1813,6 +1821,38 @@ export default {
         params.planIds = this.ids.join(',')
       }
       this.download('caigou/jihua/export', params, `采购计划明细_${new Date().getTime()}.xlsx`)
+    },
+    /** 导出汇总：选择导出当前页或全部查询结果 */
+    handleExportSummary() {
+      const createParamsByScope = (scope) => {
+        const params = { ...this.queryParams }
+        params.exportScope = scope
+        if (scope === 'all') {
+          delete params.pageNum
+          delete params.pageSize
+        }
+        return params
+      }
+      const doExport = (scope) => {
+        const params = createParamsByScope(scope)
+        this.download('caigou/jihua/exportSummary', params, `采购计划汇总_${new Date().getTime()}.xlsx`)
+      }
+      this.$confirm(
+        '请选择导出范围：\n【当前页】仅导出当前分页数据；\n【所有查询结果】导出当前筛选条件下的全部数据。',
+        '导出汇总',
+        {
+          confirmButtonText: '当前页',
+          cancelButtonText: '所有查询结果',
+          type: 'warning',
+          distinguishCancelAndClose: true
+        }
+      ).then(() => {
+        doExport('current')
+      }).catch((action) => {
+        if (action === 'cancel') {
+          doExport('all')
+        }
+      })
     },
     /** 防抖数量变化 */
     debounceQtyChange(row) {
