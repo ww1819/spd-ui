@@ -410,6 +410,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMaterialForPurchase from '@/components/SelectModel/SelectMaterialForPurchase';
+import { runConfiguredTableExport } from '@/utils/tableExportRunner'
 
 export default {
   name: "dPurchase",
@@ -878,15 +879,82 @@ export default {
       }, `purchase_${row.purchaseBillNo || row.id}_${new Date().getTime()}.xlsx`)
     },
     /** 导出按钮操作（导出勾选单据明细） */
-    handleExport() {
-      if (!this.ids || this.ids.length === 0) {
-        this.$modal.msgWarning('请先勾选要导出的单据')
-        return
+    async handleExport() {
+      const urgencyDict = (this.dict && this.dict.type && this.dict.type.urgency_level) || []
+      const statusDict = (this.dict && this.dict.type && this.dict.type.purchase_status) || []
+      const idSet = this.ids && this.ids.length ? new Set(this.ids.map(id => String(id))) : null
+
+      const dictLabel = (options, value) => {
+        const v = value == null ? '' : String(value)
+        const hit = (options || []).find(d => String(d.value) === v)
+        return hit ? hit.label : v
       }
-      this.download('department/purchase/export', {
-        ...this.queryParams,
-        exportBillIds: this.ids.join(',')
-      }, `purchase_${new Date().getTime()}.xlsx`)
+      const fmtDate = (v) => {
+        if (!v) return ''
+        const d = new Date(v)
+        if (Number.isNaN(d.getTime())) return v
+        const y = d.getFullYear()
+        const m = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${y}-${m}-${day}`
+      }
+
+      try {
+        const fileName = `purchase_${new Date().getTime()}.xlsx`
+        const result = await runConfiguredTableExport({
+          fileName,
+          query: { ...this.queryParams },
+          pageSize: 500,
+          mode: 'all',
+          fetchPage: (params) => listPurchase(params),
+          rowFilter: idSet ? (row) => row && idSet.has(String(row.id)) : null,
+          columns: [
+            {
+              label: '序号',
+              valueGetter: (_, index) => index + 1
+            },
+            { label: '申购单号', prop: 'purchaseBillNo' },
+            {
+              label: '制单日期',
+              valueGetter: (row) => fmtDate(row && row.purchaseBillDate)
+            },
+            { label: '仓库', prop: 'warehouse.name' },
+            { label: '科室', prop: 'department.name' },
+            { label: '制单人', prop: 'user.userName' },
+            {
+              label: '申购状态',
+              valueGetter: (row) => {
+                const s = row && row.purchaseBillStatus
+                if (String(s) === '1') return '未审核'
+                return dictLabel(statusDict, s)
+              }
+            },
+            {
+              label: '紧急程度',
+              valueGetter: (row) => dictLabel(urgencyDict, row && row.urgencyLevel)
+            },
+            {
+              label: '总金额',
+              valueGetter: (row) => {
+                const n = Number(row && row.totalAmount)
+                return Number.isFinite(n) && n > 0 ? `¥${n.toFixed(2)}` : '--'
+              }
+            },
+            {
+              label: '期望到货日期',
+              valueGetter: (row) => fmtDate(row && row.expectedDeliveryDate)
+            },
+            { label: '备注', prop: 'remark' }
+          ]
+        })
+        if (idSet && result.rowCount === 0) {
+          this.$modal.msgWarning('当前筛选条件下未找到勾选单据')
+          return
+        }
+        this.$modal.msgSuccess(`已导出 ${result.rowCount} 条`)
+      } catch (e) {
+        this.$modal.msgWarning(e && e.message ? e.message : '导出失败')
+      }
     }
   }
 };
