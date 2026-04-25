@@ -121,8 +121,7 @@
           <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
           <el-table-column label="数量" prop="quantity" width="90" align="right" />
           <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
-          <!-- 暂时隐藏：待科室库存能力完善后再恢复 -->
-          <!-- <el-table-column label="高值耗材库存数量" prop="highValueStockQty" width="150" align="right" sortable="custom" /> -->
+          <el-table-column label="高值耗材库存数量" prop="highValueStockQty" width="150" align="right" sortable="custom" />
           <el-table-column label="低值耗材库存数量" prop="lowValueStockQty" width="150" align="right" sortable="custom" />
           <el-table-column label="处理状态" prop="processStatus" width="120" show-overflow-tooltip>
             <template slot-scope="scope">
@@ -146,8 +145,6 @@
                 :disabled="scope.row.processStatus !== 'PENDING_CONSUME'"
                 @click="processLowValue(scope.row)"
               >低值</el-button>
-              <!-- 暂时隐藏：待科室库存能力完善后再恢复 -->
-              <!--
               <el-button
                 type="text"
                 size="mini"
@@ -155,7 +152,6 @@
                 :disabled="scope.row.processStatus === 'CONSUMED'"
                 @click="openHighDialog(scope.row)"
               >高值</el-button>
-              -->
             </template>
           </el-table-column>
         </el-table>
