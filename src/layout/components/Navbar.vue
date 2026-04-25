@@ -124,12 +124,16 @@
           <span class="version-value">医疗物资管理系统</span>
         </div>
         <div class="version-item">
-          <span class="version-label">系统版本：</span>
-          <span class="version-value">v{{ systemVersion }}</span>
+          <span class="version-label">后端应用：</span>
+          <span class="version-value">{{ backendAppName || '—' }}</span>
         </div>
         <div class="version-item">
-          <span class="version-label">构建日期：</span>
-          <span class="version-value">{{ buildDate }}</span>
+          <span class="version-label">前端版本：</span>
+          <span class="version-value">v{{ frontendVersion }}（构建 {{ frontendBuildLabel }}）</span>
+        </div>
+        <div class="version-item">
+          <span class="version-label">后端版本：</span>
+          <span class="version-value">v{{ backendVersion || '—' }}{{ backendBuildTime ? '（部署 ' + backendBuildTime + '）' : '' }}</span>
         </div>
         <div class="version-item">
           <span class="version-label">版权所有：</span>
@@ -155,6 +159,7 @@ import Search from '@/components/HeaderSearch'
 import RuoYiGit from '@/components/RuoYi/Git'
 import RuoYiDoc from '@/components/RuoYi/Doc'
 import { listConfig } from '@/api/system/config'
+import { getAppVersion } from '@/api/common/version'
 
 export default {
   components: {
@@ -175,10 +180,9 @@ export default {
       messageVisible: false,
       // 系统版本信息对话框显示状态
       versionDialogVisible: false,
-      // 系统版本号
-      systemVersion: '3.8.6',
-      // 构建日期
-      buildDate: '2021/04/20',
+      backendAppName: '',
+      backendVersion: '',
+      backendBuildTime: '',
       // 消息列表
       messageList: [
         {
@@ -231,6 +235,12 @@ export default {
       get() {
         return this.$store.state.settings.topNav
       }
+    },
+    frontendVersion() {
+      return process.env.VUE_APP_VERSION || '—'
+    },
+    frontendBuildLabel() {
+      return this.formatVersionTime(process.env.VUE_APP_BUILD_TIME)
     },
     // 未读消息数量
     unreadCount() {
@@ -296,9 +306,29 @@ export default {
         this.organizationUnit = ''
       })
     },
+    formatVersionTime(iso) {
+      if (!iso) return '—'
+      const d = new Date(iso)
+      if (Number.isNaN(d.getTime())) return String(iso)
+      return d.toLocaleString('zh-CN', { hour12: false })
+    },
+    async loadBackendVersion() {
+      this.backendAppName = ''
+      this.backendVersion = ''
+      this.backendBuildTime = ''
+      try {
+        const res = await getAppVersion()
+        this.backendAppName = res.name || ''
+        this.backendVersion = res.version || ''
+        this.backendBuildTime = (res.buildTime && String(res.buildTime).trim()) || ''
+      } catch (e) {
+        this.backendVersion = ''
+      }
+    },
     // 显示系统版本信息对话框
     showVersionDialog() {
       this.versionDialogVisible = true
+      this.loadBackendVersion()
     }
   },
   created() {
