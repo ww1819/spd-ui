@@ -215,6 +215,14 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="warning"
+          size="medium"
+          @click="openChargeItemDialog"
+          v-hasPermi="['foundation:chargeItem:query','foundation:material:query']"
+        >收费项目维护</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="info"
           plain
           icon="el-icon-upload2"
@@ -1219,11 +1227,91 @@
         <el-button @click="importPreview.visible = false">关 闭</el-button>
       </span>
     </el-dialog>
+
+    <el-dialog
+      title="收费项目维护"
+      :visible.sync="chargeItemDialog.visible"
+      width="86%"
+      top="5vh"
+      append-to-body
+      @open="loadChargeItemList"
+    >
+      <el-form :model="chargeItemDialog.query" size="small" :inline="true">
+        <el-form-item label="收费项ID">
+          <el-input v-model="chargeItemDialog.query.chargeItemId" placeholder="收费项ID" clearable style="width: 150px" />
+        </el-form-item>
+        <el-form-item label="收费编码">
+          <el-input v-model="chargeItemDialog.query.itemCode" placeholder="收费编码" clearable style="width: 150px" />
+        </el-form-item>
+        <el-form-item label="收费名称">
+          <el-input v-model="chargeItemDialog.query.name" placeholder="收费名称" clearable style="width: 180px" />
+        </el-form-item>
+        <el-form-item label="规格">
+          <el-input v-model="chargeItemDialog.query.speci" placeholder="规格" clearable style="width: 120px" />
+        </el-form-item>
+        <el-form-item label="高低值">
+          <el-select v-model="chargeItemDialog.query.valueLevel" placeholder="全部" clearable style="width: 120px">
+            <el-option v-for="opt in chargeItemValueLevelOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="loadChargeItemList">查询</el-button>
+          <el-button @click="resetChargeItemQuery">重置</el-button>
+          <el-button
+            type="success"
+            :loading="chargeItemDialog.fetching"
+            @click="handleFetchChargeItem"
+            v-hasPermi="['foundation:chargeItem:fetch','foundation:material:query']"
+          >抓取收费项目</el-button>
+          <el-button
+            type="warning"
+            :loading="chargeItemDialog.exporting"
+            @click="handleExportChargeItem"
+            v-hasPermi="['foundation:chargeItem:export','foundation:material:export']"
+          >下载</el-button>
+        </el-form-item>
+      </el-form>
+
+      <el-table v-loading="chargeItemDialog.loading" :data="chargeItemDialog.list" border stripe max-height="58vh">
+        <el-table-column label="收费项ID" prop="chargeItemId" width="140" show-overflow-tooltip />
+        <el-table-column label="收费编码" prop="chargeCode" width="130" show-overflow-tooltip />
+        <el-table-column label="收费名称" prop="chargeName" min-width="180" show-overflow-tooltip />
+        <el-table-column label="规格型号" prop="chargeSpeci" min-width="120" show-overflow-tooltip />
+        <el-table-column label="单价" prop="chargePrice" width="100" />
+        <el-table-column label="拼音简码" prop="referredCode" width="120" />
+        <el-table-column label="高低值属性" width="190">
+          <template slot-scope="scope">
+            <el-select
+              v-model="scope.row.valueLevel"
+              size="mini"
+              style="width: 110px; margin-right: 8px;"
+              :disabled="scope.row._saving"
+            >
+              <el-option v-for="opt in chargeItemValueLevelOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+            </el-select>
+            <el-button
+              type="text"
+              size="mini"
+              :disabled="scope.row._saving"
+              @click="saveChargeItemValueLevel(scope.row)"
+              v-hasPermi="['foundation:chargeItem:edit','foundation:material:edit']"
+            >保存</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        v-show="chargeItemDialog.total > 0"
+        :total="chargeItemDialog.total"
+        :page.sync="chargeItemDialog.query.pageNum"
+        :limit.sync="chargeItemDialog.query.pageSize"
+        @pagination="loadChargeItemList"
+      />
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData } from "@/api/foundation/material";
+import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel } from "@/api/foundation/material";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import { mapGetters } from "vuex";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
@@ -1422,6 +1510,27 @@ export default {
         isUploading: false,
         mode: "add",
         pendingFile: null
+      },
+      chargeItemValueLevelOptions: [
+        { label: '高值', value: '1' },
+        { label: '低值', value: '2' }
+      ],
+      chargeItemDialog: {
+        visible: false,
+        loading: false,
+        fetching: false,
+        exporting: false,
+        list: [],
+        total: 0,
+        query: {
+          pageNum: 1,
+          pageSize: 10,
+          chargeItemId: undefined,
+          itemCode: undefined,
+          name: undefined,
+          speci: undefined,
+          valueLevel: undefined
+        }
       },
       importPreview: {
         visible: false,
@@ -2228,6 +2337,81 @@ export default {
         return value;
       }
       return n.toFixed(4);
+    },
+    openChargeItemDialog() {
+      this.chargeItemDialog.visible = true;
+    },
+    resetChargeItemQuery() {
+      this.chargeItemDialog.query = {
+        pageNum: 1,
+        pageSize: 10,
+        chargeItemId: undefined,
+        itemCode: undefined,
+        name: undefined,
+        speci: undefined,
+        valueLevel: undefined
+      };
+      this.loadChargeItemList();
+    },
+    loadChargeItemList() {
+      this.chargeItemDialog.loading = true;
+      listHisChargeItem(this.chargeItemDialog.query).then(res => {
+        const rows = (res && Array.isArray(res.rows)) ? res.rows : [];
+        this.chargeItemDialog.list = rows.map(item => ({
+          ...item,
+          valueLevel: item && item.valueLevel ? String(item.valueLevel) : '2',
+          _saving: false
+        }));
+        this.chargeItemDialog.total = res && res.total ? res.total : 0;
+      }).finally(() => {
+        this.chargeItemDialog.loading = false;
+      });
+    },
+    handleFetchChargeItem() {
+      this.chargeItemDialog.fetching = true;
+      fetchHisChargeItemMirror().then(res => {
+        this.$modal.msgSuccess((res && res.msg) || '抓取成功');
+        this.loadChargeItemList();
+      }).finally(() => {
+        this.chargeItemDialog.fetching = false;
+      });
+    },
+    async handleExportChargeItem() {
+      this.chargeItemDialog.exporting = true;
+      try {
+        const blobData = await exportHisChargeItem(this.chargeItemDialog.query);
+        const blob = blobData instanceof Blob
+          ? blobData
+          : new Blob([blobData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const fileName = `收费项目维护_${new Date().getTime()}.xlsx`;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        this.$modal.msgSuccess('下载成功');
+      } catch (e) {
+        this.$modal.msgError((e && e.message) || '下载失败');
+      } finally {
+        this.chargeItemDialog.exporting = false;
+      }
+    },
+    saveChargeItemValueLevel(row) {
+      if (!row || !row.chargeItemId || !row.valueLevel) {
+        this.$modal.msgWarning('收费项ID或高低值属性不能为空');
+        return;
+      }
+      row._saving = true;
+      updateHisChargeItemValueLevel({
+        chargeItemId: row.chargeItemId,
+        valueLevel: row.valueLevel
+      }).then(res => {
+        this.$modal.msgSuccess((res && res.msg) || '保存成功');
+      }).finally(() => {
+        row._saving = false;
+      });
     }
   }
 };

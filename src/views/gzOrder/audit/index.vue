@@ -97,6 +97,14 @@
           v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="medium"
+          :disabled="multiple"
+          @click="handleBatchPrint"
+        >批量打印</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -128,15 +136,15 @@
           <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ formatDisplayDateTime(scope.row.auditDate) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作人" align="center" prop="createBy" show-overflow-tooltip resizable />
-      <el-table-column label="制单日期" align="center" prop="orderDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单时间" align="center" prop="orderDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ formatDisplayDateTime(scope.row.orderDate, scope.row.createTime) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
@@ -219,14 +227,14 @@
             </el-form-item>
           </el-col>
           <el-col :span="4">
-            <el-form-item label="制单日期" prop="orderDate">
+            <el-form-item label="制单时间" prop="orderDate">
               <el-date-picker clearable
                               v-model="form.orderDate"
                               type="date"
                               :disabled="true"
                               value-format="yyyy-MM-dd"
                               style="width: 140px"
-                              placeholder="请选择制单日期">
+                              placeholder="请选择制单时间">
               </el-date-picker>
             </el-form-item>
           </el-col>
@@ -277,10 +285,10 @@
                          @click="openRefAcceptance">引用验收单</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
+              <el-button type="primary" icon="el-icon-plus" size="small" :disabled="isAuditedForm" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry">删除</el-button>
+              <el-button type="danger" icon="el-icon-delete" size="small" :disabled="isAuditedForm" @click="handleDeleteGzOrderEntry">删除</el-button>
             </el-col>
           </div>
           <el-col :span="1.5">
@@ -315,6 +323,7 @@
           <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="数量"
+                        :disabled="true"
                         onkeyup="value=value.replace(/\D/g,'')"
                         onafterpaste="value=value.replace(/\D/g,'')"
                         @blur="form.result=$event.target.value"
@@ -381,7 +390,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="备注" />
+              <el-input v-model="scope.row.remark" :disabled="isAuditedForm" placeholder="备注" />
             </template>
           </el-table-column>
         </el-table>
@@ -389,7 +398,9 @@
             </el-form>
             <div v-show="action" class="modal-footer">
               <el-button @click="cancel">取 消</el-button>
-              <el-button type="primary" @click="submitForm">确 定</el-button>
+              <el-button type="primary" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
+              <el-button type="success" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
+              <el-button type="primary" icon="el-icon-printer" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
             </div>
           </div>
         </transition>
@@ -448,8 +459,8 @@
         <el-table-column label="仓库" min-width="100" show-overflow-tooltip>
           <template slot-scope="scope">{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</template>
         </el-table-column>
-        <el-table-column label="制单日期" width="110" align="center">
-          <template slot-scope="scope">{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</template>
+        <el-table-column label="制单时间" width="110" align="center">
+          <template slot-scope="scope">{{ formatDisplayDateTime(scope.row.orderDate, scope.row.createTime) }}</template>
         </el-table-column>
       </el-table>
       <span slot="footer" class="dialog-footer">
@@ -501,13 +512,14 @@
 </template>
 
 <script>
-import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, checkInHospitalCode, getDepotByInHospitalCodeForOutbound, listEntryChangeLog } from "@/api/gz/order";
+import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, checkInHospitalCode, getDepotByInHospitalCodeForOutbound, listEntryChangeLog } from "@/api/gz/shipment";
 import { listDepotInventory } from "@/api/gz/depotInventory";
 import { listAuditedAcceptance, listAcceptanceDepotLines } from "@/api/gz/refDoc";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
+import { parseTime } from "@/utils/ruoyi";
 import {STOCK_IN_TEMPLATE} from "@/utils/printData";
 import RMBConverter from "@/utils/tools";
 import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
@@ -597,7 +609,7 @@ export default {
       // 表单校验
       rules: {
         orderDate: [
-          { required: true, message: "制单日期不能为空", trigger: "blur" }
+          { required: true, message: "制单时间不能为空", trigger: "blur" }
         ],
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
@@ -624,7 +636,8 @@ export default {
         visible: false,
         title: '',
         content: ''
-      }
+      },
+      dialogSavedSnapshot: ''
     };
   },
   computed: {
@@ -636,6 +649,19 @@ export default {
         return '请先选择科室';
       }
       return '扫描院内码后回车';
+    },
+    isAuditedForm() {
+      const status = this.form && this.form.orderStatus;
+      return status === '2' || status === 2;
+    },
+    hasDialogUnsavedChanges() {
+      if (!this.open || !this.action) {
+        return false;
+      }
+      if (!this.dialogSavedSnapshot) {
+        return true;
+      }
+      return this.buildDialogSnapshot() !== this.dialogSavedSnapshot;
     }
   },
   created() {
@@ -684,6 +710,35 @@ export default {
       this.jsonViewer.title = title;
       this.jsonViewer.content = this.prettyJson(jsonText) || '--';
       this.jsonViewer.visible = true;
+    },
+    buildDialogSnapshot() {
+      const form = this.form || {};
+      const entryList = (this.gzOrderEntryList || []).map(item => ({
+        id: item.id || null,
+        materialId: item.materialId || null,
+        qty: item.qty || null,
+        price: item.price || null,
+        amt: item.amt || null,
+        batchNo: item.batchNo || null,
+        batchNumber: item.batchNumber || null,
+        inHospitalCode: item.inHospitalCode || null,
+        remark: item.remark || null,
+        supplierId: item.supplierId || (item.supplier && item.supplier.id) || null
+      }));
+      return JSON.stringify({
+        id: form.id || null,
+        orderNo: form.orderNo || null,
+        orderDate: form.orderDate || null,
+        warehouseId: form.warehouseId || null,
+        departmentId: form.departmentId || null,
+        orderStatus: form.orderStatus || null,
+        orderType: form.orderType || null,
+        remark: form.remark || null,
+        entryList
+      });
+    },
+    markDialogSnapshotSaved() {
+      this.dialogSavedSnapshot = this.buildDialogSnapshot();
     },
     toHalfWidth(str) {
       if (!str || typeof str !== 'string') {
@@ -778,6 +833,16 @@ export default {
         return total.toFixed(2);
       }
       return '0.00';
+    },
+    formatDisplayDateTime(primaryTime, fallbackTime) {
+      const primary = parseTime(primaryTime, '{y}-{m}-{d} {h}:{i}:{s}');
+      const fallback = parseTime(fallbackTime, '{y}-{m}-{d} {h}:{i}:{s}');
+      const primaryZeroClock = primary && / 00:00:00$/.test(primary);
+      const fallbackHasRealTime = fallback && !/ 00:00:00$/.test(fallback);
+      if (primaryZeroClock && fallbackHasRealTime) {
+        return fallback;
+      }
+      return primary || fallback || '--';
     },
     /** 根据路由设置订单类型 */
     setOrderTypeByRoute() {
@@ -954,6 +1019,7 @@ export default {
         scanInHospitalCode: null
       };
       this.gzOrderEntryList = [];
+      this.dialogSavedSnapshot = '';
       this.resetForm("form");
     },
     //数量改变事件
@@ -1128,6 +1194,7 @@ export default {
           this.form.orderType = '101';
           this.title = "查看高值备货入库";
         }
+        this.markDialogSnapshotSaved();
       });
     },
     openRefAcceptance() {
@@ -1260,6 +1327,36 @@ export default {
           this.$modal.msgSuccess("批量审核入库成功！");
         }
       }).catch(() => {});
+    },
+    /** 批量打印按钮操作（仅打印已审核单据） */
+    async handleBatchPrint() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning('请先选择要打印的数据');
+        return;
+      }
+      const selectedOrders = this.orderList.filter(item => this.ids.includes(item.id));
+      const printableOrders = selectedOrders.filter(item => item.orderStatus === '2' || item.orderStatus === 2);
+      if (printableOrders.length === 0) {
+        this.$modal.msgWarning('仅已审核单据支持打印，请重新选择');
+        return;
+      }
+      const skippedCount = selectedOrders.length - printableOrders.length;
+      const orderNos = printableOrders.map(item => item.orderNo).join('、');
+      const tip = skippedCount > 0
+        ? `已选择 ${selectedOrders.length} 条，符合打印条件 ${printableOrders.length} 条（已忽略 ${skippedCount} 条未审核单据）。\n是否开始连续打印？\n单号：${orderNos}`
+        : `确定连续打印选中的 ${printableOrders.length} 条单据吗？\n单号：${orderNos}`;
+      try {
+        await this.$modal.confirm(tip);
+        for (let i = 0; i < printableOrders.length; i++) {
+          this.handlePrint(printableOrders[i], true);
+          if (i < printableOrders.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
+        }
+        this.$modal.msgSuccess(`已触发连续打印，共 ${printableOrders.length} 条`);
+      } catch (e) {
+        // 用户取消确认时静默结束
+      }
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -1397,6 +1494,7 @@ export default {
         this.title = "修改高值入库";
         }
         this.action = true;
+        this.markDialogSnapshotSaved();
       });
     },
     /** 提交按钮 */
@@ -1527,6 +1625,7 @@ export default {
               this.$modal.msgSuccess((response && response.msg) || "修改成功");
               const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
               if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
+              this.markDialogSnapshotSaved();
               this.open = false;
               // 确保查询时使用正确的 orderType
               this.setOrderTypeByRoute();
@@ -1537,6 +1636,10 @@ export default {
               this.$modal.msgSuccess((response && response.msg) || "新增成功");
               const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
               if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
+              if (response && response.data && response.data.id) {
+                this.form.id = response.data.id;
+              }
+              this.markDialogSnapshotSaved();
               this.open = false;
               // 确保查询时使用正确的 orderType
               this.setOrderTypeByRoute();
@@ -1545,6 +1648,49 @@ export default {
           }
         }
       });
+    },
+    /** 弹窗内审核按钮 */
+    handleDialogAudit() {
+      if (!this.form.id) {
+        this.$modal.msgWarning('请先保存单据后再审核');
+        return;
+      }
+      if (this.hasDialogUnsavedChanges) {
+        this.$modal.msgWarning('当前有未保存修改，请先保存后再审核');
+        return;
+      }
+      if (this.isAuditedForm) {
+        this.$modal.msgWarning('该单据已审核');
+        return;
+      }
+      const route = this.$route;
+      const isOutbound = route && route.meta && route.meta.title && route.meta.title.includes('出库');
+      const orderType = isOutbound ? 102 : 101;
+      this.$modal.confirm(`确定要审核单据"${this.form.orderNo || this.form.id}"吗？`).then(() => {
+        return auditOrder({ id: this.form.id, orderType: orderType });
+      }).then(() => {
+        this.form.orderStatus = '2';
+        this.form.auditDate = new Date();
+        this.markDialogSnapshotSaved();
+        this.getList();
+        this.$modal.msgSuccess(isOutbound ? '审核出库成功！' : '审核入库成功！');
+      }).catch(() => {});
+    },
+    /** 弹窗内打印按钮 */
+    handleDialogPrint() {
+      if (!this.form.id) {
+        this.$modal.msgWarning('请先保存单据后再打印');
+        return;
+      }
+      if (this.hasDialogUnsavedChanges) {
+        this.$modal.msgWarning('当前有未保存修改，请先保存后再打印');
+        return;
+      }
+      if (!this.isAuditedForm) {
+        this.$modal.msgWarning('请先审核后再打印');
+        return;
+      }
+      this.handlePrint(this.form, true);
     },
     /** 打印按钮操作 */
     handlePrint(row, print){

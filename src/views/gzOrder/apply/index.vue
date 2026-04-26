@@ -104,6 +104,14 @@
           v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="medium"
+          :disabled="multiple"
+          @click="handleBatchPrint"
+        >批量打印</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -2440,6 +2448,37 @@ export default {
           this.$modal.msgError("批量审核失败！");
         });
       }).catch(() => {});
+    },
+    /** 批量打印按钮操作（仅支持已审核单据） */
+    async handleBatchPrint() {
+      const ids = this.ids;
+      if (!ids || ids.length === 0) {
+        this.$modal.msgWarning("请先选择要打印的数据项");
+        return;
+      }
+      const selectedOrders = this.orderList.filter(item => ids.includes(item.id));
+      const printableOrders = selectedOrders.filter(item => item.orderStatus === '2' || item.orderStatus === 2);
+      if (printableOrders.length === 0) {
+        this.$modal.msgWarning("仅已审核单据支持打印，请重新选择");
+        return;
+      }
+      const skippedCount = selectedOrders.length - printableOrders.length;
+      const orderNos = printableOrders.map(item => item.orderNo).join('、');
+      const confirmText = skippedCount > 0
+        ? `已选择 ${selectedOrders.length} 条，符合打印条件 ${printableOrders.length} 条（已忽略 ${skippedCount} 条未审核单据）。\n是否开始连续打印？\n单号：${orderNos}`
+        : `确定连续打印选中的 ${printableOrders.length} 个订单吗？\n单号：${orderNos}`;
+      try {
+        await this.$modal.confirm(confirmText);
+        for (let i = 0; i < printableOrders.length; i++) {
+          this.handlePrint(printableOrders[i], true);
+          if (i < printableOrders.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
+        }
+        this.$modal.msgSuccess(`已触发连续打印，共 ${printableOrders.length} 条`);
+      } catch (e) {
+        // 用户取消确认时不提示错误
+      }
     },
 	/** 高值退货明细序号 */
     rowGzOrderEntryIndex({ row, rowIndex }) {
