@@ -113,3 +113,12 @@ export function listWhApplyForCk(query) {
     params: query
   })
 }
+
+// 查询单据明细变更记录
+export function listEntryChangeLog(billType, billId) {
+  return request({
+    url: '/gz/changeLog/list',
+    method: 'get',
+    params: { billType, billId }
+  })
+}

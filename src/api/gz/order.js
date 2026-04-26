@@ -71,3 +71,12 @@ export function getDepotByInHospitalCodeForOutbound(inHospitalCode, warehouseId)
     params: { inHospitalCode, warehouseId }
   })
 }
+
+// 查询高值单据明细变更记录
+export function listEntryChangeLog(billType, billId) {
+  return request({
+    url: '/gz/changeLog/list',
+    method: 'get',
+    params: { billType, billId }
+  })
+}

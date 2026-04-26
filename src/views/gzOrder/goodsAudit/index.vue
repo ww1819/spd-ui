@@ -260,6 +260,9 @@
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry">删除</el-button>
             </el-col>
           </div>
+          <el-col :span="1.5">
+            <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
+          </el-col>
         </el-row>
         <div class="table-wrapper">
         <el-table :data="gzOrderEntryList" :row-class-name="rowGzOrderEntryIndex"
@@ -377,11 +380,50 @@
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>
+
+    <el-dialog
+      title="明细变更记录"
+      :visible.sync="entryChangeLogDialog.visible"
+      width="1000px"
+    >
+      <el-table v-loading="entryChangeLogDialog.loading" :data="entryChangeLogDialog.rows" border size="small" max-height="460">
+        <el-table-column label="变更时间" min-width="160" align="center">
+          <template slot-scope="scope">
+            {{ parseTime(scope.row.changeTime, '{y}-{m}-{d} {h}:{i}:{s}') || '--' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="actionType" label="动作" width="90" align="center" />
+        <el-table-column prop="entryId" label="明细ID" width="90" align="center" />
+        <el-table-column prop="operator" label="操作人" width="120" align="center" show-overflow-tooltip />
+        <el-table-column label="变更前" min-width="260">
+          <template slot-scope="scope">
+            <span>{{ jsonPreview(scope.row.beforeJson) }}</span>
+            <el-button v-if="scope.row.beforeJson" type="text" size="mini" @click="showJsonDetail('变更前', scope.row.beforeJson)">查看</el-button>
+          </template>
+        </el-table-column>
+        <el-table-column label="变更后" min-width="260">
+          <template slot-scope="scope">
+            <span>{{ jsonPreview(scope.row.afterJson) }}</span>
+            <el-button v-if="scope.row.afterJson" type="text" size="mini" @click="showJsonDetail('变更后', scope.row.afterJson)">查看</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="entryChangeLogDialog.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog :title="jsonViewer.title" :visible.sync="jsonViewer.visible" width="860px">
+      <pre class="json-viewer-pre">{{ jsonViewer.content }}</pre>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="jsonViewer.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder} from "@/api/gz/order";
+import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, listEntryChangeLog} from "@/api/gz/order";
 import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -438,6 +480,16 @@ export default {
       form: {},
       // 表单校验
       rules: {
+      },
+      entryChangeLogDialog: {
+        visible: false,
+        loading: false,
+        rows: []
+      },
+      jsonViewer: {
+        visible: false,
+        title: '',
+        content: ''
       }
     };
   },
@@ -445,6 +497,45 @@ export default {
     this.getList();
   },
   methods: {
+    resolveBillTypeByOrderType() {
+      const orderType = String(this.form.orderType || this.queryParams.orderType || '301');
+      if (orderType === '102') return 'GZ_SHIPMENT';
+      if (orderType === '103' || orderType === '301') return 'GZ_REFUND_DEPOT';
+      if (orderType === '104') return 'GZ_REFUND_GOODS';
+      return 'GZ_ORDER';
+    },
+    openEntryChangeLog() {
+      if (!this.form.id) {
+        this.$modal.msgWarning('请先保存单据后再查看变更记录');
+        return;
+      }
+      this.entryChangeLogDialog.visible = true;
+      this.entryChangeLogDialog.loading = true;
+      this.entryChangeLogDialog.rows = [];
+      listEntryChangeLog(this.resolveBillTypeByOrderType(), this.form.id).then((res) => {
+        this.entryChangeLogDialog.rows = res.data || [];
+      }).finally(() => {
+        this.entryChangeLogDialog.loading = false;
+      });
+    },
+    jsonPreview(jsonText) {
+      if (!jsonText) return '--';
+      const pretty = this.prettyJson(jsonText);
+      return pretty.length > 60 ? `${pretty.slice(0, 60)}...` : pretty;
+    },
+    prettyJson(jsonText) {
+      if (!jsonText) return '';
+      try {
+        return JSON.stringify(JSON.parse(jsonText), null, 2);
+      } catch (e) {
+        return String(jsonText);
+      }
+    },
+    showJsonDetail(title, jsonText) {
+      this.jsonViewer.title = title;
+      this.jsonViewer.content = this.prettyJson(jsonText) || '--';
+      this.jsonViewer.visible = true;
+    },
     /** 查询高值退货列表 */
     getList() {
       this.loading = true;
@@ -1338,5 +1429,18 @@ html, body {
 /* 单据状态列表头不换行 */
 .app-container.refund-goods-audit-page > .el-table thead th:nth-child(7) .cell {
   white-space: nowrap !important;
+}
+
+.json-viewer-pre {
+  margin: 0;
+  max-height: 520px;
+  overflow: auto;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>

@@ -215,13 +215,13 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="供应商" prop="supplerId">
-                      <SelectSupplier v-model="form.supplerId" :value2="gzOrderEntryList.length > 0"/>
+                    <el-form-item label="仓库" prop="warehouseId">
+                      <SelectWarehouse v-model="form.warehouseId" :value2="gzOrderEntryList.length > 0" :disabled="warehouseAutoFilled" includeWarehouseType="高值"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" :value2="gzOrderEntryList.length > 0" :disabled="warehouseAutoFilled" includeWarehouseType="高值"/>
+                    <el-form-item label="供应商" prop="supplerId">
+                      <SelectSupplier v-model="form.supplerId" :value2="gzOrderEntryList.length > 0"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -244,6 +244,18 @@
                   <el-col :span="4">
                     <el-form-item label="审核人" prop="auditBy">
                       <el-input v-model="form.auditorName" :disabled="true" style="width: 140px" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="审核日期" prop="auditDate" label-width="70px" style="white-space: nowrap;">
+                      <el-date-picker clearable
+                                      v-model="form.auditDate"
+                                      type="datetime"
+                                      :disabled="true"
+                                      value-format="yyyy-MM-dd HH:mm:ss"
+                                      style="width: 160px"
+                                      placeholder="请选择审核日期">
+                      </el-date-picker>
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -285,16 +297,25 @@
                   </el-col>
                   <div v-show="action">
                     <el-col :span="1.5">
-                      <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId">添加</el-button>
+                      <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId || isAudited">添加</el-button>
                     </el-col>
                     <el-col :span="1.5">
-                      <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry">删除</el-button>
+                      <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry" :disabled="isAudited">删除</el-button>
                     </el-col>
                     <el-col :span="1.5">
-                      <el-button size="small" @click="cancel">取 消</el-button>
+                      <el-button size="small" @click="cancel" :disabled="isAudited">取 消</el-button>
                     </el-col>
                     <el-col :span="1.5">
-                      <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
+                      <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :disabled="isAudited">保 存</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
+                      <el-button type="primary" size="small" @click="handleAuditOnly" :disabled="isAudited">审 核</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
+                      <el-button type="primary" icon="el-icon-printer" size="small" @click="handlePrintOnly">打 印</el-button>
+                    </el-col>
+                    <el-col :span="1.5">
+                      <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
                     </el-col>
                   </div>
                   <div v-show="!action">
@@ -347,6 +368,7 @@
                   <el-table-column label="数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
                       <el-input clearable v-model="scope.row.qty" placeholder="数量"
+                                :disabled="isAudited"
                                 onkeyup="value=value.replace(/\D/g,'')"
                                 onafterpaste="value=value.replace(/\D/g,'')"
                                 @blur="form.result=$event.target.value"
@@ -376,6 +398,7 @@
                         v-model="scope.row.batchNumber"
                         type="textarea"
                         :autosize="{ minRows: 1, maxRows: 3 }"
+                        :disabled="isAudited"
                         placeholder="批号"
                         class="barcode-textarea"
                       />
@@ -385,6 +408,7 @@
                     <template slot-scope="scope">
                       <el-date-picker clearable
                                       v-model="scope.row.beginTime"
+                                      :disabled="isAudited"
                                       type="date"
                                       value-format="yyyy-MM-dd"
                                       :picker-options="pickerBeginTimeOptions"
@@ -398,6 +422,7 @@
                     <template slot-scope="scope">
                       <el-date-picker clearable
                                       v-model="scope.row.endTime"
+                                      :disabled="isAudited"
                                       type="date"
                                       value-format="yyyy-MM-dd"
                                       :picker-options="pickerEndTimeOptions"
@@ -413,6 +438,7 @@
                         v-model="scope.row.masterBarcode"
                         type="textarea"
                         :autosize="{ minRows: 1, maxRows: 3 }"
+                        :disabled="isAudited"
                         placeholder="主条码"
                         class="barcode-textarea"
                       />
@@ -424,6 +450,7 @@
                         v-model="scope.row.secondaryBarcode"
                         type="textarea"
                         :autosize="{ minRows: 1, maxRows: 3 }"
+                        :disabled="isAudited"
                         placeholder="辅条码"
                         class="barcode-textarea"
                       />
@@ -461,7 +488,7 @@
                   </el-table-column>
                   <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      <el-input v-model="scope.row.remark" placeholder="备注" />
+                      <el-input v-model="scope.row.remark" :disabled="isAudited" placeholder="备注" />
                     </template>
                   </el-table-column>
                 </el-table>
@@ -538,11 +565,41 @@
       </span>
     </el-dialog>
 
+    <el-dialog
+      title="明细变更记录"
+      :visible.sync="entryChangeLogDialog.visible"
+      width="1000px"
+    >
+      <el-table v-loading="entryChangeLogDialog.loading" :data="entryChangeLogDialog.rows" border size="small" max-height="460">
+        <el-table-column label="变更时间" min-width="160" align="center">
+          <template slot-scope="scope">
+            {{ parseTime(scope.row.changeTime, '{y}-{m}-{d} {h}:{i}:{s}') || '--' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="actionType" label="动作" width="90" align="center" />
+        <el-table-column prop="entryId" label="明细ID" width="90" align="center" />
+        <el-table-column prop="operator" label="操作人" width="120" align="center" show-overflow-tooltip />
+        <el-table-column prop="beforeJson" label="变更前" min-width="260" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span class="json-cell">{{ scope.row.beforeJson || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="afterJson" label="变更后" min-width="260" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span class="json-cell">{{ scope.row.afterJson || '--' }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="entryChangeLogDialog.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
+
   </div>
 </template>
 
 <script>
-import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder } from "@/api/gz/order";
+import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, listEntryChangeLog } from "@/api/gz/order";
 import { listDepotInventory } from "@/api/gz/depotInventory";
 import { listMaterial,jxFtm,jxTm} from "@/api/foundation/material";
 import { listUserAll } from "@/api/system/user";
@@ -653,6 +710,13 @@ export default {
       pendingMaterialData: null,
       // 选中的仓库ID（用于弹窗）
       selectedWarehouseId: null,
+      // 保存快照（用于判断是否有未保存修改）
+      savedSnapshot: '',
+      entryChangeLogDialog: {
+        visible: false,
+        loading: false,
+        rows: []
+      },
       // 表单校验
       rules: {
         supplerId: [
@@ -671,6 +735,9 @@ export default {
     /** 与到货验收 inWarehouse/audit 弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
+    },
+    isAudited() {
+      return this.form.orderStatus == 2 || this.form.orderStatus == '2';
     }
   },
   watch: {
@@ -701,8 +768,103 @@ export default {
     this.setOrderTypeByRoute();
     this.getList();
     this.getUserList();
+    window.addEventListener('beforeunload', this.handleBeforeUnload);
+  },
+  beforeDestroy() {
+    window.removeEventListener('beforeunload', this.handleBeforeUnload);
+  },
+  beforeRouteLeave(to, from, next) {
+    if (this.open && this.action && this.hasUnsavedChanges()) {
+      this.$confirm('当前修改尚未保存，请先保存再操作。', '提示', {
+        confirmButtonText: '我知道了',
+        showCancelButton: false,
+        type: 'warning'
+      }).then(() => next(false)).catch(() => next(false));
+      return;
+    }
+    next();
   },
   methods: {
+    buildSnapshot() {
+      const formSnapshot = {
+        id: this.form.id || null,
+        orderNo: this.form.orderNo || '',
+        supplerId: this.form.supplerId || null,
+        warehouseId: this.form.warehouseId || null,
+        ztm: this.form.ztm || '',
+        ftm: this.form.ftm || '',
+        remark: this.form.remark || ''
+      };
+      const detailsSnapshot = (this.gzOrderEntryList || []).map(item => ({
+        id: item.id || null,
+        materialId: item.materialId || null,
+        qty: item.qty || '',
+        price: item.price || '',
+        amt: item.amt || '',
+        batchNo: item.batchNo || '',
+        batchNumber: item.batchNumber || '',
+        beginTime: item.beginTime || '',
+        endTime: item.endTime || '',
+        masterBarcode: item.masterBarcode || '',
+        secondaryBarcode: item.secondaryBarcode || '',
+        serialNo: item.serialNo || '',
+        remark: item.remark || ''
+      }));
+      return JSON.stringify({ form: formSnapshot, details: detailsSnapshot });
+    },
+    markSnapshotSaved() {
+      this.savedSnapshot = this.buildSnapshot();
+    },
+    hasUnsavedChanges() {
+      if (!this.open || !this.action) {
+        return false;
+      }
+      return this.savedSnapshot !== this.buildSnapshot();
+    },
+    guardUnsavedThenStop() {
+      if (this.hasUnsavedChanges()) {
+        this.$modal.msgWarning('当前修改尚未保存，请先保存再操作。');
+        return true;
+      }
+      return false;
+    },
+    handleBeforeUnload(e) {
+      if (this.hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    },
+    resolveBillTypeByOrderType() {
+      const orderType = String(this.form.orderType || '101');
+      if (orderType === '101') {
+        return 'GZ_ORDER';
+      }
+      if (orderType === '102') {
+        return 'GZ_SHIPMENT';
+      }
+      if (orderType === '103') {
+        return 'GZ_REFUND_DEPOT';
+      }
+      if (orderType === '104') {
+        return 'GZ_REFUND_GOODS';
+      }
+      return 'GZ_ORDER';
+    },
+    openEntryChangeLog() {
+      if (!this.form.id) {
+        this.$modal.msgWarning('请先保存单据后再查看变更记录');
+        return;
+      }
+      const billType = this.resolveBillTypeByOrderType();
+      this.entryChangeLogDialog.visible = true;
+      this.entryChangeLogDialog.loading = true;
+      this.entryChangeLogDialog.rows = [];
+      listEntryChangeLog(billType, this.form.id).then((res) => {
+        this.entryChangeLogDialog.rows = res.data || [];
+      }).finally(() => {
+        this.entryChangeLogDialog.loading = false;
+      });
+    },
     normalizeHeaderDisplayFields(fallbackRow) {
       const row = fallbackRow || {};
       const currentWarehouseId = this.form.warehouseId || row.warehouseId || (row.warehouse && row.warehouse.id);
@@ -983,73 +1145,22 @@ export default {
     },
     /** 处理产品查询响应 */
     processMaterialResponse(response, parsedUDI) {
-        
-        // 获取产品的供应商ID
-        const materialSupplierId = response.rows[0].supplierId || (response.rows[0].supplier && response.rows[0].supplier.id) || null;
-        
-        // 如果表单中还没有供应商，自动填充第一个产品的供应商
-        if (!this.form.supplerId && materialSupplierId) {
-          this.form.supplerId = materialSupplierId;
-        }
-        
-        // 如果表单中已有供应商，检查是否与产品供应商一致
-        if (this.form.supplerId && materialSupplierId && this.form.supplerId != materialSupplierId) {
-          this.$modal.msgWarning("供应商不一致！请核对供应商。");
-          return;
-        }
-        
-        // 获取产品ID
-        const materialId = response.rows[0].id;
-        
-        // 查找该产品在定数监测中所在的仓库
-        this.findWarehousesByFixedNumber(materialId).then(warehouseIds => {
-          if (warehouseIds.length === 0) {
-            // 没有找到定数监测，提示用户手动选择仓库
-            this.$modal.msgWarning("该产品未在定数监测中，请手动选择仓库");
-            // 继续添加产品，但不自动填充仓库
-            this.addMaterialToEntryList(response.rows, parsedUDI);
-            return;
-          } else if (warehouseIds.length === 1) {
-            // 只有一个仓库，自动填充（确保ID类型一致）
-            const warehouseId = String(warehouseIds[0]);
-            // 等待SelectWarehouse组件加载完成后再设置值
-            this.$nextTick(() => {
-              this.form.warehouseId = warehouseId;
-              this.warehouseAutoFilled = true;
-            });
-            this.addMaterialToEntryList(response.rows, parsedUDI);
-          } else {
-            // 多个仓库，需要查询仓库详细信息
-            const warehouseIdPromises = warehouseIds.map(id => {
-              return listWarehouse({ id: id, pageNum: 1, pageSize: 1 }).then(res => {
-                if (res && res.rows && res.rows.length > 0) {
-                  return res.rows[0];
-                }
-                return null;
-              }).catch(() => null);
-            });
-            
-            Promise.all(warehouseIdPromises).then(warehouses => {
-              const validWarehouses = warehouses.filter(w => w !== null);
-              this.availableWarehouses = validWarehouses;
-              this.selectedWarehouseId = validWarehouses.length > 0 ? validWarehouses[0].id : null;
-              this.warehouseSelectDialogVisible = true;
-              // 保存当前产品数据，等待用户选择仓库后再添加
-              this.pendingMaterialData = {
-                rows: response.rows,
-                parsedUDI: parsedUDI
-              };
-            }).catch(error => {
-              console.error('查询仓库信息失败:', error);
-              this.$modal.msgWarning("查询仓库信息失败，请手动选择仓库");
-              this.addMaterialToEntryList(response.rows, parsedUDI);
-            });
-          }
-        }).catch(error => {
-          console.error('查找定数监测失败:', error);
-          // 出错时继续添加产品，但不自动填充仓库
-          this.addMaterialToEntryList(response.rows, parsedUDI);
-        });
+      // 获取产品的供应商ID
+      const materialSupplierId = response.rows[0].supplierId || (response.rows[0].supplier && response.rows[0].supplier.id) || null;
+
+      // 如果表单中还没有供应商，自动填充第一个产品的供应商
+      if (!this.form.supplerId && materialSupplierId) {
+        this.form.supplerId = materialSupplierId;
+      }
+
+      // 如果表单中已有供应商，检查是否与产品供应商一致
+      if (this.form.supplerId && materialSupplierId && this.form.supplerId != materialSupplierId) {
+        this.$modal.msgWarning('供应商不一致！请核对供应商。');
+        return;
+      }
+
+      // 扫描 UDI 仅新增明细，不变更表头仓库
+      this.addMaterialToEntryList(response.rows, parsedUDI);
     },
     /** 根据产品ID查找定数监测中该产品所在的仓库（只查询高值仓库） */
     findWarehousesByFixedNumber(materialId) {
@@ -1468,6 +1579,9 @@ export default {
     },
     // 取消按钮
     cancel() {
+      if (this.guardUnsavedThenStop()) {
+        return;
+      }
       this.open = false;
       this.reset();
       // 重置仓库自动填充状态
@@ -1497,6 +1611,7 @@ export default {
       };
       this.gzOrderEntryList = [];
       this.resetForm("form");
+      this.markSnapshotSaved();
       // 重置仓库自动填充状态
       this.warehouseAutoFilled = false;
       this.pendingMaterialData = null;
@@ -1638,6 +1753,7 @@ export default {
         // 设置制单人和审核人姓名
         this.form.creatorName = this.form.creatorName || this.getCreatorName(this.form) || this.form.createBy || '--';
         this.form.auditorName = this.getAuditorName(this.form);
+        this.markSnapshotSaved();
         this.open = true;
         this.action = false;
         this.form.orderStatus = '1';
@@ -1682,33 +1798,17 @@ export default {
     },
     /** 格式化日期，如果时分秒是00:00:00则使用createTime或updateTime的时分秒 */
     formatOrderDate(dateStr, timeStr) {
-      if (!dateStr) return '--';
-      
-      // 解析日期字符串
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-      
-      // 检查时分秒是否为00:00:00
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
-      const seconds = date.getSeconds();
-      
-      // 如果时分秒都是0，尝试使用createTime或updateTime的时分秒
-      if (hours === 0 && minutes === 0 && seconds === 0 && timeStr) {
-        const timeDate = new Date(timeStr);
-        if (!isNaN(timeDate.getTime())) {
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          const h = String(timeDate.getHours()).padStart(2, '0');
-          const m = String(timeDate.getMinutes()).padStart(2, '0');
-          const s = String(timeDate.getSeconds()).padStart(2, '0');
-          return `${year}-${month}-${day} ${h}:${m}:${s}`;
+      // 列表场景优先显示 createTime / updateTime，确保到时分秒
+      if (timeStr) {
+        const fullTime = parseTime(timeStr, '{y}-{m}-{d} {h}:{i}:{s}');
+        if (fullTime) {
+          return fullTime;
         }
       }
-      
-      // 否则正常格式化
-      return parseTime(dateStr, '{y}-{m}-{d} {h}:{i}:{s}');
+      if (dateStr) {
+        return parseTime(dateStr, '{y}-{m}-{d} {h}:{i}:{s}') || '--';
+      }
+      return '--';
     },
     /** 格式化总金额 */
     formatTotalAmt(row) {
@@ -2142,10 +2242,51 @@ export default {
             }
           });
         }
+        this.markSnapshotSaved();
         this.open = true;
         this.title = "修改高值入库";
         this.action = true;
       });
+    },
+    handleAuditOnly() {
+      if (this.guardUnsavedThenStop()) {
+        return;
+      }
+      if (!this.form.id) {
+        this.$modal.msgWarning('请先保存后再审核');
+        return;
+      }
+      if (this.form.orderStatus == 2 || this.form.orderStatus == '2') {
+        this.$modal.msgSuccess('当前单据已审核');
+        return;
+      }
+      auditOrder({ id: this.form.id, orderType: 101 }).then(() => {
+        this.$modal.msgSuccess('审核成功');
+        return getOrder(this.form.id, 101);
+      }).then((response) => {
+        if (response && response.data) {
+          this.form = { ...this.form, ...response.data };
+        } else {
+          this.form.orderStatus = '2';
+        }
+        this.form.auditorName = this.getAuditorName(this.form);
+        this.markSnapshotSaved();
+        this.getList();
+      });
+    },
+    handlePrintOnly() {
+      if (this.guardUnsavedThenStop()) {
+        return;
+      }
+      if (!this.form.id) {
+        this.$modal.msgWarning('请先保存后再打印');
+        return;
+      }
+      if (!(this.form.orderStatus == 2 || this.form.orderStatus == '2')) {
+        this.$modal.msgWarning('请先审核后再打印');
+        return;
+      }
+      this.handlePrint(this.form, true);
     },
     /** 提交按钮 */
     submitForm() {
@@ -2224,6 +2365,13 @@ export default {
           if (this.form.id != null) {
             updateOrder(this.form).then(response => {
               this.$modal.msgSuccess("保存成功");
+              return getOrder(this.form.id, 101);
+            }).then((detailResp) => {
+              if (detailResp && detailResp.data) {
+                this.form = { ...this.form, ...detailResp.data };
+                this.gzOrderEntryList = detailResp.data.gzOrderEntryList || this.gzOrderEntryList;
+              }
+              this.markSnapshotSaved();
               // 保存后不关闭页面，继续操作
               this.getList();
             });
@@ -2232,7 +2380,21 @@ export default {
               this.$modal.msgSuccess("保存成功");
               // 保存后不关闭页面，继续操作
               // 更新表单ID，以便后续修改
-              this.form.id = response.data;
+              const maybeId = response && response.data
+                ? (typeof response.data === 'object' ? response.data.id : response.data)
+                : null;
+              if (maybeId !== null && maybeId !== undefined && maybeId !== '') {
+                this.form.id = maybeId;
+                return getOrder(this.form.id, 101);
+              }
+              // 后端若未返回主键ID，避免请求 /gz/order/undefined
+              return null;
+            }).then((detailResp) => {
+              if (detailResp && detailResp.data) {
+                this.form = { ...this.form, ...detailResp.data };
+                this.gzOrderEntryList = detailResp.data.gzOrderEntryList || this.gzOrderEntryList;
+              }
+              this.markSnapshotSaved();
               this.getList();
             });
           }
@@ -2747,6 +2909,13 @@ export default {
   display: block;
   font-size: 12px;
   line-height: 1.35;
+  word-break: break-all;
+  white-space: normal;
+}
+
+::v-deep .json-cell {
+  font-size: 12px;
+  line-height: 1.4;
   word-break: break-all;
   white-space: normal;
 }

@@ -25,8 +25,6 @@ export function getInWarehouse(id) {
   })
 }
 
-
-
 // 新增入库
 export function addWarehouse(data) {
   return request({
@@ -86,6 +84,15 @@ export function createRkEntriesByDingdan(query) {
     url: '/warehouse/warehouse/createRkEntriesByDingdan',
     method: 'get',
     params: query
+  })
+}
+
+// 查询单据明细变更记录
+export function listEntryChangeLog(billType, billId) {
+  return request({
+    url: '/gz/changeLog/list',
+    method: 'get',
+    params: { billType, billId }
   })
 }
 
