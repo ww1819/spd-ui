@@ -211,7 +211,7 @@
                 <el-row :gutter="8">
                   <el-col :span="4">
                     <el-form-item label="验收单号" prop="orderNo">
-                      <el-input v-model="form.orderNo" :disabled="true" style="width: 140px" />
+                      <el-input v-model="form.orderNo" :disabled="true" style="width: 220px" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -226,7 +226,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="制单人" prop="createBy">
-                      <el-input v-model="form.creatorName" :disabled="true" style="width: 140px" />
+                      <el-input v-model="form.creatorName" :disabled="true" style="width: 180px" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -370,12 +370,18 @@
                       {{ getTotalAmount() }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="批号" align="center" prop="batchNumber" width="150" show-overflow-tooltip resizable>
+                  <el-table-column label="批号" align="center" prop="batchNumber" width="220" resizable>
                     <template slot-scope="scope">
-                      <el-input v-model="scope.row.batchNumber" placeholder="批号" />
+                      <el-input
+                        v-model="scope.row.batchNumber"
+                        type="textarea"
+                        :autosize="{ minRows: 1, maxRows: 3 }"
+                        placeholder="批号"
+                        class="barcode-textarea"
+                      />
                     </template>
                   </el-table-column>
-                  <el-table-column label="生产日期" align="center" prop="beginTime" width="120" show-overflow-tooltip resizable>
+                  <el-table-column label="生产日期" align="center" prop="beginTime" width="140" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
                       <el-date-picker clearable
                                       v-model="scope.row.beginTime"
@@ -383,12 +389,12 @@
                                       value-format="yyyy-MM-dd"
                                       :picker-options="pickerBeginTimeOptions"
                                       placeholder="请选择生产日期"
-                                      style="width: 110px"
+                                      style="width: 130px"
                                       size="small">
                       </el-date-picker>
                     </template>
                   </el-table-column>
-                  <el-table-column label="有效期" align="center" prop="endTime" width="120" show-overflow-tooltip resizable>
+                  <el-table-column label="有效期" align="center" prop="endTime" width="140" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
                       <el-date-picker clearable
                                       v-model="scope.row.endTime"
@@ -396,29 +402,41 @@
                                       value-format="yyyy-MM-dd"
                                       :picker-options="pickerEndTimeOptions"
                                       placeholder="请选择有效期"
-                                      style="width: 110px"
+                                      style="width: 130px"
                                       size="small">
                       </el-date-picker>
                     </template>
                   </el-table-column>
-                  <el-table-column label="主条码" align="center" prop="masterBarcode" width="200" show-overflow-tooltip resizable>
+                  <el-table-column label="主条码" align="center" prop="masterBarcode" width="240" resizable>
                     <template slot-scope="scope">
-                      <el-input v-model="scope.row.masterBarcode" placeholder="主条码" clearable style="width:100%" />
+                      <el-input
+                        v-model="scope.row.masterBarcode"
+                        type="textarea"
+                        :autosize="{ minRows: 1, maxRows: 3 }"
+                        placeholder="主条码"
+                        class="barcode-textarea"
+                      />
                     </template>
                   </el-table-column>
-                  <el-table-column label="辅条码" align="center" prop="secondaryBarcode" width="150" show-overflow-tooltip resizable>
+                  <el-table-column label="辅条码" align="center" prop="secondaryBarcode" width="220" resizable>
                     <template slot-scope="scope">
-                      <el-input v-model="scope.row.secondaryBarcode" placeholder="辅条码" clearable style="width:100%" />
+                      <el-input
+                        v-model="scope.row.secondaryBarcode"
+                        type="textarea"
+                        :autosize="{ minRows: 1, maxRows: 3 }"
+                        placeholder="辅条码"
+                        class="barcode-textarea"
+                      />
                     </template>
                   </el-table-column>
-                  <el-table-column label="序列号" align="center" prop="serialNo" width="150" show-overflow-tooltip resizable>
+                  <el-table-column label="序列号" align="center" prop="serialNo" width="180" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
                       {{ scope.row.serialNo || '--' }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="批次号" align="center" prop="batchNo" width="150" show-overflow-tooltip resizable>
+                  <el-table-column label="批次号" align="center" prop="batchNo" width="260" resizable>
                     <template slot-scope="scope">
-                      {{ scope.row.batchNo || scope.row.batchNumber || '--' }}
+                      <span class="barcode-cell-text">{{ scope.row.batchNo || scope.row.batchNumber || '--' }}</span>
                     </template>
                   </el-table-column>
                   <el-table-column label="生产厂家" align="center" prop="factoryName" width="150" show-overflow-tooltip resizable>
@@ -685,6 +703,15 @@ export default {
     this.getUserList();
   },
   methods: {
+    normalizeHeaderDisplayFields(fallbackRow) {
+      const row = fallbackRow || {};
+      const currentWarehouseId = this.form.warehouseId || row.warehouseId || (row.warehouse && row.warehouse.id);
+      if (currentWarehouseId) {
+        this.form.warehouseId = String(currentWarehouseId);
+      }
+      const creatorName = this.getCreatorName(this.form);
+      this.form.creatorName = creatorName || this.form.createBy || '--';
+    },
     /** 明细合计（与到货验收弹窗表尾一致） */
     getSummaries(param) {
       const { columns, data } = param;
@@ -1570,6 +1597,7 @@ export default {
       const id = row.id
       getOrder(id).then(response => {
         this.form = response.data;
+        this.normalizeHeaderDisplayFields(row);
         this.gzOrderEntryList = response.data.gzOrderEntryList || [];
         // 如果有materialList，为每个entry添加完整的物料信息
         if (response.data.materialList && response.data.materialList.length > 0) {
@@ -1608,7 +1636,7 @@ export default {
           });
         }
         // 设置制单人和审核人姓名
-        this.form.creatorName = this.getCreatorName(this.form);
+        this.form.creatorName = this.form.creatorName || this.getCreatorName(this.form) || this.form.createBy || '--';
         this.form.auditorName = this.getAuditorName(this.form);
         this.open = true;
         this.action = false;
@@ -2085,6 +2113,7 @@ export default {
       const id = row.id || this.ids
       getOrder(id).then(response => {
         this.form = response.data;
+        this.normalizeHeaderDisplayFields(row);
         this.form.orderStatus = '1';
         this.form.orderType = '101';
         this.gzOrderEntryList = response.data.gzOrderEntryList || [];
@@ -2704,6 +2733,22 @@ export default {
 
 .el-button--text:hover {
   color: #409EFF;
+}
+
+/* 主/辅条码使用小字号并支持自动换行，避免长条码被截断 */
+::v-deep .local-modal-content .modal-detail-section .barcode-textarea .el-textarea__inner {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  padding: 4px 6px !important;
+  word-break: break-all;
+}
+
+::v-deep .local-modal-content .modal-detail-section .barcode-cell-text {
+  display: block;
+  font-size: 12px;
+  line-height: 1.35;
+  word-break: break-all;
+  white-space: normal;
 }
 
 </style>
