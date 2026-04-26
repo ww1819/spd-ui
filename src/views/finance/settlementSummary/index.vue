@@ -24,13 +24,19 @@
         <el-input v-model="queryParams.billNo" placeholder="单号模糊" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item label="仓库" prop="warehouseId">
-        <SelectWarehouse v-model="queryParams.warehouseId" clearable style="width: 160px" />
+        <SelectWarehouse v-model="queryParams.warehouseId" :finance-pick-mode="true" clearable style="width: 160px" />
       </el-form-item>
       <el-form-item label="科室" prop="departmentId">
-        <SelectDepartment v-model="queryParams.departmentId" clearable style="width: 160px" />
+        <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" clearable style="width: 160px" />
       </el-form-item>
       <el-form-item label="供应商" prop="supplerId">
-        <SelectSupplier v-model="queryParams.supplerId" clearable style="width: 180px" />
+        <SelectSupplier v-model="queryParams.supplerId" :finance-pick-mode="true" clearable style="width: 180px" />
+      </el-form-item>
+      <el-form-item label="是否集采" prop="materialIsProcure">
+        <el-select v-model="queryParams.materialIsProcure" clearable placeholder="全部" style="width: 120px">
+          <el-option label="是" value="1" />
+          <el-option label="否" value="2" />
+        </el-select>
       </el-form-item>
       <el-form-item label="耗材" prop="materialNameLike">
         <el-input v-model="queryParams.materialNameLike" placeholder="名称/编码/简码" clearable style="width: 160px" />
@@ -131,6 +137,7 @@ export default {
         warehouseId: null,
         departmentId: null,
         supplerId: null,
+        materialIsProcure: null,
         materialNameLike: null,
       },
       bundle: {
@@ -258,6 +265,7 @@ export default {
         warehouseId: null,
         departmentId: null,
         supplerId: null,
+        materialIsProcure: null,
         materialNameLike: null,
       })
       this.$refs.queryForm && this.$refs.queryForm.clearValidate()

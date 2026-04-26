@@ -146,7 +146,8 @@ export default {
         isFollow: undefined
       },
       fixedNumberMaterialIds: [],
-      form: {}
+      form: {},
+      selectedRowMap: {}
     };
   },
   mounted() {
@@ -161,6 +162,8 @@ export default {
     DialogComponentShow(newVal) {
       this.show = newVal;
       if (newVal) {
+        this.selectedRowMap = {};
+        this.selectRow = [];
         this.queryParams.pageNum = 1;
         this.queryParams.supplierId = this.supplierValue;
         if (this.warehouseValue) {
@@ -172,6 +175,22 @@ export default {
   },
   created() {},
   methods: {
+    getRowKey(row) {
+      if (!row || row.id == null) return null;
+      return String(row.id);
+    },
+    restorePageSelection() {
+      if (!this.$refs.singleTable || !this.materialList || this.materialList.length === 0) {
+        return;
+      }
+      this.$refs.singleTable.clearSelection();
+      this.materialList.forEach(row => {
+        const key = this.getRowKey(row);
+        if (key && this.selectedRowMap[key]) {
+          this.$refs.singleTable.toggleRowSelection(row, true);
+        }
+      });
+    },
     handlePagination({ page, limit }) {
       if (page != null) this.queryParams.pageNum = page;
       if (limit != null) this.queryParams.pageSize = limit;
@@ -187,6 +206,7 @@ export default {
           this.materialList = materials;
           this.total = materials.length;
           this.loading = false;
+          this.$nextTick(() => this.restorePageSelection());
         });
     },
     getList() {
@@ -202,6 +222,7 @@ export default {
           this.materialList = materials;
           this.total = response.total != null ? Number(response.total) : materials.length;
           this.loading = false;
+          this.$nextTick(() => this.restorePageSelection());
         })
         .catch(err => {
           if (isForbiddenError(err)) {
@@ -247,10 +268,26 @@ export default {
       this.handleQuery();
     },
     handleSelectionChange(val) {
-      this.selectRow = val;
+      const pageKeys = (this.materialList || [])
+        .map(row => this.getRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach(key => {
+        if (this.selectedRowMap[key]) {
+          delete this.selectedRowMap[key];
+        }
+      });
+      (val || []).forEach(row => {
+        const key = this.getRowKey(row);
+        if (key) {
+          this.selectedRowMap[key] = row;
+        }
+      });
+      this.selectRow = Object.values(this.selectedRowMap);
     },
     handleClose() {
       this.show = false;
+      this.selectedRowMap = {};
+      this.selectRow = [];
       this.$emit("closeDialog");
     },
     checkMaterialBtn() {

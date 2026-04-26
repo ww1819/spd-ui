@@ -16,7 +16,8 @@
 </template>
 
 <script>
-import { listdepartAll} from "@/api/foundation/depart";
+import { listdepartAll } from "@/api/foundation/depart";
+import { fetchFinancePickDepartments } from "@/api/finance/settlementSummary";
 import { pinyin } from 'pinyin-pro';
 
 export default {
@@ -31,6 +32,14 @@ export default {
     fieldPlaceholder: {
       type: String,
       default: ''
+    },
+    /**
+     * 为 true 时走财务结算汇总专用 pick 接口（仅需登录），与科室 listAll 数据口径一致；
+     * 亦用于科室库存选明细等弹窗，避免 foundation:depart:list 等权限不足。
+     */
+    financePickMode: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -83,7 +92,20 @@ export default {
   methods: {
     /** 查询科室列表 */
     getList() {
-      let userId = this.$store.state.user.userId;
+      if (this.financePickMode) {
+        fetchFinancePickDepartments()
+          .then(res => {
+            const rows = res && res.data != null ? res.data : res;
+            this.allDepartments = Array.isArray(rows) ? rows : [];
+            this.departmentOptions = this.allDepartments;
+          })
+          .catch(() => {
+            this.allDepartments = [];
+            this.departmentOptions = [];
+          });
+        return;
+      }
+      const userId = this.$store.state.user.userId;
       listdepartAll(userId).then(response => {
         this.allDepartments = response || [];
         this.departmentOptions = this.allDepartments;

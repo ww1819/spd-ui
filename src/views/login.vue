@@ -72,6 +72,7 @@
     </el-form>
     <!--  底部  -->
     <div class="el-login-footer">
+      <p class="login-version-line">前端 v{{ frontendVersion }} · 后端 v{{ backendVersionTip }}</p>
       <span>Copyright © 2018-2023 spd.vip All Rights Reserved.</span>
     </div>
   </div>
@@ -79,6 +80,7 @@
 
 <script>
 import { getCodeImg, getCustomerOptions } from "@/api/login";
+import { getAppVersion } from '@/api/common/version'
 import Cookies from "js-cookie";
 import { encrypt, decrypt } from '@/utils/jsencrypt'
 
@@ -127,7 +129,9 @@ export default {
       captchaEnabled: true,
       // 注册开关
       register: false,
-      redirect: undefined
+      redirect: undefined,
+      frontendVersion: process.env.VUE_APP_VERSION || '—',
+      backendVersionTip: '…'
     };
   },
   watch: {
@@ -142,6 +146,13 @@ export default {
     this.getCode();
     this.initCustomerOptions();
     this.getCookie();
+    getAppVersion()
+      .then(res => {
+        this.backendVersionTip = (res && res.version) ? res.version : '—'
+      })
+      .catch(() => {
+        this.backendVersionTip = '—'
+      })
   },
   methods: {
     initCustomerOptions() {
@@ -276,8 +287,9 @@ export default {
   }
 }
 .el-login-footer {
-  height: 40px;
-  line-height: 40px;
+  min-height: 40px;
+  line-height: 1.5;
+  padding: 8px 0 12px;
   position: fixed;
   bottom: 0;
   width: 100%;
@@ -286,6 +298,11 @@ export default {
   font-family: Arial;
   font-size: 12px;
   letter-spacing: 1px;
+  .login-version-line {
+    margin: 0 0 6px;
+    font-size: 12px;
+    opacity: 0.95;
+  }
 }
 .login-code-img {
   height: 38px;

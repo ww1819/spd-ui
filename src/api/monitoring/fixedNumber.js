@@ -9,6 +9,15 @@ export function listFixedNumber(query) {
   })
 }
 
+/** 定数监测新增/维护明细：分页查询可选产品档案（POST body，含 excludeMaterialIds；不按仓库定数 EXISTS 收窄） */
+export function listFixedNumberMaterialDetailPick(data) {
+  return request({
+    url: '/monitoring/fixedNumber/materialDetailPick',
+    method: 'post',
+    data
+  })
+}
+
 // 科室申购新增明细专用：查询仓库的定数检测数据（不依赖产品档案 list 权限）
 export function listFixedNumberForPurchase(query) {
   return request({

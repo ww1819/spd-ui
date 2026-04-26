@@ -90,7 +90,15 @@
           size="medium"
           @click="handleExport"
           v-hasPermi="['caigou:jihua:export']"
-        >导出</el-button>
+        >导出计划明细</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="medium"
+          @click="handleExportSummary"
+          v-hasPermi="['caigou:jihua:export']"
+        >导出汇总</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -394,7 +402,15 @@
           </el-table-column>
           <el-table-column label="供应商" align="center" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <SelectSupplier v-model="scope.row.supplierId" placeholder="请选择供应商" clearable style="width: 100%;" />
+              <SelectSupplierFromOptions
+                v-if="action"
+                v-model="scope.row.supplierId"
+                :options="planDetailSupplierOptions"
+                :loading="planDetailSupplierListLoading"
+                placeholder="请选择供应商"
+                clearable
+              />
+              <span v-else>{{ entrySupplierDisplay(scope.row) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
@@ -749,6 +765,8 @@ import { listPurchasePlan, getPurchasePlan, delPurchasePlan, addPurchasePlan, up
 import { listUserAll } from "@/api/system/user";
 import { listPurchase, getPurchase, rejectPurchase } from "@/api/department/purchase";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
+import SelectSupplierFromOptions from '@/components/SelectModel/SelectSupplierFromOptions';
+import { listSupplierAll } from '@/api/foundation/supplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -759,7 +777,7 @@ import SelectMMaterialFilter from '@/components/SelectModel/SelectMMaterialFilte
 export default {
   name: "InWarehouse",
   dicts: ['biz_status','plan_status','bill_type','way_status'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMMaterialFilter},
+  components: {SelectSupplier, SelectSupplierFromOptions, SelectMaterial, SelectWarehouse, SelectDepartment, SelectUser, SelectMMaterialFilter},
   data() {
     return {
       // 遮罩层
@@ -799,6 +817,11 @@ export default {
       stkMaterialList: [],
       // 计划明细表格数据
       stkIoBillEntryList: [],
+      /** 编辑弹窗内计划明细：全量供应商只拉一次，明细行共用 */
+      planDetailSupplierOptions: [],
+      planDetailSupplierListLoading: false,
+      planDetailSupplierLoadPromise: null,
+      planDetailSupplierLoadAttempted: false,
       // 用户选项列表
       userOptions: [],
       // 弹出层标题
@@ -1012,6 +1035,9 @@ export default {
   },
   watch: {
     open(val) {
+      if (val && this.action) {
+        this.loadPlanDetailSupplierOptions();
+      }
       if (val) {
         this.$nextTick(() => {
           const t = this.$refs.stkIoBillEntry;
@@ -1019,6 +1045,11 @@ export default {
             t.doLayout();
           }
         });
+      }
+    },
+    action(val) {
+      if (val && this.open) {
+        this.loadPlanDetailSupplierOptions();
       }
     },
     stkIoBillEntryList: {
@@ -1034,6 +1065,90 @@ export default {
     }
   },
   methods: {
+    /** 从表头、明细行收集可能不在全量列表中的供应商（合并进下拉，避免已选显示为空） */
+    collectPlanExtraSuppliers() {
+      const out = [];
+      const push = (s) => {
+        if (s && s.id != null && s.name) {
+          out.push({
+            id: s.id,
+            name: s.name,
+            code: s.code,
+            referredCode: s.referredCode
+          });
+        }
+      };
+      if (this.form && this.form.supplier) {
+        push(this.form.supplier);
+      }
+      (this.stkIoBillEntryList || []).forEach((e) => {
+        if (e.material && e.material.supplier) {
+          push(e.material.supplier);
+        }
+      });
+      return out;
+    },
+    mergeSupplierOptionLists(base, extras) {
+      const m = new Map();
+      (base || []).forEach((s) => {
+        if (s != null && s.id != null) {
+          m.set(Number(s.id), {
+            id: s.id,
+            name: s.name || '',
+            code: s.code,
+            referredCode: s.referredCode
+          });
+        }
+      });
+      (extras || []).forEach((s) => {
+        if (s != null && s.id != null && !m.has(Number(s.id))) {
+          m.set(Number(s.id), {
+            id: s.id,
+            name: s.name || '',
+            code: s.code,
+            referredCode: s.referredCode
+          });
+        }
+      });
+      return Array.from(m.values());
+    },
+    appendMissingPlanSuppliersFromForm() {
+      const extras = this.collectPlanExtraSuppliers();
+      if (!extras.length) {
+        return;
+      }
+      this.planDetailSupplierOptions = this.mergeSupplierOptionLists(this.planDetailSupplierOptions, extras);
+    },
+    /** 编辑/新增弹窗打开时只请求一次 listAll，供所有明细行共用 */
+    loadPlanDetailSupplierOptions() {
+      if (!this.open || !this.action) {
+        return Promise.resolve();
+      }
+      if (this.planDetailSupplierLoadPromise) {
+        return this.planDetailSupplierLoadPromise;
+      }
+      if (this.planDetailSupplierLoadAttempted) {
+        this.appendMissingPlanSuppliersFromForm();
+        return Promise.resolve();
+      }
+      this.planDetailSupplierListLoading = true;
+      this.planDetailSupplierLoadPromise = listSupplierAll()
+        .then((res) => {
+          const list = res || [];
+          const extras = this.collectPlanExtraSuppliers();
+          this.planDetailSupplierOptions = this.mergeSupplierOptionLists(list, extras);
+          return this.planDetailSupplierOptions;
+        })
+        .catch(() => {
+          this.planDetailSupplierOptions = [];
+        })
+        .finally(() => {
+          this.planDetailSupplierListLoading = false;
+          this.planDetailSupplierLoadPromise = null;
+          this.planDetailSupplierLoadAttempted = true;
+        });
+      return this.planDetailSupplierLoadPromise;
+    },
     // 为主表提供稳定的 row-key，减少 DOM 复用导致的抖动
     planRowKey(row) {
       return row.id || row.planNo;
@@ -1419,6 +1534,10 @@ export default {
         remark: null
       };
       this.stkIoBillEntryList = [];
+      this.planDetailSupplierOptions = [];
+      this.planDetailSupplierListLoading = false;
+      this.planDetailSupplierLoadPromise = null;
+      this.planDetailSupplierLoadAttempted = false;
       this.resetForm("form");
     },
     //数量改变事件
@@ -1645,6 +1764,19 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
+    /** 查看计划：供应商列纯文本展示，避免每行 SelectSupplier 重复请求 listAll */
+    entrySupplierDisplay(row) {
+      if (!row) return '--';
+      if (row.supplierName) return row.supplierName;
+      const ms = row.material && row.material.supplier;
+      if (ms && ms.name) return ms.name;
+      const rid = row.supplierId != null && row.supplierId !== '' ? Number(row.supplierId) : null;
+      const hid = this.form && this.form.supplierId != null && this.form.supplierId !== '' ? Number(this.form.supplierId) : null;
+      if (rid != null && hid != null && rid === hid && this.form.supplier && this.form.supplier.name) {
+        return this.form.supplier.name;
+      }
+      return '--';
+    },
     /** 计划明细序号 */
     rowStkIoBillEntryIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
@@ -1680,11 +1812,47 @@ export default {
     handleStkIoBillEntrySelectionChange(selection) {
       this.checkedStkIoBillEntry = selection.map(item => item.index)
     },
-    /** 导出按钮操作 */
+    /** 导出计划明细（供货清单）：有勾选时仅导出所选计划；否则按当前筛选导出全部匹配明细 */
     handleExport() {
-      this.download('caigou/jihua/export', {
-        ...this.queryParams
-      }, `purchase_plan_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams }
+      delete params.pageNum
+      delete params.pageSize
+      if (this.ids && this.ids.length > 0) {
+        params.planIds = this.ids.join(',')
+      }
+      this.download('caigou/jihua/export', params, `采购计划明细_${new Date().getTime()}.xlsx`)
+    },
+    /** 导出汇总：选择导出当前页或全部查询结果 */
+    handleExportSummary() {
+      const createParamsByScope = (scope) => {
+        const params = { ...this.queryParams }
+        params.exportScope = scope
+        if (scope === 'all') {
+          delete params.pageNum
+          delete params.pageSize
+        }
+        return params
+      }
+      const doExport = (scope) => {
+        const params = createParamsByScope(scope)
+        this.download('caigou/jihua/exportSummary', params, `采购计划汇总_${new Date().getTime()}.xlsx`)
+      }
+      this.$confirm(
+        '请选择导出范围：\n【当前页】仅导出当前分页数据；\n【所有查询结果】导出当前筛选条件下的全部数据。',
+        '导出汇总',
+        {
+          confirmButtonText: '当前页',
+          cancelButtonText: '所有查询结果',
+          type: 'warning',
+          distinguishCancelAndClose: true
+        }
+      ).then(() => {
+        doExport('current')
+      }).catch((action) => {
+        if (action === 'cancel') {
+          doExport('all')
+        }
+      })
     },
     /** 防抖数量变化 */
     debounceQtyChange(row) {

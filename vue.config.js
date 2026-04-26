@@ -6,6 +6,7 @@ function resolve(dir) {
 }
 
 const CompressionPlugin = require('compression-webpack-plugin')
+const pkg = require('./package.json')
 
 const name = process.env.VUE_APP_TITLE || '医疗物资管理系统' // 网页标题
 
@@ -83,6 +84,15 @@ module.exports = {
     ],
   },
   chainWebpack(config) {
+    // 构建时写入前端版本与构建时间，供登录页/导航栏与后端对照
+    config.plugin('define').tap((definitions) => {
+      const env = definitions[0]['process.env'] || {}
+      env.VUE_APP_VERSION = JSON.stringify(pkg.version || '')
+      env.VUE_APP_BUILD_TIME = JSON.stringify(new Date().toISOString())
+      definitions[0]['process.env'] = env
+      return definitions
+    })
+
     config.plugins.delete('preload') // TODO: need test
     config.plugins.delete('prefetch') // TODO: need test
     

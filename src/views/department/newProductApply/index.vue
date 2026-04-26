@@ -14,7 +14,7 @@
             </el-form-item>
             <el-form-item prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
-                <SelectDepartment v-model="queryParams.departmentId" />
+                <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" />
               </div>
             </el-form-item>
             <el-form-item prop="applyStatus" class="query-item-inline">
@@ -178,7 +178,7 @@
                 <el-row>
                   <el-col :span="4">
                     <el-form-item label="科室" prop="departmentId" label-width="100px">
-                      <SelectDepartment v-model="form.departmentId" :disabled="!action" />
+                      <SelectDepartment v-model="form.departmentId" :disabled="!action" :finance-pick-mode="true" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">

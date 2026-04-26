@@ -184,7 +184,7 @@
       :closable="false"
       show-icon
       style="margin-bottom: 12px;"
-      title="此处保存的是工作组（岗位）权限；用户实际登录与按钮权限以「用户管理」中的用户菜单为准。列表勾选工作组后使用「同步菜单/科室/仓库」：仅将工作组已有而用户尚未拥有的权限补充给用户，不会移除用户原有权限。"
+      title="此处保存的是工作组（岗位）权限；用户实际登录与按钮权限以「用户管理」中的用户菜单为准。列表勾选工作组后使用「同步菜单/科室/仓库」时支持两种方式：1）复制工作组权限（覆盖用户当前对应权限）；2）补全权限（仅补充缺失，不移除用户原有权限）。"
     />
     <el-tabs type="card">
       <el-tab-pane label="菜单权限">
@@ -266,7 +266,7 @@
 </template>
 
 <script>
-import { listPost, getPost, delPost, addPost, updatePost, roleMenuTreeselectPost, listPostUserIds } from "@/api/system/post";
+import { listPost, getPost, delPost, addPost, updatePost, roleMenuTreeselectPost, listPostUserIds, syncPostMenuToUsers, getPostMenuSyncStatus, syncPostDepartmentToUsers, getPostDepartmentSyncStatus, syncPostWarehouseToUsers, getPostWarehouseSyncStatus } from "@/api/system/post";
 import { deptTreeSelect, getUser, updateUser } from "@/api/system/user";
 import { getOptionselect as getWarehouseOptionselect } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
@@ -330,6 +330,11 @@ export default {
         children: "children",
         label: "label"
       },
+      syncMenuPollingTimer: null,
+      syncMenuPollingPostId: null,
+      syncMenuPollingTries: 0,
+      syncMenuPollingType: "",
+      syncMenuPollingMode: "supplement",
       // 表单校验
       rules: {
         postName: [
@@ -346,6 +351,9 @@ export default {
   },
   created() {
     this.getList();
+  },
+  beforeDestroy() {
+    this.stopSyncMenuPolling();
   },
   methods: {
     /** 查询工作组列表 */
@@ -470,8 +478,11 @@ export default {
           return;
         }
         
-        this.$modal.confirm(`是否将工作组已配置的仓库权限中、各用户尚未拥有的部分补充到组内用户？（不删除用户已有仓库权限）`).then(() => {
-          this.syncWarehouseToUsers(postId, warehouseIds);
+        this.chooseSyncMode("warehouse").then((syncMode) => {
+          return syncPostWarehouseToUsers(postId, syncMode).then(() => syncMode);
+        }).then((syncMode) => {
+          this.notifySyncSubmitted("warehouse", syncMode);
+          this.startSyncMenuPolling(postId, "warehouse", syncMode);
         }).catch(() => {});
       }).catch(error => {
         this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
@@ -497,8 +508,11 @@ export default {
           return;
         }
         
-        this.$modal.confirm(`是否将工作组已配置的科室权限中、各用户尚未拥有的部分补充到组内用户？（不删除用户已有科室权限）`).then(() => {
-          this.syncDepartmentToUsers(postId, departmentIds);
+        this.chooseSyncMode("department").then((syncMode) => {
+          return syncPostDepartmentToUsers(postId, syncMode).then(() => syncMode);
+        }).then((syncMode) => {
+          this.notifySyncSubmitted("department", syncMode);
+          this.startSyncMenuPolling(postId, "department", syncMode);
         }).catch(() => {});
       }).catch(error => {
         this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
@@ -513,9 +527,8 @@ export default {
       }
       
       const postId = this.ids[0]; // 获取选中的工作组ID
-      
-      // 从后端获取工作组的权限，同时获取菜单树用于查找父级目录
-      Promise.all([getPost(postId), this.getMenuTree()]).then(([postResponse, menuTreeResponse]) => {
+
+      getPost(postId).then((postResponse) => {
         const post = postResponse.data;
         const menuIds = post.menuIds || [];
         
@@ -523,18 +536,112 @@ export default {
           this.$modal.msgError("该工作组没有菜单权限，请先进行授权");
           return;
         }
-        
-        // 自动获取所有父级目录ID
-        const parentIds = this.getParentMenuIds(menuIds, this.menuOptions);
-        // 合并菜单ID和父级目录ID（去重）
-        const allMenuIds = [...new Set([...menuIds, ...parentIds])];
-        console.log('工作组菜单:', menuIds, '父级目录:', parentIds, '合并后:', allMenuIds);
-        
-        this.$modal.confirm(`是否将工作组菜单（含${parentIds.length}个上级目录）中、各用户尚未拥有的菜单补充到组内用户？（不删除用户已有菜单权限）`).then(() => {
-          this.syncMenuToUsers(postId, allMenuIds);
+
+        this.chooseSyncMode("menu").then((syncMode) => {
+          return syncPostMenuToUsers(postId, syncMode).then(() => syncMode);
+        }).then((syncMode) => {
+          this.notifySyncSubmitted("menu", syncMode);
+          this.startSyncMenuPolling(postId, "menu", syncMode);
         }).catch(() => {});
       }).catch(error => {
         this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
+      });
+    },
+    getSyncModeLabel(syncMode) {
+      return syncMode === "copy" ? "复制" : "补全";
+    },
+    chooseSyncMode(type) {
+      const label = this.getSyncTypeLabel(type);
+      return this.$confirm(
+        `请选择${label}同步方式：\n【复制工作组权限】用工作组权限覆盖用户当前${label}\n【补全权限】仅补充用户缺失的${label}`,
+        `${label}同步方式`,
+        {
+          confirmButtonText: "复制工作组权限",
+          cancelButtonText: "补全权限",
+          distinguishCancelAndClose: true,
+          type: "warning"
+        }
+      ).then(() => "copy").catch((action) => {
+        if (action === "cancel") {
+          return "supplement";
+        }
+        return Promise.reject(action);
+      });
+    },
+    getSyncTypeLabel(type) {
+      const labelMap = {
+        menu: "菜单权限",
+        department: "科室权限",
+        warehouse: "仓库权限"
+      };
+      return labelMap[type] || "权限";
+    },
+    notifySyncSubmitted(type, syncMode) {
+      const label = this.getSyncTypeLabel(type);
+      const modeLabel = this.getSyncModeLabel(syncMode);
+      this.$modal.msgSuccess(`${label}${modeLabel}任务已提交，正在后台处理中`);
+    },
+    startSyncMenuPolling(postId, type, syncMode) {
+      this.stopSyncMenuPolling();
+      this.syncMenuPollingPostId = postId;
+      this.syncMenuPollingTries = 0;
+      this.syncMenuPollingType = type;
+      this.syncMenuPollingMode = syncMode || "supplement";
+      this.syncMenuPollingTimer = setInterval(() => {
+        this.pollSyncMenuStatus();
+      }, 2000);
+      this.pollSyncMenuStatus();
+    },
+    stopSyncMenuPolling() {
+      if (this.syncMenuPollingTimer) {
+        clearInterval(this.syncMenuPollingTimer);
+      }
+      this.syncMenuPollingTimer = null;
+      this.syncMenuPollingPostId = null;
+      this.syncMenuPollingTries = 0;
+      this.syncMenuPollingType = "";
+      this.syncMenuPollingMode = "supplement";
+    },
+    pollSyncMenuStatus() {
+      const postId = this.syncMenuPollingPostId;
+      const syncType = this.syncMenuPollingType;
+      const syncMode = this.syncMenuPollingMode;
+      if (!postId) {
+        this.stopSyncMenuPolling();
+        return;
+      }
+      this.syncMenuPollingTries += 1;
+      const statusApiMap = {
+        menu: getPostMenuSyncStatus,
+        department: getPostDepartmentSyncStatus,
+        warehouse: getPostWarehouseSyncStatus
+      };
+      const statusApi = statusApiMap[syncType] || getPostMenuSyncStatus;
+      const successText = this.getSyncTypeLabel(syncType);
+      const modeText = this.getSyncModeLabel(syncMode);
+      statusApi(postId).then((res) => {
+        const status = res && res.data ? res.data : {};
+        const state = status.status;
+        if (state === "SUCCESS") {
+          const affected = status.affected || 0;
+          this.$modal.msgSuccess(`${successText}${modeText}完成，处理 ${affected} 条用户${successText}`);
+          this.stopSyncMenuPolling();
+          return;
+        }
+        if (state === "FAILED") {
+          this.$modal.msgError(status.message || `${successText}同步失败`);
+          this.stopSyncMenuPolling();
+          return;
+        }
+        if (this.syncMenuPollingTries >= 30) {
+          this.$modal.msgWarning(`${successText}同步仍在进行中，请稍后刷新查看结果`);
+          this.stopSyncMenuPolling();
+        }
+      }).catch(() => {
+        if (this.syncMenuPollingTries >= 30) {
+          this.$modal.msgWarning(`${successText}状态查询超时，请稍后刷新查看结果`);
+          this.stopSyncMenuPolling();
+        }
       });
     },
     /** 获取指定菜单ID列表的所有父级目录ID */
