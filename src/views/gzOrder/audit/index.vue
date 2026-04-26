@@ -201,7 +201,7 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :disabled="!action" includeWarehouseType="高值"/>
+              <SelectWarehouse v-model="form.warehouseId" :disabled="!action || isAuditedForm || (gzOrderEntryList && gzOrderEntryList.length > 0)" includeWarehouseType="高值"/>
             </el-form-item>
             <el-form-item label="总金额">
               <el-input :value="getTotalAmount()" :disabled="true" style="width: 140px; background-color: #fff;">
@@ -210,7 +210,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="科室" prop="departmentId">
-              <SelectDepartment v-model="form.departmentId" :disabled="!action"/>
+              <SelectDepartment v-model="form.departmentId" :disabled="!action || isAuditedForm || (gzOrderEntryList && gzOrderEntryList.length > 0)"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -279,16 +279,28 @@
           </el-col>
 
           <div v-show="action">
-            <el-col :span="1.5" v-if="isOutbound">
-              <el-button type="primary" plain icon="el-icon-link" size="small"
-                         v-hasPermi="['gz:refDoc:query']"
-                         @click="openRefAcceptance">引用验收单</el-button>
-            </el-col>
             <el-col :span="1.5">
               <el-button type="primary" icon="el-icon-plus" size="small" :disabled="isAuditedForm" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="small" :disabled="isAuditedForm" @click="handleDeleteGzOrderEntry">删除</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button size="small" @click="cancel">取 消</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="primary" size="small" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="success" size="small" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="primary" icon="el-icon-printer" size="small" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
+            </el-col>
+            <el-col :span="1.5" v-if="isOutbound">
+              <el-button type="primary" plain icon="el-icon-link" size="small"
+                         v-hasPermi="['gz:refDoc:query']"
+                         @click="openRefAcceptance">引用验收单</el-button>
             </el-col>
           </div>
           <el-col :span="1.5">
@@ -396,12 +408,6 @@
         </el-table>
         </div>
             </el-form>
-            <div v-show="action" class="modal-footer">
-              <el-button @click="cancel">取 消</el-button>
-              <el-button type="primary" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
-              <el-button type="success" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
-              <el-button type="primary" icon="el-icon-printer" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
-            </div>
           </div>
         </transition>
       </div>
@@ -449,7 +455,7 @@
       @selectData="selectData"
     ></SelectMaterialFilter>
 
-    <el-dialog title="引用备货验收单（仅带当前仓库有库存的明细）" :visible.sync="refAcceptOpen" width="800px" append-to-body>
+    <el-dialog title="引用备货验收单（仅带当前仓库有库存的明细）" :visible.sync="refAcceptOpen" width="800px" append-to-body @close="onRefAcceptDialogClose">
       <p style="margin:0 0 10px;color:#909399;font-size:13px">请选择已审核的验收单，系统将按当前出库仓库过滤仍有备货库存的条码行并带入明细。</p>
       <el-table :data="refAcceptList" v-loading="refLoading" highlight-current-row
                 @row-click="row => { refPickOrderId = row.id; refPickOrderNo = row.orderNo }"
@@ -466,6 +472,26 @@
       <span slot="footer" class="dialog-footer">
         <el-button @click="refAcceptOpen = false">取 消</el-button>
         <el-button type="primary" @click="confirmRefAcceptance">确 定</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog
+      title="请先选择科室"
+      :visible.sync="refDeptPickOpen"
+      width="480px"
+      append-to-body
+      :close-on-click-modal="false"
+      @closed="refPendingDepartmentId = null"
+    >
+      <p style="margin:0 0 12px;color:#909399;font-size:13px">引用验收单带出明细前，需要先选择出库科室；取消则不增加明细。</p>
+      <el-form label-width="70px" size="small">
+        <el-form-item label="科室" required>
+          <SelectDepartment v-model="refPendingDepartmentId" />
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="refDeptPickOpen = false">取 消</el-button>
+        <el-button type="primary" @click="confirmRefDeptPick">确 定</el-button>
       </span>
     </el-dialog>
 
@@ -592,6 +618,9 @@ export default {
       refLoading: false,
       refPickOrderId: null,
       refPickOrderNo: null,
+      /** 引用验收单：表头无科室时先弹窗选科室 */
+      refDeptPickOpen: false,
+      refPendingDepartmentId: null,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -984,13 +1013,29 @@ export default {
         this.gzOrderEntryList.push(obj);
       });
     },
-    //当天日期
-    getOrderDate(){
-      let now = new Date();
-      let year = now.getFullYear();
-      let month = now.getMonth() + 1;
-      let day = now.getDate();
-      return year + "-" + month + "-" + day;
+    /** 当天日期，须为 yyyy-MM-dd（月日补零），否则后端 Jackson 无法反序列化为 Date */
+    getOrderDate() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    },
+    /** 提交前将 orderDate 规范为 yyyy-MM-dd，兼容历史未补零字符串 */
+    normalizeOrderDateForApi(val) {
+      if (val == null || val === '') return val;
+      if (val instanceof Date) {
+        const y = val.getFullYear();
+        const m = String(val.getMonth() + 1).padStart(2, '0');
+        const d = String(val.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+      const s = String(val);
+      const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m) {
+        return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+      }
+      return val;
     },
     // 取消按钮
     cancel() {
@@ -1197,6 +1242,10 @@ export default {
         this.markDialogSnapshotSaved();
       });
     },
+    onRefAcceptDialogClose() {
+      this.refDeptPickOpen = false;
+      this.refPendingDepartmentId = null;
+    },
     openRefAcceptance() {
       if (!this.form.warehouseId) {
         this.$message.warning('请先选择出库仓库');
@@ -1218,6 +1267,33 @@ export default {
     confirmRefAcceptance() {
       if (!this.refPickOrderId) {
         this.$message.warning('请单击表格选择一条验收单');
+        return;
+      }
+      if (this.isOutbound && !this.form.departmentId) {
+        this.refPendingDepartmentId = null;
+        this.refDeptPickOpen = true;
+        return;
+      }
+      this.fetchAndApplyRefAcceptanceLines();
+    },
+    /** 科室弹窗确定：写入表头科室后再拉取引用明细 */
+    confirmRefDeptPick() {
+      if (this.refPendingDepartmentId === null || this.refPendingDepartmentId === undefined || this.refPendingDepartmentId === '') {
+        this.$message.warning('请选择科室');
+        return;
+      }
+      this.form.departmentId = this.refPendingDepartmentId;
+      this.refDeptPickOpen = false;
+      this.fetchAndApplyRefAcceptanceLines();
+    },
+    /** 按已选验收单拉取备货库存行并写入出库明细（需已选仓库；出库时已选科室） */
+    fetchAndApplyRefAcceptanceLines() {
+      if (!this.refPickOrderId) {
+        this.$message.warning('请单击表格选择一条验收单');
+        return;
+      }
+      if (this.isOutbound && !this.form.departmentId) {
+        this.$message.warning('请先选择科室');
         return;
       }
       listAcceptanceDepotLines(this.refPickOrderId, this.form.warehouseId).then(res => {
@@ -1547,6 +1623,7 @@ export default {
           } else {
             this.form.orderType = '101';
           }
+          this.form.orderDate = this.normalizeOrderDateForApi(this.form.orderDate);
           // 如果是出库单，检查院内码是否被未审核的出库单占用
           if (isOutbound) {
             const checkPromises = [];

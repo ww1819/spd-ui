@@ -48,6 +48,12 @@
               <el-option label="未处理" value="N" />
             </el-select>
           </el-form-item>
+          <el-form-item label="高低值类型">
+            <el-select v-model="detailQuery.valueLevel" placeholder="全部" clearable style="width:120px">
+              <el-option label="高值收费项" value="1" />
+              <el-option label="低值收费项" value="2" />
+            </el-select>
+          </el-form-item>
           <el-form-item label="计费日期">
             <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
             <span style="margin:0 6px">至</span>
@@ -118,6 +124,11 @@
           <el-table-column label="收费项ID" prop="chargeItemId" width="120" show-overflow-tooltip />
           <el-table-column label="项目名称" prop="itemName" min-width="160" show-overflow-tooltip />
           <el-table-column label="规格" prop="specModel" width="100" show-overflow-tooltip />
+          <el-table-column label="高低值类型" prop="valueLevel" width="110" align="center">
+            <template slot-scope="scope">
+              <span>{{ valueLevelText(scope.row.valueLevel) }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
           <el-table-column label="数量" prop="quantity" width="90" align="right" />
           <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
@@ -136,7 +147,7 @@
           <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
           <el-table-column label="处理人" prop="processBy" width="100" show-overflow-tooltip />
           <el-table-column label="本地入库" prop="createTime" width="160" />
-          <el-table-column label="操作" align="center" width="160" fixed="right">
+          <el-table-column label="操作" align="center" width="230" fixed="right">
             <template slot-scope="scope">
               <el-button
                 type="text"
@@ -152,6 +163,12 @@
                 :disabled="scope.row.processStatus === 'CONSUMED'"
                 @click="openHighDialog(scope.row)"
               >高值</el-button>
+              <el-button
+                type="text"
+                size="mini"
+                v-hasPermi="['department:patientCharge:list']"
+                @click="openConsumeRecordDialog(scope.row)"
+              >消耗记录</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -190,7 +207,35 @@
       </el-tab-pane>
     </el-tabs>
 
-    <el-dialog title="高值计费扫码消耗" :visible.sync="highDialogVisible" width="760px" append-to-body @closed="resetHighDialog">
+    <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="920px" append-to-body>
+      <el-table
+        v-loading="consumeRecordDialog.loading"
+        :data="consumeRecordDialog.rows"
+        border
+        size="small"
+        max-height="420"
+        empty-text="暂无消耗记录"
+      >
+        <el-table-column label="关联时间" prop="createTime" width="165" show-overflow-tooltip />
+        <el-table-column label="分摊数量" prop="allocQty" width="100" align="right" />
+        <el-table-column label="消耗单号" prop="consumeBillNo" min-width="140" show-overflow-tooltip />
+        <el-table-column label="消耗日期" prop="consumeBillDate" width="110" show-overflow-tooltip />
+        <el-table-column label="单状态" width="88" align="center">
+          <template slot-scope="scope">
+            <span>{{ consumeBillStatusText(scope.row.consumeBillStatus) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="耗材" prop="materialName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="批次号" prop="batchNo" min-width="130" show-overflow-tooltip />
+        <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="130" show-overflow-tooltip />
+        <el-table-column label="明细数量" prop="entryQty" width="96" align="right" />
+      </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="consumeRecordDialog.visible = false">关 闭</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog title="高值计费扫码消耗" :visible.sync="highDialogVisible" width="960px" append-to-body @closed="resetHighDialog">
       <div v-if="highMirrorRow" class="mb8">
         <span>患者 {{ highMirrorRow.patientName }} · 计费数量 {{ highMirrorRow.quantity }} · </span>
         <span v-if="highBillRemaining != null">当前剩余计费数量 {{ highBillRemaining }}</span>
@@ -203,10 +248,10 @@
         clearable
         @keyup.enter.native="doHighScan"
       />
-      <el-table :data="highLines" border size="small" class="mt8" empty-text="请先扫码添加行">
-        <el-table-column label="院内码" prop="inHospitalCode" min-width="120" show-overflow-tooltip />
-        <el-table-column label="耗材" prop="materialName" min-width="140" show-overflow-tooltip />
-        <el-table-column label="批次号" prop="batchNo" width="120" show-overflow-tooltip />
+      <el-table :data="highLines" border size="small" class="mt8 high-consume-dialog-table" empty-text="请先扫码添加行">
+        <el-table-column label="院内码" prop="inHospitalCode" min-width="220" align="left" class-name="high-col-code-wrap" />
+        <el-table-column label="耗材" prop="materialName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="批次号" prop="batchNo" min-width="200" align="left" class-name="high-col-code-wrap" />
         <el-table-column label="虚拟库存" prop="gzAvailableQty" width="90" align="right" />
         <el-table-column label="本次消耗" width="130" align="center">
           <template slot-scope="scope">
@@ -264,7 +309,8 @@ import {
   processMirrorLowValue,
   processMirrorLowValueBatch,
   scanMirrorHighBarcode,
-  applyMirrorHighConsume
+  applyMirrorHighConsume,
+  listMirrorConsumeRecords
 } from '@/api/department/patientCharge'
 
 export default {
@@ -286,6 +332,7 @@ export default {
         chargeItemId: undefined,
         departmentId: undefined,
         processed: undefined,
+        valueLevel: undefined,
         beginChargeDate: undefined,
         endChargeDate: undefined,
         beginProcessTime: undefined,
@@ -311,7 +358,13 @@ export default {
       highMirrorRow: null,
       highScanCode: '',
       highLines: [],
-      highBillRemaining: null
+      highBillRemaining: null,
+      consumeRecordDialog: {
+        visible: false,
+        loading: false,
+        title: '消耗记录',
+        rows: []
+      }
     }
   },
   computed: {
@@ -365,6 +418,31 @@ export default {
       const m = { LOW_VALUE: '低值耗材', HIGH_VALUE: '高值耗材' }
       return m[v] || v || ''
     },
+    valueLevelText(v) {
+      if (v === '1' || v === 1) return '高值'
+      if (v === '2' || v === 2) return '低值'
+      return v ? String(v) : '未对照'
+    },
+    consumeBillStatusText(v) {
+      if (v === 1 || v === '1') return '未审核'
+      if (v === 2 || v === '2') return '已审核'
+      return v != null && v !== '' ? String(v) : '--'
+    },
+    openConsumeRecordDialog(row) {
+      if (!row || !row.id) {
+        return
+      }
+      const vk = row.visitType === 'OUTPATIENT' ? 'OUTPATIENT' : 'INPATIENT'
+      this.consumeRecordDialog.title = `消耗记录 · ${row.patientName || ''} · 收费项 ${row.chargeItemId || ''}`
+      this.consumeRecordDialog.visible = true
+      this.consumeRecordDialog.loading = true
+      this.consumeRecordDialog.rows = []
+      listMirrorConsumeRecords(vk, row.id).then(res => {
+        this.consumeRecordDialog.rows = res.data || []
+      }).finally(() => {
+        this.consumeRecordDialog.loading = false
+      })
+    },
     onMainTabClick(tab) {
       if (tab.name === 'summary' && this.summaryList.length === 0 && this.summaryQuery.beginChargeDate) {
         this.loadSummary()
@@ -383,6 +461,7 @@ export default {
         chargeItemId: undefined,
         departmentId: undefined,
         processed: undefined,
+        valueLevel: undefined,
         beginChargeDate: undefined,
         endChargeDate: undefined,
         beginProcessTime: undefined,
@@ -602,3 +681,14 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+/* 高值计费扫码弹窗：院内码、批次号换行完整展示 */
+.high-consume-dialog-table >>> td.high-col-code-wrap .cell {
+  white-space: normal;
+  word-break: break-all;
+  vertical-align: top;
+  line-height: 1.45;
+  text-align: left;
+}
+</style>

@@ -299,39 +299,24 @@
               </div>
 
               <div class="modal-detail-section">
-                <el-row :gutter="10" class="detail-toolbar-row">
-                  <el-col :span="1.5">
-                    <span>高值备货明细</span>
-                  </el-col>
-                  <div v-show="action">
-                    <el-col :span="1.5">
+                <div class="detail-toolbar-row detail-toolbar-head">
+                  <span class="detail-toolbar-title">高值备货明细</span>
+                  <div class="detail-toolbar-actions">
+                    <template v-if="action">
                       <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId || isAudited">添加</el-button>
-                    </el-col>
-                    <el-col :span="1.5">
                       <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry" :disabled="isAudited">删除</el-button>
-                    </el-col>
-                    <el-col :span="1.5">
-                      <el-button size="small" @click="cancel" :disabled="isAudited">取 消</el-button>
-                    </el-col>
-                    <el-col :span="1.5">
                       <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :disabled="isAudited">保 存</el-button>
-                    </el-col>
-                    <el-col :span="1.5">
                       <el-button type="primary" size="small" @click="handleAuditOnly" :disabled="isAudited">审 核</el-button>
-                    </el-col>
-                    <el-col :span="1.5">
                       <el-button type="primary" icon="el-icon-printer" size="small" @click="handlePrintOnly">打 印</el-button>
-                    </el-col>
-                    <el-col :span="1.5">
                       <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
-                    </el-col>
-                  </div>
-                  <div v-show="!action">
-                    <el-col :span="1.5">
+                      <el-button size="small" @click="cancel" :disabled="isAudited">取 消</el-button>
+                    </template>
+                    <template v-else>
                       <el-button type="primary" icon="el-icon-printer" size="small" @click="handlePrintBarcodeFromDetail">打印条码</el-button>
-                    </el-col>
+                      <el-button size="small" @click="cancel">关 闭</el-button>
+                    </template>
                   </div>
-                </el-row>
+                </div>
                 <div class="table-wrapper">
                 <el-table :data="gzOrderEntryList" :row-class-name="rowGzOrderEntryIndex"
                           @selection-change="handleGzOrderEntrySelectionChange"
@@ -825,6 +810,10 @@ export default {
     },
     hasUnsavedChanges() {
       if (!this.open || !this.action) {
+        return false;
+      }
+      // 新增且无任何明细：允许直接关闭/取消（表头控件异步回填常与快照不一致，会误报「未保存」）
+      if (!this.form.id && (!this.gzOrderEntryList || this.gzOrderEntryList.length === 0)) {
         return false;
       }
       return this.savedSnapshot !== this.buildSnapshot();
@@ -2214,6 +2203,13 @@ export default {
       this.form.createBy = userName;
       this.form.orderDate = this.getOrderDate();
       this.action = true;
+      // reset() 内已打过快照，但默认值与明细子组件（仓库/供应商等）会在下一帧写入表头，
+      // 若仍用旧快照会导致「未保存」误报；在 DOM 更新后再对齐一次基准快照。
+      this.$nextTick(() => {
+        this.$nextTick(() => {
+          this.markSnapshotSaved();
+        });
+      });
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -2585,18 +2581,6 @@ export default {
   background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-footer {
-  padding: 16px 24px;
-  text-align: right;
-  border-top: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  margin-top: 10px;
-}
-
-.modal-footer .el-button {
-  margin-left: 12px;
-}
-
 .local-modal-content .el-form {
   flex: 1;
   overflow: visible;
@@ -2647,6 +2631,30 @@ export default {
   padding-bottom: 12px;
   box-sizing: border-box;
   flex-shrink: 0;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-title {
+  font-weight: 600;
+  color: #303133;
+  flex-shrink: 0;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .local-modal-content .modal-detail-section .table-wrapper {
