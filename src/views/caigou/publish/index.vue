@@ -174,12 +174,12 @@
               <div>
                 <el-button v-if="form.planId" type="primary" size="small" @click="handleViewPlan">查看采购计划</el-button>
                 <el-button v-if="form.planId" type="primary" size="small" @click="handleShowApplyBillNoList">查看申购单</el-button>
-                <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
+                <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
               </div>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-
-        <el-row>
+            <el-form ref="form" :model="form" :rules="rules" label-width="80px" size="small" class="modal-form-compact">
+        <div class="form-fields-container">
+        <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="单据状态" prop="orderStatus" label-width="100px">
               <el-select v-model="form.orderStatus" placeholder="请选择单据状态"
@@ -219,7 +219,7 @@
 
         </el-row>
 
-        <el-row>
+        <el-row :gutter="8">
 
           <el-col :span="4">
             <el-form-item label="采购员" prop="contactPerson" label-width="100px">
@@ -234,16 +234,19 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="10" class="mb8">
+        </div>
+        <div class="modal-detail-section">
+        <el-row :gutter="10" class="mb8 detail-toolbar-row">
           <el-col :span="1.5">
             <span>订单明细信息</span>
           </el-col>
         </el-row>
+        <div class="table-wrapper">
         <el-table :data="purchaseOrderEntryList" :row-class-name="rowPurchaseOrderEntryIndex"
                   show-summary :summary-method="getSummaries"
                   @selection-change="handlePurchaseOrderEntrySelectionChange"
                   ref="purchaseOrderEntry"
-                  height="calc(42vh)"
+                  :height="detailTableHeight"
                   border
         >
           <el-table-column label="序号" align="center" type="index" width="50" :index="index => index + 1"/>
@@ -321,6 +324,8 @@
             </template>
           </el-table-column>
         </el-table>
+        </div>
+        </div>
       </el-form>
             <div class="modal-footer">
               <el-button @click="cancel">关 闭</el-button>
@@ -547,6 +552,12 @@ export default {
   watch: {
     showSearch() {
       this.$nextTick(() => this.syncMainListTableHeight());
+    }
+  },
+  computed: {
+    /** 与到货验收「查看入库」弹窗明细表高度一致 */
+    detailTableHeight() {
+      return 'max(260px, calc(100vh - 368px))';
     }
   },
   methods: {
@@ -848,11 +859,11 @@ export default {
 /* 内部弹窗样式 */
 .local-modal-mask {
   position: absolute;
-  top: 0;
   left: 0;
+  top: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0,0,0,0.3);
   z-index: 1000;
   display: flex;
   align-items: stretch;
@@ -860,30 +871,33 @@ export default {
 }
 
 .local-modal-content {
+  background: #fff;
   width: 100%;
   height: 100%;
-  background: white;
+  min-height: 95vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  padding-bottom: 16px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  min-height: 48px;
-  flex-shrink: 0;
+  background: #EBEEF5;
+  min-height: 40px;
 }
 
 .modal-title {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   color: #303133;
-  margin: 0;
+  line-height: 1.4;
 }
 
 .close-btn {
@@ -891,28 +905,102 @@ export default {
   background: transparent;
 }
 
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
 .local-modal-content .el-form {
   flex: 1;
-  overflow-y: auto;
-  padding: 24px;
+  overflow: visible;
+  padding: 6px 20px 12px;
+  background: #fff;
+  box-shadow: none;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-footer {
-  padding: 12px 24px;
+  padding: 16px 24px;
   text-align: right;
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
-  flex-shrink: 0;
-  width: 100%;
-  box-sizing: border-box;
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  margin-top: 10px;
 }
 
 .modal-footer .el-button {
   margin-left: 12px;
+}
+
+.local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 8px 16px 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  border: 1px solid #EBEEF5;
+}
+
+.local-modal-content .form-fields-container .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .table-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin-top: 10px;
+  padding-bottom: 4px;
+}
+
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+  position: relative;
+  z-index: 10 !important;
+  background-color: #fff !important;
+  margin-top: 0;
+  box-shadow: 0 -1px 0 #ebeef5;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+  z-index: 11 !important;
+  background-color: #fff !important;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 8px !important;
+  padding-bottom: 10px !important;
+  background-color: #fff !important;
 }
 
 /* 弹窗动画 */
