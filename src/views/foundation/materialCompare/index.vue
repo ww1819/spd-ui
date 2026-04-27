@@ -82,6 +82,17 @@
                         <el-option label="未对照" value="0" />
                       </el-select>
                     </el-form-item>
+                    <el-form-item prop="isBilling" class="query-item-inline">
+                      <el-select
+                        v-model="queryParams.isBilling"
+                        placeholder="是否收费"
+                        clearable
+                        style="width: 140px"
+                      >
+                        <el-option label="是" value="1" />
+                        <el-option label="否" value="2" />
+                      </el-select>
+                    </el-form-item>
 
                     <el-form-item prop="speci" class="query-item-inline">
                       <el-input
@@ -446,6 +457,7 @@ export default {
         name: null,
         referredName: null,
         hisBindStatus: null,
+        isBilling: null,
         speci: null,
         supplierId: null
       },

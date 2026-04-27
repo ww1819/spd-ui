@@ -51,6 +51,21 @@
               style="width: 150px"
             />
           </el-form-item>
+          <el-form-item prop="hisChargeItemId" class="query-item-inline">
+            <el-input
+              v-model="queryParams.hisChargeItemId"
+              placeholder="his收费项目编码"
+              clearable
+              @keyup.enter.native="handleQuery"
+              style="width: 150px"
+            />
+          </el-form-item>
+          <el-form-item prop="hisBindStatus" class="query-item-inline query-item-compact">
+            <el-select v-model="queryParams.hisBindStatus" placeholder="是否对照HIS收费项目" style="width: 170px" clearable>
+              <el-option label="已对照" value="1" />
+              <el-option label="未对照" value="0" />
+            </el-select>
+          </el-form-item>
 
           <el-form-item prop="factoryId" class="query-item-inline">
             <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
@@ -274,6 +289,11 @@
       <el-table-column label="耗材名称" align="center" prop="name" width="240" key="name" v-if="columns[2].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-top-left" :title="scope.row.name || ''">{{ scope.row.name }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="his收费项目编码" align="center" prop="hisChargeItemId" width="150" key="hisChargeItemId" v-if="columns[26].visible" resizable class-name="material-top-cell cell-pad-tight">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left" :title="scope.row.hisChargeItemId || ''">{{ scope.row.hisChargeItemId }}</div>
         </template>
       </el-table-column>
       <el-table-column label="规格" align="center" prop="speci" width="200" key="speci" v-if="columns[3].visible" resizable class-name="material-top-cell cell-pad-tight">
@@ -1387,6 +1407,8 @@ export default {
         udiNo: undefined,
         registerNo: undefined,
         sunshineCode: undefined,
+        hisChargeItemId: undefined,
+        hisBindStatus: undefined,
         nameSearch: undefined, // 用于名称/编码/首字母综合搜索
         beginDate: undefined,
         endDate: undefined,
@@ -1426,7 +1448,8 @@ export default {
         { key: 22, label: `品牌`, visible: false },
         { key: 23, label: `医保编码`, visible: true },
         { key: 24, label: `注册证号`, visible: true },
-        { key: 25, label: `财务分类`, visible: true }
+        { key: 25, label: `财务分类`, visible: true },
+        { key: 26, label: `his收费项目编码`, visible: true }
       ],
       // 表单校验：基本信息区多项必填；单价必填且为有效数字
       rules: {
