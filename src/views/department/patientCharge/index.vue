@@ -31,6 +31,15 @@
               @keyup.enter.native="handleDetailQuery"
             />
           </el-form-item>
+          <el-form-item label="退费关联ID">
+            <el-input
+              v-model="detailQuery.chargeIdTf"
+              placeholder="退费对应收费明细ID"
+              clearable
+              style="width:180px"
+              @keyup.enter.native="handleDetailQuery"
+            />
+          </el-form-item>
           <el-form-item label="科室">
             <el-select
               v-model="detailQuery.departmentId"
@@ -122,6 +131,11 @@
           </template>
           <el-table-column label="患者" prop="patientName" width="100" show-overflow-tooltip />
           <el-table-column label="收费项ID" prop="chargeItemId" width="120" show-overflow-tooltip />
+          <el-table-column label="退费关联ID" width="130" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ scope.row.chargeIdTf || scope.row.hisInpatientChargeIdTf || scope.row.hisOutpatientChargeIdTf || '' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="项目名称" prop="itemName" min-width="160" show-overflow-tooltip />
           <el-table-column label="规格" prop="specModel" width="100" show-overflow-tooltip />
           <el-table-column label="高低值类型" prop="valueLevel" width="110" align="center">
@@ -330,6 +344,7 @@ export default {
         patientName: undefined,
         visitNo: undefined,
         chargeItemId: undefined,
+        chargeIdTf: undefined,
         departmentId: undefined,
         processed: undefined,
         valueLevel: undefined,
@@ -459,6 +474,7 @@ export default {
         patientName: undefined,
         visitNo: undefined,
         chargeItemId: undefined,
+        chargeIdTf: undefined,
         departmentId: undefined,
         processed: undefined,
         valueLevel: undefined,
@@ -502,16 +518,20 @@ export default {
       q.endProcessTime = this.toQueryDayEnd(q.endProcessTime)
       if (this.detailVisitType === 'IN') {
         q.inpatientNo = q.visitNo
+        q.hisInpatientChargeIdTf = q.chargeIdTf
         delete q.visitNo
+        delete q.chargeIdTf
         listInpatientMirror(q).then(res => {
-          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'INPATIENT' }))
+          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'INPATIENT', chargeIdTf: r.hisInpatientChargeIdTf }))
           this.detailTotal = res.total || 0
         }).finally(() => { this.detailLoading = false })
       } else if (this.detailVisitType === 'OUT') {
         q.outpatientNo = q.visitNo
+        q.hisOutpatientChargeIdTf = q.chargeIdTf
         delete q.visitNo
+        delete q.chargeIdTf
         listOutpatientMirror(q).then(res => {
-          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'OUTPATIENT' }))
+          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'OUTPATIENT', chargeIdTf: r.hisOutpatientChargeIdTf }))
           this.detailTotal = res.total || 0
         }).finally(() => { this.detailLoading = false })
       } else {
