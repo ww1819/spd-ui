@@ -82,6 +82,17 @@
                         <el-option label="未对照" value="0" />
                       </el-select>
                     </el-form-item>
+                    <el-form-item prop="isBilling" class="query-item-inline">
+                      <el-select
+                        v-model="queryParams.isBilling"
+                        placeholder="是否收费"
+                        clearable
+                        style="width: 140px"
+                      >
+                        <el-option label="是" value="1" />
+                        <el-option label="否" value="2" />
+                      </el-select>
+                    </el-form-item>
 
                     <el-form-item prop="speci" class="query-item-inline">
                       <el-input
@@ -122,8 +133,11 @@
               <el-table-column type="selection" width="55" align="center" fixed="left" />
               <el-table-column type="index" label="序号" align="center" width="80" />
               <el-table-column label="耗材编码" align="center" prop="code" width="120" show-overflow-tooltip />
+              <el-table-column label="收费项目ID" align="center" prop="hisChargeItemId" width="120" show-overflow-tooltip />
               <el-table-column label="耗材名称" align="center" prop="name" min-width="200" show-overflow-tooltip />
+              <el-table-column label="收费名称" align="center" prop="hisChargeItemName" min-width="180" show-overflow-tooltip />
               <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip />
+              <el-table-column label="收费规格" align="center" prop="hisChargeItemSpeci" width="120" show-overflow-tooltip />
               <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip />
               <el-table-column label="单位" align="center" width="80" show-overflow-tooltip>
                 <template slot-scope="scope">
@@ -135,8 +149,12 @@
                   <span>{{ formatCurrency(scope.row.price) }}</span>
                 </template>
               </el-table-column>
+              <el-table-column label="收费价" align="center" prop="hisChargeItemPrice" width="100" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <span :style="{ color: isChargePriceMismatch(scope.row) ? '#F56C6C' : '' }">{{ scope.row.hisChargeItemPrice != null ? formatCurrency(scope.row.hisChargeItemPrice) : '--' }}</span>
+                </template>
+              </el-table-column>
               <el-table-column label="HRP编码" align="center" prop="hrpCode" width="120" show-overflow-tooltip />
-              <el-table-column label="HIS收费项目ID" align="center" prop="hisChargeItemId" width="140" show-overflow-tooltip />
               <el-table-column label="供应商" align="center" width="150" show-overflow-tooltip>
                 <template slot-scope="scope">
                   <span>{{ (scope.row.supplier && scope.row.supplier.name) || scope.row.supplierName || '--' }}</span>
@@ -446,6 +464,7 @@ export default {
         name: null,
         referredName: null,
         hisBindStatus: null,
+        isBilling: null,
         speci: null,
         supplierId: null
       },
@@ -624,6 +643,9 @@ export default {
         this.$modal.msgSuccess("绑定成功");
         this.currentMaterialRow.hisChargeItemId = row.chargeItemId;
         this.currentMaterialRow.hisCode = row.chargeCode;
+        this.currentMaterialRow.hisChargeItemName = row.chargeName;
+        this.currentMaterialRow.hisChargeItemSpeci = row.chargeSpeci;
+        this.currentMaterialRow.hisChargeItemPrice = row.chargePrice;
         this.currentHisChargeItem = row;
         this.hisDialogVisible = false;
         this.getList();
@@ -641,6 +663,9 @@ export default {
         this.$modal.msgSuccess("解绑成功");
         this.currentMaterialRow.hisChargeItemId = null;
         this.currentMaterialRow.hisCode = null;
+        this.currentMaterialRow.hisChargeItemName = null;
+        this.currentMaterialRow.hisChargeItemSpeci = null;
+        this.currentMaterialRow.hisChargeItemPrice = null;
         this.currentHisChargeItem = null;
         this.getHisList();
         this.getList();
@@ -689,6 +714,13 @@ export default {
         return '0.00';
       }
       return parseFloat(value).toFixed(2);
+    },
+    /** 收费价与价格均存在且不相等时高亮 */
+    isChargePriceMismatch(row) {
+      if (!row || row.price == null || row.hisChargeItemPrice == null) {
+        return false;
+      }
+      return Number(row.price) !== Number(row.hisChargeItemPrice);
     }
   }
 };

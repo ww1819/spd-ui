@@ -27,6 +27,16 @@ export function listAllMirror(query) {
   })
 }
 
+/** 计费镜像行关联的科室消耗记录 */
+export function listMirrorConsumeRecords(visitKind, mirrorRowId) {
+  return request({
+    url: '/his/patientCharge/mirror/consumeRecords',
+    method: 'get',
+    timeout: 30000,
+    params: { visitKind, mirrorRowId }
+  })
+}
+
 export function listChargeSummary(query) {
   return request({
     url: '/his/patientCharge/summary/list',

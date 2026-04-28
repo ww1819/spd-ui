@@ -197,6 +197,13 @@
               v-if="scope.row.billStatus != 2"
               style="padding: 0 5px; margin: 0;"
             >删除</el-button>
+            <el-button
+              size="small"
+              type="text"
+              @click="handleShowEntryChangeLog(scope.row)"
+              style="padding: 0 5px; margin: 0;"
+              v-hasPermi="['outWarehouse:apply:query']"
+            >变更记录</el-button>
           </span>
         </template>
       </el-table-column>
@@ -462,12 +469,35 @@
       @selectData="selectData"
     ></SelectInventory>
 
+    <el-dialog title="明细变更记录" :visible.sync="entryChangeLogDialog.visible" width="980px" append-to-body>
+      <el-table v-loading="entryChangeLogDialog.loading" :data="entryChangeLogDialog.list" border stripe max-height="460">
+        <el-table-column label="变更时间" prop="changeTime" width="180" />
+        <el-table-column label="操作人" prop="operator" width="120" />
+        <el-table-column label="动作" prop="actionType" width="90" />
+        <el-table-column label="变更前" min-width="240">
+          <template slot-scope="scope">
+            <span>{{ jsonPreview(scope.row.beforeJson) }}</span>
+            <el-button type="text" size="mini" @click="showJsonDetail('变更前 JSON', scope.row.beforeJson)">查看</el-button>
+          </template>
+        </el-table-column>
+        <el-table-column label="变更后" min-width="240">
+          <template slot-scope="scope">
+            <span>{{ jsonPreview(scope.row.afterJson) }}</span>
+            <el-button type="text" size="mini" @click="showJsonDetail('变更后 JSON', scope.row.afterJson)">查看</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <el-dialog :title="jsonViewer.title" :visible.sync="jsonViewer.visible" width="760px" append-to-body>
+      <pre class="json-viewer-pre">{{ jsonViewer.content }}</pre>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { listOutWarehouse, getOutWarehouse,
-  delOutWarehouse, updateOutWarehouse,auditOutWarehouse } from "@/api/warehouse/outWarehouse";
+  delOutWarehouse, updateOutWarehouse,auditOutWarehouse, listEntryChangeLog } from "@/api/warehouse/outWarehouse";
 import { collectCkThScopeErrors } from '@/utils/auditBillScopeValidate';
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
@@ -491,6 +521,16 @@ export default {
       DialogComponentShow: false,
       warehouseValue: "",
       isShow: true,
+      entryChangeLogDialog: {
+        visible: false,
+        loading: false,
+        list: []
+      },
+      jsonViewer: {
+        visible: false,
+        title: '',
+        content: ''
+      },
       modalObj: {
         title: '选择打印方式',
         width: '520px',
@@ -680,6 +720,41 @@ export default {
           this.total = response.total
         }
         this.loading = false;
+      });
+    },
+    resolveChangeLogBillType() {
+      return 'STK_IO_BILL_201';
+    },
+    jsonPreview(value) {
+      if (!value) return '-';
+      const s = String(value);
+      return s.length > 80 ? s.slice(0, 80) + '...' : s;
+    },
+    prettyJson(value) {
+      if (!value) return '';
+      try {
+        return JSON.stringify(JSON.parse(value), null, 2);
+      } catch (e) {
+        return String(value);
+      }
+    },
+    showJsonDetail(title, value) {
+      this.jsonViewer.title = title;
+      this.jsonViewer.content = this.prettyJson(value);
+      this.jsonViewer.visible = true;
+    },
+    handleShowEntryChangeLog(row) {
+      const billId = row && row.id ? row.id : this.form.id;
+      if (!billId) {
+        this.$message.warning('请先保存单据后再查看变更记录');
+        return;
+      }
+      this.entryChangeLogDialog.visible = true;
+      this.entryChangeLogDialog.loading = true;
+      listEntryChangeLog(this.resolveChangeLogBillType(), billId).then(res => {
+        this.entryChangeLogDialog.list = (res && res.data) ? res.data : [];
+      }).finally(() => {
+        this.entryChangeLogDialog.loading = false;
       });
     },
     nameBtn() {
@@ -1654,5 +1729,15 @@ export default {
 /* 单据状态列不换行，宽度不足时自动增加 */
 .app-container.outWarehouse-audit-page > .el-table .col-bill-status .cell {
   white-space: nowrap !important;
+}
+
+.json-viewer-pre {
+  max-height: 520px;
+  overflow: auto;
+  margin: 0;
+  background: #f7f8fa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 10px;
 }
 </style>

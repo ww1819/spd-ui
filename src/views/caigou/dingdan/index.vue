@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+  <div class="app-container purchase-order-page">
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row :gutter="20">
         <el-col :span="6">
@@ -37,13 +37,6 @@
           </el-form-item>
         </el-col>
 
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-            <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-
       </el-row>
 
       <el-row>
@@ -73,7 +66,7 @@
 
     </el-form>
 
-    <el-row :gutter="10" class="mb8" style="padding-top: 10px">
+    <el-row :gutter="10" class="mb8 button-row-compact">
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -90,13 +83,27 @@
           v-hasPermi="['caigou:dingdan:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="small"
+          @click="handleQuery"
+        >搜索</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="small"
+          @click="resetQuery"
+        >重置</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="orderList"
+    <el-table v-loading="loading" :data="orderList" class="table-compact"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
-              height="54vh"
+              height="calc(100vh - 340px)"
               stripe border>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
       <el-table-column label="订单单号" align="center" prop="orderNo" width="180">
@@ -195,8 +202,8 @@
               <div class="modal-title">{{ title }}</div>
               <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-
+            <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="modal-form-compact">
+        <div class="form-fields-container">
         <el-row>
           <el-col :span="4">
             <el-form-item label="订单状态" prop="orderStatus" label-width="100px">
@@ -259,9 +266,11 @@
             </el-form-item>
           </el-col>
         </el-row>
+        </div>
 
 <!--        <el-divider content-position="left">订单明细信息</el-divider>-->
-        <el-row :gutter="10" class="mb8">
+        <div class="modal-detail-section">
+        <el-row :gutter="10" class="mb8 detail-toolbar-row">
           <el-col :span="1.5">
             <span>订单明细信息</span>
           </el-col>
@@ -277,11 +286,12 @@
           </div>
 
         </el-row>
+        <div class="table-wrapper">
         <el-table :data="purchaseOrderEntryList" :row-class-name="rowPurchaseOrderEntryIndex"
                   show-summary :summary-method="getSummaries"
                   @selection-change="handlePurchaseOrderEntrySelectionChange"
                   ref="purchaseOrderEntry"
-                  height="calc(42vh)"
+                  :height="detailTableHeight"
                   border
         >
           <el-table-column type="selection" width="60" align="center" />
@@ -341,6 +351,8 @@
             </template>
           </el-table-column>
         </el-table>
+        </div>
+        </div>
       </el-form>
             <div v-show="action" class="modal-footer">
               <el-button @click="cancel">取 消</el-button>
@@ -500,6 +512,9 @@ export default {
     };
   },
   computed: {
+    detailTableHeight() {
+      return 'max(260px, calc(100vh - 368px))';
+    },
     /** 当前订单明细中已选产品 id，选耗材时排除 */
     purchaseOrderExcludeMaterialIds() {
       const list = this.purchaseOrderEntryList || [];
@@ -985,8 +1000,13 @@ export default {
 
 .local-modal-content .el-form {
   flex: 1;
-  overflow-y: auto;
-  padding: 24px;
+  overflow: visible;
+  padding: 6px 20px 12px;
+  background: #fff;
+  box-shadow: none;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-footer {
@@ -1005,6 +1025,78 @@ export default {
 
 .modal-footer .el-button {
   margin-left: 12px;
+}
+
+/* 顶部查询区域：与到货验收一致 */
+.app-container > .el-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+}
+
+.app-container > .el-form .el-row {
+  margin-bottom: 8px;
+}
+
+.app-container > .el-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.app-container > .el-form .el-form-item {
+  margin-bottom: 0;
+}
+
+/* 弹窗顶部字段区 */
+.local-modal-content .form-fields-container {
+  background: #fff;
+  padding: 8px 16px 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 8px;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  border: 1px solid #EBEEF5;
+}
+
+/* 弹窗明细区 */
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
+  box-sizing: border-box;
+  margin-top: 4px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-row {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .table-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin-top: 10px;
+  padding-bottom: 4px;
+}
+
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
 }
 
 /* 弹窗动画 */
@@ -1028,5 +1120,27 @@ export default {
 /* 确保页面容器有相对定位，以便内部弹窗正确定位 */
 .app-container {
   position: relative;
+}
+</style>
+
+<style>
+.app-container.purchase-order-page {
+  position: relative;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.purchase-order-page > .el-form.query-form-compact {
+  margin-top: -12px !important;
+}
+
+.app-container.purchase-order-page > .el-row.button-row-compact {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.app-container.purchase-order-page > .el-table.table-compact {
+  margin-top: 0;
 }
 </style>

@@ -30,9 +30,34 @@
 </template>
 
 <script>
-import { listSupplierAll, listSupplier, getSupplier } from "@/api/foundation/supplier";
+import { listSupplierAll, listSupplier, getSupplier, listSupplierDeptSafe } from "@/api/foundation/supplier";
+import { fetchFinancePickSupplierById } from "@/api/finance/settlementSummary";
 import { pinyin } from 'pinyin-pro';
 import { isForbiddenError } from "@/utils/requestFallback";
+
+/** 全量供应商列表进程内缓存：表格多行各挂一个 SelectSupplier 时避免重复打 listAll */
+let supplierAllListCache;
+let supplierAllListInflight;
+
+function getCachedListSupplierAll() {
+  if (supplierAllListCache !== undefined) {
+    return Promise.resolve(supplierAllListCache);
+  }
+  if (supplierAllListInflight) {
+    return supplierAllListInflight;
+  }
+  supplierAllListInflight = listSupplierAll()
+    .then((response) => {
+      supplierAllListCache = response || [];
+      supplierAllListInflight = null;
+      return supplierAllListCache;
+    })
+    .catch((e) => {
+      supplierAllListInflight = null;
+      return Promise.reject(e);
+    });
+  return supplierAllListInflight;
+}
 
 export default {
   props: {
@@ -41,6 +66,11 @@ export default {
     placeholder: {
       type: String,
       default: '供应商'
+    },
+    /** 为 true 时用科室低敏列表 + 财务 pick 详情，避免 foundation:supplier:list/query 权限不足 */
+    financePickMode: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -75,6 +105,10 @@ export default {
     }
   },
   created() {
+    if (this.financePickMode) {
+      this.loadFinancePickSupplierBase();
+      return;
+    }
     // 使用 remote 时，初始不加载数据，等待用户输入
     // 但需要预加载所有供应商用于首字母搜索
     this.loadAllSuppliers();
@@ -93,6 +127,22 @@ export default {
       if (!this.value) return;
       const exists = this.supplierOptions.some(item => item.id === this.value);
       if (exists) return;
+      if (this.financePickMode) {
+        const hit = (this.allSuppliers || []).find(item => item.id === this.value);
+        if (hit) {
+          this.supplierOptions = [hit, ...this.supplierOptions.filter(i => i.id !== hit.id)];
+          return;
+        }
+        fetchFinancePickSupplierById(this.value)
+          .then(res => {
+            const row = res && res.data ? res.data : null;
+            if (row && row.id != null) {
+              this.supplierOptions = [row, ...this.supplierOptions.filter(i => i.id !== row.id)];
+            }
+          })
+          .catch(() => {});
+        return;
+      }
       getSupplier(this.value).then(response => {
         const row = response && response.data ? response.data : null;
         if (row) {
@@ -102,16 +152,40 @@ export default {
         // 无详情权限时静默降级，避免表单报错
       });
     },
+    /** 财务页：低敏全量 + 首屏选项 */
+    loadFinancePickSupplierBase() {
+      this.loading = true;
+      listSupplierDeptSafe()
+        .then(response => {
+          const all = response || [];
+          this.allSuppliers = all;
+          this.supplierOptions = all.slice(0, 20);
+          this.ensureSelectedOption();
+        })
+        .catch(() => {
+          this.allSuppliers = [];
+          this.supplierOptions = [];
+        })
+        .finally(() => {
+          this.loading = false;
+        });
+    },
     /** 预加载所有供应商（用于首字母搜索） */
     loadAllSuppliers() {
-      listSupplierAll().then(response => {
-        this.allSuppliers = response || [];
+      if (this.financePickMode) {
+        return;
+      }
+      getCachedListSupplierAll().then((all) => {
+        this.allSuppliers = all || [];
       }).catch(() => {
         this.allSuppliers = [];
       });
     },
     /** 加载初始数据（少量，用于确保下拉框可以正常打开） */
     loadInitialData() {
+      if (this.financePickMode) {
+        return;
+      }
       listSupplier({
         pageNum: 1,
         pageSize: 20
@@ -126,7 +200,7 @@ export default {
           this.supplierOptions = this.allSuppliers.slice(0, 20);
           return;
         }
-        listSupplierAll().then(allResponse => {
+        getCachedListSupplierAll().then((allResponse) => {
           this.allSuppliers = allResponse || [];
           this.supplierOptions = this.allSuppliers.slice(0, 20);
         }).catch(() => {
@@ -137,7 +211,7 @@ export default {
     /** 查询供应商列表（用于非 remote 模式） */
     getList() {
       this.loading = true;
-      listSupplierAll().then(response => {
+      getCachedListSupplierAll().then((response) => {
         this.supplierOptions = response || [];
         this.loading = false;
       }).catch(() => {
@@ -153,6 +227,11 @@ export default {
       
       // 如果输入为空，清空选项
       if (!query || query.trim() === '') {
+        if (this.financePickMode) {
+          this.supplierOptions = (this.allSuppliers || []).slice(0, 20);
+          this.loading = false;
+          return;
+        }
         this.supplierOptions = [];
         this.loading = false;
         return;
@@ -168,9 +247,21 @@ export default {
     },
     /** 执行搜索 */
     doSearch(query, upperQuery) {
+      if (this.financePickMode) {
+        this.loading = true;
+        listSupplierDeptSafe({ name: query })
+          .then(response => {
+            const rows = response || [];
+            this.filterSuppliers(query, upperQuery, rows);
+          })
+          .catch(() => {
+            this.filterSuppliers(query, upperQuery, []);
+          });
+        return;
+      }
       if (this.fallbackToListAll) {
         if (this.allSuppliers.length === 0) {
-          listSupplierAll().then(allResponse => {
+          getCachedListSupplierAll().then((allResponse) => {
             this.allSuppliers = allResponse || [];
             this.filterSuppliers(query, upperQuery);
           }).catch(() => {
@@ -194,7 +285,7 @@ export default {
         if (results.length === 0 || this.isPinyin(query)) {
           // 确保有完整的供应商列表
           if (this.allSuppliers.length === 0) {
-            return listSupplierAll().then(allResponse => {
+            return getCachedListSupplierAll().then((allResponse) => {
               this.allSuppliers = allResponse || [];
               this.filterSuppliers(query, upperQuery);
             });
@@ -211,7 +302,7 @@ export default {
         }
         // 如果后端搜索失败，使用前端过滤
         if (this.allSuppliers.length === 0) {
-          listSupplierAll().then(allResponse => {
+          getCachedListSupplierAll().then((allResponse) => {
             this.allSuppliers = allResponse || [];
             this.filterSuppliers(query, upperQuery);
           }).catch(() => {

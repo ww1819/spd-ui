@@ -16,7 +16,8 @@
 </template>
 
 <script>
-import { listWarehouseAll} from "@/api/foundation/warehouse";
+import { listWarehouseAll } from "@/api/foundation/warehouse";
+import { fetchFinancePickWarehouses } from "@/api/finance/settlementSummary";
 import { pinyin } from "pinyin-pro";
 
 export default {
@@ -25,6 +26,11 @@ export default {
     value2: {},
     excludeWarehouseType: {},
     includeWarehouseType: {},
+    /** 为 true 时走财务结算汇总专用 pick 接口（仅需登录），避免 foundation:warehouse:list 等权限不足 */
+    financePickMode: {
+      type: Boolean,
+      default: false
+    },
     placeholder: {
       type: String,
       default: '仓库编码/名称/简码搜索'
@@ -91,8 +97,20 @@ export default {
   methods: {
     /** 查询仓库列表 */
     getList() {
-      this.loading = true;
-      let userId = this.$store.state.user.userId;
+      if (this.financePickMode) {
+        fetchFinancePickWarehouses()
+          .then(res => {
+            const rows = res && res.data != null ? res.data : res;
+            this.allWarehouseOptions = Array.isArray(rows) ? rows : [];
+            this.warehouseOptions = this.allWarehouseOptions;
+          })
+          .catch(() => {
+            this.allWarehouseOptions = [];
+            this.warehouseOptions = [];
+          });
+        return;
+      }
+      const userId = this.$store.state.user.userId;
       listWarehouseAll(userId).then(response => {
         this.allWarehouseOptions = response || [];
         this.warehouseOptions = this.allWarehouseOptions;

@@ -1319,7 +1319,33 @@ export default {
         })
       } else {
         let addedCount = 0;
+        let skippedCount = 0;
+        const normalizeId = (v) => {
+          if (v == null) return null;
+          const s = String(v).trim();
+          return s === '' ? null : s;
+        };
+        const existedKeys = new Set(
+          (this.basApplyEntryList || [])
+            .filter(e => e && e.materialId != null)
+            .map(e => {
+              const mid = normalizeId(e.materialId) || "x";
+              const wid = normalizeId(
+                e.stockWarehouseId != null
+                  ? e.stockWarehouseId
+                  : (e.stockWarehouse && e.stockWarehouse.id != null
+                    ? e.stockWarehouse.id
+                    : e.warehouseId)
+              ) || "x";
+              return `${mid}__${wid}`;
+            })
+        );
         val.forEach(item => {
+          const candidateKey = `${normalizeId(item.materialId) || "x"}__${normalizeId(item.warehouseId) || "x"}`;
+          if (existedKeys.has(candidateKey)) {
+            skippedCount++;
+            return;
+          }
           const unitPrice = item.unitPrice != null ? Number(item.unitPrice) : null
           const defaultQty = this.getDefaultApplyQtyFromMaterial(item)
           const row = {
@@ -1358,6 +1384,7 @@ export default {
             remark: null
           }
           this.basApplyEntryList.push(row)
+          existedKeys.add(candidateKey);
           if (row.qty && row.unitPrice) {
             this.qtyChange(row);
           }
@@ -1366,6 +1393,9 @@ export default {
         this.calculateTotals()
         if (addedCount > 0) {
           this.debouncedAutoSaveApply();
+        }
+        if (skippedCount > 0) {
+          this.$message.warning(`已跳过 ${skippedCount} 条重复明细`);
         }
       }
     },

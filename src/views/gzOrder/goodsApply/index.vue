@@ -103,6 +103,14 @@
           v-hasPermi="['gzOrder:goodsApply:audit']"
         >审核</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="medium"
+          :disabled="multiple"
+          @click="handleBatchPrint"
+        >批量打印</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -120,9 +128,9 @@
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplier.name" show-overflow-tooltip resizable />
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
-      <el-table-column label="制单日期" align="center" prop="goodsDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单时间" align="center" prop="goodsDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.goodsDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ formatDisplayDateTime(scope.row.goodsDate, scope.row.createTime) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="总金额" align="center" prop="totalAmt" show-overflow-tooltip resizable>
@@ -137,9 +145,9 @@
       </el-table-column>
       <el-table-column label="制单人" align="center" prop="createBy" show-overflow-tooltip resizable />
       <el-table-column label="审核人" align="center" prop="auditBy" show-overflow-tooltip resizable />
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+          <span v-if="scope.row.auditDate">{{ formatDisplayDateTime(scope.row.auditDate) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -211,14 +219,14 @@
               </el-form-item>
             </el-col>
             <el-col :span="4">
-              <el-form-item label="制单日期" prop="goodsDate" class="form-item-goods-date-no-star">
+              <el-form-item label="制单时间" prop="goodsDate" class="form-item-goods-date-no-star">
                 <el-date-picker clearable
                                 v-model="form.goodsDate"
                                 type="date"
                                 :disabled="true"
                                 value-format="yyyy-MM-dd"
                                 style="width: 100%"
-                                placeholder="请选择制单日期">
+                                placeholder="请选择制单时间">
                 </el-date-picker>
               </el-form-item>
             </el-col>
@@ -285,10 +293,16 @@
               <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
+              <el-button type="success" icon="el-icon-finished" size="small" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzRefundGoodsEntry">删除</el-button>
+              <el-button type="primary" icon="el-icon-printer" size="small" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="primary" icon="el-icon-plus" size="small" :disabled="isAuditedForm" @click="checkMaterialBtn">添加</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="danger" icon="el-icon-delete" size="small" :disabled="isAuditedForm" @click="handleDeleteGzRefundGoodsEntry">删除</el-button>
             </el-col>
           </div>
 
@@ -516,7 +530,8 @@ export default {
         supplerId: [
           { required: true, message: "请选择供应商", trigger: "change" }
         ],
-      }
+      },
+      dialogSavedSnapshot: ''
     };
   },
   computed: {
@@ -529,6 +544,15 @@ export default {
     /** 与到货验收 inWarehouse/audit 弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
+    },
+    isAuditedForm() {
+      const status = this.form && this.form.goodsStatus;
+      return status === '2' || status === 2;
+    },
+    hasDialogUnsavedChanges() {
+      if (!this.open || !this.action) return false;
+      if (!this.dialogSavedSnapshot) return true;
+      return this.buildDialogSnapshot() !== this.dialogSavedSnapshot;
     }
   },
   watch: {
@@ -558,6 +582,28 @@ export default {
     this.getList();
   },
   methods: {
+    buildDialogSnapshot() {
+      const form = this.form || {};
+      return JSON.stringify({
+        id: form.id || null,
+        goodsNo: form.goodsNo || null,
+        goodsDate: form.goodsDate || null,
+        warehouseId: form.warehouseId || null,
+        supplerId: form.supplerId || null,
+        goodsStatus: form.goodsStatus || null,
+        goodsType: form.goodsType || null,
+        remark: form.remark || null,
+        list: (this.gzRefundGoodsEntryList || []).map(item => ({
+          id: item.id || null,
+          materialId: item.materialId || null,
+          qty: item.qty || null,
+          remark: item.remark || null
+        }))
+      });
+    },
+    markDialogSnapshotSaved() {
+      this.dialogSavedSnapshot = this.buildDialogSnapshot();
+    },
     /** 明细合计（与到货验收弹窗表尾一致） */
     getSummaries(param) {
       const { columns, data } = param;
@@ -760,6 +806,7 @@ export default {
       };
       this.gzRefundGoodsEntryList = [];
       this.scanCodeInput = "";
+      this.dialogSavedSnapshot = '';
       this.resetForm("form");
     },
     //数量改变事件
@@ -843,6 +890,7 @@ export default {
         this.form.goodsStatus = '1';
         this.form.goodsType = '301';
         this.title = "查看高值退货";
+        this.markDialogSnapshotSaved();
       });
     },
     openRefAcceptanceTh() {
@@ -923,6 +971,7 @@ export default {
       this.form.createBy = userName;
       this.form.goodsDate = this.getBillDate();
       this.action = true;
+      this.dialogSavedSnapshot = '';
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -950,6 +999,7 @@ export default {
         this.form.goodsStatus = '1';
         this.form.goodsType = '301';
         this.action = true;
+        this.markDialogSnapshotSaved();
       });
     },
     /** 提交按钮 */
@@ -987,6 +1037,7 @@ export default {
                     }
                   });
                 }
+                this.markDialogSnapshotSaved();
               });
             });
           } else {
@@ -1018,6 +1069,7 @@ export default {
                   }
                   // 更新标题为修改
                   this.title = "修改高值退货";
+                  this.markDialogSnapshotSaved();
                 });
               }
             });
@@ -1048,6 +1100,42 @@ export default {
         this.getList();
         this.$modal.msgSuccess("审核成功");
       }).catch(() => {});
+    },
+    handleBatchPrint() {
+      const selected = this.goodsList.filter(item => this.ids.includes(item.id));
+      const printable = selected.filter(item => item.goodsStatus === '2' || item.goodsStatus === 2);
+      if (printable.length === 0) {
+        this.$modal.msgWarning('请至少选择1条已审核单据');
+        return;
+      }
+      this.$modal.confirm(`确定连续打印 ${printable.length} 条单据吗？`).then(async () => {
+        for (let i = 0; i < printable.length; i++) {
+          this.handlePrint(printable[i], true);
+          if (i < printable.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
+        }
+        this.$modal.msgSuccess(`已触发连续打印，共 ${printable.length} 条`);
+      }).catch(() => {});
+    },
+    handleDialogAudit() {
+      if (!this.form.id) return this.$modal.msgWarning('请先保存单据后再审核');
+      if (this.hasDialogUnsavedChanges) return this.$modal.msgWarning('当前有未保存修改，请先保存后再审核');
+      if (this.isAuditedForm) return this.$modal.msgWarning('该单据已审核');
+      this.$modal.confirm(`确定审核单据"${this.form.goodsNo || this.form.id}"吗？`).then(() => {
+        return auditGoods({ id: this.form.id });
+      }).then(() => {
+        this.form.goodsStatus = 2;
+        this.markDialogSnapshotSaved();
+        this.getList();
+        this.$modal.msgSuccess('审核成功');
+      }).catch(() => {});
+    },
+    handleDialogPrint() {
+      if (!this.form.id) return this.$modal.msgWarning('请先保存单据后再打印');
+      if (this.hasDialogUnsavedChanges) return this.$modal.msgWarning('当前有未保存修改，请先保存后再打印');
+      if (!this.isAuditedForm) return this.$modal.msgWarning('请先审核后再打印');
+      this.handlePrint(this.form, true);
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
@@ -1150,6 +1238,16 @@ export default {
         });
       }
       return total.toFixed(2);
+    },
+    formatDisplayDateTime(primaryTime, fallbackTime) {
+      const primary = parseTime(primaryTime, '{y}-{m}-{d} {h}:{i}:{s}');
+      const fallback = parseTime(fallbackTime, '{y}-{m}-{d} {h}:{i}:{s}');
+      const primaryZeroClock = primary && / 00:00:00$/.test(primary);
+      const fallbackHasRealTime = fallback && !/ 00:00:00$/.test(fallback);
+      if (primaryZeroClock && fallbackHasRealTime) {
+        return fallback;
+      }
+      return primary || fallback || '--';
     },
     /** 高值退货明细添加按钮操作 */
     handleAddGzRefundGoodsEntry() {

@@ -1,18 +1,18 @@
 import request from '@/utils/request'
 
-// 查询新品申购审批列表
+// 查询新品申购审批列表（低敏：仅需登录，与 /list 数据一致）
 export function listNewProductAudit(query) {
   return request({
-    url: '/department/newProductAudit/list',
+    url: '/department/newProductAudit/pick/list',
     method: 'get',
     params: query
   })
 }
 
-// 查询新品申购申请详细
+// 查询新品申购申请详细（低敏：仅需登录）
 export function getNewProductAudit(id) {
   return request({
-    url: '/department/newProductAudit/' + id,
+    url: '/department/newProductAudit/pick/' + id,
     method: 'get'
   })
 }

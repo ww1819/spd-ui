@@ -74,7 +74,8 @@
           type="primary"
           size="medium"
           @click="handleExport"
-        >导出</el-button>
+          v-hasPermi="['caigou:jihua:export']"
+        >导出计划明细</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -263,27 +264,17 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="总金额" prop="totalAmount">
-                    <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
+                    <el-input v-model="form.totalAmount" :disabled="true" />
                   </el-form-item>
                 </el-col>
-              </el-row>
-
-              <el-row :gutter="8">
-                <el-col :span="8">
+                <el-col :span="4">
                   <el-form-item label="计划来源" prop="planSource">
-                    <el-input :value="planSourceDisplay" disabled placeholder="由明细聚合" style="width: 100%;" />
+                    <el-input :value="planSourceDisplay" disabled />
                   </el-form-item>
                 </el-col>
-                <el-col :span="8">
+                <el-col :span="4">
                   <el-form-item label="计划明细生成方式" prop="planEntryMode">
-                    <el-input :value="planEntryModeDisplay" disabled style="width: 100%;" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="8">
-                  <el-form-item label="引用申购单号" prop="referenceBillNo">
-                    <el-button type="primary" link @click="handleShowApplyBillNoList">
-                      {{ (form.referenceBillNo && form.referenceBillNo.trim()) ? '查看引用申购单号' : '无' }}
-                    </el-button>
+                    <el-input :value="planEntryModeDisplay" disabled />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -375,9 +366,6 @@
               </div>
               </div>
             </el-form>
-            <div class="modal-footer">
-              <el-button @click="cancel">关 闭</el-button>
-            </div>
           </div>
         </transition>
       </div>
@@ -859,11 +847,15 @@ export default {
         });
       }
     },
-    /** 导出按钮操作 */
+    /** 导出计划明细（供货清单）：有勾选时仅导出所选计划；否则按当前筛选导出 */
     handleExport() {
-      this.download('caigou/jihua/export', {
-        ...this.queryParams
-      }, `purchase_plan_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams }
+      delete params.pageNum
+      delete params.pageSize
+      if (this.ids && this.ids.length > 0) {
+        params.planIds = this.ids.join(',')
+      }
+      this.download('caigou/jihua/export', params, `采购计划明细_${new Date().getTime()}.xlsx`)
     },
     /** 导出采购记录：按选中的计划单汇总，生成「年份月份耗材采购记录」Excel，首行为标题 */
     handleExportPurchaseRecord() {

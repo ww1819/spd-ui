@@ -65,6 +65,25 @@ export function fetchHisChargeItemMirror() {
   })
 }
 
+// 导出 HIS 收费项目维护数据
+export function exportHisChargeItem(query) {
+  return request({
+    url: '/foundation/material/hisChargeItem/export',
+    method: 'post',
+    params: query,
+    responseType: 'blob'
+  })
+}
+
+// 维护 HIS 收费项目高低值属性（1高值 2低值）
+export function updateHisChargeItemValueLevel(data) {
+  return request({
+    url: '/foundation/material/hisChargeItem/valueLevel',
+    method: 'put',
+    data
+  })
+}
+
 // 绑定耗材与 HIS 收费项目（his_id = charge_item_id）
 export function bindMaterialHisChargeItem(data) {
   return request({
