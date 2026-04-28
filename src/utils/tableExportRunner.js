@@ -1,5 +1,36 @@
 import { exportPreviewRowsToXlsx } from '@/utils/importPreviewExport'
 
+/** 报表文件名：报表标题 + 日期起_日期止.xlsx（非法文件名字符替换为下划线） */
+export function buildReportFileName(reportTitle, query, dateRangeKeys) {
+  const keys = dateRangeKeys || { start: 'beginDate', end: 'endDate' }
+  const q = query || {}
+  const norm = (v) => {
+    if (v == null || v === '') return ''
+    const s = String(v).trim()
+    if (!s) return ''
+    return s.replace(/\//g, '-').slice(0, 10)
+  }
+  const start = norm(q[keys.start])
+  const end = norm(q[keys.end])
+  const today = () => {
+    const d = new Date()
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+  const d0 = start || today()
+  const d1 = end || start || today()
+  const title = (reportTitle != null && String(reportTitle).trim()) ? String(reportTitle).trim() : '报表'
+  const base = `${title}${d0}_${d1}.xlsx`
+  return base.replace(/[/\\?%*:|"<>]/g, '_')
+}
+
+/** 与 buildReportFileName 对应的表内首行标题（无 .xlsx 后缀） */
+export function buildReportTopTitle(reportTitle, query, dateRangeKeys) {
+  return buildReportFileName(reportTitle, query, dateRangeKeys).replace(/\.xlsx$/i, '')
+}
+
 function toRows(resp) {
   if (!resp) return []
   if (Array.isArray(resp)) return resp
@@ -59,11 +90,16 @@ function mapRows(columns, rows) {
  * @param {Array} options.columns 列配置：[{ label, prop?, valueGetter?, formatter? }]
  * @param {Function} options.fetchPage 分页查询函数：(params) => Promise<{rows,total}>
  * @param {Object} options.query 查询条件（不含分页）
- * @param {String} options.fileName 文件名
+ * @param {String} options.fileName 文件名（若与 reportTitle 同时存在，优先 fileName）
+ * @param {String} options.reportTitle 报表标题，用于生成文件名：标题+日期起_日期止.xlsx
+ * @param {{ start?: string, end?: string }} options.dateRangeKeys query 中日期字段名，默认 beginDate / endDate
  * @param {'all'|'currentPage'} options.mode 导出模式
  * @param {number} options.pageSize 分页拉取大小（mode=all 时生效）
  * @param {number} options.pageNum 当前页（mode=currentPage 时生效）
  * @param {Function} options.rowFilter 行过滤函数：(row)=>boolean
+ * @param {Object|Function} options.summaryRow 合计行：与列 label 同 key 的对象；或函数 ({ mappedRows, rawRows, columns }) => 合计行对象
+ * @param {string} options.sheetName 工作表名称
+ * @param {string|false|undefined} options.sheetTopTitle 表内首行大标题；不传且存在 reportTitle 时自动生成（与文件名一致）；传 false 或空串则不插入
  * @returns {Promise<{ rowCount: number }>}
  */
 export async function runConfiguredTableExport(options) {
@@ -81,6 +117,12 @@ export async function runConfiguredTableExport(options) {
   const pageSize = Number(opts.pageSize) > 0 ? Number(opts.pageSize) : 500
   const pageNum = Number(opts.pageNum) > 0 ? Number(opts.pageNum) : 1
   const rowFilter = typeof opts.rowFilter === 'function' ? opts.rowFilter : null
+
+  let fileName = opts.fileName
+  if (!fileName && opts.reportTitle) {
+    fileName = buildReportFileName(opts.reportTitle, query, opts.dateRangeKeys)
+  }
+  fileName = fileName || `table_export_${Date.now()}.xlsx`
 
   let rawRows = []
   if (mode === 'currentPage') {
@@ -116,7 +158,37 @@ export async function runConfiguredTableExport(options) {
   }
 
   const mappedRows = mapRows(columns, filtered)
-  await exportPreviewRowsToXlsx(mappedRows, opts.fileName || `table_export_${Date.now()}.xlsx`)
+  const headers = mappedRows.length ? Object.keys(mappedRows[0]) : []
+
+  let summaryRow = null
+  if (opts.summaryRow != null) {
+    if (typeof opts.summaryRow === 'function') {
+      summaryRow = opts.summaryRow({
+        mappedRows,
+        rawRows: filtered,
+        columns,
+        headers
+      })
+    } else if (typeof opts.summaryRow === 'object') {
+      summaryRow = opts.summaryRow
+    }
+  }
+
+  let sheetTopTitle = ''
+  if (Object.prototype.hasOwnProperty.call(opts, 'sheetTopTitle')) {
+    const v = opts.sheetTopTitle
+    if (v !== false && v != null && String(v).trim()) {
+      sheetTopTitle = String(v).trim()
+    }
+  } else if (opts.reportTitle) {
+    sheetTopTitle = buildReportTopTitle(opts.reportTitle, query, opts.dateRangeKeys)
+  }
+
+  await exportPreviewRowsToXlsx(mappedRows, fileName, {
+    summaryRow,
+    sheetName: opts.sheetName || 'Sheet1',
+    sheetTopTitle: sheetTopTitle || undefined
+  })
   return { rowCount: mappedRows.length }
 }
 

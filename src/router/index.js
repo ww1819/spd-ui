@@ -241,7 +241,7 @@ export const dynamicRoutes = [
         path: 'shenhe',
         component: () => import('@/views/caigou/shenhe/index'),
         name: 'CaigouShenhe',
-        meta: { title: '订单审核', icon: 'audit' }
+        meta: { title: '订单审查', icon: 'audit' }
       },
       {
         path: 'publish',

@@ -1030,14 +1030,26 @@ export default {
       }
 
       try {
-        const fileName = `purchase_${new Date().getTime()}.xlsx`
         const result = await runConfiguredTableExport({
-          fileName,
+          reportTitle: '科室申购',
+          dateRangeKeys: { start: 'beginDate', end: 'endDate' },
           query: { ...this.queryParams },
           pageSize: 500,
           mode: 'all',
           fetchPage: (params) => listPurchase(params),
           rowFilter: idSet ? (row) => row && idSet.has(String(row.id)) : null,
+          sheetName: '科室申购',
+          summaryRow: ({ rawRows, headers }) => {
+            const row = {}
+            headers.forEach((h) => { row[h] = '' })
+            row['申购单号'] = '合计'
+            const sum = (rawRows || []).reduce((s, r) => {
+              const n = Number(r && r.totalAmount)
+              return s + (Number.isFinite(n) ? n : 0)
+            }, 0)
+            row['总金额'] = sum > 0 ? `¥${sum.toFixed(2)}` : '--'
+            return row
+          },
           columns: [
             {
               label: '序号',
