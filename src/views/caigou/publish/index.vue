@@ -65,6 +65,15 @@
         <el-button
           type="primary"
           size="medium"
+          @click="handleBatchAudit"
+          :disabled="multiple"
+          v-hasPermi="['caigou:dingdan:audit']"
+        >审核</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="medium"
           @click="handleExport"
           v-hasPermi="['caigou:dingdan:export']"
         >导出</el-button>
@@ -787,6 +796,34 @@ export default {
           this.$modal.msgSuccess("发布成功！共发布 " + this.ids.length + " 个订单");
       }).catch(() => {
         // 取消或失败都不处理
+      }).catch(() => {});
+    },
+    /** 批量审核按钮操作 */
+    handleBatchAudit() {
+      if (this.ids.length === 0) {
+        this.$modal.msgError("请先选择要审核的订单！");
+        return;
+      }
+
+      // 检查选中的订单是否都是待审核状态（状态为0）
+      const selectedOrders = this.orderList.filter(item => this.ids.includes(item.id));
+      const nonPendingOrders = selectedOrders.filter(item => item.orderStatus !== '0' && item.orderStatus !== 0);
+
+      if (nonPendingOrders.length > 0) {
+        const statusInfo = nonPendingOrders.map(order => `${order.orderNo}(状态:${order.orderStatus})`).join(', ');
+        this.$modal.msgError(`只能审核待审核状态的订单！以下订单状态不正确：${statusInfo}`);
+        return;
+      }
+
+      const auditBy = this.$store.state.user.userId;
+      const orderNos = selectedOrders.map(item => item.orderNo).join('、');
+
+      this.$modal.confirm('确定要审核选中的 ' + this.ids.length + ' 个订单吗？\n订单编号：' + orderNos).then(() => {
+        const auditPromises = this.ids.map(id => auditDingdan({id: id, auditBy: auditBy, auditOpinion: ''}));
+        return Promise.all(auditPromises);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("批量审核成功！共审核 " + this.ids.length + " 个订单");
       }).catch(() => {});
     },
     /** 订单明细序号 */
