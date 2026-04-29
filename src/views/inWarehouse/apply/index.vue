@@ -316,21 +316,15 @@
               <el-input v-model="form.refBillNo" :disabled="true" placeholder="引用采购订单号" />
             </el-form-item>
           </el-col>
-          <el-col v-show="action" :span="8" class="scan-barcode-col">
-            <el-form-item label="扫描条码" label-width="80px" class="scan-barcode-form-item">
+          <el-col v-show="action" :span="6">
+            <el-form-item label="引用配送单" label-width="80px">
               <el-input
-                ref="scanBarcodeInputRef"
-                v-model="scanBarcodeInput"
-                placeholder="扫码或输入条码后回车"
-                title="请用扫码枪扫描或键盘输入条码后回车，自动解析主/辅条码并匹配产品档案"
+                v-model="deliveryRefKeyword"
+                placeholder="配送单号/配送单输入码"
                 clearable
-                size="small"
-                class="scan-barcode-input"
-                @keyup.enter.native="onScanBarcodeSubmit"
+                @keyup.enter.native="handleRefDeliverySubmit"
               >
-                <template slot="prepend">
-                  <i class="el-icon-s-operation"></i>
-                </template>
+                <el-button slot="append" icon="el-icon-search" @click="handleRefDeliverySubmit">引用</el-button>
               </el-input>
             </el-form-item>
           </el-col>
@@ -360,6 +354,26 @@
             </el-col>
           </div>
 
+        </el-row>
+        <el-row v-show="action" class="detail-scan-row">
+          <el-col :span="12">
+            <el-form-item label="扫描条码" label-width="80px" class="detail-scan-form-item">
+              <el-input
+                ref="scanBarcodeInputRef"
+                v-model="scanBarcodeInput"
+                placeholder="扫码或输入条码后回车"
+                title="请用扫码枪扫描或键盘输入条码后回车，自动解析主/辅条码并匹配产品档案"
+                clearable
+                size="small"
+                class="scan-barcode-input"
+                @keyup.enter.native="onScanBarcodeSubmit"
+              >
+                <template slot="prepend">
+                  <i class="el-icon-s-operation"></i>
+                </template>
+              </el-input>
+            </el-form-item>
+          </el-col>
         </el-row>
         <div class="table-wrapper">
         <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
@@ -717,11 +731,37 @@
     <el-dialog :title="jsonViewer.title" :visible.sync="jsonViewer.visible" width="760px" append-to-body>
       <pre class="json-viewer-pre">{{ jsonViewer.content }}</pre>
     </el-dialog>
+
+    <el-dialog title="选择配送单" :visible.sync="deliveryMatchDialog.visible" width="900px" append-to-body>
+      <el-table
+        v-loading="deliveryMatchDialog.loading"
+        :data="deliveryMatchDialog.list"
+        border
+        stripe
+        max-height="420"
+        @row-dblclick="handleDeliveryRowDblClick"
+      >
+        <el-table-column label="配送单号" prop="deliveryNo" min-width="220" />
+        <el-table-column label="订单号" prop="orderNo" min-width="180" />
+        <el-table-column label="供应商" prop="supplierName" min-width="180" />
+        <el-table-column label="医院" prop="hospitalName" min-width="180" />
+        <el-table-column label="状态" prop="deliveryStatus" width="110" />
+        <el-table-column label="创建时间" prop="createTime" min-width="170" />
+        <el-table-column label="操作" width="90" align="center">
+          <template slot-scope="scope">
+            <el-button type="text" size="small" @click="handlePickDelivery(scope.row)">选择</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <template slot="footer">
+        <el-button @click="deliveryMatchDialog.visible = false">取消</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse,createRkEntriesByDingdan, listEntryChangeLog } from "@/api/warehouse/warehouse";
+import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse, createRkEntriesByDingdan, queryZsDelivery, createRkEntriesByDeliveryNo, listEntryChangeLog } from "@/api/warehouse/warehouse";
 import { getMaterialByMainBarcode, jxTm } from "@/api/foundation/material";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -798,6 +838,8 @@ export default {
       detailSummaryTick: 0,
       // 扫描条码输入框（与引用单号同一行）
       scanBarcodeInput: "",
+      // 引用配送单关键字（配送单号/输入码）
+      deliveryRefKeyword: "",
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -813,6 +855,11 @@ export default {
         visible: false,
         title: '',
         content: ''
+      },
+      deliveryMatchDialog: {
+        visible: false,
+        loading: false,
+        list: []
       },
       // 查询参数
       queryParams: {
@@ -1126,6 +1173,7 @@ export default {
         auditPersonName:null,
         auditDate:null
       };
+      this.deliveryRefKeyword = "";
       this.stkIoBillEntryList = [];
       this.resetForm("form");
     },
@@ -1150,6 +1198,85 @@ export default {
       }
       row.amt = totalAmt.toFixed(2);
       this.refreshDetailSummary();
+    },
+    // 引用配送单：输入配送单号或输入码后查询接口，并生成入库明细
+    async handleRefDeliverySubmit() {
+      const keyword = (this.deliveryRefKeyword || '').trim();
+      if (!keyword) {
+        this.$message.warning('请输入配送单号或配送单输入码');
+        return;
+      }
+      queryZsDelivery({ keyword }).then(async response => {
+        const list = (response && response.data) ? response.data : [];
+        if (!Array.isArray(list) || list.length === 0) {
+          this.$message.warning('未查询到匹配的配送单，请核对单号/输入码');
+          return;
+        }
+        const exact = list.find(item => item && item.deliveryNo === keyword);
+        if (exact) {
+          await this.handlePickDelivery(exact);
+          return;
+        }
+        if (list.length === 1) {
+          await this.handlePickDelivery(list[0]);
+          return;
+        }
+        this.deliveryMatchDialog.list = list;
+        this.deliveryMatchDialog.visible = true;
+        this.$message.info(`匹配到 ${list.length} 条配送单，请选择一条引用`);
+      }).catch(() => {
+        this.$message.error('查询配送单失败，请稍后重试');
+      });
+    },
+    async handlePickDelivery(row) {
+      const deliveryNo = row && row.deliveryNo ? String(row.deliveryNo).trim() : '';
+      if (!deliveryNo) {
+        this.$message.warning('配送单号为空，无法引用');
+        return;
+      }
+      this.deliveryMatchDialog.loading = true;
+      this.form.refBillNo = deliveryNo;
+      try {
+        const loaded = await this.loadDeliveryEntries(deliveryNo);
+        if (loaded) {
+          this.deliveryMatchDialog.visible = false;
+          this.$message.success('引用配送单成功，已生成入库明细');
+        }
+      } finally {
+        this.deliveryMatchDialog.loading = false;
+      }
+    },
+    handleDeliveryRowDblClick(row) {
+      this.handlePickDelivery(row);
+    },
+    // 依据配送单号由后端生成入库明细
+    async loadDeliveryEntries(deliveryNo) {
+      let response;
+      try {
+        response = await createRkEntriesByDeliveryNo({ deliveryNo });
+      } catch (e) {
+        this.$message.error('引用配送单失败，请稍后重试');
+        return false;
+      }
+      const data = response && response.data ? response.data : {};
+      const entryList = data.stkIoBillEntryList || [];
+      if (!entryList.length) {
+        this.$message.warning('配送单无可生成的入库明细');
+        return false;
+      }
+      this.stkIoBillEntryList = entryList;
+      this.form.refBillNo = data.refBillNo || deliveryNo;
+      if (!this.form.supplerId && data.supplerId) {
+        this.form.supplerId = data.supplerId;
+      }
+      if (!this.form.warehouseId && data.warehouseId) {
+        this.form.warehouseId = data.warehouseId;
+      }
+      this.$nextTick(() => this.refreshDetailSummary());
+      if (data.remark) {
+        this.$message.warning(data.remark);
+      }
+      return true;
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -1785,19 +1912,22 @@ export default {
   transition: all 0.3s;
 }
 
-/* 扫描条码：与引用单号同一行，占栅格两列(span 8)，输入区铺满该列（覆盖弹窗内 140px 限制） */
-.scan-barcode-col .scan-barcode-form-item {
+/* 扫描条码：位于入库明细信息下方，输入区铺满列宽 */
+.detail-scan-row {
+  margin-bottom: 8px;
+}
+.detail-scan-row .detail-scan-form-item {
   margin-bottom: 0;
 }
-.scan-barcode-col .el-form-item__content {
+.detail-scan-row .el-form-item__content {
   line-height: 32px;
 }
-.local-modal-content .modal-form-compact .scan-barcode-col .el-input,
-.local-modal-content .modal-form-compact .scan-barcode-col .el-input-group {
+.local-modal-content .modal-detail-section .detail-scan-row .el-input,
+.local-modal-content .modal-detail-section .detail-scan-row .el-input-group {
   width: 100% !important;
   max-width: none !important;
 }
-.scan-barcode-col .scan-barcode-input .el-input-group__prepend {
+.detail-scan-row .scan-barcode-input .el-input-group__prepend {
   padding: 0 8px;
 }
 
