@@ -1171,6 +1171,7 @@ function psiRowUnitPrice(row) {
  * @param {number[]} options.numericCols1Based
  * @param {Object<number, function(*): number>} options.sumExtractors 列号(1-based) -> 从行取可汇总数值
  * @param {Object<number, string>} [options.numericNumFmt] 可选，未指定列默认 #,##0.00
+ * @param {string[]} [options.filterLines] 可选，导出抬头下方显示筛选条件，每个元素一行
  * @param {number[]|null} [options.columnWidths] 与列数相同；不传则按列序给默认宽度
  * @param {string} options.fileName
  */
@@ -1186,6 +1187,7 @@ export async function exportInventoryQueryStyledXlsx(options) {
     numericCols1Based = [],
     sumExtractors = {},
     numericNumFmt = {},
+    filterLines = [],
     columnWidths = null,
     fileName,
   } = options;
@@ -1222,8 +1224,27 @@ export async function exportInventoryQueryStyledXlsx(options) {
   };
   ws.getRow(1).height = 26;
 
+  let headerRowNo = 2;
+  if (Array.isArray(filterLines) && filterLines.length > 0) {
+    filterLines.forEach((line) => {
+      ws.mergeCells(`A${headerRowNo}:${colToLetter(colCount)}${headerRowNo}`);
+      const lineCell = ws.getCell(headerRowNo, 1);
+      lineCell.value = line || '';
+      lineCell.font = { ...FONT_BODY, bold: false };
+      lineCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+      lineCell.border = {
+        top: BORDER_THIN,
+        left: BORDER_THIN,
+        bottom: BORDER_THIN,
+        right: BORDER_THIN,
+      };
+      ws.getRow(headerRowNo).height = 22;
+      headerRowNo += 1;
+    });
+  }
+
   headers.forEach((text, c) => {
-    const cell = ws.getCell(2, c + 1);
+    const cell = ws.getCell(headerRowNo, c + 1);
     cell.value = text;
     cell.font = { ...FONT_BODY, bold: true };
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -1231,7 +1252,7 @@ export async function exportInventoryQueryStyledXlsx(options) {
   });
 
   rows.forEach((row, ri) => {
-    const r = 3 + ri;
+    const r = headerRowNo + 1 + ri;
     const cells = buildCells(row, ri);
     if (!cells || cells.length !== colCount) {
       throw new Error(`exportInventoryQueryStyledXlsx: buildCells 应返回长度 ${colCount} 的数组`);
@@ -1259,7 +1280,7 @@ export async function exportInventoryQueryStyledXlsx(options) {
     });
   });
 
-  const blankRow = 3 + rows.length;
+  const blankRow = headerRowNo + 1 + rows.length;
   for (let c = 1; c <= colCount; c++) {
     const cell = ws.getCell(blankRow, c);
     cell.value = '';
@@ -1463,7 +1484,7 @@ export async function exportWarehouseInventorySummaryStyledXlsx(options) {
 
 /** 进销存明细表 */
 export async function exportWarehousePsiDetailStyledXlsx(options) {
-  const { rows = [], beginDate = '', endDate = '', fileName, resolveBillType } = options;
+  const { rows = [], beginDate = '', endDate = '', fileName, resolveBillType, filterLines = [] } = options;
   const resType = typeof resolveBillType === 'function' ? resolveBillType : () => '';
   const headers = [
     '序号',
@@ -1492,6 +1513,7 @@ export async function exportWarehousePsiDetailStyledXlsx(options) {
     headers,
     rows,
     numericCols1Based: numericCols,
+    filterLines,
     sumExtractors: {
       12: (row) => Number(row.materialQty || 0),
       13: (row) => Number(row.materialAmt || 0),

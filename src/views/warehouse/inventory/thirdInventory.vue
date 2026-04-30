@@ -12,15 +12,33 @@
                         @keyup.enter.native="handleQuery"
               />
             </el-form-item>
+            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+              <div class="query-select-wrapper">
+                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']" clearable/>
+              </div>
+            </el-form-item>
             <el-form-item label="耗材" prop="materialId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <MaterialAutocomplete v-model="queryParams.materialName"/>
               </div>
             </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']" clearable/>
-              </div>
+            <el-form-item label="规格" prop="materialSpeciLike" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialSpeciLike"
+                placeholder="规格(模糊)"
+                clearable
+                style="width: 180px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item label="型号" prop="materialModelLike" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialModelLike"
+                placeholder="型号(模糊)"
+                clearable
+                style="width: 180px"
+                @keyup.enter.native="handleQuery"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -55,6 +73,15 @@
                 <el-option label="退货单" value="301"/>
                 <el-option label="调拨单" value="501"/>
               </el-select>
+            </el-form-item>
+            <el-form-item label="供应商" prop="supplierKeyword" class="query-item-inline">
+              <el-input
+                v-model="queryParams.supplierKeyword"
+                placeholder="编码/名称/首拼"
+                clearable
+                style="width: 220px"
+                @keyup.enter.native="handleQuery"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -95,7 +122,7 @@
       <el-table-column type="selection" width="48" align="center" fixed="left"/>
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          {{ scope.$index + 1 }}
+          {{ (Number(queryParams.pageNum) - 1) * Number(queryParams.pageSize) + scope.$index + 1 }}
         </template>
       </el-table-column>
       <el-table-column label="耗材编码" align="center" prop="materialCode" width="100" min-width="100" show-overflow-tooltip resizable/>
@@ -202,6 +229,9 @@ export default {
         materialId: null,
         warehouseId: null,
         materialName: null,
+        materialSpeciLike: null,
+        materialModelLike: null,
+        supplierKeyword: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
         billType: null
@@ -336,6 +366,9 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.warehouseId = null;
       this.queryParams.materialName = null;
+      this.queryParams.materialSpeciLike = null;
+      this.queryParams.materialModelLike = null;
+      this.queryParams.supplierKeyword = null;
       this.queryParams.billType = null;
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
@@ -389,12 +422,17 @@ export default {
         };
         const now = new Date();
         const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        const filterLines = [
+          `仓库：${this.queryParams.warehouseId || '全部'}；耗材：${this.queryParams.materialName || '全部'}；规格：${this.queryParams.materialSpeciLike || '全部'}；型号：${this.queryParams.materialModelLike || '全部'}`,
+          `供应商：${this.queryParams.supplierKeyword || '全部'}；单号：${this.queryParams.billNo || '全部'}；单据类型：${(Array.isArray(this.queryParams.billType) && this.queryParams.billType.length > 0) ? this.queryParams.billType.map(v => resolveBillType(v)).join('、') : '全部'}`,
+        ];
         await exportWarehousePsiDetailStyledXlsx({
           rows,
           beginDate: this.queryParams.beginDate || '',
           endDate: (this.queryParams.endDate && String(this.queryParams.endDate).slice(0, 10)) || this.queryParams.beginDate || '',
           fileName: `进销存明细表${dateStr}.xlsx`,
           resolveBillType,
+          filterLines,
         });
       } catch (e) {
         console.error(e);

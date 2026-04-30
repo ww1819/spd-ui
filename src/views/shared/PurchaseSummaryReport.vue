@@ -60,15 +60,27 @@
             <el-table-column
               label="配送单位名称"
               prop="supplierName"
-              width="54%"
+              width="31%"
               align="left"
               header-align="center"
               class-name="purchase-summary-supplier-col"
             />
-            <el-table-column label="本月出库" prop="monthOutAmount" width="24%" align="right">
+            <el-table-column label="上月结存" prop="lastMonthBalance" width="10%" align="right">
+              <template slot-scope="scope">{{ formatAmount(scope.row.lastMonthBalance) }}</template>
+            </el-table-column>
+            <el-table-column label="本月入库" prop="monthInAmount" width="10%" align="right">
+              <template slot-scope="scope">{{ formatAmount(scope.row.monthInAmount) }}</template>
+            </el-table-column>
+            <el-table-column label="总计" prop="totalAmount" width="10%" align="right">
+              <template slot-scope="scope">{{ formatAmount(scope.row.totalAmount) }}</template>
+            </el-table-column>
+            <el-table-column label="SPD库存" prop="spdStockAmount" width="10%" align="right">
+              <template slot-scope="scope">{{ formatAmount(scope.row.spdStockAmount) }}</template>
+            </el-table-column>
+            <el-table-column label="本月出库" prop="monthOutAmount" width="10%" align="right">
               <template slot-scope="scope">{{ formatAmount(scope.row.monthOutAmount) }}</template>
             </el-table-column>
-            <el-table-column label="备注" prop="remark" width="15%" align="left" header-align="center" class-name="purchase-summary-remark-col" />
+            <el-table-column label="备注" prop="remark" width="12%" align="left" header-align="center" class-name="purchase-summary-remark-col" />
           </el-table>
         </div>
         <div class="report-footer report-print-footer">
@@ -147,15 +159,27 @@
               <el-table-column
                 label="配送单位名称"
                 prop="supplierName"
-                width="54%"
+                width="31%"
                 align="left"
                 header-align="center"
                 class-name="purchase-summary-supplier-col"
               />
-              <el-table-column label="本月出库" prop="monthOutAmount" width="24%" align="right">
+              <el-table-column label="上月结存" prop="lastMonthBalance" width="10%" align="right">
+                <template slot-scope="scope">{{ formatAmount(scope.row.lastMonthBalance) }}</template>
+              </el-table-column>
+              <el-table-column label="本月入库" prop="monthInAmount" width="10%" align="right">
+                <template slot-scope="scope">{{ formatAmount(scope.row.monthInAmount) }}</template>
+              </el-table-column>
+              <el-table-column label="总计" prop="totalAmount" width="10%" align="right">
+                <template slot-scope="scope">{{ formatAmount(scope.row.totalAmount) }}</template>
+              </el-table-column>
+              <el-table-column label="SPD库存" prop="spdStockAmount" width="10%" align="right">
+                <template slot-scope="scope">{{ formatAmount(scope.row.spdStockAmount) }}</template>
+              </el-table-column>
+              <el-table-column label="本月出库" prop="monthOutAmount" width="10%" align="right">
                 <template slot-scope="scope">{{ formatAmount(scope.row.monthOutAmount) }}</template>
               </el-table-column>
-              <el-table-column label="备注" prop="remark" width="15%" align="left" header-align="center" class-name="purchase-summary-remark-col" />
+              <el-table-column label="备注" prop="remark" width="12%" align="left" header-align="center" class-name="purchase-summary-remark-col" />
             </el-table>
           </div>
           <div class="report-footer report-print-footer">
@@ -340,9 +364,17 @@ export default {
         const q = this.normalizeQuery();
         const backendRows = await listPurchaseSummaryBySupplier(q);
         const rows = (Array.isArray(backendRows) ? backendRows : []).map((r) => {
+          const lastMonthBalance = this.toNum(r.lastMonthBalance);
+          const monthInAmount = this.toNum(r.monthInAmount);
           const monthOutAmount = this.toNum(r.monthOutAmount);
+          const spdStockAmount = this.toNum(r.spdStockAmount);
+          const totalAmount = lastMonthBalance + monthInAmount;
           return {
             supplierName: r.supplierName || "未维护供应商",
+            lastMonthBalance,
+            monthInAmount,
+            totalAmount,
+            spdStockAmount,
             monthOutAmount,
             remark: ""
           };
@@ -351,11 +383,19 @@ export default {
 
         const sum = rows.reduce(
           (acc, r) => {
+            acc.lastMonthBalance += r.lastMonthBalance;
+            acc.monthInAmount += r.monthInAmount;
+            acc.totalAmount += r.totalAmount;
+            acc.spdStockAmount += r.spdStockAmount;
             acc.monthOutAmount += r.monthOutAmount;
             return acc;
           },
           {
             supplierName: "合计",
+            lastMonthBalance: 0,
+            monthInAmount: 0,
+            totalAmount: 0,
+            spdStockAmount: 0,
             monthOutAmount: 0,
             remark: ""
           }
@@ -384,28 +424,49 @@ export default {
         }
         const wb = new ExcelJS.Workbook();
         const ws = wb.addWorksheet("采购汇总", { views: [{ showGridLines: true }] });
+        ws.pageSetup = {
+          paperSize: 9, // A4
+          orientation: "landscape",
+          fitToPage: true,
+          fitToWidth: 1,
+          fitToHeight: 0,
+          horizontalCentered: true,
+          verticalCentered: false,
+          margins: {
+            left: 0.3,
+            right: 0.3,
+            top: 0.4,
+            bottom: 0.4,
+            header: 0.2,
+            footer: 0.2,
+          },
+        };
 
         ws.columns = [
           { width: 6 },  // 序号
-          { width: 38 }, // 配送单位名称（加宽，与页面一致）
-          { width: 18 }, // 本月出库（加宽）
-          { width: 8 }, // 备注（缩短）
+          { width: 32 }, // 配送单位名称
+          { width: 14 }, // 上月结存
+          { width: 14 }, // 本月入库
+          { width: 14 }, // 总计
+          { width: 14 }, // SPD库存
+          { width: 14 }, // 本月出库
+          { width: 10 }, // 备注
         ];
 
-        ws.mergeCells("A1:D1");
+        ws.mergeCells("A1:H1");
         ws.getCell("A1").value = this.reportTitle;
         ws.getCell("A1").font = { bold: true, size: 20, name: "Microsoft YaHei" };
         ws.getCell("A1").alignment = { vertical: "middle", horizontal: "center", wrapText: true };
         ws.getRow(1).height = 34;
 
         /* 整行合并，避免统计时间被窄列遮挡 */
-        ws.mergeCells("A2:D2");
+        ws.mergeCells("A2:H2");
         ws.getCell("A2").value = `统计时间：${this.statTimeRangeDisplay}`;
         ws.getCell("A2").font = { name: "Microsoft YaHei", size: 11 };
         ws.getCell("A2").alignment = { vertical: "middle", horizontal: "right", wrapText: true };
         ws.getRow(2).height = 28;
 
-        const header = ["序号", "配送单位名称", "本月出库", "备注"];
+        const header = ["序号", "配送单位名称", "上月结存", "本月入库", "总计", "SPD库存", "本月出库", "备注"];
         ws.addRow([]);
         ws.addRow(header);
         const headerRow = ws.getRow(4);
@@ -417,6 +478,10 @@ export default {
           ws.addRow([
             r.supplierName === "合计" ? "合计" : idx + 1,
             r.supplierName || "",
+            this.toNum(r.lastMonthBalance),
+            this.toNum(r.monthInAmount),
+            this.toNum(r.totalAmount),
+            this.toNum(r.spdStockAmount),
             this.toNum(r.monthOutAmount),
             r.remark || "",
           ]);
@@ -429,8 +494,16 @@ export default {
           row.getCell(1).alignment = { vertical: "top", horizontal: "center", wrapText: true };
           row.getCell(2).alignment = { vertical: "top", horizontal: "left", wrapText: true };
           row.getCell(3).numFmt = "#,##0.00";
+          row.getCell(4).numFmt = "#,##0.00";
+          row.getCell(5).numFmt = "#,##0.00";
+          row.getCell(6).numFmt = "#,##0.00";
+          row.getCell(7).numFmt = "#,##0.00";
           row.getCell(3).alignment = { vertical: "top", horizontal: "right", wrapText: true };
-          row.getCell(4).alignment = { vertical: "top", horizontal: "left", wrapText: true };
+          row.getCell(4).alignment = { vertical: "top", horizontal: "right", wrapText: true };
+          row.getCell(5).alignment = { vertical: "top", horizontal: "right", wrapText: true };
+          row.getCell(6).alignment = { vertical: "top", horizontal: "right", wrapText: true };
+          row.getCell(7).alignment = { vertical: "top", horizontal: "right", wrapText: true };
+          row.getCell(8).alignment = { vertical: "top", horizontal: "left", wrapText: true };
         }
 
         const border = {
@@ -468,9 +541,9 @@ export default {
   flex-direction: column;
   overflow: auto;
 }
-/* 整块报表居中、宽度不超过 A4 正文，避免左右溢出 */
+/* 整块报表居中、宽度不超过 A4 横向正文，避免左右溢出 */
 .purchase-summary-print-surface {
-  max-width: 180mm;
+  max-width: 270mm;
   width: 100%;
   margin-left: auto;
   margin-right: auto;
@@ -564,10 +637,7 @@ export default {
 <style>
 /* 打印：仅保留报表主体（与导出 xlsx 同一套标题/填报信息/列名），并美化表格边框 */
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 12mm;
-  }
+  @page { size: A4 landscape; margin: 10mm; }
 
   html,
   body {
@@ -587,7 +657,7 @@ export default {
     visibility: visible;
   }
 
-  /* 版心居中、限宽，避免表格撑出纸张 */
+  /* 横向 A4 版心居中、限宽，避免表格撑出纸张 */
   .purchase-summary-print-surface {
     position: absolute;
     left: 0;
@@ -596,7 +666,7 @@ export default {
     margin-left: auto;
     margin-right: auto;
     width: 100%;
-    max-width: 186mm;
+    max-width: 277mm;
     box-sizing: border-box;
     padding: 0;
     font-family: "Microsoft YaHei", SimSun, "Songti SC", serif;
@@ -751,11 +821,19 @@ export default {
     text-align: center !important;
   }
 
-  .purchase-summary-print-surface .report-table .el-table__body td:nth-child(3) .cell {
+  .purchase-summary-print-surface .report-table .el-table__body td:nth-child(3) .cell,
+  .purchase-summary-print-surface .report-table .el-table__body td:nth-child(4) .cell,
+  .purchase-summary-print-surface .report-table .el-table__body td:nth-child(5) .cell,
+  .purchase-summary-print-surface .report-table .el-table__body td:nth-child(6) .cell,
+  .purchase-summary-print-surface .report-table .el-table__body td:nth-child(7) .cell {
     text-align: right !important;
   }
 
-  .purchase-summary-print-surface .report-table .el-table__header th:nth-child(3) .cell {
+  .purchase-summary-print-surface .report-table .el-table__header th:nth-child(3) .cell,
+  .purchase-summary-print-surface .report-table .el-table__header th:nth-child(4) .cell,
+  .purchase-summary-print-surface .report-table .el-table__header th:nth-child(5) .cell,
+  .purchase-summary-print-surface .report-table .el-table__header th:nth-child(6) .cell,
+  .purchase-summary-print-surface .report-table .el-table__header th:nth-child(7) .cell {
     text-align: center !important;
   }
 
