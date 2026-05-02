@@ -1,5 +1,7 @@
 import request from '@/utils/request'
 
+/** 绑定表 del_flag：0 正常，1 删除（与后端 spd_scm_* 表一致） */
+
 /** 当前租户云平台医院编码绑定 */
 export function getTenantScmBind() {
   return request({

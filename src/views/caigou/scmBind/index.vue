@@ -56,7 +56,7 @@
         </el-table-column>
       </el-table>
       <p class="text-muted" style="margin-top: 12px; color: #909399; font-size: 13px;">
-        说明：列表为当前租户下已存在的绑定记录；新增时请先选择本地供应商并填写平台编码。
+        说明：列表为当前租户下已存在的有效绑定（逻辑删除 del_flag=1 的不展示）；新增时请先选择本地供应商并填写平台编码。
       </p>
     </el-card>
   </div>
