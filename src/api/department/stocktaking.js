@@ -9,6 +9,15 @@ export function listStocktaking(query) {
   })
 }
 
+/** 盘点导出明细行（JSON，前端按库存明细查询表同款样式写 xlsx） */
+export function listStocktakingExportRows(query) {
+  return request({
+    url: '/department/stocktaking/export/rows',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询科室盘点详细
 export function getStocktaking(id) {
   return request({

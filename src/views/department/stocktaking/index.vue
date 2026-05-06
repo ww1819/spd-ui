@@ -413,7 +413,8 @@
 </template>
 
 <script>
-import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking } from "@/api/department/stocktaking";
+import { listStocktaking, listStocktakingExportRows, getStocktaking, delStocktaking, addStocktaking, updateStocktaking } from "@/api/department/stocktaking";
+import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { listInventoryPick } from "@/api/department/depInventory";
 import { getMaterial } from "@/api/foundation/material";
 import SelectMaterial from '@/components/SelectModel/SelectMaterialDept';
@@ -1016,17 +1017,61 @@ export default {
     handleStkIoStocktakingEntrySelectionChange(selection) {
       this.checkedStkIoStocktakingEntry = selection.map(item => item.index)
     },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('department/stocktaking/export', {
-        ...this.queryParams
-      }, `dept_stocktaking_${new Date().getTime()}.xlsx`)
+    /** 导出：与「库存查询 → 库存明细查询」同款版式（合并标题、宋体、边框、空行、合计红色） */
+    async handleExport() {
+      const exportQuery = { ...this.queryParams };
+      delete exportQuery.pageNum;
+      delete exportQuery.pageSize;
+      this.loading = true;
+      try {
+        const response = await listStocktakingExportRows(exportQuery);
+        const rows = (response && response.data) || [];
+        if (!rows.length) {
+          this.$modal.msgWarning("暂无数据可导出");
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+        await exportDeptStocktakingDetailStyledXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || "",
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || "",
+          fileName: `科室盘点明细表${dateStr}.xlsx`,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$modal.msgError("导出失败，请稍后重试");
+      } finally {
+        this.loading = false;
+      }
     },
-    /** 单行导出操作 */
-    handleExportRow(row) {
-      this.download('department/stocktaking/export', {
-        stockNo: row.stockNo
-      }, `dept_stocktaking_${row.stockNo}_${new Date().getTime()}.xlsx`)
+    /** 单行导出（同上版式） */
+    async handleExportRow(row) {
+      this.loading = true;
+      try {
+        const response = await listStocktakingExportRows({
+          stockNo: row.stockNo,
+          stockType: this.queryParams.stockType || "502",
+        });
+        const rows = (response && response.data) || [];
+        if (!rows.length) {
+          this.$modal.msgWarning("暂无数据可导出");
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+        await exportDeptStocktakingDetailStyledXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || "",
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || "",
+          fileName: `科室盘点明细表_${row.stockNo}_${dateStr}.xlsx`,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$modal.msgError("导出失败，请稍后重试");
+      } finally {
+        this.loading = false;
+      }
     }
   }
 };

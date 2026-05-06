@@ -343,6 +343,8 @@
 
 <script>
 import { listStocktakingAudit, getStocktakingAudit, auditStocktaking, rejectStocktaking } from "@/api/department/stocktakingAudit";
+import { listStocktakingExportRows } from "@/api/department/stocktaking";
+import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import RightToolbar from "@/components/RightToolbar";
 
@@ -604,11 +606,33 @@ export default {
     rowStkIoStocktakingEntryIndex({ row, rowIndex }) {
       row.index = rowIndex + 1;
     },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('department/stocktaking/export', {
-        ...this.queryParams
-      }, `dept_stocktaking_audit_${new Date().getTime()}.xlsx`)
+    /** 导出：与「库存查询 → 库存明细查询」同款版式 */
+    async handleExport() {
+      const exportQuery = { ...this.queryParams };
+      delete exportQuery.pageNum;
+      delete exportQuery.pageSize;
+      this.loading = true;
+      try {
+        const response = await listStocktakingExportRows(exportQuery);
+        const rows = (response && response.data) || [];
+        if (!rows.length) {
+          this.$modal.msgWarning("暂无数据可导出");
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+        await exportDeptStocktakingDetailStyledXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || "",
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || "",
+          fileName: `科室盘点明细表_审核${dateStr}.xlsx`,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$modal.msgError("导出失败，请稍后重试");
+      } finally {
+        this.loading = false;
+      }
     }
   }
 };

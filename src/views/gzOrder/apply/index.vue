@@ -2017,25 +2017,36 @@ export default {
           pageNum: 1,
           pageSize: 10000
         };
-        
-        listDepotInventory(queryParams).then(invResponse => {
-          let inventoryList = invResponse.rows || [];
-          
-          // 如果查询结果为空，尝试不使用订单号过滤，只使用仓库ID查询
-          if (inventoryList.length === 0 && batchNos.length > 0) {
-            console.log('使用订单号过滤未找到库存，尝试不使用订单号过滤查询');
-            return listDepotInventory({
-              warehouseId: warehouseId,
-              includeZeroQty: true,
-              pageNum: 1,
-              pageSize: 10000
-            }).then(secondResponse => {
-              return secondResponse.rows || [];
-            });
-          }
-          
-          return inventoryList;
-        }).then(inventoryList => {
+
+        const loadInventory = () =>
+          listDepotInventory(queryParams).then(invResponse => {
+            let inventoryList = invResponse.rows || [];
+            if (inventoryList.length === 0 && batchNos.length > 0) {
+              console.log('使用订单号过滤未找到库存，尝试不使用订单号过滤查询');
+              return listDepotInventory({
+                warehouseId: warehouseId,
+                includeZeroQty: true,
+                pageNum: 1,
+                pageSize: 10000
+              }).then(secondResponse => secondResponse.rows || []);
+            }
+            return inventoryList;
+          });
+
+        const loadOrderCodeRows = () =>
+          listOrderInhospitalcode(id).then(codeRes => {
+            const d = codeRes.data;
+            return Array.isArray(d) ? d : [];
+          });
+
+        return Promise.all([loadInventory(), loadOrderCodeRows()]).then(([inventoryList, orderCodeRows]) => {
+          const appendCode = (map, batchNo, materialId, code) => {
+            if (!batchNo || !materialId || !code) return;
+            const key = `${batchNo}_${materialId}`;
+            if (!map[key]) map[key] = [];
+            map[key].push(code);
+          };
+
           console.log('查询到的库存记录数:', inventoryList.length);
           console.log('订单明细中的批次号列表:', batchNos);
           console.log('订单明细中的物料ID列表:', materialIds);
@@ -2048,7 +2059,7 @@ export default {
               appendCode(keyToInHospitalCodes, inv.batchNo || inv.batchNumber, inv.materialId, inv.inHospitalCode);
             }
           });
-          orderCodeRows.forEach(row => {
+          (orderCodeRows || []).forEach(row => {
             appendCode(keyToInHospitalCodes, row.batchNo || row.batchNumber, row.materialId, row.inHospitalCode);
           });
 

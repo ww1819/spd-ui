@@ -375,6 +375,12 @@ function fmtYmd(val) {
   return s.length >= 10 ? s.slice(0, 10) : s;
 }
 
+function fmtYmdHms(val) {
+  if (val == null || val === '') return '';
+  const s = String(val).replace('T', ' ');
+  return s.length >= 19 ? s.slice(0, 19) : s;
+}
+
 function mat(row) {
   return row.material || {};
 }
@@ -1416,6 +1422,106 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
         inventoryCreaterName(row),
         fmtYmd(row.auditDate || row.warehouseDate),
         inventoryAuditName(row),
+      ];
+    },
+    fileName,
+  });
+}
+
+/** 科室盘点申请/审核：版式与「库存明细查询表」一致（exportInventoryQueryStyledXlsx） */
+export async function exportDeptStocktakingDetailStyledXlsx(options) {
+  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  const headers = [
+    '序号',
+    '盘点单号',
+    '盘点日期',
+    '供应商',
+    '科室编码',
+    '科室名称',
+    '仓库',
+    '单据状态',
+    '单头盈亏金额汇总',
+    '单头总金额汇总',
+    '主单备注',
+    '制单人',
+    '制单时间',
+    '审核日期',
+    '驳回原因',
+    '耗材编码',
+    '耗材名称',
+    '规格',
+    '型号',
+    '单位',
+    '单价',
+    '库存数量',
+    '盘点数量',
+    '金额',
+    '盈亏数量',
+    '盈亏金额',
+    '批次号',
+    '批号',
+    '生产日期',
+    '有效期',
+    '生产厂家',
+    '耗材供应商',
+    '明细备注',
+  ];
+  const numericCols = [9, 10, 21, 22, 23, 24, 25, 26];
+  return exportInventoryQueryStyledXlsx({
+    sheetName: '科室盘点明细',
+    titleBoldText: '科室盘点明细表',
+    beginDate,
+    endDate,
+    headers,
+    rows,
+    numericCols1Based: numericCols,
+    sumExtractors: {
+      22: (row) => Number(row.bookQty || 0),
+      23: (row) => Number(row.stockQty || 0),
+      24: (row) => Number(row.amt || 0),
+      25: (row) => Number(row.profitQty || 0),
+      26: (row) => Number(row.profitAmount || 0),
+    },
+    buildCells: (row) => {
+      const r = row || {};
+      return [
+        0,
+        r.stockNo || '',
+        fmtYmd(r.stockDate),
+        r.supplierName || '',
+        r.departmentCode != null && r.departmentCode !== '' ? String(r.departmentCode) : '',
+        r.departmentName || '',
+        r.warehouseName || '',
+        r.stockStatusLabel || '',
+        r.stocktakingProfitAmount != null && r.stocktakingProfitAmount !== ''
+          ? Number(r.stocktakingProfitAmount)
+          : null,
+        r.stocktakingTotalAmount != null && r.stocktakingTotalAmount !== ''
+          ? Number(r.stocktakingTotalAmount)
+          : null,
+        r.stocktakingRemark || '',
+        r.createBy || '',
+        fmtYmdHms(r.createTime),
+        fmtYmd(r.auditDate),
+        r.rejectReason || '',
+        r.materialCode || '',
+        r.materialName || '',
+        r.materialSpeci || '',
+        r.materialModel || '',
+        r.unitName || '',
+        r.unitPrice != null && r.unitPrice !== '' ? Number(r.unitPrice) : null,
+        Number(r.bookQty || 0),
+        Number(r.stockQty || 0),
+        r.amt != null && r.amt !== '' ? Number(r.amt) : null,
+        Number(r.profitQty || 0),
+        r.profitAmount != null && r.profitAmount !== '' ? Number(r.profitAmount) : null,
+        r.batchNo || '',
+        r.batchNumber || '',
+        fmtYmd(r.beginTime),
+        fmtYmd(r.endTime),
+        r.factoryName || '',
+        r.materialSupplierName || '',
+        r.entryRemark || '',
       ];
     },
     fileName,
