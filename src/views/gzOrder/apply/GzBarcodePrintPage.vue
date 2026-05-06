@@ -128,8 +128,9 @@ export default {
 }
 .gz-barcode-print-body {
   background: #fff;
-  padding: 12px;
+  padding: 12px 12px 0;
   border-radius: 4px;
+  overflow: hidden;
 }
 .gz-barcode-print-error {
   color: #f56c6c;
@@ -145,6 +146,7 @@ export default {
   }
   .gz-barcode-print-body {
     padding: 0;
+    overflow: visible;
   }
 }
 </style>

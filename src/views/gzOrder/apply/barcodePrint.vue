@@ -1,5 +1,5 @@
 <template>
-  <div class="barcode-print-container" ref="barcodePrintRef" hidden="hidden">
+  <div class="barcode-print-container" ref="barcodePrintRef" v-bind="containerBindAttrs">
     <div v-for="(barcode, index) in barcodeListForPrint" :key="index" class="barcode-page">
       <div class="container">
         <div class="title-block">
@@ -10,6 +10,12 @@
         <div class="content">
           <div class="main-info">
             <table class="info-table">
+              <colgroup>
+                <col class="col-lab" />
+                <col class="col-val-wide" />
+                <col class="col-lab" />
+                <col class="col-val" />
+              </colgroup>
               <tr class="row-two-pair">
                 <td class="label-cell">品名</td>
                 <td class="value-cell">{{ barcode.materialName }}</td>
@@ -31,7 +37,7 @@
                 <td class="value-cell" colspan="3">{{ barcode.factoryName }}</td>
               </tr>
             </table>
-            <!-- 一维码：院内码文字行不展示，仅条码 -->
+            <!-- 一维码 + 底部明文院内码 -->
             <div class="barcode-row">
               <img
                 v-if="barcode.linearBarcodeUrl"
@@ -41,7 +47,10 @@
                 @error="handleBarcodeImageError"
                 @load="handleBarcodeImageLoad"
               />
-              <div v-else class="barcode-placeholder">
+              <div v-if="barcode.linearBarcodeUrl && barcode.inHospitalCode" class="barcode-code-text">
+                {{ barcode.inHospitalCode }}
+              </div>
+              <div v-if="!barcode.linearBarcodeUrl" class="barcode-placeholder">
                 <span v-if="!barcode.inHospitalCode">无院内码</span>
                 <span v-else>条码未生成</span>
               </div>
@@ -70,6 +79,10 @@ export default {
     }
   },
   computed: {
+    /** 预览页展示内容；列表页打印时保持 hidden 不占位 */
+    containerBindAttrs() {
+      return this.embedPreview ? {} : { hidden: "hidden" };
+    },
     /** Code128 一维码图片（院内码内容） */
     barcodeListForPrint() {
       return this.barcodeList.map((barcode) => {
@@ -141,6 +154,7 @@ export default {
 
   .barcode-print-container {
     width: 100% !important;
+    background-color: #fff !important;
   }
 
   .barcode-page {
@@ -151,6 +165,7 @@ export default {
     padding: 0;
     box-sizing: border-box;
     overflow: hidden;
+    background-color: #fff;
     page-break-after: always;
     page-break-inside: avoid;
     break-inside: avoid;
@@ -169,6 +184,7 @@ export default {
     flex-direction: column;
     align-items: stretch;
     box-sizing: border-box;
+    background-color: #fff;
     page-break-inside: avoid;
     break-inside: avoid;
   }
@@ -192,18 +208,19 @@ export default {
     flex-shrink: 0;
   }
 
-  /* 与标签纸同宽 40mm，避免预览/打印时左右露白 */
+  /* pt 线宽对齐打印机栅格；略宽于纸内宽，减少两侧“缺一段”感 */
   .barcode-page .title-line {
     display: block;
-    width: 40mm;
-    max-width: 40mm;
+    width: 100%;
+    max-width: 100%;
     height: 0;
     margin: 0;
     padding: 0;
     border: none;
-    border-top: 1px solid #000;
+    border-top: 0.75pt solid #000 !important;
+    background: none !important;
     flex-shrink: 0;
-    box-sizing: border-box;
+    box-sizing: content-box;
   }
 
   .content {
@@ -212,16 +229,18 @@ export default {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background-color: #fff;
   }
 
   .main-info {
-    flex: 1;
+    flex: 0 0 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: 0 2.5mm;
+    padding: 0 1.4mm;
     align-items: center;
+    background-color: #fff;
   }
 
   .info-table {
@@ -232,41 +251,84 @@ export default {
     flex-shrink: 0;
   }
 
-  /* 品名+规格、批号+单价：四列并排 */
-  .info-table tr.row-two-pair .label-cell {
-    width: 22%;
+  .info-table col.col-lab {
+    width: 14%;
+  }
+
+  .info-table col.col-val-wide {
+    width: 38%;
+  }
+
+  .info-table col.col-val {
+    width: 34%;
   }
 
   .info-table tr.row-two-pair .value-cell {
-    width: 28%;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0;
   }
 
   /* 有效期、厂家：标签列加宽，与值拉开 */
   .info-table tr:not(.row-two-pair) .label-cell {
     width: 34%;
+    padding-right: 2.45mm;
   }
 
   .info-table tr:not(.row-two-pair) .value-cell {
     width: 66%;
+    padding-left: 2.2mm;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: normal;
+    overflow-wrap: normal;
   }
 
   .info-table td {
     border: none;
     padding: 0.68mm 0.55mm;
-    font-size: 8px;
-    line-height: 1.48;
+    font-size: 10px;
+    line-height: 1.42;
     vertical-align: top;
     overflow: visible;
   }
 
-  /* 品名值 与 「规格」列 之间留空 */
-  .info-table tr.row-two-pair td:nth-child(2) {
-    padding-right: 1.25mm;
+  .info-table tr.row-two-pair td:nth-child(1) {
+    padding-left: 0.25mm;
   }
 
-  .info-table tr.row-two-pair td:nth-child(3) {
-    padding-left: 1.05mm;
+  /* 第一行：品名值与「规格」中间留大缝；第二行：批号与「单价」间收紧，多给批号显示宽度 */
+  .info-table tr.row-two-pair:first-child td:nth-child(2) {
+    padding-right: 2.45mm;
+  }
+
+  .info-table tr.row-two-pair:nth-child(2) td:nth-child(2) {
+    padding-right: 0.85mm;
+  }
+
+  .info-table tr.row-two-pair:first-child td:nth-child(3) {
+    padding-left: 2.35mm;
+    padding-right: 0.85mm;
+  }
+
+  .info-table tr.row-two-pair:nth-child(2) td:nth-child(3) {
+    padding-left: 0.55mm;
+    padding-right: 0.85mm;
+  }
+
+  .info-table tr.row-two-pair td:nth-child(4) {
+    padding-left: 1.55mm;
+    padding-right: 0.25mm;
+  }
+
+  .info-table tr.row-two-pair:first-child td {
+    padding-bottom: 0.82mm;
+  }
+
+  .info-table tr.row-two-pair:nth-child(2) td {
+    padding-top: 0.82mm;
   }
 
   .label-cell {
@@ -300,6 +362,7 @@ export default {
     text-align: center;
     padding: 0.3mm 0 0;
     box-sizing: border-box;
+    background-color: #fff;
   }
 
   .linear-barcode-img {
@@ -308,15 +371,27 @@ export default {
     max-width: 35mm;
     width: auto;
     height: auto;
-    max-height: 9.5mm;
+    max-height: 8.6mm;
     object-fit: contain;
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
   }
 
+  .barcode-code-text {
+    font-size: 9px;
+    line-height: 1.2;
+    text-align: center;
+    margin-top: 0.3mm;
+    padding: 0 0.8mm;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .barcode-placeholder {
-    font-size: 8px;
+    font-size: 10px;
     color: #666;
     text-align: center;
     padding: 1mm 0;
@@ -338,6 +413,7 @@ export default {
   padding: 0;
   box-sizing: border-box;
   overflow: hidden;
+  background-color: #fff;
   page-break-after: always;
   page-break-inside: avoid;
   break-inside: avoid;
@@ -356,6 +432,7 @@ export default {
   flex-direction: column;
   align-items: stretch;
   box-sizing: border-box;
+  background-color: #fff;
 }
 
 .title-block {
@@ -379,15 +456,16 @@ export default {
 
 .barcode-page .title-line {
   display: block;
-  width: 40mm;
-  max-width: 40mm;
+  width: 100%;
+  max-width: 100%;
   height: 0;
   margin: 0;
   padding: 0;
   border: none;
-  border-top: 1px solid #000;
+  border-top: 0.75pt solid #000;
+  background: none;
   flex-shrink: 0;
-  box-sizing: border-box;
+  box-sizing: content-box;
 }
 
 .content {
@@ -396,16 +474,18 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background-color: #fff;
 }
 
 .main-info {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 0 2.5mm;
+  padding: 0 1.4mm;
   align-items: center;
+  background-color: #fff;
 }
 
 .info-table {
@@ -416,38 +496,82 @@ export default {
   flex-shrink: 0;
 }
 
-.info-table tr.row-two-pair .label-cell {
-  width: 22%;
+.info-table col.col-lab {
+  width: 14%;
+}
+
+.info-table col.col-val-wide {
+  width: 38%;
+}
+
+.info-table col.col-val {
+  width: 34%;
 }
 
 .info-table tr.row-two-pair .value-cell {
-  width: 28%;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0;
 }
 
 .info-table tr:not(.row-two-pair) .label-cell {
   width: 34%;
+  padding-right: 2.45mm;
 }
 
 .info-table tr:not(.row-two-pair) .value-cell {
   width: 66%;
+  padding-left: 2.2mm;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .info-table td {
   border: none;
   padding: 0.68mm 0.55mm;
-  font-size: 8px;
-  line-height: 1.48;
+  font-size: 10px;
+  line-height: 1.42;
   vertical-align: top;
   overflow: visible;
 }
 
-.info-table tr.row-two-pair td:nth-child(2) {
-  padding-right: 1.25mm;
+.info-table tr.row-two-pair td:nth-child(1) {
+  padding-left: 0.25mm;
 }
 
-.info-table tr.row-two-pair td:nth-child(3) {
-  padding-left: 1.05mm;
+.info-table tr.row-two-pair:first-child td:nth-child(2) {
+  padding-right: 2.45mm;
+}
+
+.info-table tr.row-two-pair:nth-child(2) td:nth-child(2) {
+  padding-right: 0.85mm;
+}
+
+.info-table tr.row-two-pair:first-child td:nth-child(3) {
+  padding-left: 2.35mm;
+  padding-right: 0.85mm;
+}
+
+.info-table tr.row-two-pair:nth-child(2) td:nth-child(3) {
+  padding-left: 0.55mm;
+  padding-right: 0.85mm;
+}
+
+.info-table tr.row-two-pair td:nth-child(4) {
+  padding-left: 1.55mm;
+  padding-right: 0.25mm;
+}
+
+.info-table tr.row-two-pair:first-child td {
+  padding-bottom: 0.82mm;
+}
+
+.info-table tr.row-two-pair:nth-child(2) td {
+  padding-top: 0.82mm;
 }
 
 .label-cell {
@@ -481,6 +605,7 @@ export default {
   text-align: center;
   padding: 0.3mm 0 0;
   box-sizing: border-box;
+  background-color: #fff;
 }
 
 .linear-barcode-img {
@@ -489,15 +614,27 @@ export default {
   max-width: 35mm;
   width: auto;
   height: auto;
-  max-height: 9.5mm;
+  max-height: 8.6mm;
   object-fit: contain;
   border: none;
   outline: none;
   box-shadow: none;
 }
 
+.barcode-code-text {
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
+  margin-top: 0.3mm;
+  padding: 0 0.8mm;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .barcode-placeholder {
-  font-size: 8px;
+  font-size: 10px;
   color: #666;
   text-align: center;
   padding: 1mm 0;

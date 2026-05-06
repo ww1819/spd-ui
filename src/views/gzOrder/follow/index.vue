@@ -999,27 +999,36 @@ export default {
           printContent += '@page {size: 40mm 60mm;margin: 0;}';
           printContent += '*{margin:0;padding:0;box-sizing:border-box;}';
           printContent += 'body{font-family:"Microsoft YaHei",Arial,SimSun,sans-serif;}';
-          printContent += '.barcode-page{width:40mm;height:60mm;max-height:60mm;margin:0;padding:0;box-sizing:border-box;overflow:hidden;page-break-after:always;page-break-inside:avoid;break-inside:avoid;}';
+          printContent += '.barcode-page{width:40mm;height:60mm;max-height:60mm;margin:0;padding:0;box-sizing:border-box;overflow:hidden;background-color:#fff;page-break-after:always;page-break-inside:avoid;break-inside:avoid;}';
           printContent += '.barcode-page:last-child{page-break-after:auto;}';
-          printContent += '.container{width:100%;height:100%;max-height:100%;border:none;display:flex;flex-direction:column;align-items:stretch;box-sizing:border-box;}';
+          printContent += '.container{width:100%;height:100%;max-height:100%;border:none;display:flex;flex-direction:column;align-items:stretch;box-sizing:border-box;background-color:#fff;}';
           printContent += '.title-block{width:100%;min-width:100%;max-width:100%;flex-shrink:0;box-sizing:border-box;align-self:stretch;}';
           printContent += '.title{text-align:center;font-weight:bold;font-size:13px;padding:1mm 0 0.6mm;border:none;background-color:#fff;flex-shrink:0;}';
-          printContent += '.barcode-page .title-line{display:block;width:40mm;max-width:40mm;height:0;margin:0;padding:0;border:none;border-top:1px solid #000;flex-shrink:0;box-sizing:border-box;}';
-          printContent += '.content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}';
-          printContent += '.main-info{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0 2.5mm;align-items:center;}';
+          printContent += '.barcode-page .title-line{display:block;width:100%;max-width:100%;height:0;margin:0;padding:0;border:none;border-top:0.75pt solid #000!important;background:none!important;flex-shrink:0;box-sizing:content-box;}';
+          printContent += '.content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;background-color:#fff;}';
+          printContent += '.main-info{flex:0 0 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0 1.4mm;align-items:center;background-color:#fff;}';
           printContent += '.info-table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;}';
-          printContent += '.info-table tr.row-two-pair .label-cell{width:22%;}';
-          printContent += '.info-table tr.row-two-pair .value-cell{width:28%;white-space:nowrap;}';
-          printContent += '.info-table tr:not(.row-two-pair) .label-cell{width:34%;}';
-          printContent += '.info-table tr:not(.row-two-pair) .value-cell{width:66%;}';
-          printContent += '.info-table td{border:none;padding:0.68mm 0.55mm;font-size:8px;line-height:1.48;vertical-align:top;overflow:visible;}';
-          printContent += '.info-table tr.row-two-pair td:nth-child(2){padding-right:1.25mm;}';
-          printContent += '.info-table tr.row-two-pair td:nth-child(3){padding-left:1.05mm;}';
+          printContent += '.info-table col.col-lab{width:14%;}';
+          printContent += '.info-table col.col-val-wide{width:38%;}';
+          printContent += '.info-table col.col-val{width:34%;}';
+          printContent += '.info-table tr.row-two-pair .value-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0;}';
+          printContent += '.info-table tr:not(.row-two-pair) .label-cell{width:34%;padding-right:2.45mm;}';
+          printContent += '.info-table tr:not(.row-two-pair) .value-cell{width:66%;padding-left:2.2mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal;overflow-wrap:normal;}';
+          printContent += '.info-table td{border:none;padding:0.68mm 0.55mm;font-size:10px;line-height:1.42;vertical-align:top;overflow:visible;}';
+          printContent += '.info-table tr.row-two-pair td:nth-child(1){padding-left:0.25mm;}';
+          printContent += '.info-table tr.row-two-pair:first-child td:nth-child(2){padding-right:2.45mm;}';
+          printContent += '.info-table tr.row-two-pair:nth-child(2) td:nth-child(2){padding-right:0.85mm;}';
+          printContent += '.info-table tr.row-two-pair:first-child td:nth-child(3){padding-left:2.35mm;padding-right:0.85mm;}';
+          printContent += '.info-table tr.row-two-pair:nth-child(2) td:nth-child(3){padding-left:0.55mm;padding-right:0.85mm;}';
+          printContent += '.info-table tr.row-two-pair td:nth-child(4){padding-left:1.55mm;padding-right:0.25mm;}';
+          printContent += '.info-table tr.row-two-pair:first-child td{padding-bottom:0.82mm;}';
+          printContent += '.info-table tr.row-two-pair:nth-child(2) td{padding-top:0.82mm;}';
           printContent += '.label-cell{width:34%;font-weight:bold;background-color:#f9f9f9;text-align:left;vertical-align:top;padding-left:0.6mm;padding-right:1.35mm;white-space:nowrap;}';
           printContent += '.value-cell{width:66%;text-align:left;vertical-align:top;white-space:normal;overflow:visible;word-break:break-all;overflow-wrap:anywhere;padding-left:1mm;padding-right:0.35mm;}';
-          printContent += '.barcode-row{flex-shrink:0;width:100%;max-width:100%;margin:0 auto;text-align:center;padding:0.3mm 0 0;box-sizing:border-box;}';
-          printContent += '.linear-barcode-img{display:block;margin:0 auto;max-width:35mm;width:auto;height:auto;max-height:9.5mm;object-fit:contain;border:none!important;outline:none!important;box-shadow:none!important;}';
-          printContent += '.barcode-placeholder{font-size:8px;color:#666;text-align:center;padding:1mm 0;}';
+          printContent += '.barcode-row{flex-shrink:0;width:100%;max-width:100%;margin:0 auto;text-align:center;padding:0.3mm 0 0;box-sizing:border-box;background-color:#fff;}';
+          printContent += '.linear-barcode-img{display:block;margin:0 auto;max-width:35mm;width:auto;height:auto;max-height:8.6mm;object-fit:contain;border:none!important;outline:none!important;box-shadow:none!important;}';
+          printContent += '.barcode-code-text{font-size:9px;line-height:1.2;text-align:center;margin-top:0.3mm;padding:0 0.8mm;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}';
+          printContent += '.barcode-placeholder{font-size:10px;color:#666;text-align:center;padding:1mm 0;}';
           printContent += '@media print{body{margin:0;padding:0;}@page{margin:0;size:40mm 60mm;}';
           printContent += '.barcode-page{page-break-after:always;}}';
           printContent += '</style>';
@@ -1038,7 +1047,7 @@ export default {
             // 内容：整表 + 院内码下一行一维码（Code128）
             printContent += '<div class="content">';
             printContent += '<div class="main-info">';
-            printContent += '<table class="info-table">';
+            printContent += '<table class="info-table"><colgroup><col class="col-lab" /><col class="col-val-wide" /><col class="col-lab" /><col class="col-val" /></colgroup>';
             const materialName = item.materialName || material.name || '';
             printContent += '<tr class="row-two-pair"><td class="label-cell">品名</td><td class="value-cell">' + materialName + '</td><td class="label-cell">规格</td><td class="value-cell">' + (material.speci || '') + '</td></tr>';
             printContent += '<tr class="row-two-pair"><td class="label-cell">批号</td><td class="value-cell">' + (item.batchNumber || '') + '</td><td class="label-cell">单价</td><td class="value-cell">' + (item.price ? parseFloat(item.price).toFixed(2) : '') + '</td></tr>';
@@ -1051,6 +1060,12 @@ export default {
               const linearDataUrl = buildCode128DataUrl(String(inHospitalCode));
               if (linearDataUrl) {
                 printContent += '<img src="' + linearDataUrl + '" alt="院内码条码" class="linear-barcode-img" />';
+                const codeEsc = String(inHospitalCode)
+                  .replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;")
+                  .replace(/"/g, "&quot;");
+                printContent += '<div class="barcode-code-text">' + codeEsc + "</div>";
               } else {
                 printContent += '<div class="barcode-placeholder">条码未生成</div>';
               }
