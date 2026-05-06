@@ -57,6 +57,11 @@ export default {
     barcodeList: {
       type: Array,
       default: () => []
+    },
+    /** 预览页展示：为 true 时不隐藏根节点 */
+    embedPreview: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {

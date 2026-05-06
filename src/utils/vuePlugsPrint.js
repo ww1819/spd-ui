@@ -88,9 +88,15 @@ Print.prototype = {
   },
 
   getHtml: function () {
-    var inputs = document.querySelectorAll('input');
-    var textareas = document.querySelectorAll('textarea');
-    var selects = document.querySelectorAll('select');
+    /* 只处理打印区域内的表单节点：勿用 document 全页查询，否则会篡改整站 Element/Vue 管理的 input，
+       首打后再次打印常见「预览空白」或组件异常。 */
+    var root = this.dom;
+    if (!root || typeof root.querySelectorAll !== 'function') {
+      return root && root.outerHTML ? root.outerHTML : '';
+    }
+    var inputs = root.querySelectorAll('input');
+    var textareas = root.querySelectorAll('textarea');
+    var selects = root.querySelectorAll('select');
 
     for (var k = 0; k < inputs.length; k++) {
       if (inputs[k].type == "checkbox" || inputs[k].type == "radio") {

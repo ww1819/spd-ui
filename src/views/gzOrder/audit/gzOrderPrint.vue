@@ -1,5 +1,11 @@
 ﻿<template>
-  <div class="gz-order-print" :class="{'orientation-portrait': orientation === 'portrait', 'orientation-landscape': orientation === 'landscape'}" :data-orientation="orientation" ref="receiptOrderPrintRef" hidden="hidden">
+  <div
+    class="gz-order-print"
+    :class="{'orientation-portrait': orientation === 'portrait', 'orientation-landscape': orientation === 'landscape'}"
+    :data-orientation="orientation"
+    ref="receiptOrderPrintRef"
+    v-bind="embedPreview ? {} : { hidden: 'hidden' }"
+  >
     <div style="font-size: 22px;text-align: center;">
       <span v-if="hospitalName">{{ hospitalName }}</span><span v-if="printType === 'refund'">备货退货单</span><span v-else>高值入库单</span>
     </div>
@@ -95,6 +101,11 @@ export default {
     orientation: {
       type: String,
       default: 'landscape' // 默认横向
+    },
+    /** 独立预览页内展示：为 true 时不加 hidden，否则根节点 display:none 看不到内容 */
+    embedPreview: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {

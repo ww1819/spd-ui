@@ -97,6 +97,15 @@
           @click="resetQuery"
         >重置</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="small"
+          @click="handleBatchPublish"
+          :disabled="multiple"
+          v-hasPermi="['caigou:dingdan:export']"
+        >推送供应链</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -105,7 +114,7 @@
               @selection-change="handleSelectionChange"
               height="calc(100vh - 340px)"
               stripe border>
-<!--      <el-table-column type="selection" width="55" align="center" />-->
+      <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="订单单号" align="center" prop="orderNo" width="180">
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
@@ -415,7 +424,7 @@
 </template>
 
 <script>
-import { listDingdan, getDingdan, delDingdan, addDingdan, updateDingdan } from "@/api/caigou/dingdan";
+import { listDingdan, getDingdan, delDingdan, addDingdan, updateDingdan, publishDingdan } from "@/api/caigou/dingdan";
 import { getCaigoujihua, getJihuaApplyDetails } from "@/api/caigou/jihua";
 import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
@@ -915,6 +924,27 @@ export default {
     /** 复选框选中数据 */
     handlePurchaseOrderEntrySelectionChange(selection) {
       this.checkedPurchaseOrderEntry = selection.map(item => item.index)
+    },
+    /** 批量推送供应链平台 */
+    handleBatchPublish() {
+      if (this.ids.length === 0) {
+        this.$modal.msgError("请先选择要推送的订单！");
+        return;
+      }
+      const selectedOrders = this.orderList.filter(item => this.ids.includes(item.id));
+      const invalidOrders = selectedOrders.filter(item => item.orderStatus !== '2' && item.orderStatus !== 2);
+      if (invalidOrders.length > 0) {
+        const statusInfo = invalidOrders.map(order => `${order.orderNo}(状态:${order.orderStatus})`).join('、');
+        this.$modal.msgError(`只能推送已审核订单：${statusInfo}`);
+        return;
+      }
+      const orderNos = selectedOrders.map(item => item.orderNo).join('、');
+      this.$modal.confirm(`确定推送以下订单到供应链平台吗？\n${orderNos}`).then(() => {
+        return publishDingdan(this.ids);
+      }).then(() => {
+        this.$modal.msgSuccess(`推送成功，共 ${this.ids.length} 个订单`);
+        this.getList();
+      }).catch(() => {});
     },
     /** 导出按钮操作 */
     handleExport() {

@@ -1106,11 +1106,22 @@ export default {
     },
     /** 打印按钮操作 */
     handlePrint(row) {
-      this.$router.push({
+      const rowId = row && (row.id != null ? row.id : row.billId)
+      if (rowId == null || rowId === '') {
+        this.$modal.msgWarning('当前单据缺少ID，无法进入打印预览')
+        return
+      }
+      const target = {
         path: '/print/inbound',
         query: {
-          id: String(row.id),
+          id: String(rowId),
           from: encodeURIComponent(this.$route.fullPath)
+        }
+      }
+      const resolved = this.$router.resolve(target)
+      this.$router.push(target).catch(() => {
+        if (resolved && resolved.href) {
+          window.location.href = resolved.href
         }
       })
     },

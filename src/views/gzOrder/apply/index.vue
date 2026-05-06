@@ -174,7 +174,7 @@
             <el-button
               size="small"
               type="text"
-              @click="handlePrint(scope.row,true)"
+              @click="handlePrint(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >打印</el-button>
           </template>
@@ -524,7 +524,6 @@
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
       <gz-order-print v-if="printRowData" :row="printRowData" :orientation="printOrientation || 'landscape'" ref="receiptOrderPrintRefAuto"></gz-order-print>
-      <barcode-print v-if="printBarcodeData" :barcode-list="printBarcodeData" ref="barcodePrintRefAuto"></barcode-print>
     </div>
 
     <!-- 3、使用组件 -->
@@ -592,7 +591,7 @@
 </template>
 
 <script>
-import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, listEntryChangeLog } from "@/api/gz/order";
+import { listOrder, getOrder, listOrderInhospitalcode, delOrder, addOrder, updateOrder, auditOrder, listEntryChangeLog } from "@/api/gz/order";
 import { listDepotInventory } from "@/api/gz/depotInventory";
 import { listMaterial,jxFtm,jxTm} from "@/api/foundation/material";
 import { listUserAll } from "@/api/system/user";
@@ -603,7 +602,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
 import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
-import barcodePrint from "@/views/gzOrder/apply/barcodePrint";
+import { GZ_BARCODE_SESSION_KEY } from '@/views/gzOrder/apply/GzBarcodePrintPage'
 import RMBConverter from "@/utils/tools";
 import { parseTime } from "@/utils/ruoyi";
 import item from "@/layout/components/Sidebar/Item.vue";
@@ -611,7 +610,7 @@ import item from "@/layout/components/Sidebar/Item.vue";
 export default {
   name: "Order",
   dicts: ['biz_status','bill_type'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectGZMaterialFilter,gzOrderPrint,barcodePrint},
+  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectGZMaterialFilter,gzOrderPrint},
   data() {
     return {
       // 遮罩层
@@ -690,7 +689,6 @@ export default {
       // 打印数据（用于隐藏的打印组件）
       printRowData: null,
       // 打印条码数据（用于隐藏的打印组件）
-      printBarcodeData: null,
       // 打印方向，默认横向
       printOrientation: 'landscape',
       // 仓库是否被自动填充（如果是，则禁用仓库选择）
@@ -1852,61 +1850,26 @@ export default {
         cancel: () => {}
       };
     },
-    /** 打印按钮操作 */
-    handlePrint(row, print){
-      // 如果传入 print 参数为 true，直接执行打印
-      if (print === true) {
-        // 直接获取数据并触发打印
-        this.getOrderDetail(row).then(res => {
-          // 验证数据完整性
-          if (!res || !res.detailList || res.detailList.length === 0) {
-            this.$modal.msgWarning('打印数据不完整，请重试');
-            return;
-          }
-          // 设置打印数据
-          this.printRowData = res;
-          // 设置默认方向为横向
-          this.printOrientation = 'landscape';
-          // 等待组件渲染后调用 start()
-          this.$nextTick(() => {
-            this.$nextTick(() => {
-              if (this.$refs['receiptOrderPrintRefAuto']) {
-                // start() 方法会直接触发浏览器打印对话框
-                this.$refs['receiptOrderPrintRefAuto'].start();
-              } else {
-                this.$modal.msgError('打印组件未找到，请刷新页面重试');
-              }
-            });
-          });
-        }).catch(error => {
-          this.$modal.msgError('获取打印数据失败：' + (error.message || '未知错误'));
-        });
-        return;
+    /** 打印：跳转独立预览页（高值备货验收，与普通耗材入库单预览方式一致） */
+    handlePrint(row) {
+      if (!row || !row.id) {
+        this.$modal.msgWarning('缺少单据信息，无法打印')
+        return
       }
-      // 否则显示选择打印方式的对话框
-      // 使用 $nextTick 确保对话框正确渲染
-      this.$nextTick(() => {
-        this.modalObj = {
-          show: true,
-          title: '选择打印方式',
-          width: '520px',
-          component: 'print-type',
-          form: {
-            value: 2,
-            orientation: 'landscape', // 默认横向
-            row: null
-          },
-          ok: () => {
-            this.modalObj.show = false;
-            if (this.modalObj.form.value === 2) {
-              this.windowPrintOut(row, false);
-            }
-          },
-          cancel: () => {
-            this.modalObj.show = false;
-          }
-        };
-      });
+      const target = {
+        path: '/print/gz-acceptance',
+        query: {
+          id: String(row.id),
+          api: 'order',
+          from: encodeURIComponent(this.$route.fullPath)
+        }
+      }
+      const resolved = this.$router.resolve(target)
+      this.$router.push(target).catch(() => {
+        if (resolved && resolved.href) {
+          window.location.href = resolved.href
+        }
+      })
     },
     windowPrintOut(row, print) {
       this.getOrderDetail(row).then(res => {
@@ -2010,43 +1973,39 @@ export default {
         };
       });
     },
-    /** 打印条码按钮操作 */
+    /** 打印条码按钮操作（不依赖备货库存数量：含 qty=0 的库存行 + 审核生成的院内码明细表兜底） */
     handlePrintBarcode(row) {
       const id = row.id;
-      // 显示加载提示
       const loading = this.$loading({
         lock: true,
         text: '正在准备打印数据...',
         spinner: 'el-icon-loading',
         background: 'rgba(0, 0, 0, 0.7)'
       });
-      
+
       getOrder(id).then(response => {
         const orderData = response.data;
         const entryList = orderData.gzOrderEntryList || [];
         const materialList = orderData.materialList || [];
         const warehouseId = orderData.warehouseId;
-        
+
         if (entryList.length === 0) {
           loading.close();
           this.$modal.msgWarning("该订单没有明细数据，无法打印条码");
           return;
         }
-        
+
         if (!warehouseId) {
           loading.close();
           this.$modal.msgWarning("该订单没有仓库信息，无法打印条码");
           return;
         }
-        
-        // 构建物料映射
+
         const materialMap = {};
         materialList.forEach(material => {
           materialMap[material.id] = material;
         });
-        
-        // 查询库存信息，获取所有院内码
-        // 收集所有需要查询的批次号和物料ID，用于精确查询
+
         const batchNos = entryList.map(item => item.batchNo || item.batchNumber).filter(bn => bn);
         const materialIds = entryList.map(item => item.materialId).filter(mid => mid);
         
@@ -2086,69 +2045,39 @@ export default {
           const keyToInHospitalCodes = {};
           inventoryList.forEach(inv => {
             if (inv.inHospitalCode && inv.materialId) {
-              // 优先使用 batchNo，如果没有则使用 batchNumber
-              const batchNo = inv.batchNo || inv.batchNumber;
-              if (batchNo) {
-                const key = `${batchNo}_${inv.materialId}`;
-                if (!keyToInHospitalCodes[key]) {
-                  keyToInHospitalCodes[key] = [];
-                }
-                keyToInHospitalCodes[key].push(inv.inHospitalCode);
-              }
+              appendCode(keyToInHospitalCodes, inv.batchNo || inv.batchNumber, inv.materialId, inv.inHospitalCode);
             }
           });
-          
-          console.log('构建的院内码映射键数量:', Object.keys(keyToInHospitalCodes).length);
-          console.log('院内码映射键列表（前10个）:', Object.keys(keyToInHospitalCodes).slice(0, 10));
-          
-          // 收集所有需要打印的条码数据，预先计算好所有需要的数据
+          orderCodeRows.forEach(row => {
+            appendCode(keyToInHospitalCodes, row.batchNo || row.batchNumber, row.materialId, row.inHospitalCode);
+          });
+
           const allBarcodesToPrint = [];
           entryList.forEach((item) => {
             const material = materialMap[item.materialId] || {};
-            // 优先使用 batchNo，如果没有则使用 batchNumber
             const batchNo = item.batchNo || item.batchNumber;
             const materialId = item.materialId;
             const qty = parseInt(item.qty) || 0;
-            
+
             if (!batchNo) {
               this.$modal.msgWarning(`物料 ${item.materialName || material.name || materialId} 没有批次号，无法打印条码`);
               return;
             }
-            
+
             if (!materialId) {
               this.$modal.msgWarning(`批次号 ${batchNo} 没有物料ID，无法打印条码`);
               return;
             }
-            
+
             const key = `${batchNo}_${materialId}`;
             const inHospitalCodes = keyToInHospitalCodes[key] || [];
             const codesToPrint = inHospitalCodes.slice(0, qty);
-            
+
             if (codesToPrint.length === 0) {
-              // 添加调试信息：显示查询到的库存批次号和物料ID
-              const availableKeys = Object.keys(keyToInHospitalCodes);
-              const matchingKeys = availableKeys.filter(k => k.includes(batchNo) || k.includes(materialId));
-              console.warn(`批次号 ${batchNo} (物料ID: ${materialId}) 没有找到院内码`, {
-                queryKey: key,
-                availableKeys: availableKeys.slice(0, 10), // 只显示前10个
-                matchingKeys: matchingKeys.slice(0, 10),
-                inventoryCount: inventoryList.length,
-                itemData: {
-                  batchNo: item.batchNo,
-                  batchNumber: item.batchNumber,
-                  materialId: item.materialId,
-                  materialName: item.materialName || material.name
-                }
-              });
               this.$modal.msgWarning(`批次号 ${batchNo} 没有找到院内码，无法打印条码`);
               return;
             }
-            
-            if (codesToPrint.length < qty) {
-              this.$modal.msgWarning(`批次号 ${batchNo} 只找到 ${codesToPrint.length} 个院内码，但需要打印 ${qty} 个条码`);
-            }
-            
-            // 在循环中直接组装完整数据，减少后续处理
+
             codesToPrint.forEach((inHospitalCode) => {
               allBarcodesToPrint.push({
                 inHospitalCode: inHospitalCode,
@@ -2161,32 +2090,33 @@ export default {
               });
             });
           });
-          
+
           if (allBarcodesToPrint.length === 0) {
             loading.close();
             this.$modal.msgWarning("没有找到可打印的条码");
             return;
           }
-          
-          // 设置打印条码数据
-          this.printBarcodeData = allBarcodesToPrint;
-          
-          // 关闭加载提示
+
           loading.close();
-          
-          // 等待组件渲染后调用 start()
-          this.$nextTick(() => {
-            // 使用双重nextTick确保组件完全渲染
-            this.$nextTick(() => {
-              if (this.$refs['barcodePrintRefAuto']) {
-                // start() 方法会直接触发浏览器打印预览对话框
-                this.$refs['barcodePrintRefAuto'].start();
-              }
-            });
-          });
+          try {
+            sessionStorage.setItem(GZ_BARCODE_SESSION_KEY, JSON.stringify({ list: allBarcodesToPrint }))
+          } catch (e) {
+            this.$modal.msgError('条码数据过大或浏览器禁止存储，无法打开预览')
+            return
+          }
+          const target = {
+            path: '/print/gz-barcode',
+            query: { from: encodeURIComponent(this.$route.fullPath) }
+          }
+          const resolved = this.$router.resolve(target)
+          this.$router.push(target).catch(() => {
+            if (resolved && resolved.href) {
+              window.location.href = resolved.href
+            }
+          })
         }).catch(() => {
           loading.close();
-          this.$modal.msgError("查询库存信息失败");
+          this.$modal.msgError("查询条码数据失败");
         });
       }).catch(() => {
         loading.close();
@@ -2292,7 +2222,7 @@ export default {
         this.$modal.msgWarning('请先审核后再打印');
         return;
       }
-      this.handlePrint(this.form, true);
+      this.handlePrint(this.form);
     },
     /** 提交按钮 */
     submitForm() {
@@ -2468,7 +2398,7 @@ export default {
       try {
         await this.$modal.confirm(confirmText);
         for (let i = 0; i < printableOrders.length; i++) {
-          this.handlePrint(printableOrders[i], true);
+          this.handlePrint(printableOrders[i]);
           if (i < printableOrders.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 800));
           }

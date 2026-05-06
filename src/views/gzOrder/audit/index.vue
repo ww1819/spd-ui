@@ -154,7 +154,7 @@
             <el-button
               size="small"
               type="text"
-              @click="handlePrint(scope.row,true)"
+              @click="handlePrint(scope.row)"
               v-if="scope.row.orderStatus == 2"
               style="padding: 0 5px; margin: 0;"
             >打印</el-button>
@@ -1769,67 +1769,26 @@ export default {
       }
       this.handlePrint(this.form, true);
     },
-    /** 打印按钮操作 */
-    handlePrint(row, print){
-      console.log('handlePrint called with:', { row, print });
-      // 如果传入 print 参数为 true，直接执行打印
-      if (print === true) {
-        // 直接获取数据并触发打印
-        this.getOrderDetail(row).then(res => {
-          console.log('getOrderDetail result:', res);
-          // 验证数据完整性
-          if (!res || !res.detailList || res.detailList.length === 0) {
-            console.warn('打印数据不完整:', res);
-            this.$modal.msgWarning('打印数据不完整，请重试');
-            return;
-          }
-          // 设置打印数据
-          this.printRowData = res;
-          // 设置默认方向为横向
-          this.printOrientation = 'landscape';
-          // 等待组件渲染后调用 start()
-          this.$nextTick(() => {
-            this.$nextTick(() => {
-              console.log('Checking receiptOrderPrintRefAuto:', this.$refs['receiptOrderPrintRefAuto']);
-              if (this.$refs['receiptOrderPrintRefAuto']) {
-                // start() 方法会直接触发浏览器打印对话框
-                console.log('Calling start() on print component');
-                this.$refs['receiptOrderPrintRefAuto'].start();
-              } else {
-                console.error('receiptOrderPrintRefAuto not found');
-                this.$modal.msgError('打印组件未找到，请刷新页面重试');
-              }
-            });
-          });
-        }).catch(error => {
-          console.error('getOrderDetail error:', error);
-          this.$modal.msgError('获取打印数据失败：' + (error.message || '未知错误'));
-        });
-        return;
+    /** 打印按钮操作：跳转到独立预览页（与普通耗材入库单一致） */
+    handlePrint(row){
+      if (!row || !row.id) {
+        this.$modal.msgWarning('缺少单据信息，无法打印')
+        return
       }
-      // 否则显示选择打印方式的对话框
-      this.$nextTick(() => {
-        this.modalObj = {
-          show: true,
-          title: '选择打印方式',
-          width: '520px',
-          component: 'print-type',
-          form: {
-            value: 2,
-            orientation: 'landscape', // 默认横向
-            row: null
-          },
-          ok: () => {
-            this.modalObj.show = false;
-            if (this.modalObj.form.value === 2) {
-              this.windowPrintOut(row, false);
-            }
-          },
-          cancel: () => {
-            this.modalObj.show = false;
-          }
-        };
-      });
+      const target = {
+        path: '/print/gz-acceptance',
+        query: {
+          id: String(row.id),
+          api: 'shipment',
+          from: encodeURIComponent(this.$route.fullPath)
+        }
+      }
+      const resolved = this.$router.resolve(target)
+      this.$router.push(target).catch(() => {
+        if (resolved && resolved.href) {
+          window.location.href = resolved.href
+        }
+      })
     },
     handlePrintDialogClose() {
       this.modalObj.show = false;

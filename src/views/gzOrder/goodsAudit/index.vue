@@ -153,7 +153,7 @@
           <el-button
             size="small"
             type="text"
-            @click="handlePrint(scope.row,true)"
+            @click="handlePrint(scope.row)"
             v-if="scope.row.orderStatus == 2"
           >打印</el-button>
           <template v-if="scope.row.orderStatus != 2">
@@ -653,9 +653,25 @@ export default {
         this.$modal.msgSuccess(`已触发连续打印，共 ${printable.length} 条`);
       }).catch(() => {});
     },
-    handlePrint(row, flag) {
-      // 打印功能待实现
-      this.$message.info('打印功能待实现');
+    handlePrint(row) {
+      if (!row || !row.id) {
+        this.$modal.msgWarning('缺少单据信息，无法打印')
+        return
+      }
+      const target = {
+        path: '/print/gz-acceptance',
+        query: {
+          id: String(row.id),
+          api: 'order',
+          from: encodeURIComponent(this.$route.fullPath)
+        }
+      }
+      const resolved = this.$router.resolve(target)
+      this.$router.push(target).catch(() => {
+        if (resolved && resolved.href) {
+          window.location.href = resolved.href
+        }
+      })
     },
     checkMaterialBtn() {
       // 检查是否选择了科室
