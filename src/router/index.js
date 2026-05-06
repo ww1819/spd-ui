@@ -86,6 +86,18 @@ export const constantRoutes = [
     meta: { title: '退货单打印' }
   },
   {
+    path: '/print/gz-acceptance',
+    component: () => import('@/views/gzOrder/audit/GzAcceptancePrintPage'),
+    hidden: true,
+    meta: { title: '高值备货验收打印' }
+  },
+  {
+    path: '/print/gz-barcode',
+    component: () => import('@/views/gzOrder/apply/GzBarcodePrintPage'),
+    hidden: true,
+    meta: { title: '高值条码打印' }
+  },
+  {
     path: '',
     component: Layout,
     redirect: 'index',

@@ -174,7 +174,7 @@
             <el-button
               size="small"
               type="text"
-              @click="handlePrint(scope.row,true)"
+              @click="handlePrint(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >打印</el-button>
           </template>
@@ -524,7 +524,6 @@
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
       <gz-order-print v-if="printRowData" :row="printRowData" :orientation="printOrientation || 'landscape'" ref="receiptOrderPrintRefAuto"></gz-order-print>
-      <barcode-print v-if="printBarcodeData" :barcode-list="printBarcodeData" ref="barcodePrintRefAuto"></barcode-print>
     </div>
 
     <!-- 3、使用组件 -->
@@ -603,7 +602,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
 import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
-import barcodePrint from "@/views/gzOrder/apply/barcodePrint";
+import { GZ_BARCODE_SESSION_KEY } from '@/views/gzOrder/apply/GzBarcodePrintPage'
 import RMBConverter from "@/utils/tools";
 import { parseTime } from "@/utils/ruoyi";
 import item from "@/layout/components/Sidebar/Item.vue";
@@ -611,7 +610,7 @@ import item from "@/layout/components/Sidebar/Item.vue";
 export default {
   name: "Order",
   dicts: ['biz_status','bill_type'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectGZMaterialFilter,gzOrderPrint,barcodePrint},
+  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectGZMaterialFilter,gzOrderPrint},
   data() {
     return {
       // 遮罩层
@@ -690,7 +689,6 @@ export default {
       // 打印数据（用于隐藏的打印组件）
       printRowData: null,
       // 打印条码数据（用于隐藏的打印组件）
-      printBarcodeData: null,
       // 打印方向，默认横向
       printOrientation: 'landscape',
       // 仓库是否被自动填充（如果是，则禁用仓库选择）
@@ -1852,61 +1850,26 @@ export default {
         cancel: () => {}
       };
     },
-    /** 打印按钮操作 */
-    handlePrint(row, print){
-      // 如果传入 print 参数为 true，直接执行打印
-      if (print === true) {
-        // 直接获取数据并触发打印
-        this.getOrderDetail(row).then(res => {
-          // 验证数据完整性
-          if (!res || !res.detailList || res.detailList.length === 0) {
-            this.$modal.msgWarning('打印数据不完整，请重试');
-            return;
-          }
-          // 设置打印数据
-          this.printRowData = res;
-          // 设置默认方向为横向
-          this.printOrientation = 'landscape';
-          // 等待组件渲染后调用 start()
-          this.$nextTick(() => {
-            this.$nextTick(() => {
-              if (this.$refs['receiptOrderPrintRefAuto']) {
-                // start() 方法会直接触发浏览器打印对话框
-                this.$refs['receiptOrderPrintRefAuto'].start();
-              } else {
-                this.$modal.msgError('打印组件未找到，请刷新页面重试');
-              }
-            });
-          });
-        }).catch(error => {
-          this.$modal.msgError('获取打印数据失败：' + (error.message || '未知错误'));
-        });
-        return;
+    /** 打印：跳转独立预览页（高值备货验收，与普通耗材入库单预览方式一致） */
+    handlePrint(row) {
+      if (!row || !row.id) {
+        this.$modal.msgWarning('缺少单据信息，无法打印')
+        return
       }
-      // 否则显示选择打印方式的对话框
-      // 使用 $nextTick 确保对话框正确渲染
-      this.$nextTick(() => {
-        this.modalObj = {
-          show: true,
-          title: '选择打印方式',
-          width: '520px',
-          component: 'print-type',
-          form: {
-            value: 2,
-            orientation: 'landscape', // 默认横向
-            row: null
-          },
-          ok: () => {
-            this.modalObj.show = false;
-            if (this.modalObj.form.value === 2) {
-              this.windowPrintOut(row, false);
-            }
-          },
-          cancel: () => {
-            this.modalObj.show = false;
-          }
-        };
-      });
+      const target = {
+        path: '/print/gz-acceptance',
+        query: {
+          id: String(row.id),
+          api: 'order',
+          from: encodeURIComponent(this.$route.fullPath)
+        }
+      }
+      const resolved = this.$router.resolve(target)
+      this.$router.push(target).catch(() => {
+        if (resolved && resolved.href) {
+          window.location.href = resolved.href
+        }
+      })
     },
     windowPrintOut(row, print) {
       this.getOrderDetail(row).then(res => {
@@ -2165,23 +2128,24 @@ export default {
             this.$modal.msgWarning("没有找到可打印的条码");
             return;
           }
-          
-          // 设置打印条码数据
-          this.printBarcodeData = allBarcodesToPrint;
-          
-          // 关闭加载提示
+
           loading.close();
-          
-          // 等待组件渲染后调用 start()
-          this.$nextTick(() => {
-            // 使用双重nextTick确保组件完全渲染
-            this.$nextTick(() => {
-              if (this.$refs['barcodePrintRefAuto']) {
-                // start() 方法会直接触发浏览器打印预览对话框
-                this.$refs['barcodePrintRefAuto'].start();
-              }
-            });
-          });
+          try {
+            sessionStorage.setItem(GZ_BARCODE_SESSION_KEY, JSON.stringify({ list: allBarcodesToPrint }))
+          } catch (e) {
+            this.$modal.msgError('条码数据过大或浏览器禁止存储，无法打开预览')
+            return
+          }
+          const target = {
+            path: '/print/gz-barcode',
+            query: { from: encodeURIComponent(this.$route.fullPath) }
+          }
+          const resolved = this.$router.resolve(target)
+          this.$router.push(target).catch(() => {
+            if (resolved && resolved.href) {
+              window.location.href = resolved.href
+            }
+          })
         }).catch(() => {
           loading.close();
           this.$modal.msgError("查询库存信息失败");
@@ -2290,7 +2254,7 @@ export default {
         this.$modal.msgWarning('请先审核后再打印');
         return;
       }
-      this.handlePrint(this.form, true);
+      this.handlePrint(this.form);
     },
     /** 提交按钮 */
     submitForm() {
@@ -2466,7 +2430,7 @@ export default {
       try {
         await this.$modal.confirm(confirmText);
         for (let i = 0; i < printableOrders.length; i++) {
-          this.handlePrint(printableOrders[i], true);
+          this.handlePrint(printableOrders[i]);
           if (i < printableOrders.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 800));
           }

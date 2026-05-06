@@ -1,5 +1,9 @@
 <template>
-  <div class="barcode-print-container" ref="barcodePrintRef" hidden="hidden">
+  <div
+    class="barcode-print-container"
+    ref="barcodePrintRef"
+    v-bind="embedPreview ? {} : { hidden: 'hidden' }"
+  >
     <div v-for="(barcode, index) in barcodeListWithQRCode" :key="index" class="barcode-page">
       <div class="container">
         <!-- 标题 -->
@@ -47,8 +51,7 @@
                  :src="barcode.qrCodeUrl" 
                  alt="二维码" 
                  class="qrcode-img"
-                 @error="handleQRCodeError"
-                 @load="handleQRCodeLoad" />
+                 @error="handleQRCodeError" />
             <div v-else class="qrcode-placeholder">
               <div v-if="!barcode.inHospitalCode">无院内码: {{ barcode.inHospitalCode }}</div>
               <div v-else>二维码生成失败</div>
@@ -67,6 +70,11 @@ export default {
     barcodeList: {
       type: Array,
       default: () => []
+    },
+    /** 预览页展示：为 true 时不隐藏根节点 */
+    embedPreview: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
@@ -74,14 +82,9 @@ export default {
     // 使用较大的尺寸（200x200）以确保打印清晰度
     barcodeListWithQRCode() {
       return this.barcodeList.map(barcode => {
-        const qrCodeUrl = barcode.inHospitalCode 
+        const qrCodeUrl = barcode.inHospitalCode
           ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(barcode.inHospitalCode)}`
-          : '';
-        console.log('生成二维码:', {
-          inHospitalCode: barcode.inHospitalCode,
-          qrCodeUrl: qrCodeUrl,
-          hasQRCode: !!qrCodeUrl
-        });
+          : ''
         return {
           ...barcode,
           qrCodeUrl: qrCodeUrl
@@ -100,7 +103,7 @@ export default {
         
         if (totalImages === 0) {
           // 没有二维码图片，直接打印
-          this.$print(this.$refs.barcodePrintRef, {}, '6cm 4cm');
+          this.$print(this.$refs.barcodePrintRef, {}, '60mm 40mm');
           return;
         }
         
@@ -109,7 +112,7 @@ export default {
           if (loadedCount >= totalImages) {
             // 所有图片加载完成，延迟一点时间确保渲染完成
             setTimeout(() => {
-              this.$print(this.$refs.barcodePrintRef, {}, '6cm 4cm');
+              this.$print(this.$refs.barcodePrintRef, {}, '60mm 40mm');
             }, 100);
           }
         };
@@ -131,16 +134,13 @@ export default {
       console.error('二维码图片加载失败:', event.target.src);
       console.error('院内码:', this.barcodeList.find(b => b.qrCodeUrl === event.target.src)?.inHospitalCode);
     },
-    handleQRCodeLoad(event) {
-      console.log('二维码图片加载成功:', event.target.src);
-    }
   }
 }
 </script>
 
 <style lang="stylus" media="print">
 @page {
-  size: 6cm 4cm;
+  size: 60mm 40mm;
   margin: 0;
 }
 
@@ -187,24 +187,29 @@ export default {
     flex: 1;
     display: flex;
     flex-direction: row;
-    height: calc(100% - 12px);
+    align-items: stretch;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .left-info {
-    width: 70%;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 0;
     border-right: 1px solid #000;
     padding: 0;
   }
 
   .right-qrcode {
-    width: 30%;
+    flex: 0 0 16mm;
+    width: 16mm;
+    max-width: 16mm;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2mm;
-    height: 100%;
-    min-height: 100px;
-    border-left: 1px solid #000;
+    padding: 0.5mm;
+    min-height: 0;
+    box-sizing: border-box;
   }
 
   .info-table {
@@ -241,12 +246,10 @@ export default {
   }
 
   .qrcode-img {
-    width: 100%;
-    height: 100%;
+    width: 14mm;
+    height: 14mm;
     max-width: 100%;
     max-height: 100%;
-    min-width: 50px;
-    min-height: 50px;
     object-fit: contain;
     display: block;
     margin: auto;
@@ -301,24 +304,29 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: row;
-  height: calc(100% - 12px);
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .left-info {
-  width: 70%;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 0;
   border-right: 1px solid #000;
   padding: 0;
 }
 
 .right-qrcode {
-  width: 30%;
+  flex: 0 0 16mm;
+  width: 16mm;
+  max-width: 16mm;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2mm;
-  height: 100%;
-  min-height: 100px;
-  border-left: 1px solid #000;
+  padding: 0.5mm;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
 .info-table {
@@ -355,12 +363,10 @@ export default {
 }
 
 .qrcode-img {
-  width: 100%;
-  height: 100%;
+  width: 14mm;
+  height: 14mm;
   max-width: 100%;
   max-height: 100%;
-  min-width: 50px;
-  min-height: 50px;
   object-fit: contain;
   display: block;
   margin: auto;
