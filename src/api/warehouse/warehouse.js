@@ -87,6 +87,24 @@ export function createRkEntriesByDingdan(query) {
   })
 }
 
+// 查询配送单（支持配送单号/输入码关键字）
+export function queryZsDelivery(query) {
+  return request({
+    url: '/warehouse/warehouse/queryZsDelivery',
+    method: 'get',
+    params: query
+  })
+}
+
+// 引用配送单生成入库明细（后端统一调用供应链接口）
+export function createRkEntriesByDeliveryNo(query) {
+  return request({
+    url: '/warehouse/warehouse/createRkEntriesByDeliveryNo',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询单据明细变更记录
 export function listEntryChangeLog(billType, billId) {
   return request({
