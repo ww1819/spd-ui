@@ -2,7 +2,10 @@
   <div class="barcode-print-container" ref="barcodePrintRef" hidden="hidden">
     <div v-for="(barcode, index) in barcodeListForPrint" :key="index" class="barcode-page">
       <div class="container">
-        <div class="title">高值院内码</div>
+        <div class="title-block">
+          <div class="title">高值备货码</div>
+          <div class="title-line" aria-hidden="true"></div>
+        </div>
 
         <div class="content">
           <div class="main-info">
@@ -71,7 +74,7 @@ export default {
         const linearBarcodeUrl = barcode.inHospitalCode
           ? `https://barcode.tec-it.com/barcode.ashx?data=${encodeURIComponent(
               String(barcode.inHospitalCode)
-            )}&code=Code128&dpi=72&imagewidth=200&imageheight=56`
+            )}&code=Code128&dpi=120&imagewidth=360&imageheight=100`
           : "";
         return {
           ...barcode,
@@ -88,7 +91,7 @@ export default {
         const totalImages = images.length;
 
         if (totalImages === 0) {
-          this.$print(this.$refs.barcodePrintRef, {}, "60mm 40mm");
+          this.$print(this.$refs.barcodePrintRef, {}, "40mm 60mm");
           return;
         }
 
@@ -96,7 +99,7 @@ export default {
           loadedCount++;
           if (loadedCount >= totalImages) {
             setTimeout(() => {
-              this.$print(this.$refs.barcodePrintRef, {}, "60mm 40mm");
+              this.$print(this.$refs.barcodePrintRef, {}, "40mm 60mm");
             }, 100);
           }
         };
@@ -125,8 +128,9 @@ export default {
 </script>
 
 <style lang="stylus" media="print">
+/* 宽×高：40×60 为纵向标签页，避免预览/打印机按 60×40 走横向 */
 @page {
-  size: 60mm 40mm;
+  size: 40mm 60mm;
   margin: 0;
 }
 
@@ -140,9 +144,9 @@ export default {
   }
 
   .barcode-page {
-    width: 60mm;
-    height: 40mm;
-    max-height: 40mm;
+    width: 40mm;
+    height: 60mm;
+    max-height: 60mm;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -160,22 +164,46 @@ export default {
     width: 100%;
     height: 100%;
     max-height: 100%;
-    border: 2px solid #000;
+    border: none;
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     box-sizing: border-box;
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
+  .title-block {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    align-self: stretch;
+  }
+
   .title {
     text-align: center;
     font-weight: bold;
-    font-size: 10px;
-    padding: 1mm 0;
-    border-bottom: 1px solid #000;
+    font-size: 13px;
+    padding: 1mm 0 0.6mm;
+    border: none;
     background-color: #fff;
     flex-shrink: 0;
+  }
+
+  /* 与标签纸同宽 40mm，避免预览/打印时左右露白 */
+  .barcode-page .title-line {
+    display: block;
+    width: 40mm;
+    max-width: 40mm;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-top: 1px solid #000;
+    flex-shrink: 0;
+    box-sizing: border-box;
   }
 
   .content {
@@ -192,13 +220,13 @@ export default {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: 0 3.5mm;
+    padding: 0 2.5mm;
     align-items: center;
   }
 
   .info-table {
     width: 100%;
-    max-width: 50mm;
+    max-width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
     flex-shrink: 0;
@@ -206,46 +234,68 @@ export default {
 
   /* 品名+规格、批号+单价：四列并排 */
   .info-table tr.row-two-pair .label-cell {
-    width: 11%;
+    width: 22%;
   }
 
   .info-table tr.row-two-pair .value-cell {
-    width: 39%;
+    width: 28%;
+    white-space: nowrap;
+  }
+
+  /* 有效期、厂家：标签列加宽，与值拉开 */
+  .info-table tr:not(.row-two-pair) .label-cell {
+    width: 34%;
+  }
+
+  .info-table tr:not(.row-two-pair) .value-cell {
+    width: 66%;
   }
 
   .info-table td {
     border: none;
-    padding: 1.15mm 1mm;
-    font-size: 7px;
-    line-height: 1.72;
+    padding: 0.68mm 0.55mm;
+    font-size: 8px;
+    line-height: 1.48;
     vertical-align: top;
     overflow: visible;
   }
 
+  /* 品名值 与 「规格」列 之间留空 */
+  .info-table tr.row-two-pair td:nth-child(2) {
+    padding-right: 1.25mm;
+  }
+
+  .info-table tr.row-two-pair td:nth-child(3) {
+    padding-left: 1.05mm;
+  }
+
   .label-cell {
-    width: 28%;
+    width: 34%;
     font-weight: bold;
     background-color: #f9f9f9;
     text-align: left;
     vertical-align: top;
-    padding-left: 1mm;
+    padding-left: 0.6mm;
+    padding-right: 1.35mm;
     white-space: nowrap;
   }
 
   .value-cell {
-    width: 72%;
+    width: 66%;
     text-align: left;
     vertical-align: top;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    word-break: break-all;
+    overflow-wrap: anywhere;
     padding-left: 1mm;
+    padding-right: 0.35mm;
   }
 
   .barcode-row {
     flex-shrink: 0;
     width: 100%;
-    max-width: 50mm;
+    max-width: 100%;
     margin: 0 auto;
     text-align: center;
     padding: 0.3mm 0 0;
@@ -255,15 +305,18 @@ export default {
   .linear-barcode-img {
     display: block;
     margin: 0 auto;
-    max-width: 38mm;
+    max-width: 35mm;
     width: auto;
     height: auto;
-    max-height: 7mm;
+    max-height: 9.5mm;
     object-fit: contain;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   .barcode-placeholder {
-    font-size: 7px;
+    font-size: 8px;
     color: #666;
     text-align: center;
     padding: 1mm 0;
@@ -278,9 +331,9 @@ export default {
 }
 
 .barcode-page {
-  width: 60mm;
-  height: 40mm;
-  max-height: 40mm;
+  width: 40mm;
+  height: 60mm;
+  max-height: 60mm;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -298,20 +351,43 @@ export default {
   width: 100%;
   height: 100%;
   max-height: 100%;
-  border: 2px solid #000;
+  border: none;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   box-sizing: border-box;
+}
+
+.title-block {
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  align-self: stretch;
 }
 
 .title {
   text-align: center;
   font-weight: bold;
-  font-size: 10px;
-  padding: 1mm 0;
-  border-bottom: 1px solid #000;
+  font-size: 13px;
+  padding: 1mm 0 0.6mm;
+  border: none;
   background-color: #fff;
   flex-shrink: 0;
+}
+
+.barcode-page .title-line {
+  display: block;
+  width: 40mm;
+  max-width: 40mm;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-top: 1px solid #000;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .content {
@@ -328,59 +404,79 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 0 3.5mm;
+  padding: 0 2.5mm;
   align-items: center;
 }
 
 .info-table {
   width: 100%;
-  max-width: 50mm;
+  max-width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
   flex-shrink: 0;
 }
 
 .info-table tr.row-two-pair .label-cell {
-  width: 11%;
+  width: 22%;
 }
 
 .info-table tr.row-two-pair .value-cell {
-  width: 39%;
+  width: 28%;
+  white-space: nowrap;
+}
+
+.info-table tr:not(.row-two-pair) .label-cell {
+  width: 34%;
+}
+
+.info-table tr:not(.row-two-pair) .value-cell {
+  width: 66%;
 }
 
 .info-table td {
   border: none;
-  padding: 1.15mm 1mm;
-  font-size: 7px;
-  line-height: 1.72;
+  padding: 0.68mm 0.55mm;
+  font-size: 8px;
+  line-height: 1.48;
   vertical-align: top;
   overflow: visible;
 }
 
+.info-table tr.row-two-pair td:nth-child(2) {
+  padding-right: 1.25mm;
+}
+
+.info-table tr.row-two-pair td:nth-child(3) {
+  padding-left: 1.05mm;
+}
+
 .label-cell {
-  width: 28%;
+  width: 34%;
   font-weight: bold;
   background-color: #f9f9f9;
   text-align: left;
   vertical-align: top;
-  padding-left: 1mm;
+  padding-left: 0.6mm;
+  padding-right: 1.35mm;
   white-space: nowrap;
 }
 
 .value-cell {
-  width: 72%;
+  width: 66%;
   text-align: left;
   vertical-align: top;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  word-break: break-all;
+  overflow-wrap: anywhere;
   padding-left: 1mm;
+  padding-right: 0.35mm;
 }
 
 .barcode-row {
   flex-shrink: 0;
   width: 100%;
-  max-width: 50mm;
+  max-width: 100%;
   margin: 0 auto;
   text-align: center;
   padding: 0.3mm 0 0;
@@ -390,15 +486,18 @@ export default {
 .linear-barcode-img {
   display: block;
   margin: 0 auto;
-  max-width: 38mm;
+  max-width: 35mm;
   width: auto;
   height: auto;
-  max-height: 7mm;
+  max-height: 9.5mm;
   object-fit: contain;
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
 
 .barcode-placeholder {
-  font-size: 7px;
+  font-size: 8px;
   color: #666;
   text-align: center;
   padding: 1mm 0;

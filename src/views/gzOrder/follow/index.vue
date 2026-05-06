@@ -995,25 +995,31 @@ export default {
           // 构建单个打印页面，包含所有条码，每个条码占一页
           let printContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>打印条码</title>';
           printContent += '<style>';
-          printContent += '@page {size: 60mm 40mm;margin: 0;}';
+          printContent += '@page {size: 40mm 60mm;margin: 0;}';
           printContent += '*{margin:0;padding:0;box-sizing:border-box;}';
           printContent += 'body{font-family:"Microsoft YaHei",Arial,SimSun,sans-serif;}';
-          printContent += '.barcode-page{width:60mm;height:40mm;max-height:40mm;margin:0;padding:0;box-sizing:border-box;overflow:hidden;page-break-after:always;page-break-inside:avoid;break-inside:avoid;}';
+          printContent += '.barcode-page{width:40mm;height:60mm;max-height:60mm;margin:0;padding:0;box-sizing:border-box;overflow:hidden;page-break-after:always;page-break-inside:avoid;break-inside:avoid;}';
           printContent += '.barcode-page:last-child{page-break-after:auto;}';
-          printContent += '.container{width:100%;height:100%;max-height:100%;border:2px solid #000;display:flex;flex-direction:column;box-sizing:border-box;}';
-          printContent += '.title{text-align:center;font-weight:bold;font-size:10px;padding:1mm 0;border-bottom:1px solid #000;background-color:#fff;flex-shrink:0;}';
+          printContent += '.container{width:100%;height:100%;max-height:100%;border:none;display:flex;flex-direction:column;align-items:stretch;box-sizing:border-box;}';
+          printContent += '.title-block{width:100%;min-width:100%;max-width:100%;flex-shrink:0;box-sizing:border-box;align-self:stretch;}';
+          printContent += '.title{text-align:center;font-weight:bold;font-size:13px;padding:1mm 0 0.6mm;border:none;background-color:#fff;flex-shrink:0;}';
+          printContent += '.barcode-page .title-line{display:block;width:40mm;max-width:40mm;height:0;margin:0;padding:0;border:none;border-top:1px solid #000;flex-shrink:0;box-sizing:border-box;}';
           printContent += '.content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}';
-          printContent += '.main-info{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0 3.5mm;align-items:center;}';
-          printContent += '.info-table{width:100%;max-width:50mm;border-collapse:collapse;table-layout:fixed;}';
-          printContent += '.info-table tr.row-two-pair .label-cell{width:11%;}';
-          printContent += '.info-table tr.row-two-pair .value-cell{width:39%;}';
-          printContent += '.info-table td{border:none;padding:1.15mm 1mm;font-size:7px;line-height:1.72;vertical-align:top;overflow:visible;}';
-          printContent += '.label-cell{width:28%;font-weight:bold;background-color:#f9f9f9;text-align:left;vertical-align:top;padding-left:1mm;white-space:nowrap;}';
-          printContent += '.value-cell{width:72%;text-align:left;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:1mm;}';
-          printContent += '.barcode-row{flex-shrink:0;width:100%;max-width:50mm;margin:0 auto;text-align:center;padding:0.3mm 0 0;box-sizing:border-box;}';
-          printContent += '.linear-barcode-img{display:block;margin:0 auto;max-width:38mm;width:auto;height:auto;max-height:7mm;object-fit:contain;}';
-          printContent += '.barcode-placeholder{font-size:7px;color:#666;text-align:center;padding:1mm 0;}';
-          printContent += '@media print{body{margin:0;padding:0;}@page{margin:0;size:60mm 40mm;}';
+          printContent += '.main-info{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0 2.5mm;align-items:center;}';
+          printContent += '.info-table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;}';
+          printContent += '.info-table tr.row-two-pair .label-cell{width:22%;}';
+          printContent += '.info-table tr.row-two-pair .value-cell{width:28%;white-space:nowrap;}';
+          printContent += '.info-table tr:not(.row-two-pair) .label-cell{width:34%;}';
+          printContent += '.info-table tr:not(.row-two-pair) .value-cell{width:66%;}';
+          printContent += '.info-table td{border:none;padding:0.68mm 0.55mm;font-size:8px;line-height:1.48;vertical-align:top;overflow:visible;}';
+          printContent += '.info-table tr.row-two-pair td:nth-child(2){padding-right:1.25mm;}';
+          printContent += '.info-table tr.row-two-pair td:nth-child(3){padding-left:1.05mm;}';
+          printContent += '.label-cell{width:34%;font-weight:bold;background-color:#f9f9f9;text-align:left;vertical-align:top;padding-left:0.6mm;padding-right:1.35mm;white-space:nowrap;}';
+          printContent += '.value-cell{width:66%;text-align:left;vertical-align:top;white-space:normal;overflow:visible;word-break:break-all;overflow-wrap:anywhere;padding-left:1mm;padding-right:0.35mm;}';
+          printContent += '.barcode-row{flex-shrink:0;width:100%;max-width:100%;margin:0 auto;text-align:center;padding:0.3mm 0 0;box-sizing:border-box;}';
+          printContent += '.linear-barcode-img{display:block;margin:0 auto;max-width:35mm;width:auto;height:auto;max-height:9.5mm;object-fit:contain;border:none!important;outline:none!important;box-shadow:none!important;}';
+          printContent += '.barcode-placeholder{font-size:8px;color:#666;text-align:center;padding:1mm 0;}';
+          printContent += '@media print{body{margin:0;padding:0;}@page{margin:0;size:40mm 60mm;}';
           printContent += '.barcode-page{page-break-after:always;}}';
           printContent += '</style>';
           printContent += '</head><body>';
@@ -1025,8 +1031,8 @@ export default {
             printContent += '<div class="barcode-page">';
             printContent += '<div class="container">';
             
-            // 标题
-            printContent += '<div class="title">高值院内码</div>';
+            // 标题 + 全宽实线（避免仅用 border-bottom 打印断缺）
+            printContent += '<div class="title-block"><div class="title">高值备货码</div><div class="title-line"></div></div>';
             
             // 内容：整表 + 院内码下一行一维码（Code128）
             printContent += '<div class="content">';
@@ -1041,7 +1047,7 @@ export default {
             printContent += '</table>';
             printContent += '<div class="barcode-row">';
             if (inHospitalCode) {
-              const linearUrl = 'https://barcode.tec-it.com/barcode.ashx?data=' + encodeURIComponent(String(inHospitalCode)) + '&code=Code128&dpi=72&imagewidth=200&imageheight=56';
+              const linearUrl = 'https://barcode.tec-it.com/barcode.ashx?data=' + encodeURIComponent(String(inHospitalCode)) + '&code=Code128&dpi=120&imagewidth=360&imageheight=100';
               printContent += '<img src="' + linearUrl + '" alt="院内码条码" class="linear-barcode-img" />';
             } else {
               printContent += '<div class="barcode-placeholder">无院内码</div>';

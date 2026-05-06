@@ -107,27 +107,66 @@
         </template>
       </el-table-column>
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="盘点日期" align="center" prop="stockDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单人" align="center" prop="createBy" width="110" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.stockDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ scope.row.createBy || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="stockStatus" show-overflow-tooltip resizable>
+      <el-table-column label="制单日期" align="center" prop="createTime" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="单据状态"
+        align="center"
+        prop="stockStatus"
+        width="120"
+        min-width="112"
+        show-overflow-tooltip
+        resizable
+        label-class-name="stocktaking-col-stock-status"
+        class-name="stocktaking-col-stock-status"
+      >
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.stockStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="操作人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="审核人" align="center" prop="updateBy" width="110" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.stockStatus == 2 && scope.row.updateBy">{{ scope.row.updateBy }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="总金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatStocktakingListAmount(scope.row.totalAmount) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="盈亏金额" align="center" prop="profitAmount" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatStocktakingListProfitAmount(scope.row.profitAmount) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
+            <el-button
+              v-if="scope.row.stockStatus == 2"
+              size="small"
+              type="text"
+              v-hasPermi="['department:stocktakingAudit:export', 'department:stocktaking:export']"
+              @click="handleExportRow(scope.row)"
+              style="padding: 0 5px; margin: 0;"
+            >导出</el-button>
             <el-button
               size="small"
               type="text"
@@ -430,6 +469,21 @@ export default {
       const pageSize = Math.max(1, parseInt(this.queryParams.pageSize, 10));
       row.index = (pageNum - 1) * pageSize + rowIndex + 1;
     },
+    /** 列表总金额展示（与科室盘点申请列表一致） */
+    formatStocktakingListAmount(val) {
+      if (val == null || val === '') return '--';
+      const n = parseFloat(val);
+      if (!Number.isFinite(n)) return '--';
+      return '￥' + n.toFixed(2);
+    },
+    /** 列表盈亏金额展示（与科室盘点申请列表一致） */
+    formatStocktakingListProfitAmount(val) {
+      if (val == null || val === '') return '--';
+      const n = parseFloat(val);
+      if (!Number.isFinite(n)) return '--';
+      const prefix = n > 0 ? '+' : '';
+      return prefix + '￥' + n.toFixed(2);
+    },
     /** 查询盘点列表 */
     getList() {
       this.loading = true;
@@ -605,6 +659,34 @@ export default {
     /** 盘点明细序号 */
     rowStkIoStocktakingEntryIndex({ row, rowIndex }) {
       row.index = rowIndex + 1;
+    },
+    /** 单行导出（与科室盘点申请页同款 xlsx） */
+    async handleExportRow(row) {
+      this.loading = true;
+      try {
+        const response = await listStocktakingExportRows({
+          stockNo: row.stockNo,
+          stockType: this.queryParams.stockType || 502,
+        });
+        const rows = (response && response.data) || [];
+        if (!rows.length) {
+          this.$modal.msgWarning('暂无数据可导出');
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        await exportDeptStocktakingDetailStyledXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+          fileName: `科室盘点明细表_${row.stockNo}_${dateStr}.xlsx`,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$modal.msgError('导出失败，请稍后重试');
+      } finally {
+        this.loading = false;
+      }
     },
     /** 导出：与「库存查询 → 库存明细查询」同款版式 */
     async handleExport() {
@@ -849,5 +931,10 @@ export default {
   right: -8px;
   width: auto;
   overflow: hidden;
+}
+
+.app-container.stocktaking-audit-page > .el-table th.stocktaking-col-stock-status .cell,
+.app-container.stocktaking-audit-page > .el-table td.stocktaking-col-stock-status .cell {
+  white-space: nowrap !important;
 }
 </style>

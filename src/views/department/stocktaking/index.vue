@@ -107,7 +107,17 @@
           <span>{{ parseTime(scope.row.stockDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="stockStatus" show-overflow-tooltip resizable>
+      <el-table-column
+        label="单据状态"
+        align="center"
+        prop="stockStatus"
+        width="120"
+        min-width="112"
+        show-overflow-tooltip
+        resizable
+        label-class-name="stocktaking-col-stock-status"
+        class-name="stocktaking-col-stock-status"
+      >
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.stockStatus"/>
         </template>
@@ -1505,8 +1515,9 @@ export default {
   font-family: 'Roboto', sans-serif !important;
 }
 
-/* 单据状态列表头不换行（第6列） */
-.app-container.stocktaking-apply-page > .el-table thead th:nth-child(6) .cell {
+/* 单据状态列：表头与内容不换行（须配合 label-class-name / class-name，勿用 nth-child：含勾选列会错位） */
+.app-container.stocktaking-apply-page > .el-table th.stocktaking-col-stock-status .cell,
+.app-container.stocktaking-apply-page > .el-table td.stocktaking-col-stock-status .cell {
   white-space: nowrap !important;
 }
 
