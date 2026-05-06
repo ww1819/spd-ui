@@ -1,57 +1,47 @@
 <template>
   <div class="barcode-print-container" ref="barcodePrintRef" hidden="hidden">
-    <div v-for="(barcode, index) in barcodeListWithQRCode" :key="index" class="barcode-page">
+    <div v-for="(barcode, index) in barcodeListForPrint" :key="index" class="barcode-page">
       <div class="container">
-        <!-- 标题 -->
         <div class="title">高值院内码</div>
-        
-        <!-- 内容区域 -->
+
         <div class="content">
-          <!-- 左侧信息区域 -->
-          <div class="left-info">
+          <div class="main-info">
             <table class="info-table">
-              <tr>
+              <tr class="row-two-pair">
                 <td class="label-cell">品名</td>
                 <td class="value-cell">{{ barcode.materialName }}</td>
+                <td class="label-cell">规格</td>
+                <td class="value-cell">{{ barcode.speci }}</td>
               </tr>
-              <tr>
+              <tr class="row-two-pair">
                 <td class="label-cell">批号</td>
                 <td class="value-cell">{{ barcode.batchNumber }}</td>
-              </tr>
-              <tr>
                 <td class="label-cell">单价</td>
                 <td class="value-cell">{{ barcode.price }}</td>
               </tr>
               <tr>
                 <td class="label-cell">有效期</td>
-                <td class="value-cell">{{ barcode.endTime }}</td>
-              </tr>
-              <tr>
-                <td class="label-cell">规格</td>
-                <td class="value-cell">{{ barcode.speci }}</td>
+                <td class="value-cell" colspan="3">{{ barcode.endTime }}</td>
               </tr>
               <tr>
                 <td class="label-cell">厂家</td>
-                <td class="value-cell">{{ barcode.factoryName }}</td>
-              </tr>
-              <tr>
-                <td class="label-cell">院内码</td>
-                <td class="value-cell">{{ barcode.inHospitalCode }}</td>
+                <td class="value-cell" colspan="3">{{ barcode.factoryName }}</td>
               </tr>
             </table>
-          </div>
-          
-          <!-- 右侧二维码区域 -->
-          <div class="right-qrcode">
-            <img v-if="barcode.qrCodeUrl" 
-                 :src="barcode.qrCodeUrl" 
-                 alt="二维码" 
-                 class="qrcode-img"
-                 @error="handleQRCodeError"
-                 @load="handleQRCodeLoad" />
-            <div v-else class="qrcode-placeholder">
-              <div v-if="!barcode.inHospitalCode">无院内码: {{ barcode.inHospitalCode }}</div>
-              <div v-else>二维码生成失败</div>
+            <!-- 一维码：院内码文字行不展示，仅条码 -->
+            <div class="barcode-row">
+              <img
+                v-if="barcode.linearBarcodeUrl"
+                :src="barcode.linearBarcodeUrl"
+                alt="院内码条码"
+                class="linear-barcode-img"
+                @error="handleBarcodeImageError"
+                @load="handleBarcodeImageLoad"
+              />
+              <div v-else class="barcode-placeholder">
+                <span v-if="!barcode.inHospitalCode">无院内码</span>
+                <span v-else>条码未生成</span>
+              </div>
             </div>
           </div>
         </div>
@@ -70,77 +60,68 @@ export default {
     }
   },
   computed: {
-    // 预计算所有二维码URL，避免在模板中重复计算
-    // 使用较大的尺寸（200x200）以确保打印清晰度
-    barcodeListWithQRCode() {
-      return this.barcodeList.map(barcode => {
-        const qrCodeUrl = barcode.inHospitalCode 
-          ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(barcode.inHospitalCode)}`
-          : '';
-        console.log('生成二维码:', {
-          inHospitalCode: barcode.inHospitalCode,
-          qrCodeUrl: qrCodeUrl,
-          hasQRCode: !!qrCodeUrl
-        });
+    /** Code128 一维码图片（院内码内容） */
+    barcodeListForPrint() {
+      return this.barcodeList.map((barcode) => {
+        const linearBarcodeUrl = barcode.inHospitalCode
+          ? `https://barcode.tec-it.com/barcode.ashx?data=${encodeURIComponent(
+              String(barcode.inHospitalCode)
+            )}&code=Code128&dpi=72&imagewidth=200&imageheight=56`
+          : "";
         return {
           ...barcode,
-          qrCodeUrl: qrCodeUrl
+          linearBarcodeUrl
         };
       });
     }
   },
   methods: {
     start() {
-      // 等待二维码图片加载完成后再打印
       this.$nextTick(() => {
-        // 检查所有二维码是否已加载
-        const images = this.$refs.barcodePrintRef.querySelectorAll('.qrcode-img');
+        const images = this.$refs.barcodePrintRef.querySelectorAll(".linear-barcode-img");
         let loadedCount = 0;
         const totalImages = images.length;
-        
+
         if (totalImages === 0) {
-          // 没有二维码图片，直接打印
-          this.$print(this.$refs.barcodePrintRef, {}, '6cm 4cm');
+          this.$print(this.$refs.barcodePrintRef, {}, "60mm 40mm");
           return;
         }
-        
+
         const checkAllLoaded = () => {
           loadedCount++;
           if (loadedCount >= totalImages) {
-            // 所有图片加载完成，延迟一点时间确保渲染完成
             setTimeout(() => {
-              this.$print(this.$refs.barcodePrintRef, {}, '6cm 4cm');
+              this.$print(this.$refs.barcodePrintRef, {}, "60mm 40mm");
             }, 100);
           }
         };
-        
-        images.forEach(img => {
+
+        images.forEach((img) => {
           if (img.complete) {
             checkAllLoaded();
           } else {
-            img.addEventListener('load', checkAllLoaded);
-            img.addEventListener('error', () => {
-              console.error('二维码图片加载失败:', img.src);
-              checkAllLoaded(); // 即使失败也继续
+            img.addEventListener("load", checkAllLoaded);
+            img.addEventListener("error", () => {
+              console.error("一维码图片加载失败:", img.src);
+              checkAllLoaded();
             });
           }
         });
       });
     },
-    handleQRCodeError(event) {
-      console.error('二维码图片加载失败:', event.target.src);
-      console.error('院内码:', this.barcodeList.find(b => b.qrCodeUrl === event.target.src)?.inHospitalCode);
+    handleBarcodeImageError(event) {
+      console.error("一维码图片加载失败:", event.target.src);
     },
-    handleQRCodeLoad(event) {
-      console.log('二维码图片加载成功:', event.target.src);
+    handleBarcodeImageLoad() {
+      // 可选：调试时打开
     }
   }
-}
+};
 </script>
 
 <style lang="stylus" media="print">
 @page {
-  size: 6cm 4cm;
+  size: 60mm 40mm;
   margin: 0;
 }
 
@@ -154,12 +135,16 @@ export default {
   }
 
   .barcode-page {
-    width: 57mm;
-    height: 37mm;
+    width: 60mm;
+    height: 40mm;
+    max-height: 40mm;
     margin: 0;
-    padding: 1.5mm;
+    padding: 0;
+    box-sizing: border-box;
+    overflow: hidden;
     page-break-after: always;
     page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .barcode-page:last-child {
@@ -169,94 +154,114 @@ export default {
   .container {
     width: 100%;
     height: 100%;
+    max-height: 100%;
     border: 2px solid #000;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .title {
     text-align: center;
     font-weight: bold;
-    font-size: 11px;
-    padding: 1.5mm 0;
+    font-size: 10px;
+    padding: 1mm 0;
     border-bottom: 1px solid #000;
     background-color: #fff;
+    flex-shrink: 0;
   }
 
   .content {
     flex: 1;
+    min-height: 0;
     display: flex;
-    flex-direction: row;
-    height: calc(100% - 12px);
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  .left-info {
-    width: 70%;
-    border-right: 1px solid #000;
-    padding: 0;
-  }
-
-  .right-qrcode {
-    width: 30%;
+  .main-info {
+    flex: 1;
+    min-height: 0;
     display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 3.5mm;
     align-items: center;
-    justify-content: center;
-    padding: 2mm;
-    height: 100%;
-    min-height: 100px;
-    border-left: 1px solid #000;
   }
 
   .info-table {
     width: 100%;
+    max-width: 50mm;
     border-collapse: collapse;
-    height: 100%;
+    table-layout: fixed;
+    flex-shrink: 0;
+  }
+
+  /* 品名+规格、批号+单价：四列并排 */
+  .info-table tr.row-two-pair .label-cell {
+    width: 11%;
+  }
+
+  .info-table tr.row-two-pair .value-cell {
+    width: 39%;
   }
 
   .info-table td {
     border: none;
-    padding: 0.5mm 1.5mm;
-    font-size: 8px;
-    line-height: 1.1;
+    padding: 1.15mm 1mm;
+    font-size: 7px;
+    line-height: 1.72;
+    vertical-align: top;
+    overflow: visible;
   }
 
   .label-cell {
-    width: 30%;
+    width: 28%;
     font-weight: bold;
     background-color: #f9f9f9;
     text-align: left;
-    vertical-align: middle;
-    padding-left: 1.5mm;
+    vertical-align: top;
+    padding-left: 1mm;
     white-space: nowrap;
   }
 
   .value-cell {
-    width: 70%;
+    width: 72%;
     text-align: left;
-    vertical-align: middle;
+    vertical-align: top;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding-left: 1.5mm;
+    padding-left: 1mm;
   }
 
-  .qrcode-img {
+  .barcode-row {
+    flex-shrink: 0;
     width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    min-width: 50px;
-    min-height: 50px;
-    object-fit: contain;
-    display: block;
-    margin: auto;
+    max-width: 50mm;
+    margin: 0 auto;
+    text-align: center;
+    padding: 0.3mm 0 0;
+    box-sizing: border-box;
   }
 
-  .qrcode-placeholder {
-    font-size: 9px;
-    color: #999;
+  .linear-barcode-img {
+    display: block;
+    margin: 0 auto;
+    max-width: 38mm;
+    width: auto;
+    height: auto;
+    max-height: 7mm;
+    object-fit: contain;
+  }
+
+  .barcode-placeholder {
+    font-size: 7px;
+    color: #666;
     text-align: center;
-    padding: 10px;
+    padding: 1mm 0;
   }
 }
 </style>
@@ -264,16 +269,20 @@ export default {
 <style lang="stylus" scoped>
 .barcode-print-container {
   padding: 0;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 .barcode-page {
-  width: 57mm;
-  height: 37mm;
+  width: 60mm;
+  height: 40mm;
+  max-height: 40mm;
   margin: 0;
-  padding: 1.5mm;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
   page-break-after: always;
   page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .barcode-page:last-child {
@@ -283,93 +292,110 @@ export default {
 .container {
   width: 100%;
   height: 100%;
+  max-height: 100%;
   border: 2px solid #000;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .title {
   text-align: center;
   font-weight: bold;
-  font-size: 11px;
-  padding: 1.5mm 0;
+  font-size: 10px;
+  padding: 1mm 0;
   border-bottom: 1px solid #000;
   background-color: #fff;
+  flex-shrink: 0;
 }
 
 .content {
   flex: 1;
+  min-height: 0;
   display: flex;
-  flex-direction: row;
-  height: calc(100% - 12px);
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.left-info {
-  width: 70%;
-  border-right: 1px solid #000;
-  padding: 0;
-}
-
-.right-qrcode {
-  width: 30%;
+.main-info {
+  flex: 1;
+  min-height: 0;
   display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 3.5mm;
   align-items: center;
-  justify-content: center;
-  padding: 2mm;
-  height: 100%;
-  min-height: 100px;
-  border-left: 1px solid #000;
 }
 
 .info-table {
   width: 100%;
+  max-width: 50mm;
   border-collapse: collapse;
-  height: 100%;
+  table-layout: fixed;
+  flex-shrink: 0;
+}
+
+.info-table tr.row-two-pair .label-cell {
+  width: 11%;
+}
+
+.info-table tr.row-two-pair .value-cell {
+  width: 39%;
 }
 
 .info-table td {
   border: none;
-  padding: 0.5mm 1.5mm;
-  font-size: 8px;
-  line-height: 1.1;
+  padding: 1.15mm 1mm;
+  font-size: 7px;
+  line-height: 1.72;
+  vertical-align: top;
+  overflow: visible;
 }
 
 .label-cell {
-  width: 30%;
+  width: 28%;
   font-weight: bold;
   background-color: #f9f9f9;
   text-align: left;
-  vertical-align: middle;
-  padding-left: 1.5mm;
+  vertical-align: top;
+  padding-left: 1mm;
   white-space: nowrap;
 }
 
 .value-cell {
-  width: 70%;
+  width: 72%;
   text-align: left;
-  vertical-align: middle;
+  vertical-align: top;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-left: 1.5mm;
+  padding-left: 1mm;
 }
 
-.qrcode-img {
+.barcode-row {
+  flex-shrink: 0;
   width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  min-width: 50px;
-  min-height: 50px;
-  object-fit: contain;
-  display: block;
-  margin: auto;
+  max-width: 50mm;
+  margin: 0 auto;
+  text-align: center;
+  padding: 0.3mm 0 0;
+  box-sizing: border-box;
 }
 
-.qrcode-placeholder {
-  font-size: 9px;
-  color: #999;
+.linear-barcode-img {
+  display: block;
+  margin: 0 auto;
+  max-width: 38mm;
+  width: auto;
+  height: auto;
+  max-height: 7mm;
+  object-fit: contain;
+}
+
+.barcode-placeholder {
+  font-size: 7px;
+  color: #666;
   text-align: center;
-  padding: 10px;
+  padding: 1mm 0;
 }
 </style>

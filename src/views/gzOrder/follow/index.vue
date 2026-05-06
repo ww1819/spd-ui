@@ -909,6 +909,7 @@ export default {
         const queryParams = {
           warehouseId: warehouseId,
           orderNo: orderData.orderNo, // 添加订单号过滤
+          includeZeroQty: true, // 库存为 0 仍可补打条码
           pageNum: 1,
           pageSize: 10000
         };
@@ -994,31 +995,25 @@ export default {
           // 构建单个打印页面，包含所有条码，每个条码占一页
           let printContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>打印条码</title>';
           printContent += '<style>';
-          printContent += '@page {size: 6cm 4cm;margin: 0;}';
+          printContent += '@page {size: 60mm 40mm;margin: 0;}';
           printContent += '*{margin:0;padding:0;box-sizing:border-box;}';
           printContent += 'body{font-family:"Microsoft YaHei",Arial,SimSun,sans-serif;}';
-          printContent += '.barcode-page{width:57mm;height:37mm;margin:0;padding:1.5mm;page-break-after:always;page-break-inside:avoid;}';
+          printContent += '.barcode-page{width:60mm;height:40mm;max-height:40mm;margin:0;padding:0;box-sizing:border-box;overflow:hidden;page-break-after:always;page-break-inside:avoid;break-inside:avoid;}';
           printContent += '.barcode-page:last-child{page-break-after:auto;}';
-          printContent += '.container{width:100%;height:100%;border:2px solid #000;display:flex;flex-direction:column;}';
-          printContent += '.title{text-align:center;font-weight:bold;font-size:11px;padding:1.5mm 0;border-bottom:1px solid #000;background-color:#fff;}';
-          printContent += '.content{flex:1;display:flex;flex-direction:column;height:calc(100% - 12px);}';
-          printContent += '.top-section{display:flex;flex:1;}';
-          printContent += '.left-info{width:70%;border-right:1px solid #000;padding:0;}';
-          printContent += '.right-qrcode{width:30%;display:flex;align-items:center;justify-content:center;padding:0.5mm 2mm;border-right:0.1px solid #000;margin-right:-1px;position:relative;right:-1px;height:75%;align-self:flex-start;margin-top:2mm;}';
-          printContent += '.bottom-section{width:100%;display:flex;}';
-          printContent += '.bottom-left{width:70%;border-right:1px solid #000;padding:0;}';
-          printContent += '.bottom-right{width:30%;padding:0;}';
-          printContent += '.info-table{width:100%;border-collapse:collapse;height:100%;}';
-          printContent += '.info-table td{border:none;padding:0.5mm 1.5mm;font-size:8px;line-height:1.1;}';
-          printContent += '.label-cell{width:30%;font-weight:bold;background-color:#f9f9f9;text-align:left;vertical-align:middle;padding-left:1.5mm;white-space:nowrap;}';
-          printContent += '.value-cell{width:70%;text-align:left;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:1.5mm;}';
-          printContent += '.bottom-table{width:100%;border-collapse:collapse;}';
-          printContent += '.bottom-table td{border:none;padding:0.5mm 1.5mm;font-size:8px;line-height:1.1;}';
-          printContent += '.bottom-label{width:30%;font-weight:bold;background-color:#f9f9f9;text-align:left;vertical-align:middle;padding-left:1.5mm;white-space:nowrap;}';
-          printContent += '.bottom-value{width:70%;text-align:left;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:1.5mm;}';
-          printContent += '.qrcode-img{max-width:40%;max-height:40%;width:auto;height:auto;object-fit:contain;display:block;}';
-          printContent += '.qrcode-placeholder{font-size:9px;color:#999;}';
-          printContent += '@media print{body{margin:0;padding:0;}@page{margin:0;size:6cm 4cm;}';
+          printContent += '.container{width:100%;height:100%;max-height:100%;border:2px solid #000;display:flex;flex-direction:column;box-sizing:border-box;}';
+          printContent += '.title{text-align:center;font-weight:bold;font-size:10px;padding:1mm 0;border-bottom:1px solid #000;background-color:#fff;flex-shrink:0;}';
+          printContent += '.content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}';
+          printContent += '.main-info{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0 3.5mm;align-items:center;}';
+          printContent += '.info-table{width:100%;max-width:50mm;border-collapse:collapse;table-layout:fixed;}';
+          printContent += '.info-table tr.row-two-pair .label-cell{width:11%;}';
+          printContent += '.info-table tr.row-two-pair .value-cell{width:39%;}';
+          printContent += '.info-table td{border:none;padding:1.15mm 1mm;font-size:7px;line-height:1.72;vertical-align:top;overflow:visible;}';
+          printContent += '.label-cell{width:28%;font-weight:bold;background-color:#f9f9f9;text-align:left;vertical-align:top;padding-left:1mm;white-space:nowrap;}';
+          printContent += '.value-cell{width:72%;text-align:left;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:1mm;}';
+          printContent += '.barcode-row{flex-shrink:0;width:100%;max-width:50mm;margin:0 auto;text-align:center;padding:0.3mm 0 0;box-sizing:border-box;}';
+          printContent += '.linear-barcode-img{display:block;margin:0 auto;max-width:38mm;width:auto;height:auto;max-height:7mm;object-fit:contain;}';
+          printContent += '.barcode-placeholder{font-size:7px;color:#666;text-align:center;padding:1mm 0;}';
+          printContent += '@media print{body{margin:0;padding:0;}@page{margin:0;size:60mm 40mm;}';
           printContent += '.barcode-page{page-break-after:always;}}';
           printContent += '</style>';
           printContent += '</head><body>';
@@ -1033,66 +1028,27 @@ export default {
             // 标题
             printContent += '<div class="title">高值院内码</div>';
             
-            // 内容区域
+            // 内容：整表 + 院内码下一行一维码（Code128）
             printContent += '<div class="content">';
-            
-            // 上半部分：前5行信息 + 二维码
-            printContent += '<div class="top-section">';
-            
-            // 左侧信息（前5行）
-            printContent += '<div class="left-info">';
+            printContent += '<div class="main-info">';
             printContent += '<table class="info-table">';
-            
-            // 品名
             const materialName = item.materialName || material.name || '';
-            printContent += '<tr><td class="label-cell">品名</td><td class="value-cell">' + materialName + '</td></tr>';
-            // 批号
-            printContent += '<tr><td class="label-cell">批号</td><td class="value-cell">' + (item.batchNumber || '') + '</td></tr>';
-            // 单价
-            printContent += '<tr><td class="label-cell">单价</td><td class="value-cell">' + (item.price ? parseFloat(item.price).toFixed(2) : '') + '</td></tr>';
-            // 有效期
-            printContent += '<tr><td class="label-cell">有效期</td><td class="value-cell">' + (item.endTime || '') + '</td></tr>';
-            // 规格
-            printContent += '<tr><td class="label-cell">规格</td><td class="value-cell">' + (material.speci || '') + '</td></tr>';
-            
+            printContent += '<tr class="row-two-pair"><td class="label-cell">品名</td><td class="value-cell">' + materialName + '</td><td class="label-cell">规格</td><td class="value-cell">' + (material.speci || '') + '</td></tr>';
+            printContent += '<tr class="row-two-pair"><td class="label-cell">批号</td><td class="value-cell">' + (item.batchNumber || '') + '</td><td class="label-cell">单价</td><td class="value-cell">' + (item.price ? parseFloat(item.price).toFixed(2) : '') + '</td></tr>';
+            printContent += '<tr><td class="label-cell">有效期</td><td class="value-cell" colspan="3">' + (item.endTime || '') + '</td></tr>';
+            const factoryName = (material.fdFactory && material.fdFactory.factoryName) ? material.fdFactory.factoryName : '';
+            printContent += '<tr><td class="label-cell">厂家</td><td class="value-cell" colspan="3">' + factoryName + '</td></tr>';
             printContent += '</table>';
-            printContent += '</div>';
-            
-            // 右侧二维码
-            printContent += '<div class="right-qrcode">';
+            printContent += '<div class="barcode-row">';
             if (inHospitalCode) {
-              // 生成120x120的二维码，通过CSS进一步缩小显示
-              const qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(inHospitalCode);
-              printContent += '<img src="' + qrCodeUrl + '" alt="二维码" class="qrcode-img" />';
+              const linearUrl = 'https://barcode.tec-it.com/barcode.ashx?data=' + encodeURIComponent(String(inHospitalCode)) + '&code=Code128&dpi=72&imagewidth=200&imageheight=56';
+              printContent += '<img src="' + linearUrl + '" alt="院内码条码" class="linear-barcode-img" />';
             } else {
-              printContent += '<div class="qrcode-placeholder">二维码</div>';
+              printContent += '<div class="barcode-placeholder">无院内码</div>';
             }
             printContent += '</div>';
-            
-            printContent += '</div>'; // top-section
-            
-            // 下半部分：厂家和院内码（两列布局）
-            printContent += '<div class="bottom-section">';
-            
-            // 左侧：厂家和院内码
-            printContent += '<div class="bottom-left">';
-            printContent += '<table class="bottom-table">';
-            
-            // 厂家
-            const factoryName = (material.fdFactory && material.fdFactory.factoryName) ? material.fdFactory.factoryName : '';
-            printContent += '<tr><td class="bottom-label">厂家</td><td class="bottom-value">' + factoryName + '</td></tr>';
-            // 院内码 - 显示从库存表查询到的院内码
-            printContent += '<tr><td class="bottom-label">院内码</td><td class="bottom-value">' + (inHospitalCode || '') + '</td></tr>';
-            
-            printContent += '</table>';
-            printContent += '</div>'; // bottom-left
-            
-            // 右侧：空白区域（与二维码区域对齐）
-            printContent += '<div class="bottom-right"></div>';
-            
-            printContent += '</div>'; // bottom-section
-            
-            printContent += '</div>'; // content
+            printContent += '</div>';
+            printContent += '</div>';
             printContent += '</div>'; // container
             printContent += '</div>'; // barcode-page
           });

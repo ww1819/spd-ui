@@ -2,7 +2,7 @@
   <div v-show="show" class="local-modal-mask dep-inventory-select-full-modal">
     <div class="local-modal-content">
       <div class="modal-header">
-        <div class="modal-title">科室库存明细</div>
+        <div class="modal-title">{{ modalTitle }}</div>
         <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
       </div>
       <div class="modal-body">
@@ -41,7 +41,7 @@
               </el-col>
               <el-col :span="6" />
             </el-row>
-            <el-row :gutter="12" class="query-form-row">
+            <el-row v-if="!useMaterialDict" :gutter="12" class="query-form-row">
               <el-col :span="6">
                 <el-form-item label="批次号" prop="batchNo" label-width="100px">
                   <el-input
@@ -93,9 +93,17 @@
             <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable />
             <el-table-column label="型号" align="center" prop="material.model" width="180" show-overflow-tooltip resizable />
             <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="100" show-overflow-tooltip resizable />
-            <el-table-column label="库存数量" align="center" prop="qty" min-width="100" width="100" show-overflow-tooltip resizable />
+            <el-table-column label="库存数量" align="center" min-width="100" width="100" show-overflow-tooltip resizable>
+              <template slot-scope="scope">
+                <span>{{ useMaterialDict ? '--' : (scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '--') }}</span>
+              </template>
+            </el-table-column>
             <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable />
+            <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
+              <template slot-scope="scope">
+                <span>{{ useMaterialDict ? '--' : (scope.row.amt != null && scope.row.amt !== '' ? scope.row.amt : '--') }}</span>
+              </template>
+            </el-table-column>
             <el-table-column label="归属仓库" align="center" width="120" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
@@ -105,12 +113,14 @@
             <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable />
             <el-table-column label="有效期" align="center" prop="endDate" width="140" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
+                <span v-if="scope.row.endDate">{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
+                <span v-else>--</span>
               </template>
             </el-table-column>
             <el-table-column label="生产日期" align="center" prop="beginDate" width="140" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>
+                <span v-if="scope.row.beginDate">{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>
+                <span v-else>--</span>
               </template>
             </el-table-column>
             <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable />
@@ -132,12 +142,14 @@
             </el-table-column>
             <el-table-column label="耗材日期" align="center" prop="materialDate" width="200" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
+                <span v-if="scope.row.materialDate">{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
+                <span v-else>--</span>
               </template>
             </el-table-column>
             <el-table-column label="入库日期" align="center" prop="warehouseDate" width="180" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
+                <span v-if="scope.row.warehouseDate">{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
+                <span v-else>--</span>
               </template>
             </el-table-column>
           </el-table>
@@ -156,6 +168,7 @@
 
 <script>
 import { listInventoryPick } from "@/api/department/depInventory";
+import { listMaterial } from "@/api/foundation/material";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 
@@ -163,7 +176,17 @@ export default {
   name: "SelectDepInventory",
   components: { SelectMaterial, SelectDepartment },
   dicts: ["way_status"],
-  props: ["DialogComponentShow", "departmentValue", "warehouseValue", "selectedDetails"],
+  props: {
+    DialogComponentShow: {},
+    departmentValue: {},
+    warehouseValue: {},
+    selectedDetails: {},
+    /** 为 true 时标题为「添加明细」，数据来自耗材字典 /foundation/material/list，不再查科室库存 */
+    useMaterialDict: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       show: false,
@@ -218,10 +241,54 @@ export default {
     }
   },
   created() {},
+  computed: {
+    modalTitle() {
+      return this.useMaterialDict ? "添加明细" : "科室库存明细";
+    }
+  },
   methods: {
+    /** 字典耗材 -> 与库存行结构接近的表格行，便于共用列模板 */
+    materialDictToTableRow(m) {
+      if (!m) return null;
+      const unitPrice =
+        m.price != null && m.price !== ""
+          ? m.price
+          : m.salePrice != null && m.salePrice !== ""
+            ? m.salePrice
+            : null;
+      return {
+        _fromMaterialDict: true,
+        id: m.id,
+        materialId: m.id,
+        material: m,
+        qty: null,
+        unitPrice,
+        amt: null,
+        batchNo: "",
+        batchNumber: "",
+        materialNo: "",
+        beginDate: null,
+        endDate: null,
+        beginTime: null,
+        endTime: null,
+        warehouse: null,
+        department: null,
+        materialDate: null,
+        warehouseDate: null,
+        supplier: m.supplier || null,
+        fdFactory: m.fdFactory || null
+      };
+    },
     getRowKey(row) {
-      if (!row || row.id == null) return null;
-      return String(row.id);
+      if (!row) return null;
+      if (this.useMaterialDict) {
+        return row.materialId != null ? "dict-" + String(row.materialId) : null;
+      }
+      if (row.id != null) return "inv-" + String(row.id);
+      if (row.materialId != null && row.batchNo != null && row.batchNo !== "") {
+        return "inv-" + String(row.materialId) + "__" + String(row.batchNo);
+      }
+      return row.materialId != null ? "inv-m-" + String(row.materialId) : null;
     },
     restorePageSelection() {
       if (!this.$refs.singleTable || !this.inventoryList || this.inventoryList.length === 0) {
@@ -242,6 +309,49 @@ export default {
     },
     getList() {
       this.loading = true;
+      if (this.useMaterialDict) {
+        const q = {
+          pageNum: this.queryParams.pageNum,
+          pageSize: this.queryParams.pageSize
+        };
+        if (this.queryParams.materialId) {
+          q.id = this.queryParams.materialId;
+        }
+        const kw = this.queryParams.materialKeyword;
+        if (kw != null && String(kw).trim() !== "") {
+          q.name = String(kw).trim();
+        }
+        listMaterial(q)
+          .then((response) => {
+            const materials = response.rows || [];
+            let rows = materials.map((m) => this.materialDictToTableRow(m)).filter(Boolean);
+            if (this.selectedDetails && this.selectedDetails.length) {
+              const existedMaterialIds = new Set(
+                this.selectedDetails
+                  .map((d) => d && d.materialId)
+                  .filter((id) => id != null && id !== "")
+                  .map((id) => String(id))
+              );
+              rows = rows.filter((it) => {
+                const mid =
+                  it.materialId != null
+                    ? String(it.materialId)
+                    : it.material && it.material.id != null
+                      ? String(it.material.id)
+                      : null;
+                return !mid || !existedMaterialIds.has(mid);
+              });
+            }
+            this.inventoryList = rows;
+            this.total = response.total != null ? Number(response.total) : 0;
+            this.loading = false;
+            this.$nextTick(() => this.restorePageSelection());
+          })
+          .catch(() => {
+            this.loading = false;
+          });
+        return;
+      }
       listInventoryPick(this.queryParams)
         .then(response => {
           const rows = response.rows || [];
@@ -286,11 +396,13 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.queryParams.departmentId = this.departmentValue;
+      this.queryParams.materialKeyword = null;
       if (this.warehouseValue != null && this.warehouseValue !== "") {
         this.queryParams.warehouseId = this.warehouseValue;
       } else {
         this.queryParams.warehouseId = null;
       }
+      this.queryParams.batchNo = null;
       this.handleQuery();
     },
     handleSelectionChange(val) {

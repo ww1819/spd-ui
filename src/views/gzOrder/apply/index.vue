@@ -2054,6 +2054,7 @@ export default {
         const queryParams = {
           warehouseId: warehouseId,
           orderNo: orderData.orderNo, // 添加订单号过滤
+          includeZeroQty: true, // 库存为 0 仍可补打条码
           pageNum: 1,
           pageSize: 10000
         };
@@ -2066,6 +2067,7 @@ export default {
             console.log('使用订单号过滤未找到库存，尝试不使用订单号过滤查询');
             return listDepotInventory({
               warehouseId: warehouseId,
+              includeZeroQty: true,
               pageNum: 1,
               pageSize: 10000
             }).then(secondResponse => {
