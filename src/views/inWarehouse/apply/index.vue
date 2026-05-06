@@ -317,14 +317,15 @@
             </el-form-item>
           </el-col>
           <el-col v-show="action" :span="6">
-            <el-form-item label="引用配送单" label-width="80px">
+            <el-form-item label="引用配送单" label-width="80px" :title="deliveryRefBlockTitle">
               <el-input
                 v-model="deliveryRefKeyword"
                 placeholder="配送单号/配送单输入码"
                 clearable
+                :disabled="deliveryRefBlocked"
                 @keyup.enter.native="handleRefDeliverySubmit"
               >
-                <el-button slot="append" icon="el-icon-search" @click="handleRefDeliverySubmit">引用</el-button>
+                <el-button slot="append" icon="el-icon-search" :disabled="deliveryRefBlocked" @click="handleRefDeliverySubmit">引用</el-button>
               </el-input>
             </el-form-item>
           </el-col>
@@ -749,7 +750,7 @@
         <el-table-column label="创建时间" prop="createTime" min-width="170" />
         <el-table-column label="操作" width="90" align="center">
           <template slot-scope="scope">
-            <el-button type="text" size="small" @click="handlePickDelivery(scope.row)">选择</el-button>
+            <el-button type="text" size="small" :disabled="deliveryRefBlocked" :title="deliveryRefBlockTitle" @click="handlePickDelivery(scope.row)">选择</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -899,6 +900,13 @@ export default {
     /** 明细表高度：为弹窗标题、主表表单、工具栏与合计行预留空间，避免底部被父级 overflow 裁切 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
+    },
+    /** 已有入库明细时不允许引用配送单，避免表头与行数据错乱 */
+    deliveryRefBlocked() {
+      return Array.isArray(this.stkIoBillEntryList) && this.stkIoBillEntryList.length > 0;
+    },
+    deliveryRefBlockTitle() {
+      return this.deliveryRefBlocked ? '已有入库明细时不可引用配送单，请先清空明细' : '';
     }
   },
   created() {
@@ -1171,7 +1179,13 @@ export default {
         auditBy: null,
         createrName:null,
         auditPersonName:null,
-        auditDate:null
+        auditDate:null,
+        deliveryRefWarehouseId: null,
+        deliveryRefWarehouseName: null,
+        deliveryRefSupplierId: null,
+        deliveryRefSupplierName: null,
+        deliveryRefDeptId: null,
+        deliveryRefDeptName: null
       };
       this.deliveryRefKeyword = "";
       this.stkIoBillEntryList = [];
@@ -1201,6 +1215,10 @@ export default {
     },
     // 引用配送单：输入配送单号或输入码后查询接口，并生成入库明细
     async handleRefDeliverySubmit() {
+      if (this.deliveryRefBlocked) {
+        this.$message.warning('入库单已存在明细时不能引用配送单，请先清空明细');
+        return;
+      }
       const keyword = (this.deliveryRefKeyword || '').trim();
       if (!keyword) {
         this.$message.warning('请输入配送单号或配送单输入码');
@@ -1229,6 +1247,10 @@ export default {
       });
     },
     async handlePickDelivery(row) {
+      if (this.deliveryRefBlocked) {
+        this.$message.warning('入库单已存在明细时不能引用配送单，请先清空明细');
+        return;
+      }
       const deliveryNo = row && row.deliveryNo ? String(row.deliveryNo).trim() : '';
       if (!deliveryNo) {
         this.$message.warning('配送单号为空，无法引用');
@@ -1266,12 +1288,16 @@ export default {
       }
       this.stkIoBillEntryList = entryList;
       this.form.refBillNo = data.refBillNo || deliveryNo;
-      if (!this.form.supplerId && data.supplerId) {
-        this.form.supplerId = data.supplerId;
-      }
-      if (!this.form.warehouseId && data.warehouseId) {
-        this.form.warehouseId = data.warehouseId;
-      }
+      // 配送单表头强制覆盖已选值（无则清空，避免与配送单不一致）
+      this.form.supplerId = (data.supplerId != null && data.supplerId !== '') ? data.supplerId : null;
+      this.form.warehouseId = (data.warehouseId != null && data.warehouseId !== '') ? data.warehouseId : null;
+      this.form.departmentId = (data.departmentId != null && data.departmentId !== '') ? data.departmentId : null;
+      this.form.deliveryRefWarehouseId = data.deliveryRefWarehouseId || null;
+      this.form.deliveryRefWarehouseName = data.deliveryRefWarehouseName || null;
+      this.form.deliveryRefSupplierId = data.deliveryRefSupplierId || null;
+      this.form.deliveryRefSupplierName = data.deliveryRefSupplierName || null;
+      this.form.deliveryRefDeptId = data.deliveryRefDeptId || null;
+      this.form.deliveryRefDeptName = data.deliveryRefDeptName || null;
       this.$nextTick(() => this.refreshDetailSummary());
       if (data.remark) {
         this.$message.warning(data.remark);
