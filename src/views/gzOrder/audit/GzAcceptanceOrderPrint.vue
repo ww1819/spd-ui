@@ -179,13 +179,18 @@ export default {
     start() {
       const doPrint = () => {
         this.$nextTick(() => {
-          const el = this.$refs.receiptOrderPrintRef || this.$el
-          if (!el) return
-          if (typeof this.$print === 'function') {
-            this.$print(el, { injectPageSize: true, pageMargin: '0 4mm', waitForAssets: true, beforePrintDelay: 320 }, this.pagePaperSize)
-          } else {
-            window.print()
-          }
+          const raf = typeof requestAnimationFrame === 'function'
+            ? requestAnimationFrame
+            : (cb) => setTimeout(cb, 0)
+          raf(() => {
+            const el = this.$refs.receiptOrderPrintRef || this.$el
+            if (!el) return
+            if (typeof this.$print === 'function') {
+              this.$print(el, { injectPageSize: true, pageMargin: '0 4mm', waitForAssets: true, beforePrintDelay: 320 }, this.pagePaperSize)
+            } else {
+              window.print()
+            }
+          })
         })
       }
       Promise.resolve(this.ensureHospitalNameLoaded ? this.ensureHospitalNameLoaded() : null).then(doPrint).catch(doPrint)

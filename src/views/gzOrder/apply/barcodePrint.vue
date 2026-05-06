@@ -96,14 +96,16 @@ export default {
     start() {
       // 等待二维码图片加载完成后再打印
       this.$nextTick(() => {
+        const root = this.$refs.barcodePrintRef || this.$el
+        if (!root || !root.querySelectorAll) return
         // 检查所有二维码是否已加载
-        const images = this.$refs.barcodePrintRef.querySelectorAll('.qrcode-img');
+        const images = root.querySelectorAll('.qrcode-img');
         let loadedCount = 0;
         const totalImages = images.length;
         
         if (totalImages === 0) {
           // 没有二维码图片，直接打印
-          this.$print(this.$refs.barcodePrintRef, {}, '60mm 40mm');
+          this.$print(root, {}, '60mm 40mm');
           return;
         }
         
@@ -112,7 +114,7 @@ export default {
           if (loadedCount >= totalImages) {
             // 所有图片加载完成，延迟一点时间确保渲染完成
             setTimeout(() => {
-              this.$print(this.$refs.barcodePrintRef, {}, '60mm 40mm');
+              this.$print(root, {}, '60mm 40mm');
             }, 100);
           }
         };

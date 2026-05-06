@@ -68,9 +68,6 @@ export default {
       this.canPrint = false
       try {
         const raw = sessionStorage.getItem(GZ_BARCODE_SESSION_KEY)
-        if (raw) {
-          sessionStorage.removeItem(GZ_BARCODE_SESSION_KEY)
-        }
         if (!raw) {
           this.loadError = '未找到条码数据，请从列表重新点击「打印条码」'
           return
@@ -98,6 +95,13 @@ export default {
       if (ref && typeof ref.start === 'function') {
         ref.start()
       }
+    }
+  },
+  beforeDestroy() {
+    try {
+      sessionStorage.removeItem(GZ_BARCODE_SESSION_KEY)
+    } catch (e) {
+      // ignore
     }
   }
 }
