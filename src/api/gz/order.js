@@ -17,6 +17,14 @@ export function getOrder(id) {
   })
 }
 
+/** 主单下院内码明细（打印条码兜底，不依赖备货库存数量） */
+export function listOrderInhospitalcode(orderId) {
+  return request({
+    url: '/gz/order/' + orderId + '/inhospitalcodeList',
+    method: 'get'
+  })
+}
+
 // 新增高值备货入库
 export function addOrder(data) {
   return request({
