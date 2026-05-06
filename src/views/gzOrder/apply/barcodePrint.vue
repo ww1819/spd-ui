@@ -54,6 +54,8 @@
 </template>
 
 <script>
+import { buildCode128DataUrl } from "@/utils/code128DataUrl";
+
 export default {
   name: "BarcodePrint",
   props: {
@@ -72,9 +74,7 @@ export default {
     barcodeListForPrint() {
       return this.barcodeList.map((barcode) => {
         const linearBarcodeUrl = barcode.inHospitalCode
-          ? `https://barcode.tec-it.com/barcode.ashx?data=${encodeURIComponent(
-              String(barcode.inHospitalCode)
-            )}&code=Code128&dpi=120&imagewidth=360&imageheight=100`
+          ? buildCode128DataUrl(String(barcode.inHospitalCode))
           : "";
         return {
           ...barcode,

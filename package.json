@@ -49,6 +49,7 @@
     "highlight.js": "9.18.5",
     "js-beautify": "1.13.0",
     "js-cookie": "3.0.1",
+    "jsbarcode": "^3.11.6",
     "jsencrypt": "3.0.0-rc.1",
     "kr-print-designer": "^1.1.8",
     "nprogress": "0.2.0",

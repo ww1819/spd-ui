@@ -429,6 +429,7 @@ import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
+import { buildCode128DataUrl } from "@/utils/code128DataUrl";
 
 export default {
   name: "Follow",
@@ -1047,8 +1048,12 @@ export default {
             printContent += '</table>';
             printContent += '<div class="barcode-row">';
             if (inHospitalCode) {
-              const linearUrl = 'https://barcode.tec-it.com/barcode.ashx?data=' + encodeURIComponent(String(inHospitalCode)) + '&code=Code128&dpi=120&imagewidth=360&imageheight=100';
-              printContent += '<img src="' + linearUrl + '" alt="院内码条码" class="linear-barcode-img" />';
+              const linearDataUrl = buildCode128DataUrl(String(inHospitalCode));
+              if (linearDataUrl) {
+                printContent += '<img src="' + linearDataUrl + '" alt="院内码条码" class="linear-barcode-img" />';
+              } else {
+                printContent += '<div class="barcode-placeholder">条码未生成</div>';
+              }
             } else {
               printContent += '<div class="barcode-placeholder">无院内码</div>';
             }
