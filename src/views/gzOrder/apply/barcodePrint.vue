@@ -63,7 +63,7 @@
 </template>
 
 <script>
-import { buildCode128DataUrl } from "@/utils/code128DataUrl";
+import { buildCode128DataUrl, normalizeBarcodePayload } from "@/utils/code128DataUrl";
 
 export default {
   name: "BarcodePrint",
@@ -86,11 +86,11 @@ export default {
     /** Code128 一维码图片（院内码内容） */
     barcodeListForPrint() {
       return this.barcodeList.map((barcode) => {
-        const linearBarcodeUrl = barcode.inHospitalCode
-          ? buildCode128DataUrl(String(barcode.inHospitalCode))
-          : "";
+        const codeNorm = normalizeBarcodePayload(barcode.inHospitalCode);
+        const linearBarcodeUrl = codeNorm ? buildCode128DataUrl(codeNorm) : "";
         return {
           ...barcode,
+          inHospitalCode: codeNorm,
           linearBarcodeUrl
         };
       });

@@ -429,7 +429,7 @@ import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
-import { buildCode128DataUrl } from "@/utils/code128DataUrl";
+import { buildCode128DataUrl, normalizeBarcodePayload } from "@/utils/code128DataUrl";
 
 export default {
   name: "Follow",
@@ -1057,10 +1057,11 @@ export default {
             printContent += '</table>';
             printContent += '<div class="barcode-row">';
             if (inHospitalCode) {
-              const linearDataUrl = buildCode128DataUrl(String(inHospitalCode));
+              const codeNorm = normalizeBarcodePayload(String(inHospitalCode));
+              const linearDataUrl = codeNorm ? buildCode128DataUrl(codeNorm) : "";
               if (linearDataUrl) {
                 printContent += '<img src="' + linearDataUrl + '" alt="院内码条码" class="linear-barcode-img" />';
-                const codeEsc = String(inHospitalCode)
+                const codeEsc = String(codeNorm)
                   .replace(/&/g, "&amp;")
                   .replace(/</g, "&lt;")
                   .replace(/>/g, "&gt;")
