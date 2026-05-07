@@ -18,11 +18,12 @@ export function saveTenantScmBind(data) {
   })
 }
 
-/** 当前租户下全部供应商编码绑定 */
-export function listSupplierScmBind() {
+/** 当前租户下供应商编码绑定（可选模糊条件：spdSupplierCode、scmSupplierCode、referredCode） */
+export function listSupplierScmBind(query) {
   return request({
     url: '/caigou/scmBind/supplier/list',
-    method: 'get'
+    method: 'get',
+    params: query || {}
   })
 }
 
@@ -38,5 +39,13 @@ export function saveSupplierScmBind(data) {
     url: '/caigou/scmBind/supplier',
     method: 'put',
     data
+  })
+}
+
+/** 逻辑删除供应商绑定；supplierIds 为单个 ID 或逗号分隔多个 */
+export function delSupplierScmBind(supplierIds) {
+  return request({
+    url: '/caigou/scmBind/supplier/' + supplierIds,
+    method: 'delete'
   })
 }

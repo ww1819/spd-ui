@@ -37,34 +37,110 @@
           <el-button type="primary" @click="addSupplierBind">新增绑定</el-button>
         </el-form-item>
       </el-form>
-      <el-table v-loading="supplierLoading" :data="supplierList" border size="small">
+      <el-form :inline="true" size="small" class="mb12 supplier-query-bar">
+        <el-form-item label="SPD供应商编码">
+          <el-input
+            v-model="supplierQuery.spdSupplierCode"
+            clearable
+            placeholder="模糊"
+            style="width: 168px"
+            @keyup.enter.native="handleSupplierQuery"
+          />
+        </el-form-item>
+        <el-form-item label="平台供应商编码">
+          <el-input
+            v-model="supplierQuery.scmSupplierCode"
+            clearable
+            placeholder="模糊"
+            style="width: 168px"
+            @keyup.enter.native="handleSupplierQuery"
+          />
+        </el-form-item>
+        <el-form-item label="名称简码">
+          <el-input
+            v-model="supplierQuery.referredCode"
+            clearable
+            placeholder="拼音简码，模糊"
+            style="width: 168px"
+            @keyup.enter.native="handleSupplierQuery"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleSupplierQuery">查询</el-button>
+          <el-button @click="resetSupplierQuery">重置</el-button>
+          <el-button
+            type="danger"
+            plain
+            :disabled="supplierSelection.length === 0"
+            @click="batchDeleteSupplier"
+            v-hasPermi="['caigou:scmBind:remove']"
+          >批量删除</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table
+        ref="supplierTable"
+        v-loading="supplierLoading"
+        :data="supplierList"
+        border
+        size="small"
+        row-key="supplierId"
+        @selection-change="handleSupplierSelectionChange"
+      >
+        <el-table-column type="selection" width="50" align="center" />
         <el-table-column label="SPD供应商ID" prop="supplierId" width="130" align="center" />
+        <el-table-column label="SPD供应商编码" prop="supplierCode" min-width="140" show-overflow-tooltip />
         <el-table-column label="SPD供应商名称" prop="supplierName" min-width="180" show-overflow-tooltip />
-        <el-table-column label="平台供应商编码" min-width="200">
+        <el-table-column label="平台供应商编码" prop="scmSupplierCode" min-width="200" show-overflow-tooltip />
+        <el-table-column label="备注" prop="remark" min-width="160" show-overflow-tooltip>
           <template slot-scope="scope">
-            <el-input v-model="scope.row.scmSupplierCode" size="small" />
+            <span>{{ scope.row.remark != null && scope.row.remark !== '' ? scope.row.remark : '—' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="备注" min-width="160">
+        <el-table-column label="操作" width="130" align="center" fixed="right">
           <template slot-scope="scope">
-            <el-input v-model="scope.row.remark" size="small" />
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100" align="center" fixed="right">
-          <template slot-scope="scope">
-            <el-button type="text" size="small" @click="saveSupplierRow(scope.row)" v-hasPermi="['caigou:scmBind:edit']">保存</el-button>
+            <el-button type="text" size="small" @click="openSupplierEdit(scope.row)" v-hasPermi="['caigou:scmBind:edit']">修改</el-button>
+            <el-button type="text" size="small" style="color: #f56c6c" @click="deleteSupplierRow(scope.row)" v-hasPermi="['caigou:scmBind:remove']">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
+
+      <el-dialog
+        title="修改平台编码绑定"
+        :visible.sync="supplierEditVisible"
+        width="520px"
+        append-to-body
+        destroy-on-close
+        @close="resetSupplierEditForm"
+      >
+        <el-form ref="supplierEditFormRef" :model="supplierEditForm" :rules="supplierEditRules" label-width="130px" size="small">
+          <el-form-item label="SPD供应商">
+            <span>{{ supplierEditForm.supplierName || '—' }}</span>
+            <span style="color: #909399; margin-left: 8px">ID: {{ supplierEditForm.supplierId }}</span>
+          </el-form-item>
+          <el-form-item label="SPD供应商编码">
+            <span>{{ supplierEditForm.supplierCode || '—' }}</span>
+          </el-form-item>
+          <el-form-item label="平台供应商编码" prop="scmSupplierCode">
+            <el-input v-model="supplierEditForm.scmSupplierCode" clearable placeholder="与云平台 supplier_code 一致" maxlength="64" show-word-limit />
+          </el-form-item>
+          <el-form-item label="备注" prop="remark">
+            <el-input v-model="supplierEditForm.remark" type="textarea" :rows="3" maxlength="500" show-word-limit placeholder="选填" />
+          </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="supplierEditVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitSupplierEdit">确定</el-button>
+        </div>
+      </el-dialog>
       <p class="text-muted" style="margin-top: 12px; color: #909399; font-size: 13px;">
-        说明：列表为当前租户下已存在的有效绑定（逻辑删除 del_flag=1 的不展示）；新增时请先选择本地供应商并填写平台编码。
+        说明：列表为当前租户下已存在的有效绑定（逻辑删除 del_flag=1 的不展示）；同一 SPD 供应商在本租户下仅允许一条对照记录；多家供应商可维护相同的平台供应商编码。新增时请先选择本地供应商并填写平台编码。
       </p>
     </el-card>
   </div>
 </template>
 
 <script>
-import { getTenantScmBind, saveTenantScmBind, listSupplierScmBind, saveSupplierScmBind } from '@/api/caigou/scmBind'
+import { getTenantScmBind, saveTenantScmBind, listSupplierScmBind, saveSupplierScmBind, delSupplierScmBind } from '@/api/caigou/scmBind'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier'
 
 export default {
@@ -82,6 +158,25 @@ export default {
         supplierId: undefined,
         scmSupplierCode: '',
         remark: ''
+      },
+      supplierQuery: {
+        spdSupplierCode: '',
+        scmSupplierCode: '',
+        referredCode: ''
+      },
+      supplierSelection: [],
+      supplierEditVisible: false,
+      supplierEditForm: {
+        supplierId: undefined,
+        supplierName: '',
+        supplierCode: '',
+        scmSupplierCode: '',
+        remark: ''
+      },
+      supplierEditRules: {
+        scmSupplierCode: [
+          { required: true, message: '平台供应商编码不能为空', trigger: 'blur' }
+        ]
       }
     }
   },
@@ -104,14 +199,73 @@ export default {
     },
     loadSuppliers() {
       this.supplierLoading = true
-      listSupplierScmBind()
+      const params = {}
+      const q = this.supplierQuery || {}
+      ;['spdSupplierCode', 'scmSupplierCode', 'referredCode'].forEach(key => {
+        const v = q[key]
+        if (v != null && String(v).trim() !== '') {
+          params[key] = String(v).trim()
+        }
+      })
+      listSupplierScmBind(params)
         .then(res => {
           const rows = res && res.data != null ? res.data : []
           this.supplierList = Array.isArray(rows) ? rows.map(r => ({ ...r })) : []
+          this.supplierSelection = []
+          this.$nextTick(() => {
+            if (this.$refs.supplierTable) {
+              this.$refs.supplierTable.clearSelection()
+            }
+          })
         })
         .finally(() => {
           this.supplierLoading = false
         })
+    },
+    handleSupplierQuery() {
+      this.loadSuppliers()
+    },
+    resetSupplierQuery() {
+      this.supplierQuery = {
+        spdSupplierCode: '',
+        scmSupplierCode: '',
+        referredCode: ''
+      }
+      this.loadSuppliers()
+    },
+    handleSupplierSelectionChange(rows) {
+      this.supplierSelection = rows || []
+    },
+    deleteSupplierRow(row) {
+      if (!row || row.supplierId == null || row.supplierId === '') {
+        this.$modal.msgError('供应商ID无效')
+        return
+      }
+      const sid = row.supplierId
+      this.$modal.confirm('是否确认删除 SPD 供应商「' + (row.supplierName || sid) + '」的平台编码绑定？').then(() => {
+        return delSupplierScmBind(sid)
+      }).then(() => {
+        this.$modal.msgSuccess('删除成功')
+        this.loadSuppliers()
+      }).catch(() => {})
+    },
+    batchDeleteSupplier() {
+      const sel = this.supplierSelection || []
+      if (sel.length === 0) {
+        this.$modal.msgError('请先勾选要删除的绑定')
+        return
+      }
+      const ids = sel.map(r => r.supplierId).filter(id => id != null && id !== '')
+      if (ids.length === 0) {
+        this.$modal.msgError('未获取到有效的供应商ID')
+        return
+      }
+      this.$modal.confirm('是否确认删除选中的 ' + ids.length + ' 条供应商平台编码绑定？').then(() => {
+        return delSupplierScmBind(ids.join(','))
+      }).then(() => {
+        this.$modal.msgSuccess('删除成功')
+        this.loadSuppliers()
+      }).catch(() => {})
     },
     saveTenant() {
       saveTenantScmBind({
@@ -122,18 +276,59 @@ export default {
         this.loadTenant()
       })
     },
-    saveSupplierRow(row) {
-      if (!row || !row.supplierId) {
+    openSupplierEdit(row) {
+      if (!row || row.supplierId == null || row.supplierId === '') {
         this.$modal.msgError('供应商ID无效')
         return
       }
-      saveSupplierScmBind({
-        supplierId: Number(row.supplierId),
-        scmSupplierCode: row.scmSupplierCode,
-        remark: row.remark
-      }).then(() => {
-        this.$modal.msgSuccess('保存成功')
-        this.loadSuppliers()
+      this.supplierEditForm = {
+        supplierId: row.supplierId,
+        supplierName: row.supplierName || '',
+        supplierCode: row.supplierCode || '',
+        scmSupplierCode: row.scmSupplierCode != null ? String(row.scmSupplierCode) : '',
+        remark: row.remark != null ? String(row.remark) : ''
+      }
+      this.supplierEditVisible = true
+      this.$nextTick(() => {
+        if (this.$refs.supplierEditFormRef) {
+          this.$refs.supplierEditFormRef.clearValidate()
+        }
+      })
+    },
+    resetSupplierEditForm() {
+      this.supplierEditForm = {
+        supplierId: undefined,
+        supplierName: '',
+        supplierCode: '',
+        scmSupplierCode: '',
+        remark: ''
+      }
+      if (this.$refs.supplierEditFormRef) {
+        this.$refs.supplierEditFormRef.clearValidate()
+      }
+    },
+    submitSupplierEdit() {
+      this.$refs.supplierEditFormRef.validate(valid => {
+        if (!valid) return
+        const f = this.supplierEditForm
+        if (!f.supplierId) {
+          this.$modal.msgError('供应商ID无效')
+          return
+        }
+        const code = f.scmSupplierCode != null ? String(f.scmSupplierCode).trim() : ''
+        if (!code) {
+          this.$modal.msgError('请填写平台供应商编码')
+          return
+        }
+        saveSupplierScmBind({
+          supplierId: Number(f.supplierId),
+          scmSupplierCode: code,
+          remark: f.remark
+        }).then(() => {
+          this.$modal.msgSuccess('保存成功')
+          this.supplierEditVisible = false
+          this.loadSuppliers()
+        })
       })
     },
     addSupplierBind() {
