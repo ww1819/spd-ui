@@ -429,7 +429,7 @@ import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
-import { buildCode128DataUrl } from "@/utils/code128DataUrl";
+import { buildCode128DataUrl, normalizeBarcodePayload } from "@/utils/code128DataUrl";
 
 export default {
   name: "Follow",
@@ -1003,7 +1003,7 @@ export default {
           printContent += '.barcode-page:last-child{page-break-after:auto;}';
           printContent += '.container{width:100%;height:100%;max-height:100%;border:none;display:flex;flex-direction:column;align-items:stretch;box-sizing:border-box;background-color:#fff;}';
           printContent += '.title-block{width:100%;min-width:100%;max-width:100%;flex-shrink:0;box-sizing:border-box;align-self:stretch;}';
-          printContent += '.title{text-align:center;font-weight:bold;font-size:13px;padding:1mm 0 0.6mm;border:none;background-color:#fff;flex-shrink:0;}';
+          printContent += '.title{text-align:center;font-weight:bold;font-size:13px;line-height:1.12;padding:0.35mm 0 0.12mm;border:none;background-color:#fff;flex-shrink:0;}';
           printContent += '.barcode-page .title-line{display:block;width:100%;max-width:100%;height:0;margin:0;padding:0;border:none;border-top:0.75pt solid #000!important;background:none!important;flex-shrink:0;box-sizing:content-box;}';
           printContent += '.content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;background-color:#fff;}';
           printContent += '.main-info{flex:0 0 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0 1.4mm;align-items:center;background-color:#fff;}';
@@ -1057,10 +1057,11 @@ export default {
             printContent += '</table>';
             printContent += '<div class="barcode-row">';
             if (inHospitalCode) {
-              const linearDataUrl = buildCode128DataUrl(String(inHospitalCode));
+              const codeNorm = normalizeBarcodePayload(String(inHospitalCode));
+              const linearDataUrl = codeNorm ? buildCode128DataUrl(codeNorm) : "";
               if (linearDataUrl) {
                 printContent += '<img src="' + linearDataUrl + '" alt="院内码条码" class="linear-barcode-img" />';
-                const codeEsc = String(inHospitalCode)
+                const codeEsc = String(codeNorm)
                   .replace(/&/g, "&amp;")
                   .replace(/</g, "&lt;")
                   .replace(/>/g, "&gt;")
