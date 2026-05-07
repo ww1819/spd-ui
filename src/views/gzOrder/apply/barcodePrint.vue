@@ -202,7 +202,8 @@ export default {
     text-align: center;
     font-weight: bold;
     font-size: 13px;
-    padding: 1mm 0 0.6mm;
+    line-height: 1.12;
+    padding: 0.35mm 0 0.12mm;
     border: none;
     background-color: #fff;
     flex-shrink: 0;
@@ -448,7 +449,8 @@ export default {
   text-align: center;
   font-weight: bold;
   font-size: 13px;
-  padding: 1mm 0 0.6mm;
+  line-height: 1.12;
+  padding: 0.35mm 0 0.12mm;
   border: none;
   background-color: #fff;
   flex-shrink: 0;

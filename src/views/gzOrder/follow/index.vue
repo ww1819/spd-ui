@@ -1003,7 +1003,7 @@ export default {
           printContent += '.barcode-page:last-child{page-break-after:auto;}';
           printContent += '.container{width:100%;height:100%;max-height:100%;border:none;display:flex;flex-direction:column;align-items:stretch;box-sizing:border-box;background-color:#fff;}';
           printContent += '.title-block{width:100%;min-width:100%;max-width:100%;flex-shrink:0;box-sizing:border-box;align-self:stretch;}';
-          printContent += '.title{text-align:center;font-weight:bold;font-size:13px;padding:1mm 0 0.6mm;border:none;background-color:#fff;flex-shrink:0;}';
+          printContent += '.title{text-align:center;font-weight:bold;font-size:13px;line-height:1.12;padding:0.35mm 0 0.12mm;border:none;background-color:#fff;flex-shrink:0;}';
           printContent += '.barcode-page .title-line{display:block;width:100%;max-width:100%;height:0;margin:0;padding:0;border:none;border-top:0.75pt solid #000!important;background:none!important;flex-shrink:0;box-sizing:content-box;}';
           printContent += '.content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;background-color:#fff;}';
           printContent += '.main-info{flex:0 0 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0 1.4mm;align-items:center;background-color:#fff;}';
