@@ -40,10 +40,10 @@ export function buildCode128DataUrl(text) {
   try {
     JsBarcode(canvas, s, {
       format: "CODE128B",
-      width: 2.5,
-      height: 100,
+      width: 2,
+      height: 52,
       displayValue: false,
-      margin: 2,
+      margin: 1,
       background: "#ffffff",
       lineColor: "#000000",
     });

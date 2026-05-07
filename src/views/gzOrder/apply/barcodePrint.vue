@@ -4,7 +4,6 @@
       <div class="container">
         <div class="title-block">
           <div class="title">高值备货码</div>
-          <div class="title-line" aria-hidden="true"></div>
         </div>
 
         <div class="content">
@@ -17,23 +16,23 @@
                 <col class="col-val" />
               </colgroup>
               <tr class="row-two-pair">
-                <td class="label-cell">品名</td>
+                <td class="label-cell">品&#12288;名：</td>
                 <td class="value-cell">{{ barcode.materialName }}</td>
-                <td class="label-cell">规格</td>
+                <td class="label-cell">规&#12288;格：</td>
                 <td class="value-cell">{{ barcode.speci }}</td>
               </tr>
               <tr class="row-two-pair">
-                <td class="label-cell">批号</td>
+                <td class="label-cell">批&#12288;号：</td>
                 <td class="value-cell">{{ barcode.batchNumber }}</td>
-                <td class="label-cell">单价</td>
+                <td class="label-cell">单&#12288;价：</td>
                 <td class="value-cell">{{ barcode.price }}</td>
               </tr>
               <tr>
-                <td class="label-cell">有效期</td>
+                <td class="label-cell">有效期：</td>
                 <td class="value-cell" colspan="3">{{ barcode.endTime }}</td>
               </tr>
               <tr>
-                <td class="label-cell">厂家</td>
+                <td class="label-cell">厂&#12288;家：</td>
                 <td class="value-cell" colspan="3">{{ barcode.factoryName }}</td>
               </tr>
             </table>
@@ -99,12 +98,14 @@ export default {
   methods: {
     start() {
       this.$nextTick(() => {
-        const images = this.$refs.barcodePrintRef.querySelectorAll(".linear-barcode-img");
+        const root = this.$refs.barcodePrintRef || this.$el;
+        if (!root || !root.querySelectorAll) return;
+        const images = root.querySelectorAll(".linear-barcode-img");
         let loadedCount = 0;
         const totalImages = images.length;
 
         if (totalImages === 0) {
-          this.$print(this.$refs.barcodePrintRef, {}, "40mm 60mm");
+          this.$print(root, {}, "60mm 40mm");
           return;
         }
 
@@ -112,7 +113,7 @@ export default {
           loadedCount++;
           if (loadedCount >= totalImages) {
             setTimeout(() => {
-              this.$print(this.$refs.barcodePrintRef, {}, "40mm 60mm");
+              this.$print(root, {}, "60mm 40mm");
             }, 100);
           }
         };
@@ -141,9 +142,9 @@ export default {
 </script>
 
 <style lang="stylus" media="print">
-/* 宽×高：40×60 为纵向标签页，避免预览/打印机按 60×40 走横向 */
+/* 宽×高：60×40 mm（横向标签） */
 @page {
-  size: 40mm 60mm;
+  size: 60mm 40mm;
   margin: 0;
 }
 
@@ -155,12 +156,15 @@ export default {
   .barcode-print-container {
     width: 100% !important;
     background-color: #fff !important;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif !important;
+    font-weight: 400 !important;
+    -webkit-font-smoothing: antialiased;
   }
 
   .barcode-page {
-    width: 40mm;
-    height: 60mm;
-    max-height: 60mm;
+    width: 60mm;
+    height: 40mm;
+    max-height: 40mm;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -196,32 +200,26 @@ export default {
     flex-shrink: 0;
     box-sizing: border-box;
     align-self: stretch;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
   }
 
   .title {
+    display: block;
+    width: 100%;
+    margin: 0;
     text-align: center;
-    font-weight: bold;
-    font-size: 13px;
+    font-weight: 600;
+    font-size: 11px;
     line-height: 1.12;
-    padding: 0.35mm 0 0.12mm;
+    padding: 0.25mm 0 0.08mm;
     border: none;
     background-color: #fff;
     flex-shrink: 0;
-  }
-
-  /* pt 线宽对齐打印机栅格；略宽于纸内宽，减少两侧“缺一段”感 */
-  .barcode-page .title-line {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    height: 0;
-    margin: 0;
-    padding: 0;
-    border: none;
-    border-top: 0.75pt solid #000 !important;
-    background: none !important;
-    flex-shrink: 0;
-    box-sizing: content-box;
+    box-sizing: border-box;
   }
 
   .content {
@@ -239,8 +237,10 @@ export default {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: 0 1.4mm;
-    align-items: center;
+    padding: 0 0.25mm;
+    align-items: stretch;
+    width: 100%;
+    box-sizing: border-box;
     background-color: #fff;
   }
 
@@ -253,15 +253,15 @@ export default {
   }
 
   .info-table col.col-lab {
-    width: 14%;
+    width: 15%;
   }
 
   .info-table col.col-val-wide {
-    width: 38%;
+    width: 37%;
   }
 
   .info-table col.col-val {
-    width: 34%;
+    width: 35%;
   }
 
   .info-table tr.row-two-pair .value-cell {
@@ -271,15 +271,14 @@ export default {
     max-width: 0;
   }
 
-  /* 有效期、厂家：标签列加宽，与值拉开 */
   .info-table tr:not(.row-two-pair) .label-cell {
     width: 34%;
-    padding-right: 2.45mm;
+    padding-right: 0;
   }
 
   .info-table tr:not(.row-two-pair) .value-cell {
     width: 66%;
-    padding-left: 2.2mm;
+    padding-left: 0.1mm;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -289,39 +288,38 @@ export default {
 
   .info-table td {
     border: none;
-    padding: 0.68mm 0.55mm;
-    font-size: 10px;
-    line-height: 1.42;
+    padding: 0.42mm 0.35mm;
+    font-size: 8.5px;
+    line-height: 1.32;
     vertical-align: top;
     overflow: visible;
   }
 
   .info-table tr.row-two-pair td:nth-child(1) {
-    padding-left: 0.25mm;
+    padding-left: 0.15mm;
   }
 
-  /* 第一行：品名值与「规格」中间留大缝；第二行：批号与「单价」间收紧，多给批号显示宽度 */
   .info-table tr.row-two-pair:first-child td:nth-child(2) {
-    padding-right: 2.45mm;
+    padding-right: 0.35mm;
   }
 
   .info-table tr.row-two-pair:nth-child(2) td:nth-child(2) {
-    padding-right: 0.85mm;
+    padding-right: 0.35mm;
   }
 
   .info-table tr.row-two-pair:first-child td:nth-child(3) {
-    padding-left: 2.35mm;
-    padding-right: 0.85mm;
+    padding-left: 0.35mm;
+    padding-right: 0.35mm;
   }
 
   .info-table tr.row-two-pair:nth-child(2) td:nth-child(3) {
-    padding-left: 0.55mm;
-    padding-right: 0.85mm;
+    padding-left: 0.35mm;
+    padding-right: 0.35mm;
   }
 
   .info-table tr.row-two-pair td:nth-child(4) {
-    padding-left: 1.55mm;
-    padding-right: 0.25mm;
+    padding-left: 0.1mm;
+    padding-right: 0.15mm;
   }
 
   .info-table tr.row-two-pair:first-child td {
@@ -334,12 +332,12 @@ export default {
 
   .label-cell {
     width: 34%;
-    font-weight: bold;
+    font-weight: 500;
     background-color: #f9f9f9;
     text-align: left;
     vertical-align: top;
-    padding-left: 0.6mm;
-    padding-right: 1.35mm;
+    padding-left: 0.15mm;
+    padding-right: 0;
     white-space: nowrap;
   }
 
@@ -351,28 +349,33 @@ export default {
     overflow: visible;
     word-break: break-all;
     overflow-wrap: anywhere;
-    padding-left: 1mm;
-    padding-right: 0.35mm;
+    padding-left: 0.1mm;
+    padding-right: 0.25mm;
   }
 
   .barcode-row {
     flex-shrink: 0;
     width: 100%;
     max-width: 100%;
-    margin: 0 auto;
-    text-align: center;
-    padding: 0.3mm 0 0;
+    margin: 0;
+    padding: 0.15mm 0 0;
     box-sizing: border-box;
     background-color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
   }
 
   .linear-barcode-img {
     display: block;
-    margin: 0 auto;
-    max-width: 35mm;
+    flex-shrink: 0;
+    margin: 0;
+    max-width: 58mm;
     width: auto;
     height: auto;
-    max-height: 8.6mm;
+    max-height: 5.2mm;
     object-fit: contain;
     border: none !important;
     outline: none !important;
@@ -380,11 +383,16 @@ export default {
   }
 
   .barcode-code-text {
-    font-size: 9px;
-    line-height: 1.2;
+    display: block;
+    width: 100%;
+    max-width: 58mm;
+    margin: 0.15mm 0 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-size: 7.5px;
+    font-weight: 400;
+    line-height: 1.15;
     text-align: center;
-    margin-top: 0.3mm;
-    padding: 0 0.8mm;
     color: #000;
     white-space: nowrap;
     overflow: hidden;
@@ -392,10 +400,15 @@ export default {
   }
 
   .barcode-placeholder {
-    font-size: 10px;
+    display: block;
+    width: 100%;
+    max-width: 58mm;
+    margin: 0;
+    font-size: 8px;
     color: #666;
     text-align: center;
     padding: 1mm 0;
+    box-sizing: border-box;
   }
 }
 </style>
@@ -403,13 +416,16 @@ export default {
 <style lang="stylus" scoped>
 .barcode-print-container {
   padding: 0;
-  line-height: 1.4;
+  line-height: 1.32;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
 }
 
 .barcode-page {
-  width: 40mm;
-  height: 60mm;
-  max-height: 60mm;
+  width: 60mm;
+  height: 40mm;
+  max-height: 40mm;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -443,31 +459,26 @@ export default {
   flex-shrink: 0;
   box-sizing: border-box;
   align-self: stretch;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .title {
+  display: block;
+  width: 100%;
+  margin: 0;
   text-align: center;
-  font-weight: bold;
-  font-size: 13px;
+  font-weight: 600;
+  font-size: 11px;
   line-height: 1.12;
-  padding: 0.35mm 0 0.12mm;
+  padding: 0.25mm 0 0.08mm;
   border: none;
   background-color: #fff;
   flex-shrink: 0;
-}
-
-.barcode-page .title-line {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  height: 0;
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-top: 0.75pt solid #000;
-  background: none;
-  flex-shrink: 0;
-  box-sizing: content-box;
+  box-sizing: border-box;
 }
 
 .content {
@@ -485,8 +496,10 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 0 1.4mm;
-  align-items: center;
+  padding: 0 0.25mm;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
   background-color: #fff;
 }
 
@@ -499,15 +512,15 @@ export default {
 }
 
 .info-table col.col-lab {
-  width: 14%;
+  width: 15%;
 }
 
 .info-table col.col-val-wide {
-  width: 38%;
+  width: 37%;
 }
 
 .info-table col.col-val {
-  width: 34%;
+  width: 35%;
 }
 
 .info-table tr.row-two-pair .value-cell {
@@ -519,12 +532,12 @@ export default {
 
 .info-table tr:not(.row-two-pair) .label-cell {
   width: 34%;
-  padding-right: 2.45mm;
+  padding-right: 0;
 }
 
 .info-table tr:not(.row-two-pair) .value-cell {
   width: 66%;
-  padding-left: 2.2mm;
+  padding-left: 0.1mm;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -534,38 +547,38 @@ export default {
 
 .info-table td {
   border: none;
-  padding: 0.68mm 0.55mm;
-  font-size: 10px;
-  line-height: 1.42;
+  padding: 0.42mm 0.35mm;
+  font-size: 8.5px;
+  line-height: 1.32;
   vertical-align: top;
   overflow: visible;
 }
 
 .info-table tr.row-two-pair td:nth-child(1) {
-  padding-left: 0.25mm;
+  padding-left: 0.15mm;
 }
 
 .info-table tr.row-two-pair:first-child td:nth-child(2) {
-  padding-right: 2.45mm;
+  padding-right: 0.35mm;
 }
 
 .info-table tr.row-two-pair:nth-child(2) td:nth-child(2) {
-  padding-right: 0.85mm;
+  padding-right: 0.35mm;
 }
 
 .info-table tr.row-two-pair:first-child td:nth-child(3) {
-  padding-left: 2.35mm;
-  padding-right: 0.85mm;
+  padding-left: 0.35mm;
+  padding-right: 0.35mm;
 }
 
 .info-table tr.row-two-pair:nth-child(2) td:nth-child(3) {
-  padding-left: 0.55mm;
-  padding-right: 0.85mm;
+  padding-left: 0.35mm;
+  padding-right: 0.35mm;
 }
 
 .info-table tr.row-two-pair td:nth-child(4) {
-  padding-left: 1.55mm;
-  padding-right: 0.25mm;
+  padding-left: 0.1mm;
+  padding-right: 0.15mm;
 }
 
 .info-table tr.row-two-pair:first-child td {
@@ -578,12 +591,12 @@ export default {
 
 .label-cell {
   width: 34%;
-  font-weight: bold;
+  font-weight: 500;
   background-color: #f9f9f9;
   text-align: left;
   vertical-align: top;
-  padding-left: 0.6mm;
-  padding-right: 1.35mm;
+  padding-left: 0.15mm;
+  padding-right: 0;
   white-space: nowrap;
 }
 
@@ -595,28 +608,33 @@ export default {
   overflow: visible;
   word-break: break-all;
   overflow-wrap: anywhere;
-  padding-left: 1mm;
-  padding-right: 0.35mm;
+  padding-left: 0.1mm;
+  padding-right: 0.25mm;
 }
 
 .barcode-row {
   flex-shrink: 0;
   width: 100%;
   max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  padding: 0.3mm 0 0;
+  margin: 0;
+  padding: 0.15mm 0 0;
   box-sizing: border-box;
   background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
 }
 
 .linear-barcode-img {
   display: block;
-  margin: 0 auto;
-  max-width: 35mm;
+  flex-shrink: 0;
+  margin: 0;
+  max-width: 58mm;
   width: auto;
   height: auto;
-  max-height: 8.6mm;
+  max-height: 5.2mm;
   object-fit: contain;
   border: none;
   outline: none;
@@ -624,11 +642,16 @@ export default {
 }
 
 .barcode-code-text {
-  font-size: 9px;
-  line-height: 1.2;
+  display: block;
+  width: 100%;
+  max-width: 58mm;
+  margin: 0.15mm 0 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-size: 7.5px;
+  font-weight: 400;
+  line-height: 1.15;
   text-align: center;
-  margin-top: 0.3mm;
-  padding: 0 0.8mm;
   color: #000;
   white-space: nowrap;
   overflow: hidden;
@@ -636,9 +659,14 @@ export default {
 }
 
 .barcode-placeholder {
-  font-size: 10px;
+  display: block;
+  width: 100%;
+  max-width: 58mm;
+  margin: 0;
+  font-size: 8px;
   color: #666;
   text-align: center;
   padding: 1mm 0;
+  box-sizing: border-box;
 }
 </style>
