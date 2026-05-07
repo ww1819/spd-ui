@@ -39,6 +39,7 @@
       </el-form>
       <el-table v-loading="supplierLoading" :data="supplierList" border size="small">
         <el-table-column label="SPD供应商ID" prop="supplierId" width="130" align="center" />
+        <el-table-column label="SPD供应商名称" prop="supplierName" min-width="180" show-overflow-tooltip />
         <el-table-column label="平台供应商编码" min-width="200">
           <template slot-scope="scope">
             <el-input v-model="scope.row.scmSupplierCode" size="small" />
