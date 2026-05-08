@@ -118,6 +118,11 @@
                   <SelectFinanceCategory v-model="queryParams.financeCategoryId" placeholder="财务分类" style="width: 100%"/>
                 </div>
               </el-form-item>
+              <el-form-item prop="materialCategoryId" class="query-item-inline">
+                <div class="query-select-wrapper query-select-wrapper-small" style="width: 120px !important;">
+                  <SelectMaterialCategory v-model="queryParams.materialCategoryId" placeholder="材料类别" style="width: 100%"/>
+                </div>
+              </el-form-item>
 
               <el-form-item prop="locationId" class="query-item-inline">
                 <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
@@ -318,6 +323,13 @@
         </template>
       </el-table-column>
       <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" key="warehouseCategory" v-if="columns[9].visible" show-overflow-tooltip resizable/>
+      <el-table-column label="材料类别" align="center" prop="fdMaterialCategory.materialCategoryName" width="120" key="materialCategory" resizable class-name="material-top-cell cell-pad-tight">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left" :title="(scope.row.fdMaterialCategory && scope.row.fdMaterialCategory.materialCategoryName) ? scope.row.fdMaterialCategory.materialCategoryName : ''">
+            {{ scope.row.fdMaterialCategory && scope.row.fdMaterialCategory.materialCategoryName ? scope.row.fdMaterialCategory.materialCategoryName : '' }}
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column label="财务分类" align="center" prop="fdFinanceCategory.financeCategoryName" width="120" key="financeCategory" v-if="columns[25].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-top-left" :title="(scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName) ? scope.row.fdFinanceCategory.financeCategoryName : ''">
@@ -492,6 +504,11 @@
                     <SelectFinanceCategory v-model="form.financeCategoryId"/>
               </el-form-item>
             </el-col>
+                <el-col :span="4">
+                  <el-form-item label="材料类别：" prop="materialCategoryId">
+                    <SelectMaterialCategory v-model="form.materialCategoryId"/>
+                  </el-form-item>
+                </el-col>
                 <el-col :span="4">
                   <el-form-item label="产地：" prop="producer">
                     <el-input v-model="form.producer" placeholder="产地" />
@@ -1337,6 +1354,7 @@ import { mapGetters } from "vuex";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectFactory from '@/components/SelectModel/SelectFactory';
 import SelectFinanceCategory from "@/components/SelectModel/SelectFinanceCategory";
+import SelectMaterialCategory from "@/components/SelectModel/SelectMaterialCategory";
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import SelectUnit from "@/components/SelectModel/SelectUnit";
 import SelectLocation from "@/components/SelectModel/SelectLocation";
@@ -1349,7 +1367,7 @@ import { getToken } from "@/utils/auth";
 export default {
   name: "Material",
   dicts: ['is_use_status', 'is_yes_no','way_status','material_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
-  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords},
+  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords},
   computed: {
     ...mapGetters(['customerId']),
     isHsThirdTenant() {
@@ -1397,6 +1415,7 @@ export default {
         price: undefined,
         isGz: '', // 默认全部
         storeroomId: undefined,
+        materialCategoryId: undefined,
         financeCategoryId: undefined,
         factoryId: undefined,
         locationId: undefined,
@@ -1687,6 +1706,7 @@ export default {
         hisChargeSpeci: null,
         hisChargeModel: null,
         hisChargePrice: null,
+        materialCategoryId: null,
         hrpCode: null,
         hrpSpeci: null,
         hrpSeq: null,
@@ -2170,7 +2190,7 @@ export default {
       );
       const allowFields = [
         'id', 'code', 'name', 'referredName', 'supplierId', 'factoryId', 'speci', 'model', 'price', 'producer',
-        'useName', 'registerName', 'registerNo', 'storeroomId', 'financeCategoryId', 'medicalNo', 'medicalName',
+        'useName', 'registerName', 'registerNo', 'storeroomId', 'materialCategoryId', 'financeCategoryId', 'medicalNo', 'medicalName',
         'salePrice', 'successfulPrice', 'successfulNo', 'successfulType', 'selectionReason', 'packageSpeci',
         'unitId', 'isUse', 'isGz', 'isFollow', 'isMonitor', 'isProcure', 'isSunshineProcurement',
         'isTemporaryPurchase', 'isServiceFee', 'isBilling', 'materialLevel', 'registerLevel', 'riskLevel',
