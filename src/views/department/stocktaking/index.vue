@@ -231,7 +231,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="科室" prop="departmentId">
-                      <SelectDepartment v-model="form.departmentId" :disabled="!action || isDepartmentLocked"/>
+                      <SelectDepartment v-model="form.departmentId" :disabled="!action || isDepartmentLocked || departmentLockedByAction"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -324,7 +324,14 @@
 
           <el-table-column label="盘点数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.stockQty" :disabled="!action" type='number' @input="stockQtyChange(scope.row)" placeholder="盘点数量" />
+              <el-input
+                v-model="scope.row.stockQty"
+                :disabled="!action"
+                type='number'
+                @input="stockQtyChange(scope.row)"
+                @blur="handleStockQtyBlur(scope.row)"
+                placeholder="盘点数量"
+              />
             </template>
           </el-table-column>
 
@@ -471,6 +478,7 @@ export default {
       deptInventoryInitLoading: false,
       /** 盘点明细批次号 PC+时间+序号，保证同页不重复 */
       stocktakingBatchSeqCounter: 0,
+      departmentLockedByAction: false,
       addEntryMode: 'LOSS',
       useMaterialDictForSelect: false,
       newEntryDialogVisible: false,
@@ -821,6 +829,7 @@ export default {
             this.stkIoStocktakingEntryList = (rows || []).map((it) =>
               this.mapDepInventoryToStocktakingEntry({ ...it, _fromStocktakingInit: true })
             );
+            this.departmentLockedByAction = true;
             this.$modal.msgSuccess(`已加载 ${this.stkIoStocktakingEntryList.length} 条科室库存明细`);
           })
           .catch(() => {
@@ -845,6 +854,9 @@ export default {
       this.useMaterialDictForSelect = false;
     },
     selectData(val) {
+      if (val && val.length > 0) {
+        this.departmentLockedByAction = true;
+      }
       if (this.addEntryMode === 'LOSS') {
         // 盘亏明细：来源科室库存，直接入明细（保留 depInventoryId），仅允许改盘点数量
         const rows = (val || []).map((item) =>
@@ -940,6 +952,7 @@ export default {
       };
       this.stkIoStocktakingEntryList = [];
       this.stocktakingBatchSeqCounter = 0;
+      this.departmentLockedByAction = false;
       this.resetForm("form");
     },
     //盘点数量改变事件
@@ -951,6 +964,17 @@ export default {
         totalAmt = 0;
       }
       row.amt = totalAmt.toFixed(2);
+    },
+    handleStockQtyBlur(row) {
+      if (!row) return;
+      const stockQty = parseFloat(row.stockQty || 0);
+      const qty = parseFloat(row.qty || 0);
+      if (!Number.isFinite(stockQty) || !Number.isFinite(qty)) return;
+      if (stockQty > qty) {
+        row.stockQty = qty;
+        this.stockQtyChange(row);
+        this.$modal.msgWarning('盘点数量不能大于库存数量。盘盈请点击“新增盘盈明细”。');
+      }
     },
     //价格改变事件
     priceChange(row){
