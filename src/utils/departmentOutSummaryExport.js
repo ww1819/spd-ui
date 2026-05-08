@@ -2109,6 +2109,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '库房分类',
     '财务分类',
     '计费',
+    '产品档案状态',
     '注册证号',
     '生产厂家',
     '供应商',
@@ -2157,6 +2158,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
         wc || '',
         fc || '',
         inventoryBillingLabel(m),
+        m.isUse === '1' || m.isUse === 1 ? '启用' : (m.isUse === '2' || m.isUse === 2 ? '停用' : '--'),
         m.registerNo || '',
         depInventoryFactoryName(row),
         sup,
@@ -2188,6 +2190,7 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
     '生产厂家',
     '供应商',
     '计费',
+    '产品档案状态',
     '注册证号',
     '注册证有效期',
   ];
@@ -2223,6 +2226,7 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
         row.factoryName || '',
         row.supplierName || '',
         billing,
+        row.materialIsUse === '1' || row.materialIsUse === 1 ? '启用' : (row.materialIsUse === '2' || row.materialIsUse === 2 ? '停用' : '--'),
         row.registerNo || '',
         row.periodDate ? fmtYmd(row.periodDate) : '',
       ];

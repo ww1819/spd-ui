@@ -27,6 +27,16 @@
         </el-row>
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="产品档案" prop="materialIsUse" class="query-item-inline">
+              <el-select v-model="queryParams.materialIsUse" placeholder="启停用" clearable class="query-select-wrapper">
+                <el-option
+                  v-for="dict in dict.type.is_use_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
             <el-form-item label="业务日期" class="query-item-inline query-item-date-range query-item-period-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
@@ -108,6 +118,11 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
+        <el-table-column label="产品档案状态" align="center" prop="materialIsUse" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ materialUseDictLabel(scope.row.materialIsUse) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="注册证号" align="center" prop="registerNo" width="180" show-overflow-tooltip resizable />
         <el-table-column label="注册证有效期" align="center" prop="periodDate" width="130" show-overflow-tooltip resizable>
           <template slot-scope="scope">
@@ -148,6 +163,7 @@ import RightToolbar from "@/components/RightToolbar";
 
 export default {
   name: "InventorySummary",
+  dicts: ['is_use_status'],
   components: { SelectDepartment, SelectSupplier, RightToolbar },
   data() {
     return {
@@ -166,6 +182,7 @@ export default {
         departmentId: null,
         warehouseId: null,
         supplierId: null,
+        materialIsUse: '',
         beginDate: null,
         endDate: null
       }
@@ -207,6 +224,7 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.queryParams.supplierId = null;
+      this.queryParams.materialIsUse = '';
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
       this.handleQuery();
@@ -245,6 +263,11 @@ export default {
     handleCurrentChange(val) {
       this.queryParams.pageNum = val;
       this.getList();
+    },
+    materialUseDictLabel(isUse) {
+      if (isUse === undefined || isUse === null || isUse === '') return '--';
+      const label = this.selectDictLabel(this.dict.type.is_use_status, String(isUse));
+      return label || '--';
     }
   }
 };
