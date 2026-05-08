@@ -23,6 +23,16 @@
           </el-form-item>
         </el-col>
         <el-col :span="6">
+          <el-form-item prop="pinyinCode">
+            <el-input
+              v-model="queryParams.pinyinCode"
+              placeholder="拼音简码"
+              clearable
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
           <el-form-item>
             <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
             <el-button size="small" @click="resetQuery">重置</el-button>
@@ -70,6 +80,7 @@
       <el-table-column label="编号" align="center" prop="materialCategoryId" width="50"/>
       <el-table-column label="分类编码" align="center" prop="materialCategoryCode" width="120"/>
       <el-table-column label="分类名称" align="center" prop="materialCategoryName" width="180"/>
+      <el-table-column label="拼音简码" align="center" prop="pinyinCode" width="120"/>
       <el-table-column label="分类地址" align="center" prop="materialCategoryAddress" width="200"/>
       <el-table-column label="联系方式" align="center" prop="materialCategoryContact" width="120"/>
       <el-table-column label="创建日期" align="center" prop="createTime" width="100">
@@ -117,6 +128,11 @@
             <el-col :span="6">
               <el-form-item label="分类名称" prop="materialCategoryName">
                 <el-input v-model="form.materialCategoryName" placeholder="分类名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="拼音简码" prop="pinyinCode">
+                <el-input v-model="form.pinyinCode" placeholder="拼音简码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
@@ -171,6 +187,7 @@ export default {
         pageSize: 10,
         materialCategoryCode: null,
         materialCategoryName: null,
+        pinyinCode: null,
         materialCategoryAddress: null,
         materialCategoryContact: null,
       },
@@ -211,6 +228,7 @@ export default {
         materialCategoryId: null,
         materialCategoryCode: null,
         materialCategoryName: null,
+        pinyinCode: null,
         materialCategoryAddress: null,
         materialCategoryContact: null,
         delFlag: null,
