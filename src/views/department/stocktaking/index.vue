@@ -453,6 +453,47 @@
       </div>
     </el-dialog>
 
+    <el-dialog
+      title="保存前确认盘点数量"
+      :visible.sync="saveQtyConfirmVisible"
+      width="980px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <div style="margin-bottom: 8px; color: #e6a23c;">请逐条确认盘点数量，确认后再保存。</div>
+      <el-table :data="saveQtyConfirmList" border size="small">
+        <el-table-column label="耗材" min-width="150">
+          <template slot-scope="scope">{{ (scope.row.material && scope.row.material.name) || '--' }}</template>
+        </el-table-column>
+        <el-table-column label="批次号" prop="batchNo" min-width="140" />
+        <el-table-column label="库存数量" prop="qty" width="120" />
+        <el-table-column label="盘点数量" min-width="140">
+          <template slot-scope="scope">
+            <el-input v-model="scope.row.adjustedStockQty" type="number" :disabled="scope.row.confirmed" />
+          </template>
+        </el-table-column>
+        <el-table-column label="盈亏数量" width="120">
+          <template slot-scope="scope">
+            <span>{{ formatConfirmProfitQty(scope.row) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="盈亏金额" width="140">
+          <template slot-scope="scope">
+            <span>{{ formatConfirmProfitAmt(scope.row) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100">
+          <template slot-scope="scope">
+            <el-button type="text" @click="confirmSaveQtyRow(scope.row)">{{ scope.row.confirmed ? '已确定' : '确定' }}</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer">
+        <el-button @click="saveQtyConfirmVisible = false">取 消</el-button>
+        <el-button type="primary" @click="confirmSaveQtyAndSubmit">确 定</el-button>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -483,6 +524,8 @@ export default {
       useMaterialDictForSelect: false,
       newEntryDialogVisible: false,
       pendingNewEntries: [],
+      saveQtyConfirmVisible: false,
+      saveQtyConfirmList: [],
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -1096,29 +1139,93 @@ export default {
           this.$modal.msgWarning('来源于科室库存的明细仅允许盘亏，不允许盘盈');
           return;
         }
-        this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) => {
-          const { fromStocktakingInit, warehouse, _warehouseName, ...rest } = row;
-          return rest;
-        });
-        this.submitLoading = true;
-        const isUpdate = this.form.id != null;
-        const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
-        request.then(response => {
-          if (response.data) {
-            this.form = response.data;
-            this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList || [];
-          } else if (!isUpdate && this.form.id) {
-            getStocktaking(this.form.id).then(res => {
-              this.form = res.data;
-              this.stkIoStocktakingEntryList = res.data.stkIoStocktakingEntryList || [];
-            });
-          }
-          this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");
-          this.open = false;
-          this.getList();
-        }).finally(() => {
-          this.submitLoading = false;
-        });
+        this.openSaveQtyConfirmDialog();
+      });
+    },
+    openSaveQtyConfirmDialog() {
+      this.saveQtyConfirmList = (this.stkIoStocktakingEntryList || []).map((row, idx) => ({
+        _confirmKey: `${row.id || 'new'}_${idx}`,
+        id: row.id,
+        material: row.material,
+        batchNo: row.batchNo,
+        qty: row.qty,
+        depInventoryId: row.depInventoryId,
+        adjustedStockQty: row.stockQty != null ? row.stockQty : row.qty,
+        confirmed: false
+      }));
+      this.saveQtyConfirmVisible = true;
+    },
+    confirmSaveQtyRow(row) {
+      const v = parseFloat(row.adjustedStockQty);
+      if (!Number.isFinite(v) || v < 0) {
+        this.$modal.msgWarning('请输入有效的盘点数量');
+        return;
+      }
+      const qty = parseFloat(row.qty || 0);
+      if (row.depInventoryId && v > qty) {
+        row.adjustedStockQty = qty;
+        this.$modal.msgWarning('来源于科室库存的明细仅允许盘亏，盘点数量已回退为库存数量');
+      } else {
+        row.adjustedStockQty = v;
+      }
+      row.confirmed = true;
+    },
+    formatConfirmProfitQty(row) {
+      const stockQty = parseFloat((row && row.adjustedStockQty) || 0);
+      const qty = parseFloat((row && row.qty) || 0);
+      const v = stockQty - qty;
+      if (!Number.isFinite(v)) return '--';
+      return v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2);
+    },
+    formatConfirmProfitAmt(row) {
+      const stockQty = parseFloat((row && row.adjustedStockQty) || 0);
+      const qty = parseFloat((row && row.qty) || 0);
+      const unitPrice = parseFloat((row && row.unitPrice) || 0);
+      const v = (stockQty - qty) * unitPrice;
+      if (!Number.isFinite(v)) return '--';
+      const prefix = v > 0 ? '+' : '';
+      return `${prefix}￥${v.toFixed(2)}`;
+    },
+    confirmSaveQtyAndSubmit() {
+      const unconfirmed = (this.saveQtyConfirmList || []).some((r) => !r.confirmed);
+      if (unconfirmed) {
+        this.$modal.msgWarning('请先逐条点击“确定”后再提交保存');
+        return;
+      }
+      const adjustMap = new Map((this.saveQtyConfirmList || []).map((r) => [r._confirmKey, r.adjustedStockQty]));
+      (this.stkIoStocktakingEntryList || []).forEach((row, idx) => {
+        const key = `${row.id || 'new'}_${idx}`;
+        if (adjustMap.has(key)) {
+          row.stockQty = adjustMap.get(key);
+          this.stockQtyChange(row);
+        }
+      });
+      this.saveQtyConfirmVisible = false;
+      this.doSubmitFormRequest();
+    },
+    doSubmitFormRequest() {
+      this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) => {
+        const { fromStocktakingInit, warehouse, _warehouseName, ...rest } = row;
+        return rest;
+      });
+      this.submitLoading = true;
+      const isUpdate = this.form.id != null;
+      const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
+      request.then(response => {
+        if (response.data) {
+          this.form = response.data;
+          this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList || [];
+        } else if (!isUpdate && this.form.id) {
+          getStocktaking(this.form.id).then(res => {
+            this.form = res.data;
+            this.stkIoStocktakingEntryList = res.data.stkIoStocktakingEntryList || [];
+          });
+        }
+        this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");
+        this.open = false;
+        this.getList();
+      }).finally(() => {
+        this.submitLoading = false;
       });
     },
     /** 删除按钮操作 */
