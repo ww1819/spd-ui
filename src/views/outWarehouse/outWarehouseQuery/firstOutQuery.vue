@@ -81,6 +81,33 @@
           </el-col>
         </el-row>
 
+        <el-row :gutter="16" class="query-row-third">
+          <el-col :span="24" class="query-row-third-inner">
+            <el-form-item prop="financeCategoryKeyword" class="query-item-inline">
+              <el-input v-model="queryParams.financeCategoryKeyword" placeholder="财务分类编码/名称/简拼" clearable style="width: 200px" />
+            </el-form-item>
+            <el-form-item prop="warehouseCategoryKeyword" class="query-item-inline">
+              <el-input v-model="queryParams.warehouseCategoryKeyword" placeholder="库房分类编码/名称/简拼" clearable style="width: 200px" />
+            </el-form-item>
+            <el-form-item prop="isGz" class="query-item-inline">
+              <el-select v-model="queryParams.isGz" placeholder="是否高值" clearable style="width: 130px">
+                <el-option label="是" value="1" />
+                <el-option label="否" value="2" />
+              </el-select>
+            </el-form-item>
+            <el-form-item prop="financeCategoryIds" class="query-item-inline">
+              <div class="query-select-wrapper" style="width: 220px">
+                <SelectFinanceCategoryLow v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类多选" />
+              </div>
+            </el-form-item>
+            <el-form-item prop="warehouseCategoryIds" class="query-item-inline">
+              <div class="query-select-wrapper" style="width: 220px">
+                <SelectWarehouseCategoryLow v-model="queryParams.warehouseCategoryIds" :multiple="true" placeholder="库房分类多选" />
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
       </el-form>
     </div>
 
@@ -242,6 +269,8 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
+import SelectFinanceCategoryLow from '@/components/SelectModel/SelectFinanceCategoryLow';
+import SelectWarehouseCategoryLow from '@/components/SelectModel/SelectWarehouseCategoryLow';
 import RightToolbar from "@/components/RightToolbar";
 
 import SelectInventory from '@/components/SelectModel/SelectInventory';
@@ -249,7 +278,7 @@ import SelectInventory from '@/components/SelectModel/SelectInventory';
 export default {
   name: "firstOutQuery",
   dicts: ['biz_status','bill_type','out_warehouse_bill_type','way_status'],
-  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectSupplier,RightToolbar},
+  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectSupplier,SelectFinanceCategoryLow,SelectWarehouseCategoryLow,RightToolbar},
   data() {
     return {
       // 遮罩层
@@ -299,6 +328,11 @@ export default {
         materialNameLike: null,
         materialSpeciLike: null,
         materialModelLike: null,
+        financeCategoryKeyword: null,
+        warehouseCategoryKeyword: null,
+        isGz: null,
+        financeCategoryIds: [],
+        warehouseCategoryIds: [],
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
@@ -355,9 +389,11 @@ export default {
     getTotalSummaries(param) {
       const { columns, data } = param;
       const sums = Array(columns.length).fill('');
-      if (sums.length > 0) sums[0] = '合计';
       const totalQty = (data || []).reduce((acc, r) => acc + Number(r.materialQty || 0), 0);
       const totalAmt = (data || []).reduce((acc, r) => acc + Number(r.materialAmt || 0), 0);
+      if (sums.length > 0) {
+        sums[0] = `合计(数量:${this.formatQty(totalQty)} 金额:${this.formatAmount(totalAmt)})`;
+      }
       columns.forEach((column, index) => {
         if (column.property === 'materialQty') {
           sums[index] = this.formatQty(totalQty);
@@ -384,6 +420,12 @@ export default {
       } else if (queryParams.endDate && queryParams.endDate.length === 10) {
         // 如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
+      if (Array.isArray(queryParams.financeCategoryIds) && queryParams.financeCategoryIds.length === 0) {
+        queryParams.financeCategoryIds = null;
+      }
+      if (Array.isArray(queryParams.warehouseCategoryIds) && queryParams.warehouseCategoryIds.length === 0) {
+        queryParams.warehouseCategoryIds = null;
       }
       // 删除空字符串的参数，确保传递 null 而不是空字符串
       Object.keys(queryParams).forEach(key => {
@@ -476,6 +518,8 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.financeCategoryIds = [];
+      this.queryParams.warehouseCategoryIds = [];
       this.handleQuery();
     },
     // 多选框选中数据
@@ -498,6 +542,12 @@ export default {
         queryParams.endDate = null;
       } else if (queryParams.endDate && queryParams.endDate.length === 10) {
         queryParams.endDate = `${queryParams.endDate} 23:59:59`;
+      }
+      if (Array.isArray(queryParams.financeCategoryIds) && queryParams.financeCategoryIds.length === 0) {
+        queryParams.financeCategoryIds = null;
+      }
+      if (Array.isArray(queryParams.warehouseCategoryIds) && queryParams.warehouseCategoryIds.length === 0) {
+        queryParams.warehouseCategoryIds = null;
       }
       Object.keys(queryParams).forEach(key => {
         if (queryParams[key] === '') queryParams[key] = null;
@@ -545,6 +595,12 @@ export default {
         queryParams.endDate = null;
       } else if (queryParams.endDate && queryParams.endDate.length === 10) {
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
+      if (Array.isArray(queryParams.financeCategoryIds) && queryParams.financeCategoryIds.length === 0) {
+        queryParams.financeCategoryIds = null;
+      }
+      if (Array.isArray(queryParams.warehouseCategoryIds) && queryParams.warehouseCategoryIds.length === 0) {
+        queryParams.warehouseCategoryIds = null;
       }
       Object.keys(queryParams).forEach(key => {
         if (queryParams[key] === '') {
@@ -666,6 +722,28 @@ export default {
 .query-row-third .el-form-item {
   margin-bottom: 0;
 }
+.query-row-third-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  overflow: visible;
+  width: 100%;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+.query-row-third-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+@media (min-width: 1680px) {
+  .query-row-third-inner {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}
 
 /* 查询条件容器框样式：由外层 inventory-query-page 统一左右 8px，此处占满内容区 */
 .form-fields-container {
@@ -715,9 +793,9 @@ export default {
   position: relative;
 }
 
-/* 关键：给表体底部留空间，并把合计行抬高，避免横向滚动条遮挡 */
+/* 保持 Element 默认合计行行为，避免合计列错位/缺失 */
 .table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 32px;
+  padding-bottom: 0;
   overflow-x: auto !important;
   overflow-y: auto !important;
   scrollbar-width: thin;
@@ -725,16 +803,16 @@ export default {
 }
 
 .table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
+  position: static;
+  bottom: auto;
+  z-index: auto;
   background: #fff;
 }
 
 .table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
+  position: static;
+  bottom: auto;
+  z-index: auto;
   background: #fff;
 }
 

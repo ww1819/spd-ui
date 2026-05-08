@@ -95,6 +95,33 @@
           </el-col>
         </el-row>
 
+        <el-row :gutter="16" class="query-row-third">
+          <el-col :span="24" class="query-row-third-inner">
+            <el-form-item prop="financeCategoryKeyword" class="query-item-inline">
+              <el-input v-model="queryParams.financeCategoryKeyword" placeholder="财务分类编码/名称/简拼" clearable style="width: 200px" />
+            </el-form-item>
+            <el-form-item prop="warehouseCategoryKeyword" class="query-item-inline">
+              <el-input v-model="queryParams.warehouseCategoryKeyword" placeholder="库房分类编码/名称/简拼" clearable style="width: 200px" />
+            </el-form-item>
+            <el-form-item prop="isGz" class="query-item-inline">
+              <el-select v-model="queryParams.isGz" placeholder="是否高值" clearable style="width: 130px">
+                <el-option label="是" value="1" />
+                <el-option label="否" value="2" />
+              </el-select>
+            </el-form-item>
+            <el-form-item prop="financeCategoryIds" class="query-item-inline">
+              <div class="query-select-wrapper" style="width: 220px">
+                <SelectFinanceCategoryLow v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类多选" />
+              </div>
+            </el-form-item>
+            <el-form-item prop="warehouseCategoryIds" class="query-item-inline">
+              <div class="query-select-wrapper" style="width: 220px">
+                <SelectWarehouseCategoryLow v-model="queryParams.warehouseCategoryIds" :multiple="true" placeholder="库房分类多选" />
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
       </el-form>
     </div>
 
@@ -231,12 +258,14 @@
 import { listRTHWarehouse} from "@/api/warehouse/warehouse";
 import { exportRTHWarehouseDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
+import SelectFinanceCategoryLow from '@/components/SelectModel/SelectFinanceCategoryLow';
+import SelectWarehouseCategoryLow from '@/components/SelectModel/SelectWarehouseCategoryLow';
 import RightToolbar from "@/components/RightToolbar";
 
 export default {
   name: "firstQuery",
   dicts: ['biz_status','bill_type','in_warehouse_bill_type','way_status'],
-  components: { SelectWarehouse, RightToolbar },
+  components: { SelectWarehouse, SelectFinanceCategoryLow, SelectWarehouseCategoryLow, RightToolbar },
   data() {
       return {
         // 遮罩层
@@ -288,6 +317,11 @@ export default {
         userId: null,
         billType: null,
         isBilling: null,
+        financeCategoryKeyword: null,
+        warehouseCategoryKeyword: null,
+        isGz: null,
+        financeCategoryIds: [],
+        warehouseCategoryIds: [],
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
@@ -468,6 +502,8 @@ export default {
       this.queryParams.materialSpeciLike = null;
       this.queryParams.materialModelLike = null;
       this.queryParams.supplierKeyword = null;
+      this.queryParams.financeCategoryIds = [];
+      this.queryParams.warehouseCategoryIds = [];
       this.handleQuery();
     },
     handleSizeChange(val) {
@@ -537,6 +573,12 @@ export default {
         queryParams.endDate = null;
       } else if (queryParams.endDate && queryParams.endDate.length === 10) {
         queryParams.endDate = `${queryParams.endDate} 23:59:59`;
+      }
+      if (Array.isArray(queryParams.financeCategoryIds) && queryParams.financeCategoryIds.length === 0) {
+        queryParams.financeCategoryIds = null;
+      }
+      if (Array.isArray(queryParams.warehouseCategoryIds) && queryParams.warehouseCategoryIds.length === 0) {
+        queryParams.warehouseCategoryIds = null;
       }
       Object.keys(queryParams).forEach(key => {
         if (queryParams[key] === '') queryParams[key] = null;
@@ -611,6 +653,31 @@ export default {
 
 .query-row-second {
   margin-bottom: 2px;
+}
+.query-row-third {
+  margin-bottom: 2px;
+}
+.query-row-third-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  overflow: visible;
+  width: 100%;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+.query-row-third-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+@media (min-width: 1680px) {
+  .query-row-third-inner {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
 }
 
 .query-row-second .el-form-item {

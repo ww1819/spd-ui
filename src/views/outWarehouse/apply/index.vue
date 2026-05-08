@@ -435,6 +435,11 @@
             </template>
           </el-table-column>
         </el-table>
+        <div class="detail-total-bar">
+          <span class="detail-total-label">合计：</span>
+          <span class="detail-total-item">数量 {{ detailTotalQty }}</span>
+          <span class="detail-total-item">金额 {{ detailTotalAmt }}</span>
+        </div>
         </div>
         </div>
         </el-form>
@@ -709,6 +714,20 @@ export default {
     /** 与到货验收「添加入库」弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
+    },
+    detailTotalQty() {
+      const total = (this.stkIoBillEntryList || []).reduce((sum, item) => {
+        const value = Number(item && item.qty);
+        return isNaN(value) ? sum : sum + value;
+      }, 0);
+      return total.toFixed(2);
+    },
+    detailTotalAmt() {
+      const total = (this.stkIoBillEntryList || []).reduce((sum, item) => {
+        const value = Number(item && item.amt);
+        return isNaN(value) ? sum : sum + value;
+      }, 0);
+      return total.toFixed(2);
     }
   },
   created() {
@@ -739,32 +758,37 @@ export default {
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
+      const totalQty = (data || []).reduce((prev, item) => {
+        const value = Number(item && item.qty);
+        return !isNaN(value) ? prev + value : prev;
+      }, 0);
+      const totalAmt = (data || []).reduce((prev, item) => {
+        const value = Number(item && item.amt);
+        return !isNaN(value) ? prev + value : prev;
+      }, 0);
+
       columns.forEach((column, index) => {
         if (index === 0) {
           sums[index] = '合计';
           return;
         }
         const prop = column.property;
-        if (prop === 'unitPrice' || prop === 'qty' || prop === 'amt') {
-          const values = data.map(item => Number(item[prop]));
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              }
-              return prev;
-            }, 0);
-            sums[index] = sums[index].toFixed(2);
-          }
-          if (prop === 'amt') {
-            const res = parseFloat(sums[index]);
-            if (!isNaN(res)) {
-              this.form.totalAmount = res;
-            }
-          }
+        if (prop === 'unitPrice') {
+          const totalUnitPrice = (data || []).reduce((prev, item) => {
+            const value = Number(item && item.unitPrice);
+            return !isNaN(value) ? prev + value : prev;
+          }, 0);
+          sums[index] = totalUnitPrice.toFixed(2);
+        } else if (prop === 'qty') {
+          sums[index] = totalQty.toFixed(2);
+        } else if (prop === 'amt') {
+          sums[index] = totalAmt.toFixed(2);
         }
       });
+
+      if (!isNaN(totalAmt)) {
+        this.form.totalAmount = totalAmt.toFixed(2);
+      }
       return sums;
     },
     getTotalSummaries(param) {
@@ -776,18 +800,12 @@ export default {
           return;
         }
         const values = data.map(item => Number(item[column.property]));
-        if(index === 4){
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] = sums[index].toFixed(2);
-          }
+        if (column.property === 'totalAmount') {
+          const totalAmt = values.reduce((prev, curr) => {
+            const value = Number(curr);
+            return !isNaN(value) ? prev + value : prev;
+          }, 0);
+          sums[index] = totalAmt.toFixed(2);
         }
       });
       return sums;
@@ -1653,6 +1671,27 @@ export default {
   overflow: auto;
   margin-top: 10px;
   padding-bottom: 4px;
+}
+
+.detail-total-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  background: #f5f7fa;
+  color: #303133;
+  font-size: 14px;
+}
+
+.detail-total-label {
+  font-weight: 600;
+}
+
+.detail-total-item {
+  white-space: nowrap;
 }
 
 .local-modal-content .modal-detail-section .el-table {
