@@ -293,15 +293,29 @@
       </div>
     </el-dialog>
 
-    <el-dialog :title="fetchDialogTitle" :visible.sync="fetchDialogVisible" width="480px" append-to-body @close="resetFetchForm">
+    <el-dialog :title="fetchDialogTitle" :visible.sync="fetchDialogVisible" width="520px" append-to-body @close="resetFetchForm">
       <el-form :model="fetchForm" label-width="100px" size="small">
-        <el-form-item label="开始日期" required>
-          <el-date-picker v-model="fetchForm.beginDate" type="date" value-format="yyyy-MM-dd" placeholder="yyyy-MM-dd" style="width:100%" />
+        <el-form-item label="开始时间" required>
+          <el-date-picker
+            v-model="fetchForm.beginDate"
+            type="datetime"
+            value-format="yyyy-MM-dd HH:mm:ss"
+            placeholder="yyyy-MM-dd HH:mm:ss"
+            style="width:100%"
+            default-time="00:00:00"
+          />
         </el-form-item>
-        <el-form-item label="结束日期" required>
-          <el-date-picker v-model="fetchForm.endDate" type="date" value-format="yyyy-MM-dd" placeholder="yyyy-MM-dd" style="width:100%" />
+        <el-form-item label="结束时间" required>
+          <el-date-picker
+            v-model="fetchForm.endDate"
+            type="datetime"
+            value-format="yyyy-MM-dd HH:mm:ss"
+            placeholder="yyyy-MM-dd HH:mm:ss"
+            style="width:100%"
+            default-time="23:59:59"
+          />
         </el-form-item>
-        <el-alert type="info" :closable="false" show-icon title="按计费时间从 HIS 视图增量拉取；已存在且内容一致则跳过；跨度受服务端 max-range-days 限制。" />
+        <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="fetchDialogVisible = false">取 消</el-button>
@@ -312,6 +326,7 @@
 </template>
 
 <script>
+import { parseTime } from '@/utils/ruoyi'
 import { listdepartAll } from '@/api/foundation/depart'
 import {
   listInpatientMirror,
@@ -559,6 +574,11 @@ export default {
     },
     openFetchDialog(kind) {
       this.fetchKind = kind
+      const day = parseTime(new Date(), '{y}-{m}-{d}')
+      this.fetchForm = {
+        beginDate: `${day} 00:00:00`,
+        endDate: `${day} 23:59:59`
+      }
       this.fetchDialogVisible = true
     },
     resetFetchForm() {
@@ -683,7 +703,7 @@ export default {
     },
     submitFetch() {
       if (!this.fetchForm.beginDate || !this.fetchForm.endDate) {
-        this.$modal.msgWarning('请选择起止日期')
+        this.$modal.msgWarning('请选择起止时间')
         return
       }
       this.fetchSubmitting = true
