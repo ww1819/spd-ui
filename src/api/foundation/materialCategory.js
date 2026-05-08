@@ -42,3 +42,20 @@ export function delMaterialCategory(materialCategoryId) {
     method: 'delete'
   })
 }
+
+// 批量更新材料类别拼音简码
+export function updateMaterialCategoryPinyinCodeBatch(materialCategoryIds) {
+  return request({
+    url: '/foundation/materialCategory/updatePinyinCodeBatch',
+    method: 'put',
+    data: { materialCategoryIds }
+  })
+}
+
+// 全量更新材料类别拼音简码
+export function updateMaterialCategoryPinyinCodeAll() {
+  return request({
+    url: '/foundation/materialCategory/updatePinyinCodeAll',
+    method: 'put'
+  })
+}

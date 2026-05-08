@@ -72,6 +72,21 @@
           v-hasPermi="['foundation:materialCategory:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary" size="small"
+          :disabled="multiple"
+          @click="handleBatchUpdatePinyinCode"
+          v-hasPermi="['foundation:materialCategory:edit']"
+        >批量更新材料类别简码</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary" size="small"
+          @click="handleUpdateAllPinyinCode"
+          v-hasPermi="['foundation:materialCategory:edit']"
+        >全量更新材料类别简码</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -132,7 +147,7 @@
             </el-col>
             <el-col :span="6">
               <el-form-item label="拼音简码" prop="pinyinCode">
-                <el-input v-model="form.pinyinCode" placeholder="拼音简码" />
+                <el-input v-model="form.pinyinCode" placeholder="自动生成" disabled />
               </el-form-item>
             </el-col>
             <el-col :span="6">
@@ -157,7 +172,7 @@
 </template>
 
 <script>
-import { listMaterialCategory, getMaterialCategory, delMaterialCategory, addMaterialCategory, updateMaterialCategory } from "@/api/foundation/materialCategory";
+import { listMaterialCategory, getMaterialCategory, delMaterialCategory, addMaterialCategory, updateMaterialCategory, updateMaterialCategoryPinyinCodeBatch, updateMaterialCategoryPinyinCodeAll } from "@/api/foundation/materialCategory";
 
 export default {
   name: "MaterialCategory",
@@ -306,6 +321,29 @@ export default {
       this.download('foundation/materialCategory/export', {
         ...this.queryParams
       }, `materialCategory_${new Date().getTime()}.xlsx`)
+    },
+    /** 批量更新材料类别拼音简码 */
+    handleBatchUpdatePinyinCode() {
+      const materialCategoryIds = this.ids || [];
+      if (!materialCategoryIds.length) {
+        this.$modal.msgWarning("请先选择需要更新简码的材料类别");
+        return;
+      }
+      this.$modal.confirm("是否确认批量更新所选材料类别的拼音简码？").then(() => {
+        return updateMaterialCategoryPinyinCodeBatch(materialCategoryIds);
+      }).then(() => {
+        this.$modal.msgSuccess("批量更新材料类别简码成功");
+        this.getList();
+      }).catch(() => {});
+    },
+    /** 全量更新材料类别拼音简码 */
+    handleUpdateAllPinyinCode() {
+      this.$modal.confirm("是否确认全量更新当前租户所有材料类别的拼音简码？").then(() => {
+        return updateMaterialCategoryPinyinCodeAll();
+      }).then(() => {
+        this.$modal.msgSuccess("全量更新材料类别简码成功");
+        this.getList();
+      }).catch(() => {});
     }
   }
 };
