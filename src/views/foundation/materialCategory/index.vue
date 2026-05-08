@@ -92,12 +92,20 @@
 
     <el-table v-loading="loading" :data="materialCategoryList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编号" align="center" prop="materialCategoryId" width="50"/>
+      <el-table-column label="序号" type="index" align="center" width="60"/>
       <el-table-column label="分类编码" align="center" prop="materialCategoryCode" width="120"/>
       <el-table-column label="分类名称" align="center" prop="materialCategoryName" width="180"/>
+      <el-table-column label="上级分类编码" align="center" width="120">
+        <template slot-scope="scope">
+          <span>{{ scope.row.parentCode || "-" }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="上级分类" align="center" width="180">
+        <template slot-scope="scope">
+          <span>{{ scope.row.parentName || "-" }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="拼音简码" align="center" prop="pinyinCode" width="120"/>
-      <el-table-column label="分类地址" align="center" prop="materialCategoryAddress" width="200"/>
-      <el-table-column label="联系方式" align="center" prop="materialCategoryContact" width="120"/>
       <el-table-column label="创建日期" align="center" prop="createTime" width="100">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
