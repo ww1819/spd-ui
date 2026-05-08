@@ -1369,6 +1369,7 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
     '注册证号',
     '注册证有效期',
     '计费',
+    '产品档案状态',
     '入库单号',
     '制单日期',
     '制单人',
@@ -1417,6 +1418,7 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
         m.registerNo || '',
         m.periodDate ? fmtYmd(m.periodDate) : '',
         inventoryBillingLabel(m),
+        m.isUse === '1' || m.isUse === 1 ? '启用' : (m.isUse === '2' || m.isUse === 2 ? '停用' : '--'),
         row.receiptOrderNo || '',
         fmtYmd(row.createTime || row.materialDate),
         inventoryCreaterName(row),
@@ -1542,6 +1544,7 @@ export async function exportWarehouseInventorySummaryStyledXlsx(options) {
     '数量',
     '金额',
     '计费',
+    '产品档案状态',
     '注册证号',
     '注册证有效期',
     '仓库',
@@ -1577,6 +1580,7 @@ export async function exportWarehouseInventorySummaryStyledXlsx(options) {
         Number(row.materialQty || 0),
         Number(row.materialAmt || 0),
         billing,
+        row.materialIsUse === '1' || row.materialIsUse === 1 ? '启用' : (row.materialIsUse === '2' || row.materialIsUse === 2 ? '停用' : '--'),
         row.registerNo || '',
         row.periodDate ? fmtYmd(row.periodDate) : '',
         row.warehouseName || '',
@@ -1664,6 +1668,7 @@ export async function exportInventoryAlertStyledXlsx(options) {
     '安全库存',
     '预警状态',
     '生产厂家',
+    '产品档案状态',
   ];
   const numericCols = [8, 9];
   return exportInventoryQueryStyledXlsx({
@@ -1691,6 +1696,7 @@ export async function exportInventoryAlertStyledXlsx(options) {
         Number(row.safetyStock || 0),
         st,
         row.factoryName || '',
+        row.materialIsUse === '1' || row.materialIsUse === 1 ? '启用' : (row.materialIsUse === '2' || row.materialIsUse === 2 ? '停用' : '--'),
       ];
     },
     fileName,
@@ -1716,6 +1722,7 @@ export async function exportExpiryAlertStyledXlsx(options) {
     '库存数量',
     '生产厂家',
     '供应商',
+    '产品档案状态',
   ];
   const numericCols = [7, 12, 13];
   return exportInventoryQueryStyledXlsx({
@@ -1748,6 +1755,7 @@ export async function exportExpiryAlertStyledXlsx(options) {
       Number(row.qty || 0),
       row.factoryName || '',
       row.supplierName || '',
+      row.materialIsUse === '1' || row.materialIsUse === 1 ? '启用' : (row.materialIsUse === '2' || row.materialIsUse === 2 ? '停用' : '--'),
     ],
     fileName,
   });

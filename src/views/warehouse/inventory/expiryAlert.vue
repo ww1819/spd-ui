@@ -17,6 +17,16 @@
             <el-form-item label="预警天数" prop="daysToExpiry" class="query-item-inline">
               <el-input-number v-model="queryParams.daysToExpiry" :min="0" :max="365" placeholder="天内到期" controls-position="right" style="width: 160px"/>
             </el-form-item>
+            <el-form-item label="产品档案" prop="materialIsUse" class="query-item-inline">
+              <el-select v-model="queryParams.materialIsUse" placeholder="启停用" clearable style="width: 150px">
+                <el-option
+                  v-for="dict in dict.type.is_use_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
           </el-col>
         </el-row>
         <el-row class="query-row-second">
@@ -80,6 +90,11 @@
         <el-table-column label="库存数量" align="center" prop="qty" width="100" min-width="90" show-overflow-tooltip resizable/>
         <el-table-column label="生产厂家" align="center" prop="factoryName" width="150" min-width="100" show-overflow-tooltip resizable/>
         <el-table-column label="供应商" align="center" prop="supplierName" width="150" min-width="100" show-overflow-tooltip resizable/>
+        <el-table-column label="产品档案状态" align="center" prop="materialIsUse" width="110" min-width="100" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ materialUseDictLabel(scope.row.materialIsUse) }}</span>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
 
@@ -107,6 +122,7 @@ import RightToolbar from '@/components/RightToolbar'
 
 export default {
   name: 'ExpiryAlert',
+  dicts: ['is_use_status'],
   components: { SelectWarehouse, SelectSupplier, MaterialAutocomplete, RightToolbar },
   data() {
     return {
@@ -127,7 +143,8 @@ export default {
         warehouseId: null,
         materialName: null,
         daysToExpiry: 90,
-        supplierId: null
+        supplierId: null,
+        materialIsUse: null
       }
     }
   },
@@ -150,6 +167,13 @@ export default {
     this.getList()
   },
   methods: {
+    materialUseDictLabel(isUse) {
+      if (isUse === undefined || isUse === null || isUse === '') return '--';
+      const v = this.selectDictLabel && this.dict && this.dict.type && this.dict.type.is_use_status
+        ? this.selectDictLabel(this.dict.type.is_use_status, String(isUse))
+        : '';
+      return v || '--';
+    },
     getTotalSummaries(param) {
       const { columns, data } = param
       const sums = Array(columns.length).fill('')
@@ -195,6 +219,7 @@ export default {
       this.queryParams.warehouseId = null
       this.queryParams.daysToExpiry = 90
       this.queryParams.supplierId = null
+      this.queryParams.materialIsUse = null
       this.handleQuery()
     },
     handleSelectionChange(selection) {
