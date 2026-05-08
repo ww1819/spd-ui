@@ -322,6 +322,11 @@
                     <span>{{ getProfitQty(scope.row) }}</span>
                   </template>
                 </el-table-column>
+                <el-table-column label="盈亏标志" align="center" width="100" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ formatProfitLossFlag(scope.row) }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="盈亏金额" align="center" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ getProfitAmount(scope.row) }}</span>
@@ -728,6 +733,18 @@ export default {
       const profitAmount = profitQty * unitPrice;
       const prefix = profitAmount > 0 ? '+' : '';
       return prefix + '￥' + profitAmount.toFixed(2);
+    },
+    formatProfitLossFlag(row) {
+      const flag = (row && row.profitLossFlag ? String(row.profitLossFlag) : '').toUpperCase();
+      if (flag === 'PROFIT') return '盘盈';
+      if (flag === 'LOSS') return '盘亏';
+      if (flag === 'EQUAL') return '持平';
+      const stockQty = parseFloat((row && row.stockQty) || 0);
+      const qty = parseFloat((row && row.qty) || 0);
+      if (!Number.isFinite(stockQty) || !Number.isFinite(qty)) return '--';
+      if (stockQty > qty) return '盘盈';
+      if (stockQty < qty) return '盘亏';
+      return '持平';
     },
     /** 盘点明细序号 */
     rowStkIoStocktakingEntryIndex({ row, rowIndex }) {

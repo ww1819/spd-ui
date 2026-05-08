@@ -345,6 +345,11 @@
               <span>{{ getProfitQty(scope.row) }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="盈亏标志" align="center" width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ formatProfitLossFlag(scope.row) }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="盈亏金额" align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ getProfitAmount(scope.row) }}</span>
@@ -438,7 +443,7 @@
         </el-table-column>
         <el-table-column label="生产日期" min-width="140">
           <template slot-scope="scope">
-            <el-date-picker v-model="scope.row.beginTime" type="date" value-format="yyyy-MM-dd" placeholder="请选择" />
+            <el-date-picker v-model="scope.row.beginTime" type="date" value-format="yyyy-MM-dd" placeholder="可不填" />
           </template>
         </el-table-column>
         <el-table-column label="有效期" min-width="140">
@@ -769,6 +774,7 @@ export default {
       if (!row) return '--';
       if (row.warehouse && row.warehouse.name) return row.warehouse.name;
       if (row._warehouseName) return row._warehouseName;
+      if (row.returnWarehouseId != null && row.returnWarehouseId !== '') return String(row.returnWarehouseId);
       return '--';
     },
     mapDepInventoryToStocktakingEntry(item) {
@@ -945,10 +951,10 @@ export default {
     },
     confirmPendingNewEntries() {
       const invalid = (this.pendingNewEntries || []).find((r) =>
-        !r.returnWarehouseId || !r.batchNumber || !r.beginTime || !r.endTime
+        !r.returnWarehouseId || !r.batchNumber || !r.endTime
       );
       if (invalid) {
-        this.$modal.msgWarning('请完整填写新增明细的归属仓库、批号、生产日期、有效期');
+        this.$modal.msgWarning('请完整填写新增明细的归属仓库、批号、有效期');
         return;
       }
       const badDate = (this.pendingNewEntries || []).find((r) =>
@@ -1010,6 +1016,7 @@ export default {
     },
     handleStockQtyBlur(row) {
       if (!row) return;
+      if (!row.depInventoryId) return;
       const stockQty = parseFloat(row.stockQty || 0);
       const qty = parseFloat(row.qty || 0);
       if (!Number.isFinite(stockQty) || !Number.isFinite(qty)) return;
@@ -1045,6 +1052,19 @@ export default {
       const profitAmount = profitQty * unitPrice;
       const prefix = profitAmount > 0 ? '+' : '';
       return prefix + '￥' + profitAmount.toFixed(2);
+    },
+    // 盈亏标志展示：优先后端字段，缺省时前端兜底
+    formatProfitLossFlag(row) {
+      const flag = (row && row.profitLossFlag ? String(row.profitLossFlag) : '').toUpperCase();
+      if (flag === 'PROFIT') return '盘盈';
+      if (flag === 'LOSS') return '盘亏';
+      if (flag === 'EQUAL') return '持平';
+      const stockQty = parseFloat((row && row.stockQty) || 0);
+      const qty = parseFloat((row && row.qty) || 0);
+      if (!Number.isFinite(stockQty) || !Number.isFinite(qty)) return '--';
+      if (stockQty > qty) return '盘盈';
+      if (stockQty < qty) return '盘亏';
+      return '持平';
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -1116,10 +1136,10 @@ export default {
           return;
         }
         const missingBatchMeta = needWh.some(
-          (r) => !r.batchNumber || !r.beginTime || !r.endTime
+          (r) => !r.batchNumber || !r.endTime
         );
         if (missingBatchMeta) {
-          this.$modal.msgWarning('新增明细请补全批号、生产日期、有效期');
+          this.$modal.msgWarning('新增明细请补全批号、有效期');
           return;
         }
         const badDate = (this.stkIoStocktakingEntryList || []).some(
@@ -1143,16 +1163,27 @@ export default {
       });
     },
     openSaveQtyConfirmDialog() {
-      this.saveQtyConfirmList = (this.stkIoStocktakingEntryList || []).map((row, idx) => ({
-        _confirmKey: `${row.id || 'new'}_${idx}`,
-        id: row.id,
-        material: row.material,
-        batchNo: row.batchNo,
-        qty: row.qty,
-        depInventoryId: row.depInventoryId,
-        adjustedStockQty: row.stockQty != null ? row.stockQty : row.qty,
-        confirmed: false
-      }));
+      this.saveQtyConfirmList = (this.stkIoStocktakingEntryList || [])
+        .map((row, idx) => ({
+          _confirmKey: `${row.id || 'new'}_${idx}`,
+          id: row.id,
+          material: row.material,
+          batchNo: row.batchNo,
+          qty: row.qty,
+          unitPrice: row.unitPrice,
+          depInventoryId: row.depInventoryId,
+          adjustedStockQty: row.stockQty != null ? row.stockQty : row.qty,
+          confirmed: false
+        }))
+        .filter((row) => {
+          const detailQty = parseFloat(row.qty || 0);
+          const stockQty = parseFloat(row.adjustedStockQty || 0);
+          return Number.isFinite(detailQty) && Number.isFinite(stockQty) && detailQty !== stockQty;
+        });
+      if (!this.saveQtyConfirmList.length) {
+        this.doSubmitFormRequest();
+        return;
+      }
       this.saveQtyConfirmVisible = true;
     },
     confirmSaveQtyRow(row) {
