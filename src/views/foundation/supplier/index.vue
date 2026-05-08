@@ -48,17 +48,6 @@
             </el-form-item>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="名称简码" prop="referredCode" label-width="100px">
-              <el-input
-                v-model="queryParams.referredCode"
-                placeholder="简码"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
             <el-form-item label="税号" prop="taxNumber" label-width="100px">
               <el-input
                 v-model="queryParams.taxNumber"
@@ -69,8 +58,6 @@
               />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
           <el-col :span="6">
             <el-form-item label="状态" prop="supplierStatus" label-width="100px">
               <el-select v-model="queryParams.supplierStatus" placeholder="全部" clearable style="width: 150px">
@@ -81,64 +68,6 @@
                   :value="d.value"
                 />
               </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="供应商类型" prop="supplierType" label-width="100px">
-              <el-input
-                v-model="queryParams.supplierType"
-                placeholder="类型关键字"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="名称简码" prop="referredCode" label-width="100px">
-              <el-input
-                v-model="queryParams.referredCode"
-                placeholder="简码"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="税号" prop="taxNumber" label-width="100px">
-              <el-input
-                v-model="queryParams.taxNumber"
-                placeholder="税号"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-form-item label="状态" prop="supplierStatus" label-width="100px">
-              <el-select v-model="queryParams.supplierStatus" placeholder="全部" clearable style="width: 150px">
-                <el-option
-                  v-for="d in dict.type.is_use_status"
-                  :key="d.value"
-                  :label="d.label"
-                  :value="d.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="供应商类型" prop="supplierType" label-width="100px">
-              <el-input
-                v-model="queryParams.supplierType"
-                placeholder="类型关键字"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
             </el-form-item>
           </el-col>
         </el-row>
