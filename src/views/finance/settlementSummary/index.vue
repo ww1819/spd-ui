@@ -52,129 +52,130 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="loadData" />
     </el-row>
 
-    <div class="section-label">表一</div>
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          icon="el-icon-download"
-          size="small"
-          @click="handleExportTable1"
-          v-hasPermi="['finance:settlementSummary:export']"
-        >导出</el-button>
-      </el-col>
-    </el-row>
-
-    <div class="summary-title">{{ titleTextTable1 }}</div>
-    <el-table
-      v-loading="loading"
-      :data="tableRows"
-      border
-      size="small"
-      :span-method="objectSpanMethod"
-      :row-class-name="tableRowClassName"
-      class="table-block"
-    >
-      <el-table-column prop="category" label="分类" align="center" width="120" />
-      <el-table-column prop="supplierName" label="供货单位" align="left" min-width="280" show-overflow-tooltip />
-      <el-table-column prop="wholesaleAmt" label="批发金额" align="right" width="140">
-        <template slot-scope="scope">
-          <span :class="{ 'subtotal-row': scope.row.isSubtotal }">{{ formatAmt(scope.row.wholesaleAmt) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="retailAmt" label="零售金额" align="right" width="120">
-        <template slot-scope="scope">
-          <span>{{ scope.row.retailAmt || '' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="outBillCount" label="出库单数" align="center" width="100">
-        <template slot-scope="scope">
-          <span>{{ scope.row.outBillCount || '' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="remark" label="备注" align="left" min-width="120">
-        <template slot-scope="scope">
-          <span>{{ scope.row.remark || '' }}</span>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <p class="hint-text">
-      表一统计口径：已审核出退库（出库 201 金额为正、退库 401 为负）；批发金额 = 单价×数量；产品档案库房分类 11、12 归为「材料」，13 归为「试剂」；分类未维护或非 11/12/13 的归为「未识别分类」。零售金额、出库单数、备注不填。
-    </p>
-
-    <div class="section-gap" />
-
-    <div class="section-label">表二</div>
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          icon="el-icon-download"
-          size="small"
-          @click="handleExportTable2"
-          v-hasPermi="['finance:settlementSummary:export']"
-        >导出</el-button>
-      </el-col>
-    </el-row>
-
-    <div class="summary-title">{{ titleTextTable2 }}</div>
-    <el-table
-      v-loading="loading"
-      :data="deptPickupRows"
-      border
-      size="small"
-      show-summary
-      :summary-method="table2SummaryMethod"
-      class="table-block table-block-wide"
-    >
-      <el-table-column prop="departmentName" label="分科" align="left" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="plainConsumablesAmt" label="普通耗材" align="right" width="110">
-        <template slot-scope="scope">
-          {{ formatAmt(scope.row.plainConsumablesAmt) }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="highValueConsumablesAmt" label="高值耗材" align="right" width="110">
-        <template slot-scope="scope">
-          {{ formatAmt(scope.row.highValueConsumablesAmt) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="西药" align="center">
-        <el-table-column prop="_blankWestern" label="西药金额" align="right" min-width="100">
-          <template slot-scope="scope">
-            <span>{{ scope.row._blankWestern }}</span>
-          </template>
-        </el-table-column>
-      </el-table-column>
-      <el-table-column label="中成药" align="center">
-        <el-table-column prop="_blankPatent" label="零售金额" align="right" min-width="100">
-          <template slot-scope="scope">
-            <span>{{ scope.row._blankPatent }}</span>
-          </template>
-        </el-table-column>
-      </el-table-column>
-      <el-table-column label="中草药" align="center">
-        <el-table-column prop="_blankTcmIn" label="中药进价" align="right" min-width="100">
-          <template slot-scope="scope">
-            <span>{{ scope.row._blankTcmIn }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="_blankTcmRetail" label="零售金额" align="right" min-width="100">
-          <template slot-scope="scope">
-            <span>{{ scope.row._blankTcmRetail }}</span>
-          </template>
-        </el-table-column>
-      </el-table-column>
-      <el-table-column prop="reagentAmt" label="试剂" align="right" width="110">
-        <template slot-scope="scope">
-          {{ formatAmt(scope.row.reagentAmt) }}
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <p class="hint-text">
-      表二统计口径：与表一相同的筛选及科室数据权限；已审核科室出退库（出库 201 为正、退库 401 为负）；普通耗材、高值耗材、试剂分别按产品档案库房分类 id（storeroom_id）12、11、13 汇总，与名称无关；西药、中成药、中草药相关列仅占位不统计。
-    </p>
+    <el-tabs v-model="activeSheet" type="border-card" class="report-sheet-tabs">
+      <el-tab-pane label="表一" name="table1">
+        <div class="sheet-pane">
+          <el-row :gutter="10" class="mb8">
+            <el-col :span="1.5">
+              <el-button
+                type="warning"
+                icon="el-icon-download"
+                size="small"
+                @click="handleExportTable1"
+                v-hasPermi="['finance:settlementSummary:export']"
+              >导出</el-button>
+            </el-col>
+          </el-row>
+          <div class="summary-title">{{ titleTextTable1 }}</div>
+          <el-table
+            v-loading="loading"
+            :data="tableRows"
+            border
+            size="small"
+            :span-method="objectSpanMethod"
+            :row-class-name="tableRowClassName"
+            class="table-block"
+          >
+            <el-table-column prop="category" label="分类" align="center" width="120" />
+            <el-table-column prop="supplierName" label="供货单位" align="left" min-width="280" show-overflow-tooltip />
+            <el-table-column prop="wholesaleAmt" label="批发金额" align="right" width="140">
+              <template slot-scope="scope">
+                <span :class="{ 'subtotal-row': scope.row.isSubtotal }">{{ formatAmt(scope.row.wholesaleAmt) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="retailAmt" label="零售金额" align="right" width="120">
+              <template slot-scope="scope">
+                <span>{{ scope.row.retailAmt || '' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="outBillCount" label="出库单数" align="center" width="100">
+              <template slot-scope="scope">
+                <span>{{ scope.row.outBillCount || '' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="remark" label="备注" align="left" min-width="120">
+              <template slot-scope="scope">
+                <span>{{ scope.row.remark || '' }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+          <p class="hint-text">
+            表一统计口径：已审核出退库（出库 201 金额为正、退库 401 为负）；批发金额 = 单价×数量；产品档案库房分类 11、12 归为「材料」，13 归为「试剂」；分类未维护或非 11/12/13 的归为「未识别分类」。零售金额、出库单数、备注不填。
+          </p>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="表二" name="table2">
+        <div class="sheet-pane">
+          <el-row :gutter="10" class="mb8">
+            <el-col :span="1.5">
+              <el-button
+                type="warning"
+                icon="el-icon-download"
+                size="small"
+                @click="handleExportTable2"
+                v-hasPermi="['finance:settlementSummary:export']"
+              >导出</el-button>
+            </el-col>
+          </el-row>
+          <div class="summary-title">{{ titleTextTable2 }}</div>
+          <el-table
+            v-loading="loading"
+            :data="deptPickupRows"
+            border
+            size="small"
+            show-summary
+            :summary-method="table2SummaryMethod"
+            class="table-block table-block-wide"
+          >
+            <el-table-column prop="departmentName" label="分科" align="left" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="plainConsumablesAmt" label="普通耗材" align="right" width="110">
+              <template slot-scope="scope">
+                {{ formatAmt(scope.row.plainConsumablesAmt) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="highValueConsumablesAmt" label="高值耗材" align="right" width="110">
+              <template slot-scope="scope">
+                {{ formatAmt(scope.row.highValueConsumablesAmt) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="西药" align="center">
+              <el-table-column prop="_blankWestern" label="西药金额" align="right" min-width="100">
+                <template slot-scope="scope">
+                  <span>{{ scope.row._blankWestern }}</span>
+                </template>
+              </el-table-column>
+            </el-table-column>
+            <el-table-column label="中成药" align="center">
+              <el-table-column prop="_blankPatent" label="零售金额" align="right" min-width="100">
+                <template slot-scope="scope">
+                  <span>{{ scope.row._blankPatent }}</span>
+                </template>
+              </el-table-column>
+            </el-table-column>
+            <el-table-column label="中草药" align="center">
+              <el-table-column prop="_blankTcmIn" label="中药进价" align="right" min-width="100">
+                <template slot-scope="scope">
+                  <span>{{ scope.row._blankTcmIn }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="_blankTcmRetail" label="零售金额" align="right" min-width="100">
+                <template slot-scope="scope">
+                  <span>{{ scope.row._blankTcmRetail }}</span>
+                </template>
+              </el-table-column>
+            </el-table-column>
+            <el-table-column prop="reagentAmt" label="试剂" align="right" width="110">
+              <template slot-scope="scope">
+                {{ formatAmt(scope.row.reagentAmt) }}
+              </template>
+            </el-table-column>
+          </el-table>
+          <p class="hint-text">
+            表二统计口径：与表一相同的筛选及科室数据权限；已审核科室出退库（出库 201 为正、退库 401 为负）；普通耗材、高值耗材、试剂分别按产品档案库房分类 id（storeroom_id）12、11、13 汇总，与名称无关；西药、中成药、中草药相关列仅占位不统计。
+          </p>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
@@ -235,6 +236,8 @@ export default {
       },
       tableRows: [],
       deptPickupRows: [],
+      /** 表一 / 表二 sheet 切换 */
+      activeSheet: 'table1',
     }
   },
   computed: {
@@ -246,19 +249,25 @@ export default {
       return '财务结算表汇总'
     },
     titleTextTable2() {
+      const suffix = '科室领取器材、药品统计（金额：元）'
       const b = dateOnly(this.queryParams.beginDate)
       const e = dateOnly(this.queryParams.endDate)
-      let period = ''
+      const ymPart = (d) => {
+        if (!d || d.length < 7) return ''
+        const parts = d.split('-')
+        const y = parts[0]
+        const m = parseInt(parts[1], 10)
+        return `${y}年${m}月`
+      }
       if (b && e) {
         if (b.substring(0, 7) === e.substring(0, 7)) {
-          const [y, m] = b.split('-')
-          period = `${y}年${parseInt(m, 10)}月`
-        } else {
-          period = `${b} 至 ${e}`
+          return `报表2：${ymPart(b)}${suffix}`
         }
+        return `报表2：${ymPart(b)}至${ymPart(e)}${suffix}`
       }
-      const core = period ? `${period}科室领取器材、药品统计` : '科室领取器材、药品统计'
-      return `2:${core}(金额:元)`
+      if (b) return `报表2：${ymPart(b)}${suffix}`
+      if (e) return `报表2：${ymPart(e)}${suffix}`
+      return `报表2：${suffix}`
     },
   },
   created() {
@@ -437,14 +446,14 @@ export default {
 </script>
 
 <style scoped>
-.section-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #606266;
-  margin-bottom: 6px;
+.report-sheet-tabs {
+  margin-top: 4px;
 }
-.section-gap {
-  margin-top: 28px;
+.report-sheet-tabs ::v-deep .el-tabs__content {
+  padding: 12px 14px 8px;
+}
+.sheet-pane {
+  min-height: 120px;
 }
 .summary-title {
   font-size: 15px;
