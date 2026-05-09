@@ -166,3 +166,150 @@ export async function exportFinanceSettlementSummaryXlsx(options) {
   const buf = await wb.xlsx.writeBuffer();
   saveAs(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), fileName || `财务结算汇总_${Date.now()}.xlsx`);
 }
+
+/**
+ * 财务结算汇总表二：科室领取器材、药品统计（多列表头，西药/中成药/中草药列为空占位）
+ * @param {Object} options
+ * @param {string} options.titleText 表头标题全文
+ * @param {{ departmentName: string, plainConsumablesAmt?: number, highValueConsumablesAmt?: number, reagentAmt?: number }[]} options.rows
+ * @param {string} options.fileName
+ */
+export async function exportFinanceDeptConsumablePickupXlsx(options) {
+  const { titleText = '', rows = [], fileName } = options;
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('科室领取统计', {
+    views: [{ showGridLines: false }],
+  });
+
+  ws.mergeCells('A1:H1');
+  const t1 = ws.getCell(1, 1);
+  t1.value = titleText || '报表2：科室领取器材、药品统计（金额：元）';
+  t1.font = FONT_TITLE;
+  t1.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  setCellBorder(t1);
+  ws.getRow(1).height = 28;
+
+  const headerBold = { ...FONT_BODY, bold: true };
+  const setHeader = (addr, text, align = 'center') => {
+    const cell = ws.getCell(addr);
+    cell.value = text;
+    cell.font = headerBold;
+    cell.alignment = { vertical: 'middle', horizontal: align, wrapText: true };
+    setCellBorder(cell);
+  };
+
+  ws.mergeCells('A2:A3');
+  setHeader('A2', '分科');
+  ws.mergeCells('B2:B3');
+  setHeader('B2', '普通耗材');
+  ws.mergeCells('C2:C3');
+  setHeader('C2', '高值耗材');
+
+  setHeader('D2', '西药');
+  setHeader('D3', '西药金额');
+  setHeader('E2', '中成药');
+  setHeader('E3', '零售金额');
+
+  ws.mergeCells('F2:G2');
+  setHeader('F2', '中草药');
+  setHeader('F3', '中药进价');
+  setHeader('G3', '零售金额');
+
+  ws.mergeCells('H2:H3');
+  setHeader('H2', '试剂');
+
+  let sumPlain = 0;
+  let sumHigh = 0;
+  let sumReag = 0;
+  let r = 4;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const plain = row.plainConsumablesAmt != null ? Number(row.plainConsumablesAmt) : 0;
+    const high = row.highValueConsumablesAmt != null ? Number(row.highValueConsumablesAmt) : 0;
+    const reag = row.reagentAmt != null ? Number(row.reagentAmt) : 0;
+    sumPlain += plain;
+    sumHigh += high;
+    sumReag += reag;
+
+    const cells = [
+      { c: 1, v: row.departmentName || '', align: 'left' },
+      { c: 2, v: plain, num: true },
+      { c: 3, v: high, num: true },
+      { c: 4, v: '', align: 'center' },
+      { c: 5, v: '', align: 'center' },
+      { c: 6, v: '', align: 'center' },
+      { c: 7, v: '', align: 'center' },
+      { c: 8, v: reag, num: true },
+    ];
+    cells.forEach(({ c, v, num, align }) => {
+      const cell = ws.getCell(r, c);
+      cell.value = v;
+      cell.font = FONT_BODY;
+      cell.alignment = { vertical: 'middle', horizontal: num ? 'right' : align || 'left' };
+      if (num) cell.numFmt = '#,##0.00';
+      setCellBorder(cell);
+    });
+    ws.getRow(r).height = 18;
+    r++;
+  }
+
+  if (rows.length === 0) {
+    ws.mergeCells(`A${r}:H${r}`);
+    const emptyCell = ws.getCell(r, 1);
+    emptyCell.value = '当前条件下暂无统计数据（已审核科室出退库按产品档案库房分类 id 汇总）';
+    emptyCell.font = FONT_BODY;
+    emptyCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    setCellBorder(emptyCell);
+    r++;
+  } else {
+    const tot = ws.getCell(r, 1);
+    tot.value = '合计';
+    tot.font = { ...FONT_BODY, bold: true };
+    tot.alignment = { vertical: 'middle', horizontal: 'center' };
+    setCellBorder(tot);
+    ;[
+      [2, sumPlain],
+      [3, sumHigh],
+      [4, ''],
+      [5, ''],
+      [6, ''],
+      [7, ''],
+      [8, sumReag],
+    ].forEach(([c, v]) => {
+      const cell = ws.getCell(r, c);
+      cell.value = typeof v === 'number' ? v : '';
+      cell.font = { ...FONT_BODY, bold: true };
+      cell.alignment = { vertical: 'middle', horizontal: typeof v === 'number' ? 'right' : 'center' };
+      if (typeof v === 'number') cell.numFmt = '#,##0.00';
+      setCellBorder(cell);
+    });
+    ws.getRow(r).height = 18;
+    r++;
+  }
+
+  ws.mergeCells(`A${r}:H${r}`);
+  const foot = ws.getCell(r, 1);
+  foot.value = '药械科制表员：             ；审核员：';
+  foot.font = FONT_BODY;
+  foot.alignment = { vertical: 'middle', horizontal: 'left' };
+  setCellBorder(foot);
+  ws.getRow(r).height = 22;
+
+  ws.columns = [
+    { width: 14 },
+    { width: 12 },
+    { width: 12 },
+    { width: 12 },
+    { width: 12 },
+    { width: 12 },
+    { width: 12 },
+    { width: 12 },
+  ];
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    fileName || `财务结算汇总_表二_${Date.now()}.xlsx`
+  );
+}

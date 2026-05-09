@@ -68,6 +68,16 @@
                 <el-option label="否" value="0"/>
               </el-select>
             </el-form-item>
+            <el-form-item label="产品档案" prop="materialIsUse" class="query-item-inline">
+              <el-select v-model="queryParams.materialIsUse" placeholder="启停用" clearable class="query-select-billing">
+                <el-option
+                  v-for="dict in dict.type.is_use_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
             <el-form-item label="库房分类" prop="warehouseCategoryId" class="query-item-inline">
               <div class="query-select-wrapper query-select-warehouse-cat">
                 <SelectWarehouseCategory v-model="queryParams.warehouseCategoryId" />
@@ -215,6 +225,11 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column key="materialUseStatus" label="产品档案状态" align="center" width="110" show-overflow-tooltip resizable v-if="columns[24].visible">
+        <template slot-scope="scope">
+          <span>{{ materialUseDictLabel(scope.row.material && scope.row.material.isUse) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column key="receiptOrderNo" label="入库单号" align="center" prop="receiptOrderNo" width="180" show-overflow-tooltip resizable v-if="columns[19].visible"/>
       <el-table-column key="createTime" label="制单日期" align="center" prop="createTime" width="160" show-overflow-tooltip resizable v-if="columns[20].visible">
         <template slot-scope="scope">
@@ -281,6 +296,7 @@ import { listWarehouse } from "@/api/foundation/warehouse";
 
 export default {
   name: "firstInventory",
+  dicts: ['is_use_status'],
   components: {SelectMaterial,SelectWarehouse,SelectSupplier,SelectWarehouseCategory,MaterialAutocomplete,RightToolbar},
   data() {
     return {
@@ -321,7 +337,8 @@ export default {
         batchNumber: null,
         materialNo: null,
         isBilling: null,
-        warehouseCategoryId: null
+        warehouseCategoryId: null,
+        materialIsUse: null
       },
       // 表单参数
       form: {},
@@ -350,7 +367,8 @@ export default {
         { key: 20, label: '制单日期', visible: true },
         { key: 21, label: '制单人', visible: true },
         { key: 22, label: '审核日期', visible: true },
-        { key: 23, label: '审核人', visible: true }
+        { key: 23, label: '审核人', visible: true },
+        { key: 24, label: '产品档案状态', visible: true }
       ],
       // 表单校验
       rules: {
@@ -497,6 +515,13 @@ export default {
     sortBySupplier(a, b) { return this.sortByStr(a, b, r => (r.supplier && r.supplier.name) || ''); },
     sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
     sortByAmt(a, b) { return this.sortByNum(a, b, 'amt'); },
+    materialUseDictLabel(isUse) {
+      if (isUse === undefined || isUse === null || isUse === '') return '--';
+      const v = this.selectDictLabel && this.dict && this.dict.type && this.dict.type.is_use_status
+        ? this.selectDictLabel(this.dict.type.is_use_status, String(isUse))
+        : '';
+      return v || '--';
+    },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
       if(res.length>0) {
@@ -571,6 +596,7 @@ export default {
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
       this.queryParams.isBilling = null;
+      this.queryParams.materialIsUse = null;
       this.queryParams.batchNumber = null;
       this.handleQuery();
     },

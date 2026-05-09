@@ -33,6 +33,7 @@
         <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
+    <p class="report-tip">统计口径：耗材出库单（201）金额计为正，退库单（401）金额计为负；两个 Tab 均按此出退库数据汇总。</p>
 
     <el-tabs v-model="activeTab" @tab-click="loadCurrentTab">
       <el-tab-pane label="卫材入库" name="inbound">
@@ -58,12 +59,15 @@
             </template>
           </el-table-column>
         </el-table>
+        <div v-if="inboundTotal > 0" class="pagination-summary">
+          <span class="summary-label">合计：</span>总金额（全部）：{{ formatAmount(inboundTotalInfo.totalAmt) }}，当前页金额：{{ inboundPageAmountFormatted }}
+        </div>
         <pagination
           v-show="inboundTotal > 0"
           :total="inboundTotal"
           :page.sync="inboundPage.pageNum"
           :limit.sync="inboundPage.pageSize"
-          @pagination="loadInbound"
+          @pagination="onInboundPagination"
         />
       </el-tab-pane>
 
@@ -92,12 +96,15 @@
           <el-table-column label="单位" prop="unitName" align="center" width="120" />
           <el-table-column label="是否高值" prop="isGzText" align="center" width="100" />
         </el-table>
+        <div v-if="outboundTotal > 0" class="pagination-summary">
+          <span class="summary-label">合计：</span>总金额（全部）：{{ formatAmount(outboundTotalInfo.totalAmt) }}，当前页金额：{{ outboundPageAmountFormatted }}
+        </div>
         <pagination
           v-show="outboundTotal > 0"
           :total="outboundTotal"
           :page.sync="outboundPage.pageNum"
           :limit.sync="outboundPage.pageSize"
-          @pagination="loadOutbound"
+          @pagination="onOutboundPagination"
         />
       </el-tab-pane>
     </el-tabs>
@@ -138,9 +145,11 @@ export default {
       },
       inboundList: [],
       inboundTotal: 0,
+      inboundTotalInfo: { totalAmt: 0 },
       inboundPage: { pageNum: 1, pageSize: 10 },
       outboundList: [],
       outboundTotal: 0,
+      outboundTotalInfo: { totalAmt: 0 },
       outboundPage: { pageNum: 1, pageSize: 10 },
       loadingInbound: false,
       loadingOutbound: false,
@@ -148,6 +157,18 @@ export default {
   },
   created() {
     this.loadInbound()
+  },
+  computed: {
+    inboundPageAmountFormatted() {
+      const list = this.inboundList || []
+      const s = list.reduce((acc, row) => acc + Number(row && row.amount != null ? row.amount : 0), 0)
+      return Number.isFinite(s) ? s.toFixed(2) : '0.00'
+    },
+    outboundPageAmountFormatted() {
+      const list = this.outboundList || []
+      const s = list.reduce((acc, row) => acc + Number(row && row.amount != null ? row.amount : 0), 0)
+      return Number.isFinite(s) ? s.toFixed(2) : '0.00'
+    },
   },
   methods: {
     formatAmount(v) {
@@ -171,11 +192,33 @@ export default {
         this.loadOutbound()
       }
     },
+    /** Pagination 组件在翻页/改页大小时先 emit pagination，再同步 .sync；需显式写入 pageNum/pageSize 再请求 */
+    onInboundPagination({ page, limit }) {
+      if (page != null) {
+        this.inboundPage.pageNum = page
+      }
+      if (limit != null) {
+        this.inboundPage.pageSize = limit
+      }
+      this.loadInbound()
+    },
+    onOutboundPagination({ page, limit }) {
+      if (page != null) {
+        this.outboundPage.pageNum = page
+      }
+      if (limit != null) {
+        this.outboundPage.pageSize = limit
+      }
+      this.loadOutbound()
+    },
     loadInbound() {
       this.loadingInbound = true
       listMedicalInboundSummary({ ...this.buildBaseParams(), ...this.inboundPage }).then((res) => {
         this.inboundList = res.rows || []
-        this.inboundTotal = res.total || 0
+        this.inboundTotal = Number(res.total) || 0
+        this.inboundTotalInfo = res.totalInfo && res.totalInfo.totalAmt != null
+          ? { totalAmt: res.totalInfo.totalAmt }
+          : { totalAmt: 0 }
       }).finally(() => {
         this.loadingInbound = false
       })
@@ -184,7 +227,10 @@ export default {
       this.loadingOutbound = true
       listMedicalOutboundSummary({ ...this.buildBaseParams(), ...this.outboundPage }).then((res) => {
         this.outboundList = res.rows || []
-        this.outboundTotal = res.total || 0
+        this.outboundTotal = Number(res.total) || 0
+        this.outboundTotalInfo = res.totalInfo && res.totalInfo.totalAmt != null
+          ? { totalAmt: res.totalInfo.totalAmt }
+          : { totalAmt: 0 }
       }).finally(() => {
         this.loadingOutbound = false
       })
@@ -214,3 +260,21 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.report-tip {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+}
+.pagination-summary {
+  margin: 10px 0 6px;
+  font-size: 13px;
+  color: #606266;
+}
+.pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
+}
+</style>

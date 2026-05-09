@@ -39,6 +39,16 @@
                 <el-option label="否" value="0" />
               </el-select>
             </el-form-item>
+            <el-form-item label="产品档案" prop="materialIsUse" class="query-item-inline">
+              <el-select v-model="queryParams.materialIsUse" placeholder="启停用" clearable class="query-select-billing">
+                <el-option
+                  v-for="dict in dict.type.is_use_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
             <el-form-item label="收货确认状态" prop="receiptConfirmStatus" class="query-item-inline">
               <el-select v-model="queryParams.receiptConfirmStatus" placeholder="请选择" clearable class="query-select-receipt">
                 <el-option label="全部" :value="null" />
@@ -159,6 +169,11 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
+        <el-table-column label="产品档案状态" align="center" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ materialUseDictLabel(scope.row.material && scope.row.material.isUse) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
         <el-table-column label="生产厂家" align="center" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
@@ -224,6 +239,7 @@ import RightToolbar from "@/components/RightToolbar";
 
 export default {
   name: "InventoryDetail",
+  dicts: ['is_use_status'],
   components: {SelectDepartment,SelectWarehouse,SelectSupplier,RightToolbar},
   data() {
     return {
@@ -243,6 +259,7 @@ export default {
         materialKeyword: '',
         departmentId: null,
         isBilling: '',
+        materialIsUse: '',
         qty: null,
         unitPrice: null,
         amt: null,
@@ -290,6 +307,7 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.materialIsUse = '';
       this.handleQuery();
     },
     handleSizeChange(val) {
@@ -333,6 +351,11 @@ export default {
       const m = row.material;
       if (m && m.fdFactory && m.fdFactory.factoryName) return m.fdFactory.factoryName;
       return '--';
+    },
+    materialUseDictLabel(isUse) {
+      if (isUse === undefined || isUse === null || isUse === '') return '--';
+      const label = this.selectDictLabel(this.dict.type.is_use_status, String(isUse));
+      return label || '--';
     }
   }
 };

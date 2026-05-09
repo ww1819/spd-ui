@@ -50,6 +50,16 @@
                 <el-option label="否" value="0"/>
               </el-select>
             </el-form-item>
+            <el-form-item label="产品档案" prop="materialIsUse" class="query-item-inline">
+              <el-select v-model="queryParams.materialIsUse" placeholder="启停用" clearable class="query-select-billing">
+                <el-option
+                  v-for="dict in dict.type.is_use_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
           </el-col>
         </el-row>
       </el-form>
@@ -117,6 +127,11 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="产品档案状态" align="center" prop="materialIsUse" width="110" min-width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ materialUseDictLabel(scope.row.materialIsUse) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="注册证号" align="center" prop="registerNo" width="180" min-width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.registerNo || '--' }}</span>
@@ -162,6 +177,7 @@ import { listWarehouse } from "@/api/foundation/warehouse";
 
 export default {
   name: "secondInventory",
+  dicts: ['is_use_status'],
   components: {SelectMaterial,SelectWarehouse,SelectSupplier,MaterialAutocomplete,RightToolbar},
   data() {
     return {
@@ -199,7 +215,8 @@ export default {
         supplierId: null,
         beginDate: null,
         endDate: null,
-        isBilling: null
+        isBilling: null,
+        materialIsUse: null
       },
       // 表单参数
       form: {},
@@ -230,6 +247,13 @@ export default {
     });
   },
   methods: {
+    materialUseDictLabel(isUse) {
+      if (isUse === undefined || isUse === null || isUse === '') return '--';
+      const v = this.selectDictLabel && this.dict && this.dict.type && this.dict.type.is_use_status
+        ? this.selectDictLabel(this.dict.type.is_use_status, String(isUse))
+        : '';
+      return v || '--';
+    },
     getTotalSummaries(param) {
       const { columns, data } = param;
       const sums = Array(columns.length).fill('');
@@ -315,6 +339,7 @@ export default {
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
       this.queryParams.isBilling = null;
+      this.queryParams.materialIsUse = null;
       this.handleQuery();
     },
     // 多选框选中数据
