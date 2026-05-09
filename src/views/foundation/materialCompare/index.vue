@@ -210,10 +210,10 @@
         <el-button type="text" @click="hisDialogVisible = false" style="padding: 0;">关闭</el-button>
       </div>
       <div class="his-current-material-box">
-        <div class="his-current-material-title">当前产品档案基本信息：</div>
+        <div class="his-current-material-title">产品档案基本信息</div>
         <div class="his-current-material-grid">
-          <div class="his-current-material-item"><span class="label">项目编码：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.code) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">名称：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.name) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">产品编码：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.code) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">产品名称：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.name) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">规格：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.speci) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">型号：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.model) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">单位：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.fdUnit && currentMaterialRow.fdUnit.unitName) || (currentMaterialRow && currentMaterialRow.unitName) || '--' }}</span></div>
@@ -221,7 +221,7 @@
           <div class="his-current-material-item"><span class="label">供应商：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.supplier && currentMaterialRow.supplier.name) || (currentMaterialRow && currentMaterialRow.supplierName) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">生产厂家：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.fdFactory && currentMaterialRow.fdFactory.factoryName) || (currentMaterialRow && currentMaterialRow.factoryName) || '--' }}</span></div>
         </div>
-        <div class="his-current-material-title his-current-material-subtitle">当前对照收费项目：</div>
+        <div class="his-current-material-title his-current-material-subtitle">对照收费项目</div>
         <div class="his-current-material-grid">
           <div class="his-current-material-item"><span class="label">收费编码：</span><span class="value">{{ (currentHisChargeItem && currentHisChargeItem.chargeCode) || (currentMaterialRow && currentMaterialRow.hisCode) || (currentMaterialRow && currentMaterialRow.hisChargeItemId) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">收费名称：</span><span class="value">{{ (currentHisChargeItem && currentHisChargeItem.chargeName) || '--' }}</span></div>
@@ -549,11 +549,16 @@ export default {
       this.single = selection.length !== 1;
       this.multiple = !selection.length;
     },
-    /** HIS按钮操作 */
+    /** HIS按钮操作：明细列表默认按当前耗材名称匹配，仅用户点击「搜索」后随条件变化 */
     handleHis(row) {
       this.currentMaterialRow = row;
       this.hisDialogVisible = true;
       this.hisQueryParams.pageNum = 1;
+      this.hisQueryParams.pageSize = 10;
+      this.hisQueryParams.itemCode = null;
+      this.hisQueryParams.name = (row && row.name) ? row.name : null;
+      this.hisQueryParams.referredCode = null;
+      this.hisQueryParams.speci = null;
       this.loadCurrentHisChargeItem();
       this.getHisList();
     },
@@ -593,17 +598,18 @@ export default {
       }
       return String(this.currentMaterialRow.hisChargeItemId || '') === String(row.chargeItemId || '');
     },
-    /** 绑定 HIS 收费项目 */
-    handleBindHis(row) {
-      if (!this.currentMaterialRow || !this.currentMaterialRow.id) {
-        this.$modal.msgError("未找到当前耗材");
-        return;
+    /** 产品档案价格与待绑定行收费单价是否不一致（均有值且数值不同） */
+    isHisBindPriceMismatch(row) {
+      const p = this.currentMaterialRow && this.currentMaterialRow.price;
+      const c = row && row.chargePrice;
+      if (p == null || p === "" || c == null || c === "") {
+        return false;
       }
-      if (!row || !row.chargeItemId) {
-        this.$modal.msgError("未找到收费项目ID");
-        return;
-      }
-      bindMaterialHisChargeItem({
+      return Number(p) !== Number(c);
+    },
+    /** 执行绑定请求（不含校验与二次确认） */
+    submitBindHis(row) {
+      return bindMaterialHisChargeItem({
         materialId: this.currentMaterialRow.id,
         chargeItemId: row.chargeItemId
       }).then(() => {
@@ -617,6 +623,25 @@ export default {
         this.getHisList();
         this.getList();
       });
+    },
+    /** 绑定 HIS 收费项目 */
+    handleBindHis(row) {
+      if (!this.currentMaterialRow || !this.currentMaterialRow.id) {
+        this.$modal.msgError("未找到当前耗材");
+        return;
+      }
+      if (!row || !row.chargeItemId) {
+        this.$modal.msgError("未找到收费项目ID");
+        return;
+      }
+      if (this.isHisBindPriceMismatch(row)) {
+        this.$modal
+          .confirm("当前产品的价格跟HIS收费价格不一致！是否需要继续绑定")
+          .then(() => this.submitBindHis(row))
+          .catch(() => {});
+      } else {
+        this.submitBindHis(row);
+      }
     },
     /** 解绑 HIS 收费项目 */
     handleUnbindHis() {
