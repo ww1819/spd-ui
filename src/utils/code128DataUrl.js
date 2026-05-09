@@ -40,10 +40,12 @@ export function buildCode128DataUrl(text) {
   try {
     JsBarcode(canvas, s, {
       format: "CODE128B",
-      width: 2,
+      // 条宽略增，热敏上更易分辨
+      width: 2.25,
       height: 52,
       displayValue: false,
-      margin: 1,
+      // 静区过小会导致扫码器从符号中段切入，解出与 HRI 不一致的短串；勿用 margin:1
+      margin: 12,
       background: "#ffffff",
       lineColor: "#000000",
     });

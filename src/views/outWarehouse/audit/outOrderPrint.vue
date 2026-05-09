@@ -70,15 +70,15 @@
         </thead>
         <tbody>
           <tr v-for="(item, idx) in detailPage" :key="`${pageIndex}-${idx}`">
-            <td class="cell-textual cell-name-batch"><span class="cell-text print-line-clamp-2">{{ item.materialName || '' }}</span></td>
-            <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ formatSpecModel(item) }}</span></td>
+            <td class="cell-textual cell-name-batch"><span class="cell-text">{{ item.materialName || '' }}</span></td>
+            <td class="cell-textual"><span class="cell-text">{{ formatSpecModel(item) }}</span></td>
             <td>{{ formatNum(item.qty) }}</td>
-            <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ item.unitName || '' }}</span></td>
+            <td class="cell-textual"><span class="cell-text">{{ item.unitName || '' }}</span></td>
             <td>{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
             <td>{{ formatAmt(item.amt) }}</td>
-            <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ item.factoryName || '' }}</span></td>
-            <td class="cell-textual cell-name-batch"><span class="cell-text print-line-clamp-2">{{ item.batchNumber || '' }}</span></td>
-            <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ formatValidDate(item.endTime || item.periodDate) }}</span></td>
+            <td class="cell-textual"><span class="cell-text">{{ item.factoryName || '' }}</span></td>
+            <td class="cell-textual cell-name-batch"><span class="cell-text">{{ item.batchNumber || '' }}</span></td>
+            <td class="cell-textual"><span class="cell-text">{{ formatValidDate(item.endTime || item.periodDate) }}</span></td>
           </tr>
           <!-- 合计：大写占前四列；小写金额横跨采购价、采购金额两列 -->
           <tr v-if="pageIndex === detailPages.length - 1" class="print-total-row">
@@ -108,6 +108,7 @@
 <script>
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { getDefaultTemplate } from '@/api/system/printSetting'
+import { formatQuantity } from '@/utils/format-quantity'
 
 export default {
   mixins: [hospitalNameMixin],
@@ -248,9 +249,7 @@ export default {
       return `${y}-${m}-${day}`
     },
     formatNum(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(2)
+      return formatQuantity(v, 2)
     },
     formatPrice(v) {
       if (v == null || v === '') return ''
@@ -346,7 +345,7 @@ export default {
       this.removeMirrorNode(mirror)
       return h
     },
-    /** 明细“文本列”最多两行；两行仍装不下则缩小字号（与入库打印一致） */
+    /** 明细文本列：超过一行则缩小字号，直至单行或字号下限（与入库打印一致） */
     applyPrintCellAutoFont() {
       const root = this.$refs.receiptOrderPrintRef || this.$el
       if (!root || typeof document === 'undefined') return
@@ -357,8 +356,8 @@ export default {
       // 与 colgroup 宽度比例一致（总和不必为 1，这里用相对比例即可）
       const colRatios = [0.14, 0.12, 0.07, 0.04, 0.13, 0.13, 0.08, 0.13, 0.08]
 
-      const minPx = 8
-      const maxSteps = 48
+      const minPx = 10
+      const maxSteps = 64
 
       Array.prototype.forEach.call(cells, (el) => {
         if (!el || el.nodeType !== 1) return
@@ -373,15 +372,15 @@ export default {
 
         const cs0 = window.getComputedStyle(el)
         let fontPx = parseFloat(cs0.fontSize || '12') || 12
-        const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
-        const maxH = lineHeightPx * 2 + 1
 
         const innerW = this.estimateTdInnerWidthPx(td, colRatios)
 
         let step = 0
         while (step < maxSteps) {
+          const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
+          const oneLineMaxH = lineHeightPx + 1
           const h = this.measureUnclampedTextHeightPx(el, fontPx, innerW)
-          if (h <= maxH + 0.5 || fontPx <= minPx) {
+          if (h <= oneLineMaxH + 0.5 || fontPx <= minPx) {
             el.style.fontSize = `${fontPx}px`
             el.style.lineHeight = '1.35'
             return
@@ -484,8 +483,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   page-break-inside avoid
 
 .print-copy-block.is-third-split-copy
-  height 140mm
-  overflow hidden
+  height auto
+  min-height 140mm
+  overflow visible
 
 .doc-header
   display grid
@@ -571,7 +571,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   margin-bottom 6px
   font-family $font-song
 
-/* 消耗品名称 14%（最多两行截断）；产地 8% */
+/* 消耗品名称 14%；产地 8% */
 .detail-table .col-name
   width 14%
 .detail-table .col-spec
@@ -632,28 +632,15 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   word-break break-all
 
 .detail-table td.cell-textual .cell-text
-  display -webkit-box
-  -webkit-box-orient vertical
-  -webkit-line-clamp 2
-  line-clamp 2
-  overflow hidden
+  display block
+  overflow visible
   word-break break-all
   white-space normal
   line-height 1.35
 
-/* 名称、批号：td 保持 table-cell 以与整行底边对齐；两行截断在内层 span */
-.print-line-clamp-2
-  display -webkit-box
-  -webkit-box-orient vertical
-  -webkit-line-clamp 2
-  line-clamp 2
-  overflow hidden
-  word-break break-all
-  white-space normal
-
 .detail-table tbody tr:not(.print-total-row) td.cell-name-batch
   vertical-align top
-  overflow hidden
+  overflow visible
 
 .detail-table tbody tr:not(.print-total-row) td:nth-child(2)
   vertical-align top
@@ -776,8 +763,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     justify-content flex-start !important
 
   .print-copy-block.is-third-split-copy
-    height 140mm !important
-    overflow hidden !important
+    height auto !important
+    min-height 140mm !important
+    overflow visible !important
 
   .print-page-break
     break-after page !important
@@ -862,8 +850,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   .detail-table td
     border 1px solid #000
     padding 3px 5px !important
-    overflow hidden
-    text-overflow clip !important
+    overflow visible
+    word-break break-word !important
     line-height 1.45 !important
 
   .detail-table th
@@ -883,18 +871,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   .detail-table tbody tr:not(.print-total-row) td:nth-child(2)
     vertical-align top !important
 
-  /* 名称、批号：内层两行截断，td 仍为单元格以便与整行底边框对齐 */
   .detail-table tbody tr:not(.print-total-row) td.cell-name-batch
     vertical-align top !important
-
-  .detail-table tbody tr:not(.print-total-row) .print-line-clamp-2
-    display -webkit-box !important
-    -webkit-box-orient vertical !important
-    -webkit-line-clamp 2 !important
-    line-clamp 2 !important
-    white-space normal !important
-    word-break break-all !important
-    overflow hidden !important
 
   /* 有效期字号缩小 2 号 */
   .detail-table tbody td:nth-child(9)
@@ -916,11 +894,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     word-break break-all !important
 
   .detail-table td.cell-textual .cell-text
-    display -webkit-box !important
-    -webkit-box-orient vertical !important
-    -webkit-line-clamp 2 !important
-    line-clamp 2 !important
-    overflow hidden !important
+    display block !important
+    overflow visible !important
     white-space normal !important
     word-break break-all !important
     line-height 1.35 !important

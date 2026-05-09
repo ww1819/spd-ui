@@ -113,6 +113,7 @@
 <script>
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { getDefaultTemplate } from '@/api/system/printSetting'
+import { formatQuantity } from '@/utils/format-quantity'
 
 export default {
   mixins: [hospitalNameMixin],
@@ -212,9 +213,7 @@ export default {
       return `${y}-${m}-${day}`
     },
     formatNum(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(2)
+      return formatQuantity(v, 2)
     },
     formatPrice(v) {
       if (v == null || v === '') return ''
@@ -242,7 +241,7 @@ export default {
         }
       }).catch(() => {})
     },
-    /** 明细单元格：最多两行；若两行仍装不下，则逐步缩小字号直到装下（或到达下限） */
+    /** 明细文本列：按列宽测量，超过一行则逐步缩小字号，直至单行高度内或到达字号下限（下限仍超一行时允许多行完整展示） */
     applyPrintCellAutoFont() {
       const root = this.$refs.receiptOrderPrintRef || this.$el
       if (!root || typeof document === 'undefined') return
@@ -250,8 +249,8 @@ export default {
       const cells = root.querySelectorAll('td.cell-textual .cell-text')
       if (!cells || !cells.length) return
 
-      const minPx = 8
-      const maxSteps = 40
+      const minPx = 10
+      const maxSteps = 64
 
       const removeMirror = (m) => {
         try {
@@ -341,13 +340,13 @@ export default {
 
         const cs0 = window.getComputedStyle(el)
         let fontPx = parseFloat(cs0.fontSize || '12') || 12
-        const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
-        const maxH = lineHeightPx * 2 + 1
 
         let step = 0
         while (step < maxSteps) {
+          const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
+          const oneLineMaxH = lineHeightPx + 1
           const h = measureUnclampedHeightPx(el, fontPx)
-          if (h <= maxH + 0.5 || fontPx <= minPx) {
+          if (h <= oneLineMaxH + 0.5 || fontPx <= minPx) {
             el.style.fontSize = `${fontPx}px`
             el.style.lineHeight = '1.35'
             return
@@ -534,21 +533,21 @@ export default {
 
 .detail-table td
   word-break normal
-  overflow hidden
+  overflow visible
 
-/* 名称、规格、单位、产地：左对齐，最多两行（超出由脚本在打印前自动缩小字号） */
+/* 名称、规格、单位、产地：左对齐，多行完整展示（打印前可按列宽自动略缩字号） */
 .detail-table td.cell-textual
   text-align left
   vertical-align top
   white-space normal
   word-break break-word
+  overflow visible
 
 .detail-table td.cell-textual .cell-text
-  display -webkit-box
-  -webkit-box-orient vertical
-  -webkit-line-clamp 2
-  overflow hidden
+  display block
+  overflow visible
   word-break break-word
+  white-space normal
   line-height 1.35
 
 /* 数量、采购价、采购金额：内容右对齐 */
@@ -766,9 +765,9 @@ export default {
   .detail-table th,
   .detail-table td
     border 1px solid #000
-    overflow hidden
-    word-wrap normal
-    word-break normal
+    overflow visible
+    word-wrap break-word
+    word-break break-word
     line-height 1.45 !important
 
   .detail-table th
@@ -798,11 +797,10 @@ export default {
     word-break break-word !important
 
   .detail-table td.cell-textual .cell-text
-    display -webkit-box !important
-    -webkit-box-orient vertical !important
-    -webkit-line-clamp 2 !important
-    overflow hidden !important
+    display block !important
+    overflow visible !important
     word-break break-word !important
+    white-space normal !important
     line-height 1.35 !important
 
   .detail-table td:nth-child(4),

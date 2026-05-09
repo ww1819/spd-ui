@@ -97,6 +97,7 @@
 <script>
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { getDefaultTemplate } from '@/api/system/printSetting'
+import { formatQuantity } from '@/utils/format-quantity'
 
 export default {
   name: 'GzAcceptanceOrderPrint',
@@ -165,8 +166,7 @@ export default {
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     },
     formatNum(v) {
-      const n = Number(v)
-      return isNaN(n) ? (v || '') : n.toFixed(2)
+      return formatQuantity(v, 2)
     },
     formatPrice(v) {
       const n = Number(v)

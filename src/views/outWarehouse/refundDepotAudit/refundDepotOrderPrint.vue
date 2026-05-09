@@ -65,9 +65,9 @@
           </thead>
           <tbody>
             <tr v-for="(item, idx) in detailPage" :key="`${pageIndex}-${idx}`">
-              <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ item.materialName || '' }}</span></td>
-              <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ item.materialSpeci || '' }}</span></td>
-              <td class="cell-textual"><span class="cell-text print-line-clamp-2">{{ item.batchNumber || '' }}</span></td>
+              <td class="cell-textual"><span class="cell-text">{{ item.materialName || '' }}</span></td>
+              <td class="cell-textual"><span class="cell-text">{{ item.materialSpeci || '' }}</span></td>
+              <td class="cell-textual"><span class="cell-text">{{ item.batchNumber || '' }}</span></td>
               <td class="num-cell">{{ formatQty(item.qty) }}</td>
               <td class="num-cell">{{ formatPrice(item.unitPrice != null ? item.unitPrice : item.price) }}</td>
               <td class="num-cell">{{ formatAmt(item.amt) }}</td>
@@ -99,6 +99,7 @@
 
 <script>
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
+import { formatQuantity } from '@/utils/format-quantity'
 
 export default {
   mixins: [hospitalNameMixin],
@@ -202,9 +203,7 @@ export default {
       return `${y}-${m}-${day}`
     },
     formatQty(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(2)
+      return formatQuantity(v, 2)
     },
     formatPrice(v) {
       if (v == null || v === '') return ''
@@ -281,6 +280,7 @@ export default {
       this.removeMirrorNode(mirror)
       return h
     },
+    /** 明细文本列：超过一行则缩小字号，直至单行或字号下限 */
     applyPrintCellAutoFont() {
       const root = this.$refs.receiptRefundDepotOrderPrintRef || this.$el
       if (!root || typeof document === 'undefined') return
@@ -290,8 +290,8 @@ export default {
 
       const colRatios = [0.26, 0.18, 0.14, 0.12, 0.14, 0.16]
 
-      const minPx = 8
-      const maxSteps = 48
+      const minPx = 10
+      const maxSteps = 64
 
       Array.prototype.forEach.call(cells, (el) => {
         if (!el || el.nodeType !== 1) return
@@ -306,15 +306,15 @@ export default {
 
         const cs0 = window.getComputedStyle(el)
         let fontPx = parseFloat(cs0.fontSize || '12') || 12
-        const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
-        const maxH = lineHeightPx * 2 + 1
 
         const innerW = this.estimateTdInnerWidthPx(td, colRatios)
 
         let step = 0
         while (step < maxSteps) {
+          const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
+          const oneLineMaxH = lineHeightPx + 1
           const h = this.measureUnclampedTextHeightPx(el, fontPx, innerW)
-          if (h <= maxH + 0.5 || fontPx <= minPx) {
+          if (h <= oneLineMaxH + 0.5 || fontPx <= minPx) {
             el.style.fontSize = `${fontPx}px`
             el.style.lineHeight = '1.35'
             return
@@ -400,8 +400,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   justify-content flex-start
 
 .print-copy-block.is-third-split-copy
-  height 140mm
-  overflow hidden
+  height auto
+  min-height 140mm
+  overflow visible
 
 .doc-header
   display grid
@@ -515,23 +516,11 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   word-break break-all
 
 .detail-table td.cell-textual .cell-text
-  display -webkit-box
-  -webkit-box-orient vertical
-  -webkit-line-clamp 2
-  line-clamp 2
-  overflow hidden
+  display block
+  overflow visible
   word-break break-all
   white-space normal
   line-height 1.35
-
-.print-line-clamp-2
-  display -webkit-box
-  -webkit-box-orient vertical
-  -webkit-line-clamp 2
-  line-clamp 2
-  overflow hidden
-  word-break break-all
-  white-space normal
 
 .detail-table tbody tr.print-total-row td
   border 1px solid #000
@@ -654,8 +643,9 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     justify-content flex-start !important
 
   .print-copy-block.is-third-split-copy
-    height 140mm !important
-    overflow hidden !important
+    height auto !important
+    min-height 140mm !important
+    overflow visible !important
 
   /* 仅非末联加分页（见模板 :class 注释），避免 :last-child 被末尾空白文本节点破坏 */
   .refund-depot-order-print .print-slip-page-break-after
@@ -726,18 +716,17 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     font-size 14px !important
 
-  /* flex 子项 table 默认 min-height:auto 会按内容撑高，打印时可能超出 140mm 产生幽灵页 */
   .refund-depot-order-print .print-copy-block.is-third-split-copy .detail-table
-    flex 1 1 auto !important
+    flex 0 0 auto !important
     min-height 0 !important
-    max-height 100% !important
+    max-height none !important
 
   .detail-table th,
   .detail-table td
     border 1px solid #000
     padding 3px 5px !important
-    overflow hidden
-    text-overflow clip !important
+    overflow visible
+    word-break break-word !important
     line-height 1.45 !important
 
   .detail-table th
@@ -774,11 +763,8 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     word-break break-all !important
 
   .detail-table td.cell-textual .cell-text
-    display -webkit-box !important
-    -webkit-box-orient vertical !important
-    -webkit-line-clamp 2 !important
-    line-clamp 2 !important
-    overflow hidden !important
+    display block !important
+    overflow visible !important
     white-space normal !important
     word-break break-all !important
     line-height 1.35 !important
