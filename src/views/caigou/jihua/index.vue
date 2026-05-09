@@ -295,12 +295,10 @@
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <el-row :gutter="8">
+                <el-row v-if="form.referenceBillNo && String(form.referenceBillNo).trim()" :gutter="8">
                   <el-col :span="12">
                     <el-form-item label="引用申购单号" prop="referenceBillNo">
-                      <el-button type="primary" link @click="handleShowApplyBillNoList">
-                        {{ (form.referenceBillNo && form.referenceBillNo.trim()) ? '查看引用申购单号' : '无' }}
-                      </el-button>
+                      <el-button type="primary" link @click="handleShowApplyBillNoList">查看引用申购单号</el-button>
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -2312,8 +2310,10 @@ export default {
   padding-bottom: 4px;
 }
 
+/* 仅表体 .el-table__body-wrapper 横向滚动；根节点再 overflow-x 会出现合计下方第二条横滑条 */
 .local-modal-content .modal-detail-section .el-table {
   width: 100%;
+  overflow-x: hidden;
 }
 
 ::v-deep .local-modal-content .modal-detail-section .el-table th {
@@ -2786,11 +2786,6 @@ export default {
   ::v-deep .el-table__fixed-right {
     position: absolute !important;
     right: 0 !important;
-  }
-
-  /* 确保表格可以水平滚动 */
-  ::v-deep .el-table {
-    overflow-x: auto;
   }
 
   /* 表格样式优化 - 引用申购单弹窗 */
