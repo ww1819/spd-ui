@@ -428,12 +428,14 @@
         <el-table-column label="耗材" min-width="150">
           <template slot-scope="scope">{{ scope.row.material && scope.row.material.name ? scope.row.material.name : '--' }}</template>
         </el-table-column>
-        <el-table-column label="供应商" min-width="150">
-          <template slot-scope="scope">{{ scope.row._supplierName || '--' }}</template>
-        </el-table-column>
-        <el-table-column label="归属仓库" min-width="180">
+        <el-table-column label="单价" min-width="120">
           <template slot-scope="scope">
-            <SelectWarehouse v-model="scope.row.returnWarehouseId" finance-pick-mode placeholder="请选择仓库" />
+            <el-input v-model="scope.row.unitPrice" type="number" placeholder="请输入单价" @input="priceChange(scope.row)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="盘点数量" min-width="120">
+          <template slot-scope="scope">
+            <el-input v-model="scope.row.stockQty" type="number" placeholder="请输入盘点数量" @input="stockQtyChange(scope.row)" />
           </template>
         </el-table-column>
         <el-table-column label="批号" min-width="140">
@@ -441,15 +443,23 @@
             <el-input v-model="scope.row.batchNumber" placeholder="请输入批号" />
           </template>
         </el-table-column>
+        <el-table-column label="有效期" min-width="140">
+          <template slot-scope="scope">
+            <el-date-picker v-model="scope.row.endTime" type="date" value-format="yyyy-MM-dd" placeholder="请选择" />
+          </template>
+        </el-table-column>
         <el-table-column label="生产日期" min-width="140">
           <template slot-scope="scope">
             <el-date-picker v-model="scope.row.beginTime" type="date" value-format="yyyy-MM-dd" placeholder="可不填" />
           </template>
         </el-table-column>
-        <el-table-column label="有效期" min-width="140">
+        <el-table-column label="归属仓库" min-width="180">
           <template slot-scope="scope">
-            <el-date-picker v-model="scope.row.endTime" type="date" value-format="yyyy-MM-dd" placeholder="请选择" />
+            <SelectWarehouse v-model="scope.row.returnWarehouseId" finance-pick-mode placeholder="请选择仓库" />
           </template>
+        </el-table-column>
+        <el-table-column label="供应商" min-width="150">
+          <template slot-scope="scope">{{ scope.row._supplierName || '--' }}</template>
         </el-table-column>
       </el-table>
       <div slot="footer">
@@ -779,6 +789,15 @@ export default {
     },
     mapDepInventoryToStocktakingEntry(item) {
       const fromInit = !!item._fromStocktakingInit;
+      const customerId =
+        this.$store && this.$store.getters ? this.$store.getters.customerId : '';
+      const defaultProfitWarehouseId =
+        !fromInit && customerId === 'hengsui-third-001' ? 10 : null;
+      const materialPrice = item.material && item.material.price != null && item.material.price !== ''
+        ? item.material.price
+        : item.material && item.material.salePrice != null && item.material.salePrice !== ''
+          ? item.material.salePrice
+          : null;
       const beginTime = item.beginTime || item.beginDate;
       const endTime = item.endTime || item.endDate;
       /** 盘点初始化：账面库存数量取科室库存；新增（字典）：库存数量为 0 */
@@ -828,7 +847,7 @@ export default {
         material: item.material || null,
         supplierId: item.supplierId || (item.material && item.material.supplierId) || null,
         _supplierName: (item.material && item.material.supplier && item.material.supplier.name) || '',
-        unitPrice: item.unitPrice,
+        unitPrice: item.unitPrice != null && item.unitPrice !== '' ? item.unitPrice : materialPrice,
         qty,
         stockQty,
         amt,
@@ -838,7 +857,7 @@ export default {
         endTime: endTime ? (typeof endTime === 'string' ? endTime : this.parseTime(endTime, '{y}-{m}-{d}')) : '',
         remark: '',
         fromStocktakingInit: fromInit,
-        returnWarehouseId: fromInit ? wid : null,
+        returnWarehouseId: fromInit ? wid : defaultProfitWarehouseId,
         warehouse: wh,
         _warehouseName: warehouseName
       };
@@ -951,10 +970,19 @@ export default {
     },
     confirmPendingNewEntries() {
       const invalid = (this.pendingNewEntries || []).find((r) =>
-        !r.returnWarehouseId || !r.batchNumber || !r.endTime
+        !r.returnWarehouseId || !r.batchNumber || !r.endTime || r.unitPrice == null || r.unitPrice === '' || r.stockQty == null || r.stockQty === ''
       );
       if (invalid) {
-        this.$modal.msgWarning('请完整填写新增明细的归属仓库、批号、有效期');
+        this.$modal.msgWarning('请完整填写新增明细的归属仓库、批号、有效期、单价、盘点数量');
+        return;
+      }
+      const invalidNum = (this.pendingNewEntries || []).find((r) => {
+        const unitPrice = parseFloat(r.unitPrice);
+        const stockQty = parseFloat(r.stockQty);
+        return !Number.isFinite(unitPrice) || !Number.isFinite(stockQty) || unitPrice < 0 || stockQty <= 0;
+      });
+      if (invalidNum) {
+        this.$modal.msgWarning('单价必须为不小于 0 的数字，盘点数量必须大于 0');
         return;
       }
       const badDate = (this.pendingNewEntries || []).find((r) =>
