@@ -23,6 +23,16 @@
           </el-form-item>
         </el-col>
         <el-col :span="6">
+          <el-form-item prop="pinyinCode">
+            <el-input
+              v-model="queryParams.pinyinCode"
+              placeholder="拼音简码"
+              clearable
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="6">
           <el-form-item>
             <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
             <el-button size="small" @click="resetQuery">重置</el-button>
@@ -62,16 +72,40 @@
           v-hasPermi="['foundation:materialCategory:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary" size="small"
+          :disabled="multiple"
+          @click="handleBatchUpdatePinyinCode"
+          v-hasPermi="['foundation:materialCategory:edit']"
+        >批量更新材料类别简码</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary" size="small"
+          @click="handleUpdateAllPinyinCode"
+          v-hasPermi="['foundation:materialCategory:edit']"
+        >全量更新材料类别简码</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="materialCategoryList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编号" align="center" prop="materialCategoryId" width="50"/>
+      <el-table-column label="序号" type="index" align="center" width="60"/>
       <el-table-column label="分类编码" align="center" prop="materialCategoryCode" width="120"/>
       <el-table-column label="分类名称" align="center" prop="materialCategoryName" width="180"/>
-      <el-table-column label="分类地址" align="center" prop="materialCategoryAddress" width="200"/>
-      <el-table-column label="联系方式" align="center" prop="materialCategoryContact" width="120"/>
+      <el-table-column label="上级分类编码" align="center" width="120">
+        <template slot-scope="scope">
+          <span>{{ scope.row.parentCode || "-" }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="上级分类" align="center" width="180">
+        <template slot-scope="scope">
+          <span>{{ scope.row.parentName || "-" }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="拼音简码" align="center" prop="pinyinCode" width="120"/>
       <el-table-column label="创建日期" align="center" prop="createTime" width="100">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
@@ -120,6 +154,11 @@
               </el-form-item>
             </el-col>
             <el-col :span="6">
+              <el-form-item label="拼音简码" prop="pinyinCode">
+                <el-input v-model="form.pinyinCode" placeholder="自动生成" disabled />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
               <el-form-item label="分类地址" prop="materialCategoryAddress">
                 <el-input v-model="form.materialCategoryAddress" type="textarea" placeholder="分类地址" />
               </el-form-item>
@@ -141,7 +180,7 @@
 </template>
 
 <script>
-import { listMaterialCategory, getMaterialCategory, delMaterialCategory, addMaterialCategory, updateMaterialCategory } from "@/api/foundation/materialCategory";
+import { listMaterialCategory, getMaterialCategory, delMaterialCategory, addMaterialCategory, updateMaterialCategory, updateMaterialCategoryPinyinCodeBatch, updateMaterialCategoryPinyinCodeAll } from "@/api/foundation/materialCategory";
 
 export default {
   name: "MaterialCategory",
@@ -171,6 +210,7 @@ export default {
         pageSize: 10,
         materialCategoryCode: null,
         materialCategoryName: null,
+        pinyinCode: null,
         materialCategoryAddress: null,
         materialCategoryContact: null,
       },
@@ -211,6 +251,7 @@ export default {
         materialCategoryId: null,
         materialCategoryCode: null,
         materialCategoryName: null,
+        pinyinCode: null,
         materialCategoryAddress: null,
         materialCategoryContact: null,
         delFlag: null,
@@ -288,6 +329,29 @@ export default {
       this.download('foundation/materialCategory/export', {
         ...this.queryParams
       }, `materialCategory_${new Date().getTime()}.xlsx`)
+    },
+    /** 批量更新材料类别拼音简码 */
+    handleBatchUpdatePinyinCode() {
+      const materialCategoryIds = this.ids || [];
+      if (!materialCategoryIds.length) {
+        this.$modal.msgWarning("请先选择需要更新简码的材料类别");
+        return;
+      }
+      this.$modal.confirm("是否确认批量更新所选材料类别的拼音简码？").then(() => {
+        return updateMaterialCategoryPinyinCodeBatch(materialCategoryIds);
+      }).then(() => {
+        this.$modal.msgSuccess("批量更新材料类别简码成功");
+        this.getList();
+      }).catch(() => {});
+    },
+    /** 全量更新材料类别拼音简码 */
+    handleUpdateAllPinyinCode() {
+      this.$modal.confirm("是否确认全量更新当前租户所有材料类别的拼音简码？").then(() => {
+        return updateMaterialCategoryPinyinCodeAll();
+      }).then(() => {
+        this.$modal.msgSuccess("全量更新材料类别简码成功");
+        this.getList();
+      }).catch(() => {});
     }
   }
 };

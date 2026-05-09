@@ -26,8 +26,8 @@
       </el-row>
 
       <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item style="display: flex; align-items: center; flex-wrap: wrap;">
+        <el-col :span="16" class="query-date-range-col">
+          <el-form-item class="query-date-range-form-item">
             <el-radio-group v-model="queryParams.dateQueryType" size="small" style="margin-right: 10px; margin-bottom: 4px;">
               <el-radio-button label="bill">制单日期</el-radio-button>
               <el-radio-button label="audit">审核日期</el-radio-button>
@@ -38,7 +38,7 @@
               value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="起始日期"
               clearable
-              style="width: 220px; margin-right: 8px;"
+              style="width: 200px; margin-right: 8px;"
             />
             <span style="margin: 0 4px;">至</span>
             <el-date-picker
@@ -47,11 +47,11 @@
               value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="截止日期"
               clearable
-              style="width: 220px; margin-left: 8px;"
+              style="width: 200px; margin-left: 8px;"
             />
           </el-form-item>
         </el-col>
-        <el-col :span="6" class="query-status-col">
+        <el-col :span="4" class="query-status-col">
           <el-form-item prop="billStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                        clearable style="width: 150px">
@@ -64,7 +64,7 @@
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="4" class="query-doc-ref-col">
           <el-form-item label="被引用状态" label-width="88px">
             <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" style="width: 150px">
               <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
@@ -251,6 +251,18 @@
               <SelectUser v-model="form.createrName" :disabled="true"/>
             </el-form-item>
           </el-col>
+          <el-col :span="4">
+            <el-form-item label="发票时间" prop="invoiceTime">
+              <el-date-picker clearable
+                              v-model="form.invoiceTime"
+                              type="date"
+                              value-format="yyyy-MM-dd"
+                              :disabled="true"
+                              style="width: 100%"
+                              placeholder="发票时间">
+              </el-date-picker>
+            </el-form-item>
+          </el-col>
         </el-row>
 
         <el-row :gutter="8">
@@ -277,21 +289,6 @@
           <el-col :span="4">
             <el-form-item label="发票金额" prop="invoiceAmount">
               <el-input v-model="form.invoiceAmount" :disabled="true" placeholder="发票金额" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="8">
-          <el-col :span="4">
-            <el-form-item label="发票时间" prop="invoiceTime">
-              <el-date-picker clearable
-                              v-model="form.invoiceTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              :disabled="true"
-                              style="width: 100%"
-                              placeholder="发票时间">
-              </el-date-picker>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -1397,28 +1394,46 @@ export default {
   width: 150px;
 }
 
-/* 第二行单据状态对齐到仓库位置 */
-.app-container > .el-form .query-row-second {
-  position: relative;
+/* 第二行：inline 表单下列内强制块级，避免日期区溢出盖住「单据状态」 */
+.app-container > .el-form .query-row-second > .el-col > .el-form-item {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  vertical-align: top;
 }
 
-/* 确保制单日期的两个日期选择器在同一行 */
-.app-container > .el-form .query-row-second .el-form-item {
+.app-container > .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) {
   white-space: nowrap;
 }
 
-.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
+.app-container > .el-form .query-row-second .query-date-range-form-item {
+  white-space: normal;
+}
+
+.app-container > .el-form .query-row-second .query-date-range-form-item .el-form-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  max-width: 100%;
+}
+
+.app-container > .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
 
+.app-container > .el-form .query-row-second .query-date-range-col {
+  min-width: 0;
+}
+
 .app-container > .el-form .query-row-second .query-status-col {
-  position: absolute;
-  left: 552px;
-  width: auto;
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: 8px;
+}
+
+.app-container > .el-form .query-row-second .query-doc-ref-col {
+  min-width: 0;
 }
 
 /* 弹窗内顶部字段区：与到货验收添加入库一致（全宽灰框） */

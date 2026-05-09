@@ -26,32 +26,32 @@
       </el-row>
 
       <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item style="display: flex; align-items: center; flex-wrap: wrap;">
+        <el-col :span="16" class="query-date-range-col">
+          <el-form-item class="query-date-range-form-item">
             <el-radio-group v-model="queryParams.dateQueryType" size="small" style="margin-right: 10px; margin-bottom: 4px;">
               <el-radio-button label="bill">制单日期</el-radio-button>
               <el-radio-button label="audit">审核日期</el-radio-button>
             </el-radio-group>
             <el-date-picker
-                            v-model="queryParams.beginDate"
-                            type="datetime"
-                            value-format="yyyy-MM-dd HH:mm:ss"
+              v-model="queryParams.beginDate"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="起始日期"
               clearable
-                            style="width: 220px; margin-right: 8px;"
+              style="width: 200px; margin-right: 8px;"
             />
             <span style="margin: 0 4px;">至</span>
             <el-date-picker
-                            v-model="queryParams.endDate"
-                            type="datetime"
-                            value-format="yyyy-MM-dd HH:mm:ss"
+              v-model="queryParams.endDate"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
               placeholder="截止日期"
               clearable
-                            style="width: 220px; margin-left: 8px;"
+              style="width: 200px; margin-left: 8px;"
             />
           </el-form-item>
         </el-col>
-        <el-col :span="6" class="query-status-col">
+        <el-col :span="4" class="query-status-col">
           <el-form-item prop="billStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                        clearable style="width: 150px">
@@ -64,7 +64,7 @@
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="4" class="query-doc-ref-col">
           <el-form-item label="被引用状态" label-width="88px">
             <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" style="width: 150px">
               <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
@@ -269,6 +269,17 @@
               <SelectUser v-model="form.createrName"/>
             </el-form-item>
           </el-col>
+          <el-col :span="4">
+            <el-form-item label="发票时间" prop="invoiceTime">
+              <el-date-picker clearable
+                              v-model="form.invoiceTime"
+                              type="date"
+                              value-format="yyyy-MM-dd"
+                              style="width: 100%"
+                              placeholder="发票时间">
+              </el-date-picker>
+            </el-form-item>
+          </el-col>
         </el-row>
 
         <el-row :gutter="8">
@@ -297,27 +308,16 @@
               <el-input v-model="form.invoiceAmount" placeholder="发票金额" />
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="8">
-          <el-col :span="4">
-            <el-form-item label="发票时间" prop="invoiceTime">
-              <el-date-picker clearable
-                              v-model="form.invoiceTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              style="width: 100%"
-                              placeholder="发票时间">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
           <el-col :span="4">
             <el-form-item label="引用单号" prop="refBillNo">
               <el-input v-model="form.refBillNo" :disabled="true" placeholder="引用采购订单号" />
             </el-form-item>
           </el-col>
-          <el-col v-show="action" :span="6">
-            <el-form-item label="引用配送单" label-width="80px" :title="deliveryRefBlockTitle">
+        </el-row>
+
+        <el-row :gutter="8" v-show="action" class="delivery-scan-toolbar-row">
+          <el-col :span="7">
+            <el-form-item label="引用配送单" label-width="92px" class="delivery-ref-form-item" :title="deliveryRefBlockTitle">
               <el-input
                 v-model="deliveryRefKeyword"
                 placeholder="配送单号/配送单输入码"
@@ -326,6 +326,24 @@
                 @keyup.enter.native="handleRefDeliverySubmit"
               >
                 <el-button slot="append" icon="el-icon-search" :disabled="deliveryRefBlocked" @click="handleRefDeliverySubmit">引用</el-button>
+              </el-input>
+            </el-form-item>
+          </el-col>
+          <el-col :span="9">
+            <el-form-item label="扫描条码" label-width="80px" class="detail-scan-form-item">
+              <el-input
+                ref="scanBarcodeInputRef"
+                v-model="scanBarcodeInput"
+                placeholder="扫码或输入条码后回车"
+                title="请用扫码枪扫描或键盘输入条码后回车，自动解析主/辅条码并匹配产品档案"
+                clearable
+                size="small"
+                class="scan-barcode-input"
+                @keyup.enter.native="onScanBarcodeSubmit"
+              >
+                <template slot="prepend">
+                  <i class="el-icon-s-operation"></i>
+                </template>
               </el-input>
             </el-form-item>
           </el-col>
@@ -355,26 +373,6 @@
             </el-col>
           </div>
 
-        </el-row>
-        <el-row v-show="action" class="detail-scan-row">
-          <el-col :span="12">
-            <el-form-item label="扫描条码" label-width="80px" class="detail-scan-form-item">
-              <el-input
-                ref="scanBarcodeInputRef"
-                v-model="scanBarcodeInput"
-                placeholder="扫码或输入条码后回车"
-                title="请用扫码枪扫描或键盘输入条码后回车，自动解析主/辅条码并匹配产品档案"
-                clearable
-                size="small"
-                class="scan-barcode-input"
-                @keyup.enter.native="onScanBarcodeSubmit"
-              >
-                <template slot="prepend">
-                  <i class="el-icon-s-operation"></i>
-                </template>
-              </el-input>
-            </el-form-item>
-          </el-col>
         </el-row>
         <div class="table-wrapper">
         <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
@@ -837,7 +835,7 @@ export default {
       stkIoBillEntryList: [],
       /** 仅用于触发 el-table 合计行随明细 qty/amt 等变更重新渲染（summary-method 对嵌套变更有时不重算） */
       detailSummaryTick: 0,
-      // 扫描条码输入框（与引用单号同一行）
+      // 扫描条码输入框（与引用配送单同一行，表头区）
       scanBarcodeInput: "",
       // 引用配送单关键字（配送单号/输入码）
       deliveryRefKeyword: "",
@@ -1938,22 +1936,32 @@ export default {
   transition: all 0.3s;
 }
 
-/* 扫描条码：位于入库明细信息下方，输入区铺满列宽 */
-.detail-scan-row {
+/* 引用配送单 + 扫描条码：表头同一行，标签不换行，输入铺满各自列 */
+.delivery-scan-toolbar-row {
   margin-bottom: 8px;
 }
-.detail-scan-row .detail-scan-form-item {
+.delivery-scan-toolbar-row .delivery-ref-form-item,
+.delivery-scan-toolbar-row .detail-scan-form-item {
   margin-bottom: 0;
 }
-.detail-scan-row .el-form-item__content {
+.delivery-scan-toolbar-row .delivery-ref-form-item .el-form-item__label,
+.delivery-scan-toolbar-row .detail-scan-form-item .el-form-item__label {
+  white-space: nowrap;
+}
+.delivery-scan-toolbar-row .el-form-item__content {
   line-height: 32px;
 }
-.local-modal-content .modal-detail-section .detail-scan-row .el-input,
-.local-modal-content .modal-detail-section .detail-scan-row .el-input-group {
-  width: 100% !important;
-  max-width: none !important;
+.local-modal-content .form-fields-container .delivery-scan-toolbar-row .delivery-ref-form-item .el-input,
+.local-modal-content .form-fields-container .delivery-scan-toolbar-row .delivery-ref-form-item .el-input-group {
+  width: 100%;
+  max-width: 270px;
 }
-.detail-scan-row .scan-barcode-input .el-input-group__prepend {
+.local-modal-content .form-fields-container .delivery-scan-toolbar-row .detail-scan-form-item .el-input,
+.local-modal-content .form-fields-container .delivery-scan-toolbar-row .detail-scan-form-item .el-input-group {
+  width: 100%;
+  max-width: 340px;
+}
+.delivery-scan-toolbar-row .scan-barcode-input .el-input-group__prepend {
   padding: 0 8px;
 }
 
@@ -2049,28 +2057,46 @@ export default {
   flex-wrap: nowrap;
 }
 
-/* 第二行单据状态对齐到仓库位置 */
-.app-container > .el-form .query-row-second {
-  position: relative;
+/* 第二行：inline 表单下列内强制块级，避免日期区溢出盖住「单据状态」 */
+.app-container > .el-form .query-row-second > .el-col > .el-form-item {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  vertical-align: top;
 }
 
-/* 确保制单日期的两个日期选择器在同一行 */
-.app-container > .el-form .query-row-second .el-form-item {
+.app-container > .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) {
   white-space: nowrap;
 }
 
-.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
+.app-container > .el-form .query-row-second .query-date-range-form-item {
+  white-space: normal;
+}
+
+.app-container > .el-form .query-row-second .query-date-range-form-item .el-form-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  max-width: 100%;
+}
+
+.app-container > .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
 
+.app-container > .el-form .query-row-second .query-date-range-col {
+  min-width: 0;
+}
+
 .app-container > .el-form .query-row-second .query-status-col {
-  position: absolute;
-  left: 552px;
-  width: auto;
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: 8px;
+}
+
+.app-container > .el-form .query-row-second .query-doc-ref-col {
+  min-width: 0;
 }
 
 /* 弹窗内顶部字段区：抵消 el-form 左右 20px 内边距，灰框与弹窗主区域同宽 */

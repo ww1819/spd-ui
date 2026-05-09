@@ -97,9 +97,9 @@
                   <SelectSupplier v-model="queryParams.supplierId"/>
                 </div>
               </el-form-item>
-              <el-form-item label="名称/编码/简码" prop="materialName" class="query-item-inline">
+              <el-form-item label="名称" prop="materialName" class="query-item-inline">
                 <el-input v-model="queryParams.materialName"
-                          placeholder="名称/编码/拼音简码"
+                          placeholder="名称/编码/简码"
                           clearable
                           style="width: 300px"
                           @keyup.enter.native="handleQuery"
@@ -401,10 +401,10 @@
                       </el-form-item>
                     </el-col>
                     <el-col :span="6">
-                      <el-form-item label="名称/编码/简码" prop="materialName">
+                      <el-form-item label="名称" prop="materialName">
                         <el-input
                           v-model="addQueryParams.materialName"
-                          placeholder="名称/编码/拼音简码"
+                          placeholder="名称/编码/简码"
                           clearable
                           @keyup.enter.native="handleAddQuery"
                         />

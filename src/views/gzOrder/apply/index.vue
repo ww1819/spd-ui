@@ -152,7 +152,7 @@
           <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="审核人" align="center" prop="updateBy" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="审核人" align="center" prop="auditBy" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ getAuditorName(scope.row) }}</span>
         </template>
@@ -254,18 +254,6 @@
                       <el-input v-model="form.auditorName" :disabled="true" style="width: 140px" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="审核日期" prop="auditDate" label-width="70px" style="white-space: nowrap;">
-                      <el-date-picker clearable
-                                      v-model="form.auditDate"
-                                      type="datetime"
-                                      :disabled="true"
-                                      value-format="yyyy-MM-dd HH:mm:ss"
-                                      style="width: 160px"
-                                      placeholder="请选择审核日期">
-                      </el-date-picker>
-                    </el-form-item>
-                  </el-col>
                 </el-row>
 
                 <el-row :gutter="8">
@@ -295,26 +283,42 @@
                       <el-input :value="getTotalAmount()" :disabled="true" style="width: 140px" />
                     </el-form-item>
                   </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="审核日期" prop="auditDate" label-width="70px" style="white-space: nowrap;">
+                      <el-date-picker clearable
+                                      v-model="form.auditDate"
+                                      type="datetime"
+                                      :disabled="true"
+                                      value-format="yyyy-MM-dd HH:mm:ss"
+                                      style="width: 160px"
+                                      placeholder="请选择审核日期">
+                      </el-date-picker>
+                    </el-form-item>
+                  </el-col>
                 </el-row>
               </div>
 
               <div class="modal-detail-section">
                 <div class="detail-toolbar-row detail-toolbar-head">
-                  <span class="detail-toolbar-title">高值备货明细</span>
-                  <div class="detail-toolbar-actions">
-                    <template v-if="action">
-                      <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId || isAudited">添加</el-button>
-                      <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry" :disabled="isAudited">删除</el-button>
-                      <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :disabled="isAudited">保 存</el-button>
-                      <el-button type="primary" size="small" @click="handleAuditOnly" :disabled="isAudited">审 核</el-button>
-                      <el-button type="primary" icon="el-icon-printer" size="small" @click="handlePrintOnly">打 印</el-button>
-                      <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
-                      <el-button size="small" @click="cancel" :disabled="isAudited">取 消</el-button>
-                    </template>
-                    <template v-else>
-                      <el-button type="primary" icon="el-icon-printer" size="small" @click="handlePrintBarcodeFromDetail">打印条码</el-button>
-                      <el-button size="small" @click="cancel">关 闭</el-button>
-                    </template>
+                  <div class="detail-toolbar-left">
+                    <span class="detail-toolbar-title">高值备货明细</span>
+                    <el-button
+                      v-if="!action"
+                      type="primary"
+                      icon="el-icon-printer"
+                      size="small"
+                      class="detail-print-barcode-btn"
+                      @click="handlePrintBarcodeFromDetail"
+                    >打印条码</el-button>
+                  </div>
+                  <div v-if="action" class="detail-toolbar-actions">
+                    <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId || isAudited">添加</el-button>
+                    <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry" :disabled="isAudited">删除</el-button>
+                    <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :disabled="isAudited">保 存</el-button>
+                    <el-button type="primary" size="small" @click="handleAuditOnly" :disabled="isAudited">审 核</el-button>
+                    <el-button type="primary" icon="el-icon-printer" size="small" @click="handlePrintOnly">打 印</el-button>
+                    <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
+                    <el-button size="small" @click="cancel" :disabled="isAudited">取 消</el-button>
                   </div>
                 </div>
                 <div class="table-wrapper">
@@ -325,16 +329,18 @@
                           show-summary
                           :summary-method="getSummaries"
                           :height="detailTableHeight">
-                  <el-table-column type="selection" width="60" align="center" resizable />
+                  <el-table-column type="selection" width="60" align="center" resizable fixed="left" />
                   <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                   <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
                       {{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="耗材名称" align="center" prop="materialName" width="150" show-overflow-tooltip resizable>
+                  <el-table-column label="耗材名称" align="center" prop="materialName" width="150" resizable>
                     <template slot-scope="scope">
-                      {{ scope.row.materialName }}
+                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="(scope.row.materialName || '') || '—'">
+                        <span class="gz-detail-line-clip">{{ scope.row.materialName }}</span>
+                      </el-tooltip>
                     </template>
                   </el-table-column>
                   <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable>
@@ -358,16 +364,19 @@
                       <span v-else>--</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable>
+                  <el-table-column label="数量" align="center" prop="qty" width="80" resizable>
                     <template slot-scope="scope">
-                      <el-input clearable v-model="scope.row.qty" placeholder="数量"
-                                :disabled="isAudited"
-                                onkeyup="value=value.replace(/\D/g,'')"
-                                onafterpaste="value=value.replace(/\D/g,'')"
-                                @blur="form.result=$event.target.value"
-                                @input="qtyChange(scope.row)"
-                                style="width: 70px"
-                      />
+                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.qty != null ? scope.row.qty : '') || '—'">
+                        <span class="gz-detail-tooltip-anchor">
+                          <el-input
+                            v-model="scope.row.qty"
+                            class="gz-qty-cell-input"
+                            :disabled="isAudited"
+                            placeholder=""
+                            @input="onQtyCellInput(scope.row, $event)"
+                          />
+                        </span>
+                      </el-tooltip>
                     </template>
                   </el-table-column>
                   <el-table-column label="价格" align="center" prop="price" width="100" show-overflow-tooltip resizable>
@@ -387,66 +396,80 @@
                   </el-table-column>
                   <el-table-column label="批号" align="center" prop="batchNumber" width="220" resizable>
                     <template slot-scope="scope">
-                      <el-input
-                        v-model="scope.row.batchNumber"
-                        type="textarea"
-                        :autosize="{ minRows: 1, maxRows: 3 }"
-                        :disabled="isAudited"
-                        placeholder="批号"
-                        class="barcode-textarea"
-                      />
+                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.batchNumber || '') || '—'">
+                        <span class="gz-detail-tooltip-anchor">
+                          <el-input
+                            v-model="scope.row.batchNumber"
+                            :disabled="isAudited"
+                            placeholder="批号"
+                            class="gz-detail-cell-input"
+                          />
+                        </span>
+                      </el-tooltip>
                     </template>
                   </el-table-column>
-                  <el-table-column label="生产日期" align="center" prop="beginTime" width="140" show-overflow-tooltip resizable>
+                  <el-table-column label="生产日期" align="center" prop="beginTime" width="140" resizable>
                     <template slot-scope="scope">
-                      <el-date-picker clearable
-                                      v-model="scope.row.beginTime"
-                                      :disabled="isAudited"
-                                      type="date"
-                                      value-format="yyyy-MM-dd"
-                                      :picker-options="pickerBeginTimeOptions"
-                                      placeholder="请选择生产日期"
-                                      style="width: 130px"
-                                      size="small">
-                      </el-date-picker>
+                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.beginTime || '') || '—'">
+                        <span class="gz-detail-tooltip-anchor">
+                          <el-date-picker clearable
+                                          v-model="scope.row.beginTime"
+                                          class="gz-detail-cell-date"
+                                          :disabled="isAudited"
+                                          type="date"
+                                          value-format="yyyy-MM-dd"
+                                          :picker-options="pickerBeginTimeOptions"
+                                          placeholder="请选择生产日期"
+                                          size="small">
+                          </el-date-picker>
+                        </span>
+                      </el-tooltip>
                     </template>
                   </el-table-column>
-                  <el-table-column label="有效期" align="center" prop="endTime" width="140" show-overflow-tooltip resizable>
+                  <el-table-column label="有效期" align="center" prop="endTime" width="140" resizable>
                     <template slot-scope="scope">
-                      <el-date-picker clearable
-                                      v-model="scope.row.endTime"
-                                      :disabled="isAudited"
-                                      type="date"
-                                      value-format="yyyy-MM-dd"
-                                      :picker-options="pickerEndTimeOptions"
-                                      placeholder="请选择有效期"
-                                      style="width: 130px"
-                                      size="small">
-                      </el-date-picker>
+                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.endTime || '') || '—'">
+                        <span class="gz-detail-tooltip-anchor">
+                          <el-date-picker clearable
+                                          v-model="scope.row.endTime"
+                                          class="gz-detail-cell-date"
+                                          :disabled="isAudited"
+                                          type="date"
+                                          value-format="yyyy-MM-dd"
+                                          :picker-options="pickerEndTimeOptions"
+                                          placeholder="请选择有效期"
+                                          size="small">
+                          </el-date-picker>
+                        </span>
+                      </el-tooltip>
                     </template>
                   </el-table-column>
                   <el-table-column label="主条码" align="center" prop="masterBarcode" width="240" resizable>
                     <template slot-scope="scope">
-                      <el-input
-                        v-model="scope.row.masterBarcode"
-                        type="textarea"
-                        :autosize="{ minRows: 1, maxRows: 3 }"
-                        :disabled="isAudited"
-                        placeholder="主条码"
-                        class="barcode-textarea"
-                      />
+                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.masterBarcode || '') || '—'">
+                        <span class="gz-detail-tooltip-anchor">
+                          <el-input
+                            v-model="scope.row.masterBarcode"
+                            :disabled="isAudited"
+                            placeholder="主条码"
+                            class="gz-detail-cell-input"
+                          />
+                        </span>
+                      </el-tooltip>
                     </template>
                   </el-table-column>
                   <el-table-column label="辅条码" align="center" prop="secondaryBarcode" width="220" resizable>
                     <template slot-scope="scope">
-                      <el-input
-                        v-model="scope.row.secondaryBarcode"
-                        type="textarea"
-                        :autosize="{ minRows: 1, maxRows: 3 }"
-                        :disabled="isAudited"
-                        placeholder="辅条码"
-                        class="barcode-textarea"
-                      />
+                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.secondaryBarcode || '') || '—'">
+                        <span class="gz-detail-tooltip-anchor">
+                          <el-input
+                            v-model="scope.row.secondaryBarcode"
+                            :disabled="isAudited"
+                            placeholder="辅条码"
+                            class="gz-detail-cell-input"
+                          />
+                        </span>
+                      </el-tooltip>
                     </template>
                   </el-table-column>
                   <el-table-column label="序列号" align="center" prop="serialNo" width="180" show-overflow-tooltip resizable>
@@ -456,7 +479,9 @@
                   </el-table-column>
                   <el-table-column label="批次号" align="center" prop="batchNo" width="260" resizable>
                     <template slot-scope="scope">
-                      <span class="barcode-cell-text">{{ scope.row.batchNo || scope.row.batchNumber || '--' }}</span>
+                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.batchNo || scope.row.batchNumber || '') || '—'">
+                        <span class="gz-detail-line-clip">{{ scope.row.batchNo || scope.row.batchNumber || '--' }}</span>
+                      </el-tooltip>
                     </template>
                   </el-table-column>
                   <el-table-column label="生产厂家" align="center" prop="factoryName" width="150" show-overflow-tooltip resizable>
@@ -479,9 +504,18 @@
                       {{ scope.row.financeCategoryName || (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
+                  <el-table-column label="备注" align="center" prop="remark" width="150" resizable>
                     <template slot-scope="scope">
-                      <el-input v-model="scope.row.remark" :disabled="isAudited" placeholder="备注" />
+                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.remark || '') || '—'">
+                        <span class="gz-detail-tooltip-anchor">
+                          <el-input
+                            v-model="scope.row.remark"
+                            class="gz-detail-cell-input"
+                            :disabled="isAudited"
+                            placeholder="备注"
+                          />
+                        </span>
+                      </el-tooltip>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -866,8 +900,45 @@ export default {
       if (currentWarehouseId) {
         this.form.warehouseId = String(currentWarehouseId);
       }
+      // 始终以 createBy 解析，避免 { ...form, ...接口 } 合并后残留旧的 creatorName 与当前用户不一致
       const creatorName = this.getCreatorName(this.form);
-      this.form.creatorName = creatorName || this.form.createBy || '--';
+      this.$set(this.form, 'creatorName', creatorName || (this.form.createBy != null && String(this.form.createBy).trim() !== '' ? String(this.form.createBy) : '--'));
+      this.$set(this.form, 'auditorName', this.getAuditorName(this.form) || '');
+    },
+    /** 将 getOrder 返回的 materialList 合并到 this.gzOrderEntryList（后端明细表无耗材名称/编码等展示字段） */
+    applyMaterialListToGzOrderEntries(orderData) {
+      const materialList = orderData && orderData.materialList;
+      const entries = this.gzOrderEntryList || [];
+      if (materialList && materialList.length > 0) {
+        const materialMap = {};
+        materialList.forEach(material => {
+          materialMap[material.id] = material;
+        });
+        entries.forEach(entry => {
+          if (entry.materialId && materialMap[entry.materialId]) {
+            const material = materialMap[entry.materialId];
+            entry.material = material;
+            entry.materialName = material.name || entry.materialName || '';
+            entry.materialCode = material.code || entry.materialCode || '';
+            entry.speci = material.speci || entry.speci || '';
+            entry.model = material.model || entry.model || '';
+            if (material.fdUnit && material.fdUnit.unitName) {
+              entry.unit = material.fdUnit;
+            } else if (material.unit) {
+              entry.unit = material.unit;
+            }
+          }
+          if (!entry.masterBarcode && entry.udiNo) {
+            entry.masterBarcode = entry.udiNo;
+          }
+        });
+      } else {
+        entries.forEach(entry => {
+          if (!entry.masterBarcode && entry.udiNo) {
+            entry.masterBarcode = entry.udiNo;
+          }
+        });
+      }
     },
     /** 明细合计（与到货验收弹窗表尾一致） */
     getSummaries(param) {
@@ -1597,6 +1668,7 @@ export default {
         auditDate: null,
         createBy: null,
         createTime: null,
+        auditBy: null,
         updateBy: null,
         updateTime: null,
         remark: null,
@@ -1610,6 +1682,14 @@ export default {
       // 重置仓库自动填充状态
       this.warehouseAutoFilled = false;
       this.pendingMaterialData = null;
+    },
+    /** 数量列仅允许数字（替代原原生 onkeyup 过滤） */
+    onQtyCellInput(row, val) {
+      const digits = String(val != null ? val : '').replace(/\D/g, '');
+      if (String(row.qty) !== digits) {
+        row.qty = digits;
+      }
+      this.qtyChange(row);
     },
     //数量改变事件
     qtyChange(row){
@@ -1707,47 +1787,11 @@ export default {
       const id = row.id
       getOrder(id).then(response => {
         this.form = response.data;
+        delete this.form.creatorName;
+        delete this.form.auditorName;
         this.normalizeHeaderDisplayFields(row);
         this.gzOrderEntryList = response.data.gzOrderEntryList || [];
-        // 如果有materialList，为每个entry添加完整的物料信息
-        if (response.data.materialList && response.data.materialList.length > 0) {
-          const materialMap = {};
-          response.data.materialList.forEach(material => {
-            materialMap[material.id] = material;
-          });
-          this.gzOrderEntryList.forEach(entry => {
-            if (entry.materialId && materialMap[entry.materialId]) {
-              const material = materialMap[entry.materialId];
-              // 保存完整的物料对象
-              entry.material = material;
-              // 映射物料信息
-              entry.materialName = material.name || entry.materialName || '';
-              entry.materialCode = material.code || entry.materialCode || '';
-              entry.speci = material.speci || entry.speci || '';
-              entry.model = material.model || entry.model || '';
-              // 映射单位信息
-              if (material.fdUnit && material.fdUnit.unitName) {
-                entry.unit = material.fdUnit;
-              } else if (material.unit) {
-                entry.unit = material.unit;
-              }
-            }
-            // 确保masterBarcode有值，优先使用masterBarcode，其次使用udiNo
-            if (!entry.masterBarcode && entry.udiNo) {
-              entry.masterBarcode = entry.udiNo;
-            }
-          });
-        } else {
-          // 即使没有materialList，也要确保masterBarcode有值
-          this.gzOrderEntryList.forEach(entry => {
-            if (!entry.masterBarcode && entry.udiNo) {
-              entry.masterBarcode = entry.udiNo;
-            }
-          });
-        }
-        // 设置制单人和审核人姓名
-        this.form.creatorName = this.form.creatorName || this.getCreatorName(this.form) || this.form.createBy || '--';
-        this.form.auditorName = this.getAuditorName(this.form);
+        this.applyMaterialListToGzOrderEntries(response.data);
         this.markSnapshotSaved();
         this.open = true;
         this.action = false;
@@ -1762,34 +1806,48 @@ export default {
         this.userOptions = response || [];
       });
     },
+    /** 根据用户ID或登录名解析展示姓名（与后端 createBy/auditBy/updateBy 存储一致） */
+    resolveSysUserDisplayName(rawKey) {
+      if (rawKey === null || rawKey === undefined || rawKey === '') {
+        return '';
+      }
+      const key = String(rawKey).trim();
+      const list = this.userOptions || [];
+      // 后端存的是用户ID（纯数字）时必须先按 userId 匹配，否则 userName 与数字串相同会误命中他人（保存后制单人错）
+      const isNumericId = /^\d+$/.test(key);
+      let user = null;
+      if (isNumericId) {
+        user = list.find(u => String(u.userId) === key || u.userId == key);
+      }
+      if (!user) {
+        user = list.find(u =>
+          String(u.userName) === key ||
+          (u.nickName != null && String(u.nickName) === key)
+        );
+      }
+      if (user) {
+        return user.nickName || user.userName || key;
+      }
+      return key;
+    },
     /** 获取制单人姓名 */
     getCreatorName(row) {
-      if (row.createBy) {
-        const user = this.userOptions.find(u => u.userName === row.createBy || u.userId === row.createBy);
-        return user ? (user.nickName || user.userName) : row.createBy;
+      if (!row || !row.createBy) {
+        return '';
       }
-      return '';
+      return this.resolveSysUserDisplayName(row.createBy);
     },
-    /** 获取审核人姓名 */
+    /** 获取审核人姓名（优先 audit_by，兼容历史数据 update_by） */
     getAuditorName(row) {
-      if (row.updateBy) {
-        // 审核人通常是updateBy（审核操作时更新）
-        const user = this.userOptions.find(u => {
-          return u.userName === row.updateBy || 
-                 u.userId === row.updateBy ||
-                 u.userId == row.updateBy ||
-                 String(u.userId) === String(row.updateBy);
-        });
-        if (user) {
-          return user.nickName || user.userName;
-        }
-        // 如果updateBy不是纯数字，可能是姓名，直接返回
-        if (!/^\d+$/.test(String(row.updateBy))) {
-          return row.updateBy;
-        }
-        return row.updateBy;
+      if (!row) {
+        return '';
       }
-      return '';
+      const auditKey =
+        row.auditBy != null && String(row.auditBy).trim() !== '' ? row.auditBy : row.updateBy;
+      if (!auditKey) {
+        return '';
+      }
+      return this.resolveSysUserDisplayName(auditKey);
     },
     /** 格式化日期，如果时分秒是00:00:00则使用createTime或updateTime的时分秒 */
     formatOrderDate(dateStr, timeStr) {
@@ -2141,9 +2199,10 @@ export default {
       this.title = "添加高值备货入库";
       this.form.orderStatus = '1';
       this.form.orderType = '101';
-      //操作人
-      var userName = this.$store.state.user.name;
-      this.form.createBy = userName;
+      // 与后端一致存用户ID；制单人展示用当前登录昵称
+      const uid = this.$store.getters.userId;
+      this.form.createBy = uid != null && uid !== '' ? String(uid) : (this.$store.state.user.name || '');
+      this.form.creatorName = this.$store.getters.nickName || this.$store.state.user.name || '--';
       this.form.orderDate = this.getOrderDate();
       this.action = true;
       // reset() 内已打过快照，但默认值与明细子组件（仓库/供应商等）会在下一帧写入表头，
@@ -2160,35 +2219,13 @@ export default {
       const id = row.id || this.ids
       getOrder(id).then(response => {
         this.form = response.data;
+        delete this.form.creatorName;
+        delete this.form.auditorName;
         this.normalizeHeaderDisplayFields(row);
         this.form.orderStatus = '1';
         this.form.orderType = '101';
         this.gzOrderEntryList = response.data.gzOrderEntryList || [];
-        // 如果有materialList，为每个entry添加完整的物料信息
-        if (response.data.materialList && response.data.materialList.length > 0) {
-          const materialMap = {};
-          response.data.materialList.forEach(material => {
-            materialMap[material.id] = material;
-          });
-          this.gzOrderEntryList.forEach(entry => {
-            if (entry.materialId && materialMap[entry.materialId]) {
-              const material = materialMap[entry.materialId];
-              // 保存完整的物料对象
-              entry.material = material;
-              // 映射物料信息
-              entry.materialName = material.name || entry.materialName || '';
-              entry.materialCode = material.code || entry.materialCode || '';
-              entry.speci = material.speci || entry.speci || '';
-              entry.model = material.model || entry.model || '';
-              // 映射单位信息
-              if (material.fdUnit && material.fdUnit.unitName) {
-                entry.unit = material.fdUnit;
-              } else if (material.unit) {
-                entry.unit = material.unit;
-              }
-            }
-          });
-        }
+        this.applyMaterialListToGzOrderEntries(response.data);
         this.markSnapshotSaved();
         this.open = true;
         this.title = "修改高值入库";
@@ -2213,10 +2250,12 @@ export default {
       }).then((response) => {
         if (response && response.data) {
           this.form = { ...this.form, ...response.data };
+          delete this.form.creatorName;
+          delete this.form.auditorName;
+          this.normalizeHeaderDisplayFields(this.form);
         } else {
           this.form.orderStatus = '2';
         }
-        this.form.auditorName = this.getAuditorName(this.form);
         this.markSnapshotSaved();
         this.getList();
       });
@@ -2310,13 +2349,22 @@ export default {
             warehouseId: this.form.warehouseId || item.warehouseId || null
           }));
           if (this.form.id != null) {
-            updateOrder(this.form).then(response => {
+            const updatePayload = { ...this.form };
+            delete updatePayload.createBy;
+            delete updatePayload.createTime;
+            delete updatePayload.creatorName;
+            delete updatePayload.auditorName;
+            updateOrder(updatePayload).then(response => {
               this.$modal.msgSuccess("保存成功");
               return getOrder(this.form.id, 101);
             }).then((detailResp) => {
               if (detailResp && detailResp.data) {
                 this.form = { ...this.form, ...detailResp.data };
+                delete this.form.creatorName;
+                delete this.form.auditorName;
                 this.gzOrderEntryList = detailResp.data.gzOrderEntryList || this.gzOrderEntryList;
+                this.applyMaterialListToGzOrderEntries(detailResp.data);
+                this.normalizeHeaderDisplayFields(this.form);
               }
               this.markSnapshotSaved();
               // 保存后不关闭页面，继续操作
@@ -2339,7 +2387,11 @@ export default {
             }).then((detailResp) => {
               if (detailResp && detailResp.data) {
                 this.form = { ...this.form, ...detailResp.data };
+                delete this.form.creatorName;
+                delete this.form.auditorName;
                 this.gzOrderEntryList = detailResp.data.gzOrderEntryList || this.gzOrderEntryList;
+                this.applyMaterialListToGzOrderEntries(detailResp.data);
+                this.normalizeHeaderDisplayFields(this.form);
               }
               this.markSnapshotSaved();
               this.getList();
@@ -2584,9 +2636,22 @@ export default {
   gap: 8px 12px;
 }
 
+.local-modal-content .modal-detail-section .detail-toolbar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  flex: 1;
+  min-width: 0;
+}
+
 .local-modal-content .modal-detail-section .detail-toolbar-title {
   font-weight: 600;
   color: #303133;
+  flex-shrink: 0;
+}
+
+.local-modal-content .modal-detail-section .detail-print-barcode-btn {
   flex-shrink: 0;
 }
 
@@ -2613,6 +2678,7 @@ export default {
 
 .local-modal-content .modal-detail-section .el-table {
   width: 100%;
+  overflow-x: hidden;
 }
 
 /* 弹窗动画效果 */
@@ -2807,6 +2873,22 @@ export default {
   font-weight: 600 !important;
 }
 
+/* 明细表体：字号/字体与表体一致，单行省略（过长悬停由 el-tooltip 展示全文） */
+::v-deep .local-modal-content .modal-detail-section .el-table td .cell {
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 400;
+  color: #606266;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table-column--selection .cell {
+  overflow: visible;
+  text-overflow: clip;
+}
+
 ::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
   padding-bottom: 6px;
   box-sizing: border-box;
@@ -2831,7 +2913,8 @@ export default {
   background-color: #fff !important;
   margin-top: 0;
   box-shadow: 0 -1px 0 #ebeef5;
-  overflow: visible !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
 }
 
 ::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
@@ -2887,20 +2970,109 @@ export default {
   color: #409EFF;
 }
 
-/* 主/辅条码使用小字号并支持自动换行，避免长条码被截断 */
-::v-deep .local-modal-content .modal-detail-section .barcode-textarea .el-textarea__inner {
-  font-size: 12px !important;
-  line-height: 1.35 !important;
-  padding: 4px 6px !important;
-  word-break: break-all;
+/* 明细弹窗内：无框输入/日期，默认透明居中，聚焦内阴影主色；单行 + 省略与表体一致 */
+::v-deep .local-modal-content .modal-detail-section .gz-detail-tooltip-anchor {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
-::v-deep .local-modal-content .modal-detail-section .barcode-cell-text {
+::v-deep .local-modal-content .modal-detail-section .gz-detail-line-clip {
   display: block;
-  font-size: 12px;
-  line-height: 1.35;
-  word-break: break-all;
-  white-space: normal;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+::v-deep .local-modal-content .modal-detail-section .gz-qty-cell-input.el-input {
+  width: 100%;
+  max-width: 76px;
+}
+::v-deep .local-modal-content .modal-detail-section .gz-detail-tooltip-anchor .gz-qty-cell-input.el-input {
+  max-width: 100%;
+}
+::v-deep .local-modal-content .modal-detail-section .gz-detail-cell-input.el-input {
+  width: 100%;
+  max-width: 100%;
+}
+::v-deep .local-modal-content .modal-detail-section .gz-qty-cell-input .el-input__inner,
+::v-deep .local-modal-content .modal-detail-section .gz-detail-cell-input .el-input__inner {
+  border: none;
+  background-color: transparent;
+  text-align: center;
+  padding: 0 4px;
+  height: 28px;
+  line-height: 28px;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: 400;
+  color: #606266;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+::v-deep .local-modal-content .modal-detail-section .gz-qty-cell-input .el-input__inner:focus,
+::v-deep .local-modal-content .modal-detail-section .gz-detail-cell-input .el-input__inner:focus {
+  outline: none;
+  background-color: #fff;
+  box-shadow: inset 0 0 0 1px #409eff;
+  border-radius: 2px;
+}
+::v-deep .local-modal-content .modal-detail-section .gz-qty-cell-input.is-disabled .el-input__inner,
+::v-deep .local-modal-content .modal-detail-section .gz-detail-cell-input.is-disabled .el-input__inner {
+  border: none;
+  background: transparent;
+  color: #606266;
+  cursor: default;
+  box-shadow: none;
+}
+
+::v-deep .local-modal-content .modal-detail-section .gz-detail-cell-date.el-date-editor.el-input {
+  width: 100%;
+  max-width: 130px;
+}
+::v-deep .local-modal-content .modal-detail-section .gz-detail-cell-date.el-date-editor .el-input__inner {
+  border: none;
+  background-color: transparent;
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 28px;
+  height: 28px;
+  line-height: 28px;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: 400;
+  color: #606266;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* 只读日期框在部分浏览器会画出文本插入光标，表现为数字前一条黑竖线 */
+  caret-color: transparent;
+}
+::v-deep .local-modal-content .modal-detail-section .gz-detail-cell-date.el-date-editor .el-input__inner:focus {
+  outline: none;
+  background-color: #fff;
+  box-shadow: inset 0 0 0 1px #409eff;
+  border-radius: 2px;
+  caret-color: transparent;
+}
+::v-deep .local-modal-content .modal-detail-section .gz-detail-cell-date.is-disabled.el-date-editor .el-input__inner {
+  border: none;
+  background: transparent;
+  color: #606266;
+  cursor: default;
+  box-shadow: none;
+  caret-color: transparent;
+}
+
+::v-deep .local-modal-content .modal-detail-section .gz-detail-tooltip-anchor .gz-detail-cell-date.el-date-editor.el-input {
+  max-width: 100%;
 }
 
 ::v-deep .json-cell {

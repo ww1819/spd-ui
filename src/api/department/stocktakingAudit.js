@@ -26,6 +26,15 @@ export function auditStocktaking(data) {
   })
 }
 
+// 审核前库存一致性校验
+export function checkStocktakingQty(data) {
+  return request({
+    url: '/department/stocktaking/auditStocktaking/checkQty',
+    method: 'post',
+    data: data
+  })
+}
+
 // 审核驳回
 export function rejectStocktaking(data) {
   return request({

@@ -72,6 +72,12 @@
             </el-table-column>
             <el-table-column label="耗材编码" align="center" prop="code" width="130" show-overflow-tooltip resizable />
             <el-table-column label="耗材名称" align="center" prop="name" width="140" show-overflow-tooltip resizable />
+            <el-table-column label="高值" align="center" prop="isGz" width="72" show-overflow-tooltip resizable>
+              <template slot-scope="scope">
+                <dict-tag v-if="scope.row.isGz != null && scope.row.isGz !== ''" :options="dict.type.is_yes_no" :value="scope.row.isGz" />
+                <span v-else>--</span>
+              </template>
+            </el-table-column>
             <el-table-column label="供应商" align="center" prop="supplier.name" width="140" show-overflow-tooltip resizable />
             <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable />
             <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable />
@@ -114,7 +120,7 @@ import { isForbiddenError } from "@/utils/requestFallback";
 export default {
   name: "SelectGZMaterialFilter",
   components: { SelectMaterial, SelectSupplier },
-  dicts: ["way_status"],
+  dicts: ["way_status", "is_yes_no"],
   props: ["DialogComponentShow", "supplierValue", "warehouseValue"],
   data() {
     return {
@@ -142,8 +148,7 @@ export default {
         speci: undefined,
         model: undefined,
         price: undefined,
-        isGz: undefined,
-        isFollow: undefined
+        isGz: "1"
       },
       fixedNumberMaterialIds: [],
       form: {},
@@ -197,6 +202,8 @@ export default {
       this.getList();
     },
     loadDeptSafeMaterials() {
+      this.queryParams.isGz = "1";
+      this.queryParams.isFollow = undefined;
       return listMaterialDeptSafe(this.queryParams)
         .then(response => {
           let materials = Array.isArray(response) ? response : [];
@@ -211,8 +218,9 @@ export default {
     },
     getList() {
       this.loading = true;
+      // 备货验收/高值单：仅查高值耗材（is_gz=1）；勿再加 is_follow，否则与「跟台」双重过滤易无数据
       this.queryParams.isGz = "1";
-      this.queryParams.isFollow = "1";
+      this.queryParams.isFollow = undefined;
       listMaterial(this.queryParams)
         .then(response => {
           let materials = response.rows || [];
@@ -264,7 +272,7 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.supplierId = this.supplierValue;
       this.queryParams.isGz = "1";
-      this.queryParams.isFollow = "1";
+      this.queryParams.isFollow = undefined;
       this.handleQuery();
     },
     handleSelectionChange(val) {

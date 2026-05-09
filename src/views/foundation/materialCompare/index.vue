@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container material-compare-page">
     <!-- 左右分栏布局：左边供应商列表，右边耗材明细 -->
     <el-row :gutter="10" style="margin-top: -10px;">
       <!-- 左边：供应商列表 -->
@@ -193,67 +193,42 @@
       </el-col>
     </el-row>
 
-    <!-- HIS弹窗 -->
+    <!-- HIS弹窗：不挂到 body，遮罩与弹窗限制在主内容区内，避免盖住顶栏与侧栏 -->
     <el-dialog
       :visible.sync="hisDialogVisible"
-      width="80%"
+      width="100%"
+      top="0"
+      :append-to-body="false"
+      :modal-append-to-body="false"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
       :show-close="false"
+      custom-class="material-compare-dialog"
     >
       <div slot="title" style="display: flex; justify-content: space-between; align-items: center;">
         <span>HIS对照</span>
         <el-button type="text" @click="hisDialogVisible = false" style="padding: 0;">关闭</el-button>
       </div>
       <div class="his-current-material-box">
-        <div class="his-current-material-title">当前产品档案基本信息：</div>
+        <div class="his-current-material-title">产品档案基本信息</div>
         <div class="his-current-material-grid">
-          <div class="his-current-material-item"><span class="label">项目编码：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.code) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">名称：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.name) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">拼音简码：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.referredName) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">产品编码：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.code) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">产品名称：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.name) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">规格：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.speci) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">型号：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.model) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">单位：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.fdUnit && currentMaterialRow.fdUnit.unitName) || (currentMaterialRow && currentMaterialRow.unitName) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">价格：</span><span class="value">{{ formatCurrency(currentMaterialRow && currentMaterialRow.price) }}</span></div>
           <div class="his-current-material-item"><span class="label">供应商：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.supplier && currentMaterialRow.supplier.name) || (currentMaterialRow && currentMaterialRow.supplierName) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">生产厂家：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.fdFactory && currentMaterialRow.fdFactory.factoryName) || (currentMaterialRow && currentMaterialRow.factoryName) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">HIS收费项目ID：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.hisChargeItemId) || '--' }}</span></div>
         </div>
-      </div>
-      <div class="his-current-bind-box">
-        <div class="his-current-bind-title">当前对照收费项目：</div>
-        <el-table
-          :data="[currentHisChargeItem || {}]"
-          border
-          size="mini"
-          class="his-current-bind-table"
-        >
-          <el-table-column label="收费编码" min-width="120" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.chargeCode || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="收费名称" min-width="220" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.chargeName || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="收费规格" min-width="120" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.chargeSpeci || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="收费型号" min-width="120" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.chargeModel || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="收费单价" width="110" align="center">
-            <template slot-scope="scope">
-              <span>{{ scope.row.chargePrice != null ? formatCurrency(scope.row.chargePrice) : '--' }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
+        <div class="his-current-material-title his-current-material-subtitle">对照收费项目</div>
+        <div class="his-current-material-grid">
+          <div class="his-current-material-item"><span class="label">收费编码：</span><span class="value">{{ (currentHisChargeItem && currentHisChargeItem.chargeCode) || (currentMaterialRow && currentMaterialRow.hisCode) || (currentMaterialRow && currentMaterialRow.hisChargeItemId) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">收费名称：</span><span class="value">{{ (currentHisChargeItem && currentHisChargeItem.chargeName) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">收费规格：</span><span class="value">{{ (currentHisChargeItem && currentHisChargeItem.chargeSpeci) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">收费型号：</span><span class="value">{{ (currentHisChargeItem && currentHisChargeItem.chargeModel) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">收费单价：</span><span class="value">{{ currentHisChargeItem && currentHisChargeItem.chargePrice != null ? formatCurrency(currentHisChargeItem.chargePrice) : '--' }}</span></div>
+        </div>
       </div>
       
       <!-- 搜索框 -->
@@ -279,15 +254,6 @@
                   style="width: 180px"
                 />
               </el-form-item>
-              <el-form-item label="拼音简码" prop="referredCode" class="query-item-inline">
-                <el-input
-                  v-model="hisQueryParams.referredCode"
-                  placeholder="拼音简码"
-                  clearable
-                  @keyup.enter.native="handleHisQuery"
-                  style="width: 180px"
-                />
-              </el-form-item>
 
               <el-form-item label="规格" prop="speci" class="query-item-inline">
                 <el-input
@@ -298,24 +264,18 @@
                   style="width: 200px"
                 />
               </el-form-item>
+              <el-form-item class="query-item-inline his-query-btn-item" label-width="0">
+                <el-button type="primary" size="medium" @click="handleHisQuery">搜索</el-button>
+              </el-form-item>
             </el-col>
           </el-row>
         </el-form>
       </div>
 
-      <!-- 搜索按钮 -->
-      <el-row :gutter="10" class="mb8" style="margin-top: 8px; margin-bottom: 16px; padding: 0 20px;">
-        <el-col :span="1.5">
-          <el-button
-            type="primary" size="medium"
-            @click="handleHisQuery"
-          >搜索</el-button>
-        </el-col>
-      </el-row>
-
-      <!-- 明细表格 -->
-      <div class="his-table-container">
-        <el-table v-loading="hisLoading" :data="hisList" border height="400px">
+      <!-- 明细表格：外层 flex 占满剩余高度，仅表体内部滚动，弹窗整体不上下滑动 -->
+      <div class="his-table-container material-compare-dialog-table-wrap">
+        <div class="material-compare-dialog-table-scroll">
+          <el-table v-loading="hisLoading" :data="hisList" border height="100%">
           <el-table-column type="index" label="序号" align="center" width="80" />
           <el-table-column label="收费编码" align="center" prop="chargeCode" width="150" show-overflow-tooltip />
           <el-table-column label="收费名称" align="center" prop="chargeName" min-width="200" show-overflow-tooltip />
@@ -338,7 +298,8 @@
               <el-button v-else type="text" size="mini" @click="handleBindHis(scope.row)">绑定</el-button>
             </template>
           </el-table-column>
-        </el-table>
+          </el-table>
+        </div>
 
         <pagination
           v-show="hisTotal > 0"
@@ -350,13 +311,17 @@
       </div>
     </el-dialog>
 
-    <!-- HRP弹窗 -->
+    <!-- HRP弹窗：与 HIS 一致，限制在主内容区 -->
     <el-dialog
       :visible.sync="hrpDialogVisible"
-      width="80%"
+      width="100%"
+      top="0"
+      :append-to-body="false"
+      :modal-append-to-body="false"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
       :show-close="false"
+      custom-class="material-compare-dialog"
     >
       <div slot="title" style="display: flex; justify-content: space-between; align-items: center;">
         <span>HRP对照</span>
@@ -403,8 +368,9 @@
       </el-row>
 
       <!-- 明细表格 -->
-      <div class="hrp-table-container">
-        <el-table v-loading="hrpLoading" :data="hrpList" border height="400px">
+      <div class="hrp-table-container material-compare-dialog-table-wrap">
+        <div class="material-compare-dialog-table-scroll">
+          <el-table v-loading="hrpLoading" :data="hrpList" border height="100%">
           <el-table-column type="index" label="序号" align="center" width="80" />
           <el-table-column label="收费编码" align="center" prop="chargeCode" width="150" show-overflow-tooltip />
           <el-table-column label="收费名称" align="center" prop="chargeName" min-width="200" show-overflow-tooltip />
@@ -415,7 +381,8 @@
               <span>{{ formatCurrency(scope.row.chargePrice) }}</span>
             </template>
           </el-table-column>
-        </el-table>
+          </el-table>
+        </div>
 
         <pagination
           v-show="hrpTotal > 0"
@@ -582,11 +549,16 @@ export default {
       this.single = selection.length !== 1;
       this.multiple = !selection.length;
     },
-    /** HIS按钮操作 */
+    /** HIS按钮操作：明细列表默认按当前耗材名称匹配，仅用户点击「搜索」后随条件变化 */
     handleHis(row) {
       this.currentMaterialRow = row;
       this.hisDialogVisible = true;
       this.hisQueryParams.pageNum = 1;
+      this.hisQueryParams.pageSize = 10;
+      this.hisQueryParams.itemCode = null;
+      this.hisQueryParams.name = (row && row.name) ? row.name : null;
+      this.hisQueryParams.referredCode = null;
+      this.hisQueryParams.speci = null;
       this.loadCurrentHisChargeItem();
       this.getHisList();
     },
@@ -626,17 +598,18 @@ export default {
       }
       return String(this.currentMaterialRow.hisChargeItemId || '') === String(row.chargeItemId || '');
     },
-    /** 绑定 HIS 收费项目 */
-    handleBindHis(row) {
-      if (!this.currentMaterialRow || !this.currentMaterialRow.id) {
-        this.$modal.msgError("未找到当前耗材");
-        return;
+    /** 产品档案价格与待绑定行收费单价是否不一致（均有值且数值不同） */
+    isHisBindPriceMismatch(row) {
+      const p = this.currentMaterialRow && this.currentMaterialRow.price;
+      const c = row && row.chargePrice;
+      if (p == null || p === "" || c == null || c === "") {
+        return false;
       }
-      if (!row || !row.chargeItemId) {
-        this.$modal.msgError("未找到收费项目ID");
-        return;
-      }
-      bindMaterialHisChargeItem({
+      return Number(p) !== Number(c);
+    },
+    /** 执行绑定请求（不含校验与二次确认） */
+    submitBindHis(row) {
+      return bindMaterialHisChargeItem({
         materialId: this.currentMaterialRow.id,
         chargeItemId: row.chargeItemId
       }).then(() => {
@@ -647,9 +620,28 @@ export default {
         this.currentMaterialRow.hisChargeItemSpeci = row.chargeSpeci;
         this.currentMaterialRow.hisChargeItemPrice = row.chargePrice;
         this.currentHisChargeItem = row;
-        this.hisDialogVisible = false;
+        this.getHisList();
         this.getList();
       });
+    },
+    /** 绑定 HIS 收费项目 */
+    handleBindHis(row) {
+      if (!this.currentMaterialRow || !this.currentMaterialRow.id) {
+        this.$modal.msgError("未找到当前耗材");
+        return;
+      }
+      if (!row || !row.chargeItemId) {
+        this.$modal.msgError("未找到收费项目ID");
+        return;
+      }
+      if (this.isHisBindPriceMismatch(row)) {
+        this.$modal
+          .confirm("当前产品的价格跟HIS收费价格不一致！是否需要继续绑定")
+          .then(() => this.submitBindHis(row))
+          .catch(() => {});
+      } else {
+        this.submitBindHis(row);
+      }
     },
     /** 解绑 HIS 收费项目 */
     handleUnbindHis() {
@@ -727,6 +719,101 @@ export default {
 </script>
 
 <style scoped>
+/* 页面根作为弹窗定位容器（与 layout 中 app-main 留白一致：顶栏+标签约 84px） */
+.material-compare-page {
+  position: relative;
+  min-height: calc(100vh - 84px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 遮罩层与到货验收 local-modal-mask 一致：铺满定位容器、拉伸对齐 */
+.material-compare-page ::v-deep .el-dialog__wrapper {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 !important;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  box-sizing: border-box;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* Element 遮罩默认 fixed 会盖住侧栏顶栏；改为相对本页容器（与到货验收 local-modal-mask 一致） */
+.material-compare-page ::v-deep .v-modal {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 弹窗占满遮罩且不整体滚动：顶部标题与信息区固定，仅表格区域内部滚动 */
+.material-compare-page ::v-deep .material-compare-dialog.el-dialog {
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: #fff;
+  overflow: hidden;
+  padding-bottom: 8px;
+}
+
+.material-compare-page ::v-deep .material-compare-dialog .el-dialog__header {
+  flex-shrink: 0;
+}
+
+.material-compare-page ::v-deep .material-compare-dialog .el-dialog__body {
+  flex: 1;
+  min-height: 0;
+  max-height: none !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+  padding-bottom: 4px;
+}
+
+/* 占满正文剩余高度；翻页在 flex 底部，表体在上方 scroll 区内滚动 */
+.material-compare-page ::v-deep .material-compare-dialog-table-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* flex:1 1 0 + min-height:0 让明细区吃满剩余高度，配合 el-table height=100% 仅表内滚动 */
+.material-compare-dialog-table-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.material-compare-page ::v-deep .material-compare-dialog-table-scroll > .el-table {
+  flex: 1;
+  min-height: 0;
+}
+
+.material-compare-page ::v-deep .material-compare-dialog .el-dialog__body > .his-current-material-box,
+.material-compare-page ::v-deep .material-compare-dialog .el-dialog__body > .his-query-container,
+.material-compare-page ::v-deep .material-compare-dialog .el-dialog__body > .hrp-query-container,
+.material-compare-page ::v-deep .material-compare-dialog .el-dialog__body > .el-row.mb8 {
+  flex-shrink: 0;
+}
+
 /* 供应商容器 */
 .supplier-container {
   background: #fff;
@@ -833,30 +920,55 @@ export default {
 
 /* HIS弹窗样式 */
 .his-query-container {
-  margin-bottom: 16px;
-  padding: 16px;
+  margin-bottom: 10px;
+  padding: 10px 16px;
   background: #fafafa;
   border-radius: 4px;
   border: 1px solid #EBEEF5;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
 }
 
-.his-current-bind-box {
-  margin-bottom: 12px;
-  padding: 10px 14px;
-  border: 1px solid #EBEEF5;
-  border-radius: 4px;
-  background: #f8fbff;
-  color: #606266;
+.his-query-container ::v-deep .el-form {
+  margin-bottom: 0;
+  width: 100%;
 }
 
-.his-current-bind-title {
-  color: #303133;
-  font-weight: 600;
-  margin-bottom: 8px;
+.his-query-container ::v-deep .el-row {
+  margin-bottom: 0 !important;
 }
 
-.his-current-bind-table {
-  background: #fff;
+.his-query-container ::v-deep .el-form--inline .el-form-item {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  vertical-align: middle;
+}
+
+.his-query-container .his-query-btn-item ::v-deep .el-form-item__content {
+  margin-left: 0 !important;
+}
+
+.his-query-container .his-query-btn-item ::v-deep .el-form-item__label-wrap {
+  display: none;
+}
+
+/* 覆盖 ruoyi.scss 中 .pagination-container { height: 25px }，否则会裁掉翻页下半截 */
+.material-compare-dialog-table-wrap ::v-deep .pagination-container,
+.his-table-container ::v-deep .pagination-container,
+.hrp-table-container ::v-deep .pagination-container {
+  flex-shrink: 0;
+  height: auto !important;
+  min-height: 44px;
+  margin-top: 2px !important;
+  margin-bottom: 0 !important;
+  padding: 4px 12px !important;
+}
+
+.his-current-material-subtitle {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #EBEEF5;
 }
 
 .his-current-material-box {
@@ -875,8 +987,8 @@ export default {
 
 .his-current-material-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 20px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px 16px;
 }
 
 .his-current-material-item {
@@ -1000,6 +1112,21 @@ export default {
 .el-table__fixed-right:hover::-webkit-scrollbar-thumb,
 .el-table__fixed:hover::-webkit-scrollbar-thumb {
   background: #a8a8a8 !important;
+}
+</style>
+
+<style>
+/* 与到货验收 inWarehouse/audit 页非 scoped 块一致：app-container 左右 8px、弹窗遮罩水平外扩 8px（见 .app-container.inWarehouse-audit-page .local-modal-mask） */
+.app-container.material-compare-page {
+  position: relative;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.app-container.material-compare-page .el-dialog__wrapper {
+  left: -8px;
+  right: -8px;
+  width: auto;
 }
 </style>
 

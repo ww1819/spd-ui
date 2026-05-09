@@ -679,6 +679,7 @@ export default {
         auditDate: null,
         createBy: null,
         createTime: null,
+        auditBy: null,
         updateBy: null,
         updateTime: null,
         remark: null,
@@ -851,34 +852,46 @@ export default {
         this.userOptions = response || [];
       });
     },
+    resolveSysUserDisplayName(rawKey) {
+      if (rawKey === null || rawKey === undefined || rawKey === '') {
+        return '';
+      }
+      const key = String(rawKey).trim();
+      const list = this.userOptions || [];
+      const isNumericId = /^\d+$/.test(key);
+      let user = null;
+      if (isNumericId) {
+        user = list.find(u => String(u.userId) === key || u.userId == key);
+      }
+      if (!user) {
+        user = list.find(u =>
+          String(u.userName) === key ||
+          (u.nickName != null && String(u.nickName) === key)
+        );
+      }
+      if (user) {
+        return user.nickName || user.userName || key;
+      }
+      return key;
+    },
     /** 获取制单人姓名 */
     getCreatorName(row) {
-      if (row.createBy) {
-        const user = this.userOptions.find(u => u.userName === row.createBy || u.userId === row.createBy);
-        return user ? (user.nickName || user.userName) : row.createBy;
+      if (!row || !row.createBy) {
+        return '';
       }
-      return '';
+      return this.resolveSysUserDisplayName(row.createBy);
     },
-    /** 获取审核人姓名 */
+    /** 获取审核人姓名（优先 audit_by，兼容历史数据 update_by） */
     getAuditorName(row) {
-      if (row.updateBy) {
-        // 审核人通常是updateBy（审核操作时更新）
-        const user = this.userOptions.find(u => {
-          return u.userName === row.updateBy || 
-                 u.userId === row.updateBy ||
-                 u.userId == row.updateBy ||
-                 String(u.userId) === String(row.updateBy);
-        });
-        if (user) {
-          return user.nickName || user.userName;
-        }
-        // 如果updateBy不是纯数字，可能是姓名，直接返回
-        if (!/^\d+$/.test(String(row.updateBy))) {
-          return row.updateBy;
-        }
-        return row.updateBy;
+      if (!row) {
+        return '';
       }
-      return '';
+      const auditKey =
+        row.auditBy != null && String(row.auditBy).trim() !== '' ? row.auditBy : row.updateBy;
+      if (!auditKey) {
+        return '';
+      }
+      return this.resolveSysUserDisplayName(auditKey);
     },
     /** 打印条码按钮操作 */
     handlePrintBarcode(row) {
@@ -1130,9 +1143,9 @@ export default {
       this.title = "添加跟台管理";
       this.form.orderStatus = '1';
       this.form.orderType = '401'; // 跟台类型，使用401生成GT开头的单号
-      //操作人
-      var userName = this.$store.state.user.name;
-      this.form.createBy = userName;
+      const uid = this.$store.getters.userId;
+      this.form.createBy = uid != null && uid !== '' ? String(uid) : (this.$store.state.user.name || '');
+      this.form.creatorName = this.$store.getters.nickName || this.$store.state.user.name || '--';
       this.form.orderDate = this.getOrderDate();
       this.action = true;
     },
