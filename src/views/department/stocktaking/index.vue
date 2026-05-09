@@ -1206,6 +1206,7 @@ export default {
         .filter((row) => {
           const detailQty = parseFloat(row.qty || 0);
           const stockQty = parseFloat(row.adjustedStockQty || 0);
+          // 保存阶段仅按“库存数量不一致”逐条确认，不区分盘盈盘亏
           return Number.isFinite(detailQty) && Number.isFinite(stockQty) && detailQty !== stockQty;
         });
       if (!this.saveQtyConfirmList.length) {
