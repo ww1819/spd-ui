@@ -357,10 +357,19 @@ export default {
           const rows = response.rows || [];
           if (this.selectedDetails && this.selectedDetails.length) {
             const existedDepInvIds = new Set(
-              this.selectedDetails
-                .map(d => d && d.kcNo)
-                .filter(id => id != null && id !== "")
-                .map(id => String(id))
+              this.selectedDetails.flatMap((d) => {
+                if (!d) {
+                  return [];
+                }
+                const keys = [];
+                if (d.depInventoryId != null && String(d.depInventoryId).trim() !== "") {
+                  keys.push(String(d.depInventoryId).trim());
+                }
+                if (d.kcNo != null && String(d.kcNo).trim() !== "") {
+                  keys.push(String(d.kcNo).trim());
+                }
+                return keys;
+              })
             );
             const existedBatchKeys = new Set(
               this.selectedDetails

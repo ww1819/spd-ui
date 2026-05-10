@@ -413,14 +413,16 @@
       :DialogComponentShow="DialogComponentShow"
       :departmentValue="departmentValue"
       :use-material-dict="useMaterialDictForSelect"
+      :selected-details="stkIoStocktakingEntryList"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectDepInventory>
 
     <el-dialog
+      custom-class="profit-pending-dialog"
       title="新增盘盈明细信息"
       :visible.sync="newEntryDialogVisible"
-      width="760px"
+      width="1080px"
       append-to-body
       :close-on-click-modal="false"
     >
@@ -438,14 +440,39 @@
             <el-input v-model="scope.row.stockQty" type="number" placeholder="请输入盘点数量" @input="stockQtyChange(scope.row)" />
           </template>
         </el-table-column>
-        <el-table-column label="批号" min-width="140">
+        <el-table-column label="批号" min-width="340" width="360">
           <template slot-scope="scope">
-            <el-input v-model="scope.row.batchNumber" placeholder="请输入批号" />
+            <div class="profit-batch-cell">
+              <el-input
+                v-model="scope.row.batchNumber"
+                type="textarea"
+                :autosize="{ minRows: 2, maxRows: 14 }"
+                :disabled="scope.row._batchLocked"
+                placeholder="请输入批号"
+                class="profit-batch-textarea"
+                @input="onProfitBatchNumberInput(scope.row)"
+              />
+              <div class="profit-batch-checks">
+                <el-checkbox v-model="scope.row._cbBatchNone" @change="() => profitBatchNoneChange(scope.row)">无</el-checkbox>
+                <el-checkbox v-model="scope.row._cbBatchUnknown" @change="() => profitBatchUnknownChange(scope.row)">未知</el-checkbox>
+              </div>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column label="有效期" min-width="140">
+        <el-table-column label="有效期" min-width="240">
           <template slot-scope="scope">
-            <el-date-picker v-model="scope.row.endTime" type="date" value-format="yyyy-MM-dd" placeholder="请选择" />
+            <div class="profit-expiry-cell">
+              <el-date-picker
+                v-model="scope.row.endTime"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="请选择"
+                :disabled="scope.row._longTerm"
+                style="width: 150px"
+                @change="onProfitExpiryManualChange(scope.row)"
+              />
+              <el-checkbox v-model="scope.row._longTerm" @change="profitLongTermChange(scope.row)">长期</el-checkbox>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="生产日期" min-width="140">
@@ -787,12 +814,77 @@ export default {
       if (row.returnWarehouseId != null && row.returnWarehouseId !== '') return String(row.returnWarehouseId);
       return '--';
     },
+    /** 租户 hengsui-third-001：新增盘盈明细默认归属仓库 id（退库目标仓） */
+    profitDefaultReturnWhId() {
+      const g = this.$store && this.$store.getters ? this.$store.getters : null;
+      if (!g) return null;
+      const cid = (g.customerId || "").trim();
+      const tc =
+        g.tenant && g.tenant.customerId != null ? String(g.tenant.customerId).trim() : "";
+      if (cid === "hengsui-third-001" || tc === "hengsui-third-001") {
+        return 10;
+      }
+      return null;
+    },
+    /** 盘盈二次弹窗：批号/有效期勾选项与锁定状态 */
+    initProfitPendingEntryMeta(row) {
+      if (!row) return;
+      const b = row.batchNumber != null ? String(row.batchNumber).trim() : "";
+      const isNone = b === "无";
+      const isUnknown = b === "未知";
+      this.$set(row, "_cbBatchNone", isNone);
+      this.$set(row, "_cbBatchUnknown", isUnknown);
+      this.$set(row, "_batchLocked", isNone || isUnknown);
+      const et = row.endTime != null ? String(row.endTime).trim() : "";
+      this.$set(row, "_longTerm", et === "2099-01-01");
+    },
+    profitBatchNoneChange(row) {
+      if (row._cbBatchNone) {
+        row._cbBatchUnknown = false;
+        row.batchNumber = "无";
+        row._batchLocked = true;
+      } else {
+        if (String(row.batchNumber || "").trim() === "无") {
+          row.batchNumber = "";
+        }
+        row._batchLocked = !!row._cbBatchUnknown;
+      }
+    },
+    profitBatchUnknownChange(row) {
+      if (row._cbBatchUnknown) {
+        row._cbBatchNone = false;
+        row.batchNumber = "未知";
+        row._batchLocked = true;
+      } else {
+        if (String(row.batchNumber || "").trim() === "未知") {
+          row.batchNumber = "";
+        }
+        row._batchLocked = !!row._cbBatchNone;
+      }
+    },
+    onProfitBatchNumberInput(row) {
+      if (row._batchLocked) return;
+      const t = String(row.batchNumber || "").trim();
+      row._cbBatchNone = t === "无";
+      row._cbBatchUnknown = t === "未知";
+    },
+    profitLongTermChange(row) {
+      if (row._longTerm) {
+        row.endTime = "2099-01-01";
+      } else if (String(row.endTime || "").trim() === "2099-01-01") {
+        row.endTime = "";
+      }
+    },
+    onProfitExpiryManualChange(row) {
+      if (String(row.endTime || "").trim() === "2099-01-01") {
+        row._longTerm = true;
+      } else {
+        row._longTerm = false;
+      }
+    },
     mapDepInventoryToStocktakingEntry(item) {
       const fromInit = !!item._fromStocktakingInit;
-      const customerId =
-        this.$store && this.$store.getters ? this.$store.getters.customerId : '';
-      const defaultProfitWarehouseId =
-        !fromInit && customerId === 'hengsui-third-001' ? 10 : null;
+      const defaultProfitWarehouseId = !fromInit ? this.profitDefaultReturnWhId() : null;
       const materialPrice = item.material && item.material.price != null && item.material.price !== ''
         ? item.material.price
         : item.material && item.material.salePrice != null && item.material.salePrice !== ''
@@ -961,6 +1053,7 @@ export default {
       // 盘盈明细：先二次录入归属仓库/批号/生产日期/有效期后再入明细
       this.selectRow = val;
       const rows = (val || []).map((item) => this.mapDepInventoryToStocktakingEntry({ ...item, _fromStocktakingInit: false }));
+      rows.forEach((r) => this.initProfitPendingEntryMeta(r));
       this.pendingNewEntries = rows;
       this.newEntryDialogVisible = rows.length > 0;
     },
@@ -992,6 +1085,12 @@ export default {
         this.$modal.msgWarning('有效期不能早于生产日期');
         return;
       }
+      (this.pendingNewEntries || []).forEach((r) => {
+        delete r._cbBatchNone;
+        delete r._cbBatchUnknown;
+        delete r._batchLocked;
+        delete r._longTerm;
+      });
       this.stkIoStocktakingEntryList.push(...this.pendingNewEntries);
       this.newEntryDialogVisible = false;
       this.pendingNewEntries = [];
@@ -1831,5 +1930,36 @@ export default {
 
 .app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-footer-wrapper {
   z-index: 31 !important;
+}
+</style>
+<style>
+/* 新增盘盈明细弹窗（append-to-body，须非 scoped） */
+.profit-pending-dialog .el-table .cell {
+  vertical-align: top;
+}
+.profit-pending-dialog .profit-batch-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.profit-pending-dialog .profit-batch-textarea .el-textarea__inner {
+  min-height: 48px !important;
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: pre-wrap;
+  resize: vertical;
+}
+.profit-pending-dialog .profit-batch-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.profit-pending-dialog .profit-expiry-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 </style>
