@@ -526,19 +526,22 @@
             label="批号"
             align="center"
             prop="batchNumber"
-            width="200"
-            min-width="180"
-            show-overflow-tooltip
+            width="220"
+            min-width="200"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-batch"
             resizable
             sortable
           >
             <template slot-scope="scope">
-              <div style="text-align: center;">
+              <div class="detail-cell-edit-wrap detail-batch-wrap">
                 <el-input
                   v-model="scope.row.batchNumber"
-                  clearable
+                  type="textarea"
+                  :autosize="{ minRows: 1, maxRows: 8 }"
                   placeholder="批号"
                   size="small"
+                  class="detail-batch-textarea"
                   style="width: 100%"
                 />
               </div>
@@ -548,15 +551,15 @@
             label="有效期"
             align="center"
             prop="endTime"
-            width="200"
-            min-width="180"
+            width="240"
+            min-width="220"
             :show-overflow-tooltip="false"
             class-name="detail-col-date"
             resizable
             sortable
           >
             <template slot-scope="scope">
-              <div class="detail-cell-edit-wrap">
+              <div class="detail-cell-edit-wrap detail-expiry-wrap">
                 <el-date-picker
                   clearable
                   v-model="scope.row.endTime"
@@ -565,9 +568,16 @@
                   :picker-options="pickerEndTimeOptions"
                   placeholder="有效期"
                   size="small"
+                  :disabled="!!scope.row._longTerm"
                   class="detail-date-expiry"
                   style="width: 100%"
+                  @change="onEndTimeManualChange(scope.row)"
                 />
+                <el-checkbox
+                  v-model="scope.row._longTerm"
+                  class="detail-long-term-check"
+                  @change="onLongTermChange(scope.row)"
+                >长期</el-checkbox>
               </div>
             </template>
           </el-table-column>
@@ -1109,6 +1119,7 @@ export default {
         // 确保material对象包含所有必要的关联数据
         obj.material = material;
 
+        this.initRowLongTermFlag(obj);
         this.stkIoBillEntryList.push(obj);
       });
       this.refreshDetailSummary();
@@ -1211,6 +1222,27 @@ export default {
       row.amt = totalAmt.toFixed(2);
       this.refreshDetailSummary();
     },
+    /** 初始化/同步明细行的「长期」勾选状态：endTime 为 2099-01-01 时视为长期 */
+    initRowLongTermFlag(row) {
+      if (!row) return;
+      const et = row.endTime != null ? String(row.endTime).trim() : "";
+      this.$set(row, "_longTerm", et.startsWith("2099-01-01"));
+    },
+    /** 切换「长期」勾选：勾选→写入 2099-01-01；取消且当前是 2099-01-01→清空 */
+    onLongTermChange(row) {
+      if (!row) return;
+      if (row._longTerm) {
+        row.endTime = "2099-01-01";
+      } else if (String(row.endTime || "").trim().startsWith("2099-01-01")) {
+        row.endTime = "";
+      }
+    },
+    /** 手动选择有效期：与「长期」勾选状态保持一致 */
+    onEndTimeManualChange(row) {
+      if (!row) return;
+      const et = String(row.endTime || "").trim();
+      row._longTerm = et.startsWith("2099-01-01");
+    },
     // 引用配送单：输入配送单号或输入码后查询接口，并生成入库明细
     async handleRefDeliverySubmit() {
       if (this.deliveryRefBlocked) {
@@ -1284,6 +1316,7 @@ export default {
         this.$message.warning('配送单无可生成的入库明细');
         return false;
       }
+      entryList.forEach(r => this.initRowLongTermFlag(r));
       this.stkIoBillEntryList = entryList;
       this.form.refBillNo = data.refBillNo || deliveryNo;
       // 配送单表头强制覆盖已选值（无则清空，避免与配送单不一致）
@@ -1549,7 +1582,9 @@ export default {
         this.form = response.data;
         this.form.billStatus = '1';
         this.form.billType = '101';
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+        const entries = response.data.stkIoBillEntryList || [];
+        entries.forEach(r => this.initRowLongTermFlag(r));
+        this.stkIoBillEntryList = entries;
         this.open = true;
         this.title = "修改入库";
         this.action = true;
@@ -1647,6 +1682,7 @@ export default {
       obj.barcodeInput = "";
       obj.remark = "";
 
+      this.initRowLongTermFlag(obj);
       this.stkIoBillEntryList.push(obj);
       this.refreshDetailSummary();
     },
@@ -1665,9 +1701,11 @@ export default {
         } else {
           row.mainBarcode = raw;
         }
+        this.initRowLongTermFlag(row);
         this.fetchMaterialByMainBarcode(row);
       } catch (e) {
         row.mainBarcode = raw;
+        this.initRowLongTermFlag(row);
         this.fetchMaterialByMainBarcode(row);
       }
     },
@@ -1741,6 +1779,7 @@ export default {
             barcodeInput: "",
             remark: ""
           };
+          this.initRowLongTermFlag(row);
           this.stkIoBillEntryList.push(row);
           this.scanBarcodeInput = "";
           this.$message.success("已根据条码添加明细");
@@ -1805,7 +1844,9 @@ export default {
       createRkEntriesByDingdan(param).then(response => {
         if (response && response.data) {
           this.form = response.data;
-          this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+          const entries = response.data.stkIoBillEntryList || [];
+          entries.forEach(r => this.initRowLongTermFlag(r));
+          this.stkIoBillEntryList = entries;
           this.form.billStatus = '1';
           this.form.billType = '101';
           this.DialogDingdanComponentShow = false;
@@ -2157,15 +2198,42 @@ export default {
   text-align: left;
   padding: 2px 0;
 }
+/* 批号：textarea 自适应高度，长批号自动换行查看 */
+.local-modal-content .modal-detail-section .el-table .detail-batch-wrap {
+  width: 100%;
+}
+.local-modal-content .modal-detail-section .el-table ::v-deep .detail-batch-textarea .el-textarea__inner {
+  min-height: 28px !important;
+  padding: 4px 8px;
+  line-height: 1.5;
+  word-break: break-all;
+  white-space: pre-wrap;
+  resize: vertical;
+}
+/* 有效期：日期选择器与「长期」勾选项同行排布，必要时换行 */
+.local-modal-content .modal-detail-section .el-table .detail-expiry-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.local-modal-content .modal-detail-section .el-table .detail-expiry-wrap .detail-date-expiry {
+  flex: 1 1 150px;
+  min-width: 150px;
+}
+.local-modal-content .modal-detail-section .el-table .detail-long-term-check {
+  flex: 0 0 auto;
+  margin-left: 0;
+}
 /* 有效期：加宽，避免日历/清空图标压住日期文字 */
 .local-modal-content .modal-detail-section .el-table .detail-date-expiry {
   width: 100% !important;
   max-width: none !important;
-  min-width: 172px !important;
+  min-width: 150px !important;
 }
 .local-modal-content .modal-detail-section .el-table .detail-date-expiry.el-date-editor.el-input {
   width: 100% !important;
-  min-width: 172px !important;
+  min-width: 150px !important;
 }
 .local-modal-content .modal-detail-section .el-table ::v-deep .detail-date-expiry .el-input__inner {
   padding-left: 10px !important;
@@ -2517,6 +2585,23 @@ export default {
   vertical-align: middle;
   padding-top: 8px;
   padding-bottom: 8px;
+}
+
+/* 添加入库弹窗：批号列允许 textarea 自适应高度并自动换行 */
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-batch .cell {
+  white-space: normal;
+  word-break: break-all;
+  vertical-align: middle;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-batch .el-textarea__inner {
+  min-height: 28px;
+  line-height: 1.5;
+  word-break: break-all;
+  white-space: pre-wrap;
+  padding: 4px 8px;
+  resize: vertical;
 }
 
 /* 名称、规格、型号、生产厂家：左上对齐，最多两行；行高随内容在 1～2 行间变化；列可拖拽加宽 */

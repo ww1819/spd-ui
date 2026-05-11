@@ -263,6 +263,7 @@
 
 <script>
 import { listCTKWarehouse} from "@/api/warehouse/outWarehouse";
+import { formatQuantity } from '@/utils/format-quantity'
 import { exportCTKWarehouseDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -381,7 +382,7 @@ export default {
       return num.toFixed(scale);
     },
     formatQty(value) {
-      return this.formatNumber(value, 2);
+      return formatQuantity(value, 2)
     },
     formatAmount(value) {
       return this.formatNumber(value, 4);

@@ -275,8 +275,19 @@ export default {
                 .filter(d => d && d.materialId != null && d.batchNo)
                 .map(d => `${d.materialId}__${d.batchNo}`)
             );
-            this.inventoryList = rows.filter(it => {
-              const key = it && it.materialId != null && it.batchNo ? `${it.materialId}__${it.batchNo}` : null;
+            const existedInvIds = new Set(
+              this.selectedDetails
+                .map((d) => (d && d.kcNo != null && d.kcNo !== "" ? String(d.kcNo) : ""))
+                .filter((s) => s)
+            );
+            this.inventoryList = rows.filter((it) => {
+              if (!it) {
+                return true;
+              }
+              if (it.id != null && existedInvIds.has(String(it.id))) {
+                return false;
+              }
+              const key = it.materialId != null && it.batchNo ? `${it.materialId}__${it.batchNo}` : null;
               return !key || !existedKeySet.has(key);
             });
           } else {

@@ -105,6 +105,7 @@
 
 <script>
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
+import { formatQuantity } from '@/utils/format-quantity'
 
 export default {
   mixins: [hospitalNameMixin],
@@ -225,14 +226,15 @@ export default {
       this.removeMirrorNode(mirror)
       return h
     },
+    /** 明细文本列：超过一行则缩小字号，直至单行或字号下限 */
     applyPrintCellAutoFont() {
       const root = this.$refs.receiptRefundGoodsPrintRef || this.$el
       if (!root || typeof document === 'undefined') return
       const cells = root.querySelectorAll('td.cell-textual .cell-text')
       if (!cells || !cells.length) return
       const colRatios = [0.24, 0.06, 0.16, 0.12, 0.15, 0.15, 0.12]
-      const minPx = 8
-      const maxSteps = 48
+      const minPx = 10
+      const maxSteps = 64
       Array.prototype.forEach.call(cells, (el) => {
         if (!el || el.nodeType !== 1) return
         const text = (el.textContent || '').trim()
@@ -243,13 +245,13 @@ export default {
         el.style.lineHeight = ''
         const cs0 = window.getComputedStyle(el)
         let fontPx = parseFloat(cs0.fontSize || '12') || 12
-        const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
-        const maxH = lineHeightPx * 2 + 1
         const innerW = this.estimateTdInnerWidthPx(td, colRatios)
         let step = 0
         while (step < maxSteps) {
+          const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
+          const oneLineMaxH = lineHeightPx + 1
           const h = this.measureUnclampedTextHeightPx(el, fontPx, innerW)
-          if (h <= maxH + 0.5 || fontPx <= minPx) {
+          if (h <= oneLineMaxH + 0.5 || fontPx <= minPx) {
             el.style.fontSize = `${fontPx}px`
             el.style.lineHeight = '1.35'
             return
@@ -277,10 +279,7 @@ export default {
       this.ensureHospitalNameLoaded().then(run).catch(run)
     },
     formatQty(value) {
-      if (value === null || value === undefined || value === '') return ''
-      const num = parseFloat(value)
-      if (isNaN(num)) return ''
-      return num.toFixed(2)
+      return formatQuantity(value, 2)
     },
     formatPrice(value) {
       if (value === null || value === undefined || value === '') return ''
@@ -347,8 +346,9 @@ export default {
   overflow-y visible
 
 .print-page.is-third-split-copy
-  height 140mm
-  overflow hidden
+  height auto
+  min-height 140mm
+  overflow visible
 
 .print-page:last-child
   page-break-after auto
@@ -458,7 +458,7 @@ export default {
 
 .detail-table td
   word-break normal
-  overflow hidden
+  overflow visible
 
 .detail-table td.cell-textual
   text-align left
@@ -467,10 +467,9 @@ export default {
   word-break break-word
 
 .detail-table td.cell-textual .cell-text
-  display -webkit-box
-  -webkit-box-orient vertical
-  -webkit-line-clamp 2
-  overflow hidden
+  display block
+  overflow visible
+  white-space normal
   word-break break-word
   line-height 1.35
 
@@ -576,6 +575,11 @@ export default {
   .print-page.print-page-break
     page-break-after always
 
+  .refund-goods-print .print-page.is-third-split-copy
+    height auto !important
+    min-height 140mm !important
+    overflow visible !important
+
   .is-a4-print .print-page
     min-height 0 !important
     height auto !important
@@ -644,9 +648,9 @@ export default {
   .detail-table td
     padding 4px 6px !important
     border 1px solid #000
-    overflow hidden
-    word-wrap normal
-    word-break normal
+    overflow visible
+    word-wrap break-word
+    word-break break-word
     line-height 1.45 !important
 
   .detail-table th
@@ -670,10 +674,9 @@ export default {
     word-break break-word !important
 
   .detail-table td.cell-textual .cell-text
-    display -webkit-box !important
-    -webkit-box-orient vertical !important
-    -webkit-line-clamp 2 !important
-    overflow hidden !important
+    display block !important
+    overflow visible !important
+    white-space normal !important
     word-break break-word !important
     line-height 1.35 !important
 

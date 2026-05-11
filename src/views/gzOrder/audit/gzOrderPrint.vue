@@ -50,7 +50,7 @@
         <td>{{ item.materialSpeci || '' }}</td>
 <!--        <td>{{ item.planQuantity }}</td>-->
         <td>{{ formatAmount(item.price) }}</td>
-        <td>{{ item.qty || '' }}</td>
+        <td>{{ formatQty(item.qty) }}</td>
         <td>{{ formatAmount(item.amt) }}</td>
         <td>{{ item.batchNumber || '' }}</td>
         <td>{{ item.periodDate || '' }}</td>
@@ -63,7 +63,7 @@
       <tr>
         <td>本页小计：</td>
         <td colspan="3"></td>
-        <td >{{ row.totalQty }}</td>
+        <td >{{ formatQty(row.totalQty) }}</td>
         <td >{{ formatAmount(row.totalAmt) }}</td>
         <td colspan="4"></td>
       </tr>
@@ -86,6 +86,7 @@
 
 <script>
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
+import { formatQuantity } from '@/utils/format-quantity'
 
 export default {
   mixins: [hospitalNameMixin],
@@ -188,6 +189,9 @@ export default {
         return ''
       }
       return num.toFixed(2)
+    },
+    formatQty(value) {
+      return formatQuantity(value, 2)
     }
   }
 }

@@ -584,11 +584,35 @@ export default {
       }
       const unAuditedIds = unAuditedRows.map(row => row.id);
       this.$modal.confirm('是否确认审核选中的' + unAuditedIds.length + '条数据项？').then(() => {
-        // 逐个审核
-        const promises = unAuditedIds.map(id => auditStocktaking({ id: id }));
-        return Promise.all(promises);
-      }).then(() => {
+        // 批量审核也做数量校验：存在库存不一致的单据需改走单条逐条确认
+        const checkTasks = unAuditedRows.map((row) =>
+          checkStocktakingQty({ id: row.id }).then((res) => {
+            const mismatches = (res && res.data) || [];
+            const needManualConfirm = mismatches.length > 0;
+            return {
+              id: row.id,
+              stockNo: row.stockNo,
+              needManualConfirm
+            };
+          })
+        );
+        return Promise.all(checkTasks);
+      }).then((checkResults) => {
+        const canAuditIds = (checkResults || []).filter((r) => !r.needManualConfirm).map((r) => r.id);
+        const blockedStockNos = (checkResults || []).filter((r) => r.needManualConfirm).map((r) => r.stockNo);
+        if (!canAuditIds.length) {
+          this.$modal.msgWarning("所选单据均存在需逐条确认的数量差异，请改用单条审核处理。");
+          return null;
+        }
+        const auditTasks = canAuditIds.map((id) => auditStocktaking({ id }));
+        return Promise.all(auditTasks).then(() => ({ blockedStockNos, auditedCount: canAuditIds.length }));
+      }).then((result) => {
+        if (!result) return;
         this.getList();
+        if (result.blockedStockNos && result.blockedStockNos.length) {
+          this.$modal.msgWarning("已审核" + result.auditedCount + "条；以下单据需单条逐条确认后审核：" + result.blockedStockNos.join("、"));
+          return;
+        }
         this.$modal.msgSuccess("批量审核成功");
       }).catch(() => {});
     },
