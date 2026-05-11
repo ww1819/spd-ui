@@ -12,6 +12,15 @@
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
+          <el-form-item prop="refBillNo" class="query-item-inline">
+            <el-input
+              v-model="queryParams.refBillNo"
+              placeholder="引用单号"
+              clearable
+              style="width: 180px"
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
           <el-form-item label="科室" prop="departmentId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectDepartment v-model="queryParams.departmentId" />
@@ -267,21 +276,7 @@
               <SelectUser v-model="form.createrName" :disabled="true"/>
             </el-form-item>
           </el-col>
-          <el-col :span="4" v-show="false">
-            <el-form-item label="出库类型" prop="billType">
-              <el-select v-model="form.billType" placeholder="请选择出库类型"
-                         :disabled="true"
-                         clearable style="width: 100%">
-                <el-option v-for="dict in dict.type.bill_type"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
         </el-row>
-
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
@@ -301,20 +296,19 @@
           <el-col :span="1.5">
             <span>出库明细信息</span>
           </el-col>
-          <el-col :span="1.5" v-if="form.id">
-            <el-button
-              type="warning"
-              plain
-              icon="el-icon-download"
-              size="small"
-              @click="handleExportDetailPickList"
-              v-hasPermi="['outWarehouse:apply:export']"
-            >导出拣货单</el-button>
-          </el-col>
 
           <div v-show="action">
+            <el-col :span="1.5" v-if="form.id">
+              <el-button
+                type="warning"
+                plain
+                icon="el-icon-download"
+                size="small"
+                @click="handleExportDetailPickList"
+                v-hasPermi="['outWarehouse:apply:export']"
+              >导出拣货单</el-button>
+            </el-col>
             <el-col :span="1.5">
-  <!--            <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddStkIoBillEntry">添加</el-button>-->
               <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
@@ -336,20 +330,63 @@
         <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
                   show-summary :summary-method="getSummaries"
                   @selection-change="handleStkIoBillEntrySelectionChange"
+                  ref="stkIoBillEntry"
                   border
                   :height="detailTableHeight"
         >
-          <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
+          <el-table-column type="selection" width="60" align="center" fixed="left" />
           <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-<!--          <el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>-->
-<!--            <template slot-scope="scope">-->
-<!--              <SelectMaterial v-model="scope.row.materialId" :value2="isShow" />-->
-<!--            </template>-->
-<!--          </el-table-column>-->
-
-          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column
+            label="名称"
+            align="left"
+            header-align="center"
+            width="240"
+            min-width="180"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-text-wrap"
+            resizable
+          >
+            <template slot-scope="scope">
+              <span
+                class="detail-text-cell-2line"
+                :title="(scope.row.material && scope.row.material.name) || '--'"
+              >{{ (scope.row.material && scope.row.material.name) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="规格"
+            align="left"
+            header-align="center"
+            width="200"
+            min-width="150"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-text-wrap"
+            resizable
+          >
+            <template slot-scope="scope">
+              <span
+                class="detail-text-cell-2line"
+                :title="(scope.row.material && scope.row.material.speci) || '--'"
+              >{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="型号"
+            align="left"
+            header-align="center"
+            width="200"
+            min-width="150"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-text-wrap"
+            resizable
+          >
+            <template slot-scope="scope">
+              <span
+                class="detail-text-cell-2line"
+                :title="(scope.row.material && scope.row.material.model) || '--'"
+              >{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -435,11 +472,6 @@
             </template>
           </el-table-column>
         </el-table>
-        <div class="detail-total-bar">
-          <span class="detail-total-label">合计：</span>
-          <span class="detail-total-item">数量 {{ detailTotalQty }}</span>
-          <span class="detail-total-item">金额 {{ detailTotalAmt }}</span>
-        </div>
         </div>
         </div>
         </el-form>
@@ -673,6 +705,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         billNo: null,
+        refBillNo: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,
@@ -714,26 +747,33 @@ export default {
     /** 与到货验收「添加入库」弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
-    },
-    detailTotalQty() {
-      const total = (this.stkIoBillEntryList || []).reduce((sum, item) => {
-        const value = Number(item && item.qty);
-        return isNaN(value) ? sum : sum + value;
-      }, 0);
-      return total.toFixed(2);
-    },
-    detailTotalAmt() {
-      const total = (this.stkIoBillEntryList || []).reduce((sum, item) => {
-        const value = Number(item && item.amt);
-        return isNaN(value) ? sum : sum + value;
-      }, 0);
-      return total.toFixed(2);
     }
   },
   created() {
-    this.getList();
+    this.applyRouteRefBillQuery()
+    this.getList()
+  },
+  watch: {
+    '$route.query.refBillNo'(val) {
+      if (val) {
+        this.queryParams.refBillNo = String(val)
+        this.queryParams.beginDate = null
+        this.queryParams.endDate = null
+        this.queryParams.pageNum = 1
+        this.getList()
+      }
+    }
   },
   methods: {
+    /** 从路由 query 带入引用申领单号（消息提醒双击跳转等） */
+    applyRouteRefBillQuery() {
+      const ref = this.$route.query && this.$route.query.refBillNo
+      if (!ref) return
+      this.queryParams.refBillNo = String(ref)
+      this.queryParams.beginDate = null
+      this.queryParams.endDate = null
+      this.queryParams.billNo = null
+    },
     getStatDate(){
       // 返回前5天 00:00:00
       let myDate = new Date();
@@ -783,6 +823,8 @@ export default {
           sums[index] = totalQty.toFixed(2);
         } else if (prop === 'amt') {
           sums[index] = totalAmt.toFixed(2);
+        } else {
+          sums[index] = '';
         }
       });
 
@@ -1528,6 +1570,7 @@ export default {
   text-align: right;
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
+  margin-top: 10px;
 }
 
 .modal-footer .el-button {
@@ -1673,27 +1716,6 @@ export default {
   padding-bottom: 4px;
 }
 
-.detail-total-bar {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-top: 8px;
-  padding: 8px 12px;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  background: #f5f7fa;
-  color: #303133;
-  font-size: 14px;
-}
-
-.detail-total-label {
-  font-weight: 600;
-}
-
-.detail-total-item {
-  white-space: nowrap;
-}
-
 .local-modal-content .modal-detail-section .el-table {
   width: 100%;
 }
@@ -1729,22 +1751,6 @@ export default {
 ::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
   padding-bottom: 6px;
   box-sizing: border-box;
-  overflow-y: auto !important;
-  overflow-x: auto !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 4px;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.06);
 }
 
 ::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
@@ -1780,9 +1786,7 @@ export default {
 }
 
 ::v-deep .local-modal-content {
-  min-height: 0 !important;
-  max-height: 100% !important;
-  height: 100% !important;
+  min-height: 95vh !important;
 }
 
 ::v-deep .local-modal-content .el-table .el-table__body-wrapper {
@@ -2023,6 +2027,27 @@ export default {
 .app-container.outWarehouse-apply-page > .el-table.table-compact .el-table__body-wrapper {
   scroll-behavior: smooth !important;
   -webkit-overflow-scrolling: touch !important;
+}
+
+/* 出库申请弹窗明细：名称/规格/型号与到货验收一致（两行截断 + title） */
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td {
+  vertical-align: middle;
+}
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .cell {
+  vertical-align: top;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  padding: 8px 10px 8px 12px;
+}
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .detail-text-cell-2line {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  line-height: 1.45;
+  max-height: calc(1.45em * 2 + 2px);
 }
 
 .json-viewer-pre {

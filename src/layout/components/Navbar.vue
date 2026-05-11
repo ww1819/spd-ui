@@ -188,24 +188,24 @@ export default {
         {
           id: 1,
           type: 'system',
-          title: '系统通知',
-          content: '您有一条新的系统通知，请及时查看',
+          title: '科室预警',
+          content: '您有一条新的科室预警，请及时查看',
           time: '2024-01-15 10:30',
           read: false
         },
         {
           id: 2,
           type: 'warning',
-          title: '待办提醒',
-          content: '您有3条待办事项需要处理',
+          title: '仓库提醒',
+          content: '您有3条仓库提醒需要处理',
           time: '2024-01-15 09:20',
           read: false
         },
         {
           id: 3,
           type: 'info',
-          title: '消息通知',
-          content: '您的申请已通过审核',
+          title: '数据异常预警',
+          content: '存在数据异常，请及时核查',
           time: '2024-01-14 16:45',
           read: true
         }
@@ -278,7 +278,21 @@ export default {
       if (!item.read) {
         this.$set(this.messageList[index], 'read', true)
       }
-      // 这里可以添加跳转到具体消息详情的逻辑
+      const reminderCategoryByTitle = {
+        仓库提醒: { category: 'warehouse', subTab: 'all' },
+        申领单预警: { category: 'warehouse', subTab: 'apply' },
+        申购单预警: { category: 'warehouse', subTab: 'purchase' },
+        库存预警: { category: 'warehouse', subTab: 'inventory' },
+        库存近效期仓库预警: { category: 'warehouse', subTab: 'nearExpiry' },
+        科室预警: { category: 'department' },
+        数据异常预警: { category: 'data' }
+      }
+      const route = reminderCategoryByTitle[item.title]
+      if (route) {
+        this.messageVisible = false
+        this.$store.dispatch('app/openWarehouseReminder', route)
+        return
+      }
       this.$message.info(`查看消息：${item.title}`)
     },
     // 全部已读
