@@ -212,11 +212,6 @@
                       <el-input v-model="stockStatusText" :disabled="true" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="6">
-                    <el-form-item label="单号" prop="stockNo">
-                      <el-input v-model="form.stockNo" :disabled="true" placeholder="保存后生成" />
-                    </el-form-item>
-                  </el-col>
                   <el-col :span="4">
                     <el-form-item label="盘点日期" prop="stockDate" class="form-item-stock-date-no-star">
                       <el-date-picker clearable
@@ -229,17 +224,30 @@
                       </el-date-picker>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col :span="8">
                     <el-form-item label="科室" prop="departmentId">
                       <SelectDepartment v-model="form.departmentId" :disabled="!action || isDepartmentLocked || departmentLockedByAction"/>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col :span="8">
                     <el-form-item label="操作人" prop="createBy">
                       <el-input v-model="form.createBy" :disabled="true" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="2" />
+                </el-row>
+                <el-row :gutter="8" class="stocktaking-form-row-stockno">
+                  <el-col :span="24">
+                    <el-form-item label="单号" prop="stockNo" class="form-item-stock-no-full">
+                      <el-input
+                        v-model="form.stockNo"
+                        type="textarea"
+                        :autosize="{ minRows: 1, maxRows: 4 }"
+                        :disabled="true"
+                        placeholder="保存后生成"
+                        class="input-stock-no-fullwidth"
+                      />
+                    </el-form-item>
+                  </el-col>
                 </el-row>
                 <el-row :gutter="8">
                   <el-col :span="4">
@@ -523,13 +531,16 @@
     </el-dialog>
 
     <el-dialog
-      title="保存前确认盘点数量"
+      title="保存前确认（明细库存与科室实物不一致）"
       :visible.sync="saveQtyConfirmVisible"
-      width="980px"
+      width="1020px"
       append-to-body
       :close-on-click-modal="false"
+      v-loading="saveQtyConfirmLoading"
     >
-      <div style="margin-bottom: 8px; color: #e6a23c;">请逐条确认盘点数量，确认后再保存。</div>
+      <div style="margin-bottom: 8px; color: #e6a23c;">
+        以下明细「库存数量」与当前科室库存明细不一致，请逐条点击「确定」确认；确认后将把明细中的库存数量更新为当前实物数量，并重新计算金额与盈亏。普通盘盈/盘亏（仅盘点数量与账面不同、但与科室库存一致）不会进入本表。
+      </div>
       <el-table :data="saveQtyConfirmList" border size="small">
         <el-table-column label="耗材编码" width="120" align="center" show-overflow-tooltip>
           <template slot-scope="scope">
@@ -541,10 +552,11 @@
           <template slot-scope="scope">{{ (scope.row.material && scope.row.material.name) || '--' }}</template>
         </el-table-column>
         <el-table-column label="批次号" prop="batchNo" min-width="140" />
-        <el-table-column label="库存数量" prop="qty" width="120" />
-        <el-table-column label="盘点数量" min-width="140">
+        <el-table-column label="明细库存数量" prop="detailQty" width="120" align="center" />
+        <el-table-column label="当前科室库存" prop="currentQty" width="120" align="center" />
+        <el-table-column label="盘点数量" min-width="100" align="center">
           <template slot-scope="scope">
-            <el-input v-model="scope.row.adjustedStockQty" type="number" :disabled="scope.row.confirmed" />
+            <span>{{ scope.row.adjustedStockQty != null && scope.row.adjustedStockQty !== '' ? scope.row.adjustedStockQty : '--' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="盈亏数量" width="120">
@@ -604,6 +616,7 @@ export default {
       profitNameSpecStockLoading: false,
       saveQtyConfirmVisible: false,
       saveQtyConfirmList: [],
+      saveQtyConfirmLoading: false,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -1424,7 +1437,13 @@ export default {
       this.$refs["form"].validate(valid => {
         if (!valid) return;
         if (this.submitLoading) return;
-        const needWh = (this.stkIoStocktakingEntryList || []).filter((r) => !r.fromStocktakingInit);
+        const list = this.stkIoStocktakingEntryList || [];
+        /** 服务端回查明细通常不带 fromStocktakingInit，不能以该字段区分；有 depInventoryId 即为科室库存盘亏行，不要求「盘盈二次录入」的批号/效期规则 */
+        const isDepInventoryLine = (r) => {
+          if (!r || r.depInventoryId == null || r.depInventoryId === '') return false;
+          return String(r.depInventoryId).trim() !== '';
+        };
+        const needWh = list.filter((r) => !r.fromStocktakingInit);
         const missingWh = needWh.some(
           (r) => r.returnWarehouseId == null || r.returnWarehouseId === ''
         );
@@ -1432,11 +1451,14 @@ export default {
           this.$modal.msgWarning('请为「新增」添加的明细选择所属仓库');
           return;
         }
-        const missingBatchMeta = needWh.some(
-          (r) => !r.batchNumber || !r.endTime
-        );
+        const needProfitBatchMeta = list.filter((r) => r && !isDepInventoryLine(r));
+        const missingBatchMeta = needProfitBatchMeta.some((r) => {
+          const batchText = String(r.batchNumber != null ? r.batchNumber : r.materialNo || '').trim();
+          const endText = String(r.endTime != null ? r.endTime : r.endDate || '').trim();
+          return !batchText || !endText;
+        });
         if (missingBatchMeta) {
-          this.$modal.msgWarning('新增明细请补全批号、有效期');
+          this.$modal.msgWarning('盘盈新增明细请补全批号、有效期');
           return;
         }
         const badDate = (this.stkIoStocktakingEntryList || []).some(
@@ -1459,58 +1481,99 @@ export default {
         this.openSaveQtyConfirmDialog();
       });
     },
-    openSaveQtyConfirmDialog() {
-      this.saveQtyConfirmList = (this.stkIoStocktakingEntryList || [])
-        .map((row, idx) => ({
-          _confirmKey: `${row.id || 'new'}_${idx}`,
-          id: row.id,
-          material: row.material,
-          batchNo: row.batchNo,
-          qty: row.qty,
-          unitPrice: row.unitPrice,
-          depInventoryId: row.depInventoryId,
-          adjustedStockQty: row.stockQty != null ? row.stockQty : row.qty,
-          confirmed: false
-        }))
-        .filter((row) => {
-          const detailQty = parseFloat(row.qty || 0);
-          const stockQty = parseFloat(row.adjustedStockQty || 0);
-          // 保存阶段仅按“库存数量不一致”逐条确认，不区分盘盈盘亏
-          return Number.isFinite(detailQty) && Number.isFinite(stockQty) && detailQty !== stockQty;
-        });
-      if (!this.saveQtyConfirmList.length) {
-        this.doSubmitFormRequest();
-        return;
+    async openSaveQtyConfirmDialog() {
+      const list = this.stkIoStocktakingEntryList || [];
+      this.saveQtyConfirmLoading = true;
+      try {
+        const rows = await Promise.all(
+          list.map(async (row, idx) => {
+            if (!row || !row.depInventoryId) {
+              return null;
+            }
+            try {
+              const idRaw = row.depInventoryId;
+              const idNum = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw).trim(), 10);
+              if (!Number.isFinite(idNum)) {
+                return null;
+              }
+              const res = await listInventoryPick({
+                id: idNum,
+                pageNum: 1,
+                pageSize: 1
+              });
+              const pickRows = (res && res.rows) || [];
+              if (!pickRows.length) {
+                return { _fetchError: true };
+              }
+              const inv = pickRows[0];
+              const live = inv != null && inv.qty != null && inv.qty !== '' ? parseFloat(inv.qty) : NaN;
+              const book = row.qty != null && row.qty !== '' ? parseFloat(row.qty) : NaN;
+              if (!Number.isFinite(live) || !Number.isFinite(book) || book === live) {
+                return null;
+              }
+              return {
+                _confirmKey: `${row.id || 'new'}_${idx}`,
+                _rowIndex: idx,
+                id: row.id,
+                material: row.material,
+                batchNo: row.batchNo,
+                detailQty: row.qty,
+                currentQty: live,
+                unitPrice: row.unitPrice,
+                depInventoryId: row.depInventoryId,
+                adjustedStockQty: row.stockQty != null && row.stockQty !== '' ? row.stockQty : row.qty,
+                confirmed: false
+              };
+            } catch (e) {
+              return { _fetchError: true };
+            }
+          })
+        );
+        if (rows.some((r) => r && r._fetchError)) {
+          this.$modal.msgError('加载科室库存明细失败，请检查网络后重试');
+          return;
+        }
+        this.saveQtyConfirmList = rows.filter((r) => r && !r._fetchError);
+        if (!this.saveQtyConfirmList.length) {
+          this.doSubmitFormRequest();
+          return;
+        }
+        this.saveQtyConfirmVisible = true;
+      } finally {
+        this.saveQtyConfirmLoading = false;
       }
-      this.saveQtyConfirmVisible = true;
     },
     confirmSaveQtyRow(row) {
-      const v = parseFloat(row.adjustedStockQty);
-      if (!Number.isFinite(v) || v < 0) {
-        this.$modal.msgWarning('请输入有效的盘点数量');
+      const idx = row && row._rowIndex;
+      if (idx == null || idx < 0) return;
+      const target = (this.stkIoStocktakingEntryList || [])[idx];
+      if (!target) return;
+      const live = parseFloat(row.currentQty);
+      if (!Number.isFinite(live) || live < 0) {
+        this.$modal.msgWarning('当前科室库存数据无效');
         return;
       }
-      const qty = parseFloat(row.qty || 0);
-      if (row.depInventoryId && v > qty) {
-        row.adjustedStockQty = qty;
-        this.$modal.msgWarning('来源于科室库存的明细仅允许盘亏，盘点数量已回退为库存数量');
-      } else {
-        row.adjustedStockQty = v;
+      this.$set(target, 'qty', live);
+      const stockQty = parseFloat(target.stockQty || 0);
+      if (target.depInventoryId && stockQty > live) {
+        this.$set(target, 'stockQty', live);
+        this.$modal.msgWarning('来源于科室库存的明细仅允许盘亏，盘点数量已调整为当前库存数量');
       }
-      row.confirmed = true;
+      this.stockQtyChange(target);
+      this.$set(row, 'confirmed', true);
     },
     formatConfirmProfitQty(row) {
       const stockQty = parseFloat((row && row.adjustedStockQty) || 0);
-      const qty = parseFloat((row && row.qty) || 0);
-      const v = stockQty - qty;
+      const bookAfter = parseFloat((row && row.currentQty) || 0);
+      const v = stockQty - bookAfter;
       if (!Number.isFinite(v)) return '--';
       return v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2);
     },
     formatConfirmProfitAmt(row) {
       const stockQty = parseFloat((row && row.adjustedStockQty) || 0);
-      const qty = parseFloat((row && row.qty) || 0);
+      const bookAfter = parseFloat((row && row.currentQty) || 0);
       const unitPrice = parseFloat((row && row.unitPrice) || 0);
-      const v = (stockQty - qty) * unitPrice;
+      const v = (stockQty - bookAfter) * unitPrice;
       if (!Number.isFinite(v)) return '--';
       const prefix = v > 0 ? '+' : '';
       return `${prefix}￥${v.toFixed(2)}`;
@@ -1521,14 +1584,6 @@ export default {
         this.$modal.msgWarning('请先逐条点击“确定”后再提交保存');
         return;
       }
-      const adjustMap = new Map((this.saveQtyConfirmList || []).map((r) => [r._confirmKey, r.adjustedStockQty]));
-      (this.stkIoStocktakingEntryList || []).forEach((row, idx) => {
-        const key = `${row.id || 'new'}_${idx}`;
-        if (adjustMap.has(key)) {
-          row.stockQty = adjustMap.get(key);
-          this.stockQtyChange(row);
-        }
-      });
       this.saveQtyConfirmVisible = false;
       this.doSubmitFormRequest();
     },
@@ -1731,6 +1786,23 @@ export default {
 
 .local-modal-content .form-fields-container .el-row:last-child {
   margin-bottom: 0;
+}
+
+/* 盘点单号：独占一行，换行完整展示（避免窄列截断） */
+.stocktaking-form-row-stockno {
+  margin-top: 4px;
+}
+.local-modal-content .form-item-stock-no-full >>> .el-textarea__inner,
+.local-modal-content .input-stock-no-fullwidth >>> .el-textarea__inner {
+  word-break: break-all;
+  white-space: pre-wrap;
+  resize: none;
+  min-height: 32px !important;
+  line-height: 1.45;
+  font-family: inherit;
+}
+.local-modal-content .form-item-stock-no-full >>> .el-form-item__content {
+  max-width: 100%;
 }
 
 /* 弹窗内明细区 */

@@ -9,7 +9,8 @@ export function listInventory(query) {
   })
 }
 
-/** 选库存明细弹窗等：仅需登录，数据范围与 list 一致，避免无 department:depInventory:list 时 403 */
+/** 选库存明细弹窗等：仅需登录，数据范围与 list 一致，避免无 department:depInventory:list 时 403。
+ *  支持 params：含 id 时按主键精确查一条（盘点保存前对账等，替代 GET /department/inventory/:id 的 query 权限）。 */
 export function listInventoryPick(query) {
   return request({
     url: '/department/inventory/pick/list',

@@ -422,12 +422,95 @@
         <el-button type="primary" @click="confirmPendingNewEntries">确 定</el-button>
       </div>
     </el-dialog>
+
+    <el-dialog
+      title="保存前确认（明细库存与仓库实物不一致）"
+      :visible.sync="saveQtyConfirmVisible"
+      width="1020px"
+      append-to-body
+      :close-on-click-modal="false"
+      v-loading="saveQtyConfirmLoading"
+    >
+      <div style="margin-bottom: 8px; color: #e6a23c;">
+        以下明细「库存数量」与当前仓库库存明细不一致，请逐条点击「确定」确认；确认后将把明细中的库存数量更新为当前实物数量，并重新计算金额。普通盘盈/盘亏（仅盘点数量与账面不同、但与仓库库存一致）不会进入本表。
+      </div>
+      <el-table :data="saveQtyConfirmList" border size="small">
+        <el-table-column label="耗材编码" width="120" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="耗材名称" min-width="150" show-overflow-tooltip>
+          <template slot-scope="scope">{{ (scope.row.material && scope.row.material.name) || '--' }}</template>
+        </el-table-column>
+        <el-table-column label="批次号" prop="batchNo" min-width="140" />
+        <el-table-column label="明细库存数量" prop="detailQty" width="120" align="center" />
+        <el-table-column label="当前仓库库存" prop="currentQty" width="120" align="center" />
+        <el-table-column label="盘点数量" min-width="100" align="center">
+          <template slot-scope="scope">
+            <span>{{ scope.row.adjustedStockQty != null && scope.row.adjustedStockQty !== '' ? scope.row.adjustedStockQty : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="盈亏数量" width="120">
+          <template slot-scope="scope">
+            <span>{{ formatWhSaveConfirmProfitQty(scope.row) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100">
+          <template slot-scope="scope">
+            <el-button type="text" @click="confirmWhSaveQtyRow(scope.row)">{{ scope.row.confirmed ? '已确定' : '确定' }}</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer">
+        <el-button @click="saveQtyConfirmVisible = false">取 消</el-button>
+        <el-button type="primary" @click="confirmWhSaveQtyAndSubmit">确 定</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog
+      title="审核前确认（明细库存与仓库实物不一致）"
+      :visible.sync="whAuditQtyMismatchVisible"
+      width="980px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <div style="margin-bottom: 8px; color: #e6a23c;">
+        以下明细「库存数量」与当前仓库库存不一致，请逐条确认盘点数量后再审核；确认后将把明细账面库存更新为当前仓库数量并回写盈亏。仅账面与仓库实物不一致时需确认，普通盘盈盘亏不进入本表。
+      </div>
+      <el-table :data="qtyMismatchAuditList" border size="small">
+        <el-table-column label="耗材" prop="materialName" min-width="150" />
+        <el-table-column label="批次号" prop="batchNo" min-width="150" />
+        <el-table-column label="明细内库存数量" prop="detailQty" width="140" />
+        <el-table-column label="当前仓库库存" prop="currentQty" width="140" />
+        <el-table-column label="盘点数量" min-width="140">
+          <template slot-scope="scope">
+            <el-input
+              v-model="scope.row.adjustedStockQty"
+              type="number"
+              :disabled="scope.row.confirmed"
+              placeholder="盘点数量"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100">
+          <template slot-scope="scope">
+            <el-button type="text" @click="confirmWhAuditMismatchRow(scope.row)">{{ scope.row.confirmed ? '已确定' : '确定' }}</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer">
+        <el-button @click="whAuditQtyMismatchVisible = false">取 消</el-button>
+        <el-button type="primary" @click="confirmWhAuditQtyMismatchAndAudit">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking,auditStocktaking } from "@/api/warehouse/stocktaking";
-import { listInventory, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
+import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, auditStocktaking, checkStocktakingQty } from "@/api/warehouse/stocktaking";
+import { listInventory, listInventoryPick, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
@@ -476,6 +559,12 @@ export default {
       //是否显示
       action: true,
       submitLoading: false,
+      saveQtyConfirmVisible: false,
+      saveQtyConfirmList: [],
+      saveQtyConfirmLoading: false,
+      whAuditQtyMismatchVisible: false,
+      qtyMismatchAuditList: [],
+      pendingWhAuditId: null,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -1019,15 +1108,64 @@ export default {
     },
     /** 审核按钮操作 */
     handleAudit(row) {
-      this.reset();
-      const id = row.id || this.ids
-
-      this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(function() {
-        return auditStocktaking({id:id});
-      }).then(() => {
+      const id = row.id || this.ids;
+      const stockNo = row && row.stockNo != null ? row.stockNo : id;
+      this.$modal
+        .confirm('确定要审核"' + stockNo + '"的数据项？')
+        .then(() => checkStocktakingQty({ id }))
+        .then((res) => {
+          const rows = (res && res.data) || [];
+          if (!rows.length) {
+            return auditStocktaking({ id });
+          }
+          this.pendingWhAuditId = id;
+          this.qtyMismatchAuditList = rows.map((r) => ({
+            ...r,
+            adjustedStockQty: r.stockQty != null ? r.stockQty : r.currentQty,
+            confirmed: false
+          }));
+          this.whAuditQtyMismatchVisible = true;
+          return null;
+        })
+        .then((result) => {
+          if (!result) return;
+          this.getList();
+          this.$modal.msgSuccess('审核成功！');
+        })
+        .catch(() => {});
+    },
+    confirmWhAuditMismatchRow(row) {
+      const v = parseFloat(row.adjustedStockQty);
+      if (!Number.isFinite(v) || v < 0) {
+        this.$modal.msgWarning('请输入有效的盘点数量');
+        return;
+      }
+      const cap = parseFloat(row.currentQty);
+      if (Number.isFinite(cap) && v > cap) {
+        row.adjustedStockQty = cap;
+        this.$modal.msgWarning('来源于仓库库存的明细仅允许盘亏，盘点数量已回退为当前库存数量');
+      } else {
+        row.adjustedStockQty = v;
+      }
+      row.confirmed = true;
+    },
+    confirmWhAuditQtyMismatchAndAudit() {
+      const unconfirmed = (this.qtyMismatchAuditList || []).some((r) => !r.confirmed);
+      if (unconfirmed) {
+        this.$modal.msgWarning('请先逐条点击“确定”后再提交');
+        return;
+      }
+      const qtyAdjustList = (this.qtyMismatchAuditList || []).map((r) => ({
+        entryId: r.entryId,
+        stockQty: r.adjustedStockQty
+      }));
+      auditStocktaking({ id: this.pendingWhAuditId, qtyAdjustList }).then(() => {
+        this.whAuditQtyMismatchVisible = false;
+        this.qtyMismatchAuditList = [];
+        this.pendingWhAuditId = null;
         this.getList();
-        this.$modal.msgSuccess("审核成功！");
-      }).catch(() => {});
+        this.$modal.msgSuccess('审核成功！');
+      });
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -1052,22 +1190,116 @@ export default {
           return;
         }
         if (this.submitLoading) return;
-        this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
-        this.submitLoading = true;
-        const isUpdate = this.form.id != null;
-        const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
-        request.then(response => {
-          const data = response.data || response;
-          if (!isUpdate && data) {
-            this.form.id = data.id;
-            if (data.stockNo != null) this.form.stockNo = data.stockNo;
-          }
-          this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");
-          this.open = false;
-          this.getList();
-        }).finally(() => {
-          this.submitLoading = false;
-        });
+        this.openSaveQtyConfirmDialogWarehouse();
+      });
+    },
+    async openSaveQtyConfirmDialogWarehouse() {
+      const list = this.stkIoStocktakingEntryList || [];
+      this.saveQtyConfirmLoading = true;
+      try {
+        const rows = await Promise.all(
+          list.map(async (row, idx) => {
+            if (!row || row.kcNo == null || row.kcNo === '') {
+              return null;
+            }
+            try {
+              const idRaw = row.kcNo;
+              const idNum = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw).trim(), 10);
+              if (!Number.isFinite(idNum)) {
+                return null;
+              }
+              const res = await listInventoryPick({
+                id: idNum,
+                pageNum: 1,
+                pageSize: 1
+              });
+              const pickRows = (res && res.rows) || [];
+              if (!pickRows.length) {
+                return { _fetchError: true };
+              }
+              const inv = pickRows[0];
+              const live = inv != null && inv.qty != null && inv.qty !== '' ? parseFloat(inv.qty) : NaN;
+              const book = row.qty != null && row.qty !== '' ? parseFloat(row.qty) : NaN;
+              if (!Number.isFinite(live) || !Number.isFinite(book) || book === live) {
+                return null;
+              }
+              return {
+                _confirmKey: `${row.id || 'new'}_${idx}`,
+                _rowIndex: idx,
+                id: row.id,
+                material: row.material,
+                batchNo: row.batchNo,
+                detailQty: row.qty,
+                currentQty: live,
+                adjustedStockQty: row.stockQty != null && row.stockQty !== '' ? row.stockQty : row.qty,
+                confirmed: false
+              };
+            } catch (e) {
+              return { _fetchError: true };
+            }
+          })
+        );
+        if (rows.some((r) => r && r._fetchError)) {
+          this.$modal.msgError('加载仓库库存明细失败，请检查网络后重试');
+          return;
+        }
+        this.saveQtyConfirmList = rows.filter((r) => r && !r._fetchError);
+        if (!this.saveQtyConfirmList.length) {
+          this.doSubmitStocktakingForm();
+          return;
+        }
+        this.saveQtyConfirmVisible = true;
+      } finally {
+        this.saveQtyConfirmLoading = false;
+      }
+    },
+    confirmWhSaveQtyRow(row) {
+      const idx = row && row._rowIndex;
+      if (idx == null || idx < 0) return;
+      const target = (this.stkIoStocktakingEntryList || [])[idx];
+      if (!target) return;
+      const live = parseFloat(row.currentQty);
+      if (!Number.isFinite(live) || live < 0) {
+        this.$modal.msgWarning('当前仓库库存数据无效');
+        return;
+      }
+      this.$set(target, 'qty', live);
+      this.stockQtyChangeWh(target);
+      this.$set(row, 'confirmed', true);
+    },
+    formatWhSaveConfirmProfitQty(row) {
+      const stockQty = parseFloat((row && row.adjustedStockQty) || 0);
+      const bookAfter = parseFloat((row && row.currentQty) || 0);
+      const v = stockQty - bookAfter;
+      if (!Number.isFinite(v)) return '--';
+      return v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2);
+    },
+    confirmWhSaveQtyAndSubmit() {
+      const unconfirmed = (this.saveQtyConfirmList || []).some((r) => !r.confirmed);
+      if (unconfirmed) {
+        this.$modal.msgWarning('请先逐条点击“确定”后再提交保存');
+        return;
+      }
+      this.saveQtyConfirmVisible = false;
+      this.doSubmitStocktakingForm();
+    },
+    doSubmitStocktakingForm() {
+      if (this.submitLoading) return;
+      this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
+      this.submitLoading = true;
+      const isUpdate = this.form.id != null;
+      const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
+      request.then(response => {
+        const data = response.data || response;
+        if (!isUpdate && data) {
+          this.form.id = data.id;
+          if (data.stockNo != null) this.form.stockNo = data.stockNo;
+        }
+        this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");
+        this.open = false;
+        this.getList();
+      }).finally(() => {
+        this.submitLoading = false;
       });
     },
     /** 删除按钮操作 */

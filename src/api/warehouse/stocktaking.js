@@ -43,11 +43,20 @@ export function delStocktaking(id) {
   })
 }
 
-// 审核盘点
+// 审核盘点（可传 qtyAdjustList：账面与仓库实物不一致时逐条确认后的盘点数量）
 export function auditStocktaking(data) {
   return request({
     url: '/stocktaking/in/auditStocktaking',
     method: 'put',
+    data: data
+  })
+}
+
+/** 审核前校验：仓库盘点明细 qty 与当前 stk_inventory 是否一致（仅 stock_type=501 有差异行） */
+export function checkStocktakingQty(data) {
+  return request({
+    url: '/stocktaking/in/auditStocktaking/checkQty',
+    method: 'post',
     data: data
   })
 }

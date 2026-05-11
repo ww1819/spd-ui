@@ -389,7 +389,7 @@
     </transition>
 
     <el-dialog title="库存数量不一致校验" :visible.sync="qtyMismatchDialogVisible" width="980px" append-to-body>
-      <div style="margin-bottom: 8px; color: #e6a23c;">检测到明细库存数量与当前科室账面库存不一致，请逐条确认后再点击确定。</div>
+      <div style="margin-bottom: 8px; color: #e6a23c;">检测到明细「库存数量」与当前科室账面库存不一致（非普通盘盈/盘亏），请逐条确认盘点数量后再审核；确认后系统将按当前科室库存更新账面并回写盈亏。</div>
       <el-table :data="qtyMismatchList" border size="small">
         <el-table-column label="耗材" prop="materialName" min-width="150" />
         <el-table-column label="批次号" prop="batchNo" min-width="150" />

@@ -9,6 +9,15 @@ export function listInventory(query) {
   })
 }
 
+/** 盘点/弹窗对账：仅需登录，与 list 同源；支持 params.id 精确查一条（替代 GET /warehouse/inventory/:id）。 */
+export function listInventoryPick(query) {
+  return request({
+    url: '/warehouse/inventory/pick/list',
+    method: 'get',
+    params: query
+  })
+}
+
 /** 科室申领：全院按耗材聚合的可用库存（策略由后端 DepartmentApplyAvailableStockStrategy 决定） */
 export function listDeptApplyAvailableStock(query) {
   return request({
@@ -27,10 +36,10 @@ export function listInventorySummary(query) {
   })
 }
 
-/** 按仓库+耗材 SQL 汇总数量（全量），用于仓库盘点盘盈弹窗「当前库存」 */
+/** 按仓库+耗材 SQL 汇总数量（全量），用于仓库盘点盘盈弹窗「当前库存」（低权限 pick 接口） */
 export function listInventoryStocktakingProfitQtySummary(query) {
   return request({
-    url: '/warehouse/inventory/stocktakingProfitQtySummary',
+    url: '/warehouse/inventory/pick/stocktakingProfitQtySummary',
     method: 'get',
     params: query
   })
