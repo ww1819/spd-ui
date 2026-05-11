@@ -806,11 +806,18 @@ export default {
       this.loading = true;
       this.queryParams.stockStatus = "1";
       this.queryParams.stockType = "502"; // 盘点类型：502表示盘点
-      listStocktaking(this.queryParams).then(response => {
-        this.stocktakingList = response.rows;
-        this.total = response.total;
-        this.loading = false;
-      });
+      listStocktaking(this.queryParams)
+        .then((response) => {
+          this.stocktakingList = (response && response.rows) || [];
+          this.total = (response && response.total) || 0;
+        })
+        .catch(() => {
+          this.stocktakingList = [];
+          this.total = 0;
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
     openAddLossEntry() {
       if(!this.form.departmentId) {
@@ -962,7 +969,8 @@ export default {
           departmentId: this.form.departmentId,
           receiptConfirmStatus: 1
         });
-        const rows = Array.isArray(res.data) ? res.data : [];
+        const raw = res && res.data != null ? res.data : res;
+        const rows = Array.isArray(raw) ? raw : [];
         rows.forEach((it) => {
           const name = it.materialName != null ? String(it.materialName).trim() : "";
           const spec = it.specification != null ? String(it.specification).trim() : "";
@@ -974,6 +982,8 @@ export default {
         this.profitNameSpecStockMap = map;
       } catch (e) {
         this.profitNameSpecStockMap = {};
+        // 业务/HTTP 错误多数已在 request 拦截器中提示，此处避免重复弹窗
+        console.error("[refreshProfitNameSpecStockDept]", e);
       } finally {
         this.profitNameSpecStockLoading = false;
       }
@@ -1282,13 +1292,11 @@ export default {
       this.resetForm("form");
     },
     //盘点数量改变事件
-    stockQtyChange(row){
-      let totalAmt = 0;
-      if(row.stockQty && row.unitPrice){
-        totalAmt = row.stockQty * row.unitPrice;
-      }else{
-        totalAmt = 0;
-      }
+    stockQtyChange(row) {
+      if (!row) return;
+      const sq = parseFloat(row.stockQty);
+      const up = parseFloat(row.unitPrice);
+      const totalAmt = Number.isFinite(sq) && Number.isFinite(up) ? sq * up : 0;
       row.amt = totalAmt.toFixed(2);
     },
     handleStockQtyBlur(row) {
@@ -1304,13 +1312,11 @@ export default {
       }
     },
     //价格改变事件
-    priceChange(row){
-      let totalAmt = 0;
-      if(row.stockQty && row.unitPrice){
-        totalAmt = row.stockQty * row.unitPrice;
-      }else{
-        totalAmt = 0;
-      }
+    priceChange(row) {
+      if (!row) return;
+      const sq = parseFloat(row.stockQty);
+      const up = parseFloat(row.unitPrice);
+      const totalAmt = Number.isFinite(sq) && Number.isFinite(up) ? sq * up : 0;
       row.amt = totalAmt.toFixed(2);
     },
     // 计算盈亏数量
@@ -1360,17 +1366,24 @@ export default {
       this.multiple = !selection.length
     },
     /** 查看按钮操作 */
-    handleView(row){
-      const id = row.id
-      getStocktaking(id).then(response => {
-        this.form = response.data;
-        this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList || [];
-        this.open = true;
-        this.action = false;
-        // 查看须保留服务端返回的单据状态，勿写死为未审核（否则已审核单显示错误）
-        this.form.stockType = 502;
-        this.title = "查看科室盘点";
-      });
+    handleView(row) {
+      const id = row.id;
+      getStocktaking(id)
+        .then((response) => {
+          const data = response && response.data;
+          if (!data) {
+            this.$modal.msgError("获取盘点单失败");
+            return;
+          }
+          this.form = data;
+          this.stkIoStocktakingEntryList = data.stkIoStocktakingEntryList || [];
+          this.open = true;
+          this.action = false;
+          // 查看须保留服务端返回的单据状态，勿写死为未审核（否则已审核单显示错误）
+          this.form.stockType = 502;
+          this.title = "查看科室盘点";
+        })
+        .catch(() => {});
     },
     /** 新增按钮操作 */
     handleAdd() {
@@ -1388,16 +1401,23 @@ export default {
     /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
-      const id = row.id || this.ids
-      getStocktaking(id).then(response => {
-        this.form = response.data;
-        this.form.stockStatus = 1;
-        this.form.stockType = 502;
-        this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList || [];
-        this.open = true;
-        this.action = true;
-        this.title = "修改科室盘点";
-      });
+      const id = row.id || this.ids;
+      getStocktaking(id)
+        .then((response) => {
+          const data = response && response.data;
+          if (!data) {
+            this.$modal.msgError("获取盘点单失败");
+            return;
+          }
+          this.form = data;
+          this.form.stockStatus = 1;
+          this.form.stockType = 502;
+          this.stkIoStocktakingEntryList = data.stkIoStocktakingEntryList || [];
+          this.open = true;
+          this.action = true;
+          this.title = "修改科室盘点";
+        })
+        .catch(() => {});
     },
     /** 提交按钮 */
     submitForm() {
@@ -1514,7 +1534,10 @@ export default {
     },
     doSubmitFormRequest() {
       this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) => {
-        const { fromStocktakingInit, warehouse, _warehouseName, ...rest } = row;
+        const rest = { ...row };
+        delete rest.fromStocktakingInit;
+        delete rest.warehouse;
+        delete rest._warehouseName;
         return rest;
       });
       this.submitLoading = true;
