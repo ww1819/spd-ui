@@ -2280,6 +2280,16 @@ function depInventoryReceiptStatus(v) {
   return '--';
 }
 
+function depInventoryNearExpiryDays(row) {
+  if (!row || row.endDate === null || row.endDate === undefined || row.endDate === '') return '--';
+  const end = new Date(row.endDate);
+  if (Number.isNaN(end.getTime())) return '--';
+  end.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((end.getTime() - today.getTime()) / 86400000);
+}
+
 /** 科室库存查询 — 库存明细 */
 export async function exportDepInventoryDetailStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
@@ -2288,12 +2298,12 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '耗材编码',
     '耗材',
     '科室',
-    '归属仓库',
     '规格',
     '型号',
     '单位',
     '单价',
     '数量',
+    '近效期天数',
     '金额',
     '生产批号',
     '耗材批次号',
@@ -2311,9 +2321,10 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '辅条码',
     '出库日期',
     '出库单号',
+    '归属仓库',
     '收货确认状态',
   ];
-  const numericCols = [9, 10, 11];
+  const numericCols = [8, 9, 11];
   return exportInventoryQueryStyledXlsx({
     sheetName: '科室库存明细',
     titleBoldText: '科室库存明细查询表',
@@ -2323,7 +2334,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     rows,
     numericCols1Based: numericCols,
     sumExtractors: {
-      10: (row) => Number(row.qty || 0),
+      9: (row) => Number(row.qty || 0),
       11: (row) => Number(row.amt || 0),
     },
     buildCells: (row) => {
@@ -2332,17 +2343,18 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
       const fc = m.fdFinanceCategory && m.fdFinanceCategory.financeCategoryName;
       const sup =
         (row.supplier && row.supplier.name) || (m.supplier && m.supplier.name) || '';
+      const near = depInventoryNearExpiryDays(row);
       return [
         0,
         m.code || '',
         m.name || '',
         (row.department && row.department.name) || '',
-        (row.warehouse && row.warehouse.name) || '',
         m.speci || '',
         m.model || '',
         (m.fdUnit && m.fdUnit.unitName) || '',
         depInventoryUnitPrice(row),
         Number(row.qty || 0),
+        near === '--' ? '--' : near,
         Number(row.amt || 0),
         row.batchNumber || '',
         row.materialNo || '',
@@ -2360,6 +2372,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
         row.subBarcode || '',
         fmtYmd(row.materialDate),
         row.outOrderNo || '',
+        (row.warehouse && row.warehouse.name) || '',
         depInventoryReceiptStatus(row.receiptConfirmStatus),
       ];
     },

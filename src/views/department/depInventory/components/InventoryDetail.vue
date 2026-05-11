@@ -97,11 +97,6 @@
         <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="耗材" align="center" prop="material.name" width="160" show-overflow-tooltip resizable />
         <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="归属仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
-          </template>
-        </el-table-column>
         <el-table-column label="规格" align="center" prop="material.speci" width="80" show-overflow-tooltip resizable/>
         <el-table-column label="型号" align="center" prop="material.model" width="80" show-overflow-tooltip resizable/>
         <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
@@ -121,6 +116,14 @@
           </template>
         </el-table-column>
         <el-table-column label="数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable/>
+        <el-table-column label="近效期天数" align="center" min-width="140" width="140" resizable>
+          <template slot-scope="scope">
+            <span
+              class="near-expiry-days-cell"
+              :class="{ 'near-expiry-days-cell--warn': nearExpiryDaysIsNumeric(scope.row) }"
+            >{{ nearExpiryDaysRemaining(scope.row) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
@@ -198,6 +201,11 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
+        <el-table-column label="归属仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="收货确认状态" align="center" prop="receiptConfirmStatus" width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.receiptConfirmStatus === 1">已确认</span>
@@ -241,6 +249,13 @@ export default {
   name: "InventoryDetail",
   dicts: ['is_use_status'],
   components: {SelectDepartment,SelectWarehouse,SelectSupplier,RightToolbar},
+  props: {
+    /** detail：库存明细；alert：科室库存预警；nearExpiry：近效期（与后端查询参数一致） */
+    listVariant: {
+      type: String,
+      default: 'detail'
+    }
+  },
   data() {
     return {
       loading: true,
@@ -273,6 +288,14 @@ export default {
     };
   },
   computed: {
+    exportFileBaseName() {
+      const map = {
+        detail: '科室库存明细查询表',
+        alert: '科室库存预警表',
+        nearExpiry: '科室库存近效期预警表'
+      }
+      return map[this.listVariant] || map.detail
+    },
     pageTotalQty() {
       return (this.inventoryList || []).reduce((s, r) => s + Number(r.qty || 0), 0);
     },
@@ -287,9 +310,21 @@ export default {
     this.getList();
   },
   methods: {
+    /** 合并列表查询参数（预警/近效期 Tab 附加后端筛选字段） */
+    buildListQuery() {
+      const p = { ...this.queryParams }
+      delete p.depInventoryAlertOnly
+      delete p.depInventoryNearExpiryDays
+      if (this.listVariant === 'alert') {
+        p.depInventoryAlertOnly = 1
+      } else if (this.listVariant === 'nearExpiry') {
+        p.depInventoryNearExpiryDays = 30
+      }
+      return p
+    },
     getList() {
       this.loading = true;
-      listInventory(this.queryParams).then(response => {
+      listInventory(this.buildListQuery()).then(response => {
         this.inventoryList = response.rows || [];
         this.total = response.total != null ? response.total : 0;
         this.totalInfo = response.totalInfo || { totalQty: 0, totalAmt: 0 };
@@ -321,7 +356,7 @@ export default {
     },
     /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
     async handleExport() {
-      const requestParams = { ...this.queryParams, pageNum: 1, pageSize: 10000 };
+      const requestParams = { ...this.buildListQuery(), pageNum: 1, pageSize: 10000 };
       this.loading = true;
       try {
         const response = await listInventory(requestParams);
@@ -336,7 +371,7 @@ export default {
           rows,
           beginDate: "",
           endDate: "",
-          fileName: `科室库存明细查询表${dateStr}.xlsx`,
+          fileName: `${this.exportFileBaseName}${dateStr}.xlsx`,
         });
       } catch (e) {
         console.error(e);
@@ -356,6 +391,21 @@ export default {
       if (isUse === undefined || isUse === null || isUse === '') return '--';
       const label = this.selectDictLabel(this.dict.type.is_use_status, String(isUse));
       return label || '--';
+    },
+    /** 距有效期的剩余天数（与 DATEDIFF(有效期, CURDATE()) 一致：已过期为负整数） */
+    nearExpiryDaysRemaining(row) {
+      if (!row || row.endDate === null || row.endDate === undefined || row.endDate === '') return '--';
+      const end = new Date(row.endDate);
+      if (Number.isNaN(end.getTime())) return '--';
+      end.setHours(0, 0, 0, 0);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return String(Math.round((end.getTime() - today.getTime()) / 86400000));
+    },
+    /** 是否为可着色的天数数字（非「--」） */
+    nearExpiryDaysIsNumeric(row) {
+      const v = this.nearExpiryDaysRemaining(row);
+      return v !== '--' && /^-?\d+$/.test(String(v));
     }
   }
 };
@@ -585,5 +635,14 @@ export default {
   white-space: normal;
   word-break: break-all;
   line-height: 18px;
+}
+
+.near-expiry-days-cell {
+  display: inline-block;
+  min-width: 2em;
+}
+.near-expiry-days-cell--warn {
+  color: #f56c6c;
+  font-weight: 600;
 }
 </style>

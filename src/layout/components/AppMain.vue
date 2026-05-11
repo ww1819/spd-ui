@@ -220,6 +220,11 @@
                             <span class="wh-reminder-inventory-qty-warn">{{ formatReminderInt(scope.row.currentQty) }}</span>
                           </template>
                         </el-table-column>
+                        <el-table-column label="安全库存" prop="safetyStock" width="90" align="right" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span class="wh-reminder-inventory-qty-warn">{{ formatReminderInt(scope.row.safetyStock) }}</span>
+                          </template>
+                        </el-table-column>
                         <el-table-column label="单价" width="100" align="right" show-overflow-tooltip>
                           <template slot-scope="scope">
                             <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== ''">¥{{ formatReminderMoney(scope.row.unitPrice) }}</span>
@@ -245,11 +250,6 @@
                           </template>
                         </el-table-column>
                         <el-table-column label="生产厂家" prop="factoryName" min-width="120" show-overflow-tooltip />
-                        <el-table-column label="安全库存" prop="safetyStock" width="90" align="right" show-overflow-tooltip>
-                          <template slot-scope="scope">
-                            <span class="wh-reminder-inventory-qty-warn">{{ formatReminderInt(scope.row.safetyStock) }}</span>
-                          </template>
-                        </el-table-column>
                       </el-table>
                     </div>
                     <div
@@ -407,9 +407,69 @@
                     </div>
                     <div
                       v-show="showDepartmentExpiryBlock"
-                      class="wh-reminder-panel-inner wh-reminder-placeholder"
+                      v-loading="departmentExpiryLoading"
+                      class="wh-reminder-near-expiry-wrap wh-reminder-near-expiry-wrap--full"
                     >
-                      <p class="wh-reminder-line">科室有效期预警请在科室效期预警、科室批次效期等相关业务菜单中查看与处理。</p>
+                      <p v-if="departmentExpiryError" class="wh-reminder-error wh-reminder-error--above-table">{{ departmentExpiryError }}</p>
+                      <div class="wh-reminder-apply-toolbar">
+                        <div class="wh-reminder-detail-section-title">科室批次近效期（有效期距今天在 30 天及以内）</div>
+                      </div>
+                      <el-table
+                        :data="departmentExpiryRows"
+                        border
+                        stripe
+                        size="small"
+                        class="wh-reminder-detail-table wh-reminder-near-expiry-table"
+                        max-height="420"
+                        empty-text="暂无近效期科室库存"
+                      >
+                        <el-table-column type="index" label="序号" width="58" align="center" />
+                        <el-table-column label="耗材编码" prop="materialCode" min-width="110">
+                          <template slot-scope="scope">
+                            <span
+                              class="wh-reminder-material-code-link"
+                              :title="(scope.row.materialCode || '') + '（双击打开有效期预警表）'"
+                              @dblclick.stop="handleNearExpiryMaterialCodeDblClick(scope.row)"
+                            >{{ scope.row.materialCode || '—' }}</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="耗材名称" prop="materialName" min-width="140" show-overflow-tooltip />
+                        <el-table-column label="规格" prop="materialSpeci" min-width="100" show-overflow-tooltip />
+                        <el-table-column label="型号" prop="materialModel" min-width="100" show-overflow-tooltip />
+                        <el-table-column label="单位" prop="unitName" width="72" align="center" show-overflow-tooltip />
+                        <el-table-column label="数量" width="90" align="right" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span>{{ formatReminderInt(scope.row.qty) }}</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="近效期天数" width="128" align="center" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span
+                              v-if="departmentExpiryDaysIsNumeric(scope.row)"
+                              class="wh-reminder-inventory-qty-warn"
+                            >{{ scope.row.daysToExpiry }}</span>
+                            <span v-else>—</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="金额" width="100" align="right" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span v-if="scope.row.amt != null && scope.row.amt !== ''">¥{{ formatReminderMoney(scope.row.amt) }}</span>
+                            <span v-else>—</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="生产日期" width="110" align="center" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span v-if="scope.row.produceDate">{{ parseTime(scope.row.produceDate, '{y}-{m}-{d}') }}</span>
+                            <span v-else>—</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="有效期" width="110" align="center" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span v-if="scope.row.expiryDate">{{ parseTime(scope.row.expiryDate, '{y}-{m}-{d}') }}</span>
+                            <span v-else>—</span>
+                          </template>
+                        </el-table-column>
+                      </el-table>
                     </div>
                   </template>
                   <div
@@ -437,7 +497,7 @@
 <script>
 import { mapState, mapGetters } from 'vuex'
 import iframeToggle from './IframeToggle/index'
-import { fetchHomeWarehouseReminderCounts, fetchHomeWarehouseReminderApplyList, fetchHomeWarehouseReminderPurchaseList, fetchHomeWarehouseReminderNearExpiryList, fetchHomeWarehouseReminderInventoryAlertList, fetchHomeDepartmentReminderUnreceivedReceipt } from '@/api/dashboard/home'
+import { fetchHomeWarehouseReminderCounts, fetchHomeWarehouseReminderApplyList, fetchHomeWarehouseReminderPurchaseList, fetchHomeWarehouseReminderNearExpiryList, fetchHomeWarehouseReminderInventoryAlertList, fetchHomeDepartmentReminderUnreceivedReceipt, fetchHomeDepartmentReminderNearExpiryList } from '@/api/dashboard/home'
 
 export default {
   name: 'AppMain',
@@ -458,7 +518,11 @@ export default {
       departmentUnreceivedLoading: false,
       departmentUnreceivedError: '',
       departmentUnreceivedRows: [],
-      departmentUnreceivedBillCount: 0
+      departmentUnreceivedBillCount: 0,
+      departmentExpiryLoading: false,
+      departmentExpiryError: '',
+      departmentExpiryRows: [],
+      departmentExpiryLineCount: 0
     }
   },
   computed: {
@@ -555,16 +619,18 @@ export default {
       if (val && this.messageReminderCategory === 'warehouse' && (this.showWarehouseBillBlock || this.showWarehouseNearExpiryBlock || this.showWarehouseInventoryBlock)) {
         this.loadWarehouseReminderCounts()
       }
-      if (val && this.messageReminderCategory === 'department' && this.showDepartmentUnreceivedBlock) {
-        this.loadDepartmentReminderUnreceived()
+      if (val && this.messageReminderCategory === 'department') {
+        if (this.showDepartmentUnreceivedBlock) this.loadDepartmentReminderUnreceived()
+        if (this.showDepartmentExpiryBlock) this.loadDepartmentReminderNearExpiry()
       }
     },
     messageReminderCategory(val) {
       if (this.warehouseReminderVisible && val === 'warehouse' && (this.showWarehouseBillBlock || this.showWarehouseNearExpiryBlock || this.showWarehouseInventoryBlock)) {
         this.loadWarehouseReminderCounts()
       }
-      if (this.warehouseReminderVisible && val === 'department' && this.showDepartmentUnreceivedBlock) {
-        this.loadDepartmentReminderUnreceived()
+      if (this.warehouseReminderVisible && val === 'department') {
+        if (this.showDepartmentUnreceivedBlock) this.loadDepartmentReminderUnreceived()
+        if (this.showDepartmentExpiryBlock) this.loadDepartmentReminderNearExpiry()
       }
     },
     warehouseReminderSubTab() {
@@ -573,22 +639,24 @@ export default {
       }
     },
     departmentReminderSubTab() {
-      if (this.warehouseReminderVisible && this.messageReminderCategory === 'department' && this.showDepartmentUnreceivedBlock) {
-        this.loadDepartmentReminderUnreceived()
+      if (this.warehouseReminderVisible && this.messageReminderCategory === 'department') {
+        if (this.showDepartmentUnreceivedBlock) this.loadDepartmentReminderUnreceived()
+        if (this.showDepartmentExpiryBlock) this.loadDepartmentReminderNearExpiry()
       }
     }
   },
   methods: {
     departmentSubTabBadge(key) {
-      const n = Number(this.departmentUnreceivedBillCount) || 0
-      if (n <= 0) {
-        return 0
+      const u = Number(this.departmentUnreceivedBillCount) || 0
+      const e = Number(this.departmentExpiryLineCount) || 0
+      if (key === 'unreceivedConfirm' && u > 0) {
+        return u
       }
-      if (key === 'unreceivedConfirm') {
-        return n
+      if (key === 'expiry' && e > 0) {
+        return e
       }
-      if (key === 'all') {
-        return n
+      if (key === 'all' && u + e > 0) {
+        return u + e
       }
       return 0
     },
@@ -851,6 +919,30 @@ export default {
         this.departmentUnreceivedError = (e && e.message) ? String(e.message) : '加载失败，请稍后重试'
       } finally {
         this.departmentUnreceivedLoading = false
+      }
+    },
+    departmentExpiryDaysIsNumeric(row) {
+      const v = row && row.daysToExpiry
+      return v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v))
+    },
+    async loadDepartmentReminderNearExpiry() {
+      if (!this.warehouseReminderVisible || this.messageReminderCategory !== 'department' || !this.showDepartmentExpiryBlock) {
+        return
+      }
+      this.departmentExpiryLoading = true
+      this.departmentExpiryError = ''
+      try {
+        const res = await fetchHomeDepartmentReminderNearExpiryList()
+        const d = (res && res.data) || {}
+        this.departmentExpiryLineCount = Number(d.lineCount) || 0
+        const raw = d.lines
+        this.departmentExpiryRows = Array.isArray(raw) ? raw : []
+      } catch (e) {
+        this.departmentExpiryLineCount = 0
+        this.departmentExpiryRows = []
+        this.departmentExpiryError = (e && e.message) ? String(e.message) : '加载失败，请稍后重试'
+      } finally {
+        this.departmentExpiryLoading = false
       }
     },
     async loadWarehouseReminderCounts() {
@@ -1139,6 +1231,13 @@ export default {
 
 .wh-reminder-detail-table {
   width: 100%;
+}
+
+/* 与仓库侧近效期/库存预警一致：不占 720px 窄版，铺满右侧内容区，减少表内横向滚动 */
+.wh-reminder-near-expiry-wrap--full {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
 }
 
 .wh-reminder-placeholder .wh-reminder-line {

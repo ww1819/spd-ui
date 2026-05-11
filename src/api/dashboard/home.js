@@ -94,3 +94,13 @@ export function fetchHomeDepartmentReminderUnreceivedReceipt() {
     headers: { hideError: true }
   })
 }
+
+/** 消息提醒：科室近效期库存明细（lineCount + lines，仅需登录） */
+export function fetchHomeDepartmentReminderNearExpiryList() {
+  return request({
+    url: '/dashboard/home/departmentReminderNearExpiryList',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
