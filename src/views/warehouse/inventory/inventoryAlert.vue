@@ -57,41 +57,82 @@
     </el-row>
 
     <div class="table-container">
-      <el-table v-loading="loading" :data="list"
-                @selection-change="handleSelectionChange"
-                show-summary :summary-method="getTotalSummaries"
-                height="60vh"
-                border>
-        <el-table-column type="selection" width="48" align="center" fixed="left"/>
-        <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
-          <template slot-scope="scope">{{ scope.$index + 1 + (queryParams.pageNum - 1) * queryParams.pageSize }}</template>
-        </el-table-column>
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="100" min-width="100" show-overflow-tooltip resizable/>
-        <el-table-column label="耗材名称" align="center" prop="materialName" width="160" min-width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="90" show-overflow-tooltip resizable/>
-        <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable/>
-        <el-table-column label="单位" align="center" prop="unitName" width="80" min-width="70" show-overflow-tooltip resizable/>
-        <el-table-column label="仓库" align="center" prop="warehouseName" width="120" min-width="90" show-overflow-tooltip resizable/>
-        <el-table-column label="当前库存" align="center" prop="currentQty" width="100" min-width="90" show-overflow-tooltip resizable/>
-        <el-table-column label="安全库存" align="center" prop="safetyStock" width="100" min-width="90" show-overflow-tooltip resizable/>
-        <el-table-column label="预警状态" align="center" prop="alertStatus" width="100" min-width="90" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span v-if="scope.row.alertStatus === 1 || scope.row.alertStatus === '1'" style="color: #E6A23C;">预警</span>
-            <span v-else>正常</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="生产厂家" align="center" prop="factoryName" width="150" min-width="100" show-overflow-tooltip resizable/>
-        <el-table-column label="产品档案状态" align="center" prop="materialIsUse" width="110" min-width="100" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span>{{ materialUseDictLabel(scope.row.materialIsUse) }}</span>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="inventory-alert-table-scroll">
+        <el-table
+          v-loading="loading"
+          :data="list"
+          class="inventory-alert-table-el"
+          border
+          height="60vh"
+          style="min-width: 1860px"
+          show-summary
+          :summary-method="getTotalSummaries"
+          @selection-change="handleSelectionChange"
+        >
+          <el-table-column type="selection" width="48" align="center" fixed="left"/>
+          <el-table-column type="index" label="序号" width="72" align="center" show-overflow-tooltip resizable>
+            <template slot-scope="scope">{{ scope.$index + 1 + (queryParams.pageNum - 1) * queryParams.pageSize }}</template>
+          </el-table-column>
+          <el-table-column label="耗材编码" align="center" prop="materialCode" width="100" min-width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材名称" align="center" prop="materialName" width="160" min-width="120" show-overflow-tooltip resizable/>
+          <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="90" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable/>
+          <el-table-column label="单位" align="center" prop="unitName" width="72" min-width="70" show-overflow-tooltip resizable/>
+          <el-table-column label="当前库存" align="center" prop="currentQty" width="100" min-width="96" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span class="inventory-alert-qty-warn">{{ formatInventoryAlertInt(scope.row.currentQty) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="安全库存" align="center" prop="safetyStock" width="100" min-width="96" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span class="inventory-alert-qty-warn">{{ formatInventoryAlertInt(scope.row.safetyStock) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="单价" align="center" prop="unitPrice" width="100" min-width="90" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== ''">{{ formatInventoryAlertMoney(scope.row.unitPrice) }}</span>
+              <span v-else>—</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="金额" align="center" prop="totalAmt" width="110" min-width="96" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.totalAmt != null && scope.row.totalAmt !== ''">{{ formatInventoryAlertMoney(scope.row.totalAmt) }}</span>
+              <span v-else>—</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="生产日期" align="center" prop="produceDate" width="110" min-width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.produceDate ? parseTime(scope.row.produceDate, '{y}-{m}-{d}') : '—' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="有效期" align="center" prop="expiryDate" width="110" min-width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.expiryDate ? parseTime(scope.row.expiryDate, '{y}-{m}-{d}') : '—' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="批号" align="center" prop="batchNumber" width="120" min-width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="批次" align="center" prop="batchNo" width="130" min-width="110" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" prop="factoryName" width="150" min-width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="供应商" align="center" prop="supplierName" width="150" min-width="100" show-overflow-tooltip resizable/>
+          <el-table-column label="仓库" align="center" prop="warehouseName" width="120" min-width="90" show-overflow-tooltip resizable/>
+          <el-table-column label="产品档案状态" align="center" prop="materialIsUse" width="118" min-width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ materialUseDictLabel(scope.row.materialIsUse) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="预警状态" align="center" prop="alertStatus" width="100" min-width="96" fixed="right" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.alertStatus === 1 || scope.row.alertStatus === '1'" style="color: #E6A23C;">预警</span>
+              <span v-else>正常</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </div>
 
     <div class="pagination-wrapper">
       <div class="pagination-summary">
-        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额: {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额: {{ pageTotalAmtFormatted }}
+        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额: {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQtyInt }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
       <pagination
         :total="total"
@@ -143,17 +184,46 @@ export default {
     pageTotalQty() {
       return (this.list || []).reduce((s, r) => s + Number(r.currentQty || 0), 0)
     },
+    pageTotalQtyInt() {
+      return Math.round(this.pageTotalQty)
+    },
     pageTotalAmtFormatted() {
-      const amt = 0
+      const amt = (this.list || []).reduce((s, r) => s + Number(r.totalAmt || 0), 0)
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : '0.00'
+        : Number(amt).toFixed(2)
     }
   },
   created() {
+    this.mergeRouteQueryToSearch()
     this.getList()
   },
+  watch: {
+    $route() {
+      this.mergeRouteQueryToSearch()
+      this.handleQuery()
+    }
+  },
   methods: {
+    /** 深链：库存查询页 ?materialName= / ?materialCode= / ?alertStatus= */
+    mergeRouteQueryToSearch() {
+      const q = (this.$route && this.$route.query) || {}
+      let touched = false
+      if (q.materialName != null && String(q.materialName).trim() !== '') {
+        this.queryParams.materialName = String(q.materialName).trim()
+        touched = true
+      } else if (q.materialCode != null && String(q.materialCode).trim() !== '') {
+        this.queryParams.materialName = String(q.materialCode).trim()
+        touched = true
+      }
+      if (q.alertStatus != null && String(q.alertStatus).trim() !== '') {
+        this.queryParams.alertStatus = String(q.alertStatus).trim()
+        touched = true
+      }
+      if (touched) {
+        this.queryParams.pageNum = 1
+      }
+    },
     materialUseDictLabel(isUse) {
       if (isUse === undefined || isUse === null || isUse === '') return '--';
       const v = this.selectDictLabel && this.dict && this.dict.type && this.dict.type.is_use_status
@@ -161,16 +231,32 @@ export default {
         : '';
       return v || '--';
     },
+    formatInventoryAlertInt(v) {
+      if (v === null || v === undefined || v === '') return '—'
+      const n = Math.round(Number(v))
+      return Number.isFinite(n) ? String(n) : '—'
+    },
+    formatInventoryAlertMoney(v) {
+      const n = parseFloat(v)
+      if (!Number.isFinite(n)) return '0.00'
+      return n.toFixed(2)
+    },
     getTotalSummaries(param) {
       const { columns, data } = param
       const sums = Array(columns.length).fill('')
       let totalQty = 0
+      let totalAmt = 0
       for (let i = 0; i < (data || []).length; i++) {
-        totalQty += Number((data[i] || {}).currentQty || 0)
+        const row = data[i] || {}
+        totalQty += Number(row.currentQty || 0)
+        totalAmt += Number(row.totalAmt || 0)
       }
       columns.forEach((column, index) => {
         if (column.property === 'currentQty') {
-          sums[index] = totalQty.toFixed(2)
+          sums[index] = String(Math.round(totalQty))
+        }
+        if (column.property === 'totalAmt') {
+          sums[index] = totalAmt.toFixed(2)
         }
       })
       sums[0] = ''
@@ -338,6 +424,30 @@ export default {
   margin-left: 0;
   margin-right: 0;
   position: relative;
+}
+.inventory-alert-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.inventory-alert-table-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+.inventory-alert-table-scroll::-webkit-scrollbar-track {
+  background: #e8e8e8;
+  border-radius: 4px;
+}
+.inventory-alert-table-scroll::-webkit-scrollbar-thumb {
+  background: #a0a0a0;
+  border-radius: 4px;
+}
+.inventory-alert-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #808080;
+}
+.inventory-alert-qty-warn {
+  color: #f56c6c;
+  font-weight: 600;
 }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar { height: 6px; transition: height 0.2s ease; }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:hover { height: 12px; }

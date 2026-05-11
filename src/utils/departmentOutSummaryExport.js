@@ -1663,14 +1663,30 @@ export async function exportInventoryAlertStyledXlsx(options) {
     '规格',
     '型号',
     '单位',
-    '仓库',
     '当前库存',
     '安全库存',
-    '预警状态',
+    '单价',
+    '金额',
+    '生产日期',
+    '有效期',
+    '批号',
+    '批次',
     '生产厂家',
+    '供应商',
+    '仓库',
     '产品档案状态',
+    '预警状态',
   ];
-  const numericCols = [8, 9];
+  const numericCols = [7, 8, 9, 10];
+  const fmtDate = (v) => {
+    if (!v) return '';
+    const d = v instanceof Date ? v : new Date(v);
+    if (Number.isNaN(d.getTime())) return String(v);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
   return exportInventoryQueryStyledXlsx({
     sheetName: '库存预警',
     titleBoldText: '库存预警表',
@@ -1680,7 +1696,8 @@ export async function exportInventoryAlertStyledXlsx(options) {
     rows,
     numericCols1Based: numericCols,
     sumExtractors: {
-      8: (row) => Number(row.currentQty || 0),
+      7: (row) => Number(row.currentQty || 0),
+      10: (row) => Number(row.totalAmt || 0),
     },
     buildCells: (row) => {
       const st = row.alertStatus === 1 || row.alertStatus === '1' ? '预警' : '正常';
@@ -1691,12 +1708,19 @@ export async function exportInventoryAlertStyledXlsx(options) {
         row.materialSpeci || '',
         row.materialModel || '',
         row.unitName || '',
-        row.warehouseName || '',
-        Number(row.currentQty || 0),
-        Number(row.safetyStock || 0),
-        st,
+        Math.round(Number(row.currentQty || 0)),
+        Math.round(Number(row.safetyStock || 0)),
+        Number(row.unitPrice != null && row.unitPrice !== '' ? row.unitPrice : 0),
+        Number(row.totalAmt != null && row.totalAmt !== '' ? row.totalAmt : 0),
+        fmtDate(row.produceDate),
+        fmtDate(row.expiryDate),
+        row.batchNumber || '',
+        row.batchNo || '',
         row.factoryName || '',
+        row.supplierName || '',
+        row.warehouseName || '',
         row.materialIsUse === '1' || row.materialIsUse === 1 ? '启用' : (row.materialIsUse === '2' || row.materialIsUse === 2 ? '停用' : '--'),
+        st,
       ];
     },
     fileName,

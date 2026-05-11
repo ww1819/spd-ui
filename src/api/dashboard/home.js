@@ -54,3 +54,43 @@ export function fetchHomeWarehouseReminderApplyList() {
     headers: { hideError: true }
   })
 }
+
+/** 消息提醒：科室申购监控列表（含审核时间，仅需登录） */
+export function fetchHomeWarehouseReminderPurchaseList() {
+  return request({
+    url: '/dashboard/home/warehouseReminderPurchaseList',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
+
+/** 消息提醒：仓库库存近效期明细（有效期≤30天，仅需登录） */
+export function fetchHomeWarehouseReminderNearExpiryList() {
+  return request({
+    url: '/dashboard/home/warehouseReminderNearExpiryList',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
+
+/** 消息提醒：库存预警明细（与库存查询「库存预警」一致，仅需登录） */
+export function fetchHomeWarehouseReminderInventoryAlertList() {
+  return request({
+    url: '/dashboard/home/warehouseReminderInventoryAlertList',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
+
+/** 消息提醒：科室未收货确认的已审核出库单（billCount + bills，仅需登录） */
+export function fetchHomeDepartmentReminderUnreceivedReceipt() {
+  return request({
+    url: '/dashboard/home/departmentReminderUnreceivedReceipt',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}

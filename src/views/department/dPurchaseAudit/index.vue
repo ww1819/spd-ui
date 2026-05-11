@@ -451,9 +451,26 @@ export default {
     };
   },
   created() {
-    this.getList();
+    this.applyRoutePurchaseBillQuery()
+    this.getList()
+  },
+  watch: {
+    '$route.query.purchaseBillNo'(val) {
+      if (val) {
+        this.queryParams.purchaseBillNo = String(val)
+        this.queryParams.pageNum = 1
+        this.getList()
+      }
+    }
   },
   methods: {
+    /** 消息提醒双击等：路由带入申购单号 */
+    applyRoutePurchaseBillQuery() {
+      const ref = this.$route.query && this.$route.query.purchaseBillNo
+      if (!ref) return
+      this.queryParams.purchaseBillNo = String(ref)
+      this.queryParams.pageNum = 1
+    },
     /** 查询申购单列表（支持全部、未审核、已审核） */
     getList() {
       this.loading = true;

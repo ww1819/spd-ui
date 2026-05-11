@@ -38,6 +38,26 @@ export default {
       activeName: 'first',
     };
   },
+  created() {
+    this.applyInventoryTabFromRoute(this.$route);
+  },
+  watch: {
+    $route(to) {
+      this.applyInventoryTabFromRoute(to);
+    }
+  },
+  methods: {
+    /** 支持从消息提醒等场景深链：?tab=expiry | ?tab=alert */
+    applyInventoryTabFromRoute(route) {
+      const q = (route && route.query) || {};
+      const tab = q.tab || q.activeTab;
+      if (tab === 'expiry') {
+        this.activeName = 'expiry';
+      } else if (tab === 'alert') {
+        this.activeName = 'alert';
+      }
+    }
+  },
   activated() {
     document.body.classList.add('inventory-query-fixed');
   },
@@ -49,7 +69,7 @@ export default {
   },
   beforeDestroy() {
     document.body.classList.remove('inventory-query-fixed');
-  },
+  }
 };
 </script>
 

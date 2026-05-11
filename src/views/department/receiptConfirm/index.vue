@@ -384,9 +384,23 @@ export default {
     };
   },
   created() {
-    this.getList();
+    this.mergeRouteQueryIntoSearch()
+    this.getList()
+  },
+  activated() {
+    this.mergeRouteQueryIntoSearch()
   },
   methods: {
+    /** 从路由 query 带入出库单号（消息提醒双击跳转等） */
+    mergeRouteQueryIntoSearch() {
+      const q = this.$route && this.$route.query ? this.$route.query : {}
+      if (q.billNo != null && String(q.billNo).trim() !== '') {
+        this.queryParams.billNo = String(q.billNo).trim()
+        if (this.queryParams.receiptConfirmStatus === null || this.queryParams.receiptConfirmStatus === '') {
+          this.queryParams.receiptConfirmStatus = 0
+        }
+      }
+    },
     /** 查询出库单列表（支持全部、未确认、已确认） */
     getList() {
       this.loading = true;

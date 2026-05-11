@@ -164,9 +164,38 @@ export default {
     }
   },
   created() {
+    this.mergeRouteQueryToSearch()
     this.getList()
   },
+  watch: {
+    $route() {
+      this.mergeRouteQueryToSearch()
+      this.handleQuery()
+    }
+  },
   methods: {
+    /** 深链：库存查询页 ?materialName= / ?materialCode= / ?daysToExpiry= */
+    mergeRouteQueryToSearch() {
+      const q = (this.$route && this.$route.query) || {}
+      let touched = false
+      if (q.materialName != null && String(q.materialName).trim() !== '') {
+        this.queryParams.materialName = String(q.materialName).trim()
+        touched = true
+      } else if (q.materialCode != null && String(q.materialCode).trim() !== '') {
+        this.queryParams.materialName = String(q.materialCode).trim()
+        touched = true
+      }
+      if (q.daysToExpiry != null && String(q.daysToExpiry).trim() !== '') {
+        const n = parseInt(String(q.daysToExpiry), 10)
+        if (Number.isFinite(n) && n >= 0 && n <= 365) {
+          this.queryParams.daysToExpiry = n
+          touched = true
+        }
+      }
+      if (touched) {
+        this.queryParams.pageNum = 1
+      }
+    },
     materialUseDictLabel(isUse) {
       if (isUse === undefined || isUse === null || isUse === '') return '--';
       const v = this.selectDictLabel && this.dict && this.dict.type && this.dict.type.is_use_status
