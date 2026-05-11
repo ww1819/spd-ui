@@ -613,6 +613,176 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
 }
 
 /**
+ * 出/退库明细简表（按供应商）：与对账简表一致七列——序号、耗材名称、规格、单位、价格、数量、金额；
+ * 一供应商一段，标题「供应商名 + 出/退库明细 + 日期」；逐行明细不合并，段末仅合计数量与金额（红色）。
+ * @param {Object[]} options.rows listCTKWarehouse 返回行
+ * @param {string} [options.beginDate]
+ * @param {string} [options.endDate]
+ * @param {string} [options.fileName]
+ */
+export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
+  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  if (!rows.length) return;
+
+  const headers = ['序号', '耗材名称', '规格', '单位', '价格', '数量', '金额'];
+  const colCount = 7;
+  const priceCol = 5;
+  const qtyCol = 6;
+  const amtCol = 7;
+
+  const bySupplier = new Map();
+  rows.forEach((row) => {
+    const k = detailSupplierGroupKey(row);
+    if (!bySupplier.has(k)) bySupplier.set(k, []);
+    bySupplier.get(k).push(row);
+  });
+  const supplierNames = Array.from(bySupplier.keys()).sort((a, b) =>
+    a.localeCompare(b, 'zh-Hans-CN')
+  );
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('出退库明细简表', { views: [{ showGridLines: false }] });
+
+  const d1 = formatCnDate(beginDate);
+  const d2 = formatCnDate(endDate || beginDate);
+  const datePart = d1 && d2 ? `（${d1}至${d2}）` : '';
+
+  let r = 1;
+
+  const writeHeaderRow = () => {
+    headers.forEach((text, c) => {
+      const cell = ws.getCell(r, c + 1);
+      cell.value = text;
+      cell.font = { ...FONT_BODY, bold: true };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      setCellBorder(cell);
+    });
+    r += 1;
+  };
+
+  const writeDetailBodyRow = (row, lineNo) => {
+    const price =
+      row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null;
+    const cells = [
+      lineNo,
+      row.materialName || '',
+      row.materialSpeci || '',
+      row.unitName || '',
+      price,
+      Number(row.materialQty || 0),
+      Number(row.materialAmt || 0),
+    ];
+    cells.forEach((v, ci) => {
+      const cell = ws.getCell(r, ci + 1);
+      const col = ci + 1;
+      if (col === priceCol || col === qtyCol || col === amtCol) {
+        if (v == null || v === '' || (typeof v === 'number' && Number.isNaN(v))) {
+          if (col === priceCol) {
+            cell.value = '';
+          } else {
+            cell.value = 0;
+            cell.numFmt = '#,##0.00';
+          }
+        } else {
+          cell.value = Number(v);
+          cell.numFmt = '#,##0.00';
+        }
+        cell.font = FONT_BODY;
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+      } else {
+        cell.value = v === null || v === undefined ? '' : v;
+        cell.font = FONT_BODY;
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      }
+      setCellBorder(cell);
+    });
+    r += 1;
+  };
+
+  supplierNames.forEach((supplierName, blockIdx) => {
+    const grp = bySupplier.get(supplierName);
+    if (blockIdx > 0) {
+      r += 1;
+    }
+
+    ws.mergeCells(`A${r}:${colToLetter(colCount)}${r}`);
+    const titleCell = ws.getCell(r, 1);
+    titleCell.value = {
+      richText: [
+        { font: { ...FONT_TITLE, bold: true }, text: supplierName },
+        { font: { ...FONT_TITLE, bold: false }, text: `出/退库明细${datePart || ''}` },
+      ],
+    };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    titleCell.border = {
+      top: BORDER_THIN,
+      left: BORDER_THIN,
+      bottom: BORDER_THIN,
+      right: BORDER_THIN,
+    };
+    ws.getRow(r).height = 26;
+    r += 1;
+
+    writeHeaderRow();
+
+    grp.forEach((row, ri) => {
+      writeDetailBodyRow(row, ri + 1);
+    });
+
+    for (let c = 1; c <= colCount; c++) {
+      const cell = ws.getCell(r, c);
+      cell.value = '';
+      cell.font = FONT_BODY;
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      setCellBorder(cell);
+    }
+    r += 1;
+
+    const totalQty = grp.reduce((s, row) => s + Number(row.materialQty || 0), 0);
+    const totalAmt = grp.reduce((s, row) => s + Number(row.materialAmt || 0), 0);
+
+    for (let c = 1; c <= colCount; c++) {
+      const cell = ws.getCell(r, c);
+      setCellBorder(cell);
+      if (c === 1) {
+        cell.value = '合计';
+        cell.font = { ...FONT_BODY, bold: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      } else if (c === qtyCol) {
+        cell.value = totalQty;
+        cell.numFmt = '#,##0.00';
+        cell.font = RED_NUM;
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+      } else if (c === amtCol) {
+        cell.value = totalAmt;
+        cell.numFmt = '#,##0.00';
+        cell.font = RED_NUM;
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+      } else {
+        cell.value = '';
+        cell.font = FONT_BODY;
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      }
+    }
+    r += 1;
+  });
+
+  ws.getColumn(1).width = 8;
+  ws.getColumn(2).width = 28;
+  ws.getColumn(3).width = 14;
+  ws.getColumn(4).width = 8;
+  ws.getColumn(5).width = 12;
+  ws.getColumn(6).width = 12;
+  ws.getColumn(7).width = 14;
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  saveAs(blob, fileName || `出退库明细简表_${Date.now()}.xlsx`);
+}
+
+/**
  * 出/退库汇总表（列表汇总）：版式与供应商导出一致；合计仅汇总数量、金额列
  */
 export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
