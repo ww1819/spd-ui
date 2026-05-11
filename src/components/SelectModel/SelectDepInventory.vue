@@ -324,24 +324,8 @@ export default {
         listMaterial(q)
           .then((response) => {
             const materials = response.rows || [];
-            let rows = materials.map((m) => this.materialDictToTableRow(m)).filter(Boolean);
-            if (this.selectedDetails && this.selectedDetails.length) {
-              const existedMaterialIds = new Set(
-                this.selectedDetails
-                  .map((d) => d && d.materialId)
-                  .filter((id) => id != null && id !== "")
-                  .map((id) => String(id))
-              );
-              rows = rows.filter((it) => {
-                const mid =
-                  it.materialId != null
-                    ? String(it.materialId)
-                    : it.material && it.material.id != null
-                      ? String(it.material.id)
-                      : null;
-                return !mid || !existedMaterialIds.has(mid);
-              });
-            }
+            const rows = materials.map((m) => this.materialDictToTableRow(m)).filter(Boolean);
+            // 盘盈等产品字典选择：不过滤单据明细已有 materialId，允许同产品重复选入（如多条盘盈行）
             this.inventoryList = rows;
             this.total = response.total != null ? Number(response.total) : 0;
             this.loading = false;

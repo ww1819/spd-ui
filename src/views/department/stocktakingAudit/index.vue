@@ -273,6 +273,12 @@
                         ref="stkIoStocktakingEntry" height="calc(42vh)" border
               >
                 <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
+                <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
+                    <span v-else>--</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="耗材名称" prop="materialId" width="150" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span v-if="scope.row.material">{{ scope.row.material.name || '--' }}</span>

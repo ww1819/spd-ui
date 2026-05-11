@@ -285,6 +285,12 @@
         >
           <el-table-column type="selection" width="60" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
           <el-table-column label="耗材名称" prop="materialId" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.material ? (scope.row.material.name || '--') : '--' }}</span>
@@ -332,6 +338,11 @@
                 @blur="handleStockQtyBlur(scope.row)"
                 placeholder="盘点数量"
               />
+            </template>
+          </el-table-column>
+          <el-table-column v-if="action" label="盘盈复制" width="96" align="center" resizable>
+            <template slot-scope="scope">
+              <el-button type="text" size="small" @click="copyDetailToProfitDialog(scope.row)">盘盈复制</el-button>
             </template>
           </el-table-column>
 
@@ -426,9 +437,20 @@
       append-to-body
       :close-on-click-modal="false"
     >
-      <el-table :data="pendingNewEntries" border size="small">
-        <el-table-column label="耗材" min-width="150">
+      <el-table :data="pendingNewEntries" border size="small" v-loading="profitNameSpecStockLoading">
+        <el-table-column label="耗材编码" width="120" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="耗材名称" min-width="150" show-overflow-tooltip>
           <template slot-scope="scope">{{ scope.row.material && scope.row.material.name ? scope.row.material.name : '--' }}</template>
+        </el-table-column>
+        <el-table-column label="规格" min-width="120" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '--' }}</span>
+          </template>
         </el-table-column>
         <el-table-column label="单价" min-width="120">
           <template slot-scope="scope">
@@ -438,6 +460,11 @@
         <el-table-column label="盘点数量" min-width="120">
           <template slot-scope="scope">
             <el-input v-model="scope.row.stockQty" type="number" placeholder="请输入盘点数量" @input="stockQtyChange(scope.row)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="当前库存" width="110" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatProfitNameSpecStockQty(scope.row) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="批号" min-width="340" width="360">
@@ -504,7 +531,13 @@
     >
       <div style="margin-bottom: 8px; color: #e6a23c;">请逐条确认盘点数量，确认后再保存。</div>
       <el-table :data="saveQtyConfirmList" border size="small">
-        <el-table-column label="耗材" min-width="150">
+        <el-table-column label="耗材编码" width="120" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="耗材名称" min-width="150" show-overflow-tooltip>
           <template slot-scope="scope">{{ (scope.row.material && scope.row.material.name) || '--' }}</template>
         </el-table-column>
         <el-table-column label="批次号" prop="batchNo" min-width="140" />
@@ -542,7 +575,7 @@
 <script>
 import { listStocktaking, listStocktakingExportRows, getStocktaking, delStocktaking, addStocktaking, updateStocktaking } from "@/api/department/stocktaking";
 import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
-import { listInventoryPick } from "@/api/department/depInventory";
+import { listInventoryPick, listInventoryPickSummary } from "@/api/department/depInventory";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import RightToolbar from "@/components/RightToolbar";
@@ -566,6 +599,9 @@ export default {
       useMaterialDictForSelect: false,
       newEntryDialogVisible: false,
       pendingNewEntries: [],
+      /** 当前科室下按「耗材名称+规格」汇总的库存数量（盘盈弹窗「当前库存」） */
+      profitNameSpecStockMap: {},
+      profitNameSpecStockLoading: false,
       saveQtyConfirmVisible: false,
       saveQtyConfirmList: [],
       // 选中数组
@@ -642,6 +678,11 @@ export default {
             t.doLayout();
           }
         });
+      }
+    },
+    newEntryDialogVisible(val) {
+      if (val) {
+        this.$nextTick(() => this.refreshProfitNameSpecStockDept());
       }
     }
   },
@@ -881,6 +922,115 @@ export default {
       } else {
         row._longTerm = false;
       }
+    },
+    /** 批号/效期复制到盘盈弹窗时的日期格式化 */
+    formatDateYmdForProfitCopy(value) {
+      if (value == null || value === "") return "";
+      if (typeof value === "string") {
+        const s = value.trim();
+        return s.length >= 10 ? s.slice(0, 10) : s;
+      }
+      try {
+        return this.parseTime(value, "{y}-{m}-{d}");
+      } catch (e) {
+        return "";
+      }
+    },
+    getProfitNameSpecKey(row) {
+      const m = row && row.material ? row.material : null;
+      const name = m && m.name != null ? String(m.name).trim() : "";
+      const spec = m && m.speci != null ? String(m.speci).trim() : "";
+      return `${name}||${spec}`;
+    },
+    formatProfitNameSpecStockQty(row) {
+      const k = this.getProfitNameSpecKey(row);
+      if (!k || k === "||") return "--";
+      const v = this.profitNameSpecStockMap[k];
+      if (v == null || !Number.isFinite(v)) return "0";
+      const n = Number(v);
+      return Math.abs(n - Math.round(n)) < 1e-6 ? String(Math.round(n)) : n.toFixed(2);
+    },
+    async refreshProfitNameSpecStockDept() {
+      if (!this.newEntryDialogVisible || !this.form.departmentId) {
+        this.profitNameSpecStockMap = {};
+        return;
+      }
+      this.profitNameSpecStockLoading = true;
+      const map = {};
+      try {
+        const res = await listInventoryPickSummary({
+          departmentId: this.form.departmentId,
+          receiptConfirmStatus: 1
+        });
+        const rows = Array.isArray(res.data) ? res.data : [];
+        rows.forEach((it) => {
+          const name = it.materialName != null ? String(it.materialName).trim() : "";
+          const spec = it.specification != null ? String(it.specification).trim() : "";
+          const key = `${name}||${spec}`;
+          const q = parseFloat(it.totalQty);
+          const add = Number.isFinite(q) ? q : 0;
+          map[key] = (map[key] || 0) + add;
+        });
+        this.profitNameSpecStockMap = map;
+      } catch (e) {
+        this.profitNameSpecStockMap = {};
+      } finally {
+        this.profitNameSpecStockLoading = false;
+      }
+    },
+    /** 从单据明细复制到新增盘盈弹窗：产品档案、批号、效期；归属仓库同新增盘盈策略；供应商来自产品档案 */
+    copyDetailToProfitDialog(detailRow) {
+      if (!this.form.departmentId) {
+        this.$message({ message: "请先选择科室", type: "warning" });
+        return;
+      }
+      const mid = detailRow.materialId || (detailRow.material && detailRow.material.id);
+      if (!mid) {
+        this.$modal.msgWarning("当前行缺少耗材信息，无法复制");
+        return;
+      }
+      const mat = detailRow.material ? { ...detailRow.material } : { id: mid };
+      const materialPrice =
+        mat.price != null && mat.price !== ""
+          ? mat.price
+          : mat.salePrice != null && mat.salePrice !== ""
+            ? mat.salePrice
+            : null;
+      const unitPrice =
+        detailRow.unitPrice != null && detailRow.unitPrice !== ""
+          ? detailRow.unitPrice
+          : materialPrice;
+      const batchNumber = detailRow.batchNumber != null ? String(detailRow.batchNumber) : "";
+      const endTime = this.formatDateYmdForProfitCopy(detailRow.endTime);
+      const beginTime = this.formatDateYmdForProfitCopy(detailRow.beginTime);
+      const entry = {
+        depInventoryId: null,
+        materialId: mid,
+        material: mat,
+        supplierId: mat.supplierId || detailRow.supplierId || null,
+        _supplierName: (mat.supplier && mat.supplier.name) || "",
+        unitPrice,
+        price: unitPrice,
+        qty: 0,
+        stockQty: "",
+        amt: "0.00",
+        batchNo: this.nextStocktakingBatchNo(),
+        batchNumber,
+        beginTime,
+        endTime,
+        remark: "",
+        fromStocktakingInit: false,
+        returnWarehouseId: this.profitDefaultReturnWhId(),
+        warehouse: null,
+        _warehouseName: ""
+      };
+      this.initProfitPendingEntryMeta(entry);
+      if (!Array.isArray(this.pendingNewEntries)) {
+        this.pendingNewEntries = [];
+      }
+      this.pendingNewEntries.push(entry);
+      this.newEntryDialogVisible = true;
+      this.$nextTick(() => this.refreshProfitNameSpecStockDept());
     },
     mapDepInventoryToStocktakingEntry(item) {
       const fromInit = !!item._fromStocktakingInit;

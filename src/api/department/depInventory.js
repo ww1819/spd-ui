@@ -18,6 +18,15 @@ export function listInventoryPick(query) {
   })
 }
 
+/** 按科室+耗材 SQL 汇总数量（全量），用于盘点盘盈弹窗「当前库存」等，避免前端分页累加 */
+export function listInventoryPickSummary(query) {
+  return request({
+    url: '/department/inventory/pick/summary',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询科室库存详细
 export function getInventory(id) {
   return request({

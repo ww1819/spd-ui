@@ -27,6 +27,15 @@ export function listInventorySummary(query) {
   })
 }
 
+/** 按仓库+耗材 SQL 汇总数量（全量），用于仓库盘点盘盈弹窗「当前库存」 */
+export function listInventoryStocktakingProfitQtySummary(query) {
+  return request({
+    url: '/warehouse/inventory/stocktakingProfitQtySummary',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询库存明细详细
 export function getInventory(id) {
   return request({
