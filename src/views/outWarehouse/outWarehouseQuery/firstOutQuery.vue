@@ -129,6 +129,15 @@
             v-hasPermi="['outWarehouse:outWarehouseQuery:exportOverall']"
           >整体导出</el-button>
         </el-tooltip>
+        <el-tooltip content="出退库明细表（按供应商、名称、规格、单价）：每供应商一段，七列简表；逐行明细不合并，仅段末合计数量与金额" placement="top">
+          <el-button
+            type="warning"
+            plain
+            icon="el-icon-download"
+            size="medium"
+            @click="handleExportSupplierSimple"
+          >简表(供应商)</el-button>
+        </el-tooltip>
         <el-button
           type="primary"
           icon="el-icon-search"
@@ -264,7 +273,7 @@
 <script>
 import { listCTKWarehouse} from "@/api/warehouse/outWarehouse";
 import { formatQuantity } from '@/utils/format-quantity'
-import { exportCTKWarehouseDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
+import { exportCTKWarehouseDetailStyledXlsx, exportCTKWarehouseDetailSupplierSimpleXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -533,8 +542,8 @@ export default {
     handleStkIoBillEntrySelectionChange(selection) {
       this.checkedStkIoBillEntry = selection.map(item => item.index)
     },
-    /** 导出：按供应商分段，每段标题「供应商+出/退库明细+日期」、表头、明细、空行、合计数量/金额（红色） */
-    async handleExport() {
+    /** 与列表筛选一致，拉取导出用全量（最多 10000 条） */
+    buildCTKExportRequestParams() {
       const queryParams = { ...this.queryParams };
       if (!queryParams.beginDate || queryParams.beginDate === '' || queryParams.beginDate == null) {
         queryParams.beginDate = null;
@@ -553,7 +562,11 @@ export default {
       Object.keys(queryParams).forEach(key => {
         if (queryParams[key] === '') queryParams[key] = null;
       });
-      const requestParams = { ...queryParams, pageNum: 1, pageSize: 10000 };
+      return { ...queryParams, pageNum: 1, pageSize: 10000 };
+    },
+    /** 导出：按供应商分段，每段标题「供应商+出/退库明细+日期」、全列表头、明细、空行、合计数量/金额（红色） */
+    async handleExport() {
+      const requestParams = this.buildCTKExportRequestParams();
       this.loading = true;
       try {
         const response = await listCTKWarehouse(requestParams);
@@ -576,6 +589,32 @@ export default {
           endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
           fileName: `出退库明细表${dateStr}.xlsx`,
           resolveWay,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$message && this.$message.error('导出失败，请稍后重试');
+      } finally {
+        this.loading = false;
+      }
+    },
+    /** 出退库明细简表（按供应商）：七列版式，逐行明细，每供应商段末合计 */
+    async handleExportSupplierSimple() {
+      const requestParams = this.buildCTKExportRequestParams();
+      this.loading = true;
+      try {
+        const response = await listCTKWarehouse(requestParams);
+        const rows = response.rows || [];
+        if (!rows.length) {
+          this.$message && this.$message.warning('暂无数据可导出');
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        await exportCTKWarehouseDetailSupplierSimpleXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+          fileName: `出退库明细_供方名称规格单价_${dateStr}.xlsx`,
         });
       } catch (e) {
         console.error(e);
