@@ -307,9 +307,36 @@ export default {
     }
   },
   mounted() {
+    this.mergeRouteQueryToSearch();
     this.getList();
   },
+  watch: {
+    $route() {
+      if (this.listVariant !== 'nearExpiry' && this.listVariant !== 'alert') return;
+      this.mergeRouteQueryToSearch();
+      this.handleQuery();
+    }
+  },
   methods: {
+    /** 深链：科室库存查询 ?tab=nearExpiry&materialKeyword= / materialCode / materialName */
+    mergeRouteQueryToSearch() {
+      if (this.listVariant !== 'nearExpiry' && this.listVariant !== 'alert') return;
+      const q = (this.$route && this.$route.query) || {};
+      let touched = false;
+      if (q.materialKeyword != null && String(q.materialKeyword).trim() !== '') {
+        this.queryParams.materialKeyword = String(q.materialKeyword).trim();
+        touched = true;
+      } else if (q.materialCode != null && String(q.materialCode).trim() !== '') {
+        this.queryParams.materialKeyword = String(q.materialCode).trim();
+        touched = true;
+      } else if (q.materialName != null && String(q.materialName).trim() !== '') {
+        this.queryParams.materialKeyword = String(q.materialName).trim();
+        touched = true;
+      }
+      if (touched) {
+        this.queryParams.pageNum = 1;
+      }
+    },
     /** 合并列表查询参数（预警/近效期 Tab 附加后端筛选字段） */
     buildListQuery() {
       const p = { ...this.queryParams }

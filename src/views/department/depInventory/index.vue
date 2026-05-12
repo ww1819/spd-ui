@@ -33,6 +33,26 @@ export default {
       activeTab: 'detail'
     };
   },
+  created() {
+    this.applyDepInventoryTabFromRoute(this.$route);
+  },
+  watch: {
+    $route(to) {
+      this.applyDepInventoryTabFromRoute(to);
+    }
+  },
+  methods: {
+    /** 消息提醒等深链：?tab=nearExpiry | alert | detail | summary | inout */
+    applyDepInventoryTabFromRoute(route) {
+      const q = (route && route.query) || {};
+      const tab = q.tab || q.activeTab;
+      if (tab === 'nearExpiry') this.activeTab = 'nearExpiry';
+      else if (tab === 'alert') this.activeTab = 'alert';
+      else if (tab === 'summary') this.activeTab = 'summary';
+      else if (tab === 'inout') this.activeTab = 'inout';
+      else if (tab === 'detail') this.activeTab = 'detail';
+    }
+  },
   activated() {
     document.body.classList.add('inventory-query-fixed');
   },
