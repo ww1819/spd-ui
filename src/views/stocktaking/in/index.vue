@@ -244,6 +244,12 @@
               <span v-else>--</span>
             </template>
           </el-table-column>
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.material && scope.row.material.fdUnit">{{ scope.row.material.fdUnit.unitName || '--' }}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
 
           <el-table-column label="库存数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -361,6 +367,11 @@
             <span>{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '--' }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="单位" width="80" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="单价" min-width="120">
           <template slot-scope="scope">
             <el-input v-model="scope.row.unitPrice" type="number" placeholder="请输入单价" @input="priceChangePending(scope.row)" />
@@ -443,6 +454,16 @@
         </el-table-column>
         <el-table-column label="耗材名称" min-width="150" show-overflow-tooltip>
           <template slot-scope="scope">{{ (scope.row.material && scope.row.material.name) || '--' }}</template>
+        </el-table-column>
+        <el-table-column label="规格" min-width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单位" width="72" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '--' }}</span>
+          </template>
         </el-table-column>
         <el-table-column label="批次号" prop="batchNo" min-width="140" />
         <el-table-column label="明细库存数量" prop="detailQty" width="120" align="center" />
