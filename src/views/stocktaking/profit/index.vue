@@ -722,9 +722,8 @@ export default {
       this.title = "添加盘点";
       this.form.stockStatus = '1';
       this.form.stockType = '502';
-      //操作人
-      var userName = this.$store.state.user.name;
-      this.form.createBy = userName;
+      // 制单人：与后端一致存用户ID（后端仍会强制覆盖，避免误传昵称）
+      this.form.createBy = this.$store.getters.userId != null ? String(this.$store.getters.userId) : '';
       this.form.stockDate = this.getBillDate();
       this.action = true;
     },
