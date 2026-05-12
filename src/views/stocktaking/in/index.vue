@@ -251,7 +251,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="库存数量" prop="qty" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : 0 }}</span>
             </template>
@@ -443,7 +443,7 @@
       v-loading="saveQtyConfirmLoading"
     >
       <div style="margin-bottom: 8px; color: #e6a23c;">
-        以下明细「库存数量」与当前仓库库存明细不一致，请逐条点击「确定」确认；确认后将把明细中的库存数量更新为当前实物数量，并重新计算金额。普通盘盈/盘亏（仅盘点数量与账面不同、但与仓库库存一致）不会进入本表。
+        以下明细「账面数量(qty)」与当前仓库库存不一致，请逐条点击「确定」确认；确认后将把明细账面更新为当前仓库数量，并重新计算金额。「盈亏数量」= 盘点数量 − 明细账面（第一列）。普通盘盈/盘亏（仅盘点与账面不同、但与仓库实时库存一致）不会进入本表。
       </div>
       <el-table :data="saveQtyConfirmList" border size="small">
         <el-table-column label="耗材编码" width="120" align="center" show-overflow-tooltip>
@@ -466,7 +466,7 @@
           </template>
         </el-table-column>
         <el-table-column label="批次号" prop="batchNo" min-width="140" />
-        <el-table-column label="明细库存数量" prop="detailQty" width="120" align="center" />
+        <el-table-column label="明细账面数量" prop="detailQty" width="120" align="center" />
         <el-table-column label="当前仓库库存" prop="currentQty" width="120" align="center" />
         <el-table-column label="盘点数量" min-width="100" align="center">
           <template slot-scope="scope">
@@ -498,12 +498,12 @@
       :close-on-click-modal="false"
     >
       <div style="margin-bottom: 8px; color: #e6a23c;">
-        以下明细「库存数量」与当前仓库库存不一致，请逐条确认盘点数量后再审核；确认后将把明细账面库存更新为当前仓库数量并回写盈亏。仅账面与仓库实物不一致时需确认，普通盘盈盘亏不进入本表。
+        以下明细「账面数量(qty)」与当前仓库库存不一致，请逐条确认盘点数量后再审核；确认后将把明细账面更新为当前仓库数量并回写盈亏。仅账面与仓库实物不一致时需确认，普通盘盈盘亏不进入本表。
       </div>
       <el-table :data="qtyMismatchAuditList" border size="small">
         <el-table-column label="耗材" prop="materialName" min-width="150" />
         <el-table-column label="批次号" prop="batchNo" min-width="150" />
-        <el-table-column label="明细内库存数量" prop="detailQty" width="140" />
+        <el-table-column label="明细账面数量" prop="detailQty" width="140" />
         <el-table-column label="当前仓库库存" prop="currentQty" width="140" />
         <el-table-column label="盘点数量" min-width="140">
           <template slot-scope="scope">
@@ -1316,13 +1316,14 @@ export default {
       }
       this.$set(target, 'qty', live);
       this.stockQtyChangeWh(target);
+      this.$set(row, 'detailQty', live);
       this.$set(row, 'confirmed', true);
     },
     formatWhSaveConfirmProfitQty(row) {
       const stockQty = parseFloat((row && row.adjustedStockQty) || 0);
-      const bookAfter = parseFloat((row && row.currentQty) || 0);
-      const v = stockQty - bookAfter;
-      if (!Number.isFinite(v)) return '--';
+      const bookOnLine = parseFloat((row && row.detailQty) || 0);
+      const v = stockQty - bookOnLine;
+      if (!Number.isFinite(v) || !Number.isFinite(stockQty)) return '--';
       return v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2);
     },
     confirmWhSaveQtyAndSubmit() {

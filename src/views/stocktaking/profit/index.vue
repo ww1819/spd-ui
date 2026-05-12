@@ -311,6 +311,11 @@
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.qty || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="盘点数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.stockQty" placeholder="盘点数量"
@@ -319,11 +324,6 @@
                         @blur="form.result=$event.target.value"
                         @input="stockQtyChange(scope.row)"
               />
-            </template>
-          </el-table-column>
-          <el-table-column label="库存数量" prop="qty" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.qty || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
@@ -434,7 +434,7 @@
       <el-table :data="qtyMismatchAuditList" border size="small">
         <el-table-column label="耗材" prop="materialName" min-width="150" />
         <el-table-column label="批次号" prop="batchNo" min-width="150" />
-        <el-table-column label="明细内库存数量" prop="detailQty" width="140" />
+        <el-table-column label="明细账面数量" prop="detailQty" width="140" />
         <el-table-column label="当前仓库库存" prop="currentQty" width="140" />
         <el-table-column label="盘点数量" min-width="140">
           <template slot-scope="scope">
@@ -634,23 +634,15 @@ export default {
       this.stkIoStocktakingEntryList = [];
       this.resetForm("form");
     },
-    //盘点数量改变事件
+    //盘点数量改变：盈亏数量 = 盘点(stockQty) − 账面(qty)；盘点金额 = 盘点×单价；盈亏金额 = 盈亏×单价
     stockQtyChange(row){
-      let totalProfitQty = 0;//盈亏数量
-      let profitAmount = 0;//盈亏金额
-      let stockAmount = 0;//盘点金额
-
-      if(row.stockQty >= row.qty){
-        stockAmount = (row.stockQty - row.qty) * row.price;
-      }else{
-        totalProfitQty = row.stockQty - row.qty;
-        profitAmount = totalProfitQty * row.price;
-        stockAmount = row.stockQty * row.price;
-      }
-
-      row.profitQty = totalProfitQty.toFixed(2);
-      row.profitAmount = profitAmount.toFixed(2);
-      row.stockAmount = stockAmount.toFixed(2);
+      const sq = parseFloat(row.stockQty);
+      const bq = parseFloat(row.qty);
+      const pr = parseFloat(row.price) || 0;
+      const totalProfitQty = (Number.isFinite(sq) && Number.isFinite(bq)) ? sq - bq : 0;
+      row.profitQty = Number.isFinite(totalProfitQty) ? totalProfitQty.toFixed(2) : '0.00';
+      row.profitAmount = (Number.isFinite(totalProfitQty) ? totalProfitQty * pr : 0).toFixed(2);
+      row.stockAmount = (Number.isFinite(sq) ? sq * pr : 0).toFixed(2);
     },
     //数量改变事件
     qtyChange(row){
@@ -682,7 +674,7 @@ export default {
           return;
         }
         const values = data.map(item => Number(item[column.property]));
-        // 计算盘点数量、库存数量、盈亏数量、金额、盘点金额、盈亏金额的合计
+        // 合计：盘点数量、账面数量、盈亏数量、金额、盘点金额、盈亏金额
         if(['stockQty', 'qty', 'profitQty', 'amt', 'stockAmount', 'profitAmount'].includes(column.property)){
           if (!values.every(value => isNaN(value))) {
             sums[index] = values.reduce((prev, curr) => {
