@@ -616,9 +616,21 @@ export default {
   methods: {
     normalizeLoadedEntries(list) {
       (list || []).forEach((row) => {
-        if (row && (row.stockQty == null || row.stockQty === '')) {
+        if (!row) return;
+        if (row.stockQty == null || row.stockQty === '') {
           row.stockQty = row.qty != null && row.qty !== '' ? row.qty : 0;
         }
+        const u = row.unitPrice != null && row.unitPrice !== '' ? row.unitPrice : null;
+        const p = row.price != null && row.price !== '' ? row.price : null;
+        const v = u != null ? u : p;
+        if (v != null && v !== '') {
+          row.unitPrice = v;
+          row.price = v;
+        }
+        const up = parseFloat(row.unitPrice != null && row.unitPrice !== '' ? row.unitPrice : row.price || 0);
+        const sq = parseFloat(row.stockQty || 0);
+        const a = sq * (Number.isFinite(up) ? up : 0);
+        row.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
       });
       return list || [];
     },
@@ -637,7 +649,12 @@ export default {
     },
     mapWhInventoryToStocktakingEntry(item) {
       const book = item.qty != null && item.qty !== '' ? item.qty : 0;
-      const up = item.unitPrice != null && item.unitPrice !== '' ? item.unitPrice : (item.price != null ? item.price : null);
+      const up =
+        item.unitPrice != null && item.unitPrice !== ''
+          ? item.unitPrice
+          : item.price != null && item.price !== ''
+            ? item.price
+            : null;
       const stockQty = book;
       const unitPriceNum = parseFloat(up || 0);
       const amt = (parseFloat(stockQty) || 0) * (Number.isFinite(unitPriceNum) ? unitPriceNum : 0);
@@ -716,11 +733,19 @@ export default {
             : mat && mat.salePrice != null && mat.salePrice !== ''
               ? mat.salePrice
               : null;
+        const rowPrice =
+          row.unitPrice != null && row.unitPrice !== ''
+            ? row.unitPrice
+            : row.price != null && row.price !== ''
+              ? row.price
+              : null;
+        const effectivePrice =
+          materialPrice != null && materialPrice !== '' ? materialPrice : rowPrice;
         return {
           materialId: row.materialId != null ? row.materialId : mat && mat.id,
           material: mat,
-          unitPrice: materialPrice,
-          price: materialPrice,
+          unitPrice: effectivePrice,
+          price: effectivePrice,
           qty: 0,
           stockQty: '',
           amt: '0.00',
@@ -948,6 +973,9 @@ export default {
     stockQtyChangePending(row) {
       const a = (parseFloat(row.stockQty) || 0) * (parseFloat(row.unitPrice) || 0);
       row.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
+      if (row.unitPrice != null && row.unitPrice !== '') {
+        row.price = row.unitPrice;
+      }
     },
     handleStocktakingInitFromWarehouseInventory() {
       if (!this.form.warehouseId) {
@@ -977,7 +1005,9 @@ export default {
         fetchNext(1)
           .then((rows) => {
             this.stocktakingBatchSeqCounter = 0;
-            this.stkIoStocktakingEntryList = (rows || []).map((it) => this.mapWhInventoryToStocktakingEntry(it));
+            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(
+              (rows || []).map((it) => this.mapWhInventoryToStocktakingEntry(it))
+            );
             this.$modal.msgSuccess(`已加载 ${this.stkIoStocktakingEntryList.length} 条仓库库存明细`);
           })
           .catch(() => this.$modal.msgError('加载仓库库存失败'))
@@ -1285,7 +1315,15 @@ export default {
     },
     doSubmitStocktakingForm() {
       if (this.submitLoading) return;
-      this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
+      this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) => {
+        const r = { ...row };
+        const up = r.unitPrice != null && r.unitPrice !== '' ? r.unitPrice : r.price;
+        if (up != null && up !== '') {
+          r.unitPrice = up;
+          r.price = up;
+        }
+        return r;
+      });
       this.submitLoading = true;
       const isUpdate = this.form.id != null;
       const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
