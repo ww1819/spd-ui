@@ -65,8 +65,6 @@
           border
           height="60vh"
           style="min-width: 1860px"
-          show-summary
-          :summary-method="getTotalSummaries"
           @selection-change="handleSelectionChange"
         >
           <el-table-column type="selection" width="48" align="center" fixed="left"/>
@@ -241,30 +239,6 @@ export default {
       if (!Number.isFinite(n)) return '0.00'
       return n.toFixed(2)
     },
-    getTotalSummaries(param) {
-      const { columns, data } = param
-      const sums = Array(columns.length).fill('')
-      let totalQty = 0
-      let totalAmt = 0
-      for (let i = 0; i < (data || []).length; i++) {
-        const row = data[i] || {}
-        totalQty += Number(row.currentQty || 0)
-        totalAmt += Number(row.totalAmt || 0)
-      }
-      columns.forEach((column, index) => {
-        if (column.property === 'currentQty') {
-          sums[index] = String(Math.round(totalQty))
-        }
-        if (column.property === 'totalAmt') {
-          sums[index] = totalAmt.toFixed(2)
-        }
-      })
-      sums[0] = ''
-      if (sums.length > 1) {
-        sums[1] = '合计'
-      }
-      return sums
-    },
     getList() {
       this.loading = true
       listInventoryAlert(this.queryParams).then(response => {
@@ -421,36 +395,31 @@ export default {
   margin-bottom: 0;
   overflow: visible;
   width: 100%;
+  min-width: 0;
   margin-left: 0;
   margin-right: 0;
   position: relative;
 }
+/* 仅作布局包裹，横向滚动交给 el-table 表体，避免与 .el-table__body-wrapper 叠出双横条 */
 .inventory-alert-table-scroll {
   width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-.inventory-alert-table-scroll::-webkit-scrollbar {
-  height: 10px;
-}
-.inventory-alert-table-scroll::-webkit-scrollbar-track {
-  background: #e8e8e8;
-  border-radius: 4px;
-}
-.inventory-alert-table-scroll::-webkit-scrollbar-thumb {
-  background: #a0a0a0;
-  border-radius: 4px;
-}
-.inventory-alert-table-scroll::-webkit-scrollbar-thumb:hover {
-  background: #808080;
+  min-width: 0;
+  overflow: visible;
 }
 .inventory-alert-qty-warn {
   color: #f56c6c;
   font-weight: 600;
 }
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar { height: 6px; transition: height 0.2s ease; }
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:hover { height: 12px; }
+/* 表体横向可滚；表内合计已关闭，合计见下方 pagination-summary（外层不再 overflow-x，避免双横条） */
+.table-container ::v-deep .el-table__body-wrapper {
+  padding-bottom: 16px;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: #a0a0a0 #e8e8e8;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar { height: 10px; transition: height 0.2s ease; }
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:hover { height: 14px; }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track { background: #e8e8e8; border-radius: 3px; margin: 0 2px; cursor: pointer; }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb { background: #a0a0a0; border-radius: 3px; cursor: grab; }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover { background: #808080; }
@@ -459,22 +428,4 @@ export default {
 .table-container ::v-deep .el-table th.el-table__cell .cell { white-space: nowrap; }
 .table-container ::v-deep .el-table td.el-table__cell { padding: 10px 12px !important; }
 .table-container ::v-deep .el-table .cell { padding: 0 4px; }
-.table-container ::v-deep .el-table__body-wrapper { padding-bottom: 32px; }
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
-  background: #fff;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
-  background: #fff;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell .cell,
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell .cell {
-  white-space: nowrap;
-  overflow: visible;
-}
 </style>

@@ -116,7 +116,6 @@
     <div class="table-container">
     <el-table v-loading="loading" :data="inventoryList"
               @selection-change="handleSelectionChange"
-              show-summary :summary-method="getTotalSummaries"
               height="60vh"
               border>
       <el-table-column type="selection" width="48" align="center" fixed="left"/>
@@ -265,30 +264,6 @@ export default {
     });
   },
   methods: {
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill('');
-      let totalQty = 0;
-      let totalAmt = 0;
-      for (let i = 0; i < (data || []).length; i++) {
-        const item = data[i] || {};
-        totalQty += Number(item.materialQty || 0);
-        totalAmt += Number(item.materialAmt || 0);
-      }
-      columns.forEach((column, index) => {
-        if (column.property === 'materialQty') {
-          sums[index] = totalQty.toFixed(2);
-        } else if (column.property === 'materialAmt') {
-          const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-        }
-      });
-      sums[0] = '';
-      if (sums.length > 1) {
-        sums[1] = '合计';
-      }
-      return sums;
-    },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
       if(res.length>0) {
@@ -597,17 +572,27 @@ export default {
   margin-bottom: 0;
   overflow: visible;
   width: 100%;
+  min-width: 0;
   margin-left: 0;
   margin-right: 0;
   position: relative;
 }
 
+/* 表体横向可滚；表内合计已关闭，合计见下方 pagination-summary */
+.table-container ::v-deep .el-table__body-wrapper {
+  padding-bottom: 16px;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: #a0a0a0 #e8e8e8;
+}
+
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 6px;
+  height: 10px;
   transition: height 0.2s ease;
 }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:hover {
-  height: 12px;
+  height: 14px;
 }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
   background: #e8e8e8;
@@ -639,26 +624,5 @@ export default {
 }
 .table-container ::v-deep .el-table .cell {
   padding: 0 4px;
-}
-
-.table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 32px;
-}
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
-  background: #fff;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
-  background: #fff;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell .cell,
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell .cell {
-  white-space: nowrap;
-  overflow: visible;
 }
 </style>
