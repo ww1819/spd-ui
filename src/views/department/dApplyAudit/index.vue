@@ -477,14 +477,17 @@ export default {
         delete params.applyBillStatus;
       }
       listApplyAudit(params).then(response => {
+        const rawRows = response.rows || [];
+        // 分页总数必须用服务端 total（PageHelper），不能用当前页过滤后的条数，否则「共 N 条」与页码错误
+        const serverTotal = response.total != null ? Number(response.total) : 0;
         // 前端二次过滤：确保只显示SL开头的单号，排除ZK开头的转科申请
-        if (response.rows && response.rows.length > 0) {
-          this.applyList = response.rows.filter(item => {
+        if (rawRows.length > 0) {
+          this.applyList = rawRows.filter(item => {
             const billNo = item.applyBillNo || '';
             // 只保留SL开头的申领单，排除ZK开头的转科申请
             return billNo.toUpperCase().startsWith('SL') && (item.billType === 1 || item.billType == null);
           });
-          this.total = this.applyList.length;
+          this.total = serverTotal;
         } else {
           this.applyList = [];
           this.total = 0;
