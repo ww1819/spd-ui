@@ -1,5 +1,10 @@
-import { getInventory as getWhInv } from '@/api/warehouse/inventory'
-import { getInventory as getDepInv } from '@/api/department/depInventory'
+import { listInventoryPick as listWhInvPick } from '@/api/warehouse/inventory'
+import { listInventoryPick as listDepInvPick } from '@/api/department/depInventory'
+
+function firstRowFromTableRes(res) {
+  const rows = (res && (res.rows || res.data)) || []
+  return Array.isArray(rows) && rows.length ? rows[0] : null
+}
 
 function sameId(a, b) {
   if (a == null && b == null) return true
@@ -8,7 +13,8 @@ function sameId(a, b) {
 }
 
 /**
- * 出库(201)/退货(301)：按明细 kc_no 查仓库库存，校验归属仓库、退货时校验供应商
+ * 出库(201)/退货(301)：按明细 kc_no（仓库库存明细主键）查仓库库存，校验归属仓库、退货时校验供应商。
+ * 使用 /warehouse/inventory/pick/list（仅需登录），避免无 warehouse:inventory:query 时 403 被误判为「库存不存在」。
  */
 export async function collectCkThScopeErrors(form, entryList, billType) {
   const wh = form.warehouseId
@@ -26,7 +32,9 @@ export async function collectCkThScopeErrors(form, entryList, billType) {
     if (!e || !e.kcNo) continue
     const row = i + 1
     tasks.push(
-      getWhInv(e.kcNo).then(res => ({ row, inv: res.data })).catch(() => ({ row, inv: null }))
+      listWhInvPick({ id: e.kcNo, pageNum: 1, pageSize: 1 })
+        .then(res => ({ row, inv: firstRowFromTableRes(res) }))
+        .catch(() => ({ row, inv: null }))
     )
   }
   const results = await Promise.all(tasks)
@@ -46,7 +54,8 @@ export async function collectCkThScopeErrors(form, entryList, billType) {
 }
 
 /**
- * 退库(401)：按明细 kc_no 查科室库存，校验归属仓库、科室
+ * 退库(401)：按明细 kc_no（科室库存明细主键）查科室库存，校验归属仓库、科室。
+ * 使用 /department/inventory/pick/list（仅需登录），避免无 department:depInventory:query 时 403 误判。
  */
 export async function collectTkScopeErrors(form, entryList) {
   const wh = form.warehouseId
@@ -67,7 +76,9 @@ export async function collectTkScopeErrors(form, entryList) {
     if (!e || !e.kcNo) continue
     const row = i + 1
     tasks.push(
-      getDepInv(e.kcNo).then(res => ({ row, inv: res.data })).catch(() => ({ row, inv: null }))
+      listDepInvPick({ id: e.kcNo, pageNum: 1, pageSize: 1 })
+        .then(res => ({ row, inv: firstRowFromTableRes(res) }))
+        .catch(() => ({ row, inv: null }))
     )
   }
   const results = await Promise.all(tasks)
