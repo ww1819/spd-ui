@@ -571,7 +571,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
   margin-bottom 6px
   font-family $font-song
 
-/* 消耗品名称 14%；产地 8% */
+/* 采购价 11%；产地加宽；批号收窄（九列合计仍约 92%） */
 .detail-table .col-name
   width 14%
 .detail-table .col-spec
@@ -581,13 +581,13 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
 .detail-table .col-unit
   width 4%
 .detail-table .col-price
-  width 13%
+  width 11%
 .detail-table .col-amt
-  width 13%
+  width 12%
 .detail-table .col-origin
-  width 8%
-.detail-table .col-batch
   width 13%
+.detail-table .col-batch
+  width 11%
 .detail-table .col-exp
   width 8%
 
