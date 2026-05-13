@@ -317,9 +317,21 @@
         >
           <el-table-column type="selection" width="60" align="center" fixed="left" />
           <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
+          <el-table-column v-if="action" label="操作" width="188" align="center" resizable>
+            <template slot-scope="scope">
+              <el-button type="text" size="small" @click="copyOutEntryRow(scope.$index)">复制</el-button>
+              <el-button type="text" size="small" style="color:#f56c6c" @click="deleteOutEntryRow(scope.$index)">删除</el-button>
+              <el-button type="text" size="small" @click="openPickBatchForRow(scope.$index)">选批次</el-button>
+            </template>
+          </el-table-column>
+          <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.code) || '—' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="型号" align="center" prop="material.model" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -465,6 +477,9 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="warehouseValue"
+      :lockedMaterialId="inventoryLockedMaterialId"
+      :ignoreSelectedDetailRowIndex="inventoryPickRowIndex"
+      :selectedDetails="stkIoBillEntryList"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectInventory>
@@ -507,6 +522,12 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import outOrderPrint from "@/views/outWarehouse/audit/outOrderPrint";
 import { buildOutboundPrintRowFromDetail } from '@/views/warehouse/print/outboundPrintRow'
+import {
+  cloneStkOutEntryForDuplicate,
+  cloneDocRefRowForDuplicate,
+  sumQtyByWhApplyEntryId,
+  maxSrcRefableQtyByWhApplyEntryId
+} from '@/utils/outWarehouseBillRow'
 import {STOCK_OUT_TEMPLATE} from '@/utils/printData'
 
 export default {
@@ -519,6 +540,8 @@ export default {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
+      inventoryPickRowIndex: null,
+      inventoryLockedMaterialId: null,
       warehouseValue: "",
       isShow: true,
       entryChangeLogDialog: {
@@ -762,19 +785,96 @@ export default {
         this.$message({ message: '请先选择仓库', type: 'warning' })
         return
       }
+      this.inventoryPickRowIndex = null
+      this.inventoryLockedMaterialId = null
       //打开“弹窗组件”
       this.DialogComponentShow = true
       this.warehouseValue = this.form.warehouseId;
     },
+    openPickBatchForRow(rowIndex) {
+      if (!this.form.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' })
+        return
+      }
+      const row = this.stkIoBillEntryList[rowIndex]
+      const mid =
+        row && row.materialId != null && String(row.materialId).trim() !== ''
+          ? row.materialId
+          : row && row.material && row.material.id != null
+            ? row.material.id
+            : null
+      if (!row || mid == null || String(mid).trim() === '') {
+        this.$message({ message: '该行缺少耗材档案，无法按产品筛选库存', type: 'warning' })
+        return
+      }
+      this.inventoryPickRowIndex = rowIndex
+      this.inventoryLockedMaterialId = mid
+      this.DialogComponentShow = true
+      this.warehouseValue = this.form.warehouseId
+    },
     closeDialog() {
       //关闭“弹窗组件”
       this.DialogComponentShow = false
+      this.inventoryPickRowIndex = null
+      this.inventoryLockedMaterialId = null
     },
     selectData(val) {
-      //监听“弹窗组件”返回的数据
+      const rows = Array.isArray(val) ? val : (val ? [val] : [])
+      if (!rows.length) return
+      const pickIdx = this.inventoryPickRowIndex
+      if (pickIdx != null && pickIdx >= 0) {
+        const item = rows[0]
+        if (!item) {
+          this.inventoryPickRowIndex = null
+          this.inventoryLockedMaterialId = null
+          return
+        }
+        const target = this.stkIoBillEntryList[pickIdx]
+        if (!target) {
+          this.inventoryPickRowIndex = null
+          this.inventoryLockedMaterialId = null
+          return
+        }
+        const existedOther = new Set(
+          this.stkIoBillEntryList
+            .map((e, i) => (i !== pickIdx && e && e.batchNo ? String(e.batchNo).trim() : ''))
+            .filter(Boolean)
+        )
+        if (item.batchNo && existedOther.has(String(item.batchNo).trim())) {
+          this.$modal.msgError('该批次号已在其它明细行使用，请选择其它批次')
+          return
+        }
+        target.materialId = item.materialId
+        target.unitPrice = item.unitPrice
+        if (target.qty == null || String(target.qty).trim() === '') {
+          target.qty = item.qty
+        }
+        target.batchNo = item.batchNo
+        target.batchNumber = item.batchNumber || item.materialNo || ''
+        target.beginTime = item.beginTime
+        target.endTime = item.endTime
+        target.remark = item.remark
+        target.material = item.material
+        target.supplierId = item.supplierId
+        target.supplerId = item.supplerId != null ? item.supplerId : item.supplierId
+        if (item.id != null) {
+          target.stkInventoryId = item.id
+          target.kcNo = String(item.id)
+        } else {
+          target.stkInventoryId = null
+          target.kcNo = null
+        }
+        if (item.warehouseId != null) {
+          target.warehouseId = item.warehouseId
+        }
+        this.qtyChange(target)
+        this.inventoryPickRowIndex = null
+        this.inventoryLockedMaterialId = null
+        return
+      }
       this.selectRow = val;
-
-      this.selectRow.forEach((item, index) => {
+      rows.forEach((item) => {
+        if (!item) return
         let obj = {};
         obj.materialId = item.materialId;
         obj.unitPrice = item.unitPrice;
@@ -787,8 +887,18 @@ export default {
         obj.remark = item.remark;
         obj.material = item.material;
         obj.supplierId = item.supplierId;
+        if (item.id != null) {
+          obj.stkInventoryId = item.id
+          obj.kcNo = String(item.id)
+        }
+        if (item.warehouseId != null) {
+          obj.warehouseId = item.warehouseId
+        }
 
         this.stkIoBillEntryList.push(obj);
+        if (Array.isArray(this.form.docRefList)) {
+          this.form.docRefList.push({ refType: null });
+        }
       });
     },
     getStatDate(){
@@ -842,9 +952,12 @@ export default {
         auditBy: null,
         createrName:null,
         auditPersonName:null,
-        auditDate:null
+        auditDate:null,
+        docRefList: []
       };
       this.stkIoBillEntryList = [];
+      this.inventoryPickRowIndex = null
+      this.inventoryLockedMaterialId = null
       this.resetForm("form");
     },
     //数量改变事件
@@ -897,6 +1010,7 @@ export default {
       const id = row.id
       getOutWarehouse(id).then(response => {
         this.form = response.data;
+        this.$set(this.form, 'docRefList', Array.isArray(response.data.docRefList) ? response.data.docRefList : []);
         this.stkIoBillEntryList = response.data.stkIoBillEntryList;
         this.open = true;
         this.action = false;
@@ -948,6 +1062,7 @@ export default {
       const id = row.id || this.ids
       getOutWarehouse(id).then(response => {
         this.form = response.data;
+        this.$set(this.form, 'docRefList', Array.isArray(response.data.docRefList) ? response.data.docRefList : []);
         this.form.billStatus = '1';
         this.form.billType = '201';
         this.stkIoBillEntryList = response.data.stkIoBillEntryList;
@@ -960,7 +1075,44 @@ export default {
     submitForm() {
       this.$refs["form"].validate(async valid => {
         if (!valid) return
+        for (const [index, entry] of this.stkIoBillEntryList.entries()) {
+          const bn = entry && entry.batchNo != null ? String(entry.batchNo).trim() : ''
+          if (!bn) {
+            this.$modal.msgError(`第${index + 1}行未选择批次，请点击「选批次」或通过「添加」选择库存`)
+            return
+          }
+          if (entry.kcNo == null || String(entry.kcNo).trim() === '') {
+            this.$modal.msgError(`第${index + 1}行缺少库存行标识，请重新选择批次`)
+            return
+          }
+        }
+        if (this.form.whWarehouseApplyId) {
+          const sums = sumQtyByWhApplyEntryId(this.stkIoBillEntryList)
+          const maxRef = maxSrcRefableQtyByWhApplyEntryId(this.stkIoBillEntryList)
+          for (const [whEid, sum] of sums.entries()) {
+            const cap = maxRef.get(whEid)
+            if (cap != null && sum > cap) {
+              this.$modal.msgError(
+                `引用库房申请：同一申请明细合计数量不能超过界面「可引用」上限 ${cap}，当前合计 ${sum}（保存前请调小数量或删除多余行）`
+              )
+              return
+            }
+          }
+        }
+        const batchMap = new Map()
+        for (const [index, entry] of this.stkIoBillEntryList.entries()) {
+          const key = entry && entry.batchNo && String(entry.batchNo).trim()
+          if (!key) continue
+          if (batchMap.has(key)) {
+            this.$modal.msgError(`明细第${batchMap.get(key)}行与第${index + 1}行批次号重复，请检查后再保存`)
+            return
+          }
+          batchMap.set(key, index + 1)
+        }
         this.form.stkIoBillEntryList = this.stkIoBillEntryList
+        if (!Array.isArray(this.form.docRefList)) {
+          this.$set(this.form, 'docRefList', []);
+        }
         const scopeErrs = await collectCkThScopeErrors(this.form, this.stkIoBillEntryList, this.form.billType)
         if (scopeErrs.length) {
           this.$modal.msgError(scopeErrs.join('；'))
@@ -1049,12 +1201,44 @@ export default {
     handleDeleteStkIoBillEntry() {
       if (this.checkedStkIoBillEntry.length == 0) {
         this.$modal.msgError("请先选择要删除的出库明细数据");
-      } else {
-        const stkIoBillEntryList = this.stkIoBillEntryList;
-        const checkedStkIoBillEntry = this.checkedStkIoBillEntry;
-        this.stkIoBillEntryList = stkIoBillEntryList.filter(function(item) {
-          return checkedStkIoBillEntry.indexOf(item.index) == -1
-        });
+        return;
+      }
+      const removeSet = new Set(this.checkedStkIoBillEntry);
+      const refs = Array.isArray(this.form.docRefList) ? this.form.docRefList : null;
+      const nextEntries = [];
+      const nextRefs = [];
+      this.stkIoBillEntryList.forEach((item, idx) => {
+        if (removeSet.has(item.index)) {
+          return;
+        }
+        nextEntries.push(item);
+        if (refs && idx < refs.length) {
+          nextRefs.push(refs[idx]);
+        }
+      });
+      this.stkIoBillEntryList = nextEntries;
+      if (refs) {
+        this.$set(this.form, 'docRefList', nextRefs);
+      }
+    },
+    copyOutEntryRow(rowIndex) {
+      const src = this.stkIoBillEntryList[rowIndex];
+      if (!src) {
+        return;
+      }
+      const clone = cloneStkOutEntryForDuplicate(src);
+      this.stkIoBillEntryList.splice(rowIndex + 1, 0, clone);
+      if (!Array.isArray(this.form.docRefList)) {
+        this.$set(this.form, 'docRefList', []);
+      }
+      const refs = this.form.docRefList;
+      const refRow = rowIndex < refs.length ? cloneDocRefRowForDuplicate(refs[rowIndex]) : { refType: null };
+      refs.splice(rowIndex + 1, 0, refRow);
+    },
+    deleteOutEntryRow(rowIndex) {
+      this.stkIoBillEntryList.splice(rowIndex, 1);
+      if (Array.isArray(this.form.docRefList) && rowIndex < this.form.docRefList.length) {
+        this.form.docRefList.splice(rowIndex, 1);
       }
     },
     /** 复选框选中数据 */
