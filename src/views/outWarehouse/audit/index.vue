@@ -278,6 +278,15 @@
         </el-row>
         </div>
 
+        <el-alert
+          v-if="form.whWarehouseApplyId"
+          type="warning"
+          :closable="false"
+          show-icon
+          class="wh-apply-outbound-hint"
+          title="引用库房申请单出库：同一申请明细在本单各行的「数量」合计不得大于「可引用」；「可引用」=申请数扣减明细作废与其它出库单已占用。"
+        />
+
         <div class="modal-detail-section">
         <el-row :gutter="10" class="detail-toolbar-row">
           <el-col :span="1.5">
@@ -345,7 +354,15 @@
               <span>{{ scope.row.srcRefedQty != null ? scope.row.srcRefedQty : '—' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="可引用" prop="srcRefableQty" width="72" align="center" show-overflow-tooltip resizable>
+          <el-table-column prop="srcRefableQty" width="88" align="center" show-overflow-tooltip resizable>
+            <template slot="header">
+              <el-tooltip
+                content="引用库房申请时：本单同一申请明细各行「数量」之和不得大于「可引用」；可引用=申请数−已作废−其它单已出库占用。"
+                placement="top"
+              >
+                <span class="table-header-with-tip">可引用<i class="el-icon-question" /></span>
+              </el-tooltip>
+            </template>
             <template slot-scope="scope">
               <span>{{ scope.row.srcRefableQty != null ? scope.row.srcRefableQty : '—' }}</span>
             </template>
@@ -1093,7 +1110,7 @@ export default {
             const cap = maxRef.get(whEid)
             if (cap != null && sum > cap) {
               this.$modal.msgError(
-                `引用库房申请：同一申请明细合计数量不能超过界面「可引用」上限 ${cap}，当前合计 ${sum}（保存前请调小数量或删除多余行）`
+                `引用库房申请单出库：同一申请明细本单「数量」合计不得大于可申请（界面「可引用」）${cap}，当前合计 ${sum}。请调小数量或删除多余行后再保存。`
               )
               return
             }
@@ -1365,6 +1382,21 @@ export default {
 
 .local-modal-content .form-fields-container .el-row:last-child {
   margin-bottom: 0;
+}
+
+.wh-apply-outbound-hint {
+  margin: 0 0 8px;
+  flex-shrink: 0;
+}
+
+.table-header-with-tip {
+  cursor: help;
+}
+
+.table-header-with-tip .el-icon-question {
+  margin-left: 2px;
+  font-size: 12px;
+  color: #909399;
 }
 
 /* 弹窗内明细区：与到货验收一致 */
