@@ -486,6 +486,7 @@
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="warehouseValue"
       :selectedDetails="stkIoBillEntryList"
+      :exclude-zero-qty="true"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectInventory>
