@@ -161,7 +161,7 @@ import drawMixin from "@/utils/drawMixin"; //自适应缩放
 import { formatTimeDT } from "@/utils"; //日期格式转换
 import * as echarts from "echarts";
 import { listdepart } from "@/api/foundation/depart";
-import { outboundSummaryByDepartment } from "@/api/warehouse/warehouse";
+import { outboundSummaryByDepartment, biScreenConsumablesTotals } from "@/api/warehouse/warehouse";
 export default {
   mixins: [drawMixin],
   data() {
@@ -345,6 +345,8 @@ export default {
     this.timeFn();
     //加载loading图
     this.cancelLoading();
+    //大屏顶部六项：验收/出库/消耗 金额与数量
+    this.loadStatsTotals();
     //加载科室列表用于锥形图
     this.loadConeDepartmentData();
     //中国地图
@@ -441,6 +443,31 @@ export default {
       setTimeout(() => {
         this.loading = false;
       }, 500);
+    },
+    /** 大屏顶部六项统计：全租户已审核入退货、出退库、科室消耗合计 */
+    loadStatsTotals() {
+      biScreenConsumablesTotals()
+        .then((res) => {
+          const d = res && res.data;
+          if (!d || typeof d !== "object") {
+            return;
+          }
+          const money = (v) => {
+            const n = Number(v);
+            return Number.isFinite(n) ? n.toFixed(2) : "0.00";
+          };
+          const qty = (v) => {
+            const n = Number(v);
+            return Number.isFinite(n) ? String(Math.round(n)) : "0";
+          };
+          this.statsData.acceptanceAmount = money(d.acceptanceAmount);
+          this.statsData.outboundAmount = money(d.outboundAmount);
+          this.statsData.consumptionAmount = money(d.consumptionAmount);
+          this.statsData.acceptanceQuantity = qty(d.acceptanceQuantity);
+          this.statsData.outboundQuantity = qty(d.outboundQuantity);
+          this.statsData.consumptionQuantity = qty(d.consumptionQuantity);
+        })
+        .catch(() => {});
     },
     /** 高值消耗柱状图：拉取手术室/导管室/口腔科/眼科/骨科的科室出库数据 */
     loadColumnarData() {

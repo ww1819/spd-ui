@@ -8,6 +8,14 @@ export function outboundSummaryByDepartment() {
   })
 }
 
+/** 数据可视化大屏：验收/出库/消耗 金额与数量合计（当前租户） */
+export function biScreenConsumablesTotals() {
+  return request({
+    url: '/warehouse/warehouse/biScreenConsumablesTotals',
+    method: 'get'
+  })
+}
+
 // 查询入库列表
 export function listWarehouse(query) {
   return request({
