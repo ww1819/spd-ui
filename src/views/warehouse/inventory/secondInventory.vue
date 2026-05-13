@@ -9,10 +9,32 @@
                 <SelectSupplier v-model="queryParams.supplierId" />
               </div>
             </el-form-item>
-            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <MaterialAutocomplete v-model="queryParams.materialName"/>
-              </div>
+            <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialName"
+                placeholder="名称/编码/拼音模糊"
+                clearable
+                class="query-input-material-name"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item label="规格" prop="materialSpeci" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialSpeci"
+                placeholder="规格模糊"
+                clearable
+                class="query-input-material-spec"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item label="型号" prop="materialModel" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialModel"
+                placeholder="型号模糊"
+                clearable
+                class="query-input-material-model"
+                @keyup.enter.native="handleQuery"
+              />
             </el-form-item>
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
@@ -170,14 +192,13 @@ import { exportWarehouseInventorySummaryStyledXlsx } from "@/utils/departmentOut
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
-import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
 import RightToolbar from "@/components/RightToolbar";
 import { listWarehouse } from "@/api/foundation/warehouse";
 
 export default {
   name: "secondInventory",
   dicts: ['is_use_status'],
-  components: {SelectMaterial,SelectWarehouse,SelectSupplier,MaterialAutocomplete,RightToolbar},
+  components: {SelectMaterial,SelectWarehouse,SelectSupplier,RightToolbar},
   data() {
     return {
       // 遮罩层
@@ -211,6 +232,8 @@ export default {
         materialId: null,
         warehouseId: null,
         materialName: null,
+        materialSpeci: null,
+        materialModel: null,
         supplierId: null,
         beginDate: null,
         endDate: null,
@@ -310,6 +333,8 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.queryParams.materialName = null;
+      this.queryParams.materialSpeci = null;
+      this.queryParams.materialModel = null;
       this.queryParams.supplierId = null;
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
@@ -463,6 +488,14 @@ export default {
 
 .query-select-billing {
   width: 120px;
+}
+
+.query-input-material-name {
+  width: 170px;
+}
+.query-input-material-spec,
+.query-input-material-model {
+  width: 130px;
 }
 
 .button-row-inventory-flex {
