@@ -45,7 +45,7 @@
                 <dv-border-box-12>
                   <div id="Rose_diagram"></div>
                   <dv-active-ring-chart
-                    :config="config"
+                    :config="ring_chart_config"
                     class="left_box1_rose_right"
                   />
                   <div
@@ -54,14 +54,14 @@
                     :key="index"
                   >
                     <p>
-                      <span class="coin">￥</span>
+                      <span v-if="item.showCurrency" class="coin">￥</span>
                       <span class="rose_text_nmb">{{
                           item.number.number
                         }}</span>
                     </p>
                     <p>
                       <span>{{ item.text }}</span>
-                      <span class="colorYellow">(件)</span>
+                      <span class="colorYellow">{{ item.unitSuffix || "(件)" }}</span>
                     </p>
                   </div>
                 </dv-border-box-12>
@@ -73,13 +73,16 @@
                   <div id="columnar"></div>
                 </dv-border-box-12>
               </div>
-              <!-- 轮播表格部分 -->
+              <!-- 供应商排行（与右侧科室领用排名同一标题样式） -->
               <div class="left_box3">
-                <dv-border-box-12 style="padding-top: 10px">
-                  <dv-scroll-board
-                    :config="board_info"
-                    class="carousel_list"
-                  />
+                <dv-border-box-12 :reverse="true">
+                  <div class="cone_title">本月供应商排行TOP10</div>
+                  <div class="cone_chart_wrapper">
+                    <dv-scroll-board
+                      :config="board_info"
+                      class="carousel_list"
+                    />
+                  </div>
                 </dv-border-box-12>
               </div>
             </el-col>
@@ -128,7 +131,7 @@
                   >耗 材 排 行 榜</dv-decoration-7
                   >
                   <dv-scroll-ranking-board
-                    :config="config"
+                    :config="consumables_ranking_config"
                     style="width: 95%; height: 87%; margin-left: 2%"
                   />
                 </dv-border-box-12>
@@ -139,12 +142,15 @@
                   <div id="dotter_bar"></div>
                 </dv-border-box-12>
               </div>
-              <!-- 科室领用排名 -->
+              <!-- 科室领用排名（轮播表展示全部科室，避免锥形图科室过多重叠） -->
               <div class="right_box3">
                 <dv-border-box-12 :reverse="true">
                   <div class="cone_title">科室领用排名</div>
                   <div class="cone_chart_wrapper">
-                    <dv-conical-column-chart :config="cone" class="cone_box" />
+                    <dv-scroll-board
+                      :config="dept_rank_board"
+                      class="dept_rank_list"
+                    />
                   </div>
                 </dv-border-box-12>
               </div>
@@ -161,7 +167,7 @@ import drawMixin from "@/utils/drawMixin"; //自适应缩放
 import { formatTimeDT } from "@/utils"; //日期格式转换
 import * as echarts from "echarts";
 import { listdepart } from "@/api/foundation/depart";
-import { outboundSummaryByDepartment, biScreenConsumablesTotals, biScreenInboundSupplierTop10 } from "@/api/warehouse/warehouse";
+import { outboundSummaryByDepartment, biScreenConsumablesTotals, biScreenInboundSupplierTop10, biScreenInboundDailyHighLowValue, biScreenOutboundMaterialMonthTop, biScreenInboundFinanceCategoryMonth, biScreenTodayInboundOutboundBillCount, biScreenYearInboundReturnByMonth } from "@/api/warehouse/warehouse";
 export default {
   mixins: [drawMixin],
   data() {
@@ -180,71 +186,53 @@ export default {
       dateWeek: null,
       //周几
       weekday: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
-      //轮播排行榜
-      config: {
-        data: [
-          {
-            name: "一次性手术无菌包",
-            value: 55,
-          },
-          {
-            name: "手套",
-            value: 120,
-          },
-          {
-            name: "棉签",
-            value: 78,
-          },
-          {
-            name: "一次性注射器",
-            value: 66,
-          },
-          {
-            name: "碘伏",
-            value: 80,
-          },
-          {
-            name: "一次性输液器",
-            value: 45,
-          },
-          {
-            name: "注射用水",
-            value: 29,
-          },
-        ],
+      // 左侧圆环图（与耗材排行配置分离；数据与玫瑰饼图同源：当月财务分类入库金额）
+      ring_chart_config: {
+        data: [{ name: "加载中", value: 1 }],
+        lineWidth: 18,
+        activeTimeGap: 2800,
       },
-      //左侧饼图文字
+      // 右侧耗材排行榜（独立 config，勿与左侧圆环 ring_chart_config 混用）
+      consumables_ranking_config: {
+        data: [],
+        rowNum: 6,
+        sort: true,
+        unit: "",
+        valueFormatter: null,
+      },
+      //左侧饼图下方三项：前两项为今日出库/入退货单据笔数（次），第三项仍为占位展示
       numberData: [
         {
-          number: {
-            number: 15,
-          },
-          text: "今日构建总量",
+          number: { number: 0 },
+          text: "今日配送总单",
+          showCurrency: false,
+          unitSuffix: "(次)",
         },
         {
-          number: {
-            number: 1144,
-          },
-          text: "总共完成数量",
+          number: { number: 0 },
+          text: "今日验收总量",
+          showCurrency: false,
+          unitSuffix: "(次)",
         },
         {
-          number: {
-            number: 361,
-          },
+          number: { number: 361 },
           text: "正在编译数量",
+          showCurrency: true,
+          unitSuffix: "(件)",
         },
       ],
-      //左侧轮播表格配置项（无背景色，与边框框内容一致）
+      //左侧轮播表格：本月供应商配送金额 TOP10（两列：名称 + 金额；首列加宽由 columnWidth 控制）
       board_info: {
-        header: ["供应商", "数量", "金额"],
+        header: ["供应商", "金额"],
         data: [],
         headerBGC: "transparent",
         evenRowBGC: "transparent",
         oddRowBGC: "transparent",
         rowNum: 10,
+        columnWidth: [250],
         waitTime: 2500,
         headerHeight: 36,
-        align: ["left", "right", "right"]
+        align: ["left", "right"]
       },
       // 定义颜色
       colorList: {
@@ -317,10 +305,18 @@ export default {
           ],
         },
       },
-      //锥形柱状图（科室，名称从系统科室列表读取）
-      cone: {
+      //右侧科室领用排名：轮播表（与接口当月出退库汇总一致，展示全部科室）
+      dept_rank_board: {
+        header: ["科室", "金额"],
         data: [],
-        showValue: true,
+        headerBGC: "transparent",
+        evenRowBGC: "transparent",
+        oddRowBGC: "transparent",
+        rowNum: 10,
+        columnWidth: [250],
+        waitTime: 2500,
+        headerHeight: 36,
+        align: ["left", "right"]
       },
       //高值消耗柱状图：固定显示5个科室，金额+数量
       columnarCategories: ["手术室", "导管室", "口腔科", "眼科", "骨科"],
@@ -345,18 +341,21 @@ export default {
     this.cancelLoading();
     //大屏顶部六项：验收/出库/消耗 金额与数量
     this.loadStatsTotals();
+    // 左下三项：今日出库单笔数、今日入退货单笔数
+    this.loadTodayBillCounts();
     //送货入库前十供应商轮播表
     this.loadSupplierBoard();
-    //加载科室列表用于锥形图
-    this.loadConeDepartmentData();
+    this.loadConsumablesRanking();
+    //右侧：科室领用排名（轮播表，全部科室）
+    this.loadDepartmentRankBoard();
     //中国地图
     // this.china_map();
-    //左侧玫瑰饼图
-    this.Rose_diagram();
+    //左侧玫瑰饼图 + 圆环：当月按财务分类入库金额
+    this.loadFinanceInboundByCategoryChart();
     //左侧高值消耗柱状图（科室出库数据）
     this.loadColumnarData();
-    //中间折线图
-    this.line_center_diagram();
+    //中间折线图：当年按月入库/退货金额
+    this.loadYearInboundReturnLineChart();
     //虚线柱状图
     this.dotter_bar();
     //监听全屏状态变化
@@ -367,6 +366,22 @@ export default {
     clearInterval(this.timing);
     //移除全屏状态监听
     this.removeFullscreenListener();
+    if (this._rosePieOnResize) {
+      window.removeEventListener("resize", this._rosePieOnResize);
+      this._rosePieOnResize = null;
+    }
+    if (this._rosePieChart) {
+      this._rosePieChart.dispose();
+      this._rosePieChart = null;
+    }
+    if (this._yearLineResize) {
+      window.removeEventListener("resize", this._yearLineResize);
+      this._yearLineResize = null;
+    }
+    if (this._yearLineChart) {
+      this._yearLineChart.dispose();
+      this._yearLineChart = null;
+    }
   },
   methods: {
     //全屏切换方法
@@ -444,7 +459,7 @@ export default {
         this.loading = false;
       }, 500);
     },
-    /** 大屏左侧：送货入库前十供应商（已审核入退货，按数量降序） */
+    /** 大屏左侧：本月送货入库前十供应商（已审核入退货，按金额降序；仅名称+金额两列） */
     loadSupplierBoard() {
       biScreenInboundSupplierTop10()
         .then((res) => {
@@ -452,12 +467,11 @@ export default {
           const rows = Array.isArray(raw) ? raw : [];
           const data = rows.map((r) => {
             const name = (r.supplierName || r.supplier_name || "—").toString();
-            const q = Math.round(Number(r.totalQty != null ? r.totalQty : (r.total_qty != null ? r.total_qty : 0)));
             const a = Number(r.totalAmt != null ? r.totalAmt : (r.total_amt != null ? r.total_amt : 0));
             const amtStr = Number.isFinite(a) ? "¥" + a.toFixed(2) : "¥0.00";
-            return [name, String(Number.isFinite(q) ? q : 0), amtStr];
+            return [name, amtStr];
           });
-          const finalData = data.length ? data : [["暂无数据", "0", "¥0.00"]];
+          const finalData = data.length ? data : [["暂无数据", "¥0.00"]];
           // dv-scroll-board 对 config 深层变更常不刷新，需整体替换引用；rowNum 勿大于 data 行数
           const rowNum = Math.min(10, Math.max(1, finalData.length));
           this.board_info = { ...this.board_info, data: finalData, rowNum };
@@ -465,8 +479,59 @@ export default {
         .catch(() => {
           this.board_info = {
             ...this.board_info,
-            data: [["加载失败", "-", "-"]],
+            data: [["加载失败", "-"]],
             rowNum: 1
+          };
+        });
+    },
+    /** 耗材排行：去掉换行/HTML，控制长度（排行图为 v-html） */
+    clipRankingMaterialName(raw) {
+      let t = String(raw || "—")
+        .replace(/<[^>]*>/g, "")
+        .replace(/[\r\n\t]+/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      const max = 48;
+      const arr = Array.from(t);
+      if (arr.length <= max) {
+        return t;
+      }
+      return arr.slice(0, max).join("") + "…";
+    },
+    /** 耗材排行榜：当月出退库按单品金额 TOP（横向条 + 金额，与 DataV 排行图一致） */
+    loadConsumablesRanking() {
+      const fmt = (item) => {
+        const v = Number(item && item.value);
+        return Number.isFinite(v) ? "¥" + v.toFixed(2) : "¥0.00";
+      };
+      biScreenOutboundMaterialMonthTop()
+        .then((res) => {
+          const rows = Array.isArray(res && res.data) ? res.data : [];
+          const data = rows.map((r) => {
+            const raw = (r.materialName || r.material_name || "—").toString();
+            const name = this.clipRankingMaterialName(raw);
+            const v = Number(r.totalAmt != null ? r.totalAmt : r.total_amt);
+            return { name, value: Number.isFinite(v) ? v : 0 };
+          });
+          const finalData = data.length ? data : [{ name: "暂无数据", value: 0 }];
+          const rowNum = Math.min(8, Math.max(1, finalData.length));
+          this.consumables_ranking_config = {
+            ...this.consumables_ranking_config,
+            data: finalData,
+            sort: true,
+            rowNum,
+            unit: "",
+            valueFormatter: fmt,
+          };
+        })
+        .catch(() => {
+          this.consumables_ranking_config = {
+            ...this.consumables_ranking_config,
+            data: [{ name: "加载失败", value: 0 }],
+            sort: true,
+            rowNum: 5,
+            unit: "",
+            valueFormatter: fmt,
           };
         });
     },
@@ -495,7 +560,26 @@ export default {
         })
         .catch(() => {});
     },
-    /** 高值消耗柱状图：拉取手术室/导管室/口腔科/眼科/骨科的科室出库数据 */
+    /** 左下角：今日已审核出库单(201)笔数、今日已审核入库单(101)笔数 */
+    loadTodayBillCounts() {
+      biScreenTodayInboundOutboundBillCount()
+        .then((res) => {
+          const d = res && res.data;
+          if (!d || typeof d !== "object") {
+            return;
+          }
+          const c = (v) => {
+            const n = Number(v != null ? v : 0);
+            return Number.isFinite(n) ? Math.round(n) : 0;
+          };
+          const out = c(d.todayOutboundBillCount != null ? d.todayOutboundBillCount : d.today_outbound_bill_count);
+          const inn = c(d.todayInboundBillCount != null ? d.todayInboundBillCount : d.today_inbound_bill_count);
+          this.$set(this.numberData[0].number, "number", out);
+          this.$set(this.numberData[1].number, "number", inn);
+        })
+        .catch(() => {});
+    },
+    /** 高值消耗柱状图：固定五科室，数据为当月出退库汇总（与科室领用排名接口口径一致） */
     loadColumnarData() {
       Promise.all([
         listdepart({ pageNum: 1, pageSize: 200 }),
@@ -534,28 +618,69 @@ export default {
         this.columnar();
       });
     },
-    /** 从系统读取科室列表并拉取科室出库总数据，只显示前5个科室 */
-    loadConeDepartmentData() {
+    /**
+     * 科室领用排名：系统全部科室 + 当月出退库金额汇总，轮播表展示（金额高→低，金额为 0 的科室不展示）。
+     */
+    loadDepartmentRankBoard() {
       Promise.all([
-        listdepart({ pageNum: 1, pageSize: 200 }),
+        listdepart({ pageNum: 1, pageSize: 500 }),
         outboundSummaryByDepartment()
       ]).then(([deptRes, outboundRes]) => {
         const rows = deptRes.rows || deptRes.data || [];
         const outboundList = outboundRes.data || outboundRes || [];
         const outboundMap = {};
-        outboundList.forEach(item => {
+        outboundList.forEach((item) => {
           const id = item.departmentId != null ? item.departmentId : item.department_id;
-          if (id != null) outboundMap[id] = parseFloat(item.outboundAmount || item.outbound_amount || 0) || 0;
+          if (id != null) {
+            outboundMap[id] = parseFloat(item.outboundAmount || item.outbound_amount || 0) || 0;
+          }
         });
-        const all = rows.slice(0, 5).map((dept, index) => {
+        const byId = new Map();
+        rows.forEach((dept, index) => {
           const id = dept.id != null ? dept.id : dept.departmentId;
-          const name = dept.name || dept.departmentName || '科室' + (index + 1);
-          const value = id != null ? (outboundMap[id] != null ? outboundMap[id] : 0) : 0;
-          return { name, value };
+          if (id == null) {
+            return;
+          }
+          const name = dept.name || dept.departmentName || "科室" + (index + 1);
+          const v = outboundMap[id] != null ? outboundMap[id] : 0;
+          byId.set(id, { name, value: v });
         });
-        this.cone.data = all.length ? all : [{ name: '暂无科室', value: 0 }];
+        outboundList.forEach((item) => {
+          const id = item.departmentId != null ? item.departmentId : item.department_id;
+          if (id == null || byId.has(id)) {
+            return;
+          }
+          const name =
+            item.departmentName ||
+            item.department_name ||
+            "科室" + id;
+          const v = parseFloat(item.outboundAmount || item.outbound_amount || 0) || 0;
+          byId.set(id, { name, value: v });
+        });
+        const sorted = Array.from(byId.values())
+          .filter((r) => {
+            const amt = Number(r.value);
+            return Number.isFinite(amt) && amt > 0;
+          })
+          .sort((a, b) => b.value - a.value);
+        const dataRows = sorted.map((r) => {
+          const amt = Number(r.value);
+          const amtStr = Number.isFinite(amt) ? "¥" + amt.toFixed(2) : "¥0.00";
+          return [r.name, amtStr];
+        });
+        const finalData = dataRows.length ? dataRows : [["暂无数据", "¥0.00"]];
+        const rowNum = Math.min(12, Math.max(1, finalData.length));
+        this.dept_rank_board = {
+          ...this.dept_rank_board,
+          data: finalData,
+          rowNum: rowNum
+        };
       }).catch(() => {
-        this.cone.data = [{ name: '加载失败', value: 0 }];
+        this.dept_rank_board = {
+          ...this.dept_rank_board,
+          data: [["加载失败", "-"]],
+          rowNum: 1
+        };
       });
     },
     //中国地图
@@ -918,26 +1043,102 @@ export default {
       };
       mapChart.setOption(option); //生成图表
     },
-    //玫瑰饼图
-    Rose_diagram() {
-      let mapChart = this.$echarts.init(
-        document.getElementById("Rose_diagram")
-      ); //图表初始化，china-map是绑定的元素
-      window.onresize = mapChart.resize; //如果容器变大小，自适应从新构图
-      let option = {
-        color: [
-          "#37a2da",
-          "#32c5e9",
-          "#9fe6b8",
-          "#ffdb5c",
-          "#ff9f7f",
-          "#fb7293",
-          "#e7bcf3",
-          "#8378ea",
-        ],
+    /** 当月财务分类入库：玫瑰图最多 6 块，第 6 名起合并为「其他」 */
+    mergeFinanceInboundPieSlices(rows) {
+      const parsed = (rows || [])
+        .map((r) => {
+          const name = (r.financeCategoryName || r.finance_category_name || "未分类").toString();
+          const v = Number(r.totalAmt != null ? r.totalAmt : r.total_amt);
+          return { name, value: Number.isFinite(v) && v > 0 ? v : 0 };
+        })
+        .filter((x) => x.value > 0)
+        .sort((a, b) => b.value - a.value);
+      if (!parsed.length) {
+        return [{ name: "暂无当月入库", value: 0 }];
+      }
+      if (parsed.length <= 6) {
+        return parsed;
+      }
+      const head = parsed.slice(0, 5);
+      const rest = parsed.slice(5).reduce((s, x) => s + x.value, 0);
+      return head.concat([{ name: "其他", value: rest }]);
+    },
+    /** 左侧玫瑰饼图 + 右侧圆环：接口「当月入退货按财务分类汇总金额」 */
+    loadFinanceInboundByCategoryChart() {
+      biScreenInboundFinanceCategoryMonth()
+        .then((res) => {
+          const rows = Array.isArray(res && res.data) ? res.data : [];
+          const slices = this.mergeFinanceInboundPieSlices(rows);
+          this.ring_chart_config = {
+            ...this.ring_chart_config,
+            data: slices.map((s) => ({
+              name: s.name,
+              value: s.value > 0 ? s.value : 1,
+            })),
+          };
+          this.renderRoseFinancePie(slices);
+        })
+        .catch(() => {
+          const fb = [{ name: "加载失败", value: 0 }];
+          this.ring_chart_config = {
+            ...this.ring_chart_config,
+            data: [{ name: "加载失败", value: 1 }],
+          };
+          this.renderRoseFinancePie(fb);
+        });
+    },
+    renderRoseFinancePie(slices) {
+      const el = document.getElementById("Rose_diagram");
+      if (!el) {
+        return;
+      }
+      if (!this._rosePieChart) {
+        this._rosePieChart = this.$echarts.init(el);
+        this._rosePieOnResize = () => {
+          if (this._rosePieChart) {
+            this._rosePieChart.resize();
+          }
+        };
+        window.addEventListener("resize", this._rosePieOnResize);
+      }
+      const colors = [
+        "#37a2da",
+        "#32c5e9",
+        "#9fe6b8",
+        "#ffdb5c",
+        "#ff9f7f",
+        "#fb7293",
+        "#e7bcf3",
+        "#8378ea",
+        "#96bfff",
+        "#c4ebad",
+      ];
+      const chart = this._rosePieChart;
+      const seriesData = slices.map((s) => {
+        const real = Number(s.value);
+        const isZeroDisplay =
+          !Number.isFinite(real) ||
+          real <= 0 ||
+          s.name === "暂无当月入库" ||
+          s.name === "加载失败";
+        const v = isZeroDisplay ? 1 : real;
+        return {
+          name: s.name,
+          value: v,
+          realAmt: isZeroDisplay ? 0 : real,
+        };
+      });
+      const legendData = seriesData.map((d) => d.name);
+      const option = {
+        color: colors,
         tooltip: {
           trigger: "item",
-          formatter: "{a} <br/>{b} : {c} ({d}%)",
+          formatter: (p) => {
+            const d = p.data || {};
+            const amt = d.realAmt != null ? Number(d.realAmt) : Number(p.value);
+            const money = Number.isFinite(amt) ? "¥" + amt.toFixed(2) : "¥0.00";
+            return p.seriesName + "<br/>" + p.name + "：" + money + " (" + p.percent + "%)";
+          },
         },
         toolbox: {
           show: true,
@@ -948,30 +1149,23 @@ export default {
           icon: "circle",
           bottom: 0,
           x: "center",
-          data: ["data1", "data2", "data3", "data4", "data5", "data6"],
+          data: legendData,
           textStyle: {
             color: "#fff",
           },
         },
         series: [
           {
-            name: "通过率统计",
+            name: "当月财务分类入库",
             type: "pie",
             radius: [10, 50],
             roseType: "area",
             center: ["50%", "40%"],
-            data: [
-              { value: 10, name: "data1" },
-              { value: 5, name: "data2" },
-              { value: 15, name: "data3" },
-              { value: 25, name: "data4" },
-              { value: 20, name: "data5" },
-              { value: 35, name: "data6" },
-            ],
+            data: seriesData,
           },
         ],
       };
-      mapChart.setOption(option); //生成图表
+      chart.setOption(option, true);
     },
     //柱状图（高值消耗：金额+数量，仅显示手术室/导管室/口腔科/眼科/骨科）
     columnar() {
@@ -1073,41 +1267,89 @@ export default {
       };
       mapChart.setOption(option);
     },
-    //折线图
-    line_center_diagram() {
-      let mapChart = this.$echarts.init(
-        document.getElementById("line_center_diagram")
-      ); //图表初始化，china-map是绑定的元素
-      window.onresize = mapChart.resize; //如果容器变大小，自适应从新构图
+    /** 将接口返回的「有数据的月份」铺到 1～12 月数组（入库 / 退货金额） */
+    fillYearInboundReturnSeries(rows) {
+      const inbound = new Array(12).fill(0);
+      const ret = new Array(12).fill(0);
+      (rows || []).forEach((r) => {
+        const m = Number(r.monthNum != null ? r.monthNum : r.month_num);
+        if (!Number.isFinite(m) || m < 1 || m > 12) {
+          return;
+        }
+        const i = m - 1;
+        inbound[i] = Number(r.inboundAmt != null ? r.inboundAmt : r.inbound_amt) || 0;
+        ret[i] = Number(r.returnAmt != null ? r.returnAmt : r.return_amt) || 0;
+      });
+      return { inbound, ret };
+    },
+    /** 中间折线图：当年按月已审核入库(101)、退货入库(301)金额（年度采购与退货曲线） */
+    loadYearInboundReturnLineChart() {
+      const dom = document.getElementById("line_center_diagram");
+      if (!dom) {
+        return;
+      }
+      let chart = this.$echarts.getInstanceByDom(dom);
+      if (!chart) {
+        chart = this.$echarts.init(dom);
+        this._yearLineChart = chart;
+        if (!this._yearLineResize) {
+          this._yearLineResize = () => {
+            if (this._yearLineChart) {
+              this._yearLineChart.resize();
+            }
+          };
+          window.addEventListener("resize", this._yearLineResize);
+        }
+      } else {
+        this._yearLineChart = chart;
+      }
+      const monthLabels = ["一月份", "二月份", "三月份", "四月份", "五月份", "六月份", "七月份", "八月份", "九月份", "十月份", "十一月份", "十二月份"];
       const currentYear = new Date().getFullYear();
-      let option = {
+      const moneyFmt = (v) => {
+        const n = typeof v === "number" ? v : Number(v);
+        return Number.isFinite(n) ? "¥" + n.toFixed(2) : v;
+      };
+      const buildOption = (inbound, ret) => ({
         title: {
           text: "年度采购（" + currentYear + "）",
           left: 50,
-          top: 12,
+          top: 10,
           textStyle: {
             color: "rgba(255,255,255,.9)",
             fontSize: 14,
           },
         },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "cross", label: { backgroundColor: "#6a7985" } },
+          valueFormatter: (v) => (typeof v === "number" && Number.isFinite(v) ? "¥" + v.toFixed(2) : v),
+        },
+        legend: {
+          data: ["入库金额", "退货金额"],
+          top: 8,
+          right: 20,
+          textStyle: { color: "rgba(255,255,255,.85)", fontSize: 12 },
+        },
+        grid: {
+          left: 56,
+          right: 16,
+          bottom: 28,
+          top: 52,
+        },
         xAxis: {
           type: "category",
-          data: ["一月份", "二月份", "三月份", "四月份", "五月份", "六月份", "七月份", "八月份", "九月份", "十月份", "十一月份", "十二月份"],
+          data: monthLabels,
           position: "bottom",
-          axisLine: true,
+          axisLine: { lineStyle: { color: "rgba(255,255,255,.25)" } },
           axisLabel: {
             color: "rgba(255,255,255,.8)",
-            fontSize: 12,
+            fontSize: 11,
           },
         },
         yAxis: {
           type: "value",
           splitNumber: 4,
-          axisLine: {
-            lineStyle: {
-              opacity: 0,
-            },
-          },
+          axisLine: { show: false },
           splitLine: {
             show: true,
             lineStyle: {
@@ -1118,70 +1360,71 @@ export default {
           axisLabel: {
             color: "rgba(255,255,255,.8)",
             fontSize: 12,
+            formatter: (v) => moneyFmt(v),
           },
-        },
-        grid: {
-          left: 50,
-          right: 10,
-          bottom: 25,
-          top: 42,
         },
         series: [
           {
-            data: [820, 932, 901, 934, 1290, 1330, 1320, 1250, 1180, 1100, 1050, 1200],
+            name: "入库金额",
             type: "line",
             smooth: true,
             symbol: "emptyCircle",
             symbolSize: 8,
-            itemStyle: {
-              normal: {
-                color: "#fff",
-              },
-            },
-            //线的颜色样式
+            data: inbound,
+            itemStyle: { color: "#fff" },
             lineStyle: {
-              normal: {
-                color: this.colorList.linearBtoG,
-                width: 3,
-              },
+              width: 3,
+              color: this.colorList.linearBtoG,
             },
-            //填充颜色样式
             areaStyle: {
-              normal: {
-                color: this.colorList.areaBtoG,
-              },
+              color: this.colorList.areaBtoG,
+            },
+          },
+          {
+            name: "退货金额",
+            type: "line",
+            smooth: true,
+            symbol: "emptyCircle",
+            symbolSize: 8,
+            data: ret,
+            itemStyle: { color: "#ffb088" },
+            lineStyle: {
+              width: 2,
+              color: "#ff9f7f",
             },
           },
         ],
-      };
-      mapChart.setOption(option); //生成图表
+      });
+      biScreenYearInboundReturnByMonth()
+        .then((res) => {
+          const rows = Array.isArray(res && res.data) ? res.data : [];
+          const { inbound, ret } = this.fillYearInboundReturnSeries(rows);
+          chart.setOption(buildOption(inbound, ret), true);
+        })
+        .catch(() => {
+          chart.setOption(buildOption(new Array(12).fill(0), new Array(12).fill(0)), true);
+        });
     },
-    //右侧虚线柱状图图
+    //右侧虚线柱状图：近 20 天入退货金额（折线=高值耗材，柱=低值耗材）
     dotter_bar() {
-      let mapChart = this.$echarts.init(document.getElementById("dotter_bar")); //图表初始化，china-map是绑定的元素
-      window.onresize = mapChart.resize; //如果容器变大小，自适应从新构图
-      // Generate data
-      let category = [];
-      let dottedBase = +new Date();
-      let lineData = [];
-      let barData = [];
-      for (let i = 0; i < 20; i++) {
-        let date = new Date((dottedBase += 3600 * 24 * 1000));
-        category.push(
-          [date.getFullYear(), date.getMonth() + 1, date.getDate()].join("-")
-        );
-        let b = Math.random() * 200;
-        let d = Math.random() * 200;
-        barData.push(b);
-        lineData.push(d + b);
+      const dom = document.getElementById("dotter_bar");
+      if (!dom) {
+        return;
       }
-      // option
-      let option = {
+      let mapChart = this.$echarts.getInstanceByDom(dom);
+      if (!mapChart) {
+        mapChart = this.$echarts.init(dom);
+      }
+      window.onresize = () => {
+        mapChart.resize();
+      };
+      const buildOption = (category, highData, lowData) => ({
         tooltip: {
           trigger: "axis",
           axisPointer: {
             type: "shadow",
           },
+          valueFormatter: (v) => (typeof v === "number" ? "¥" + v.toFixed(2) : v),
         },
         grid: {
           left: 50,
@@ -1190,7 +1433,7 @@ export default {
           top: "18%",
         },
         legend: {
-          data: ["line", "bar"],
+          data: ["高值", "低值"],
           textStyle: {
             color: "#ccc",
           },
@@ -1213,35 +1456,36 @@ export default {
         },
         series: [
           {
-            name: "line",
+            name: "高值",
             type: "line",
             smooth: true,
             showAllSymbol: true,
             symbol: "emptyCircle",
             symbolSize: 15,
-            data: lineData,
+            data: highData,
           },
           {
-            name: "bar",
+            name: "低值",
             type: "bar",
             barWidth: 10,
             itemStyle: {
               borderRadius: 5,
-              // color: "#14c8d4",
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: "#14c8d4" },
                 { offset: 1, color: "#43eec6" },
               ]),
             },
-            data: barData,
+            data: lowData,
           },
           {
-            name: "line",
+            name: "高值",
             type: "bar",
             barGap: "-100%",
             barWidth: 10,
+            silent: true,
+            tooltip: { show: false },
+            legendHoverLink: false,
             itemStyle: {
-              // color: "rgba(20,200,212,0.5)",
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: "rgba(20,200,212,0.5)" },
                 { offset: 0.2, color: "rgba(20,200,212,0.2)" },
@@ -1249,12 +1493,15 @@ export default {
               ]),
             },
             z: -12,
-            data: lineData,
+            data: highData,
           },
           {
-            name: "dotted",
+            name: "底纹",
             type: "pictorialBar",
             symbol: "rect",
+            silent: true,
+            tooltip: { show: false },
+            legendHoverLink: false,
             itemStyle: {
               color: "#0f375f",
             },
@@ -1262,11 +1509,64 @@ export default {
             symbolSize: [12, 4],
             symbolMargin: 1,
             z: -10,
-            data: lineData,
+            data: highData,
           },
         ],
+      });
+      const fillAxis = () => {
+        const category = [];
+        const keys = [];
+        const highData = [];
+        const lowData = [];
+        for (let i = 19; i >= 0; i--) {
+          const dt = new Date();
+          dt.setHours(0, 0, 0, 0);
+          dt.setDate(dt.getDate() - i);
+          const y = dt.getFullYear();
+          const mo = dt.getMonth() + 1;
+          const da = dt.getDate();
+          keys.push(
+            `${y}-${String(mo).padStart(2, "0")}-${String(da).padStart(2, "0")}`
+          );
+          category.push(`${y}-${mo}-${da}`);
+          highData.push(0);
+          lowData.push(0);
+        }
+        return { category, keys, highData, lowData };
       };
-      mapChart.setOption(option); //生成图表
+      biScreenInboundDailyHighLowValue()
+        .then((res) => {
+          const list = Array.isArray(res && res.data) ? res.data : [];
+          const { category, keys, highData, lowData } = fillAxis();
+          const idx = {};
+          keys.forEach((k, i) => {
+            idx[k] = i;
+          });
+          list.forEach((row) => {
+            const raw = row.statDate != null ? row.statDate : row.stat_date;
+            if (raw == null) {
+              return;
+            }
+            const statKey = String(raw).substring(0, 10);
+            const j = idx[statKey];
+            if (j == null) {
+              return;
+            }
+            const h = Number(
+              row.highValueAmt != null ? row.highValueAmt : row.high_value_amt
+            );
+            const l = Number(
+              row.lowValueAmt != null ? row.lowValueAmt : row.low_value_amt
+            );
+            highData[j] = Number.isFinite(h) ? h : 0;
+            lowData[j] = Number.isFinite(l) ? l : 0;
+          });
+          mapChart.setOption(buildOption(category, highData, lowData), true);
+        })
+        .catch(() => {
+          const { category, highData, lowData } = fillAxis();
+          mapChart.setOption(buildOption(category, highData, lowData), true);
+        });
     },
   },
 };
@@ -1442,11 +1742,39 @@ a {
     height: 310px;
     width: 100%;
   }
-  //右1模块
+  //右1模块：耗材排行（横向条样式，名称单行省略）
   .right_box1 {
     height: 310px;
     width: 100%;
     margin-bottom: 10px;
+  }
+  #index .right_box1 .dv-scroll-ranking-board .ranking-info {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-height: 22px !important;
+    min-height: 20px !important;
+    line-height: 20px !important;
+    overflow: hidden !important;
+  }
+  #index .right_box1 .dv-scroll-ranking-board .ranking-info .rank {
+    flex: 0 0 44px !important;
+    white-space: nowrap !important;
+  }
+  #index .right_box1 .dv-scroll-ranking-board .ranking-info .ranking-value {
+    flex: 0 0 auto !important;
+    margin-left: 4px !important;
+    white-space: nowrap !important;
+  }
+  #index .right_box1 .dv-scroll-ranking-board .ranking-info .info-name {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
   }
   //右2模块
   .right_box2 {
@@ -1511,6 +1839,38 @@ a {
     height: 98%;
     margin-left: 10px;
     background: transparent;
+  }
+  // 供应商表：与科室领用排名共用 cone_chart_wrapper，表体铺满标题下方区域
+  .left_box3 .cone_chart_wrapper .carousel_list {
+    width: 95%;
+    height: 100%;
+    margin-left: 3%;
+    box-sizing: border-box;
+  }
+  // 供应商列：允许换行，尽量显示全称（DataV 默认单行省略）
+  #index .left_box3 .dv-scroll-board .header .header-item:first-child .text,
+  #index .left_box3 .dv-scroll-board .rows .row-item .ceil:first-child .text {
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.25;
+  }
+  // 科室领用排名轮播表
+  .right_box3 .cone_chart_wrapper .dept_rank_list {
+    width: 95%;
+    height: 100%;
+    margin-left: 3%;
+    box-sizing: border-box;
+    background: transparent;
+  }
+  #index .right_box3 .dv-scroll-board .header .header-item:first-child .text,
+  #index .right_box3 .dv-scroll-board .rows .row-item .ceil:first-child .text {
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.25;
   }
   //虚线柱状图
   #dotter_bar {

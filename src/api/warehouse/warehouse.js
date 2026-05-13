@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// 按科室汇总出库总金额（数据可视化大屏用）
+// 按科室汇总当月出退库金额与数量（数据可视化大屏：科室领用排名、高值消耗图等）
 export function outboundSummaryByDepartment() {
   return request({
     url: '/warehouse/warehouse/outboundSummaryByDepartment',
@@ -16,10 +16,50 @@ export function biScreenConsumablesTotals() {
   })
 }
 
-/** 数据可视化大屏：送货入库前十供应商 */
+/** 数据可视化大屏：本月送货入库前十供应商（按配送金额合计降序） */
 export function biScreenInboundSupplierTop10() {
   return request({
     url: '/warehouse/warehouse/biScreenInboundSupplierTop10',
+    method: 'get'
+  })
+}
+
+/** 数据可视化大屏：近 20 天入退货按日汇总金额（高值/低值耗材，折线+柱图） */
+export function biScreenInboundDailyHighLowValue() {
+  return request({
+    url: '/warehouse/warehouse/biScreenInboundDailyHighLowValue',
+    method: 'get'
+  })
+}
+
+/** 数据可视化大屏：当月出退库按耗材汇总金额 TOP20（耗材排行榜） */
+export function biScreenOutboundMaterialMonthTop() {
+  return request({
+    url: '/warehouse/warehouse/biScreenOutboundMaterialMonthTop',
+    method: 'get'
+  })
+}
+
+/** 数据可视化大屏：当月入退货按财务分类汇总入库金额（玫瑰饼图/圆环图） */
+export function biScreenInboundFinanceCategoryMonth() {
+  return request({
+    url: '/warehouse/warehouse/biScreenInboundFinanceCategoryMonth',
+    method: 'get'
+  })
+}
+
+/** 数据可视化大屏：今日已审核出库单笔数、今日已审核入库单(101)笔数 */
+export function biScreenTodayInboundOutboundBillCount() {
+  return request({
+    url: '/warehouse/warehouse/biScreenTodayInboundOutboundBillCount',
+    method: 'get'
+  })
+}
+
+/** 数据可视化大屏：当年按自然月汇总入库金额(101)、退货入库金额(301)（年度采购/入退货曲线） */
+export function biScreenYearInboundReturnByMonth() {
+  return request({
+    url: '/warehouse/warehouse/biScreenYearInboundReturnByMonth',
     method: 'get'
   })
 }
