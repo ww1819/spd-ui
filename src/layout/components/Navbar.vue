@@ -29,6 +29,7 @@
           width="350"
           trigger="click"
           v-model="messageVisible"
+          @show="loadMessageReminderStrip"
         >
           <div class="message-popover">
             <div class="message-header">
@@ -160,6 +161,13 @@ import RuoYiGit from '@/components/RuoYi/Git'
 import RuoYiDoc from '@/components/RuoYi/Doc'
 import { listConfig } from '@/api/system/config'
 import { getAppVersion } from '@/api/common/version'
+import { parseTime } from '@/utils/ruoyi'
+import {
+  fetchHomeDepartmentReminderUnreceivedReceipt,
+  fetchHomeDepartmentReminderNearExpiryList,
+  fetchHomeWarehouseReminderApplyList,
+  fetchHomeWarehouseReminderPurchaseList
+} from '@/api/dashboard/home'
 
 export default {
   components: {
@@ -183,14 +191,14 @@ export default {
       backendAppName: '',
       backendVersion: '',
       backendBuildTime: '',
-      // 消息列表
+      // 消息列表（时间由 loadMessageReminderStrip 拉取业务日期/审核时间后回填）
       messageList: [
         {
           id: 1,
           type: 'system',
           title: '科室预警',
           content: '您有一条新的科室预警，请及时查看',
-          time: '2024-01-15 10:30',
+          time: '—',
           read: false
         },
         {
@@ -198,7 +206,7 @@ export default {
           type: 'warning',
           title: '仓库提醒',
           content: '您有3条仓库提醒需要处理',
-          time: '2024-01-15 09:20',
+          time: '—',
           read: false
         },
         {
@@ -206,7 +214,7 @@ export default {
           type: 'info',
           title: '数据异常预警',
           content: '存在数据异常，请及时核查',
-          time: '2024-01-14 16:45',
+          time: '—',
           read: true
         }
       ]
@@ -248,6 +256,66 @@ export default {
     }
   },
   methods: {
+    /** 取若干时间字符串/对象中的最大时刻，格式 yyyy-MM-dd HH:mm:ss；无则 null */
+    maxTimeToDisplay(candidates) {
+      const ms = []
+      for (const c of candidates || []) {
+        if (c == null || c === '') continue
+        const t = new Date(c).getTime()
+        if (Number.isFinite(t)) ms.push(t)
+      }
+      if (!ms.length) return null
+      const d = new Date(Math.max(...ms))
+      return parseTime(d, '{y}-{m}-{d} {h}:{i}:{s}') || null
+    },
+    /** 科室预警：出库单业务日期 billDate（无则 auditDate）与近效期行 warehouse_date 中的最新值 */
+    async loadMessageReminderStrip() {
+      try {
+        const [depUn, depNear, whApply, whPurchase] = await Promise.all([
+          fetchHomeDepartmentReminderUnreceivedReceipt(),
+          fetchHomeDepartmentReminderNearExpiryList(),
+          fetchHomeWarehouseReminderApplyList(),
+          fetchHomeWarehouseReminderPurchaseList()
+        ])
+        const deptCandidates = []
+        const du = (depUn && depUn.data) || {}
+        const bills = Array.isArray(du.bills) ? du.bills : []
+        for (const b of bills) {
+          const t = b.billDate || b.auditDate
+          if (t) deptCandidates.push(t)
+        }
+        const dn = (depNear && depNear.data) || {}
+        const lines = Array.isArray(dn.lines) ? dn.lines : []
+        for (const r of lines) {
+          const t = r.warehouseDate
+          if (t) deptCandidates.push(t)
+        }
+        const deptStr = this.maxTimeToDisplay(deptCandidates)
+
+        const whCandidates = []
+        const applyRows = Array.isArray(whApply && whApply.data) ? whApply.data : []
+        for (const row of applyRows) {
+          const t = row.lastOutboundAuditDate
+          if (t) whCandidates.push(t)
+        }
+        const purchaseRows = Array.isArray(whPurchase && whPurchase.data) ? whPurchase.data : []
+        for (const row of purchaseRows) {
+          const t = row.lastPurchaseAuditDate
+          if (t) whCandidates.push(t)
+        }
+        const whStr = this.maxTimeToDisplay(whCandidates)
+
+        this.messageList.forEach((item) => {
+          if (item.title === '科室预警' && deptStr) {
+            this.$set(item, 'time', deptStr)
+          } else if (item.title === '仓库提醒' && whStr) {
+            this.$set(item, 'time', whStr)
+          }
+        })
+      } catch (e) {
+        // 静默：无权限或接口失败时保留「—」
+      }
+    },
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
     },
@@ -348,6 +416,7 @@ export default {
   created() {
     // 获取参数设置第七条参数值
     this.getOrganizationUnit()
+    this.loadMessageReminderStrip()
   }
 }
 </script>

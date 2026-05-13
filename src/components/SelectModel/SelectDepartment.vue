@@ -2,9 +2,9 @@
   <el-select v-model="department"
              filterable
              :filter-method="filterMethod"
-             clearable
+             :clearable="!selectDisabled"
              :placeholder="selectPlaceholder"
-             :disabled="value2"
+             :disabled="selectDisabled"
   >
     <el-option
       v-for="item in departmentOptions"
@@ -40,6 +40,11 @@ export default {
     financePickMode: {
       type: Boolean,
       default: false
+    },
+    /** 禁用选择（与历史 value2 并存：任一为真则不可选） */
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -53,6 +58,10 @@ export default {
     }
   },
   computed: {
+    /** value2 历史用法：部分页面用其表示只读/禁用 */
+    selectDisabled() {
+      return !!this.disabled || !!this.value2;
+    },
     selectPlaceholder() {
       const t = this.fieldPlaceholder != null ? String(this.fieldPlaceholder).trim() : '';
       return t || '科室编码/名称/简码搜索';

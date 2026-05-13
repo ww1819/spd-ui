@@ -311,26 +311,26 @@
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="型号" align="center" prop="material.model" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span v-if="scope.row.material">{{ scope.row.material.model || '' }}</span>
-              <span v-else></span>
-            </template>
-          </el-table-column>
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.material && scope.row.material.fdUnit">{{ scope.row.material.fdUnit.unitName || '--' }}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
-
-          <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="型号" align="center" prop="material.model" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.unitPrice ? parseFloat(scope.row.unitPrice).toFixed(2) : '--' }}</span>
+              <span v-if="scope.row.material">{{ scope.row.material.model || '' }}</span>
+              <span v-else></span>
             </template>
           </el-table-column>
 
-          <el-table-column label="库存数量" prop="qty" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ formatEntryUnitPriceDisplay(scope.row) }}</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : 0 }}</span>
             </template>
@@ -460,6 +460,11 @@
             <span>{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '--' }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="单位" width="80" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="单价" min-width="120">
           <template slot-scope="scope">
             <el-input v-model="scope.row.unitPrice" type="number" placeholder="请输入单价" @input="priceChange(scope.row)" />
@@ -539,7 +544,7 @@
       v-loading="saveQtyConfirmLoading"
     >
       <div style="margin-bottom: 8px; color: #e6a23c;">
-        以下明细「库存数量」与当前科室库存明细不一致，请逐条点击「确定」确认；确认后将把明细中的库存数量更新为当前实物数量，并重新计算金额与盈亏。普通盘盈/盘亏（仅盘点数量与账面不同、但与科室库存一致）不会进入本表。
+        以下明细「账面数量(qty)」与当前科室库存不一致，请逐条点击「确定」确认；确认后将把明细账面更新为当前实物数量，并重新计算金额与盈亏。「盈亏数量」= 盘点数量 − 明细账面（第一列）。普通盘盈/盘亏（仅盘点与账面不同、但与科室实时库存一致）不会进入本表。
       </div>
       <el-table :data="saveQtyConfirmList" border size="small">
         <el-table-column label="耗材编码" width="120" align="center" show-overflow-tooltip>
@@ -551,8 +556,18 @@
         <el-table-column label="耗材名称" min-width="150" show-overflow-tooltip>
           <template slot-scope="scope">{{ (scope.row.material && scope.row.material.name) || '--' }}</template>
         </el-table-column>
+        <el-table-column label="规格" min-width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单位" width="72" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="批次号" prop="batchNo" min-width="140" />
-        <el-table-column label="明细库存数量" prop="detailQty" width="120" align="center" />
+        <el-table-column label="明细账面数量" prop="detailQty" width="120" align="center" />
         <el-table-column label="当前科室库存" prop="currentQty" width="120" align="center" />
         <el-table-column label="盘点数量" min-width="100" align="center">
           <template slot-scope="scope">
@@ -730,6 +745,46 @@ export default {
     }
   },
   methods: {
+    /** 明细单价：与后端 StkIoStocktakingEntry 一致，unitPrice / price 任一缺失时用另一方兜底，避免盈亏金额异常 */
+    entryEffectiveUnitPriceNum(row) {
+      if (!row) return 0;
+      const u = row.unitPrice;
+      const p = row.price;
+      const raw = u != null && u !== '' ? u : p != null && p !== '' ? p : 0;
+      const n = parseFloat(raw);
+      return Number.isFinite(n) ? n : 0;
+    },
+    formatEntryUnitPriceDisplay(row) {
+      const n = this.entryEffectiveUnitPriceNum(row);
+      return n > 0 || (row && ((row.unitPrice != null && row.unitPrice !== '') || (row.price != null && row.price !== '')))
+        ? n.toFixed(2)
+        : '--';
+    },
+    /** 加载或提交前补齐单价双字段，避免仅 price 或仅 unitPrice 时前端汇总/保存异常 */
+    syncEntryUnitPriceAndPrice(row) {
+      if (!row) return;
+      const u = row.unitPrice != null && row.unitPrice !== '' ? row.unitPrice : null;
+      const p = row.price != null && row.price !== '' ? row.price : null;
+      const v = u != null ? u : p;
+      if (v == null || v === '') return;
+      row.unitPrice = v;
+      row.price = v;
+    },
+    normalizeLoadedEntries(list) {
+      (list || []).forEach((row) => {
+        if (!row) return;
+        if (row.stockQty == null || row.stockQty === '') {
+          row.stockQty = row.qty != null && row.qty !== '' ? row.qty : 0;
+        }
+        this.syncEntryUnitPriceAndPrice(row);
+        const sq = parseFloat(row.stockQty);
+        const up = this.entryEffectiveUnitPriceNum(row);
+        if (Number.isFinite(sq) && Number.isFinite(up)) {
+          row.amt = (sq * up).toFixed(2);
+        }
+      });
+      return list || [];
+    },
     /** 明细合计（与到货验收弹窗表尾一致；按列 property 汇总，避免列顺序变化错位） */
     getSummaries(param) {
       const { columns, data } = param;
@@ -778,7 +833,7 @@ export default {
           let t = 0;
           data.forEach((item) => {
             const pq = parseFloat(item.stockQty || 0) - parseFloat(item.qty || 0);
-            t += pq * parseFloat(item.unitPrice || 0);
+            t += pq * this.entryEffectiveUnitPriceNum(item);
           });
           const prefix = t > 0 ? '+' : '';
           sums[index] = prefix + '￥' + t.toFixed(2);
@@ -1022,7 +1077,9 @@ export default {
       const unitPrice =
         detailRow.unitPrice != null && detailRow.unitPrice !== ""
           ? detailRow.unitPrice
-          : materialPrice;
+          : detailRow.price != null && detailRow.price !== ""
+            ? detailRow.price
+            : materialPrice;
       const batchNumber = detailRow.batchNumber != null ? String(detailRow.batchNumber) : "";
       const endTime = this.formatDateYmdForProfitCopy(detailRow.endTime);
       const beginTime = this.formatDateYmdForProfitCopy(detailRow.beginTime);
@@ -1083,10 +1140,16 @@ export default {
       } else {
         stockQty = stockRaw != null && stockRaw !== '' ? stockRaw : 0;
       }
+      const resolvedUp =
+        item.unitPrice != null && item.unitPrice !== ''
+          ? item.unitPrice
+          : item.price != null && item.price !== ''
+            ? item.price
+            : materialPrice;
       let amt = item.amt;
       if (amt == null || amt === '') {
-        const up = parseFloat(item.unitPrice || 0);
-        const a = (parseFloat(stockQty) || 0) * up;
+        const up = parseFloat(resolvedUp != null && resolvedUp !== '' ? resolvedUp : 0);
+        const a = (parseFloat(stockQty) || 0) * (Number.isFinite(up) ? up : 0);
         amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
       }
       const wh = item.warehouse || null;
@@ -1112,7 +1175,8 @@ export default {
         material: item.material || null,
         supplierId: item.supplierId || (item.material && item.material.supplierId) || null,
         _supplierName: (item.material && item.material.supplier && item.material.supplier.name) || '',
-        unitPrice: item.unitPrice != null && item.unitPrice !== '' ? item.unitPrice : materialPrice,
+        unitPrice: resolvedUp,
+        price: resolvedUp,
         qty,
         stockQty,
         amt,
@@ -1159,8 +1223,10 @@ export default {
         fetchNext(1)
           .then((rows) => {
             this.stocktakingBatchSeqCounter = 0;
-            this.stkIoStocktakingEntryList = (rows || []).map((it) =>
-              this.mapDepInventoryToStocktakingEntry({ ...it, _fromStocktakingInit: true })
+            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(
+              (rows || []).map((it) =>
+                this.mapDepInventoryToStocktakingEntry({ ...it, _fromStocktakingInit: true })
+              )
             );
             this.departmentLockedByAction = true;
             this.$modal.msgSuccess(`已加载 ${this.stkIoStocktakingEntryList.length} 条科室库存明细`);
@@ -1263,6 +1329,9 @@ export default {
         delete r._cbBatchUnknown;
         delete r._batchLocked;
         delete r._longTerm;
+        r.price = r.unitPrice;
+        const a = (parseFloat(r.stockQty) || 0) * (parseFloat(r.unitPrice) || 0);
+        r.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
       });
       this.stkIoStocktakingEntryList.push(...this.pendingNewEntries);
       this.newEntryDialogVisible = false;
@@ -1307,8 +1376,9 @@ export default {
     //盘点数量改变事件
     stockQtyChange(row) {
       if (!row) return;
+      this.syncEntryUnitPriceAndPrice(row);
       const sq = parseFloat(row.stockQty);
-      const up = parseFloat(row.unitPrice);
+      const up = this.entryEffectiveUnitPriceNum(row);
       const totalAmt = Number.isFinite(sq) && Number.isFinite(up) ? sq * up : 0;
       row.amt = totalAmt.toFixed(2);
     },
@@ -1321,14 +1391,17 @@ export default {
       if (stockQty > qty) {
         row.stockQty = qty;
         this.stockQtyChange(row);
-        this.$modal.msgWarning('盘点数量不能大于库存数量。盘盈请点击“新增盘盈明细”。');
+        this.$modal.msgWarning('盘点数量不能大于账面数量。盘盈请点击“新增盘盈明细”。');
       }
     },
     //价格改变事件
     priceChange(row) {
       if (!row) return;
+      if (row.unitPrice != null && row.unitPrice !== '') {
+        row.price = row.unitPrice;
+      }
       const sq = parseFloat(row.stockQty);
-      const up = parseFloat(row.unitPrice);
+      const up = this.entryEffectiveUnitPriceNum(row);
       const totalAmt = Number.isFinite(sq) && Number.isFinite(up) ? sq * up : 0;
       row.amt = totalAmt.toFixed(2);
     },
@@ -1343,7 +1416,7 @@ export default {
     getProfitAmount(row) {
       const stockQty = parseFloat(row.stockQty || 0);
       const qty = parseFloat(row.qty || 0);
-      const unitPrice = parseFloat(row.unitPrice || 0);
+      const unitPrice = this.entryEffectiveUnitPriceNum(row);
       const profitQty = stockQty - qty;
       const profitAmount = profitQty * unitPrice;
       const prefix = profitAmount > 0 ? '+' : '';
@@ -1389,7 +1462,7 @@ export default {
             return;
           }
           this.form = data;
-          this.stkIoStocktakingEntryList = data.stkIoStocktakingEntryList || [];
+          this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
           this.open = true;
           this.action = false;
           // 查看须保留服务端返回的单据状态，勿写死为未审核（否则已审核单显示错误）
@@ -1425,7 +1498,7 @@ export default {
           this.form = data;
           this.form.stockStatus = 1;
           this.form.stockType = 502;
-          this.stkIoStocktakingEntryList = data.stkIoStocktakingEntryList || [];
+          this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
           this.open = true;
           this.action = true;
           this.title = "修改科室盘点";
@@ -1519,7 +1592,12 @@ export default {
                 batchNo: row.batchNo,
                 detailQty: row.qty,
                 currentQty: live,
-                unitPrice: row.unitPrice,
+                unitPrice:
+                  row.unitPrice != null && row.unitPrice !== ''
+                    ? row.unitPrice
+                    : row.price != null && row.price !== ''
+                      ? row.price
+                      : null,
                 depInventoryId: row.depInventoryId,
                 adjustedStockQty: row.stockQty != null && row.stockQty !== '' ? row.stockQty : row.qty,
                 confirmed: false
@@ -1560,21 +1638,22 @@ export default {
         this.$modal.msgWarning('来源于科室库存的明细仅允许盘亏，盘点数量已调整为当前库存数量');
       }
       this.stockQtyChange(target);
+      this.$set(row, 'detailQty', live);
       this.$set(row, 'confirmed', true);
     },
     formatConfirmProfitQty(row) {
       const stockQty = parseFloat((row && row.adjustedStockQty) || 0);
-      const bookAfter = parseFloat((row && row.currentQty) || 0);
-      const v = stockQty - bookAfter;
-      if (!Number.isFinite(v)) return '--';
+      const bookOnLine = parseFloat((row && row.detailQty) || 0);
+      const v = stockQty - bookOnLine;
+      if (!Number.isFinite(v) || !Number.isFinite(stockQty)) return '--';
       return v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2);
     },
     formatConfirmProfitAmt(row) {
       const stockQty = parseFloat((row && row.adjustedStockQty) || 0);
-      const bookAfter = parseFloat((row && row.currentQty) || 0);
-      const unitPrice = parseFloat((row && row.unitPrice) || 0);
-      const v = (stockQty - bookAfter) * unitPrice;
-      if (!Number.isFinite(v)) return '--';
+      const bookOnLine = parseFloat((row && row.detailQty) || 0);
+      const unitPrice = parseFloat((row && row.unitPrice) || (row && row.price) || 0);
+      const v = (stockQty - bookOnLine) * unitPrice;
+      if (!Number.isFinite(v) || !Number.isFinite(stockQty)) return '--';
       const prefix = v > 0 ? '+' : '';
       return `${prefix}￥${v.toFixed(2)}`;
     },
@@ -1593,6 +1672,11 @@ export default {
         delete rest.fromStocktakingInit;
         delete rest.warehouse;
         delete rest._warehouseName;
+        const up = rest.unitPrice != null && rest.unitPrice !== '' ? rest.unitPrice : rest.price;
+        if (up != null && up !== '') {
+          rest.unitPrice = up;
+          rest.price = up;
+        }
         return rest;
       });
       this.submitLoading = true;
@@ -1601,11 +1685,11 @@ export default {
       request.then(response => {
         if (response.data) {
           this.form = response.data;
-          this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList || [];
+          this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(response.data.stkIoStocktakingEntryList || []);
         } else if (!isUpdate && this.form.id) {
           getStocktaking(this.form.id).then(res => {
             this.form = res.data;
-            this.stkIoStocktakingEntryList = res.data.stkIoStocktakingEntryList || [];
+            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(res.data.stkIoStocktakingEntryList || []);
           });
         }
         this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");

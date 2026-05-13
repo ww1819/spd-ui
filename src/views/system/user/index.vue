@@ -941,8 +941,9 @@ export default {
         if (cid) {
           return roleMenuTreeselectUser(userId).then(res => {
             this.menuOptions = res.menus || [];
+            const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
             const ck = res.checkedKeys != null ? res.checkedKeys : [];
-            this.authForm.menuIds = ck.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            this.authForm.menuIds = ck.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
             return res;
           });
         }
@@ -950,8 +951,8 @@ export default {
       }).then(() => {
         this.$nextTick(() => {
           if (this.$refs.authMenuTree) {
-            // 确保 menuIds 是数字数组
-            const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+            const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
             console.log('设置菜单树选中状态 - menuIds:', menuIds);
             this.$refs.authMenuTree.setCheckedKeys(menuIds);
             // check-strictly=true 时不会自动联动父节点，这里补齐父链路（不级联子节点）
@@ -962,7 +963,8 @@ export default {
         // 确保弹窗打开后再设置一次（有时候需要延迟）
         setTimeout(() => {
           if (this.$refs.authMenuTree && this.authForm.menuIds && this.authForm.menuIds.length > 0) {
-            const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+            const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
             console.log('延迟设置菜单树选中状态 - menuIds:', menuIds);
             this.$refs.authMenuTree.setCheckedKeys(menuIds);
             (menuIds || []).forEach(id => this.ensureAuthMenuAncestorsChecked(id));
@@ -1077,15 +1079,13 @@ export default {
     },
     /** 授权提交 */
     submitAuth() {
-      // 从菜单树组件获取最新的选中菜单ID（包括半选中的父节点）
+      const allowedSet = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+      // 严格树：仅以实际勾选为准；再与客户可分配菜单树求交，避免提交客户未开通的菜单
       let menuIds = [];
       if (this.$refs.authMenuTree) {
-        menuIds = this.getAuthMenuAllCheckedKeys();
-        console.log('从菜单树获取的 menuIds（包括半选中节点）:', menuIds);
+        menuIds = this.$refs.authMenuTree.getCheckedKeys() || [];
       } else {
-        // 如果菜单树组件不存在，使用 authForm 中的 menuIds
         menuIds = Array.isArray(this.authForm.menuIds) ? this.authForm.menuIds : [];
-        console.log('从 authForm 获取的 menuIds:', menuIds);
       }
       
       console.log('开始提交授权 - 当前 menuIds:', menuIds);
@@ -1106,7 +1106,7 @@ export default {
           ? roleIdsSrc.map(id => Number(id)).filter(id => !isNaN(id))
           : [];
         // 确保 menuIds 是数字数组
-        const finalMenuIds = menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+        const finalMenuIds = menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowedSet.has(id));
         console.log('处理后的 menuIds:', finalMenuIds);
         console.log('userData 中的 menuIds:', userData.menuIds);
         
@@ -1146,8 +1146,10 @@ export default {
         console.log('保存后重新获取的菜单权限:', menuIds, '完整响应:', response);
         this.authForm.menuIds = menuIds;
         if (this.$refs.authMenuTree) {
-          // 设置选中状态时，需要同时设置选中的和半选中的节点
-          this.$refs.authMenuTree.setCheckedKeys(menuIds);
+          const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+          const keys = (menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
+          this.$refs.authMenuTree.setCheckedKeys(keys);
+          keys.forEach(id => this.ensureAuthMenuAncestorsChecked(id));
           this.updateAuthMenuCheckState();
         }
       }).catch(error => {

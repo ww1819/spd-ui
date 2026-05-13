@@ -140,10 +140,10 @@
         <el-form-item>
           <el-checkbox v-model="menuExpand" @change="handleMenuTreeExpand">展开/折叠</el-checkbox>
           <el-checkbox v-model="menuNodeAll" @change="handleMenuTreeNodeAll">全选/全不选</el-checkbox>
-          <el-checkbox v-model="menuCheckStrictly" @change="handleMenuTreeConnect">父子联动</el-checkbox>
+          <el-checkbox v-model="menuParentChildLinked" @change="handleMenuTreeConnect">父子联动</el-checkbox>
         </el-form-item>
         <el-form-item>
-          <el-tree class="tree-border" :data="menuOptions" show-checkbox ref="menuTree" node-key="menuId" :check-strictly="!menuCheckStrictly" :default-expand-all="menuExpand" empty-text="加载中，请稍候" :props="{ label: 'menuName', children: 'children' }" />
+          <el-tree class="tree-border" :data="menuOptions" show-checkbox ref="menuTree" node-key="menuId" :check-strictly="!menuParentChildLinked" :default-expand-all="menuExpand" empty-text="加载中，请稍候" :props="{ label: 'menuName', children: 'children' }" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -185,7 +185,8 @@ export default {
       menuOptions: [],
       menuExpand: false,
       menuNodeAll: false,
-      menuCheckStrictly: true,
+      /** false=父子独立勾选（默认），避免无客户权限的节点因父级联动显示为已选 */
+      menuParentChildLinked: false,
       menuForm: { customerId: '', customerName: '' },
       openFullInit: false,
       fullInitTokenInput: '',
@@ -245,6 +246,16 @@ export default {
     handleSelectionChange(selection) { this.ids = selection.map(item => item.customerId); this.single = selection.length !== 1; this.multiple = !selection.length },
     handleQuery() { this.queryParams.pageNum = 1; this.getList() },
     resetQuery() { this.resetForm('queryForm'); this.handleQuery() },
+    collectCustomerMenuTreeIds(nodes, acc) {
+      const set = acc || new Set()
+      if (!nodes || !nodes.length) return set
+      nodes.forEach(n => {
+        const id = n.menuId != null ? n.menuId : n.id
+        if (id != null && id !== '') set.add(String(id))
+        if (n.children && n.children.length) this.collectCustomerMenuTreeIds(n.children, set)
+      })
+      return set
+    },
     handleAssignMenu(row) {
       this.menuForm = { customerId: row.customerId, customerName: row.customerName }
       this.openMenu = true
@@ -254,7 +265,9 @@ export default {
         const rawTree = treeRes.data || []
         this.menuOptions = this.mapTreeToMenuKeys(rawTree)
         const ids = idsRes.data || []
-        this.$nextTick(() => { if (this.$refs.menuTree) this.$refs.menuTree.setCheckedKeys(ids.map(String)) })
+        const allowed = this.collectCustomerMenuTreeIds(this.menuOptions)
+        const filtered = ids.map(String).filter(id => allowed.has(id))
+        this.$nextTick(() => { if (this.$refs.menuTree) this.$refs.menuTree.setCheckedKeys(filtered) })
       })
     },
     mapTreeToMenuKeys(nodes) {
@@ -267,7 +280,7 @@ export default {
     },
     handleMenuTreeExpand(v) { const tree = this.$refs.menuTree; if (!tree) return; const nodes = (tree.store && tree.store.nodesMap) ? Object.values(tree.store.nodesMap) : []; nodes.forEach(n => { n.expanded = v }) },
     handleMenuTreeNodeAll(v) { const tree = this.$refs.menuTree; if (!tree) return; if (v) tree.setCheckedNodes(this.menuOptions); else tree.setCheckedKeys([]) },
-    handleMenuTreeConnect(v) { this.menuCheckStrictly = v },
+    handleMenuTreeConnect(v) { this.menuParentChildLinked = !!v },
     handleChangeStatus(row, status) {
       this.statusForm = { customerId: row.customerId, customerName: row.customerName, status: status, statusChangeReason: '' }
       this.statusDialogTitle = status === '0' ? '启用客户' : '停用客户'
@@ -329,7 +342,7 @@ export default {
     submitMenuForm() {
       const tree = this.$refs.menuTree
       const checkedKeys = tree.getCheckedKeys()
-      const halfKeys = tree.getHalfCheckedKeys()
+      const halfKeys = this.menuParentChildLinked ? (tree.getHalfCheckedKeys() || []) : []
       const menuIds = [...checkedKeys, ...halfKeys].map(String)
       saveHcCustomerMenus(this.menuForm.customerId, menuIds).then(() => { this.$modal.msgSuccess('保存成功'); this.openMenu = false })
     }

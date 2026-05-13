@@ -428,8 +428,8 @@
                           <template slot-scope="scope">
                             <span
                               class="wh-reminder-material-code-link"
-                              :title="(scope.row.materialCode || '') + '（双击打开有效期预警表）'"
-                              @dblclick.stop="handleNearExpiryMaterialCodeDblClick(scope.row)"
+                              :title="(scope.row.materialCode || '') + '（双击打开科室库存近效期预警）'"
+                              @dblclick.stop="handleDepartmentNearExpiryMaterialCodeDblClick(scope.row)"
                             >{{ scope.row.materialCode || '—' }}</span>
                           </template>
                         </el-table-column>
@@ -725,6 +725,23 @@ export default {
       }
       return ''
     },
+    /** 同标题多菜单时收集全部路径（如「科室库存查询」可能对应库房侧与科室侧不同路由） */
+    findSidebarPathsByMetaTitle(routes, title, parentPath) {
+      const out = []
+      for (const route of routes || []) {
+        if (route.hidden) continue
+        const nextPath = this.joinSidebarRoutePath(parentPath, route.path)
+        if (route.meta && route.meta.title === title) {
+          const p = nextPath.startsWith('/') ? nextPath : `/${nextPath}`
+          out.push(String(p).replace(/\/+/g, '/'))
+        }
+        if (route.children && route.children.length) {
+          const baseForChildren = nextPath === '/' ? '' : nextPath
+          out.push(...this.findSidebarPathsByMetaTitle(route.children, title, baseForChildren))
+        }
+      }
+      return out
+    },
     resolveOutWarehouseApplyMenuPath() {
       const fromMenu = this.findSidebarPathByMetaTitle(this.sidebarRouters, '出库申请', '')
       return fromMenu || '/warehouse/outWarehouse/apply'
@@ -757,6 +774,14 @@ export default {
     resolveExpiryAlertInventoryPath() {
       const fromMenu = this.findSidebarPathByMetaTitle(this.sidebarRouters, '库存查询', '')
       return fromMenu || '/warehouse/inventory/index'
+    },
+    /** 科室管理下「科室库存查询」（多 Tab 含近效期），与侧栏菜单标题一致；优先匹配路径含 depInventory 的菜单项 */
+    resolveDepartmentDepInventoryQueryPath() {
+      const paths = this.findSidebarPathsByMetaTitle(this.sidebarRouters, '科室库存查询', '') || []
+      const depInv = paths.find((p) => String(p).includes('depInventory'))
+      if (depInv) return depInv
+      if (paths.length === 1) return paths[0]
+      return '/department/depInventory/index'
     },
     handleInventoryAlertCellDblClick(row, column) {
       if (!column || column.property !== 'materialCode') return
@@ -792,6 +817,22 @@ export default {
       const query = { tab: 'expiry', materialName, daysToExpiry: '30' }
       if (this.$tab && typeof this.$tab.openPage === 'function') {
         this.$tab.openPage('库存查询', path, query)
+      } else {
+        this.$router.push({ path, query })
+      }
+    },
+    /** 科室预警-科室有效期预警：跳转科室库存查询「科室库存近效期预警」Tab，勿复用库房有效期预警表 */
+    handleDepartmentNearExpiryMaterialCodeDblClick(row) {
+      if (!row) return
+      const raw = row.materialCode != null && row.materialCode !== '' ? row.materialCode : row.material_code
+      if (raw == null || String(raw).trim() === '') return
+      const materialKeyword = String(raw).trim()
+      if (!materialKeyword) return
+      const path = this.resolveDepartmentDepInventoryQueryPath()
+      this.closeWarehouseReminder()
+      const query = { tab: 'nearExpiry', materialKeyword }
+      if (this.$tab && typeof this.$tab.openPage === 'function') {
+        this.$tab.openPage('科室库存查询', path, query)
       } else {
         this.$router.push({ path, query })
       }

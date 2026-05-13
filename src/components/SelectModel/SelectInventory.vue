@@ -1,8 +1,8 @@
 <template>
   <div v-show="show" class="local-modal-mask inventory-select-full-modal">
     <div class="local-modal-content">
-      <div class="modal-header">
-        <div class="modal-title">库存明细</div>
+        <div class="modal-header">
+        <div class="modal-title">{{ modalTitle }}</div>
         <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
       </div>
       <div class="modal-body">
@@ -41,7 +41,12 @@
               </el-col>
               <el-col v-if="hideSupplierQuery" :span="12" />
             </el-row>
-            <el-row :gutter="12" class="query-form-row">
+            <el-row v-if="isMaterialLocked" :gutter="12" class="query-form-row">
+              <el-col :span="24">
+                <span class="inventory-lock-hint">仅显示当前行耗材（产品档案）的库存，其它耗材已过滤</span>
+              </el-col>
+            </el-row>
+            <el-row v-else :gutter="12" class="query-form-row">
               <el-col :span="6">
                 <el-form-item label="产品名称" prop="materialName" label-width="100px">
                   <el-input
@@ -113,7 +118,11 @@
             <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable />
             <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable />
             <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable />
+            <el-table-column label="耗材批次号" align="center" width="200" show-overflow-tooltip resizable>
+              <template slot-scope="scope">
+                <span>{{ scope.row.batchNo || '—' }}</span>
+              </template>
+            </el-table-column>
             <el-table-column label="主条码" align="center" prop="mainBarcode" width="140" show-overflow-tooltip resizable />
             <el-table-column label="辅条码" align="center" prop="subBarcode" width="140" show-overflow-tooltip resizable />
             <el-table-column label="有效期" align="center" prop="endTime" width="140" show-overflow-tooltip resizable>
@@ -126,7 +135,6 @@
                 <span>{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable />
             <el-table-column label="生产厂家" align="center" width="180" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
@@ -173,10 +181,32 @@ export default {
     warehouseValue: [String, Number],
     supplierValue: [String, Number],
     selectedDetails: Array,
+    /** 为 true 时请求仅返回库存数量大于 0 的明细（出库申请「添加」弹窗等） */
+    excludeZeroQty: {
+      type: Boolean,
+      default: false
+    },
     /** 为 true 时不展示供应商条件，查询固定使用 supplierValue（如采购退货申请） */
     hideSupplierQuery: {
       type: Boolean,
       default: false
+    },
+    /** 锁定耗材 ID，查询仅展示该耗材库存（出库单行「选批次」等） */
+    lockedMaterialId: {
+      type: [String, Number],
+      default: null
+    },
+    /**
+     * 按行「选批次」时传入：该下标对应明细不参与「已占用」过滤，
+     * 避免把本行当前批次误当成其它行已选而从列表中隐藏。
+     */
+    ignoreSelectedDetailRowIndex: {
+      type: Number,
+      default: null
+    },
+    modalTitle: {
+      type: String,
+      default: "库存明细"
     }
   },
   data() {
@@ -203,7 +233,9 @@ export default {
         materialSpeci: null,
         materialModel: null,
         supplierId: null,
-        batchNo: null
+        batchNo: null,
+        /** 仅查可用库存（与后端 StkInventory.onlyPositiveQty 一致） */
+        onlyPositiveQty: true
       },
       form: {},
       selectedRowMap: {}
@@ -213,6 +245,7 @@ export default {
     this.show = this.DialogComponentShow || false;
     this.queryParams.warehouseId = this.warehouseValue;
     this.applyHeaderSupplierFilter();
+    this.applyLockedMaterialToQuery();
     if (this.show) {
       this.getList();
     }
@@ -224,7 +257,9 @@ export default {
         this.selectedRowMap = {};
         this.selectRow = [];
         this.queryParams.pageNum = 1;
+        this.queryParams.warehouseId = this.warehouseValue;
         this.applyHeaderSupplierFilter();
+        this.applyLockedMaterialToQuery();
         this.getList();
         this.$nextTick(() => {
           if (this.inventoryList && this.inventoryList.length > 0) {
@@ -242,10 +277,44 @@ export default {
         }
       },
       deep: true
+    },
+    ignoreSelectedDetailRowIndex() {
+      if (this.show) {
+        this.getList();
+      }
     }
   },
-  created() {},
+  computed: {
+    /** 出库「选批次」等场景：锁定为单行耗材，只查该 materialId */
+    isMaterialLocked() {
+      const lock = this.lockedMaterialId;
+      return lock != null && String(lock).trim() !== '';
+    },
+    /** 参与「已选批次 / 已选库存行」排除的明细（不含正在编辑行） */
+    selectedDetailsForOccupiedFilter() {
+      const list = this.selectedDetails;
+      if (!Array.isArray(list) || !list.length) {
+        return [];
+      }
+      const idx = this.ignoreSelectedDetailRowIndex;
+      if (idx == null || idx < 0 || idx >= list.length) {
+        return list;
+      }
+      return list.filter((_, i) => i !== idx);
+    }
+  },
   methods: {
+    applyLockedMaterialToQuery() {
+      const lock = this.lockedMaterialId;
+      if (lock != null && String(lock).trim() !== '') {
+        this.queryParams.materialId = lock;
+        this.queryParams.materialName = null;
+        this.queryParams.materialSpeci = null;
+        this.queryParams.materialModel = null;
+      } else {
+        this.queryParams.materialId = null;
+      }
+    },
     getRowKey(row) {
       if (!row) return null;
       if (row.id != null) return String(row.id);
@@ -265,18 +334,32 @@ export default {
     },
     getList() {
       this.applyHeaderSupplierFilter();
+      if (this.warehouseValue != null && this.warehouseValue !== "") {
+        this.queryParams.warehouseId = this.warehouseValue;
+      }
+      this.applyLockedMaterialToQuery();
+      this.queryParams.onlyPositiveQty = true;
       this.loading = true;
-      listInventory(this.queryParams)
+      const query = { ...this.queryParams };
+      if (this.excludeZeroQty) {
+        query.excludeZeroQty = true;
+      }
+      listInventory(query)
         .then(response => {
-          const rows = response.rows || [];
-          if (this.selectedDetails && this.selectedDetails.length) {
+          let rows = response.rows || [];
+          if (this.isMaterialLocked) {
+            const lid = String(this.lockedMaterialId).trim();
+            rows = rows.filter((it) => it && String(it.materialId) === lid);
+          }
+          const occ = this.selectedDetailsForOccupiedFilter;
+          if (occ && occ.length) {
             const existedKeySet = new Set(
-              this.selectedDetails
+              occ
                 .filter(d => d && d.materialId != null && d.batchNo)
                 .map(d => `${d.materialId}__${d.batchNo}`)
             );
             const existedInvIds = new Set(
-              this.selectedDetails
+              occ
                 .map((d) => (d && d.kcNo != null && d.kcNo !== "" ? String(d.kcNo) : ""))
                 .filter((s) => s)
             );
@@ -315,10 +398,14 @@ export default {
           selectedRows.push(inventoryItem);
         }
       });
-      this.inventoryList.forEach(inventoryItem => {
-        const isSelected = this.selectedDetails.some(detail => {
-          return detail.materialId === inventoryItem.materialId && detail.batchNo === inventoryItem.batchNo;
-        });
+        const ign = this.ignoreSelectedDetailRowIndex;
+        this.inventoryList.forEach(inventoryItem => {
+          const isSelected = this.selectedDetails.some((detail, idx) => {
+            if (ign != null && idx === ign) {
+              return false;
+            }
+            return detail.materialId === inventoryItem.materialId && detail.batchNo === inventoryItem.batchNo;
+          });
         if (isSelected) {
           selectedRows.push(inventoryItem);
         }
@@ -336,6 +423,9 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.applyHeaderSupplierFilter();
+      this.queryParams.warehouseId = this.warehouseValue;
+      this.queryParams.onlyPositiveQty = true;
+      this.applyLockedMaterialToQuery();
       this.handleQuery();
     },
     handleSelectionChange(val) {
@@ -439,6 +529,14 @@ export default {
   background: #fff;
 }
 
+.inventory-lock-hint {
+  display: inline-block;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 4px 0 8px;
+}
+
 .material-filter-table-section {
   margin-left: -20px;
   margin-right: -20px;
@@ -446,7 +544,7 @@ export default {
   box-sizing: border-box;
 }
 
-.material-filter-detail-table {
+.material-filter-table-section {
   width: 100% !important;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);

@@ -126,7 +126,11 @@
             <span>{{ scope.row.pendingOutboundQty != null ? Number(scope.row.pendingOutboundQty).toFixed(2) : '—' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="批号" prop="batchNo" width="120" show-overflow-tooltip />
+        <el-table-column label="批次" prop="batchNo" width="120" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.batchNo || '—' }}</span>
+          </template>
+        </el-table-column>
       </el-table>
     </el-dialog>
   </div>

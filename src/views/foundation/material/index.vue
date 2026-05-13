@@ -394,6 +394,7 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[27].visible" show-overflow-tooltip resizable/>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
         <template slot-scope="scope">
           <el-button
@@ -609,6 +610,15 @@
                     <el-input v-model="form.packageSpeci" placeholder="包装规格" />
               </el-form-item>
             </el-col>
+                <el-col :span="4">
+                  <el-form-item label="最小包装数：" prop="minPackageQty">
+                    <el-input
+                      v-model="form.minPackageQty"
+                      placeholder="如 10 支/盒填 10，选填"
+                      clearable
+                    />
+                  </el-form-item>
+                </el-col>
                 <el-col :span="4">
                   <el-form-item label="储存方式：" prop="isWay">
                     <el-select v-model="form.isWay" placeholder="请选择储存方式" style="width: 100%">
@@ -1468,7 +1478,8 @@ export default {
         { key: 23, label: `医保编码`, visible: true },
         { key: 24, label: `注册证号`, visible: true },
         { key: 25, label: `财务分类`, visible: true },
-        { key: 26, label: `his收费项目编码`, visible: true }
+        { key: 26, label: `his收费项目编码`, visible: true },
+        { key: 27, label: `最小包装数`, visible: true }
       ],
       // 表单校验：基本信息区多项必填；单价必填且为有效数字
       rules: {
@@ -1544,6 +1555,20 @@ export default {
         ],
         isUse: [
           { required: true, message: "请选择启用状态", trigger: "change" }
+        ],
+        minPackageQty: [
+          { validator: (rule, value, callback) => {
+            if (value === '' || value === null || value === undefined) {
+              callback();
+              return;
+            }
+            const n = Number(value);
+            if (Number.isNaN(n) || n <= 0) {
+              callback(new Error('最小包装数须为大于 0 的数字'));
+            } else {
+              callback();
+            }
+          }, trigger: 'blur' }
         ]
       },
       upload: {
@@ -1732,7 +1757,8 @@ export default {
         sunshineThirdLevel: null,
         sunshineSource: null,
         sunshineCoefficient: null,
-        selectionReason: null
+        selectionReason: null,
+        minPackageQty: null
       };
     },
     // 表单重置
@@ -2191,7 +2217,7 @@ export default {
       const allowFields = [
         'id', 'code', 'name', 'referredName', 'supplierId', 'factoryId', 'speci', 'model', 'price', 'producer',
         'useName', 'registerName', 'registerNo', 'storeroomId', 'materialCategoryId', 'financeCategoryId', 'medicalNo', 'medicalName',
-        'salePrice', 'successfulPrice', 'successfulNo', 'successfulType', 'selectionReason', 'packageSpeci',
+        'salePrice', 'successfulPrice', 'successfulNo', 'successfulType', 'selectionReason', 'packageSpeci', 'minPackageQty',
         'unitId', 'isUse', 'isGz', 'isFollow', 'isMonitor', 'isProcure', 'isSunshineProcurement',
         'isTemporaryPurchase', 'isServiceFee', 'isBilling', 'materialLevel', 'registerLevel', 'riskLevel',
         'firstaidLevel', 'doctorLevel', 'brand', 'useto', 'quality', 'function', 'isWay', 'locationId', 'udiNo',

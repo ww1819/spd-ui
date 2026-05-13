@@ -244,8 +244,14 @@
               <span v-else>--</span>
             </template>
           </el-table-column>
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.material && scope.row.material.fdUnit">{{ scope.row.material.fdUnit.unitName || '--' }}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
 
-          <el-table-column label="库存数量" prop="qty" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : 0 }}</span>
             </template>
@@ -361,6 +367,11 @@
             <span>{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '--' }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="单位" width="80" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="单价" min-width="120">
           <template slot-scope="scope">
             <el-input v-model="scope.row.unitPrice" type="number" placeholder="请输入单价" @input="priceChangePending(scope.row)" />
@@ -432,7 +443,7 @@
       v-loading="saveQtyConfirmLoading"
     >
       <div style="margin-bottom: 8px; color: #e6a23c;">
-        以下明细「库存数量」与当前仓库库存明细不一致，请逐条点击「确定」确认；确认后将把明细中的库存数量更新为当前实物数量，并重新计算金额。普通盘盈/盘亏（仅盘点数量与账面不同、但与仓库库存一致）不会进入本表。
+        以下明细「账面数量(qty)」与当前仓库库存不一致，请逐条点击「确定」确认；确认后将把明细账面更新为当前仓库数量，并重新计算金额。「盈亏数量」= 盘点数量 − 明细账面（第一列）。普通盘盈/盘亏（仅盘点与账面不同、但与仓库实时库存一致）不会进入本表。
       </div>
       <el-table :data="saveQtyConfirmList" border size="small">
         <el-table-column label="耗材编码" width="120" align="center" show-overflow-tooltip>
@@ -444,8 +455,18 @@
         <el-table-column label="耗材名称" min-width="150" show-overflow-tooltip>
           <template slot-scope="scope">{{ (scope.row.material && scope.row.material.name) || '--' }}</template>
         </el-table-column>
+        <el-table-column label="规格" min-width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单位" width="72" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="批次号" prop="batchNo" min-width="140" />
-        <el-table-column label="明细库存数量" prop="detailQty" width="120" align="center" />
+        <el-table-column label="明细账面数量" prop="detailQty" width="120" align="center" />
         <el-table-column label="当前仓库库存" prop="currentQty" width="120" align="center" />
         <el-table-column label="盘点数量" min-width="100" align="center">
           <template slot-scope="scope">
@@ -477,12 +498,12 @@
       :close-on-click-modal="false"
     >
       <div style="margin-bottom: 8px; color: #e6a23c;">
-        以下明细「库存数量」与当前仓库库存不一致，请逐条确认盘点数量后再审核；确认后将把明细账面库存更新为当前仓库数量并回写盈亏。仅账面与仓库实物不一致时需确认，普通盘盈盘亏不进入本表。
+        以下明细「账面数量(qty)」与当前仓库库存不一致，请逐条确认盘点数量后再审核；确认后将把明细账面更新为当前仓库数量并回写盈亏。仅账面与仓库实物不一致时需确认，普通盘盈盘亏不进入本表。
       </div>
       <el-table :data="qtyMismatchAuditList" border size="small">
         <el-table-column label="耗材" prop="materialName" min-width="150" />
         <el-table-column label="批次号" prop="batchNo" min-width="150" />
-        <el-table-column label="明细内库存数量" prop="detailQty" width="140" />
+        <el-table-column label="明细账面数量" prop="detailQty" width="140" />
         <el-table-column label="当前仓库库存" prop="currentQty" width="140" />
         <el-table-column label="盘点数量" min-width="140">
           <template slot-scope="scope">
@@ -616,9 +637,21 @@ export default {
   methods: {
     normalizeLoadedEntries(list) {
       (list || []).forEach((row) => {
-        if (row && (row.stockQty == null || row.stockQty === '')) {
+        if (!row) return;
+        if (row.stockQty == null || row.stockQty === '') {
           row.stockQty = row.qty != null && row.qty !== '' ? row.qty : 0;
         }
+        const u = row.unitPrice != null && row.unitPrice !== '' ? row.unitPrice : null;
+        const p = row.price != null && row.price !== '' ? row.price : null;
+        const v = u != null ? u : p;
+        if (v != null && v !== '') {
+          row.unitPrice = v;
+          row.price = v;
+        }
+        const up = parseFloat(row.unitPrice != null && row.unitPrice !== '' ? row.unitPrice : row.price || 0);
+        const sq = parseFloat(row.stockQty || 0);
+        const a = sq * (Number.isFinite(up) ? up : 0);
+        row.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
       });
       return list || [];
     },
@@ -637,7 +670,12 @@ export default {
     },
     mapWhInventoryToStocktakingEntry(item) {
       const book = item.qty != null && item.qty !== '' ? item.qty : 0;
-      const up = item.unitPrice != null && item.unitPrice !== '' ? item.unitPrice : (item.price != null ? item.price : null);
+      const up =
+        item.unitPrice != null && item.unitPrice !== ''
+          ? item.unitPrice
+          : item.price != null && item.price !== ''
+            ? item.price
+            : null;
       const stockQty = book;
       const unitPriceNum = parseFloat(up || 0);
       const amt = (parseFloat(stockQty) || 0) * (Number.isFinite(unitPriceNum) ? unitPriceNum : 0);
@@ -716,11 +754,19 @@ export default {
             : mat && mat.salePrice != null && mat.salePrice !== ''
               ? mat.salePrice
               : null;
+        const rowPrice =
+          row.unitPrice != null && row.unitPrice !== ''
+            ? row.unitPrice
+            : row.price != null && row.price !== ''
+              ? row.price
+              : null;
+        const effectivePrice =
+          materialPrice != null && materialPrice !== '' ? materialPrice : rowPrice;
         return {
           materialId: row.materialId != null ? row.materialId : mat && mat.id,
           material: mat,
-          unitPrice: materialPrice,
-          price: materialPrice,
+          unitPrice: effectivePrice,
+          price: effectivePrice,
           qty: 0,
           stockQty: '',
           amt: '0.00',
@@ -948,6 +994,9 @@ export default {
     stockQtyChangePending(row) {
       const a = (parseFloat(row.stockQty) || 0) * (parseFloat(row.unitPrice) || 0);
       row.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
+      if (row.unitPrice != null && row.unitPrice !== '') {
+        row.price = row.unitPrice;
+      }
     },
     handleStocktakingInitFromWarehouseInventory() {
       if (!this.form.warehouseId) {
@@ -977,7 +1026,9 @@ export default {
         fetchNext(1)
           .then((rows) => {
             this.stocktakingBatchSeqCounter = 0;
-            this.stkIoStocktakingEntryList = (rows || []).map((it) => this.mapWhInventoryToStocktakingEntry(it));
+            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(
+              (rows || []).map((it) => this.mapWhInventoryToStocktakingEntry(it))
+            );
             this.$modal.msgSuccess(`已加载 ${this.stkIoStocktakingEntryList.length} 条仓库库存明细`);
           })
           .catch(() => this.$modal.msgError('加载仓库库存失败'))
@@ -1085,9 +1136,8 @@ export default {
       this.form.stockStatus = '1';
       this.form.stockType = '501';
       this.stocktakingBatchSeqCounter = 0;
-      //操作人
-      var userName = this.$store.state.user.name;
-      this.form.createBy = userName;
+      // 制单人：与后端一致存用户ID（后端仍会强制覆盖，避免误传昵称）
+      this.form.createBy = this.$store.getters.userId != null ? String(this.$store.getters.userId) : '';
       this.form.stockDate = this.getBillDate();
       this.action = true;
     },
@@ -1265,13 +1315,14 @@ export default {
       }
       this.$set(target, 'qty', live);
       this.stockQtyChangeWh(target);
+      this.$set(row, 'detailQty', live);
       this.$set(row, 'confirmed', true);
     },
     formatWhSaveConfirmProfitQty(row) {
       const stockQty = parseFloat((row && row.adjustedStockQty) || 0);
-      const bookAfter = parseFloat((row && row.currentQty) || 0);
-      const v = stockQty - bookAfter;
-      if (!Number.isFinite(v)) return '--';
+      const bookOnLine = parseFloat((row && row.detailQty) || 0);
+      const v = stockQty - bookOnLine;
+      if (!Number.isFinite(v) || !Number.isFinite(stockQty)) return '--';
       return v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2);
     },
     confirmWhSaveQtyAndSubmit() {
@@ -1285,7 +1336,15 @@ export default {
     },
     doSubmitStocktakingForm() {
       if (this.submitLoading) return;
-      this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
+      this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) => {
+        const r = { ...row };
+        const up = r.unitPrice != null && r.unitPrice !== '' ? r.unitPrice : r.price;
+        if (up != null && up !== '') {
+          r.unitPrice = up;
+          r.price = up;
+        }
+        return r;
+      });
       this.submitLoading = true;
       const isUpdate = this.form.id != null;
       const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);

@@ -142,7 +142,6 @@
     <div class="table-container">
     <el-table v-loading="loading" :data="inventoryList"
               :row-class-name="inventoryListIndex"
-              show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" 
               height="60vh"
               border>
@@ -406,33 +405,6 @@ export default {
     });
   },
   methods: {
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill('');
-
-      let totalQty = 0;
-      let totalAmt = 0;
-      for (let i = 0; i < (data || []).length; i++) {
-        const item = data[i] || {};
-        totalQty += Number(item.qty || 0);
-        totalAmt += Number(item.amt || 0);
-      }
-
-      columns.forEach((column, index) => {
-        if (column.property === 'qty') {
-          sums[index] = totalQty.toFixed(2);
-        } else if (column.property === 'amt') {
-          const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-        }
-      });
-
-      sums[0] = '';
-      if (sums.length > 1) {
-        sums[1] = '合计';
-      }
-      return sums;
-    },
     openColumnDialog() {
       this.columnHiddenKeys = this.columns.filter(c => !c.visible).map(c => String(c.key));
       this.columnDialogVisible = true;
@@ -822,43 +794,28 @@ export default {
   margin-bottom: 0;
   overflow: visible;
   width: 100%;
+  min-width: 0;
   margin-left: 0;
   margin-right: 0;
   position: relative;
 }
 
-/* 关键：给表体底部留空间，把横向滚动条“顶”上去，避免遮挡汇总(合计)行 */
+/* 表体横向可滚；无表内合计行时底部留白略减，横向条更易露出 */
 .table-container ::v-deep .el-table__body-wrapper {
-  /* 预留：横向滚动条(最高 12px) + 合计行粘底偏移 */
-  padding-bottom: 32px;
+  padding-bottom: 16px;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: #a0a0a0 #e8e8e8;
 }
 
-/* 合计行：粘在表格底部，并抬高一段距离避开横向滚动条 */
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
-  background: #fff;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
-  background: #fff;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell .cell,
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell .cell {
-  white-space: nowrap;
-  overflow: visible;
-}
-
-/* 表格底部横向滚动条：默认 6px，鼠标悬停自动变粗 12px */
+/* 表内合计行已关闭（避免 sticky 合计盖住横向滚动条）；全量/当前页合计见下方 pagination-summary */
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 6px;
+  height: 10px;
   transition: height 0.2s ease;
 }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:hover {
-  height: 12px;
+  height: 14px;
 }
 
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
