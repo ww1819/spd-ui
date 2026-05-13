@@ -16,6 +16,14 @@ export function biScreenConsumablesTotals() {
   })
 }
 
+/** 数据可视化大屏：送货入库前十供应商 */
+export function biScreenInboundSupplierTop10() {
+  return request({
+    url: '/warehouse/warehouse/biScreenInboundSupplierTop10',
+    method: 'get'
+  })
+}
+
 // 查询入库列表
 export function listWarehouse(query) {
   return request({

@@ -161,7 +161,7 @@ import drawMixin from "@/utils/drawMixin"; //自适应缩放
 import { formatTimeDT } from "@/utils"; //日期格式转换
 import * as echarts from "echarts";
 import { listdepart } from "@/api/foundation/depart";
-import { outboundSummaryByDepartment, biScreenConsumablesTotals } from "@/api/warehouse/warehouse";
+import { outboundSummaryByDepartment, biScreenConsumablesTotals, biScreenInboundSupplierTop10 } from "@/api/warehouse/warehouse";
 export default {
   mixins: [drawMixin],
   data() {
@@ -237,16 +237,14 @@ export default {
       //左侧轮播表格配置项（无背景色，与边框框内容一致）
       board_info: {
         header: ["供应商", "数量", "金额"],
-        data: [
-          ["国药器械有限责任公司", "1083", "￥0"],
-          ["广东华润医疗器械有限公司", "1350", "￥0"],
-          ["江门国药器械责任有限责任公司", "1035", "￥0"],
-          ["华融医疗器械有限责任公司", "1330", "￥0"],
-          ["四川科华生物医疗器械有限责任公司", "1250", "￥0"],
-        ],
+        data: [],
         headerBGC: "transparent",
         evenRowBGC: "transparent",
         oddRowBGC: "transparent",
+        rowNum: 10,
+        waitTime: 2500,
+        headerHeight: 36,
+        align: ["left", "right", "right"]
       },
       // 定义颜色
       colorList: {
@@ -347,6 +345,8 @@ export default {
     this.cancelLoading();
     //大屏顶部六项：验收/出库/消耗 金额与数量
     this.loadStatsTotals();
+    //送货入库前十供应商轮播表
+    this.loadSupplierBoard();
     //加载科室列表用于锥形图
     this.loadConeDepartmentData();
     //中国地图
@@ -443,6 +443,32 @@ export default {
       setTimeout(() => {
         this.loading = false;
       }, 500);
+    },
+    /** 大屏左侧：送货入库前十供应商（已审核入退货，按数量降序） */
+    loadSupplierBoard() {
+      biScreenInboundSupplierTop10()
+        .then((res) => {
+          const raw = res && res.data;
+          const rows = Array.isArray(raw) ? raw : [];
+          const data = rows.map((r) => {
+            const name = (r.supplierName || r.supplier_name || "—").toString();
+            const q = Math.round(Number(r.totalQty != null ? r.totalQty : (r.total_qty != null ? r.total_qty : 0)));
+            const a = Number(r.totalAmt != null ? r.totalAmt : (r.total_amt != null ? r.total_amt : 0));
+            const amtStr = Number.isFinite(a) ? "¥" + a.toFixed(2) : "¥0.00";
+            return [name, String(Number.isFinite(q) ? q : 0), amtStr];
+          });
+          const finalData = data.length ? data : [["暂无数据", "0", "¥0.00"]];
+          // dv-scroll-board 对 config 深层变更常不刷新，需整体替换引用；rowNum 勿大于 data 行数
+          const rowNum = Math.min(10, Math.max(1, finalData.length));
+          this.board_info = { ...this.board_info, data: finalData, rowNum };
+        })
+        .catch(() => {
+          this.board_info = {
+            ...this.board_info,
+            data: [["加载失败", "-", "-"]],
+            rowNum: 1
+          };
+        });
     },
     /** 大屏顶部六项统计：全租户已审核入退货、出退库、科室消耗合计 */
     loadStatsTotals() {
