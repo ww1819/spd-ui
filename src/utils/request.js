@@ -101,7 +101,7 @@ service.interceptors.response.use(res => {
       });
     }
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
-    } else if (code === 606 || code === 607) {
+    } else if (code === 606 || code === 607 || code === 608) {
       if (!res.config?.headers?.hideLicenseRedirect) {
         Message({ message: msg, type: 'warning', duration: 4000 })
         const target = '/system/license'
