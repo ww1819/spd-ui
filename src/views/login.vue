@@ -72,15 +72,113 @@
     </el-form>
     <!--  底部  -->
     <div class="el-login-footer">
-      <p class="login-version-line">前端 v{{ frontendVersion }} · 后端 v{{ backendVersionTip }}</p>
+      <p class="login-version-line" @click="onLicenseSecretClick">前端 v{{ frontendVersion }} · 后端 v{{ backendVersionTip }}</p>
       <span>Copyright © 2018-2023 spd.vip All Rights Reserved.</span>
     </div>
+
+    <el-dialog
+      title="系统授权"
+      :visible.sync="licenseDialogVisible"
+      width="480px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <div class="lic-section">
+        <div class="lic-label">注册</div>
+        <p class="lic-tip">请粘贴厂商提供的整行注册码。</p>
+        <el-input
+          v-model="licenseRegCode"
+          type="textarea"
+          :rows="4"
+          placeholder="粘贴整行注册码"
+        />
+        <el-button
+          type="primary"
+          style="margin-top:12px;width:100%"
+          :loading="licenseSubmitting"
+          @click="submitLicenseRegister"
+        >注册</el-button>
+      </div>
+
+      <el-divider content-position="left">厂商</el-divider>
+      <div class="lic-section">
+        <el-button size="small" type="warning" plain @click="openLicenseBuilderPwd">生成注册码</el-button>
+        <span class="lic-muted">（点击后需输入签发口令）</span>
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="licenseDialogVisible = false">关 闭</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog
+      title="签发口令"
+      :visible.sync="licensePwdDialogVisible"
+      width="400px"
+      append-to-body
+      :close-on-click-modal="false"
+      @closed="licenseBuilderPwd = ''"
+    >
+      <el-input
+        v-model="licenseBuilderPwd"
+        type="password"
+        placeholder="请输入签发口令"
+        show-password
+        autocomplete="off"
+        @keyup.enter.native="confirmLicenseBuilderPwd"
+      />
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="licensePwdDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="confirmLicenseBuilderPwd">进 入</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog
+      title="生成注册码（私钥仅在浏览器内使用，不会上传服务器）"
+      :visible.sync="licenseGenDialogVisible"
+      width="520px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <el-form label-width="96px" size="small">
+        <el-form-item label="私钥文件">
+          <input
+            ref="licensePemInput"
+            type="file"
+            accept=".pem,.key,.txt"
+            style="max-width:100%"
+            @change="onLicensePemFile"
+          >
+          <div v-if="licenseGenPemFileName" class="lic-muted" style="margin-top:4px;">已选：{{ licenseGenPemFileName }}</div>
+        </el-form-item>
+        <el-form-item label="医院全称">
+          <el-input v-model="licenseGenHospital" placeholder="医院全称" />
+        </el-form-item>
+        <el-form-item label="到期日期">
+          <el-date-picker
+            v-model="licenseGenExpireDay"
+            type="date"
+            value-format="yyyy-MM-dd"
+            placeholder="到期日（UTC 当日 23:59:59）"
+            style="width:100%"
+          />
+        </el-form-item>
+        <el-form-item label="注册码">
+          <el-input v-model="licenseGenOutput" type="textarea" :rows="4" readonly placeholder="点击下方「生成」" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="licenseGenDialogVisible = false">关 闭</el-button>
+        <el-button v-if="licenseGenOutput" @click="copyLicenseGenOutput">复制注册码</el-button>
+        <el-button type="primary" :loading="licenseGenSubmitting" @click="runLicenseGen">生成</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getCodeImg, getCustomerOptions } from "@/api/login";
+import { getCodeImg, getCustomerOptions, registerLicense } from "@/api/login";
 import { getAppVersion } from '@/api/common/version'
+import { signLicenseV2InBrowser } from '@/utils/licenseBrowserSign'
 import Cookies from "js-cookie";
 import { encrypt, decrypt } from '@/utils/jsencrypt'
 
@@ -131,8 +229,26 @@ export default {
       register: false,
       redirect: undefined,
       frontendVersion: process.env.VUE_APP_VERSION || '—',
-      backendVersionTip: '…'
+      backendVersionTip: '…',
+      licenseDialogVisible: false,
+      licenseRegCode: '',
+      licenseSubmitting: false,
+      licensePwdDialogVisible: false,
+      licenseGenDialogVisible: false,
+      licenseBuilderPwd: '',
+      licenseGenPemText: '',
+      licenseGenPemFileName: '',
+      licenseGenHospital: '',
+      licenseGenExpireDay: '',
+      licenseGenOutput: '',
+      licenseGenSubmitting: false
     };
+  },
+  computed: {
+    licenseBuilderEnabled() {
+      const s = process.env.VUE_APP_LICENSE_BUILDER_SECRET
+      return !!(s != null && String(s).trim() !== '')
+    }
   },
   watch: {
     $route: {
@@ -194,6 +310,140 @@ export default {
         code: this.loginForm.code,
         uuid: this.loginForm.uuid
       };
+    },
+    onLicenseSecretClick() {
+      const t = Date.now()
+      if (t - (this._licLastTs || 0) > 1200) {
+        this._licClicks = 0
+      }
+      this._licLastTs = t
+      this._licClicks = (this._licClicks || 0) + 1
+      if (this._licClicks >= 4) {
+        this._licClicks = 0
+        this.licenseDialogVisible = true
+        this.licenseRegCode = ''
+      }
+    },
+    submitLicenseRegister() {
+      const code = (this.licenseRegCode || '').trim()
+      if (!code) {
+        this.$message.warning('请输入注册码')
+        return
+      }
+      this.licenseSubmitting = true
+      registerLicense({
+        licenseCode: code,
+        customerId: this.loginForm.customerId || undefined,
+        systemType: 'hc'
+      }).then(res => {
+        this.$message.success((res && res.msg) || '注册成功，请登录')
+        this.licenseDialogVisible = false
+      }).catch(() => {}).finally(() => {
+        this.licenseSubmitting = false
+      })
+    },
+    openLicenseBuilderPwd() {
+      if (!this.licenseBuilderEnabled) {
+        this.$message.warning('未配置签发口令：请在 spd-ui 根目录 .env 中设置 VUE_APP_LICENSE_BUILDER_SECRET 后重新打包')
+        return
+      }
+      this.licensePwdDialogVisible = true
+      this.licenseBuilderPwd = ''
+    },
+    confirmLicenseBuilderPwd() {
+      const expect = process.env.VUE_APP_LICENSE_BUILDER_SECRET || ''
+      if ((this.licenseBuilderPwd || '') !== expect) {
+        this.$message.error('口令错误')
+        return
+      }
+      this.licensePwdDialogVisible = false
+      this.licenseBuilderPwd = ''
+      this.licenseGenPemText = ''
+      this.licenseGenPemFileName = ''
+      this.licenseGenHospital = ''
+      this.licenseGenExpireDay = ''
+      this.licenseGenOutput = ''
+      if (this.$refs.licensePemInput) {
+        this.$refs.licensePemInput.value = ''
+      }
+      this.licenseGenDialogVisible = true
+    },
+    onLicensePemFile(e) {
+      const input = e.target
+      const f = input.files && input.files[0]
+      if (!f) {
+        this.licenseGenPemText = ''
+        this.licenseGenPemFileName = ''
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = () => {
+        this.licenseGenPemText = reader.result || ''
+        this.licenseGenPemFileName = f.name
+      }
+      reader.onerror = () => {
+        this.$message.error('读取私钥文件失败')
+        this.licenseGenPemText = ''
+        this.licenseGenPemFileName = ''
+      }
+      reader.readAsText(f, 'UTF-8')
+    },
+    async runLicenseGen() {
+      const pem = (this.licenseGenPemText || '').trim()
+      if (!pem) {
+        this.$message.warning('请选择 PKCS#8 私钥 PEM 文件（BEGIN PRIVATE KEY）')
+        return
+      }
+      if (!pem.includes('BEGIN PRIVATE KEY')) {
+        this.$message.warning('私钥须为 PKCS#8 PEM（以 -----BEGIN PRIVATE KEY----- 开头）')
+        return
+      }
+      const hospital = (this.licenseGenHospital || '').trim()
+      if (!hospital) {
+        this.$message.warning('请输入医院全称')
+        return
+      }
+      const day = this.licenseGenExpireDay
+      if (!day) {
+        this.$message.warning('请选择到期日期')
+        return
+      }
+      const expireAt = `${day}T23:59:59Z`
+      this.licenseGenSubmitting = true
+      this.licenseGenOutput = ''
+      try {
+        const line = await signLicenseV2InBrowser(pem, hospital, expireAt)
+        this.licenseGenOutput = line
+        this.$message.success('已生成，可复制后发给客户')
+      } catch (err) {
+        this.$message.error((err && err.message) || '生成失败')
+      } finally {
+        this.licenseGenSubmitting = false
+      }
+    },
+    copyLicenseGenOutput() {
+      const t = (this.licenseGenOutput || '').trim()
+      if (!t) return
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(() => {
+          this.$message.success('已复制')
+        }).catch(() => this.fallbackCopyText(t))
+      } else {
+        this.fallbackCopyText(t)
+      }
+    },
+    fallbackCopyText(text) {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        this.$message.success('已复制')
+      } catch (e) {
+        this.$message.error('复制失败')
+      }
+      document.body.removeChild(ta)
     },
     handleLogin() {
       this.$refs.loginForm.validate(valid => {
@@ -306,5 +556,25 @@ export default {
 }
 .login-code-img {
   height: 38px;
+}
+.lic-label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #303133;
+}
+.lic-tip {
+  font-size: 13px;
+  color: #606266;
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+.lic-muted {
+  font-size: 12px;
+  color: #909399;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.lic-section {
+  margin-bottom: 4px;
 }
 </style>

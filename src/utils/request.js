@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { Notification, MessageBox, Message, Loading } from 'element-ui'
+import router from '@/router'
 import store from '@/store'
 import { getToken } from '@/utils/auth'
 import errorCode from '@/utils/errorCode'
@@ -100,6 +101,15 @@ service.interceptors.response.use(res => {
       });
     }
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
+    } else if (code === 606 || code === 607) {
+      if (!res.config?.headers?.hideLicenseRedirect) {
+        Message({ message: msg, type: 'warning', duration: 4000 })
+        const target = '/system/license'
+        if (router.currentRoute && router.currentRoute.path !== target) {
+          router.push({ path: target }).catch(() => {})
+        }
+      }
+      return Promise.reject(new Error(msg))
     } else if (code === 500) {
       // 检查请求配置中是否有hideError标记
       const hideError = res.config?.headers?.hideError || res.config?.hideError;

@@ -75,6 +75,18 @@ export function getCustomerOptions(systemType) {
   })
 }
 
+/** 登录页隐蔽入口：匿名导入离线注册码（v2 医院名称绑定） */
+export function registerLicense(data) {
+  return request({
+    url: '/license/register',
+    headers: {
+      isToken: false
+    },
+    method: 'post',
+    data: data || {}
+  })
+}
+
 // 获取验证码
 export function getCodeImg() {
   return request({

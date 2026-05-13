@@ -137,19 +137,32 @@ export const constantRoutes = [
       }
     ]
   },
-  {
-    path: '/tenant-switch',
-    component: Layout,
-    hidden: true,
-    children: [
-      {
-        path: 'index',
-        component: () => import('@/views/system/tenantSwitch/index'),
-        name: 'TenantSwitch',
-        meta: { title: '租户切换', icon: 'peoples' }
-      }
-    ]
-  }
+    {
+      path: '/tenant-switch',
+      component: Layout,
+      hidden: true,
+      children: [
+        {
+          path: 'index',
+          component: () => import('@/views/system/tenantSwitch/index'),
+          name: 'TenantSwitch',
+          meta: { title: '租户切换', icon: 'peoples' }
+        }
+      ]
+    },
+    {
+      path: '/system/license',
+      component: Layout,
+      hidden: true,
+      children: [
+        {
+          path: '',
+          component: () => import('@/views/system/license/index'),
+          name: 'SystemLicensePage',
+          meta: { title: '离线授权', icon: 'password' }
+        }
+      ]
+    }
 ]
 
 // 动态路由，基于用户权限动态去加载
