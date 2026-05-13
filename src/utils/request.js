@@ -101,7 +101,7 @@ service.interceptors.response.use(res => {
       });
     }
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
-    } else if (code === 606 || code === 607) {
+    } else if (code === 606 || code === 607 || code === 608) {
       if (!res.config?.headers?.hideLicenseRedirect) {
         Message({ message: msg, type: 'warning', duration: 4000 })
         const target = '/system/license'
@@ -120,6 +120,25 @@ service.interceptors.response.use(res => {
     } else if (code === 601) {
       Message({ message: msg, type: 'warning' })
       return Promise.reject(new Error(msg))
+    } else if (code === 603) {
+      const hideError = res.config?.headers?.hideError || res.config?.hideError;
+      if (!hideError) {
+        const base = res.data.msg || msg
+        const lines = res.data.data
+        let fullMsg = base
+        if (Array.isArray(lines) && lines.length) {
+          const lineMsgs = lines.map(l => {
+            const bits = []
+            if (l.lineNo != null) bits.push(`第${l.lineNo}行`)
+            if (l.materialName) bits.push(String(l.materialName))
+            if (l.reason) bits.push(String(l.reason))
+            return bits.join(' ')
+          })
+          fullMsg = base + '：' + lineMsgs.join('；')
+        }
+        Message({ message: fullMsg, type: 'error', duration: 0, showClose: true })
+      }
+      return Promise.reject(new Error(res.data.msg || msg))
     } else if (code !== 200) {
       // 检查请求配置中是否有hideError标记
       const hideError = res.config?.headers?.hideError || res.config?.hideError;
