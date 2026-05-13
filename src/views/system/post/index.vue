@@ -72,7 +72,7 @@
         <el-button
           type="primary"
           size="small"
-          :disabled="single"
+          :disabled="multiple"
           @click="handleSyncWarehouse"
           v-hasPermi="['system:post:edit', 'system:post:sync']"
         >同步仓库</el-button>
@@ -81,7 +81,7 @@
         <el-button
           type="primary"
           size="small"
-          :disabled="single"
+          :disabled="multiple"
           @click="handleSyncDepartment"
           v-hasPermi="['system:post:edit', 'system:post:sync']"
         >同步科室</el-button>
@@ -90,7 +90,7 @@
         <el-button
           type="primary"
           size="small"
-          :disabled="single"
+          :disabled="multiple"
           @click="handleSyncMenu"
           v-hasPermi="['system:post:edit', 'system:post:sync']"
         >同步菜单</el-button>
@@ -184,7 +184,7 @@
       :closable="false"
       show-icon
       style="margin-bottom: 12px;"
-      title="此处保存的是工作组（岗位）权限；用户实际登录与按钮权限以「用户管理」中的用户菜单为准。列表勾选工作组后使用「同步菜单/科室/仓库」时支持两种方式：1）复制工作组权限（覆盖用户当前对应权限）；2）补全权限（仅补充缺失，不移除用户原有权限）。"
+      title="此处保存的是工作组（岗位）权限；用户实际登录与按钮权限以「用户管理」中的用户菜单为准。列表勾选至少一个工作组后使用「同步菜单/科室/仓库」：可多选，系统会对每个已勾选工作组分别提交同步任务；支持「复制工作组权限」或「补全权限」。菜单树默认父子独立勾选，勾选「父子联动」后勾选父级会自动勾选下级。"
     />
     <el-tabs type="card">
       <el-tab-pane label="菜单权限">
@@ -198,7 +198,7 @@
           :props="defaultProps"
           node-key="id"
           show-checkbox
-          :check-strictly="false"
+          :check-strictly="true"
           :default-expand-all="false"
           :expand-on-click-node="false"
           :check-on-click-node="true"
@@ -332,6 +332,8 @@ export default {
       },
       syncMenuPollingTimer: null,
       syncMenuPollingPostId: null,
+      /** 非空时表示批量同步：对每个 postId 轮询状态 */
+      syncMenuPollingPostIds: null,
       syncMenuPollingTries: 0,
       syncMenuPollingType: "",
       syncMenuPollingMode: "supplement",
@@ -458,94 +460,81 @@ export default {
         ...this.queryParams
       }, `post_${new Date().getTime()}.xlsx`)
     },
-    /** 同步仓库按钮操作 */
+    /** 同步仓库：支持多选工作组，对每个组分别提交任务 */
     handleSyncWarehouse() {
-      // 检查是否选中了工作组
-      if (this.single || !this.ids || this.ids.length === 0) {
-        this.$modal.msgWarning("请先选择一个工作组");
-        return;
-      }
-      
-      const postId = this.ids[0]; // 获取选中的工作组ID
-      
-      // 从后端获取工作组的权限
-      getPost(postId).then(response => {
-        const post = response.data;
-        const warehouseIds = post.warehouseIds || [];
-        
-        if (!warehouseIds || warehouseIds.length === 0) {
-          this.$modal.msgError("该工作组没有仓库权限，请先进行授权");
-          return;
+      const postIds = this.getSelectedPostIdsOrWarn();
+      if (!postIds) return;
+      Promise.all(postIds.map(pid => getPost(pid))).then(responses => {
+        for (let i = 0; i < responses.length; i++) {
+          const warehouseIds = responses[i].data.warehouseIds || [];
+          if (!warehouseIds.length) {
+            const name = responses[i].data.postName || postIds[i];
+            this.$modal.msgError("工作组「" + name + "」没有仓库权限，请先进行授权");
+            return;
+          }
         }
-        
         this.chooseSyncMode("warehouse").then((syncMode) => {
-          return syncPostWarehouseToUsers(postId, syncMode).then(() => syncMode);
+          return Promise.all(postIds.map(pid => syncPostWarehouseToUsers(pid, syncMode))).then(() => syncMode);
         }).then((syncMode) => {
           this.notifySyncSubmitted("warehouse", syncMode);
-          this.startSyncMenuPolling(postId, "warehouse", syncMode);
+          this.startSyncMenuPolling(postIds, "warehouse", syncMode);
         }).catch(() => {});
       }).catch(error => {
         this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
       });
     },
-    /** 同步科室按钮操作 */
+    /** 同步科室：支持多选工作组 */
     handleSyncDepartment() {
-      // 检查是否选中了工作组
-      if (this.single || !this.ids || this.ids.length === 0) {
-        this.$modal.msgWarning("请先选择一个工作组");
-        return;
-      }
-      
-      const postId = this.ids[0]; // 获取选中的工作组ID
-      
-      // 从后端获取工作组的权限
-      getPost(postId).then(response => {
-        const post = response.data;
-        const departmentIds = post.departmentIds || [];
-        
-        if (!departmentIds || departmentIds.length === 0) {
-          this.$modal.msgError("该工作组没有科室权限，请先进行授权");
-          return;
+      const postIds = this.getSelectedPostIdsOrWarn();
+      if (!postIds) return;
+      Promise.all(postIds.map(pid => getPost(pid))).then(responses => {
+        for (let i = 0; i < responses.length; i++) {
+          const departmentIds = responses[i].data.departmentIds || [];
+          if (!departmentIds.length) {
+            const name = responses[i].data.postName || postIds[i];
+            this.$modal.msgError("工作组「" + name + "」没有科室权限，请先进行授权");
+            return;
+          }
         }
-        
         this.chooseSyncMode("department").then((syncMode) => {
-          return syncPostDepartmentToUsers(postId, syncMode).then(() => syncMode);
+          return Promise.all(postIds.map(pid => syncPostDepartmentToUsers(pid, syncMode))).then(() => syncMode);
         }).then((syncMode) => {
           this.notifySyncSubmitted("department", syncMode);
-          this.startSyncMenuPolling(postId, "department", syncMode);
+          this.startSyncMenuPolling(postIds, "department", syncMode);
         }).catch(() => {});
       }).catch(error => {
         this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
       });
     },
-    /** 同步菜单按钮操作 */
+    /** 同步菜单：支持多选工作组 */
     handleSyncMenu() {
-      // 检查是否选中了工作组
-      if (this.single || !this.ids || this.ids.length === 0) {
-        this.$modal.msgWarning("请先选择一个工作组");
-        return;
-      }
-      
-      const postId = this.ids[0]; // 获取选中的工作组ID
-
-      getPost(postId).then((postResponse) => {
-        const post = postResponse.data;
-        const menuIds = post.menuIds || [];
-        
-        if (!menuIds || menuIds.length === 0) {
-          this.$modal.msgError("该工作组没有菜单权限，请先进行授权");
-          return;
+      const postIds = this.getSelectedPostIdsOrWarn();
+      if (!postIds) return;
+      Promise.all(postIds.map(pid => getPost(pid))).then(responses => {
+        for (let i = 0; i < responses.length; i++) {
+          const menuIds = responses[i].data.menuIds || [];
+          if (!menuIds.length) {
+            const name = responses[i].data.postName || postIds[i];
+            this.$modal.msgError("工作组「" + name + "」没有菜单权限，请先进行授权");
+            return;
+          }
         }
-
         this.chooseSyncMode("menu").then((syncMode) => {
-          return syncPostMenuToUsers(postId, syncMode).then(() => syncMode);
+          return Promise.all(postIds.map(pid => syncPostMenuToUsers(pid, syncMode))).then(() => syncMode);
         }).then((syncMode) => {
           this.notifySyncSubmitted("menu", syncMode);
-          this.startSyncMenuPolling(postId, "menu", syncMode);
+          this.startSyncMenuPolling(postIds, "menu", syncMode);
         }).catch(() => {});
       }).catch(error => {
         this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
       });
+    },
+    getSelectedPostIdsOrWarn() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先勾选至少一个工作组");
+        return null;
+      }
+      return [...this.ids];
     },
     getSyncModeLabel(syncMode) {
       return syncMode === "copy" ? "复制" : "补全";
@@ -581,9 +570,11 @@ export default {
       const modeLabel = this.getSyncModeLabel(syncMode);
       this.$modal.msgSuccess(`${label}${modeLabel}任务已提交，正在后台处理中`);
     },
-    startSyncMenuPolling(postId, type, syncMode) {
+    startSyncMenuPolling(postIdsOrId, type, syncMode) {
       this.stopSyncMenuPolling();
-      this.syncMenuPollingPostId = postId;
+      const ids = Array.isArray(postIdsOrId) ? postIdsOrId.filter(id => id != null) : [postIdsOrId];
+      this.syncMenuPollingPostIds = ids.length ? ids : null;
+      this.syncMenuPollingPostId = ids.length ? ids[0] : null;
       this.syncMenuPollingTries = 0;
       this.syncMenuPollingType = type;
       this.syncMenuPollingMode = syncMode || "supplement";
@@ -598,15 +589,18 @@ export default {
       }
       this.syncMenuPollingTimer = null;
       this.syncMenuPollingPostId = null;
+      this.syncMenuPollingPostIds = null;
       this.syncMenuPollingTries = 0;
       this.syncMenuPollingType = "";
       this.syncMenuPollingMode = "supplement";
     },
     pollSyncMenuStatus() {
-      const postId = this.syncMenuPollingPostId;
+      const ids = (this.syncMenuPollingPostIds && this.syncMenuPollingPostIds.length)
+        ? this.syncMenuPollingPostIds
+        : (this.syncMenuPollingPostId != null ? [this.syncMenuPollingPostId] : []);
       const syncType = this.syncMenuPollingType;
       const syncMode = this.syncMenuPollingMode;
-      if (!postId) {
+      if (!ids.length) {
         this.stopSyncMenuPolling();
         return;
       }
@@ -619,17 +613,20 @@ export default {
       const statusApi = statusApiMap[syncType] || getPostMenuSyncStatus;
       const successText = this.getSyncTypeLabel(syncType);
       const modeText = this.getSyncModeLabel(syncMode);
-      statusApi(postId).then((res) => {
-        const status = res && res.data ? res.data : {};
-        const state = status.status;
-        if (state === "SUCCESS") {
-          const affected = status.affected || 0;
-          this.$modal.msgSuccess(`${successText}${modeText}完成，处理 ${affected} 条用户${successText}`);
-          this.stopSyncMenuPolling();
-          return;
-        }
-        if (state === "FAILED") {
-          this.$modal.msgError(status.message || `${successText}同步失败`);
+      Promise.all(ids.map(postId => statusApi(postId).then(res => ({ postId, st: res && res.data ? res.data : {} })))).then(results => {
+        const allTerminal = results.every(({ st }) => st && (st.status === "SUCCESS" || st.status === "FAILED"));
+        const anyFailed = results.some(({ st }) => st && st.status === "FAILED");
+        const totalAffected = results.reduce((s, { st }) => s + (st && st.affected ? Number(st.affected) : 0), 0);
+        if (allTerminal) {
+          if (anyFailed) {
+            const msg = results.find(({ st }) => st && st.status === "FAILED");
+            this.$modal.msgError((msg && msg.st && msg.st.message) || `${successText}同步失败`);
+          } else {
+            const n = ids.length;
+            this.$modal.msgSuccess(n > 1
+              ? `已为 ${n} 个工作组完成${successText}${modeText}同步，累计处理用户侧约 ${totalAffected} 条`
+              : `${successText}${modeText}完成，处理 ${results[0].st.affected || 0} 条用户${successText}`);
+          }
           this.stopSyncMenuPolling();
           return;
         }
@@ -928,9 +925,11 @@ export default {
         this.$nextTick(() => {
           this.$nextTick(() => {
             if (this.$refs.authMenuTree) {
-              const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+              const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+              const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
               console.log('设置菜单树选中状态 - menuIds:', menuIds);
               this.$refs.authMenuTree.setCheckedKeys(menuIds);
+              menuIds.forEach(id => this.ensurePostAuthMenuAncestorsChecked(id));
               this.updateAuthMenuCheckState();
               // 如果第一次设置失败，延迟再试一次
               setTimeout(() => {
@@ -939,6 +938,7 @@ export default {
                   if (!currentKeys || currentKeys.length === 0) {
                     console.log('菜单树选中状态未设置成功，重试设置');
                     this.$refs.authMenuTree.setCheckedKeys(menuIds);
+                    menuIds.forEach(id => this.ensurePostAuthMenuAncestorsChecked(id));
                     this.updateAuthMenuCheckState();
                   }
                 }
@@ -962,8 +962,9 @@ export default {
       }
       return roleMenuTreeselectPost(postId).then(response => {
         this.menuOptions = response.menus || [];
+        const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
         if (response.checkedKeys != null) {
-          const keys = response.checkedKeys.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+          const keys = response.checkedKeys.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
           this.authForm.menuIds = keys;
         }
         return response;
@@ -994,12 +995,46 @@ export default {
         this.updateAuthMenuCheckState();
       }
     },
-    /** 授权菜单选择变化 */
+    /** 授权菜单选择变化（父子独立：勾选子级时仅向上补齐父链路；取消时按需回收父级） */
     handleAuthMenuCheck(data, checked) {
-      const checkedKeys = this.$refs.authMenuTree.getCheckedKeys();
-      const halfCheckedKeys = this.$refs.authMenuTree.getHalfCheckedKeys();
-      this.authForm.menuIds = checkedKeys;
-      this.updateAuthMenuCheckState(checkedKeys, halfCheckedKeys);
+      if (!this.$refs.authMenuTree || !data) {
+        return;
+      }
+      const checkedKeys = (checked && checked.checkedKeys) ? checked.checkedKeys : (this.$refs.authMenuTree.getCheckedKeys() || []);
+      const currentId = data.id;
+      const isNowChecked = Array.isArray(checkedKeys) && checkedKeys.includes(currentId);
+      if (isNowChecked) {
+        this.ensurePostAuthMenuAncestorsChecked(currentId);
+      } else {
+        this.cleanupPostAuthMenuAncestorsUnchecked(currentId);
+      }
+      const finalCheckedKeys = this.$refs.authMenuTree.getCheckedKeys() || [];
+      this.authForm.menuIds = finalCheckedKeys;
+      this.updateAuthMenuCheckState(finalCheckedKeys, []);
+    },
+    ensurePostAuthMenuAncestorsChecked(nodeId) {
+      if (!this.$refs.authMenuTree) return;
+      const node = this.$refs.authMenuTree.getNode(nodeId);
+      if (!node) return;
+      let p = node.parent;
+      while (p && p.data && p.data.id != null) {
+        this.$refs.authMenuTree.setChecked(p.data.id, true, false);
+        p = p.parent;
+      }
+    },
+    cleanupPostAuthMenuAncestorsUnchecked(nodeId) {
+      if (!this.$refs.authMenuTree) return;
+      const node = this.$refs.authMenuTree.getNode(nodeId);
+      if (!node) return;
+      let p = node.parent;
+      while (p && p.data && p.data.id != null) {
+        const anyChildChecked = (p.childNodes || []).some(c => c.checked || c.indeterminate);
+        if (anyChildChecked) {
+          break;
+        }
+        this.$refs.authMenuTree.setChecked(p.data.id, false, false);
+        p = p.parent;
+      }
     },
     /** 更新授权菜单全选/半选状态 */
     updateAuthMenuCheckState(checkedKeysParam, halfCheckedKeysParam) {
@@ -1035,9 +1070,10 @@ export default {
     },
     /** 授权提交 */
     submitAuth() {
-      // 确保 menuIds 是数字数组
-      const menuIds = Array.isArray(this.authForm.menuIds) 
-        ? this.authForm.menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0)
+      const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+      // 确保 menuIds 是数字数组，且仅保留当前客户可分配树内节点
+      const menuIds = Array.isArray(this.authForm.menuIds)
+        ? this.authForm.menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id))
         : [];
       
       const departmentIds = Array.isArray(this.authForm.departmentIds)
@@ -1093,8 +1129,10 @@ export default {
           // 更新菜单树选中状态
           this.$nextTick(() => {
             if (this.$refs.authMenuTree) {
-              const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+              const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+              const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
               this.$refs.authMenuTree.setCheckedKeys(menuIds);
+              menuIds.forEach(id => this.ensurePostAuthMenuAncestorsChecked(id));
               this.updateAuthMenuCheckState();
             }
           });
@@ -1109,9 +1147,11 @@ export default {
             // 更新菜单树选中状态
             this.$nextTick(() => {
               if (this.$refs.authMenuTree) {
-                const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+                const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+                const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
                 console.log('更新菜单树选中状态 - menuIds:', menuIds);
                 this.$refs.authMenuTree.setCheckedKeys(menuIds);
+                menuIds.forEach(id => this.ensurePostAuthMenuAncestorsChecked(id));
                 this.updateAuthMenuCheckState();
               }
             });
