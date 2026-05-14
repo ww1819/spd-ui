@@ -203,7 +203,7 @@
               <div class="modal-title">{{ title }}</div>
               <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px" size="small" class="modal-form-compact">
+            <el-form ref="form" :model="form" :rules="formRules" label-width="80px" size="small" class="modal-form-compact">
               <el-row>
                 <el-col :span="4">
                   <el-form-item label="机构单位">
@@ -266,8 +266,15 @@
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
-                  <el-form-item label="用户密码" prop="password" v-if="form.userId == undefined">
-                    <el-input v-model="form.password" placeholder="用户密码" type="password" maxlength="20" show-password/>
+                  <el-form-item :label="form.userId != undefined ? '登录密码' : '用户密码'" prop="password">
+                    <el-input
+                      v-model="form.password"
+                      :placeholder="form.userId != undefined ? '留空不修改登录密码' : '用户密码'"
+                      type="password"
+                      maxlength="20"
+                      show-password
+                      autocomplete="new-password"
+                    />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -600,6 +607,35 @@ export default {
         (item.name || "").includes(keyword)
       );
     },
+    /** 新增密码必填；修改时选填，有值则校验长度 */
+    formRules() {
+      const base = { ...this.rules };
+      base.password = [
+        {
+          validator: (rule, value, callback) => {
+            const isAdd = this.form.userId === undefined || this.form.userId === null;
+            const v = value == null ? "" : String(value).trim();
+            if (isAdd) {
+              if (!v) {
+                callback(new Error("用户密码不能为空"));
+              } else if (v.length < 5 || v.length > 20) {
+                callback(new Error("用户密码长度必须介于 5 和 20 之间"));
+              } else {
+                callback();
+              }
+            } else if (!v) {
+              callback();
+            } else if (v.length < 5 || v.length > 20) {
+              callback(new Error("新密码长度必须介于 5 和 20 之间"));
+            } else {
+              callback();
+            }
+          },
+          trigger: "blur"
+        }
+      ];
+      return base;
+    }
   },
   data() {
     return {
@@ -706,10 +742,6 @@ export default {
         ],
         nickName: [
           { required: true, message: "用户姓名不能为空", trigger: "blur" }
-        ],
-        password: [
-          { required: true, message: "用户密码不能为空", trigger: "blur" },
-          { min: 5, max: 20, message: '用户密码长度必须介于 5 和 20 之间', trigger: 'blur' }
         ],
         email: [
           {
@@ -1453,7 +1485,12 @@ export default {
           }
           
           if (this.form.userId != undefined) {
-            updateUser(this.form).then(response => {
+            const payload = { ...this.form };
+            const pw = payload.password != null ? String(payload.password).trim() : "";
+            if (!pw) {
+              delete payload.password;
+            }
+            updateUser(payload).then(response => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
