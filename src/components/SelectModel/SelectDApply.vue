@@ -57,9 +57,28 @@
           <div class="material-filter-between-actions">
             <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
             <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+            <el-button
+              type="danger"
+              plain
+              icon="el-icon-close"
+              size="small"
+              :disabled="!voidWholeEnabled()"
+              v-hasPermi="['department:whWarehouseApply:voidWhole','department:dApply:edit','outWarehouse:apply:edit']"
+              @click="handleVoidWhole"
+            >作废</el-button>
             <el-button size="small" @click="handleClose" style="margin-left: 12px;">取 消</el-button>
             <el-button type="primary" size="small" @click="checkBtn">确 定</el-button>
           </div>
+
+          <el-tabs v-model="queryParams.ckRefSheet" class="wh-apply-ck-tabs" @tab-click="onCkRefSheetTabClick">
+            <el-tab-pane label="未引用" name="none" />
+            <el-tab-pane label="部分引用" name="partial" />
+            <el-tab-pane label="全部引用" name="full" />
+            <el-tab-pane name="lineVoid">
+              <span slot="label" title="已引用出库一部分后，对剩余未引用数量做明细作废">部分作废</span>
+            </el-tab-pane>
+            <el-tab-pane label="已作废" name="wholeVoid" />
+          </el-tabs>
 
           <div class="material-filter-table-section">
             <el-table
@@ -88,9 +107,29 @@
                 </template>
               </el-table-column>
               <el-table-column label="科室" align="center" prop="department.name" min-width="100" show-overflow-tooltip resizable />
+              <el-table-column label="已关联出库" align="center" prop="linkedCkTotal" width="100" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ scope.row.linkedCkTotal != null ? Number(scope.row.linkedCkTotal).toFixed(2) : '—' }}</span>
+                </template>
+              </el-table-column>
               <el-table-column label="待出库数量" align="center" prop="pendingOutboundTotal" width="110" show-overflow-tooltip resizable>
                 <template slot-scope="scope">
                   <span>{{ scope.row.pendingOutboundTotal != null ? Number(scope.row.pendingOutboundTotal).toFixed(2) : '—' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="作废状态" align="center" min-width="110" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ formatVoidStatus(scope.row) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="作废人" align="center" min-width="90" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ formatVoidBy(scope.row) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="作废时间" align="center" min-width="158" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ formatVoidTime(scope.row) }}</span>
                 </template>
               </el-table-column>
               <el-table-column label="源审核日期" align="center" prop="sourceAuditDate" width="160" show-overflow-tooltip resizable>
@@ -140,7 +179,7 @@
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import { listWhApplyForCk } from "@/api/warehouse/outWarehouse";
-import { getWhWarehouseApply } from "@/api/department/whWarehouseApply";
+import { getWhWarehouseApply, voidWhWarehouseApplyWhole } from "@/api/department/whWarehouseApply";
 
 export default {
   name: "SelectDApply",
@@ -164,7 +203,8 @@ export default {
         applyBillNo: null,
         basApplyBillNo: null,
         warehouseId: null,
-        departmentId: null
+        departmentId: null,
+        ckRefSheet: "none"
       }
     };
   },
@@ -186,6 +226,8 @@ export default {
       this.queryParams.warehouseId = this.warehouseValue;
       this.queryParams.departmentId = this.departmentValue;
       if (this.show) {
+        this.queryParams.ckRefSheet = "none";
+        this.queryParams.pageNum = 1;
         this.getList();
       }
     },
@@ -215,6 +257,7 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.pageNum = 1;
       this.queryParams.pageSize = 10;
+      this.queryParams.ckRefSheet = "none";
       this.queryParams.warehouseId = this.warehouseValue;
       this.queryParams.departmentId = this.departmentValue;
       this.handleQuery();
@@ -235,7 +278,26 @@ export default {
         this.$message({ message: "仓库申请单请单选", type: "warning" });
         return;
       }
-      this.$emit("selectWhApplyData", this.selectRowWh[0]);
+      const row = this.selectRowWh[0];
+      const pend = row.pendingOutboundTotal != null ? Number(row.pendingOutboundTotal) : 0;
+      if (pend <= 0) {
+        this.$message({ message: "该申请单当前无可出库数量，无法引用生成出库", type: "warning" });
+        return;
+      }
+      if (row.voidWholeFlag === 1) {
+        this.$message({ message: "该申请单已作废，无法引用", type: "warning" });
+        return;
+      }
+      const linkedCk = row.linkedCkTotal != null ? Number(row.linkedCkTotal) : 0;
+      const lineVoidLines = row.lineVoidedEntryCount != null ? Number(row.lineVoidedEntryCount) : 0;
+      if (linkedCk > 0 && lineVoidLines > 0) {
+        this.$message({
+          message: "该申请单为部分作废状态（已出库引用且存在明细作废），不允许再次引用出库",
+          type: "warning"
+        });
+        return;
+      }
+      this.$emit("selectWhApplyData", row);
       this.handleClose();
     },
     whApplyIndex({ row, rowIndex }) {
@@ -249,6 +311,76 @@ export default {
         this.detailTitle = "仓库申请单 " + (data.applyBillNo || row.applyBillNo || "");
         this.openWhDetail = true;
       });
+    },
+    onCkRefSheetTabClick() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    voidWholeEnabled() {
+      const sheet = this.queryParams.ckRefSheet;
+      if (sheet !== "none" && sheet !== "partial") {
+        return false;
+      }
+      if (!this.selectRowWh || this.selectRowWh.length !== 1) {
+        return false;
+      }
+      const row = this.selectRowWh[0];
+      if (!row || row.voidWholeFlag === 1) {
+        return false;
+      }
+      return true;
+    },
+    formatVoidStatus(row) {
+      if (!row) return "—";
+      if (row.voidWholeFlag === 1) {
+        return "已整单作废";
+      }
+      const linked = row.linkedCkTotal != null ? Number(row.linkedCkTotal) : 0;
+      const lineVoidLines = row.lineVoidedEntryCount != null ? Number(row.lineVoidedEntryCount) : 0;
+      if (linked > 0 && lineVoidLines > 0) {
+        return "部分作废";
+      }
+      if (lineVoidLines > 0) {
+        return "明细作废(未出库引用)";
+      }
+      return "正常";
+    },
+    formatVoidBy(row) {
+      if (!row) return "—";
+      if (row.voidWholeFlag === 1 && row.voidWholeBy) {
+        return row.voidWholeBy;
+      }
+      if (row.lastLineVoidBy) {
+        return row.lastLineVoidBy;
+      }
+      return "—";
+    },
+    formatVoidTime(row) {
+      if (!row) return "—";
+      const t = row.voidWholeFlag === 1 ? row.voidWholeTime : row.lastLineVoidTime;
+      if (!t) return "—";
+      return this.parseTime(t, "{y}-{m}-{d} {h}:{i}:{s}");
+    },
+    handleVoidWhole() {
+      if (!this.voidWholeEnabled()) {
+        return;
+      }
+      const row = this.selectRowWh[0];
+      this.$prompt("请输入作废原因（可留空）", "整单作废确认", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        inputPlaceholder: "原因",
+        inputValue: ""
+      })
+        .then(({ value }) => {
+          const reason = value != null ? String(value).trim() : "";
+          return voidWhWarehouseApplyWhole({ id: row.id, reason });
+        })
+        .then(() => {
+          this.$message.success("作废成功");
+          this.getList();
+        })
+        .catch(() => {});
     }
   }
 };
@@ -392,6 +524,11 @@ export default {
   margin-top: 0;
   margin-bottom: 0;
   text-align: left;
+}
+
+.wh-apply-ck-tabs {
+  margin: 10px -20px 0;
+  padding: 0 16px;
 }
 
 .query-form {

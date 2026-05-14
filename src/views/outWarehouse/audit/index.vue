@@ -284,7 +284,7 @@
           :closable="false"
           show-icon
           class="wh-apply-outbound-hint"
-          title="引用库房申请单出库：同一申请明细在本单各行的「数量」合计不得大于「可引用」；「可引用」=申请数扣减明细作废与其它出库单已占用。"
+          title="引用库房申请单出库：「可引用」列为申请数扣减明细作废与其它出库单已占用后的参考值；保存与审核不再强制要求出库数量不得超过该参考值。"
         />
 
         <div class="modal-detail-section">
@@ -357,7 +357,7 @@
           <el-table-column prop="srcRefableQty" width="88" align="center" show-overflow-tooltip resizable>
             <template slot="header">
               <el-tooltip
-                content="引用库房申请时：本单同一申请明细各行「数量」之和不得大于「可引用」；可引用=申请数−已作废−其它单已出库占用。"
+                content="可引用=申请数−已作废−其它单已出库占用，仅供参考；出库数量可大于该值。"
                 placement="top"
               >
                 <span class="table-header-with-tip">可引用<i class="el-icon-question" /></span>
@@ -541,9 +541,7 @@ import outOrderPrint from "@/views/outWarehouse/audit/outOrderPrint";
 import { buildOutboundPrintRowFromDetail } from '@/views/warehouse/print/outboundPrintRow'
 import {
   cloneStkOutEntryForDuplicate,
-  cloneDocRefRowForDuplicate,
-  sumQtyByWhApplyEntryId,
-  maxSrcRefableQtyByWhApplyEntryId
+  cloneDocRefRowForDuplicate
 } from '@/utils/outWarehouseBillRow'
 import {STOCK_OUT_TEMPLATE} from '@/utils/printData'
 
@@ -1101,19 +1099,6 @@ export default {
           if (entry.kcNo == null || String(entry.kcNo).trim() === '') {
             this.$modal.msgError(`第${index + 1}行缺少库存行标识，请重新选择批次`)
             return
-          }
-        }
-        if (this.form.whWarehouseApplyId) {
-          const sums = sumQtyByWhApplyEntryId(this.stkIoBillEntryList)
-          const maxRef = maxSrcRefableQtyByWhApplyEntryId(this.stkIoBillEntryList)
-          for (const [whEid, sum] of sums.entries()) {
-            const cap = maxRef.get(whEid)
-            if (cap != null && sum > cap) {
-              this.$modal.msgError(
-                `引用库房申请单出库：同一申请明细本单「数量」合计不得大于可申请（界面「可引用」）${cap}，当前合计 ${sum}。请调小数量或删除多余行后再保存。`
-              )
-              return
-            }
           }
         }
         const batchMap = new Map()
