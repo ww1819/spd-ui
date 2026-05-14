@@ -1130,20 +1130,16 @@ export default {
     onWhEntryCountedChange(row, val) {
       if (!row || !row.id) return;
       const prev = val === 1 ? 0 : 1;
-      updateStocktakingEntryCounted({ id: row.id, countedFlag: val })
-        .then(() => {
-          const headId = this.form && this.form.id;
-          if (!headId) return;
-          return getStocktaking(headId).then((response) => {
-            const data = response && response.data;
-            if (!data) return;
-            this.form = data;
-            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
-          });
-        })
-        .catch(() => {
-          this.$set(row, 'countedFlag', prev);
-        });
+      const sq = parseFloat(row.stockQty);
+      const payload = { id: row.id, countedFlag: val };
+      if (Number.isFinite(sq)) {
+        payload.stockQty = sq;
+      }
+      updateStocktakingEntryCounted(payload).then(() => {
+        this.stockQtyChangeWh(row);
+      }).catch(() => {
+        this.$set(row, 'countedFlag', prev);
+      });
     },
     stockQtyChangeWh(row) {
       const up = parseFloat(row.unitPrice != null ? row.unitPrice : row.price || 0);

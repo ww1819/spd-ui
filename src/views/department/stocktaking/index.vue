@@ -1536,20 +1536,16 @@ export default {
     onDeptEntryCountedChange(row, val) {
       if (!row || !row.id) return;
       const prev = val === 1 ? 0 : 1;
-      updateDeptStocktakingEntryCounted({ id: row.id, countedFlag: val })
-        .then(() => {
-          const headId = this.form && this.form.id;
-          if (!headId) return;
-          return getStocktaking(headId).then((response) => {
-            const data = response && response.data;
-            if (!data) return;
-            this.form = data;
-            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
-          });
-        })
-        .catch(() => {
-          this.$set(row, 'countedFlag', prev);
-        });
+      const sq = parseFloat(row.stockQty);
+      const payload = { id: row.id, countedFlag: val };
+      if (Number.isFinite(sq)) {
+        payload.stockQty = sq;
+      }
+      updateDeptStocktakingEntryCounted(payload).then(() => {
+        this.stockQtyChange(row);
+      }).catch(() => {
+        this.$set(row, 'countedFlag', prev);
+      });
     },
     //盘点数量改变事件
     stockQtyChange(row) {
