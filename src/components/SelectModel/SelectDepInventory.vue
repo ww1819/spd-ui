@@ -169,6 +169,7 @@
 <script>
 import { listInventoryPick } from "@/api/department/depInventory";
 import { listMaterial } from "@/api/foundation/material";
+import { sortInventoryRowsByNameSpecCodeMaterialId } from "@/utils/stocktakingInventorySort";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 
@@ -181,6 +182,11 @@ export default {
     departmentValue: {},
     warehouseValue: {},
     selectedDetails: {},
+    /** 为 true 时列表按名称、规格、编码、产品档案 id 排序（盘点初始化/盘亏选库存等） */
+    stocktakingPickSortByMaterial: {
+      type: Boolean,
+      default: false
+    },
     /** 为 true 时标题为「添加明细」，数据来自耗材字典 /foundation/material/list，不再查科室库存 */
     useMaterialDict: {
       type: Boolean,
@@ -326,7 +332,9 @@ export default {
             const materials = response.rows || [];
             const rows = materials.map((m) => this.materialDictToTableRow(m)).filter(Boolean);
             // 盘盈等产品字典选择：不过滤单据明细已有 materialId，允许同产品重复选入（如多条盘盈行）
-            this.inventoryList = rows;
+            this.inventoryList = this.stocktakingPickSortByMaterial
+              ? sortInventoryRowsByNameSpecCodeMaterialId(rows)
+              : rows;
             this.total = response.total != null ? Number(response.total) : 0;
             this.loading = false;
             this.$nextTick(() => this.restorePageSelection());
@@ -360,7 +368,7 @@ export default {
                 .filter(d => d && d.materialId != null && d.batchNo && (d.kcNo == null || d.kcNo === ""))
                 .map(d => `${d.materialId}__${d.batchNo}`)
             );
-            this.inventoryList = rows.filter(it => {
+            const filtered = rows.filter(it => {
               if (!it) return true;
               if (it.id != null && existedDepInvIds.has(String(it.id))) {
                 return false;
@@ -371,8 +379,13 @@ export default {
               }
               return true;
             });
+            this.inventoryList = this.stocktakingPickSortByMaterial
+              ? sortInventoryRowsByNameSpecCodeMaterialId(filtered)
+              : filtered;
           } else {
-            this.inventoryList = rows;
+            this.inventoryList = this.stocktakingPickSortByMaterial
+              ? sortInventoryRowsByNameSpecCodeMaterialId(rows)
+              : rows;
           }
           this.total = response.total != null ? Number(response.total) : 0;
           this.loading = false;

@@ -168,6 +168,7 @@
 
 <script>
 import { listInventory } from "@/api/warehouse/inventory";
+import { sortInventoryRowsByNameSpecCodeMaterialId } from "@/utils/stocktakingInventorySort";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 /** 下拉用 listDeptSafe，避免依赖 foundation:supplier:list（科室审核/库存选择等场景） */
 import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
@@ -207,6 +208,11 @@ export default {
     modalTitle: {
       type: String,
       default: "库存明细"
+    },
+    /** 为 true 时按名称、规格、编码、产品档案 id 排序列表（仓库盘点盘亏选库存等） */
+    stocktakingPickSortByMaterial: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -352,6 +358,7 @@ export default {
             rows = rows.filter((it) => it && String(it.materialId) === lid);
           }
           const occ = this.selectedDetailsForOccupiedFilter;
+          let list;
           if (occ && occ.length) {
             const existedKeySet = new Set(
               occ
@@ -363,7 +370,7 @@ export default {
                 .map((d) => (d && d.kcNo != null && d.kcNo !== "" ? String(d.kcNo) : ""))
                 .filter((s) => s)
             );
-            this.inventoryList = rows.filter((it) => {
+            list = rows.filter((it) => {
               if (!it) {
                 return true;
               }
@@ -374,8 +381,12 @@ export default {
               return !key || !existedKeySet.has(key);
             });
           } else {
-            this.inventoryList = rows;
+            list = rows;
           }
+          if (this.stocktakingPickSortByMaterial && list && list.length) {
+            list = sortInventoryRowsByNameSpecCodeMaterialId(list);
+          }
+          this.inventoryList = list;
           this.total = response.total != null ? Number(response.total) : 0;
           this.loading = false;
           this.$nextTick(() => {
