@@ -565,8 +565,8 @@
 </template>
 
 <script>
-import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, auditStocktaking, checkStocktakingQty, updateStocktakingEntryCounted, appendStocktakingEntries } from "@/api/warehouse/stocktaking";
-import { listInventory, listInventoryPick, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
+import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, auditStocktaking, checkStocktakingQty, updateStocktakingEntryCounted, appendStocktakingEntries, initWarehouseStocktakingFromInventory } from "@/api/warehouse/stocktaking";
+import { listInventoryPick, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
@@ -1088,7 +1088,8 @@ export default {
         row.price = row.unitPrice;
       }
     },
-    handleStocktakingInitFromWarehouseInventory() {
+    /** 按当前仓库：服务端生成并保存盘点单+明细后再加载到前端（失败不落库） */
+    async handleStocktakingInitFromWarehouseInventory() {
       if (!this.form.warehouseId) {
         this.$message({ message: '请先选择仓库', type: 'warning' });
         return;
@@ -1097,42 +1098,34 @@ export default {
         this.$modal.msgWarning('盘点单已有明细，请先删除后再进行盘点初始化');
         return;
       }
-      const run = () => {
-        this.whInventoryInitLoading = true;
-        const pageSize = 500;
-        const allRows = [];
-        const fetchNext = (pageNum) =>
-          listInventory({
-            warehouseId: this.form.warehouseId,
-            pageNum,
-            pageSize
-          }).then((res) => {
-            const rows = res.rows || [];
-            if (!rows.length) {
-              return allRows;
-            }
-            allRows.push(...rows);
-            if (rows.length < pageSize) {
-              return allRows;
-            }
-            return fetchNext(pageNum + 1);
-          });
-        fetchNext(1)
-          .then((rows) => {
-            this.stocktakingBatchSeqCounter = 0;
-            const sorted = sortInventoryRowsByNameSpecCodeMaterialId(rows || []);
-            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(
-              sorted.map((it) => this.mapWhInventoryToStocktakingEntry(it))
-            );
-            this.$modal.msgSuccess(`已加载 ${this.stkIoStocktakingEntryList.length} 条仓库库存明细`);
-            this.$nextTick(() => this.attemptAutoSaveAfterStocktakingDetailChange());
-          })
-          .catch(() => this.$modal.msgError('加载仓库库存失败'))
-          .finally(() => {
-            this.whInventoryInitLoading = false;
-          });
-      };
-      run();
+      this.whInventoryInitLoading = true;
+      try {
+        const payload = {
+          id: this.form.id,
+          warehouseId: this.form.warehouseId,
+          departmentId: this.form.departmentId,
+          stockDate: this.form.stockDate,
+          stockStatus: this.form.stockStatus,
+          stockType: this.form.stockType != null && this.form.stockType !== '' ? this.form.stockType : 501,
+          remark: this.form.remark
+        };
+        const res = await initWarehouseStocktakingFromInventory(payload);
+        const data = res && res.data;
+        if (!data) {
+          this.$modal.msgError('盘点初始化失败：未返回单据数据');
+          return;
+        }
+        this.stocktakingBatchSeqCounter = 0;
+        this.form = data;
+        this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
+        this.stocktakingAutoSaveEnabled = false;
+        this.$modal.msgSuccess(`已生成并保存 ${this.stkIoStocktakingEntryList.length} 条仓库库存盘点明细`);
+        this.getList();
+      } catch (e) {
+        // 错误由后端/拦截器提示
+      } finally {
+        this.whInventoryInitLoading = false;
+      }
     },
     onWhEntryCountedChange(row, val) {
       if (!row || !row.id) return;

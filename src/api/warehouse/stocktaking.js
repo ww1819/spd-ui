@@ -44,6 +44,15 @@ export function appendStocktakingEntries(billId, entries) {
   })
 }
 
+/** 仓库盘点：服务端按仓库库存生成并保存主单+明细，成功后返回完整单据 */
+export function initWarehouseStocktakingFromInventory(data) {
+  return request({
+    url: '/stocktaking/in/init-from-inventory',
+    method: 'post',
+    data
+  })
+}
+
 // 删除盘点
 export function delStocktaking(id) {
   return request({

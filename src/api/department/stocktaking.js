@@ -53,6 +53,15 @@ export function appendDeptStocktakingEntries(billId, entries) {
   })
 }
 
+/** 科室盘点：服务端按「已收货确认」科室库存生成并保存主单+明细，成功后返回完整单据 */
+export function initDeptStocktakingFromInventory(data) {
+  return request({
+    url: '/department/stocktaking/init-from-inventory',
+    method: 'post',
+    data
+  })
+}
+
 // 删除科室盘点
 export function delStocktaking(id) {
   return request({

@@ -652,7 +652,7 @@
 </template>
 
 <script>
-import { listStocktaking, listStocktakingExportRows, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, updateDeptStocktakingEntryCounted, appendDeptStocktakingEntries } from "@/api/department/stocktaking";
+import { listStocktaking, listStocktakingExportRows, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, updateDeptStocktakingEntryCounted, appendDeptStocktakingEntries, initDeptStocktakingFromInventory } from "@/api/department/stocktaking";
 import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { listInventoryPick, listInventoryPickSummary } from "@/api/department/depInventory";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -1346,8 +1346,8 @@ export default {
         countedFlag: fromInit ? 0 : 1
       };
     },
-    /** 按当前科室拉取全部科室库存，填充盘点明细 */
-    handleStocktakingInitFromDeptInventory() {
+    /** 按当前科室：服务端生成并保存盘点单+明细后再加载到前端（失败不落库） */
+    async handleStocktakingInitFromDeptInventory() {
       if (!this.form.departmentId) {
         this.$message({ message: '请先选择科室', type: 'warning' });
         return;
@@ -1356,50 +1356,34 @@ export default {
         this.$modal.msgWarning('盘点单已有明细，请先删除后再进行盘点初始化');
         return;
       }
-      const runLoad = () => {
-        this.deptInventoryInitLoading = true;
-        const pageSize = 500;
-        const allRows = [];
-        const fetchNext = (pageNum) => {
-          // 与科室库存查询「已确认」一致：只拉已收货确认的明细，未确认出库不计入盘点初始化
-          return listInventoryPick({
-            departmentId: this.form.departmentId,
-            pageNum,
-            pageSize,
-            receiptConfirmStatus: 1
-          }).then((res) => {
-            const rows = res.rows || [];
-            if (rows.length === 0) {
-              return allRows;
-            }
-            allRows.push(...rows);
-            if (rows.length < pageSize) {
-              return allRows;
-            }
-            return fetchNext(pageNum + 1);
-          });
+      this.deptInventoryInitLoading = true;
+      try {
+        const payload = {
+          id: this.form.id,
+          departmentId: this.form.departmentId,
+          stockDate: this.form.stockDate,
+          stockStatus: this.form.stockStatus,
+          stockType: this.form.stockType != null && this.form.stockType !== '' ? this.form.stockType : 502,
+          remark: this.form.remark
         };
-        fetchNext(1)
-          .then((rows) => {
-            this.stocktakingBatchSeqCounter = 0;
-            const sorted = sortInventoryRowsByNameSpecCodeMaterialId(rows || []);
-            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(
-              sorted.map((it) =>
-                this.mapDepInventoryToStocktakingEntry({ ...it, _fromStocktakingInit: true })
-              )
-            );
-            this.departmentLockedByAction = true;
-            this.$modal.msgSuccess(`已加载 ${this.stkIoStocktakingEntryList.length} 条科室库存明细`);
-            this.$nextTick(() => this.attemptAutoSaveDeptAfterStocktakingDetailChange());
-          })
-          .catch(() => {
-            this.$modal.msgError('加载科室库存失败');
-          })
-          .finally(() => {
-            this.deptInventoryInitLoading = false;
-          });
-      };
-      runLoad();
+        const res = await initDeptStocktakingFromInventory(payload);
+        const data = res && res.data;
+        if (!data) {
+          this.$modal.msgError('盘点初始化失败：未返回单据数据');
+          return;
+        }
+        this.stocktakingBatchSeqCounter = 0;
+        this.form = data;
+        this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
+        this.departmentLockedByAction = true;
+        this.stocktakingAutoSaveEnabled = false;
+        this.$modal.msgSuccess(`已生成并保存 ${this.stkIoStocktakingEntryList.length} 条科室库存盘点明细`);
+        this.getList();
+      } catch (e) {
+        // 错误文案由后端返回；请求层已弹窗时可不再处理
+      } finally {
+        this.deptInventoryInitLoading = false;
+      }
     },
     closeDialog() {
       //关闭“弹窗组件”
