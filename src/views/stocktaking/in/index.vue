@@ -215,7 +215,14 @@
               <el-button type="warning" icon="el-icon-plus" size="small" @click="openAddProfitEntry">新增盘盈明细</el-button>
             </el-col>
             <el-col :span="2">
-              <el-button type="primary" icon="el-icon-refresh" size="small" :loading="whInventoryInitLoading" @click="handleStocktakingInitFromWarehouseInventory">盘点初始化</el-button>
+              <el-button
+                type="primary"
+                icon="el-icon-refresh"
+                size="small"
+                :loading="whInventoryInitLoading"
+                :disabled="(stkIoStocktakingEntryList || []).length > 0"
+                @click="handleStocktakingInitFromWarehouseInventory"
+              >盘点初始化</el-button>
             </el-col>
             <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoStocktakingEntry">删除</el-button>
@@ -558,7 +565,7 @@
 </template>
 
 <script>
-import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, auditStocktaking, checkStocktakingQty, updateStocktakingEntryCounted } from "@/api/warehouse/stocktaking";
+import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, auditStocktaking, checkStocktakingQty, updateStocktakingEntryCounted, appendStocktakingEntries } from "@/api/warehouse/stocktaking";
 import { listInventory, listInventoryPick, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
@@ -1086,6 +1093,10 @@ export default {
         this.$message({ message: '请先选择仓库', type: 'warning' });
         return;
       }
+      if ((this.stkIoStocktakingEntryList || []).length > 0) {
+        this.$modal.msgWarning('盘点单已有明细，请先删除后再进行盘点初始化');
+        return;
+      }
       const run = () => {
         this.whInventoryInitLoading = true;
         const pageSize = 500;
@@ -1121,21 +1132,25 @@ export default {
             this.whInventoryInitLoading = false;
           });
       };
-      if (this.stkIoStocktakingEntryList && this.stkIoStocktakingEntryList.length > 0) {
-        this.$modal
-          .confirm('将清空当前盘点明细，并按所选仓库库存重新加载明细，是否继续？')
-          .then(run)
-          .catch(() => {});
-      } else {
-        run();
-      }
+      run();
     },
     onWhEntryCountedChange(row, val) {
       if (!row || !row.id) return;
       const prev = val === 1 ? 0 : 1;
-      updateStocktakingEntryCounted({ id: row.id, countedFlag: val }).catch(() => {
-        this.$set(row, 'countedFlag', prev);
-      });
+      updateStocktakingEntryCounted({ id: row.id, countedFlag: val })
+        .then(() => {
+          const headId = this.form && this.form.id;
+          if (!headId) return;
+          return getStocktaking(headId).then((response) => {
+            const data = response && response.data;
+            if (!data) return;
+            this.form = data;
+            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
+          });
+        })
+        .catch(() => {
+          this.$set(row, 'countedFlag', prev);
+        });
     },
     stockQtyChangeWh(row) {
       const up = parseFloat(row.unitPrice != null ? row.unitPrice : row.price || 0);
@@ -1479,6 +1494,28 @@ export default {
           this.$modal.msgWarning('账面数量与当前仓库库存不一致，请点击「确定」手动保存并完成逐条确认');
           return;
         }
+        const list = this.stkIoStocktakingEntryList || [];
+        const newEntries = list.filter((r) => r && (r.id == null || r.id === ''));
+        if (patchExisting) {
+          if (!newEntries.length) {
+            return;
+          }
+          this.submitLoading = true;
+          try {
+            const payload = newEntries.map((row) => this.serializeStocktakingEntryForSave(row));
+            const res = await appendStocktakingEntries(this.form.id, payload);
+            const data = res && res.data;
+            if (data) {
+              this.form = data;
+              this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
+            }
+            this.$modal.msgSuccess('已自动保存');
+            this.getList();
+          } finally {
+            this.submitLoading = false;
+          }
+          return;
+        }
         await this.doSubmitStocktakingForm({ keepDialogOpen: true, quietSuccess: true });
       } catch (e) {
         // 网络等异常由接口层提示；此处避免打断用户操作
@@ -1533,20 +1570,35 @@ export default {
       this.saveQtyConfirmVisible = false;
       this.doSubmitStocktakingForm();
     },
+    /** 提交/追加明细时去掉前端展示用字段，减轻整包体积 */
+    serializeStocktakingEntryForSave(row) {
+      const rest = { ...row };
+      delete rest.material;
+      delete rest.warehouse;
+      delete rest._warehouseName;
+      delete rest._supplierName;
+      delete rest.index;
+      delete rest.fromStocktakingInit;
+      delete rest._fromStocktakingInit;
+      delete rest._cbBatchNone;
+      delete rest._cbBatchUnknown;
+      delete rest._batchLocked;
+      delete rest._longTerm;
+      const up = rest.unitPrice != null && rest.unitPrice !== '' ? rest.unitPrice : rest.price;
+      if (up != null && up !== '') {
+        rest.unitPrice = up;
+        rest.price = up;
+      }
+      return rest;
+    },
     doSubmitStocktakingForm(options) {
       if (this.submitLoading) return Promise.resolve();
       options = options || {};
       const keepDialogOpen = !!options.keepDialogOpen;
       const quietSuccess = !!options.quietSuccess;
-      this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) => {
-        const r = { ...row };
-        const up = r.unitPrice != null && r.unitPrice !== '' ? r.unitPrice : r.price;
-        if (up != null && up !== '') {
-          r.unitPrice = up;
-          r.price = up;
-        }
-        return r;
-      });
+      this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) =>
+        this.serializeStocktakingEntryForSave(row)
+      );
       this.submitLoading = true;
       const isUpdate = this.form.id != null;
       const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);

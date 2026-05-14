@@ -44,6 +44,15 @@ export function updateStocktaking(data) {
   })
 }
 
+/** 向已存在的科室盘点单追加明细（新行，无明细 id），返回完整单据 */
+export function appendDeptStocktakingEntries(billId, entries) {
+  return request({
+    url: '/department/stocktaking/' + billId + '/entries',
+    method: 'post',
+    data: entries
+  })
+}
+
 // 删除科室盘点
 export function delStocktaking(id) {
   return request({

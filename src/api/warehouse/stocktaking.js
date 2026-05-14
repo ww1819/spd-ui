@@ -35,6 +35,15 @@ export function updateStocktaking(data) {
   })
 }
 
+/** 向已存在的仓库盘点单追加明细（新行无明细 id），返回完整单据 */
+export function appendStocktakingEntries(billId, entries) {
+  return request({
+    url: '/stocktaking/in/' + billId + '/entries',
+    method: 'post',
+    data: entries
+  })
+}
+
 // 删除盘点
 export function delStocktaking(id) {
   return request({

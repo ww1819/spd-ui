@@ -261,29 +261,51 @@
 
               <div class="modal-detail-section">
                 <el-row :gutter="10" class="detail-toolbar-row">
-                  <el-col :span="1.5">
-                    <span>盘点明细信息</span>
+                  <el-col :span="24">
+                    <div class="detail-toolbar-inner">
+                      <span class="detail-section-title">盘点明细信息</span>
+                      <div v-show="action" class="detail-toolbar-actions">
+                        <el-button type="primary" icon="el-icon-minus" size="small" @click="openAddLossEntry">新增盘亏明细</el-button>
+                        <el-button type="warning" icon="el-icon-plus" size="small" @click="openAddProfitEntry">新增盘盈明细</el-button>
+                        <el-button
+                          type="primary"
+                          icon="el-icon-refresh"
+                          size="small"
+                          :loading="deptInventoryInitLoading"
+                          :disabled="(stkIoStocktakingEntryList || []).length > 0"
+                          @click="handleStocktakingInitFromDeptInventory"
+                        >盘点初始化</el-button>
+                        <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoStocktakingEntry">删除</el-button>
+                        <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :loading="submitLoading">保 存</el-button>
+                      </div>
+                      <div class="detail-toolbar-filters">
+                        <el-input
+                          v-model="detailFilterMaterialName"
+                          size="small"
+                          clearable
+                          placeholder="耗材名称模糊"
+                          class="detail-filter-input"
+                        />
+                        <el-input
+                          v-model="detailFilterSpec"
+                          size="small"
+                          clearable
+                          placeholder="规格模糊"
+                          class="detail-filter-input"
+                        />
+                        <el-input
+                          v-model="detailFilterModel"
+                          size="small"
+                          clearable
+                          placeholder="型号模糊"
+                          class="detail-filter-input"
+                        />
+                      </div>
+                    </div>
                   </el-col>
-                  <div v-show="action">
-                    <el-col :span="1.5">
-                      <el-button type="primary" icon="el-icon-minus" size="small" @click="openAddLossEntry">新增盘亏明细</el-button>
-                    </el-col>
-                    <el-col :span="1.5">
-                      <el-button type="warning" icon="el-icon-plus" size="small" @click="openAddProfitEntry">新增盘盈明细</el-button>
-                    </el-col>
-                    <el-col :span="2">
-                      <el-button type="primary" icon="el-icon-refresh" size="small" :loading="deptInventoryInitLoading" @click="handleStocktakingInitFromDeptInventory">盘点初始化</el-button>
-                    </el-col>
-                    <el-col :span="1.5">
-                      <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoStocktakingEntry">删除</el-button>
-                    </el-col>
-                    <el-col :span="1.5">
-                      <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :loading="submitLoading">保 存</el-button>
-                    </el-col>
-                  </div>
                 </el-row>
                 <div class="table-wrapper">
-        <el-table :data="stkIoStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex"
+        <el-table :data="filteredStkIoStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex"
                   @selection-change="handleStkIoStocktakingEntrySelectionChange"
                   ref="stkIoStocktakingEntry"
                   border
@@ -630,7 +652,7 @@
 </template>
 
 <script>
-import { listStocktaking, listStocktakingExportRows, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, updateDeptStocktakingEntryCounted } from "@/api/department/stocktaking";
+import { listStocktaking, listStocktakingExportRows, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, updateDeptStocktakingEntryCounted, appendDeptStocktakingEntries } from "@/api/department/stocktaking";
 import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { listInventoryPick, listInventoryPickSummary } from "@/api/department/depInventory";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -668,8 +690,12 @@ export default {
       saveQtyConfirmLoading: false,
       // 选中数组
       ids: [],
-      // 子表选中数据
+      // 子表选中数据（行对象引用，筛选后删除仍正确）
       checkedStkIoStocktakingEntry: [],
+      /** 盘点明细表：名称/规格/型号模糊筛选（仅前端展示，不影响保存条数） */
+      detailFilterMaterialName: '',
+      detailFilterSpec: '',
+      detailFilterModel: '',
       // 非单个禁用
       single: true,
       // 非多个禁用
@@ -746,6 +772,15 @@ export default {
       if (val) {
         this.$nextTick(() => this.refreshProfitNameSpecStockDept());
       }
+    },
+    detailFilterMaterialName() {
+      this.clearEntryTableSelection();
+    },
+    detailFilterSpec() {
+      this.clearEntryTableSelection();
+    },
+    detailFilterModel() {
+      this.clearEntryTableSelection();
     }
   },
   computed: {
@@ -780,9 +815,39 @@ export default {
     stocktakingHeadAudited() {
       const s = this.form && this.form.stockStatus;
       return s === 2 || s === '2';
+    },
+    /** 当前表格展示的明细（模糊筛选后）；保存仍使用完整 stkIoStocktakingEntryList */
+    filteredStkIoStocktakingEntryList() {
+      const list = this.stkIoStocktakingEntryList || [];
+      const norm = (v) => (v != null && String(v).trim() !== '' ? String(v).trim().toLowerCase() : '');
+      const fn = norm(this.detailFilterMaterialName);
+      const fs = norm(this.detailFilterSpec);
+      const fm = norm(this.detailFilterModel);
+      if (!fn && !fs && !fm) {
+        return list;
+      }
+      return list.filter((row) => {
+        const m = row && row.material ? row.material : null;
+        const name = m && m.name != null ? String(m.name).toLowerCase() : '';
+        const spec = m && m.speci != null ? String(m.speci).toLowerCase() : '';
+        const model = m && m.model != null ? String(m.model).toLowerCase() : '';
+        if (fn && !name.includes(fn)) return false;
+        if (fs && !spec.includes(fs)) return false;
+        if (fm && !model.includes(fm)) return false;
+        return true;
+      });
     }
   },
   methods: {
+    clearEntryTableSelection() {
+      this.checkedStkIoStocktakingEntry = [];
+      this.$nextTick(() => {
+        const t = this.$refs.stkIoStocktakingEntry;
+        if (t && typeof t.clearSelection === 'function') {
+          t.clearSelection();
+        }
+      });
+    },
     /** 明细单价：与后端 StkIoStocktakingEntry 一致，unitPrice / price 任一缺失时用另一方兜底，避免盈亏金额异常 */
     entryEffectiveUnitPriceNum(row) {
       if (!row) return 0;
@@ -1287,6 +1352,10 @@ export default {
         this.$message({ message: '请先选择科室', type: 'warning' });
         return;
       }
+      if ((this.stkIoStocktakingEntryList || []).length > 0) {
+        this.$modal.msgWarning('盘点单已有明细，请先删除后再进行盘点初始化');
+        return;
+      }
       const runLoad = () => {
         this.deptInventoryInitLoading = true;
         const pageSize = 500;
@@ -1330,14 +1399,7 @@ export default {
             this.deptInventoryInitLoading = false;
           });
       };
-      if (this.stkIoStocktakingEntryList && this.stkIoStocktakingEntryList.length > 0) {
-        this.$modal
-          .confirm('将清空当前盘点明细，并按所选科室「已收货确认」的库存重新加载明细，是否继续？')
-          .then(runLoad)
-          .catch(() => {});
-      } else {
-        runLoad();
-      }
+      runLoad();
     },
     closeDialog() {
       //关闭“弹窗组件”
@@ -1478,6 +1540,10 @@ export default {
         remark: null
       };
       this.stkIoStocktakingEntryList = [];
+      this.detailFilterMaterialName = '';
+      this.detailFilterSpec = '';
+      this.detailFilterModel = '';
+      this.checkedStkIoStocktakingEntry = [];
       this.stocktakingBatchSeqCounter = 0;
       this.departmentLockedByAction = false;
       this.stocktakingAutoSaveEnabled = false;
@@ -1486,9 +1552,20 @@ export default {
     onDeptEntryCountedChange(row, val) {
       if (!row || !row.id) return;
       const prev = val === 1 ? 0 : 1;
-      updateDeptStocktakingEntryCounted({ id: row.id, countedFlag: val }).catch(() => {
-        this.$set(row, 'countedFlag', prev);
-      });
+      updateDeptStocktakingEntryCounted({ id: row.id, countedFlag: val })
+        .then(() => {
+          const headId = this.form && this.form.id;
+          if (!headId) return;
+          return getStocktaking(headId).then((response) => {
+            const data = response && response.data;
+            if (!data) return;
+            this.form = data;
+            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
+          });
+        })
+        .catch(() => {
+          this.$set(row, 'countedFlag', prev);
+        });
     },
     //盘点数量改变事件
     stockQtyChange(row) {
@@ -1578,6 +1655,10 @@ export default {
             this.$modal.msgError("获取盘点单失败");
             return;
           }
+          this.detailFilterMaterialName = '';
+          this.detailFilterSpec = '';
+          this.detailFilterModel = '';
+          this.checkedStkIoStocktakingEntry = [];
           this.form = data;
           this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
           this.open = true;
@@ -1834,6 +1915,28 @@ export default {
           this.$modal.msgWarning('账面数量与当前科室库存不一致，请点击「保存」手动保存并完成逐条确认');
           return;
         }
+        const list = this.stkIoStocktakingEntryList || [];
+        const newEntries = list.filter((r) => r && (r.id == null || r.id === ''));
+        if (patchExisting) {
+          if (!newEntries.length) {
+            return;
+          }
+          this.submitLoading = true;
+          try {
+            const payload = newEntries.map((row) => this.serializeStocktakingEntryForSave(row));
+            const res = await appendDeptStocktakingEntries(this.form.id, payload);
+            const data = res && res.data;
+            if (data) {
+              this.form = data;
+              this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
+            }
+            this.$modal.msgSuccess('已自动保存');
+            this.getList();
+          } finally {
+            this.submitLoading = false;
+          }
+          return;
+        }
         await this.doSubmitFormRequest({ keepDialogOpen: true, quietSuccess: true });
       } catch (e) {
         // 忽略
@@ -1902,23 +2005,35 @@ export default {
       this.saveQtyConfirmVisible = false;
       this.doSubmitFormRequest();
     },
+    /** 提交/追加明细时去掉前端展示用字段，减轻整包体积、避免嵌套对象干扰后端 */
+    serializeStocktakingEntryForSave(row) {
+      const rest = { ...row };
+      delete rest.fromStocktakingInit;
+      delete rest.warehouse;
+      delete rest._warehouseName;
+      delete rest._supplierName;
+      delete rest.material;
+      delete rest.index;
+      delete rest._fromStocktakingInit;
+      delete rest._cbBatchNone;
+      delete rest._cbBatchUnknown;
+      delete rest._batchLocked;
+      delete rest._longTerm;
+      const up = rest.unitPrice != null && rest.unitPrice !== '' ? rest.unitPrice : rest.price;
+      if (up != null && up !== '') {
+        rest.unitPrice = up;
+        rest.price = up;
+      }
+      return rest;
+    },
     doSubmitFormRequest(options) {
       if (this.submitLoading) return Promise.resolve();
       options = options || {};
       const keepDialogOpen = !!options.keepDialogOpen;
       const quietSuccess = !!options.quietSuccess;
-      this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) => {
-        const rest = { ...row };
-        delete rest.fromStocktakingInit;
-        delete rest.warehouse;
-        delete rest._warehouseName;
-        const up = rest.unitPrice != null && rest.unitPrice !== '' ? rest.unitPrice : rest.price;
-        if (up != null && up !== '') {
-          rest.unitPrice = up;
-          rest.price = up;
-        }
-        return rest;
-      });
+      this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) =>
+        this.serializeStocktakingEntryForSave(row)
+      );
       this.submitLoading = true;
       const isUpdate = this.form.id != null;
       const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
@@ -1961,19 +2076,18 @@ export default {
     },
     /** 盘点明细删除按钮操作 */
     handleDeleteStkIoStocktakingEntry() {
-      if (this.checkedStkIoStocktakingEntry.length == 0) {
+      const checked = this.checkedStkIoStocktakingEntry || [];
+      if (checked.length === 0) {
         this.$modal.msgError("请先选择要删除的盘点明细数据");
-      } else {
-        const stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
-        const checkedStkIoStocktakingEntry = this.checkedStkIoStocktakingEntry;
-        this.stkIoStocktakingEntryList = stkIoStocktakingEntryList.filter(function(item) {
-          return checkedStkIoStocktakingEntry.indexOf(item.index) == -1
-        });
+        return;
       }
+      const sel = new Set(checked);
+      this.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).filter((item) => !sel.has(item));
+      this.clearEntryTableSelection();
     },
     /** 复选框选中数据 */
     handleStkIoStocktakingEntrySelectionChange(selection) {
-      this.checkedStkIoStocktakingEntry = selection.map(item => item.index)
+      this.checkedStkIoStocktakingEntry = selection || [];
     },
     /** 导出：与「库存查询 → 库存明细查询」同款版式（合并标题、宋体、边框、空行、合计红色） */
     async handleExport() {
@@ -2154,6 +2268,38 @@ export default {
   padding-top: 12px;
   padding-bottom: 12px;
   box-sizing: border-box;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-inner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  width: 100%;
+}
+
+.local-modal-content .modal-detail-section .detail-section-title {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.local-modal-content .modal-detail-section .detail-filter-input {
+  width: 140px;
 }
 
 .local-modal-content .modal-detail-section .table-wrapper {
