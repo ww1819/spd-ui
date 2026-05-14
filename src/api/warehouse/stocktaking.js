@@ -60,3 +60,12 @@ export function checkStocktakingQty(data) {
     data: data
   })
 }
+
+/** 更新盘点明细「是否已盘」（未审核单） */
+export function updateStocktakingEntryCounted(data) {
+  return request({
+    url: '/stocktaking/in/entry/counted',
+    method: 'put',
+    data
+  })
+}

@@ -348,6 +348,17 @@
               />
             </template>
           </el-table-column>
+          <el-table-column label="已盘" width="72" align="center" resizable>
+            <template slot-scope="scope">
+              <el-checkbox
+                :true-label="1"
+                :false-label="0"
+                v-model="scope.row.countedFlag"
+                :disabled="!action || stocktakingHeadAudited || !scope.row.id"
+                @change="(v) => onDeptEntryCountedChange(scope.row, v)"
+              />
+            </template>
+          </el-table-column>
           <el-table-column v-if="action" label="盘盈复制" width="96" align="center" resizable>
             <template slot-scope="scope">
               <el-button type="text" size="small" @click="copyDetailToProfitDialog(scope.row)">盘盈复制</el-button>
@@ -433,6 +444,7 @@
       :departmentValue="departmentValue"
       :use-material-dict="useMaterialDictForSelect"
       :selected-details="stkIoStocktakingEntryList"
+      :stocktaking-pick-sort-by-material="true"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectDepInventory>
@@ -600,13 +612,14 @@
 </template>
 
 <script>
-import { listStocktaking, listStocktakingExportRows, getStocktaking, delStocktaking, addStocktaking, updateStocktaking } from "@/api/department/stocktaking";
+import { listStocktaking, listStocktakingExportRows, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, updateDeptStocktakingEntryCounted } from "@/api/department/stocktaking";
 import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { listInventoryPick, listInventoryPickSummary } from "@/api/department/depInventory";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import RightToolbar from "@/components/RightToolbar";
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
+import { sortInventoryRowsByNameSpecCodeMaterialId } from "@/utils/stocktakingInventorySort";
 
 export default {
   name: "DeptStocktaking",
@@ -622,6 +635,8 @@ export default {
       /** 盘点明细批次号 PC+时间+序号，保证同页不重复 */
       stocktakingBatchSeqCounter: 0,
       departmentLockedByAction: false,
+      /** 仅「新增科室盘点」弹窗内自动保存；修改/查看打开后为 false */
+      stocktakingAutoSaveEnabled: false,
       addEntryMode: 'LOSS',
       useMaterialDictForSelect: false,
       newEntryDialogVisible: false,
@@ -742,6 +757,10 @@ export default {
     },
     isDepartmentLocked() {
       return Array.isArray(this.stkIoStocktakingEntryList) && this.stkIoStocktakingEntryList.length > 0;
+    },
+    stocktakingHeadAudited() {
+      const s = this.form && this.form.stockStatus;
+      return s === 2 || s === '2';
     }
   },
   methods: {
@@ -773,6 +792,11 @@ export default {
     normalizeLoadedEntries(list) {
       (list || []).forEach((row) => {
         if (!row) return;
+        if (row.countedFlag == null || row.countedFlag === '') {
+          row.countedFlag = 0;
+        } else {
+          row.countedFlag = Number(row.countedFlag) === 1 ? 1 : 0;
+        }
         if (row.stockQty == null || row.stockQty === '') {
           row.stockQty = row.qty != null && row.qty !== '' ? row.qty : 0;
         }
@@ -1092,19 +1116,21 @@ export default {
         unitPrice,
         price: unitPrice,
         qty: 0,
-        stockQty: "",
+        stockQty: 1,
         amt: "0.00",
         batchNo: this.nextStocktakingBatchNo(),
         batchNumber,
         beginTime,
         endTime,
         remark: "",
+        countedFlag: 1,
         fromStocktakingInit: false,
         returnWarehouseId: this.profitDefaultReturnWhId(),
         warehouse: null,
         _warehouseName: ""
       };
       this.initProfitPendingEntryMeta(entry);
+      this.stockQtyChange(entry);
       if (!Array.isArray(this.pendingNewEntries)) {
         this.pendingNewEntries = [];
       }
@@ -1188,7 +1214,8 @@ export default {
         fromStocktakingInit: fromInit,
         returnWarehouseId: fromInit ? wid : defaultProfitWarehouseId,
         warehouse: wh,
-        _warehouseName: warehouseName
+        _warehouseName: warehouseName,
+        countedFlag: fromInit ? 0 : 1
       };
     },
     /** 按当前科室拉取全部科室库存，填充盘点明细 */
@@ -1223,13 +1250,15 @@ export default {
         fetchNext(1)
           .then((rows) => {
             this.stocktakingBatchSeqCounter = 0;
+            const sorted = sortInventoryRowsByNameSpecCodeMaterialId(rows || []);
             this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(
-              (rows || []).map((it) =>
+              sorted.map((it) =>
                 this.mapDepInventoryToStocktakingEntry({ ...it, _fromStocktakingInit: true })
               )
             );
             this.departmentLockedByAction = true;
             this.$modal.msgSuccess(`已加载 ${this.stkIoStocktakingEntryList.length} 条科室库存明细`);
+            this.$nextTick(() => this.attemptAutoSaveDeptAfterStocktakingDetailChange());
           })
           .catch(() => {
             this.$modal.msgError('加载科室库存失败');
@@ -1258,7 +1287,8 @@ export default {
       }
       if (this.addEntryMode === 'LOSS') {
         // 盘亏明细：来源科室库存，直接入明细（保留 depInventoryId），仅允许改盘点数量
-        const rows = (val || []).map((item) =>
+        const sorted = sortInventoryRowsByNameSpecCodeMaterialId(val || []);
+        const rows = sorted.map((item) =>
           this.mapDepInventoryToStocktakingEntry({ ...item, _fromStocktakingInit: true })
         );
         const exists = new Set(
@@ -1283,6 +1313,7 @@ export default {
         });
         if (toAdd.length > 0) {
           this.stkIoStocktakingEntryList.push(...toAdd);
+          this.$nextTick(() => this.attemptAutoSaveDeptAfterStocktakingDetailChange(true));
         }
         if (skipCount > 0) {
           this.$modal.msgWarning(`已过滤 ${skipCount} 条重复或无效的科室库存明细`);
@@ -1292,7 +1323,11 @@ export default {
       // 盘盈明细：先二次录入归属仓库/批号/生产日期/有效期后再入明细
       this.selectRow = val;
       const rows = (val || []).map((item) => this.mapDepInventoryToStocktakingEntry({ ...item, _fromStocktakingInit: false }));
-      rows.forEach((r) => this.initProfitPendingEntryMeta(r));
+      rows.forEach((r) => {
+        this.initProfitPendingEntryMeta(r);
+        r.stockQty = 1;
+        this.stockQtyChange(r);
+      });
       this.pendingNewEntries = rows;
       this.newEntryDialogVisible = rows.length > 0;
     },
@@ -1336,6 +1371,7 @@ export default {
       this.stkIoStocktakingEntryList.push(...this.pendingNewEntries);
       this.newEntryDialogVisible = false;
       this.pendingNewEntries = [];
+      this.$nextTick(() => this.attemptAutoSaveDeptAfterStocktakingDetailChange(true));
     },
     //当天日期
     getStockDate(){
@@ -1371,7 +1407,15 @@ export default {
       this.stkIoStocktakingEntryList = [];
       this.stocktakingBatchSeqCounter = 0;
       this.departmentLockedByAction = false;
+      this.stocktakingAutoSaveEnabled = false;
       this.resetForm("form");
+    },
+    onDeptEntryCountedChange(row, val) {
+      if (!row || !row.id) return;
+      const prev = val === 1 ? 0 : 1;
+      updateDeptStocktakingEntryCounted({ id: row.id, countedFlag: val }).catch(() => {
+        this.$set(row, 'countedFlag', prev);
+      });
     },
     //盘点数量改变事件
     stockQtyChange(row) {
@@ -1468,6 +1512,7 @@ export default {
           // 查看须保留服务端返回的单据状态，勿写死为未审核（否则已审核单显示错误）
           this.form.stockType = 502;
           this.title = "查看科室盘点";
+          this.stocktakingAutoSaveEnabled = false;
         })
         .catch(() => {});
     },
@@ -1483,6 +1528,7 @@ export default {
       this.form.stockDate = this.getStockDate();
       this.title = "添加科室盘点";
       this.action = true;
+      this.stocktakingAutoSaveEnabled = true;
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -1502,117 +1548,179 @@ export default {
           this.open = true;
           this.action = true;
           this.title = "修改科室盘点";
+          this.stocktakingAutoSaveEnabled = false;
         })
         .catch(() => {});
+    },
+    /** 与提交保存一致的业务校验；通过返回 null，否则返回提示文案 */
+    getDeptSubmitValidationError() {
+      const list = this.stkIoStocktakingEntryList || [];
+      if (!list.length) {
+        return '请至少添加一条盘点明细';
+      }
+      /** 服务端回查明细通常不带 fromStocktakingInit，不能以该字段区分；有 depInventoryId 即为科室库存盘亏行，不要求「盘盈二次录入」的批号/效期规则 */
+      const isDepInventoryLine = (r) => {
+        if (!r || r.depInventoryId == null || r.depInventoryId === '') return false;
+        return String(r.depInventoryId).trim() !== '';
+      };
+      const needWh = list.filter((r) => !r.fromStocktakingInit);
+      const missingWh = needWh.some(
+        (r) => r.returnWarehouseId == null || r.returnWarehouseId === ''
+      );
+      if (missingWh) {
+        return '请为「新增」添加的明细选择所属仓库';
+      }
+      const needProfitBatchMeta = list.filter((r) => r && !isDepInventoryLine(r));
+      const missingBatchMeta = needProfitBatchMeta.some((r) => {
+        const batchText = String(r.batchNumber != null ? r.batchNumber : r.materialNo || '').trim();
+        const endText = String(r.endTime != null ? r.endTime : r.endDate || '').trim();
+        return !batchText || !endText;
+      });
+      if (missingBatchMeta) {
+        return '盘盈新增明细请补全批号、有效期';
+      }
+      const badDate = (this.stkIoStocktakingEntryList || []).some(
+        (r) => r.beginTime && r.endTime && new Date(r.endTime).getTime() < new Date(r.beginTime).getTime()
+      );
+      if (badDate) {
+        return '有效期不能早于生产日期';
+      }
+      const hasProfitOnDepInventory = (this.stkIoStocktakingEntryList || []).some((r) => {
+        if (!r.depInventoryId) return false;
+        const stockQty = parseFloat(r.stockQty || 0);
+        const qty = parseFloat(r.qty || 0);
+        return stockQty > qty;
+      });
+      if (hasProfitOnDepInventory) {
+        return '来源于科室库存的明细仅允许盘亏，不允许盘盈';
+      }
+      return null;
     },
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (!valid) return;
         if (this.submitLoading) return;
-        const list = this.stkIoStocktakingEntryList || [];
-        /** 服务端回查明细通常不带 fromStocktakingInit，不能以该字段区分；有 depInventoryId 即为科室库存盘亏行，不要求「盘盈二次录入」的批号/效期规则 */
-        const isDepInventoryLine = (r) => {
-          if (!r || r.depInventoryId == null || r.depInventoryId === '') return false;
-          return String(r.depInventoryId).trim() !== '';
-        };
-        const needWh = list.filter((r) => !r.fromStocktakingInit);
-        const missingWh = needWh.some(
-          (r) => r.returnWarehouseId == null || r.returnWarehouseId === ''
-        );
-        if (missingWh) {
-          this.$modal.msgWarning('请为「新增」添加的明细选择所属仓库');
-          return;
-        }
-        const needProfitBatchMeta = list.filter((r) => r && !isDepInventoryLine(r));
-        const missingBatchMeta = needProfitBatchMeta.some((r) => {
-          const batchText = String(r.batchNumber != null ? r.batchNumber : r.materialNo || '').trim();
-          const endText = String(r.endTime != null ? r.endTime : r.endDate || '').trim();
-          return !batchText || !endText;
-        });
-        if (missingBatchMeta) {
-          this.$modal.msgWarning('盘盈新增明细请补全批号、有效期');
-          return;
-        }
-        const badDate = (this.stkIoStocktakingEntryList || []).some(
-          (r) => r.beginTime && r.endTime && new Date(r.endTime).getTime() < new Date(r.beginTime).getTime()
-        );
-        if (badDate) {
-          this.$modal.msgWarning('有效期不能早于生产日期');
-          return;
-        }
-        const hasProfitOnDepInventory = (this.stkIoStocktakingEntryList || []).some((r) => {
-          if (!r.depInventoryId) return false;
-          const stockQty = parseFloat(r.stockQty || 0);
-          const qty = parseFloat(r.qty || 0);
-          return stockQty > qty;
-        });
-        if (hasProfitOnDepInventory) {
-          this.$modal.msgWarning('来源于科室库存的明细仅允许盘亏，不允许盘盈');
+        const err = this.getDeptSubmitValidationError();
+        if (err) {
+          this.$modal.msgWarning(err);
           return;
         }
         this.openSaveQtyConfirmDialog();
       });
     },
-    async openSaveQtyConfirmDialog() {
+    async _computeDeptSaveQtyConfirmRows() {
       const list = this.stkIoStocktakingEntryList || [];
-      this.saveQtyConfirmLoading = true;
-      try {
-        const rows = await Promise.all(
-          list.map(async (row, idx) => {
-            if (!row || !row.depInventoryId) {
+      const rows = await Promise.all(
+        list.map(async (row, idx) => {
+          if (!row || !row.depInventoryId) {
+            return null;
+          }
+          try {
+            const idRaw = row.depInventoryId;
+            const idNum = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw).trim(), 10);
+            if (!Number.isFinite(idNum)) {
               return null;
             }
-            try {
-              const idRaw = row.depInventoryId;
-              const idNum = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw).trim(), 10);
-              if (!Number.isFinite(idNum)) {
-                return null;
-              }
-              const res = await listInventoryPick({
-                id: idNum,
-                pageNum: 1,
-                pageSize: 1
-              });
-              const pickRows = (res && res.rows) || [];
-              if (!pickRows.length) {
-                return { _fetchError: true };
-              }
-              const inv = pickRows[0];
-              const live = inv != null && inv.qty != null && inv.qty !== '' ? parseFloat(inv.qty) : NaN;
-              const book = row.qty != null && row.qty !== '' ? parseFloat(row.qty) : NaN;
-              if (!Number.isFinite(live) || !Number.isFinite(book) || book === live) {
-                return null;
-              }
-              return {
-                _confirmKey: `${row.id || 'new'}_${idx}`,
-                _rowIndex: idx,
-                id: row.id,
-                material: row.material,
-                batchNo: row.batchNo,
-                detailQty: row.qty,
-                currentQty: live,
-                unitPrice:
-                  row.unitPrice != null && row.unitPrice !== ''
-                    ? row.unitPrice
-                    : row.price != null && row.price !== ''
-                      ? row.price
-                      : null,
-                depInventoryId: row.depInventoryId,
-                adjustedStockQty: row.stockQty != null && row.stockQty !== '' ? row.stockQty : row.qty,
-                confirmed: false
-              };
-            } catch (e) {
+            const res = await listInventoryPick({
+              id: idNum,
+              pageNum: 1,
+              pageSize: 1
+            });
+            const pickRows = (res && res.rows) || [];
+            if (!pickRows.length) {
               return { _fetchError: true };
             }
-          })
-        );
-        if (rows.some((r) => r && r._fetchError)) {
+            const inv = pickRows[0];
+            const live = inv != null && inv.qty != null && inv.qty !== '' ? parseFloat(inv.qty) : NaN;
+            const book = row.qty != null && row.qty !== '' ? parseFloat(row.qty) : NaN;
+            if (!Number.isFinite(live) || !Number.isFinite(book) || book === live) {
+              return null;
+            }
+            return {
+              _confirmKey: `${row.id || 'new'}_${idx}`,
+              _rowIndex: idx,
+              id: row.id,
+              material: row.material,
+              batchNo: row.batchNo,
+              detailQty: row.qty,
+              currentQty: live,
+              unitPrice:
+                row.unitPrice != null && row.unitPrice !== ''
+                  ? row.unitPrice
+                  : row.price != null && row.price !== ''
+                    ? row.price
+                    : null,
+              depInventoryId: row.depInventoryId,
+              adjustedStockQty: row.stockQty != null && row.stockQty !== '' ? row.stockQty : row.qty,
+              confirmed: false
+            };
+          } catch (e) {
+            return { _fetchError: true };
+          }
+        })
+      );
+      if (rows.some((r) => r && r._fetchError)) {
+        return { fetchError: true, rows: [] };
+      }
+      return { fetchError: false, rows: rows.filter((r) => r && !r._fetchError) };
+    },
+    /**
+     * 盘点初始化 / 追加盘亏、盘盈明细后自动落库（不关闭编辑弹窗）。
+     * @param {boolean} [allowAppendOnExisting] 为 true 时，已存在单据 id 的「修改」场景下追加明细也会保存；初始化回调勿传 true。
+     */
+    async attemptAutoSaveDeptAfterStocktakingDetailChange(allowAppendOnExisting) {
+      if (!this.open) return;
+      const isNewDraftSession = this.stocktakingAutoSaveEnabled;
+      const hasHeadId =
+        this.form &&
+        this.form.id != null &&
+        this.form.id !== '';
+      const patchExisting = !!allowAppendOnExisting && hasHeadId;
+      if (!isNewDraftSession && !patchExisting) return;
+      if (!this.stkIoStocktakingEntryList || !this.stkIoStocktakingEntryList.length) return;
+      if (this.submitLoading) return;
+      try {
+        const valid = await new Promise((resolve) => {
+          if (!this.$refs.form) {
+            resolve(false);
+            return;
+          }
+          this.$refs.form.validate((v) => resolve(v));
+        });
+        if (!valid) {
+          this.$modal.msgWarning('请先补全盘点单主表必填项后再保存');
+          return;
+        }
+        const bizErr = this.getDeptSubmitValidationError();
+        if (bizErr) {
+          this.$modal.msgWarning(bizErr);
+          return;
+        }
+        const { fetchError, rows } = await this._computeDeptSaveQtyConfirmRows();
+        if (fetchError) {
+          this.$modal.msgError('加载科室库存明细失败，无法自动保存，请稍后手动保存');
+          return;
+        }
+        if (rows.length) {
+          this.$modal.msgWarning('账面数量与当前科室库存不一致，请点击「保存」手动保存并完成逐条确认');
+          return;
+        }
+        await this.doSubmitFormRequest({ keepDialogOpen: true, quietSuccess: true });
+      } catch (e) {
+        // 忽略
+      }
+    },
+    async openSaveQtyConfirmDialog() {
+      this.saveQtyConfirmLoading = true;
+      try {
+        const { fetchError, rows } = await this._computeDeptSaveQtyConfirmRows();
+        if (fetchError) {
           this.$modal.msgError('加载科室库存明细失败，请检查网络后重试');
           return;
         }
-        this.saveQtyConfirmList = rows.filter((r) => r && !r._fetchError);
-        if (!this.saveQtyConfirmList.length) {
+        this.saveQtyConfirmList = rows;
+        if (!rows.length) {
           this.doSubmitFormRequest();
           return;
         }
@@ -1666,7 +1774,11 @@ export default {
       this.saveQtyConfirmVisible = false;
       this.doSubmitFormRequest();
     },
-    doSubmitFormRequest() {
+    doSubmitFormRequest(options) {
+      if (this.submitLoading) return Promise.resolve();
+      options = options || {};
+      const keepDialogOpen = !!options.keepDialogOpen;
+      const quietSuccess = !!options.quietSuccess;
       this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) => {
         const rest = { ...row };
         delete rest.fromStocktakingInit;
@@ -1682,7 +1794,7 @@ export default {
       this.submitLoading = true;
       const isUpdate = this.form.id != null;
       const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
-      request.then(response => {
+      return request.then(response => {
         if (response.data) {
           this.form = response.data;
           this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(response.data.stkIoStocktakingEntryList || []);
@@ -1692,8 +1804,14 @@ export default {
             this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(res.data.stkIoStocktakingEntryList || []);
           });
         }
-        this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");
-        this.open = false;
+        if (quietSuccess) {
+          this.$modal.msgSuccess('已自动保存');
+        } else {
+          this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");
+        }
+        if (!keepDialogOpen) {
+          this.open = false;
+        }
         this.getList();
       }).finally(() => {
         this.submitLoading = false;

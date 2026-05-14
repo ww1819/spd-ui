@@ -60,3 +60,12 @@ export function auditStocktaking(data) {
     data: data
   })
 }
+
+/** 更新科室盘点明细「是否已盘」（未审核单） */
+export function updateDeptStocktakingEntryCounted(data) {
+  return request({
+    url: '/department/stocktaking/entry/counted',
+    method: 'put',
+    data
+  })
+}
