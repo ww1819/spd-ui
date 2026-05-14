@@ -414,8 +414,11 @@
           </el-table-column>
           <el-table-column label="供应商" align="center" prop="material.supplier.name" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span v-if="scope.row.material && scope.row.material.supplier">{{ scope.row.material.supplier.name || '--' }}</span>
-              <span v-else>--</span>
+              <span>{{
+                (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) ||
+                  scope.row._supplierName ||
+                  '--'
+              }}</span>
             </template>
           </el-table-column>
           <el-table-column label="所属仓库" align="center" prop="returnWarehouseId" width="200" show-overflow-tooltip resizable>
@@ -1195,12 +1198,51 @@ export default {
         fromInit && item.batchNo != null && String(item.batchNo).trim() !== ''
           ? String(item.batchNo).trim()
           : this.nextStocktakingBatchNo();
+      /**
+       * 盘点初始化 / 盘亏选科室库存（fromInit）：供应商仅 stk_dep_inventory.supplier_id + join 的 item.supplier，
+       * 不用产品档案 fd_material 上的 supplier（若前端曾带在 material 上则剔除）。
+       */
+      const baseMat = item.material || null;
+      let material = baseMat;
+      const supplierNameFromRoot =
+        item.supplier && item.supplier.name != null && item.supplier.name !== '' ? item.supplier.name : '';
+      const supplierNameFromMat =
+        !fromInit &&
+        baseMat &&
+        baseMat.supplier &&
+        baseMat.supplier.name != null &&
+        baseMat.supplier.name !== ''
+          ? baseMat.supplier.name
+          : '';
+      if (baseMat) {
+        material = { ...baseMat };
+        if (fromInit) {
+          delete material.supplier;
+        }
+        if (
+          item.supplier &&
+          ((item.supplier.name != null && item.supplier.name !== '') || item.supplier.id != null)
+        ) {
+          material.supplier = item.supplier;
+        }
+      }
+      const supplierIdFromInvOnly =
+        item.supplierId != null && item.supplierId !== ''
+          ? item.supplierId
+          : item.supplier && item.supplier.id != null
+            ? item.supplier.id
+            : null;
       return {
         depInventoryId: fromInit ? (item.depInventoryId || (item.id != null ? String(item.id) : null)) : null,
         materialId: item.materialId,
-        material: item.material || null,
-        supplierId: item.supplierId || (item.material && item.material.supplierId) || null,
-        _supplierName: (item.material && item.material.supplier && item.material.supplier.name) || '',
+        material,
+        supplierId: fromInit
+          ? supplierIdFromInvOnly
+          : supplierIdFromInvOnly ||
+            (item.material && item.material.supplierId) ||
+            (item.supplier && item.supplier.id) ||
+            null,
+        _supplierName: fromInit ? supplierNameFromRoot || '' : supplierNameFromRoot || supplierNameFromMat,
         unitPrice: resolvedUp,
         price: resolvedUp,
         qty,
@@ -1609,19 +1651,72 @@ export default {
         this.openSaveQtyConfirmDialog();
       });
     },
+    /**
+     * 与盘点初始化一致：按科室分页拉取「已收货确认」库存，供保存前对账。
+     * 避免对每条明细并发 listInventoryPick(id, pageSize=1) 导致请求风暴与超时。
+     */
+    async _fetchAllDeptInventoryPickForSaveQtyCheck(departmentId) {
+      const pageSize = 500;
+      const allRows = [];
+      const fetchNext = async (pageNum) => {
+        const res = await listInventoryPick({
+          departmentId,
+          pageNum,
+          pageSize,
+          receiptConfirmStatus: 1
+        });
+        const rows = (res && res.rows) || [];
+        allRows.push(...rows);
+        if (rows.length === 0 || rows.length < pageSize) {
+          return allRows;
+        }
+        return fetchNext(pageNum + 1);
+      };
+      return fetchNext(1);
+    },
     async _computeDeptSaveQtyConfirmRows() {
       const list = this.stkIoStocktakingEntryList || [];
-      const rows = await Promise.all(
-        list.map(async (row, idx) => {
-          if (!row || !row.depInventoryId) {
-            return null;
-          }
-          try {
-            const idRaw = row.depInventoryId;
-            const idNum = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw).trim(), 10);
-            if (!Number.isFinite(idNum)) {
-              return null;
+      const deptId = this.form && this.form.departmentId;
+      const entriesNeedingCheck = [];
+      for (let idx = 0; idx < list.length; idx++) {
+        const row = list[idx];
+        if (!row || !row.depInventoryId) continue;
+        const idRaw = row.depInventoryId;
+        const idNum = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw).trim(), 10);
+        if (!Number.isFinite(idNum)) continue;
+        entriesNeedingCheck.push({ row, idx, idNum });
+      }
+      if (entriesNeedingCheck.length === 0) {
+        return { fetchError: false, rows: [] };
+      }
+
+      let invById = null;
+      try {
+        if (deptId != null && deptId !== '') {
+          const invRows = await this._fetchAllDeptInventoryPickForSaveQtyCheck(deptId);
+          invById = new Map();
+          (invRows || []).forEach((inv) => {
+            if (inv && inv.id != null) {
+              invById.set(String(inv.id), inv);
             }
+          });
+        }
+      } catch (e) {
+        return { fetchError: true, rows: [] };
+      }
+
+      const out = [];
+      let fetchError = false;
+      for (const { row, idx, idNum } of entriesNeedingCheck) {
+        let inv = null;
+        if (invById) {
+          inv = invById.get(String(idNum));
+          if (!inv) {
+            fetchError = true;
+            break;
+          }
+        } else {
+          try {
             const res = await listInventoryPick({
               id: idNum,
               pageNum: 1,
@@ -1629,41 +1724,43 @@ export default {
             });
             const pickRows = (res && res.rows) || [];
             if (!pickRows.length) {
-              return { _fetchError: true };
+              fetchError = true;
+              break;
             }
-            const inv = pickRows[0];
-            const live = inv != null && inv.qty != null && inv.qty !== '' ? parseFloat(inv.qty) : NaN;
-            const book = row.qty != null && row.qty !== '' ? parseFloat(row.qty) : NaN;
-            if (!Number.isFinite(live) || !Number.isFinite(book) || book === live) {
-              return null;
-            }
-            return {
-              _confirmKey: `${row.id || 'new'}_${idx}`,
-              _rowIndex: idx,
-              id: row.id,
-              material: row.material,
-              batchNo: row.batchNo,
-              detailQty: row.qty,
-              currentQty: live,
-              unitPrice:
-                row.unitPrice != null && row.unitPrice !== ''
-                  ? row.unitPrice
-                  : row.price != null && row.price !== ''
-                    ? row.price
-                    : null,
-              depInventoryId: row.depInventoryId,
-              adjustedStockQty: row.stockQty != null && row.stockQty !== '' ? row.stockQty : row.qty,
-              confirmed: false
-            };
+            inv = pickRows[0];
           } catch (e) {
-            return { _fetchError: true };
+            fetchError = true;
+            break;
           }
-        })
-      );
-      if (rows.some((r) => r && r._fetchError)) {
+        }
+        const live = inv != null && inv.qty != null && inv.qty !== '' ? parseFloat(inv.qty) : NaN;
+        const book = row.qty != null && row.qty !== '' ? parseFloat(row.qty) : NaN;
+        if (!Number.isFinite(live) || !Number.isFinite(book) || book === live) {
+          continue;
+        }
+        out.push({
+          _confirmKey: `${row.id || 'new'}_${idx}`,
+          _rowIndex: idx,
+          id: row.id,
+          material: row.material,
+          batchNo: row.batchNo,
+          detailQty: row.qty,
+          currentQty: live,
+          unitPrice:
+            row.unitPrice != null && row.unitPrice !== ''
+              ? row.unitPrice
+              : row.price != null && row.price !== ''
+                ? row.price
+                : null,
+          depInventoryId: row.depInventoryId,
+          adjustedStockQty: row.stockQty != null && row.stockQty !== '' ? row.stockQty : row.qty,
+          confirmed: false
+        });
+      }
+      if (fetchError) {
         return { fetchError: true, rows: [] };
       }
-      return { fetchError: false, rows: rows.filter((r) => r && !r._fetchError) };
+      return { fetchError: false, rows: out };
     },
     /**
      * 盘点初始化 / 追加盘亏、盘盈明细后自动落库（不关闭编辑弹窗）。

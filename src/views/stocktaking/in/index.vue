@@ -703,11 +703,30 @@ export default {
       const stockQty = book;
       const unitPriceNum = parseFloat(up || 0);
       const amt = (parseFloat(stockQty) || 0) * (Number.isFinite(unitPriceNum) ? unitPriceNum : 0);
+      /** 盘点初始化 / 选仓库库存：供应商仅 stk_inventory.supplier_id 及 join 的 item.supplier，不用 fd_material 上的 supplier */
+      const baseMat = item.material || null;
+      let material = baseMat;
+      if (baseMat) {
+        material = { ...baseMat };
+        delete material.supplier;
+        if (
+          item.supplier &&
+          ((item.supplier.name != null && item.supplier.name !== '') || item.supplier.id != null)
+        ) {
+          material.supplier = item.supplier;
+        }
+      }
+      const supplierIdFromInv =
+        item.supplierId != null && item.supplierId !== ''
+          ? item.supplierId
+          : item.supplier && item.supplier.id != null
+            ? item.supplier.id
+            : null;
       return {
         kcNo: item.id,
         materialId: item.materialId,
-        material: item.material || null,
-        supplierId: item.supplierId || (item.material && item.material.supplierId) || null,
+        material,
+        supplierId: supplierIdFromInv,
         unitPrice: up,
         price: up,
         qty: book,
@@ -1288,20 +1307,72 @@ export default {
         this.openSaveQtyConfirmDialogWarehouse();
       });
     },
+    /**
+     * 按仓库分页拉取库存明细，供保存前对账（与初始化同源条件）。
+     * 避免对每条明细并发 listInventoryPick(id, pageSize=1) 导致请求风暴。
+     */
+    async _fetchAllWhInventoryPickForSaveQtyCheck(warehouseId) {
+      const pageSize = 500;
+      const allRows = [];
+      const fetchNext = async (pageNum) => {
+        const res = await listInventoryPick({
+          warehouseId,
+          pageNum,
+          pageSize
+        });
+        const rows = (res && res.rows) || [];
+        allRows.push(...rows);
+        if (rows.length === 0 || rows.length < pageSize) {
+          return allRows;
+        }
+        return fetchNext(pageNum + 1);
+      };
+      return fetchNext(1);
+    },
     /** 计算保存前需逐条确认的仓库库存差异行（与 openSaveQtyConfirmDialogWarehouse 逻辑一致，不弹窗） */
     async _computeWhSaveQtyConfirmRows() {
       const list = this.stkIoStocktakingEntryList || [];
-      const rows = await Promise.all(
-        list.map(async (row, idx) => {
-          if (!row || row.kcNo == null || row.kcNo === '') {
-            return null;
-          }
-          try {
-            const idRaw = row.kcNo;
-            const idNum = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw).trim(), 10);
-            if (!Number.isFinite(idNum)) {
-              return null;
+      const warehouseId = this.form && this.form.warehouseId;
+      const entriesNeedingCheck = [];
+      for (let idx = 0; idx < list.length; idx++) {
+        const row = list[idx];
+        if (!row || row.kcNo == null || row.kcNo === '') continue;
+        const idRaw = row.kcNo;
+        const idNum = typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw).trim(), 10);
+        if (!Number.isFinite(idNum)) continue;
+        entriesNeedingCheck.push({ row, idx, idNum });
+      }
+      if (entriesNeedingCheck.length === 0) {
+        return { fetchError: false, rows: [] };
+      }
+
+      let invById = null;
+      try {
+        if (warehouseId != null && warehouseId !== '') {
+          const invRows = await this._fetchAllWhInventoryPickForSaveQtyCheck(warehouseId);
+          invById = new Map();
+          (invRows || []).forEach((inv) => {
+            if (inv && inv.id != null) {
+              invById.set(String(inv.id), inv);
             }
+          });
+        }
+      } catch (e) {
+        return { fetchError: true, rows: [] };
+      }
+
+      const out = [];
+      let fetchError = false;
+      for (const { row, idx, idNum } of entriesNeedingCheck) {
+        let inv = null;
+        if (invById) {
+          inv = invById.get(String(idNum));
+          if (!inv) {
+            fetchError = true;
+            break;
+          }
+        } else {
+          try {
             const res = await listInventoryPick({
               id: idNum,
               pageNum: 1,
@@ -1309,34 +1380,36 @@ export default {
             });
             const pickRows = (res && res.rows) || [];
             if (!pickRows.length) {
-              return { _fetchError: true };
+              fetchError = true;
+              break;
             }
-            const inv = pickRows[0];
-            const live = inv != null && inv.qty != null && inv.qty !== '' ? parseFloat(inv.qty) : NaN;
-            const book = row.qty != null && row.qty !== '' ? parseFloat(row.qty) : NaN;
-            if (!Number.isFinite(live) || !Number.isFinite(book) || book === live) {
-              return null;
-            }
-            return {
-              _confirmKey: `${row.id || 'new'}_${idx}`,
-              _rowIndex: idx,
-              id: row.id,
-              material: row.material,
-              batchNo: row.batchNo,
-              detailQty: row.qty,
-              currentQty: live,
-              adjustedStockQty: row.stockQty != null && row.stockQty !== '' ? row.stockQty : row.qty,
-              confirmed: false
-            };
+            inv = pickRows[0];
           } catch (e) {
-            return { _fetchError: true };
+            fetchError = true;
+            break;
           }
-        })
-      );
-      if (rows.some((r) => r && r._fetchError)) {
+        }
+        const live = inv != null && inv.qty != null && inv.qty !== '' ? parseFloat(inv.qty) : NaN;
+        const book = row.qty != null && row.qty !== '' ? parseFloat(row.qty) : NaN;
+        if (!Number.isFinite(live) || !Number.isFinite(book) || book === live) {
+          continue;
+        }
+        out.push({
+          _confirmKey: `${row.id || 'new'}_${idx}`,
+          _rowIndex: idx,
+          id: row.id,
+          material: row.material,
+          batchNo: row.batchNo,
+          detailQty: row.qty,
+          currentQty: live,
+          adjustedStockQty: row.stockQty != null && row.stockQty !== '' ? row.stockQty : row.qty,
+          confirmed: false
+        });
+      }
+      if (fetchError) {
         return { fetchError: true, rows: [] };
       }
-      return { fetchError: false, rows: rows.filter((r) => r && !r._fetchError) };
+      return { fetchError: false, rows: out };
     },
     /**
      * 盘点初始化 / 追加盘亏、盘盈明细后自动落库（不关闭编辑弹窗）。
