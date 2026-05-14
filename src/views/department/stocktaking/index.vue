@@ -540,8 +540,23 @@
             <SelectWarehouse v-model="scope.row.returnWarehouseId" finance-pick-mode placeholder="请选择仓库" />
           </template>
         </el-table-column>
-        <el-table-column label="供应商" min-width="150">
-          <template slot-scope="scope">{{ scope.row._supplierName || '--' }}</template>
+        <el-table-column label="供应商" min-width="220">
+          <template slot-scope="scope">
+            <template v-if="profitEntryMaterialMissingSupplier(scope.row)">
+              <SelectSupplier
+                :value="scope.row.supplierId"
+                finance-pick-mode
+                placeholder="请选择供应商"
+                style="width: 100%"
+                @input="(v) => $set(scope.row, 'supplierId', v)"
+              />
+            </template>
+            <span v-else>{{
+              (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) ||
+                scope.row._supplierName ||
+                '--'
+            }}</span>
+          </template>
         </el-table-column>
       </el-table>
       <div slot="footer">
@@ -620,6 +635,7 @@ import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSumm
 import { listInventoryPick, listInventoryPickSummary } from "@/api/department/depInventory";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
+import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import RightToolbar from "@/components/RightToolbar";
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
 import { sortInventoryRowsByNameSpecCodeMaterialId } from "@/utils/stocktakingInventorySort";
@@ -627,7 +643,7 @@ import { sortInventoryRowsByNameSpecCodeMaterialId } from "@/utils/stocktakingIn
 export default {
   name: "DeptStocktaking",
   dicts: ['biz_status','bill_type'],
-  components: {SelectDepartment, SelectWarehouse, SelectDepInventory, RightToolbar},
+  components: {SelectDepartment, SelectWarehouse, SelectSupplier, SelectDepInventory, RightToolbar},
   data() {
     return {
       // 遮罩层
@@ -968,6 +984,11 @@ export default {
         return 10;
       }
       return null;
+    },
+    /** 盘盈弹窗：产品档案未维护供应商时需用户在下拉框中选择 */
+    profitEntryMaterialMissingSupplier(row) {
+      const m = row && row.material ? row.material : null;
+      return !(m && m.supplierId != null && m.supplierId !== '');
     },
     /** 盘盈二次弹窗：批号/有效期勾选项与锁定状态 */
     initProfitPendingEntryMeta(row) {
@@ -1392,6 +1413,16 @@ export default {
       });
       if (invalidNum) {
         this.$modal.msgWarning('单价必须为不小于 0 的数字，盘点数量必须大于 0');
+        return;
+      }
+      const needSup = (this.pendingNewEntries || []).find(
+        (r) => this.profitEntryMaterialMissingSupplier(r) && (r.supplierId == null || r.supplierId === '')
+      );
+      if (needSup) {
+        const name = needSup.material && needSup.material.name ? needSup.material.name : '';
+        this.$modal.msgWarning(
+          name ? `耗材「${name}」产品档案未维护供应商，请先选择供应商。` : '存在产品档案未维护供应商的明细，请先选择供应商。'
+        );
         return;
       }
       const badDate = (this.pendingNewEntries || []).find((r) =>

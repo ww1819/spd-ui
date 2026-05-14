@@ -439,6 +439,22 @@
             <el-date-picker v-model="scope.row.beginTime" type="date" value-format="yyyy-MM-dd" placeholder="可不填" />
           </template>
         </el-table-column>
+        <el-table-column label="供应商" min-width="220">
+          <template slot-scope="scope">
+            <template v-if="profitEntryMaterialMissingSupplier(scope.row)">
+              <SelectSupplier
+                :value="scope.row.supplierId"
+                finance-pick-mode
+                placeholder="请选择供应商"
+                style="width: 100%"
+                @input="(v) => $set(scope.row, 'supplierId', v)"
+              />
+            </template>
+            <span v-else>{{
+              (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--'
+            }}</span>
+          </template>
+        </el-table-column>
       </el-table>
       <div slot="footer">
         <el-button @click="cancelPendingNewEntries">取 消</el-button>
@@ -811,6 +827,7 @@ export default {
         return {
           materialId: row.materialId != null ? row.materialId : mat && mat.id,
           material: mat,
+          supplierId: mat && mat.supplierId != null && mat.supplierId !== '' ? mat.supplierId : null,
           unitPrice: effectivePrice,
           price: effectivePrice,
           qty: 0,
@@ -902,6 +919,11 @@ export default {
       const spec = m && m.speci != null ? String(m.speci).trim() : "";
       return `${name}||${spec}`;
     },
+    /** 盘盈弹窗：产品档案未维护供应商时需用户在下拉框中选择 */
+    profitEntryMaterialMissingSupplier(row) {
+      const m = row && row.material ? row.material : null;
+      return !(m && m.supplierId != null && m.supplierId !== '');
+    },
     formatProfitNameSpecStockQty(row) {
       const k = this.getProfitNameSpecKey(row);
       if (!k || k === "||") return "--";
@@ -966,7 +988,7 @@ export default {
       const entry = {
         materialId: mid,
         material: mat,
-        supplierId: mat.supplierId || null,
+        supplierId: mat.supplierId || detailRow.supplierId || null,
         unitPrice,
         price: unitPrice,
         qty: 0,
@@ -1013,6 +1035,16 @@ export default {
       });
       if (invalidNum) {
         this.$modal.msgWarning('单价必须为不小于 0 的数字，盘点数量必须大于 0');
+        return;
+      }
+      const needSup = (this.pendingNewEntries || []).find(
+        (r) => this.profitEntryMaterialMissingSupplier(r) && (r.supplierId == null || r.supplierId === '')
+      );
+      if (needSup) {
+        const name = needSup.material && needSup.material.name ? needSup.material.name : '';
+        this.$modal.msgWarning(
+          name ? `耗材「${name}」产品档案未维护供应商，请先选择供应商。` : '存在产品档案未维护供应商的明细，请先选择供应商。'
+        );
         return;
       }
       const badDate = (this.pendingNewEntries || []).find(
