@@ -288,6 +288,15 @@ export default {
         this.$message({ message: "该申请单已作废，无法引用", type: "warning" });
         return;
       }
+      const linkedCk = row.linkedCkTotal != null ? Number(row.linkedCkTotal) : 0;
+      const lineVoidLines = row.lineVoidedEntryCount != null ? Number(row.lineVoidedEntryCount) : 0;
+      if (linkedCk > 0 && lineVoidLines > 0) {
+        this.$message({
+          message: "该申请单为部分作废状态（已出库引用且存在明细作废），不允许再次引用出库",
+          type: "warning"
+        });
+        return;
+      }
       this.$emit("selectWhApplyData", row);
       this.handleClose();
     },
