@@ -109,10 +109,10 @@
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="制单人" align="center" prop="createBy" width="110" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.createBy || '--' }}</span>
+          <span>{{ scope.row.createUserNickName || scope.row.createBy || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="制单日期" align="center" prop="createTime" width="160" show-overflow-tooltip resizable>
+      <el-table-column label="制单时间" align="center" prop="createTime" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
@@ -135,13 +135,14 @@
       </el-table-column>
       <el-table-column label="审核人" align="center" prop="updateBy" width="110" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.stockStatus == 2 && scope.row.updateBy">{{ scope.row.updateBy }}</span>
+          <span v-if="scope.row.stockStatus == 2">{{ scope.row.auditUserNickName || scope.row.updateBy || '--' }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+          <span v-if="scope.row.stockStatus == 2 && scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else-if="scope.row.stockStatus == 2 && scope.row.updateTime">{{ parseTime(scope.row.updateTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -219,7 +220,12 @@
                       <el-input v-model="stockStatusText" :disabled="true" style="width: 150px" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col :span="5">
+                    <el-form-item label="盘点单号" prop="stockNo" label-width="100px">
+                      <el-input v-model="form.stockNo" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="5">
                     <el-form-item label="盘点日期" prop="stockDate" label-width="100px">
                       <el-date-picker clearable
                                       v-model="form.stockDate"
@@ -231,18 +237,33 @@
                       </el-date-picker>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col :span="6">
                     <el-form-item label="科室" prop="departmentId" label-width="80px">
                       <SelectDepartment v-model="form.departmentId" :disabled="true"/>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="操作人" prop="createBy" label-width="100px">
-                      <el-input v-model="form.createBy" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
                 </el-row>
                 <el-row>
+                  <el-col :span="5">
+                    <el-form-item label="制单人" prop="createBy" label-width="100px">
+                      <el-input :value="deptFormCreatorName" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="5">
+                    <el-form-item label="制单时间" label-width="100px">
+                      <el-input :value="deptFormCreateTimeText" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="5">
+                    <el-form-item label="审核人" label-width="100px">
+                      <el-input :value="deptFormAuditorName" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="5">
+                    <el-form-item label="审核时间" label-width="100px">
+                      <el-input :value="deptFormAuditTimeText" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
                   <el-col :span="4">
                     <el-form-item label="总金额" label-width="100px">
                       <el-input :value="totalAmountText" :disabled="true" style="width: 150px; font-weight: bold; color: #409EFF;" />
@@ -504,6 +525,27 @@ export default {
         });
       }
       return '￥' + total.toFixed(2);
+    },
+    deptFormCreatorName() {
+      const f = this.form || {};
+      return f.createUserNickName || f.createBy || '--';
+    },
+    deptFormCreateTimeText() {
+      const f = this.form || {};
+      if (!f.createTime) return '--';
+      return this.parseTime(f.createTime, '{y}-{m}-{d} {h}:{i}:{s}');
+    },
+    deptFormAuditorName() {
+      const f = this.form || {};
+      if (f.stockStatus !== 2) return '--';
+      return f.auditUserNickName || f.updateBy || '--';
+    },
+    deptFormAuditTimeText() {
+      const f = this.form || {};
+      if (f.stockStatus !== 2) return '--';
+      if (f.auditDate) return this.parseTime(f.auditDate, '{y}-{m}-{d} {h}:{i}:{s}');
+      if (f.updateTime) return this.parseTime(f.updateTime, '{y}-{m}-{d} {h}:{i}:{s}');
+      return '--';
     }
   },
   methods: {

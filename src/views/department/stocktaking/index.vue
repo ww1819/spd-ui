@@ -92,10 +92,10 @@
       </el-table-column>
       <el-table-column label="制单人" align="center" prop="createBy" width="110" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.createBy || '--' }}</span>
+          <span>{{ scope.row.createUserNickName || scope.row.createBy || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="制单日期" align="center" prop="createTime" width="160" show-overflow-tooltip resizable>
+      <el-table-column label="制单时间" align="center" prop="createTime" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
@@ -124,13 +124,14 @@
       </el-table-column>
       <el-table-column label="审核人" align="center" prop="updateBy" width="110" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.stockStatus == 2 && scope.row.updateBy">{{ scope.row.updateBy }}</span>
+          <span v-if="scope.row.stockStatus == 2">{{ scope.row.auditUserNickName || scope.row.updateBy || '--' }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+          <span v-if="scope.row.stockStatus == 2 && scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else-if="scope.row.stockStatus == 2 && scope.row.updateTime">{{ parseTime(scope.row.updateTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -230,22 +231,37 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="8">
-                    <el-form-item label="操作人" prop="createBy">
-                      <el-input v-model="form.createBy" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="8" class="stocktaking-form-row-stockno">
-                  <el-col :span="24">
-                    <el-form-item label="单号" prop="stockNo" class="form-item-stock-no-full">
+                    <el-form-item label="盘点单号" prop="stockNo">
                       <el-input
                         v-model="form.stockNo"
                         type="textarea"
-                        :autosize="{ minRows: 1, maxRows: 4 }"
+                        :autosize="{ minRows: 1, maxRows: 2 }"
                         :disabled="true"
                         placeholder="保存后生成"
                         class="input-stock-no-fullwidth"
                       />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="8">
+                  <el-col :span="6">
+                    <el-form-item label="制单人">
+                      <el-input :value="deptFormCreatorName" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="制单时间">
+                      <el-input :value="deptFormCreateTimeText" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="审核人">
+                      <el-input :value="deptFormAuditorName" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="审核时间">
+                      <el-input :value="deptFormAuditTimeText" :disabled="true" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -279,6 +295,16 @@
                         <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :loading="submitLoading">保 存</el-button>
                       </div>
                       <div class="detail-toolbar-filters">
+                        <el-select
+                          v-model="detailFilterCounted"
+                          size="small"
+                          clearable
+                          placeholder="是否已盘"
+                          class="detail-filter-input"
+                        >
+                          <el-option label="已盘" :value="1" />
+                          <el-option label="未盘" :value="0" />
+                        </el-select>
                         <el-input
                           v-model="detailFilterMaterialName"
                           size="small"
@@ -696,6 +722,8 @@ export default {
       detailFilterMaterialName: '',
       detailFilterSpec: '',
       detailFilterModel: '',
+      /** 明细是否已盘：null 全部，1 已盘，0 未盘 */
+      detailFilterCounted: null,
       // 非单个禁用
       single: true,
       // 非多个禁用
@@ -781,6 +809,9 @@ export default {
     },
     detailFilterModel() {
       this.clearEntryTableSelection();
+    },
+    detailFilterCounted() {
+      this.clearEntryTableSelection();
     }
   },
   computed: {
@@ -809,6 +840,27 @@ export default {
       }
       return '￥' + total.toFixed(2);
     },
+    deptFormCreatorName() {
+      const f = this.form || {};
+      return f.createUserNickName || f.createBy || '--';
+    },
+    deptFormCreateTimeText() {
+      const f = this.form || {};
+      if (!f.createTime) return '--';
+      return this.parseTime(f.createTime, '{y}-{m}-{d} {h}:{i}:{s}');
+    },
+    deptFormAuditorName() {
+      const f = this.form || {};
+      if (f.stockStatus !== 2 && f.stockStatus !== '2') return '--';
+      return f.auditUserNickName || f.updateBy || '--';
+    },
+    deptFormAuditTimeText() {
+      const f = this.form || {};
+      if (f.stockStatus !== 2 && f.stockStatus !== '2') return '--';
+      if (f.auditDate) return this.parseTime(f.auditDate, '{y}-{m}-{d} {h}:{i}:{s}');
+      if (f.updateTime) return this.parseTime(f.updateTime, '{y}-{m}-{d} {h}:{i}:{s}');
+      return '--';
+    },
     isDepartmentLocked() {
       return Array.isArray(this.stkIoStocktakingEntryList) && this.stkIoStocktakingEntryList.length > 0;
     },
@@ -823,10 +875,25 @@ export default {
       const fn = norm(this.detailFilterMaterialName);
       const fs = norm(this.detailFilterSpec);
       const fm = norm(this.detailFilterModel);
-      if (!fn && !fs && !fm) {
+      const countedRaw = this.detailFilterCounted;
+      const countedFilter =
+        countedRaw === 0 || countedRaw === '0'
+          ? 0
+          : countedRaw === 1 || countedRaw === '1'
+            ? 1
+            : null;
+      const rowCounted = (row) => {
+        if (!row) return 0;
+        const v = row.countedFlag;
+        return v === 1 || v === '1' ? 1 : 0;
+      };
+      if (!fn && !fs && !fm && countedFilter === null) {
         return list;
       }
       return list.filter((row) => {
+        if (countedFilter !== null && rowCounted(row) !== countedFilter) {
+          return false;
+        }
         const m = row && row.material ? row.material : null;
         const name = m && m.name != null ? String(m.name).toLowerCase() : '';
         const spec = m && m.speci != null ? String(m.speci).toLowerCase() : '';
@@ -1527,6 +1594,7 @@ export default {
       this.detailFilterMaterialName = '';
       this.detailFilterSpec = '';
       this.detailFilterModel = '';
+      this.detailFilterCounted = null;
       this.checkedStkIoStocktakingEntry = [];
       this.stocktakingBatchSeqCounter = 0;
       this.departmentLockedByAction = false;
@@ -1638,6 +1706,7 @@ export default {
           this.detailFilterMaterialName = '';
           this.detailFilterSpec = '';
           this.detailFilterModel = '';
+          this.detailFilterCounted = null;
           this.checkedStkIoStocktakingEntry = [];
           this.form = data;
           this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);

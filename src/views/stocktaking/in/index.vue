@@ -202,35 +202,40 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
-            <span>盘点明细信息</span>
+        <el-row :gutter="10" class="mb8 wh-stocktaking-detail-toolbar">
+          <el-col :span="24">
+            <div class="wh-stocktaking-detail-toolbar-inner">
+              <span>盘点明细信息</span>
+              <div v-show="action" class="wh-stocktaking-detail-toolbar-actions">
+                <el-button type="primary" icon="el-icon-minus" size="small" @click="openAddLossEntry">新增盘亏明细</el-button>
+                <el-button type="warning" icon="el-icon-plus" size="small" @click="openAddProfitEntry">新增盘盈明细</el-button>
+                <el-button
+                  type="primary"
+                  icon="el-icon-refresh"
+                  size="small"
+                  :loading="whInventoryInitLoading"
+                  :disabled="(stkIoStocktakingEntryList || []).length > 0"
+                  @click="handleStocktakingInitFromWarehouseInventory"
+                >盘点初始化</el-button>
+                <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoStocktakingEntry">删除</el-button>
+              </div>
+              <div class="wh-stocktaking-detail-toolbar-filters">
+                <el-select
+                  v-model="detailFilterCounted"
+                  size="small"
+                  clearable
+                  placeholder="是否已盘"
+                  class="wh-detail-filter-counted"
+                >
+                  <el-option label="已盘" :value="1" />
+                  <el-option label="未盘" :value="0" />
+                </el-select>
+              </div>
+            </div>
           </el-col>
-
-          <div v-show="action">
-            <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-minus" size="small" @click="openAddLossEntry">新增盘亏明细</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="warning" icon="el-icon-plus" size="small" @click="openAddProfitEntry">新增盘盈明细</el-button>
-            </el-col>
-            <el-col :span="2">
-              <el-button
-                type="primary"
-                icon="el-icon-refresh"
-                size="small"
-                :loading="whInventoryInitLoading"
-                :disabled="(stkIoStocktakingEntryList || []).length > 0"
-                @click="handleStocktakingInitFromWarehouseInventory"
-              >盘点初始化</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoStocktakingEntry">删除</el-button>
-            </el-col>
-          </div>
         </el-row>
 
-        <el-table :data="stkIoStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" height="calc(42vh)" border>
+        <el-table :data="filteredWhStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" height="calc(42vh)" border>
           <el-table-column type="selection" width="50" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
           <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
@@ -624,6 +629,8 @@ export default {
       pendingWhAuditId: null,
       /** 仅「新增盘点」弹窗内自动保存；修改/查看打开后为 false */
       stocktakingAutoSaveEnabled: false,
+      /** 明细是否已盘：null 全部，1 已盘，0 未盘（仅前端筛选表格） */
+      detailFilterCounted: null,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -665,6 +672,9 @@ export default {
       if (val) {
         this.$nextTick(() => this.refreshProfitNameSpecStockWh());
       }
+    },
+    detailFilterCounted() {
+      this.clearWhEntryTableSelection();
     }
   },
   computed: {
@@ -674,9 +684,38 @@ export default {
     stocktakingHeadAudited() {
       const s = this.form && this.form.stockStatus;
       return s === 2 || s === '2';
+    },
+    /** 明细表格展示数据（是否已盘筛选）；保存仍用完整 stkIoStocktakingEntryList */
+    filteredWhStocktakingEntryList() {
+      const list = this.stkIoStocktakingEntryList || [];
+      const countedRaw = this.detailFilterCounted;
+      const countedFilter =
+        countedRaw === 0 || countedRaw === '0'
+          ? 0
+          : countedRaw === 1 || countedRaw === '1'
+            ? 1
+            : null;
+      const rowCounted = (row) => {
+        if (!row) return 0;
+        const v = row.countedFlag;
+        return v === 1 || v === '1' ? 1 : 0;
+      };
+      if (countedFilter === null) {
+        return list;
+      }
+      return list.filter((row) => rowCounted(row) === countedFilter);
     }
   },
   methods: {
+    clearWhEntryTableSelection() {
+      this.checkedStkIoStocktakingEntry = [];
+      this.$nextTick(() => {
+        const t = this.$refs.stkIoStocktakingEntry;
+        if (t && typeof t.clearSelection === 'function') {
+          t.clearSelection();
+        }
+      });
+    },
     normalizeLoadedEntries(list) {
       (list || []).forEach((row) => {
         if (!row) return;
@@ -1191,6 +1230,8 @@ export default {
         remark: null
       };
       this.stkIoStocktakingEntryList = [];
+      this.detailFilterCounted = null;
+      this.checkedStkIoStocktakingEntry = [];
       this.stocktakingAutoSaveEnabled = false;
       this.resetForm("form");
     },
@@ -1244,6 +1285,8 @@ export default {
 
       const id = row.id
       getStocktaking(id).then(response => {
+        this.detailFilterCounted = null;
+        this.checkedStkIoStocktakingEntry = [];
         this.form = response.data;
         this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(response.data.stkIoStocktakingEntryList || []);
         this.open = true;
@@ -1643,19 +1686,18 @@ export default {
     },
     /** 盘点明细删除按钮操作 */
     handleDeleteStkIoStocktakingEntry() {
-      if (this.checkedStkIoStocktakingEntry.length == 0) {
+      const checked = this.checkedStkIoStocktakingEntry || [];
+      if (checked.length === 0) {
         this.$modal.msgError("请先选择要删除的盘点明细数据");
-      } else {
-        const stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
-        const checkedStkIoStocktakingEntry = this.checkedStkIoStocktakingEntry;
-        this.stkIoStocktakingEntryList = stkIoStocktakingEntryList.filter(function(item) {
-          return checkedStkIoStocktakingEntry.indexOf(item.index) == -1
-        });
+        return;
       }
+      const sel = new Set(checked);
+      this.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).filter((item) => !sel.has(item));
+      this.clearWhEntryTableSelection();
     },
     /** 复选框选中数据 */
     handleStkIoStocktakingEntrySelectionChange(selection) {
-      this.checkedStkIoStocktakingEntry = selection.map(item => item.index)
+      this.checkedStkIoStocktakingEntry = selection || [];
     },
     /** 导出按钮操作 */
     handleExport() {
@@ -1821,5 +1863,27 @@ export default {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+}
+
+.wh-stocktaking-detail-toolbar-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.wh-stocktaking-detail-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.wh-stocktaking-detail-toolbar-filters {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wh-detail-filter-counted {
+  width: 140px;
 }
 </style>
