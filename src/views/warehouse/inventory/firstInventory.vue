@@ -23,11 +23,6 @@
                 <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['设备', '高值']"/>
               </div>
             </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
             <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
               <el-input
                 v-model="queryParams.materialName"
@@ -55,6 +50,11 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
             <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"

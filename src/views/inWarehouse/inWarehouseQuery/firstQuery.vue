@@ -5,49 +5,53 @@
 
         <el-row class="query-row-left">
           <el-col :span="24">
-            <el-form-item prop="billNo" class="query-item-inline">
-              <el-input v-model="queryParams.billNo"
-                        placeholder="业务单号"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item prop="materialNameLike" class="query-item-inline">
-              <el-input v-model="queryParams.materialNameLike"
-                        placeholder="耗材编码/名称/简码"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item prop="materialSpeciLike" class="query-item-inline">
-              <el-input v-model="queryParams.materialSpeciLike"
-                        placeholder="规格"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item prop="materialModelLike" class="query-item-inline">
-              <el-input v-model="queryParams.materialModelLike"
-                        placeholder="型号"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item prop="supplierKeyword" class="query-item-inline">
-              <el-input v-model="queryParams.supplierKeyword"
-                        placeholder="供应商编码/名称"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
+            <el-form-item class="query-item-inline more-search-item">
+              <div class="more-search-row more-search-row--multi">
+                <span class="more-search-label">更多检索</span>
+                <el-select
+                  v-model="moreSearchTypes"
+                  multiple
+                  collapse-tags
+                  placeholder="选择检索条件（可多选）"
+                  class="more-search-type"
+                  @change="onMoreSearchTypesChange"
+                >
+                  <el-option label="供应商" value="supplier" />
+                  <el-option label="生产厂家" value="factory" />
+                  <el-option label="耗材" value="materialName" />
+                  <el-option label="单号" value="billNo" />
+                  <el-option label="规格" value="materialSpeci" />
+                  <el-option label="型号" value="materialModel" />
+                  <el-option label="批号" value="batchNo" />
+                  <el-option label="批次号" value="batchNumber" />
+                  <el-option label="仓库" value="warehouse" />
+                  <el-option label="财务分类" value="financeCategoryKeyword" />
+                  <el-option label="库房分类" value="warehouseCategoryKeyword" />
+                </el-select>
+                <div
+                  v-for="t in moreSearchTypes"
+                  :key="t"
+                  class="more-search-dynamic-field"
+                >
+                  <span class="more-search-field-label">{{ moreSearchTypeLabel(t) }}</span>
+                  <template v-if="t === 'warehouse'">
+                    <div class="query-select-wrapper more-search-warehouse-wrap">
+                      <SelectWarehouse
+                        v-model="queryParams.warehouseId"
+                        excludeWarehouseType="高值"
+                        placeholder="仓库编码/名称/简码搜索"
+                      />
+                    </div>
+                  </template>
+                  <el-input
+                    v-else
+                    v-model="moreSearchKeywords[t]"
+                    :placeholder="moreSearchPlaceholderFor(t)"
+                    clearable
+                    class="more-search-input more-search-input--dynamic"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </div>
               </div>
             </el-form-item>
           </el-col>
@@ -92,17 +96,6 @@
                 <el-option label="否" value="0" />
               </el-select>
             </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="16" class="query-row-third">
-          <el-col :span="24" class="query-row-third-inner">
-            <el-form-item prop="financeCategoryKeyword" class="query-item-inline">
-              <el-input v-model="queryParams.financeCategoryKeyword" placeholder="财务分类编码/名称/简拼" clearable style="width: 200px" />
-            </el-form-item>
-            <el-form-item prop="warehouseCategoryKeyword" class="query-item-inline">
-              <el-input v-model="queryParams.warehouseCategoryKeyword" placeholder="库房分类编码/名称/简拼" clearable style="width: 200px" />
-            </el-form-item>
             <el-form-item prop="isGz" class="query-item-inline">
               <el-select v-model="queryParams.isGz" placeholder="是否高值" clearable style="width: 130px">
                 <el-option label="是" value="1" />
@@ -110,12 +103,12 @@
               </el-select>
             </el-form-item>
             <el-form-item prop="financeCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper" style="width: 220px">
+              <div class="query-select-wrapper category-multi-wrap">
                 <SelectFinanceCategoryLow v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类多选" />
               </div>
             </el-form-item>
             <el-form-item prop="warehouseCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper" style="width: 220px">
+              <div class="query-select-wrapper category-multi-wrap">
                 <SelectWarehouseCategoryLow v-model="queryParams.warehouseCategoryIds" :multiple="true" placeholder="库房分类多选" />
               </div>
             </el-form-item>
@@ -152,8 +145,6 @@
 
     <div class="table-container">
       <el-table v-loading="loading" :data="displayData"
-                show-summary
-                :summary-method="getTotalSummaries"
                 height="60vh"
                 border
                 stripe
@@ -292,8 +283,12 @@ export default {
           totalQty: 0
         },
       stkMaterialList: [],
-      // 入/退货明细表格数据
+        // 入/退货明细表格数据
       stkIoBillEntryList: [],
+      /** 更多检索：已选检索维度（多选） */
+      moreSearchTypes: [],
+      /** 各维度关键字，键与 moreSearchTypes 取值一致 */
+      moreSearchKeywords: {},
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -311,6 +306,8 @@ export default {
         materialSpeciLike: null,
         materialModelLike: null,
         supplierKeyword: null,
+        batchNo: null,
+        batchNumberKeyword: null,
         warehouseId: null,
         departmentId: null,
         billStatus: null,
@@ -380,43 +377,12 @@ export default {
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
         : String(Number(amt).toFixed(2));
-    },
+    }
   },
   created() {
     this.getList();
   },
   methods: {
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill('');
-      if (sums.length > 0) sums[0] = '合计';
-
-      const totalQty = (data || []).reduce((acc, r) => acc + Number(r.materialQty || 0), 0);
-      const totalAmt = (data || []).reduce((acc, r) => acc + Number(r.materialAmt || 0), 0);
-      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-
-      const hasPriceCol = columns.some(c => c.property === 'unitPrice');
-      const hasQtyCol = columns.some(c => c.property === 'materialQty');
-
-      columns.forEach((column, index) => {
-        if (column.property === 'materialAmt') {
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-          return;
-        }
-        // 价格+数量两列同时存在时：合计数量合并到「价格」列（更宽），「数量」列留空，避免换行
-        if (column.property === 'unitPrice') {
-          if (hasQtyCol) {
-            sums[index] = totalQty.toFixed(2);
-          }
-          return;
-        }
-        if (column.property === 'materialQty') {
-          sums[index] = hasPriceCol ? '' : totalQty.toFixed(2);
-        }
-      });
-      return sums;
-    },
-
     /** 查询入/退货列表 */
     getList() {
       this.loading = true;
@@ -498,12 +464,20 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.billNo = null;
       this.queryParams.materialNameLike = null;
       this.queryParams.materialSpeciLike = null;
       this.queryParams.materialModelLike = null;
       this.queryParams.supplierKeyword = null;
+      this.queryParams.batchNo = null;
+      this.queryParams.batchNumberKeyword = null;
+      this.queryParams.warehouseId = null;
       this.queryParams.financeCategoryIds = [];
       this.queryParams.warehouseCategoryIds = [];
+      this.queryParams.financeCategoryKeyword = null;
+      this.queryParams.warehouseCategoryKeyword = null;
+      this.moreSearchTypes = [];
+      this.moreSearchKeywords = {};
       this.handleQuery();
     },
     handleSizeChange(val) {
@@ -514,6 +488,56 @@ export default {
     handleCurrentChange(val) {
       this.queryParams.pageNum = val;
       this.getList();
+    },
+    onMoreSearchTypesChange(val) {
+      const set = new Set(val || []);
+      if (!set.has("warehouse")) {
+        this.queryParams.warehouseId = null;
+      }
+      Object.keys(this.moreSearchKeywords).forEach(k => {
+        if (!set.has(k)) {
+          this.$delete(this.moreSearchKeywords, k);
+        }
+      });
+      (val || []).forEach(k => {
+        if (k === "warehouse") {
+          return;
+        }
+        if (!Object.prototype.hasOwnProperty.call(this.moreSearchKeywords, k)) {
+          this.$set(this.moreSearchKeywords, k, "");
+        }
+      });
+    },
+    moreSearchTypeLabel(t) {
+      const map = {
+        supplier: "供应商",
+        factory: "生产厂家",
+        materialName: "耗材",
+        billNo: "单号",
+        materialSpeci: "规格",
+        materialModel: "型号",
+        batchNo: "批号",
+        batchNumber: "批次号",
+        warehouse: "仓库",
+        financeCategoryKeyword: "财务分类",
+        warehouseCategoryKeyword: "库房分类"
+      };
+      return map[t] || t;
+    },
+    moreSearchPlaceholderFor(t) {
+      const map = {
+        supplier: "供应商编码/名称",
+        factory: "生产厂家编码/名称/简码",
+        materialName: "耗材编码/名称/简码",
+        billNo: "业务单号模糊",
+        materialSpeci: "规格模糊",
+        materialModel: "型号模糊",
+        batchNo: "入库明细批号(batch_no)",
+        batchNumber: "入库明细批次号(batch_number)",
+        financeCategoryKeyword: "财务分类编码/名称/简拼",
+        warehouseCategoryKeyword: "库房分类编码/名称/简拼"
+      };
+      return map[t] || "请输入关键字";
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -580,6 +604,54 @@ export default {
       if (Array.isArray(queryParams.warehouseCategoryIds) && queryParams.warehouseCategoryIds.length === 0) {
         queryParams.warehouseCategoryIds = null;
       }
+      const types = this.moreSearchTypes || [];
+      if (!types.includes("warehouse")) {
+        queryParams.warehouseId = null;
+      }
+      types.forEach(t => {
+        if (t === "warehouse") {
+          return;
+        }
+        const raw = this.moreSearchKeywords[t];
+        const kw = raw != null ? String(raw).trim() : "";
+        if (!kw) {
+          return;
+        }
+        switch (t) {
+          case "supplier":
+            queryParams.supplierKeyword = kw;
+            break;
+          case "factory":
+            queryParams.factoryKeyword = kw;
+            break;
+          case "materialName":
+            queryParams.materialNameLike = kw;
+            break;
+          case "billNo":
+            queryParams.billNo = kw;
+            break;
+          case "materialSpeci":
+            queryParams.materialSpeciLike = kw;
+            break;
+          case "materialModel":
+            queryParams.materialModelLike = kw;
+            break;
+          case "batchNo":
+            queryParams.batchNo = kw;
+            break;
+          case "batchNumber":
+            queryParams.batchNumberKeyword = kw;
+            break;
+          case "financeCategoryKeyword":
+            queryParams.financeCategoryKeyword = kw;
+            break;
+          case "warehouseCategoryKeyword":
+            queryParams.warehouseCategoryKeyword = kw;
+            break;
+          default:
+            break;
+        }
+      });
       Object.keys(queryParams).forEach(key => {
         if (queryParams[key] === '') queryParams[key] = null;
       });
@@ -651,13 +723,71 @@ export default {
   width: 180px;
 }
 
+.more-search-item >>> .el-form-item__content {
+  line-height: 32px;
+  max-width: 100%;
+}
+.more-search-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+.more-search-row--multi {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  max-width: 100%;
+}
+.more-search-dynamic-field {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.more-search-field-label {
+  color: #606266;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.more-search-label {
+  color: #606266;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.more-search-type {
+  min-width: 220px;
+  width: auto;
+  max-width: 360px;
+}
+.more-search-input {
+  width: 200px;
+}
+.more-search-input--dynamic {
+  width: 180px;
+}
+
+.category-multi-wrap {
+  width: 158px !important;
+  max-width: 158px;
+}
+.category-multi-wrap >>> .el-select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.more-search-warehouse-wrap {
+  width: 210px;
+}
+.more-search-warehouse-wrap >>> .el-select {
+  width: 100%;
+}
+
 .query-row-second {
   margin-bottom: 2px;
 }
-.query-row-third {
-  margin-bottom: 2px;
-}
-.query-row-third-inner {
+.query-row-second-inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -666,14 +796,14 @@ export default {
   gap: 4px;
   padding-bottom: 2px;
 }
-.query-row-third-inner .el-form-item {
+.query-row-second-inner .el-form-item {
   flex: 0 0 auto;
   margin-bottom: 0 !important;
   margin-right: 8px;
   white-space: nowrap;
 }
 @media (min-width: 1680px) {
-  .query-row-third-inner {
+  .query-row-second-inner {
     flex-wrap: nowrap;
     overflow-x: auto;
     overflow-y: hidden;
@@ -689,24 +819,6 @@ export default {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-}
-
-.query-row-second-inner {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-  width: 100%;
-  gap: 4px;
-  padding-bottom: 2px;
-}
-
-.query-row-second-inner .el-form-item {
-  flex: 0 0 auto;
-  margin-bottom: 0 !important;
-  margin-right: 8px;
-  white-space: nowrap;
 }
 
 .query-row-second-inner .el-form-item .el-form-item__content {
@@ -771,81 +883,42 @@ export default {
 .table-container {
   margin-top: 8px;
   margin-bottom: 0;
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: visible;
   width: 100%;
   margin-left: 0;
   margin-right: 0;
   position: relative;
 }
 
+/* 表体区域横向滚动：底部滚动条不被其它层挡住 */
 .table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 32px;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
-  background: #fff;
-}
-
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
-  background: #fff;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  padding-bottom: 10px;
 }
 
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 6px;
-  transition: height 0.2s ease;
-}
-.table-container:hover ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 12px;
+  height: 10px;
+  width: 10px;
 }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
   background: #e8e8e8;
-  border-radius: 3px;
+  border-radius: 4px;
   margin: 0 2px;
-  cursor: pointer;
 }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #a0a0a0;
-  border-radius: 3px;
-  cursor: grab;
+  background: #909399;
+  border-radius: 4px;
 }
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #808080;
+  background: #606266;
 }
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
-  background: #606060;
-  cursor: grabbing;
-}
+
 .table-container ::v-deep .el-table th.el-table__cell {
   padding: 10px 12px !important;
 }
 .table-container ::v-deep .el-table td.el-table__cell {
   padding: 10px 12px !important;
-}
-
-/* 合计行：价格+数量合并展示时，数量列与左侧价格列视觉连成一体，且数字不换行 */
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell,
-.table-container ::v-deep .el-table__footer-wrapper .cell {
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: initial;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell,
-.table-container ::v-deep .el-table__fixed-footer-wrapper .cell {
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: initial;
-}
-/* 合计行数量列留空时去掉左竖线，与价格列合并观感 */
-.table-container ::v-deep .el-table__footer-wrapper td.col-in-sum-qty {
-  border-left: none !important;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.col-in-sum-qty {
-  border-left: none !important;
 }
 </style>
