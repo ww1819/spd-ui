@@ -301,6 +301,21 @@
           <div class="material-cell-top-left" :title="scope.row.hisChargeItemId || ''">{{ scope.row.hisChargeItemId }}</div>
         </template>
       </el-table-column>
+      <el-table-column label="收费项目名称" align="center" prop="hisChargeItemName" min-width="160" key="hisChargeItemName" v-if="columns[27].visible" show-overflow-tooltip resizable class-name="material-top-cell cell-pad-tight">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left" :title="scope.row.hisChargeItemName || ''">{{ scope.row.hisChargeItemName || '--' }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="收费项目规格" align="center" prop="hisChargeItemSpeci" width="140" key="hisChargeItemSpeci" v-if="columns[28].visible" show-overflow-tooltip resizable class-name="material-top-cell cell-pad-tight">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left" :title="scope.row.hisChargeItemSpeci || ''">{{ scope.row.hisChargeItemSpeci || '--' }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="收费单价(HIS)" align="center" prop="hisChargeItemPrice" width="120" key="hisChargeItemPrice" v-if="columns[29].visible" resizable class-name="material-price-cell cell-pad-tight">
+        <template slot-scope="scope">
+          <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.hisChargeItemPrice) || '')">{{ scope.row.hisChargeItemPrice != null && scope.row.hisChargeItemPrice !== '' ? formatPrice4(scope.row.hisChargeItemPrice) : '--' }}</div>
+        </template>
+      </el-table-column>
       <el-table-column label="规格" align="center" prop="speci" width="200" key="speci" v-if="columns[3].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-top-left" :title="scope.row.speci || ''">{{ scope.row.speci }}</div>
@@ -394,7 +409,7 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[27].visible" show-overflow-tooltip resizable/>
+      <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" show-overflow-tooltip resizable/>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
         <template slot-scope="scope">
           <el-button
@@ -837,6 +852,41 @@
                       ></el-switch>
                     </div>
                   </el-form-item>
+                </div>
+              </div>
+            </el-col>
+          </el-row>
+
+              <!-- 收费项目（HIS 镜像对照，只读；维护页修改档案时一并提交 hisId/hisChargeItemId 避免被清空） -->
+          <el-row v-if="form.id" :gutter="20">
+            <el-col :span="24">
+              <div class="his-compare-container">
+                <div class="his-compare-header">
+                  <span class="his-compare-title">收费项目信息（HIS）</span>
+                </div>
+                <div class="his-compare-content">
+                  <el-row :gutter="20">
+                    <el-col :span="5">
+                      <el-form-item label="收费项ID：">
+                        <el-input :value="form.hisChargeItemId || '--'" disabled />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="7">
+                      <el-form-item label="收费名称：">
+                        <el-input :value="form.hisChargeItemName || '--'" disabled />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="5">
+                      <el-form-item label="收费规格：">
+                        <el-input :value="form.hisChargeItemSpeci || '--'" disabled />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="4">
+                      <el-form-item label="收费单价：">
+                        <el-input :value="form.hisChargeItemPrice != null && form.hisChargeItemPrice !== '' ? formatPrice4(form.hisChargeItemPrice) : '--'" disabled />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
                 </div>
               </div>
             </el-col>
@@ -1479,7 +1529,10 @@ export default {
         { key: 24, label: `注册证号`, visible: true },
         { key: 25, label: `财务分类`, visible: true },
         { key: 26, label: `his收费项目编码`, visible: true },
-        { key: 27, label: `最小包装数`, visible: true }
+        { key: 27, label: `收费项目名称`, visible: true },
+        { key: 28, label: `收费项目规格`, visible: true },
+        { key: 29, label: `收费单价(HIS)`, visible: true },
+        { key: 30, label: `最小包装数`, visible: true }
       ],
       // 表单校验：基本信息区多项必填；单价必填且为有效数字
       rules: {
@@ -2222,7 +2275,7 @@ export default {
         'isTemporaryPurchase', 'isServiceFee', 'isBilling', 'materialLevel', 'registerLevel', 'riskLevel',
         'firstaidLevel', 'doctorLevel', 'brand', 'useto', 'quality', 'function', 'isWay', 'locationId', 'udiNo',
         'sunshineCode', 'countryNo', 'permitNo', 'description', 'countryName', 'periodDate', 'imageUrl',
-        'mainBarcode', 'subBarcode', 'defaultWarehouseId'
+        'mainBarcode', 'subBarcode', 'defaultWarehouseId', 'hisId', 'hisChargeItemId'
       ];
       const payload = {};
       allowFields.forEach(k => {
