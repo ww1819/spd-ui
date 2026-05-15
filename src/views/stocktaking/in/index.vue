@@ -542,47 +542,11 @@
       </div>
     </el-dialog>
 
-    <el-dialog
-      title="审核前确认（明细库存与仓库实物不一致）"
-      :visible.sync="whAuditQtyMismatchVisible"
-      width="980px"
-      append-to-body
-      :close-on-click-modal="false"
-    >
-      <div style="margin-bottom: 8px; color: #e6a23c;">
-        以下明细「账面数量(qty)」与当前仓库库存不一致，请逐条确认盘点数量后再审核；确认后将把明细账面更新为当前仓库数量并回写盈亏。仅账面与仓库实物不一致时需确认，普通盘盈盘亏不进入本表。
-      </div>
-      <el-table :data="qtyMismatchAuditList" border size="small">
-        <el-table-column label="耗材" prop="materialName" min-width="150" />
-        <el-table-column label="批次号" prop="batchNo" min-width="150" />
-        <el-table-column label="明细账面数量" prop="detailQty" width="140" />
-        <el-table-column label="当前仓库库存" prop="currentQty" width="140" />
-        <el-table-column label="盘点数量" min-width="140">
-          <template slot-scope="scope">
-            <el-input
-              v-model="scope.row.adjustedStockQty"
-              type="number"
-              :disabled="scope.row.confirmed"
-              placeholder="盘点数量"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100">
-          <template slot-scope="scope">
-            <el-button type="text" @click="confirmWhAuditMismatchRow(scope.row)">{{ scope.row.confirmed ? '已确定' : '确定' }}</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer">
-        <el-button @click="whAuditQtyMismatchVisible = false">取 消</el-button>
-        <el-button type="primary" @click="confirmWhAuditQtyMismatchAndAudit">确 定</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, patchSaveStocktaking, auditStocktaking, checkStocktakingQty, updateStocktakingEntryCounted, appendStocktakingEntries, initWarehouseStocktakingFromInventory } from "@/api/warehouse/stocktaking";
+import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, patchSaveStocktaking, auditStocktaking, updateStocktakingEntryCounted, appendStocktakingEntries, initWarehouseStocktakingFromInventory } from "@/api/warehouse/stocktaking";
 import { listInventoryPick, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
@@ -636,9 +600,6 @@ export default {
       saveQtyConfirmVisible: false,
       saveQtyConfirmList: [],
       saveQtyConfirmLoading: false,
-      whAuditQtyMismatchVisible: false,
-      qtyMismatchAuditList: [],
-      pendingWhAuditId: null,
       /** 仅「新增盘点」弹窗内自动保存；修改/查看打开后为 false */
       stocktakingAutoSaveEnabled: false,
       entrySaveSnapshots: null,
@@ -1442,60 +1403,12 @@ export default {
       const stockNo = row && row.stockNo != null ? row.stockNo : id;
       this.$modal
         .confirm('确定要审核"' + stockNo + '"的数据项？')
-        .then(() => checkStocktakingQty({ id }))
-        .then((res) => {
-          const rows = (res && res.data) || [];
-          if (!rows.length) {
-            return auditStocktaking({ id });
-          }
-          this.pendingWhAuditId = id;
-          this.qtyMismatchAuditList = rows.map((r) => ({
-            ...r,
-            adjustedStockQty: r.stockQty != null ? r.stockQty : r.currentQty,
-            confirmed: false
-          }));
-          this.whAuditQtyMismatchVisible = true;
-          return null;
-        })
-        .then((result) => {
-          if (!result) return;
+        .then(() => auditStocktaking({ id }))
+        .then(() => {
           this.getList();
           this.$modal.msgSuccess('审核成功！');
         })
         .catch(() => {});
-    },
-    confirmWhAuditMismatchRow(row) {
-      const v = parseFloat(row.adjustedStockQty);
-      if (!Number.isFinite(v) || v < 0) {
-        this.$modal.msgWarning('请输入有效的盘点数量');
-        return;
-      }
-      const cap = parseFloat(row.currentQty);
-      if (Number.isFinite(cap) && v > cap) {
-        row.adjustedStockQty = cap;
-        this.$modal.msgWarning('来源于仓库库存的明细仅允许盘亏，盘点数量已回退为当前库存数量');
-      } else {
-        row.adjustedStockQty = v;
-      }
-      row.confirmed = true;
-    },
-    confirmWhAuditQtyMismatchAndAudit() {
-      const unconfirmed = (this.qtyMismatchAuditList || []).some((r) => !r.confirmed);
-      if (unconfirmed) {
-        this.$modal.msgWarning('请先逐条点击“确定”后再提交');
-        return;
-      }
-      const qtyAdjustList = (this.qtyMismatchAuditList || []).map((r) => ({
-        entryId: r.entryId,
-        stockQty: r.adjustedStockQty
-      }));
-      auditStocktaking({ id: this.pendingWhAuditId, qtyAdjustList }).then(() => {
-        this.whAuditQtyMismatchVisible = false;
-        this.qtyMismatchAuditList = [];
-        this.pendingWhAuditId = null;
-        this.getList();
-        this.$modal.msgSuccess('审核成功！');
-      });
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
