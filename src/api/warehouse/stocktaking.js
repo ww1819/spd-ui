@@ -35,6 +35,15 @@ export function updateStocktaking(data) {
   })
 }
 
+/** 精简保存：主表 + 有变更的明细实盘/账面/已盘 */
+export function patchSaveStocktaking(data) {
+  return request({
+    url: '/stocktaking/in/patch-save',
+    method: 'put',
+    data
+  })
+}
+
 /** 向已存在的仓库盘点单追加明细（新行无明细 id），返回完整单据 */
 export function appendStocktakingEntries(billId, entries) {
   return request({

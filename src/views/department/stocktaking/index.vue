@@ -684,7 +684,7 @@
 </template>
 
 <script>
-import { listStocktaking, listStocktakingExportRows, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, updateDeptStocktakingEntryCounted, appendDeptStocktakingEntries, initDeptStocktakingFromInventory } from "@/api/department/stocktaking";
+import { listStocktaking, listStocktakingExportRows, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, patchSaveStocktaking, updateDeptStocktakingEntryCounted, appendDeptStocktakingEntries, initDeptStocktakingFromInventory } from "@/api/department/stocktaking";
 import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { listInventoryPick, listInventoryPickSummary } from "@/api/department/depInventory";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -710,6 +710,8 @@ export default {
       departmentLockedByAction: false,
       /** 仅「新增科室盘点」弹窗内自动保存；修改/查看打开后为 false */
       stocktakingAutoSaveEnabled: false,
+      /** 打开/加载后明细快照，用于精简保存仅提交变更行 */
+      entrySaveSnapshots: null,
       addEntryMode: 'LOSS',
       useMaterialDictForSelect: false,
       newEntryDialogVisible: false,
@@ -1040,7 +1042,61 @@ export default {
           row.amt = (sq * up).toFixed(2);
         }
       });
+      this.refreshEntrySaveSnapshots(list);
       return list || [];
+    },
+    patchQtyNum(v) {
+      if (v == null || v === '') return null;
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : null;
+    },
+    snapshotEntryForSave(row) {
+      if (!row) return null;
+      return {
+        stockQty: this.patchQtyNum(row.stockQty),
+        qty: this.patchQtyNum(row.qty),
+        countedFlag: Number(row.countedFlag) === 1 ? 1 : 0
+      };
+    },
+    refreshEntrySaveSnapshots(list) {
+      const m = {};
+      (list || []).forEach((row) => {
+        if (row && row.id != null && row.id !== '') {
+          m[String(row.id)] = this.snapshotEntryForSave(row);
+        }
+      });
+      this.entrySaveSnapshots = m;
+    },
+    collectEntryQtyPatches(list) {
+      const snap = this.entrySaveSnapshots || {};
+      const patches = [];
+      (list || []).forEach((row) => {
+        if (!row || row.id == null || row.id === '') return;
+        const key = String(row.id);
+        const old = snap[key];
+        const cur = this.snapshotEntryForSave(row);
+        if (!old || !cur) return;
+        const stockChanged = cur.stockQty !== old.stockQty;
+        const qtyChanged = cur.qty !== old.qty;
+        const countedChanged = cur.countedFlag !== old.countedFlag;
+        if (!stockChanged && !qtyChanged && !countedChanged) return;
+        const p = { id: row.id };
+        if (stockChanged) p.stockQty = cur.stockQty;
+        if (qtyChanged) p.bookQty = cur.qty;
+        if (countedChanged) p.countedFlag = cur.countedFlag;
+        patches.push(p);
+      });
+      return patches;
+    },
+    buildPatchSavePayload() {
+      return {
+        id: this.form.id,
+        stockDate: this.form.stockDate,
+        remark: this.form.remark,
+        isMonthInit: this.form.isMonthInit,
+        departmentId: this.form.departmentId,
+        entryPatches: this.collectEntryQtyPatches(this.stkIoStocktakingEntryList)
+      };
     },
     /** 明细合计（与到货验收弹窗表尾一致；按列 property 汇总，避免列顺序变化错位） */
     getSummaries(param) {
@@ -1673,6 +1729,7 @@ export default {
         remark: null
       };
       this.stkIoStocktakingEntryList = [];
+      this.entrySaveSnapshots = null;
       this.detailFilterMaterialName = '';
       this.detailFilterSpec = '';
       this.detailFilterModel = '';
@@ -1693,6 +1750,7 @@ export default {
       }
       updateDeptStocktakingEntryCounted(payload).then(() => {
         this.stockQtyChange(row);
+        this.refreshEntrySaveSnapshots(this.stkIoStocktakingEntryList);
       }).catch(() => {
         this.$set(row, 'countedFlag', prev);
       });
@@ -2163,12 +2221,17 @@ export default {
       options = options || {};
       const keepDialogOpen = !!options.keepDialogOpen;
       const quietSuccess = !!options.quietSuccess;
-      this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) =>
-        this.serializeStocktakingEntryForSave(row)
-      );
       this.submitLoading = true;
       const isUpdate = this.form.id != null;
-      const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
+      let request;
+      if (isUpdate) {
+        request = patchSaveStocktaking(this.buildPatchSavePayload());
+      } else {
+        this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) =>
+          this.serializeStocktakingEntryForSave(row)
+        );
+        request = addStocktaking(this.form);
+      }
       return request.then(response => {
         if (response.data) {
           this.form = response.data;

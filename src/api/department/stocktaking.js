@@ -35,12 +35,21 @@ export function addStocktaking(data) {
   })
 }
 
-// 修改科室盘点
+// 修改科室盘点（全量明细，追加新行等场景仍可用）
 export function updateStocktaking(data) {
   return request({
     url: '/department/stocktaking',
     method: 'put',
     data: data
+  })
+}
+
+/** 精简保存：主表 + 有变更的明细实盘/账面/已盘 */
+export function patchSaveStocktaking(data) {
+  return request({
+    url: '/department/stocktaking/patch-save',
+    method: 'put',
+    data
   })
 }
 
