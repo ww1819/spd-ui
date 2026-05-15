@@ -275,6 +275,7 @@
                 v-if="action"
                 v-model="scope.row.stockQty"
                 type="number"
+                :disabled="isEntryStockQtyLocked(scope.row)"
                 @input="stockQtyChangeWh(scope.row)"
                 placeholder="实盘数量"
               />
@@ -1261,6 +1262,11 @@ export default {
       } finally {
         this.whInventoryInitLoading = false;
       }
+    },
+    /** 已盘且已落库明细：锁定实盘数量，取消已盘后恢复（无 id 的待确认行不锁） */
+    isEntryStockQtyLocked(row) {
+      if (!row || row.id == null || row.id === '') return false;
+      return Number(row.countedFlag) === 1;
     },
     onWhEntryCountedChange(row, val) {
       if (!row || !row.id) return;

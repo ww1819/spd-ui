@@ -390,6 +390,7 @@
                 v-if="action"
                 v-model="scope.row.stockQty"
                 type="number"
+                :disabled="isEntryStockQtyLocked(scope.row)"
                 @input="stockQtyChange(scope.row)"
                 @blur="handleStockQtyBlur(scope.row)"
                 placeholder="实盘数量"
@@ -1740,6 +1741,11 @@ export default {
       this.stocktakingAutoSaveEnabled = false;
       this.resetForm("form");
     },
+    /** 已盘且已落库明细：锁定实盘数量，取消已盘后恢复（无 id 的待确认行不锁） */
+    isEntryStockQtyLocked(row) {
+      if (!row || row.id == null || row.id === '') return false;
+      return Number(row.countedFlag) === 1;
+    },
     onDeptEntryCountedChange(row, val) {
       if (!row || !row.id) return;
       const prev = val === 1 ? 0 : 1;
@@ -1766,6 +1772,7 @@ export default {
     },
     handleStockQtyBlur(row) {
       if (!row) return;
+      if (this.isEntryStockQtyLocked(row)) return;
       if (!row.depInventoryId) return;
       const stockQty = parseFloat(row.stockQty || 0);
       const qty = parseFloat(row.qty || 0);
