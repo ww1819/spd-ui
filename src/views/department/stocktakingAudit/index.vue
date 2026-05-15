@@ -329,14 +329,19 @@
                     <span>{{ scope.row.unitPrice ? parseFloat(scope.row.unitPrice).toFixed(2) : '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="库存数量" prop="qty" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="明细账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.qty || '--' }}</span>
+                    <span>{{ formatEntryQtyDisplay(scope.row, 'qty') }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="盘点数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="实盘数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.stockQty || '--' }}</span>
+                    <span>{{ formatEntryQtyDisplay(scope.row, 'stockQty') }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="当前库存数量" width="120" align="center" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ formatEntryCurrentInventoryQty(scope.row) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
@@ -443,6 +448,7 @@
 
 <script>
 import { listStocktakingAudit, getStocktakingAudit, auditStocktaking, rejectStocktaking, checkStocktakingQty } from "@/api/department/stocktakingAudit";
+import { listInventoryPick } from "@/api/department/depInventory";
 import { listStocktakingExportRows } from "@/api/department/stocktaking";
 import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -515,8 +521,15 @@ export default {
         return '未审核';
       }
     },
-    // 计算总金额
+    // 计算总金额（优先主单汇总字段，避免明细未映射时显示 0）
     totalAmountText() {
+      const head = this.form && this.form.totalAmount;
+      if (head != null && head !== '') {
+        const n = parseFloat(head);
+        if (Number.isFinite(n)) {
+          return '￥' + n.toFixed(2);
+        }
+      }
       let total = 0;
       if (this.stkIoStocktakingEntryList && this.stkIoStocktakingEntryList.length > 0) {
         this.stkIoStocktakingEntryList.forEach(item => {
@@ -601,12 +614,118 @@ export default {
     handleView(row){
       const id = row.id
       getStocktakingAudit(id).then(response => {
-        this.form = response.data;
-        this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList || [];
+        const data = response && response.data;
+        if (!data) {
+          this.$modal.msgError('获取盘点单失败');
+          return;
+        }
+        this.form = data;
+        this.stkIoStocktakingEntryList = this.normalizeAuditEntries(data.stkIoStocktakingEntryList || []);
         this.open = true;
         this.form.stockType = 502;
         this.title = "查看科室盘点";
+        this.$nextTick(() => {
+          this.hydrateDeptEntryCurrentInventoryQty();
+        });
       });
+    },
+    normalizeAuditEntries(list) {
+      return (list || []).map((row) => {
+        if (!row) return row;
+        if (row.countedFlag == null || row.countedFlag === '') {
+          row.countedFlag = 0;
+        } else {
+          row.countedFlag = Number(row.countedFlag) === 1 ? 1 : 0;
+        }
+        return row;
+      });
+    },
+    formatEntryQtyDisplay(row, field) {
+      if (!row) return '0';
+      const v = row[field];
+      if (v == null || v === '') return '0';
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? String(n) : '0';
+    },
+    formatEntryCurrentInventoryQty(row) {
+      if (!row) return '--';
+      if (row._currentInventoryQtyLoading) return '加载中…';
+      const v = row._currentInventoryQty;
+      if (v == null || v === '') return '--';
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? String(n) : '--';
+    },
+    async _fetchAllDeptInventoryPickForView(departmentId) {
+      const pageSize = 500;
+      const allRows = [];
+      const fetchNext = async (pageNum) => {
+        const res = await listInventoryPick({
+          departmentId,
+          pageNum,
+          pageSize,
+          receiptConfirmStatus: 1
+        });
+        const rows = (res && res.rows) || [];
+        allRows.push(...rows);
+        if (rows.length === 0 || rows.length < pageSize) {
+          return allRows;
+        }
+        return fetchNext(pageNum + 1);
+      };
+      return fetchNext(1);
+    },
+    async hydrateDeptEntryCurrentInventoryQty() {
+      const list = this.stkIoStocktakingEntryList || [];
+      list.forEach((row) => {
+        if (!row) return;
+        this.$set(row, '_currentInventoryQty', null);
+        this.$set(row, '_currentInventoryQtyLoading', true);
+      });
+      const deptId = this.form && this.form.departmentId;
+      let invById = null;
+      try {
+        if (deptId != null && deptId !== '') {
+          const invRows = await this._fetchAllDeptInventoryPickForView(deptId);
+          invById = new Map();
+          (invRows || []).forEach((inv) => {
+            if (inv && inv.id != null) {
+              invById.set(String(inv.id), inv);
+            }
+          });
+        }
+        for (const row of list) {
+          if (!row) continue;
+          let live = null;
+          if (row.depInventoryId) {
+            const idStr = String(row.depInventoryId).trim();
+            if (invById && invById.has(idStr)) {
+              const inv = invById.get(idStr);
+              live = inv && inv.qty != null && inv.qty !== '' ? inv.qty : 0;
+            } else if (!invById) {
+              const idNum = parseInt(idStr, 10);
+              if (Number.isFinite(idNum)) {
+                try {
+                  const res = await listInventoryPick({ id: idNum, pageNum: 1, pageSize: 1 });
+                  const pickRows = (res && res.rows) || [];
+                  if (pickRows[0] && pickRows[0].qty != null && pickRows[0].qty !== '') {
+                    live = pickRows[0].qty;
+                  }
+                } catch (e) {
+                  live = null;
+                }
+              }
+            }
+          }
+          this.$set(row, '_currentInventoryQty', live);
+          this.$set(row, '_currentInventoryQtyLoading', false);
+        }
+      } catch (e) {
+        list.forEach((row) => {
+          if (!row) return;
+          this.$set(row, '_currentInventoryQty', null);
+          this.$set(row, '_currentInventoryQtyLoading', false);
+        });
+      }
     },
     /** 审核按钮操作 */
     handleAudit(row) {

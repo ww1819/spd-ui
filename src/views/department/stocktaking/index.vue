@@ -378,22 +378,28 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="明细账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : 0 }}</span>
+              <span>{{ formatEntryQtyDisplay(scope.row, 'qty') }}</span>
             </template>
           </el-table-column>
 
-          <el-table-column label="盘点数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="实盘数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input
+                v-if="action"
                 v-model="scope.row.stockQty"
-                :disabled="!action"
-                type='number'
+                type="number"
                 @input="stockQtyChange(scope.row)"
                 @blur="handleStockQtyBlur(scope.row)"
-                placeholder="盘点数量"
+                placeholder="实盘数量"
               />
+              <span v-else>{{ formatEntryQtyDisplay(scope.row, 'stockQty') }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="!action" label="当前库存数量" width="120" align="center" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ formatEntryCurrentInventoryQty(scope.row) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="已盘" width="72" align="center" resizable>
@@ -829,8 +835,15 @@ export default {
         return '未审核';
       }
     },
-    // 计算总金额
+    // 计算总金额（优先主单汇总字段，避免明细未映射时显示 0）
     totalAmountText() {
+      const head = this.form && this.form.totalAmount;
+      if (head != null && head !== '') {
+        const n = parseFloat(head);
+        if (Number.isFinite(n)) {
+          return '￥' + n.toFixed(2);
+        }
+      }
       let total = 0;
       if (this.stkIoStocktakingEntryList && this.stkIoStocktakingEntryList.length > 0) {
         this.stkIoStocktakingEntryList.forEach(item => {
@@ -923,6 +936,75 @@ export default {
       const raw = u != null && u !== '' ? u : p != null && p !== '' ? p : 0;
       const n = parseFloat(raw);
       return Number.isFinite(n) ? n : 0;
+    },
+    formatEntryQtyDisplay(row, field) {
+      if (!row) return '0';
+      const v = row[field];
+      if (v == null || v === '') return '0';
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? String(n) : '0';
+    },
+    formatEntryCurrentInventoryQty(row) {
+      if (!row) return '--';
+      if (row._currentInventoryQtyLoading) return '加载中…';
+      const v = row._currentInventoryQty;
+      if (v == null || v === '') return '--';
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? String(n) : '--';
+    },
+    /** 查看时拉取科室实时库存，与明细账面数量、实盘数量分列展示 */
+    async hydrateDeptEntryCurrentInventoryQty() {
+      const list = this.stkIoStocktakingEntryList || [];
+      list.forEach((row) => {
+        if (!row) return;
+        this.$set(row, '_currentInventoryQty', null);
+        this.$set(row, '_currentInventoryQtyLoading', true);
+      });
+      const deptId = this.form && this.form.departmentId;
+      let invById = null;
+      try {
+        if (deptId != null && deptId !== '') {
+          const invRows = await this._fetchAllDeptInventoryPickForSaveQtyCheck(deptId);
+          invById = new Map();
+          (invRows || []).forEach((inv) => {
+            if (inv && inv.id != null) {
+              invById.set(String(inv.id), inv);
+            }
+          });
+        }
+        for (const row of list) {
+          if (!row) continue;
+          let live = null;
+          if (row.depInventoryId) {
+            const idStr = String(row.depInventoryId).trim();
+            if (invById && invById.has(idStr)) {
+              const inv = invById.get(idStr);
+              live = inv && inv.qty != null && inv.qty !== '' ? inv.qty : 0;
+            } else if (!invById) {
+              const idNum = parseInt(idStr, 10);
+              if (Number.isFinite(idNum)) {
+                try {
+                  const res = await listInventoryPick({ id: idNum, pageNum: 1, pageSize: 1 });
+                  const pickRows = (res && res.rows) || [];
+                  if (pickRows[0] && pickRows[0].qty != null && pickRows[0].qty !== '') {
+                    live = pickRows[0].qty;
+                  }
+                } catch (e) {
+                  live = null;
+                }
+              }
+            }
+          }
+          this.$set(row, '_currentInventoryQty', live);
+          this.$set(row, '_currentInventoryQtyLoading', false);
+        }
+      } catch (e) {
+        list.forEach((row) => {
+          if (!row) return;
+          this.$set(row, '_currentInventoryQty', null);
+          this.$set(row, '_currentInventoryQtyLoading', false);
+        });
+      }
     },
     formatEntryUnitPriceDisplay(row) {
       const n = this.entryEffectiveUnitPriceNum(row);
@@ -1716,6 +1798,7 @@ export default {
           this.form.stockType = 502;
           this.title = "查看科室盘点";
           this.stocktakingAutoSaveEnabled = false;
+          this.hydrateDeptEntryCurrentInventoryQty();
         })
         .catch(() => {});
     },
