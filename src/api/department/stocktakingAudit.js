@@ -17,21 +17,23 @@ export function getStocktakingAudit(id) {
   })
 }
 
-// 审核通过
+// 审核通过（服务端逐条落科室库存/流水，明细多时可能超过默认 10s）
 export function auditStocktaking(data) {
   return request({
     url: '/department/stocktaking/auditStocktaking',
     method: 'put',
-    data: data
+    data: data,
+    timeout: 120000
   })
 }
 
-// 审核前库存一致性校验
+// 审核前库存一致性校验（逐条对账科室库存，明细多时可较慢）
 export function checkStocktakingQty(data) {
   return request({
     url: '/department/stocktaking/auditStocktaking/checkQty',
     method: 'post',
-    data: data
+    data: data,
+    timeout: 120000
   })
 }
 

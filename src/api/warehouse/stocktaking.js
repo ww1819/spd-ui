@@ -70,12 +70,13 @@ export function delStocktaking(id) {
   })
 }
 
-// 审核盘点（可传 qtyAdjustList：账面与仓库实物不一致时逐条确认后的盘点数量）
+// 审核盘点（可传 qtyAdjustList；501 会逐条对齐库存并写明细，明细多时可能超过默认 10s）
 export function auditStocktaking(data) {
   return request({
     url: '/stocktaking/in/auditStocktaking',
     method: 'put',
-    data: data
+    data: data,
+    timeout: 120000
   })
 }
 
@@ -84,7 +85,8 @@ export function checkStocktakingQty(data) {
   return request({
     url: '/stocktaking/in/auditStocktaking/checkQty',
     method: 'post',
-    data: data
+    data: data,
+    timeout: 120000
   })
 }
 

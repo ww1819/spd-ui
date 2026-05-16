@@ -79,12 +79,13 @@ export function delStocktaking(id) {
   })
 }
 
-// 审核科室盘点
+// 审核科室盘点（服务端逐条落科室库存/流水，明细多时可能超过默认 10s）
 export function auditStocktaking(data) {
   return request({
     url: '/department/stocktaking/auditStocktaking',
     method: 'put',
-    data: data
+    data: data,
+    timeout: 120000
   })
 }
 
