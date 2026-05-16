@@ -835,6 +835,7 @@ export default {
         stockDate: this.form.stockDate,
         remark: this.form.remark,
         isMonthInit: this.form.isMonthInit,
+        expectedUpdateTime: this.form.updateTime,
         entryPatches: this.collectEntryQtyPatches(this.stkIoStocktakingEntryList)
       };
     },
@@ -1243,7 +1244,8 @@ export default {
           stockDate: this.form.stockDate,
           stockStatus: this.form.stockStatus,
           stockType: this.form.stockType != null && this.form.stockType !== '' ? this.form.stockType : 501,
-          remark: this.form.remark
+          remark: this.form.remark,
+          updateTime: this.form.updateTime
         };
         const res = await initWarehouseStocktakingFromInventory(payload);
         const data = res && res.data;
@@ -1272,7 +1274,7 @@ export default {
       if (!row || !row.id) return;
       const prev = val === 1 ? 0 : 1;
       const sq = parseFloat(row.stockQty);
-      const payload = { id: row.id, countedFlag: val };
+      const payload = { id: row.id, countedFlag: val, expectedUpdateTime: this.form.updateTime };
       if (Number.isFinite(sq)) {
         payload.stockQty = sq;
       }
@@ -1409,7 +1411,7 @@ export default {
       const stockNo = row && row.stockNo != null ? row.stockNo : id;
       this.$modal
         .confirm('确定要审核"' + stockNo + '"的数据项？')
-        .then(() => auditStocktaking({ id }))
+        .then(() => auditStocktaking({ id, expectedUpdateTime: row.updateTime }))
         .then(() => {
           this.getList();
           this.$modal.msgSuccess('审核成功！');
@@ -1592,7 +1594,10 @@ export default {
           this.submitLoading = true;
           try {
             const payload = newEntries.map((row) => this.serializeStocktakingEntryForSave(row));
-            const res = await appendStocktakingEntries(this.form.id, payload);
+            const res = await appendStocktakingEntries(this.form.id, {
+              entries: payload,
+              expectedUpdateTime: this.form.updateTime
+            });
             const data = res && res.data;
             if (data) {
               this.form = data;

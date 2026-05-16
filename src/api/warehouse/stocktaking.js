@@ -44,12 +44,12 @@ export function patchSaveStocktaking(data) {
   })
 }
 
-/** 向已存在的仓库盘点单追加明细（新行无明细 id），返回完整单据 */
-export function appendStocktakingEntries(billId, entries) {
+/** 向已存在的仓库盘点单追加明细（新行无明细 id），返回完整单据；body: { entries, expectedUpdateTime } */
+export function appendStocktakingEntries(billId, body) {
   return request({
     url: '/stocktaking/in/' + billId + '/entries',
     method: 'post',
-    data: entries
+    data: body
   })
 }
 

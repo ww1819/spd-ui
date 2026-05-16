@@ -53,12 +53,12 @@ export function patchSaveStocktaking(data) {
   })
 }
 
-/** 向已存在的科室盘点单追加明细（新行，无明细 id），返回完整单据 */
-export function appendDeptStocktakingEntries(billId, entries) {
+/** 向已存在的科室盘点单追加明细（新行，无明细 id），返回完整单据；body: { entries, expectedUpdateTime } */
+export function appendDeptStocktakingEntries(billId, body) {
   return request({
     url: '/department/stocktaking/' + billId + '/entries',
     method: 'post',
-    data: entries
+    data: body
   })
 }
 

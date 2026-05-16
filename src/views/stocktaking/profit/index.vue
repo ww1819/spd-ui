@@ -513,6 +513,7 @@ export default {
       whAuditQtyMismatchVisible: false,
       qtyMismatchAuditList: [],
       pendingWhAuditId: null,
+      pendingWhAuditExpectedUpdateTime: null,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -752,9 +753,10 @@ export default {
         .then((res) => {
           const rows = (res && res.data) || [];
           if (!rows.length) {
-            return auditStocktaking({ id });
+            return auditStocktaking({ id, expectedUpdateTime: row.updateTime });
           }
           this.pendingWhAuditId = id;
+          this.pendingWhAuditExpectedUpdateTime = row.updateTime;
           this.qtyMismatchAuditList = rows.map((r) => ({
             ...r,
             adjustedStockQty: r.stockQty != null ? r.stockQty : r.currentQty,
@@ -795,10 +797,15 @@ export default {
         entryId: r.entryId,
         stockQty: r.adjustedStockQty
       }));
-      auditStocktaking({ id: this.pendingWhAuditId, qtyAdjustList }).then(() => {
+      auditStocktaking({
+        id: this.pendingWhAuditId,
+        qtyAdjustList,
+        expectedUpdateTime: this.pendingWhAuditExpectedUpdateTime
+      }).then(() => {
         this.whAuditQtyMismatchVisible = false;
         this.qtyMismatchAuditList = [];
         this.pendingWhAuditId = null;
+        this.pendingWhAuditExpectedUpdateTime = null;
         this.getList();
         this.$modal.msgSuccess('审核成功！');
       });
@@ -822,13 +829,18 @@ export default {
           return Promise.all(checkTasks);
         })
         .then((checkResults) => {
+          const rowById = new Map((this.inList || []).map((r) => [r.id, r]));
           const canAuditIds = (checkResults || []).filter((r) => !r.needManualConfirm).map((r) => r.id);
           const blockedIds = (checkResults || []).filter((r) => r.needManualConfirm).map((r) => r.id);
           if (!canAuditIds.length) {
             this.$modal.msgWarning('所选单据均存在需逐条确认的数量差异，请改用单条审核处理。');
             return null;
           }
-          return Promise.all(canAuditIds.map((id) => auditStocktaking({ id }))).then(() => ({
+          return Promise.all(
+            canAuditIds.map((id) =>
+              auditStocktaking({ id, expectedUpdateTime: (rowById.get(id) || {}).updateTime })
+            )
+          ).then(() => ({
             blockedIds,
             auditedCount: canAuditIds.length
           }));

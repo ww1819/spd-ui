@@ -697,7 +697,7 @@ export default {
     /** 审核按钮操作 */
     handleAudit(row) {
       const id = row.id || this.ids[0];
-      this.runAuditWithQtyCheck(id, row.stockNo, false);
+      this.runAuditWithQtyCheck(id, row.stockNo, false, row.updateTime);
     },
     /** 批量审核 */
     handleBatchAudit() {
@@ -718,7 +718,9 @@ export default {
       }
       const unAuditedIds = unAuditedRows.map(row => row.id);
       this.$modal.confirm('是否确认审核选中的' + unAuditedIds.length + '条数据项？').then(() => {
-        const auditTasks = unAuditedIds.map((id) => auditStocktaking({ id }));
+        const auditTasks = unAuditedRows.map((row) =>
+          auditStocktaking({ id: row.id, expectedUpdateTime: row.updateTime })
+        );
         return Promise.all(auditTasks);
       }).then(() => {
         this.getList();
@@ -757,11 +759,11 @@ export default {
         this.$modal.msgError("数据异常，无法审核");
         return;
       }
-      this.runAuditWithQtyCheck(id, this.form.stockNo, true);
+      this.runAuditWithQtyCheck(id, this.form.stockNo, true, this.form.updateTime);
     },
-    runAuditWithQtyCheck(id, stockNo, closeOnSuccess) {
+    runAuditWithQtyCheck(id, stockNo, closeOnSuccess, expectedUpdateTime) {
       this.$modal.confirm('是否确认审核盘点编号为"' + stockNo + '"的数据项？').then(() => {
-        return auditStocktaking({ id });
+        return auditStocktaking({ id, expectedUpdateTime });
       }).then(() => {
         this.getList();
         if (closeOnSuccess) this.open = false;
@@ -780,7 +782,7 @@ export default {
         return;
       }
       this.$modal.confirm('是否确认驳回盘点编号为"' + this.form.stockNo + '"的数据项？').then(() => {
-        return rejectStocktaking({ id: id, rejectReason: this.form.rejectReason });
+        return rejectStocktaking({ id: id, rejectReason: this.form.rejectReason, expectedUpdateTime: this.form.updateTime });
       }).then(() => {
         this.getList();
         this.open = false;
