@@ -753,10 +753,10 @@ export default {
         .then((res) => {
           const rows = (res && res.data) || [];
           if (!rows.length) {
-            return auditStocktaking({ id, expectedUpdateTime: row.updateTime });
+            return auditStocktaking({ id, expectedUpdateTime: row.updateTime || row.createTime });
           }
           this.pendingWhAuditId = id;
-          this.pendingWhAuditExpectedUpdateTime = row.updateTime;
+          this.pendingWhAuditExpectedUpdateTime = row.updateTime || row.createTime;
           this.qtyMismatchAuditList = rows.map((r) => ({
             ...r,
             adjustedStockQty: r.stockQty != null ? r.stockQty : r.currentQty,
@@ -838,7 +838,7 @@ export default {
           }
           return Promise.all(
             canAuditIds.map((id) =>
-              auditStocktaking({ id, expectedUpdateTime: (rowById.get(id) || {}).updateTime })
+              auditStocktaking({ id, expectedUpdateTime: (rowById.get(id) || {}).updateTime || (rowById.get(id) || {}).createTime })
             )
           ).then(() => ({
             blockedIds,

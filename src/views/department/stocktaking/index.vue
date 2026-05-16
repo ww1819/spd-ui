@@ -1089,6 +1089,10 @@ export default {
       });
       return patches;
     },
+    /** 并发校验：主表 updateTime；历史数据未写 update_time 时与后端一致回退 createTime */
+    deptStocktakingClientVersionTime() {
+      return this.form.updateTime || this.form.createTime;
+    },
     buildPatchSavePayload() {
       return {
         id: this.form.id,
@@ -1096,7 +1100,7 @@ export default {
         remark: this.form.remark,
         isMonthInit: this.form.isMonthInit,
         departmentId: this.form.departmentId,
-        expectedUpdateTime: this.form.updateTime,
+        expectedUpdateTime: this.deptStocktakingClientVersionTime(),
         entryPatches: this.collectEntryQtyPatches(this.stkIoStocktakingEntryList)
       };
     },
@@ -1572,7 +1576,7 @@ export default {
           stockStatus: this.form.stockStatus,
           stockType: this.form.stockType != null && this.form.stockType !== '' ? this.form.stockType : 502,
           remark: this.form.remark,
-          updateTime: this.form.updateTime
+          updateTime: this.deptStocktakingClientVersionTime()
         };
         const res = await initDeptStocktakingFromInventory(payload);
         const data = res && res.data;
@@ -1752,7 +1756,7 @@ export default {
       if (!row || !row.id) return;
       const prev = val === 1 ? 0 : 1;
       const sq = parseFloat(row.stockQty);
-      const payload = { id: row.id, countedFlag: val, expectedUpdateTime: this.form.updateTime };
+      const payload = { id: row.id, countedFlag: val, expectedUpdateTime: this.deptStocktakingClientVersionTime() };
       if (Number.isFinite(sq)) {
         payload.stockQty = sq;
       }
@@ -2125,7 +2129,7 @@ export default {
             const payload = newEntries.map((row) => this.serializeStocktakingEntryForSave(row));
             const res = await appendDeptStocktakingEntries(this.form.id, {
               entries: payload,
-              expectedUpdateTime: this.form.updateTime
+              expectedUpdateTime: this.deptStocktakingClientVersionTime()
             });
             const data = res && res.data;
             if (data) {

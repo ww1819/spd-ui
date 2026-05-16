@@ -829,13 +829,17 @@ export default {
       });
       return patches;
     },
+    /** 并发校验：主表 updateTime；历史数据未写 update_time 时与后端一致回退 createTime */
+    whStocktakingClientVersionTime() {
+      return this.form.updateTime || this.form.createTime;
+    },
     buildPatchSavePayload() {
       return {
         id: this.form.id,
         stockDate: this.form.stockDate,
         remark: this.form.remark,
         isMonthInit: this.form.isMonthInit,
-        expectedUpdateTime: this.form.updateTime,
+        expectedUpdateTime: this.whStocktakingClientVersionTime(),
         entryPatches: this.collectEntryQtyPatches(this.stkIoStocktakingEntryList)
       };
     },
@@ -1245,7 +1249,7 @@ export default {
           stockStatus: this.form.stockStatus,
           stockType: this.form.stockType != null && this.form.stockType !== '' ? this.form.stockType : 501,
           remark: this.form.remark,
-          updateTime: this.form.updateTime
+          updateTime: this.whStocktakingClientVersionTime()
         };
         const res = await initWarehouseStocktakingFromInventory(payload);
         const data = res && res.data;
@@ -1274,7 +1278,7 @@ export default {
       if (!row || !row.id) return;
       const prev = val === 1 ? 0 : 1;
       const sq = parseFloat(row.stockQty);
-      const payload = { id: row.id, countedFlag: val, expectedUpdateTime: this.form.updateTime };
+      const payload = { id: row.id, countedFlag: val, expectedUpdateTime: this.whStocktakingClientVersionTime() };
       if (Number.isFinite(sq)) {
         payload.stockQty = sq;
       }
@@ -1411,7 +1415,12 @@ export default {
       const stockNo = row && row.stockNo != null ? row.stockNo : id;
       this.$modal
         .confirm('确定要审核"' + stockNo + '"的数据项？')
-        .then(() => auditStocktaking({ id, expectedUpdateTime: row.updateTime }))
+        .then(() =>
+          auditStocktaking({
+            id,
+            expectedUpdateTime: (row && (row.updateTime || row.createTime)) || undefined
+          })
+        )
         .then(() => {
           this.getList();
           this.$modal.msgSuccess('审核成功！');
@@ -1596,7 +1605,7 @@ export default {
             const payload = newEntries.map((row) => this.serializeStocktakingEntryForSave(row));
             const res = await appendStocktakingEntries(this.form.id, {
               entries: payload,
-              expectedUpdateTime: this.form.updateTime
+              expectedUpdateTime: this.whStocktakingClientVersionTime()
             });
             const data = res && res.data;
             if (data) {
