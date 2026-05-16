@@ -293,7 +293,7 @@
                 :true-label="1"
                 :false-label="0"
                 v-model="scope.row.countedFlag"
-                :disabled="!action || stocktakingHeadAudited || !scope.row.id"
+                :disabled="!action || stocktakingHeadAudited || whEntryCountedCheckboxDisabled(scope.row)"
                 @change="(v) => onWhEntryCountedChange(scope.row, v)"
               />
             </template>
@@ -1107,11 +1107,38 @@ export default {
         this.profitNameSpecStockLoading = false;
       }
     },
+    /** 盘盈复制：将被复制源行标为已盘（有明细 id 时同步服务端） */
+    markSourceRowCountedAfterProfitCopy(detailRow) {
+      if (!detailRow || Number(detailRow.countedFlag) === 1) {
+        return Promise.resolve();
+      }
+      this.$set(detailRow, "countedFlag", 1);
+      if (!detailRow.id) {
+        return Promise.resolve();
+      }
+      const sq = parseFloat(detailRow.stockQty);
+      const payload = {
+        id: detailRow.id,
+        countedFlag: 1,
+        expectedUpdateTime: this.whStocktakingClientVersionTime()
+      };
+      if (Number.isFinite(sq)) {
+        payload.stockQty = sq;
+      }
+      return updateStocktakingEntryCounted(payload)
+        .then(() => {
+          this.refreshEntrySaveSnapshots(this.stkIoStocktakingEntryList);
+        })
+        .catch(() => {
+          this.$set(detailRow, "countedFlag", 0);
+        });
+    },
     copyDetailToProfitDialog(detailRow) {
       if (!this.form.warehouseId) {
         this.$message({ message: "请先选择仓库", type: "warning" });
         return;
       }
+      this.markSourceRowCountedAfterProfitCopy(detailRow);
       const mid = detailRow.materialId || (detailRow.material && detailRow.material.id);
       if (!mid) {
         this.$modal.msgWarning("当前行缺少耗材信息，无法复制");
@@ -1211,6 +1238,7 @@ export default {
         const a = (parseFloat(r.stockQty) || 0) * (parseFloat(r.unitPrice) || 0);
         r.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
         r.kcNo = null;
+        r.countedFlag = 1;
       });
       this.stkIoStocktakingEntryList.push(...this.pendingNewEntries);
       this.newEntryDialogVisible = false;
@@ -1269,13 +1297,24 @@ export default {
         this.whInventoryInitLoading = false;
       }
     },
+    /** 库存行未落库前不可勾选已盘；盘盈新增行（无 kcNo）可本地勾选 */
+    whEntryCountedCheckboxDisabled(row) {
+      if (!row || !row.id) {
+        return !!(row && row.kcNo);
+      }
+      return false;
+    },
     /** 已盘且已落库明细：锁定实盘数量，取消已盘后恢复（无 id 的待确认行不锁） */
     isEntryStockQtyLocked(row) {
       if (!row || row.id == null || row.id === '') return false;
       return Number(row.countedFlag) === 1;
     },
     onWhEntryCountedChange(row, val) {
-      if (!row || !row.id) return;
+      if (!row) return;
+      if (!row.id) {
+        this.$set(row, "countedFlag", val === 1 ? 1 : 0);
+        return;
+      }
       const prev = val === 1 ? 0 : 1;
       const sq = parseFloat(row.stockQty);
       const payload = { id: row.id, countedFlag: val, expectedUpdateTime: this.whStocktakingClientVersionTime() };
