@@ -264,6 +264,8 @@
                                 clearable
                                 style="width: 140px"
                                 :disabled="!form.warehouseId"
+                                @input="onZtmInput"
+                                @paste.native="onZtmPaste"
                                 @keyup.enter.native="sm"
                       />
                     </el-form-item>
@@ -639,6 +641,7 @@ import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
 import { GZ_BARCODE_SESSION_KEY } from '@/views/gzOrder/apply/GzBarcodePrintPage'
 import RMBConverter from "@/utils/tools";
 import { parseTime } from "@/utils/ruoyi";
+import { normalizeUdiScanInput, parseGs1UdiScan, buildUdiQueryVariants } from '@/utils/udi';
 import item from "@/layout/components/Sidebar/Item.vue";
 
 export default {
@@ -1002,101 +1005,20 @@ export default {
     orderListIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
-    /** 解析UDI码字符串 */
+    /** 解析 UDI（扫码/粘贴已去括号，支持 01+GTIN 紧凑 GS1） */
     parseUDIString(udiString) {
-      if (!udiString || typeof udiString !== 'string') {
-        return null;
+      return parseGs1UdiScan(udiString);
+    },
+    onZtmInput() {
+      const normalized = normalizeUdiScanInput(this.form.ztm);
+      if (normalized !== this.form.ztm) {
+        this.form.ztm = normalized;
       }
-      
-      const result = {
-        udiCode: '',      // (01)开头的完整UDI码，包含(01)前缀
-        udiCodeForQuery: '', // (01)后面的UDI码，用于查询产品
-        secondaryBarcode: '', // 辅助条码：从(11)开始到结尾，不包含(01)部分
-        productionDate: '',   // (11)后面的生产日期
-        expiryDate: '',       // (17)后面的有效期
-        batchNo: '',          // (10)后面的批号
-        serialNo: ''          // (21)后面的序列号
-      };
-      
-      // 扫码内容统一转半角并去空格，兼容全角括号/数字/字母
-      udiString = this.toHalfWidth(udiString).trim();
-      
-      // 提取(01)开头的UDI码
-      let udiMatch = udiString.match(/^\(01\)([^\(]+)/);
-      
-      // 如果没有(01)前缀，尝试作为纯数字UDI码处理
-      if (!udiMatch) {
-        // 检查是否是纯数字（可能是扫描时只扫描了UDI码部分）
-        const numericMatch = udiString.match(/^(\d+)/);
-        if (numericMatch) {
-          // 如果是纯数字，自动添加(01)前缀
-          const numericUDI = numericMatch[1];
-          result.udiCode = `(01)${numericUDI}`;
-          result.udiCodeForQuery = numericUDI;
-          // 如果后面还有其他内容（如(11)等），继续解析
-          const remainingPart = udiString.substring(numericUDI.length);
-          if (remainingPart && remainingPart.trim()) {
-            // 如果剩余部分以(11)等开头，说明是完整的UDI字符串，只是缺少(01)前缀
-            if (remainingPart.trim().startsWith('(')) {
-              result.secondaryBarcode = remainingPart.trim();
-            }
-          }
-        } else {
-          // 既没有(01)前缀，也不是纯数字，返回null
-          return null;
-        }
-      } else {
-        // UDI码显示时包含(01)前缀
-        result.udiCode = `(01)${udiMatch[1]}`;
-        // 查询时只用(01)后面的部分
-        result.udiCodeForQuery = udiMatch[1];
-        
-        // 辅助条码：从(11)开始到结尾，不包含(01)部分和(01)后面的UDI码
-        // 例如：(01)06901234567892(11)230515(17)251230(10)BATCH001(21)SN123456
-        // 辅助条码应该是：(11)230515(17)251230(10)BATCH001(21)SN123456
-        // 找到(11)的位置
-        const index11 = udiString.indexOf('(11)');
-        if (index11 > 0) {
-          const secondaryPart = udiString.substring(index11);
-          if (secondaryPart && secondaryPart.trim()) {
-            result.secondaryBarcode = secondaryPart.trim();
-          }
-        }
-      }
-      
-      // 提取(11)生产日期，格式：(11)230515 -> 2023-05-15
-      const prodMatch = udiString.match(/\(11\)(\d{6})/);
-      if (prodMatch) {
-        const dateStr = prodMatch[1];
-        const year = '20' + dateStr.substring(0, 2);
-        const month = dateStr.substring(2, 4);
-        const day = dateStr.substring(4, 6);
-        result.productionDate = `${year}-${month}-${day}`;
-      }
-      
-      // 提取(17)有效期，格式：(17)251230 -> 2025-12-30
-      const expMatch = udiString.match(/\(17\)(\d{6})/);
-      if (expMatch) {
-        const dateStr = expMatch[1];
-        const year = '20' + dateStr.substring(0, 2);
-        const month = dateStr.substring(2, 4);
-        const day = dateStr.substring(4, 6);
-        result.expiryDate = `${year}-${month}-${day}`;
-      }
-      
-      // 提取(10)批号
-      const batchMatch = udiString.match(/\(10\)([^\(]+)/);
-      if (batchMatch) {
-        result.batchNo = batchMatch[1];
-      }
-      
-      // 提取(21)序列号
-      const serialMatch = udiString.match(/\(21\)([^\(]+)/);
-      if (serialMatch) {
-        result.serialNo = serialMatch[1];
-      }
-      
-      return result;
+    },
+    onZtmPaste() {
+      this.$nextTick(() => {
+        this.form.ztm = normalizeUdiScanInput(this.form.ztm);
+      });
     },
     /** 查询高值入库列表 */
     sm(){
@@ -1109,65 +1031,16 @@ export default {
         this.$modal.msgWarning("请输入UDI码");
         return;
       }
-      this.form.ztm = this.toHalfWidth(this.form.ztm).trim();
-      
-      // 解析UDI码字符串
+      this.form.ztm = normalizeUdiScanInput(this.form.ztm);
       const parsedUDI = this.parseUDIString(this.form.ztm);
       if (!parsedUDI || !parsedUDI.udiCodeForQuery) {
         this.$modal.msgWarning("UDI码格式不正确，请输入完整的UDI码或UDI码数字部分");
         return;
       }
       
-      // 先验证UDI码对应的产品是否存在（使用(01)后面的部分查询）
-      // 尝试多种格式：原始格式、去掉前导零、补零格式（14位GS1标准）、包含(01)前缀的格式
+      // 优先用完整扫码串查产品字典（与耗材维护 udi_no 一致），再尝试 GS1 解析出的 GTIN 等格式
       const udiCodeForQuery = parsedUDI.udiCodeForQuery;
-      const udiVariants = [udiCodeForQuery];
-      
-      // 如果数据库中存储的是包含(01)前缀的格式，也需要尝试
-      const udiCodeWithPrefix = parsedUDI.udiCode; // (01)06901234567891
-      if (udiCodeWithPrefix && udiCodeWithPrefix !== udiCodeForQuery) {
-        udiVariants.push(udiCodeWithPrefix);
-      }
-      
-      // 如果是纯数字，尝试多种格式
-      if (/^\d+$/.test(udiCodeForQuery)) {
-        // 1. 去掉前导零的格式（数据库可能存储为没有前导零的格式）
-        const withoutLeadingZeros = udiCodeForQuery.replace(/^0+/, '');
-        if (withoutLeadingZeros !== udiCodeForQuery && withoutLeadingZeros.length > 0) {
-          udiVariants.push(withoutLeadingZeros);
-          // 去掉前导零后加上(01)前缀
-          udiVariants.push(`(01)${withoutLeadingZeros}`);
-        }
-        
-        // 2. 补零到14位（GS1标准UDI码通常是14位）
-        const padded14 = udiCodeForQuery.padStart(14, '0');
-        if (padded14 !== udiCodeForQuery) {
-          udiVariants.push(padded14);
-          // 补零到14位后加上(01)前缀
-          udiVariants.push(`(01)${padded14}`);
-        }
-        
-        // 3. 去掉前导零后再补零到14位
-        if (withoutLeadingZeros !== udiCodeForQuery && withoutLeadingZeros.length > 0) {
-          const padded14NoLeading = withoutLeadingZeros.padStart(14, '0');
-          if (padded14NoLeading !== padded14 && padded14NoLeading !== udiCodeForQuery) {
-            udiVariants.push(padded14NoLeading);
-            // 去掉前导零后补零到14位，再加上(01)前缀
-            udiVariants.push(`(01)${padded14NoLeading}`);
-          }
-        }
-        
-        // 4. 补零到13位
-        const padded13 = udiCodeForQuery.padStart(13, '0');
-        if (padded13 !== udiCodeForQuery && padded13 !== padded14) {
-          udiVariants.push(padded13);
-          // 补零到13位后加上(01)前缀
-          udiVariants.push(`(01)${padded13}`);
-        }
-      }
-      
-      // 去重
-      const uniqueVariants = [...new Set(udiVariants)];
+      const uniqueVariants = buildUdiQueryVariants(this.form.ztm, parsedUDI);
       
       // 添加调试日志
       console.log('查询UDI码:', {
@@ -1179,7 +1052,7 @@ export default {
       // 依次尝试各种格式
       const tryQueryUDI = (index) => {
         if (index >= uniqueVariants.length) {
-          this.$modal.msgWarning(`未找到UDI码为 ${udiCodeForQuery} 的产品，请检查产品字典。已尝试的格式：${uniqueVariants.join(', ')}`);
+          this.$modal.msgWarning(`未找到UDI码为 ${this.form.ztm} 的产品，请检查产品字典。已尝试的格式：${uniqueVariants.join(', ')}`);
           return;
         }
         

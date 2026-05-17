@@ -26,6 +26,7 @@
             <el-input
               v-model="queryParams.udiNo"
               placeholder="UDI"
+              @blur="onQueryUdiNoBlur"
               clearable
               @keyup.enter.native="handleQuery"
                   style="width: 150px"
@@ -657,7 +658,7 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="UDI码：" prop="udiNo">
-                <el-input v-model="form.udiNo" placeholder="UDI码" />
+                <el-input v-model="form.udiNo" placeholder="UDI码" @blur="onFormUdiNoBlur" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -1373,6 +1374,7 @@ import { getWarehouseCategory } from "@/api/foundation/warehouseCategory";
 import { getFinanceCategory } from "@/api/foundation/financeCategory";
 import { pinyin } from 'pinyin-pro'
 import { getToken } from "@/utils/auth";
+import { sanitizeUdiNo } from '@/utils/udi';
 
 export default {
   name: "Material",
@@ -1788,6 +1790,7 @@ export default {
       merged.isSunshineProcurement = this.normalizeSwitchValue(merged.isSunshineProcurement);
       merged.isTemporaryPurchase = this.normalizeSwitchValue(merged.isTemporaryPurchase);
       merged.isServiceFee = this.normalizeSwitchValue(merged.isServiceFee);
+      merged.udiNo = sanitizeUdiNo(merged.udiNo);
       return merged;
     },
     nameChange(val){
@@ -1807,8 +1810,15 @@ export default {
     },
     /** 搜索按钮操作 */
     handleQuery() {
+      this.queryParams.udiNo = sanitizeUdiNo(this.queryParams.udiNo);
       this.queryParams.pageNum = 1;
       this.getList();
+    },
+    onQueryUdiNoBlur() {
+      this.queryParams.udiNo = sanitizeUdiNo(this.queryParams.udiNo);
+    },
+    onFormUdiNoBlur() {
+      this.form.udiNo = sanitizeUdiNo(this.form.udiNo);
     },
     /** 重置按钮操作 */
     resetQuery() {
@@ -2179,6 +2189,7 @@ export default {
       }
       this.$refs["form"].validate(valid => {
         if (valid) {
+          this.form.udiNo = sanitizeUdiNo(this.form.udiNo);
           this.validateHsHighValueRule().then(pass => {
             if (!pass) {
               this.showSaveBlockedDialog(['财务分类为“高值耗材”时，请勾选「高值」标志']);
@@ -2230,6 +2241,9 @@ export default {
           payload[k] = draft[k];
         }
       });
+      if (Object.prototype.hasOwnProperty.call(payload, 'udiNo')) {
+        payload.udiNo = sanitizeUdiNo(payload.udiNo);
+      }
       return payload;
     },
     openZoomEditor(prop, label) {

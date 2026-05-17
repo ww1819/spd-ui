@@ -1,6 +1,6 @@
 <template>
   <div class="app-container home">
-    <el-row :gutter="20">
+    <el-row :gutter="24">
       <el-col :xs="24" :sm="24" :md="12" :lg="8" >
         <el-card class="update-log" style="height:42vh;">
           <div slot="header" class="clearfix">
@@ -613,6 +613,10 @@ export default {
 
 <style scoped lang="scss">
 .home {
+  /* 首页：顶栏/标签下沿与首卡顶部、侧栏与首卡左侧留白一致（略收紧顶距） */
+  margin-top: 0;
+  padding: 10px 20px 20px 10px;
+
   blockquote {
     padding: 10px 20px;
     margin: 0 0 20px;
