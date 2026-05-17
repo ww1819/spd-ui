@@ -6,6 +6,7 @@
       <el-tab-pane label="出/退库汇总(供应商)" name="thirdSupplier"></el-tab-pane>
       <el-tab-pane label="出/退库汇总(科室)" name="fourthDepartment"></el-tab-pane>
       <el-tab-pane label="采购汇总报表" name="purchaseSummary"></el-tab-pane>
+      <el-tab-pane label="耗材使用排名" name="materialUsageRank"></el-tab-pane>
     </el-tabs>
     <!-- 使用 v-show 替代 v-if，切换时只切换显示不销毁组件，避免重复创建和请求 -->
     <FirstOutQuery v-show="activeName === 'first'" ref="firstQuery"/>
@@ -13,6 +14,7 @@
     <ThirdSupplierOutQuery v-show="activeName === 'thirdSupplier'" ref="thirdSupplierQuery"/>
     <FourthDepartmentOutQuery v-show="activeName === 'fourthDepartment'" ref="fourthDepartmentQuery"/>
     <PurchaseSummaryReport v-show="activeName === 'purchaseSummary'" ref="purchaseSummaryReport" :inline="true" />
+    <MaterialUsageRankReport v-show="activeName === 'materialUsageRank'" ref="materialUsageRankReport" :inline="true" />
   </div>
 </template>
 
@@ -23,11 +25,12 @@ import SecondOutQuery from "@/views/outWarehouse/outWarehouseQuery/secondOutQuer
 import ThirdSupplierOutQuery from "@/views/outWarehouse/outWarehouseQuery/thirdSupplierOutQuery";
 import FourthDepartmentOutQuery from "@/views/outWarehouse/outWarehouseQuery/fourthDepartmentOutQuery";
 import PurchaseSummaryReport from "@/views/shared/PurchaseSummaryReport";
+import MaterialUsageRankReport from "@/views/shared/MaterialUsageRankReport";
 
 
 export default {
   name: "OutWarehouseQuery",
-  components: {FirstOutQuery, SecondOutQuery, ThirdSupplierOutQuery, FourthDepartmentOutQuery, PurchaseSummaryReport},
+  components: {FirstOutQuery, SecondOutQuery, ThirdSupplierOutQuery, FourthDepartmentOutQuery, PurchaseSummaryReport, MaterialUsageRankReport},
   data() {
     return {
       activeName: 'first',
@@ -59,6 +62,9 @@ export default {
       }
       if (tab.name === 'purchaseSummary' && this.$refs.purchaseSummaryReport && typeof this.$refs.purchaseSummaryReport.loadReport === 'function') {
         this.$nextTick(() => this.$refs.purchaseSummaryReport.loadReport());
+      }
+      if (tab.name === 'materialUsageRank' && this.$refs.materialUsageRankReport && typeof this.$refs.materialUsageRankReport.loadReport === 'function') {
+        this.$nextTick(() => this.$refs.materialUsageRankReport.loadReport());
       }
     },
   },

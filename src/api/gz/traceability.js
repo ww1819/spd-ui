@@ -76,3 +76,12 @@ export function listTraceabilityEntry(query) {
     params: query
   })
 }
+
+// 高值耗材使用情况报表
+export function listMaterialUsageReport(query) {
+  return request({
+    url: '/gz/traceability/usageReport/list',
+    method: 'get',
+    params: query
+  })
+}

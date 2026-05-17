@@ -1,6 +1,6 @@
 <template>
   <div class="table-container">
-    <el-table ref="table" v-loading="loading" :data="summaryList" border height="58vh" style="width: 100%">
+    <el-table ref="table" v-loading="loading" :data="summaryList" border height="60vh" style="width: 100%">
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -29,13 +29,15 @@
       </el-table-column>
     </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="pagination-wrapper">
+      <pagination
+        v-show="total > 0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
   </div>
 </template>
 
@@ -151,94 +153,9 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
-.table-container {
-  margin-top: 0px;
-  overflow: visible;
-  width: 100%;
-  position: relative;
-  
-  ::v-deep .el-table {
-    width: 100%;
-    border-radius: 8px;
-    overflow: visible;
-  }
-}
-
+<style scoped>
 ::v-deep .el-table__header-wrapper {
   overflow-x: hidden !important;
   overflow-y: hidden !important;
-}
-
-::v-deep .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  max-height: none !important;
-}
-
-::v-deep .el-table__header-wrapper::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-::v-deep .el-table__header-wrapper {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  border-radius: 6px;
-  background-color: #c0c4cc;
-}
-
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-  background-color: #f5f7fa;
-}
-
-::v-deep .el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266;
-  font-weight: 500;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-::v-deep .el-table td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-::v-deep .el-table tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
-}
-
-::v-deep .pagination-container {
-  margin-top: 16px;
-  padding: 16px 0;
-  background: #fff;
-}
-
-::v-deep .el-table__header,
-::v-deep .el-table__body {
-  width: 100% !important;
-}
-
-::v-deep .el-table__header table,
-::v-deep .el-table__body table {
-  width: 100% !important;
-}
-
-::v-deep .el-table__header th,
-::v-deep .el-table__body td {
-  box-sizing: border-box;
 }
 </style>

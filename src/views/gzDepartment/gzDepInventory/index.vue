@@ -1,11 +1,11 @@
 <template>
-  <div class="app-container">
-    <el-tabs v-model="activeName" type="card" @tab-click="handleTabClick">
+  <div class="app-container out-warehouse-query-page">
+    <el-tabs v-model="activeName" type="card" class="inventory-tabs-compact" @tab-click="handleTabClick">
       <el-tab-pane label="库存明细查询" name="detail"></el-tab-pane>
       <el-tab-pane label="库存汇总查询" name="summary"></el-tab-pane>
     </el-tabs>
 
-    <div class="query-container">
+    <div class="app-container first-inventory-page">
       <div class="form-fields-container">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row class="query-row-left">
@@ -30,8 +30,8 @@
                   v-model="queryParams.batchNo"
                   placeholder="批次号"
                   clearable
-                  @keyup.enter.native="handleQuery"
                   style="width: 180px"
+                  @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
               <el-form-item label="主条码" prop="masterBarcode" class="query-item-inline">
@@ -39,8 +39,8 @@
                   v-model="queryParams.masterBarcode"
                   placeholder="主条码"
                   clearable
-                  @keyup.enter.native="handleQuery"
                   style="width: 180px"
+                  @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
               <el-form-item label="辅条码" prop="secondaryBarcode" class="query-item-inline">
@@ -48,85 +48,93 @@
                   v-model="queryParams.secondaryBarcode"
                   placeholder="辅条码"
                   clearable
-                  @keyup.enter.native="handleQuery"
                   style="width: 180px"
+                  @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16" class="query-row-second">
+            <el-col :span="24" class="query-row-second-inner">
               <el-form-item label="批号" prop="materialNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.materialNo"
                   placeholder="批号"
                   clearable
-                  @keyup.enter.native="handleQuery"
                   style="width: 180px"
+                  @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
-              <el-form-item prop="materialDate" class="query-item-inline">
+              <el-form-item label="生产日期" prop="materialDate" class="query-item-inline">
                 <el-date-picker
                   v-model="queryParams.materialDate"
                   type="date"
                   value-format="yyyy-MM-dd"
                   placeholder="生产日期"
                   clearable
-                  style="width: 180px"
+                  style="width: 150px"
                 />
               </el-form-item>
-              <el-form-item prop="warehouseDate" class="query-item-inline">
+              <el-form-item label="入库日期" prop="warehouseDate" class="query-item-inline">
                 <el-date-picker
                   v-model="queryParams.warehouseDate"
                   type="date"
                   value-format="yyyy-MM-dd"
                   placeholder="入库日期"
                   clearable
-                  style="width: 180px"
+                  style="width: 150px"
                 />
               </el-form-item>
-              <el-form-item class="query-item-inline">
+              <el-form-item class="query-item-inline query-item-switch">
                 <el-switch
                   v-model="queryParams.showZeroStock"
                   active-text="显示"
                   inactive-text="隐藏"
-                  active-color="#13ce66"
-                  inactive-color="#ff4949"
                 />
               </el-form-item>
             </el-col>
           </el-row>
         </el-form>
       </div>
+
+      <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
+        <div class="button-row-left">
+          <el-button
+            type="warning"
+            icon="el-icon-download"
+            size="medium"
+            @click="handleExport"
+            v-hasPermi="['gzDepartment:gzDepInventory:export']"
+          >导出</el-button>
+          <el-button
+            type="primary"
+            icon="el-icon-search"
+            size="medium"
+            @click="handleQuery"
+          >搜索</el-button>
+          <el-button
+            icon="el-icon-refresh"
+            size="medium"
+            @click="resetQuery"
+          >重置</el-button>
+        </div>
+        <div class="button-row-right">
+          <right-toolbar :showSearch.sync="showSearch" @queryTable="handleQuery"></right-toolbar>
+        </div>
+      </el-row>
+
+      <GzDepInventoryDetail
+        v-show="activeName === 'detail'"
+        ref="detailTable"
+        :query-params="queryParams"
+        @selection-change="handleSelectionChange"
+      />
+      <GzDepInventorySummary
+        v-show="activeName === 'summary'"
+        ref="summaryTable"
+        :query-params="queryParams"
+      />
     </div>
-
-    <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="handleExport"
-          v-hasPermi="['gzDepartment:gzDepInventory:export']"
-        >导出</el-button>
-        <el-button
-          type="primary"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-        <el-button
-          type="primary"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
-      </div>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="handleQuery"></right-toolbar>
-    </el-row>
-
-    <GzDepInventoryDetail 
-      v-if="activeName === 'detail'" 
-      :query-params="queryParams"
-      @selection-change="handleSelectionChange"
-    />
-    <GzDepInventorySummary 
-      v-if="activeName === 'summary'" 
-      :query-params="queryParams"
-    />
   </div>
 </template>
 
@@ -151,15 +159,10 @@ export default {
   data() {
     return {
       activeName: 'detail',
-      // 选中数组
       ids: [],
-      // 非单个禁用
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -172,141 +175,237 @@ export default {
         materialNo: null,
         materialDate: null,
         warehouseDate: null,
-        showZeroStock: false // 是否显示零库存，默认false（不显示）
+        showZeroStock: false
       }
     };
   },
+  activated() {
+    document.body.classList.add('inventory-query-fixed');
+  },
+  deactivated() {
+    document.body.classList.remove('inventory-query-fixed');
+  },
+  mounted() {
+    document.body.classList.add('inventory-query-fixed');
+  },
+  beforeDestroy() {
+    document.body.classList.remove('inventory-query-fixed');
+  },
   methods: {
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
+      this.refreshActiveTable();
     },
-    /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
       this.queryParams.pageNum = 1;
+      this.queryParams.showZeroStock = false;
       this.handleQuery();
     },
-    /** 标签页切换 */
     handleTabClick(tab) {
-      // 切换标签页时重置查询参数
-      this.resetQuery();
+      this.$nextTick(() => {
+        if (tab.name === 'summary' && this.$refs.summaryTable && typeof this.$refs.summaryTable.getList === 'function') {
+          this.$refs.summaryTable.getList();
+        } else if (tab.name === 'detail' && this.$refs.detailTable && typeof this.$refs.detailTable.getList === 'function') {
+          this.$refs.detailTable.getList();
+        }
+      });
     },
-    // 多选框选中数据
+    refreshActiveTable() {
+      const ref = this.activeName === 'summary' ? this.$refs.summaryTable : this.$refs.detailTable;
+      if (ref && typeof ref.getList === 'function') {
+        ref.getList();
+      }
+    },
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      this.ids = selection.map(item => item.id);
+      this.single = selection.length !== 1;
+      this.multiple = !selection.length;
     },
-    /** 导出按钮操作 */
     handleExport() {
       this.download('gzDepartment/gzDepInventory/export', {
         ...this.queryParams
-      }, `gzDepInventory_${new Date().getTime()}.xlsx`)
+      }, `gzDepInventory_${new Date().getTime()}.xlsx`);
     }
   }
 };
 </script>
 
-<style lang="scss" scoped>
-.app-container {
-  padding: 20px;
+<style>
+body.inventory-query-fixed {
+  overflow-y: hidden !important;
+}
+body.inventory-query-fixed .main-container {
+  overflow-y: hidden !important;
 }
 
-/* 标签页样式优化 */
-::v-deep .el-tabs {
-  margin-bottom: 16px;
-  
-  .el-tabs__header {
-    margin: 0 0 16px 0;
-  }
-  
-  .el-tabs__item {
-    padding: 0 20px;
-    height: 40px;
-    line-height: 40px;
-    font-size: 14px;
-  }
-  
-  .el-tabs__item.is-active {
-    color: #409EFF;
-    font-weight: 500;
-  }
+.app-container.first-inventory-page {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
-/* 查询条件样式 */
-.query-row-left {
-  margin-bottom: 8px;
+.out-warehouse-query-page .first-inventory-page .pagination-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  margin-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+.out-warehouse-query-page .first-inventory-page .pagination-wrapper .pagination-summary {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #606266;
+}
+.out-warehouse-query-page .first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
+  font-weight: 700;
+}
+.out-warehouse-query-page .first-inventory-page .pagination-wrapper .pagination-container {
+  margin-top: 0 !important;
+  margin-left: auto !important;
+  padding: 4px 0 4px 16px !important;
+  flex-shrink: 0;
+}
+.out-warehouse-query-page .first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
+  padding: 2px 0 !important;
 }
 
-.query-row-left:first-child {
-  margin-top: 4px;
-}
-
-.query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0px;
-  margin-top: 0px;
-}
-
-.query-item-inline .el-form-item__label {
-  width: 80px !important;
-}
-
-.query-select-wrapper {
-  width: 180px;
-}
-
-.query-row-second {
-  margin-bottom: 10px;
+.out-warehouse-query-page .first-inventory-page .table-container {
+  margin-top: 8px;
+  margin-bottom: 0;
+  overflow: visible;
+  width: 100%;
+  min-width: 0;
   position: relative;
 }
 
-.query-row-second .el-form-item {
-  white-space: nowrap;
+.out-warehouse-query-page .first-inventory-page .table-container ::v-deep .el-table__body-wrapper {
+  padding-bottom: 16px;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: #a0a0a0 #e8e8e8;
+}
+.out-warehouse-query-page .first-inventory-page .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 10px;
+  transition: height 0.2s ease;
+}
+.out-warehouse-query-page .first-inventory-page .table-container:hover ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  height: 14px;
+}
+.out-warehouse-query-page .first-inventory-page .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #e8e8e8;
+  border-radius: 3px;
+  margin: 0 2px;
+}
+.out-warehouse-query-page .first-inventory-page .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a0a0a0;
+  border-radius: 3px;
+}
+.out-warehouse-query-page .first-inventory-page .table-container ::v-deep .el-table th.el-table__cell {
+  padding: 10px 12px !important;
+}
+.out-warehouse-query-page .first-inventory-page .table-container ::v-deep .el-table td.el-table__cell {
+  padding: 10px 12px !important;
+}
+</style>
+
+<style scoped>
+.app-container.out-warehouse-query-page {
+  padding-top: 8px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  height: calc(100vh - 92px) !important;
+  overflow-y: hidden !important;
+  overflow-x: hidden !important;
+}
+.inventory-tabs-compact {
+  margin-top: 0;
 }
 
-.query-row-second .el-form-item .el-form-item__content {
+.app-container.first-inventory-page {
+  margin-top: -10px;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.query-row-left {
+  margin-bottom: 2px;
+}
+.query-item-inline {
+  display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 2px;
+}
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+.query-item-inline .el-form-item {
+  margin-bottom: 0;
+}
+.query-select-wrapper {
+  width: 180px;
+}
+.query-row-second {
+  margin-bottom: 2px;
+}
+.query-row-second-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+.query-row-second-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.query-row-second-inner .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
-
-/* 查询容器样式 */
-.query-container {
-  margin-top: -20px;
-  margin-bottom: 16px;
+.query-item-switch .el-form-item__content {
+  min-height: 32px;
 }
 
-/* 查询条件容器框样式 */
 .form-fields-container {
   background: #fff;
-  padding: 6px 20px;
+  padding: 6px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 8px;
+  margin-top: -20px;
+  margin-left: 0;
+  margin-right: 0;
   border: 1px solid #EBEEF5;
 }
 
-/* 表格容器样式 */
-::v-deep .table-container {
-  margin-top: -8px;
-  overflow: visible;
-  width: 100%;
-  position: relative;
+.button-row-inventory {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
 }
-
-/* 按钮行布局优化 */
-.mb8 {
-  width: 100%;
+.button-row-inventory-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-
-.mb8 > div:first-child {
-  flex: 0 0 auto;
+.button-row-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-
-.mb8 .top-right-btn {
-  flex: 0 0 auto;
+.button-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
 }
 </style>

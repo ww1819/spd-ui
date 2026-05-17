@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container inventory-query-page">
+  <div class="app-container out-warehouse-query-page">
 
     <el-tabs v-model="activeName" type="card" class="inventory-tabs-compact">
       <el-tab-pane label="库存明细查询" name="first"></el-tab-pane>
@@ -84,8 +84,8 @@ body.inventory-query-fixed .main-container {
 </style>
 
 <style scoped>
-/* 库存查询页：顶部与左右保持 8px，搜索框与明细框整体增宽；固定高度避免溢出 */
-.app-container.inventory-query-page {
+/* 库存查询页：与出/退库查询一致，顶部与左右 8px，固定高度避免溢出 */
+.app-container.out-warehouse-query-page {
   padding-top: 8px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;

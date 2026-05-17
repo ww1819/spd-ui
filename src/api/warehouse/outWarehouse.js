@@ -79,6 +79,15 @@ export function listPurchaseSummaryBySupplier(query) {
   })
 }
 
+// 耗材使用排名（出/退库按耗材汇总）
+export function listMaterialUsageRank(query) {
+  return request({
+    url: '/warehouse/rthWarehouse/materialUsageRank',
+    method: 'get',
+    params: query
+  })
+}
+
 
 export function createCkEntriesByRkApply(data) {
   return request({

@@ -1,6 +1,6 @@
 <template>
   <div class="table-container">
-    <el-table ref="table" v-loading="loading" :data="gzDepInventoryList" @selection-change="handleSelectionChange" border height="58vh" style="width: 100%">
+    <el-table ref="table" v-loading="loading" :data="gzDepInventoryList" @selection-change="handleSelectionChange" border height="60vh" style="width: 100%">
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <!-- 1. 序号 -->
       <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
@@ -106,13 +106,18 @@
       <el-table-column label="备注" align="center" prop="remark" width="200" show-overflow-tooltip resizable/>
     </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="pagination-wrapper">
+      <div class="pagination-summary" v-if="total > 0">
+        <span class="summary-label">合计：</span>当前页数量: {{ pageTotalQty }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        v-show="total > 0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
   </div>
 </template>
 
@@ -134,6 +139,17 @@ export default {
       total: 0,
       ids: []
     };
+  },
+  computed: {
+    pageTotalQty() {
+      return (this.gzDepInventoryList || []).reduce((s, r) => s + Number(r.qty || 0), 0);
+    },
+    pageTotalAmtFormatted() {
+      const amt = (this.gzDepInventoryList || []).reduce((s, r) => s + Number(r.amt || 0), 0);
+      return this.$options.filters && this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(amt)
+        : String(Number(amt).toFixed(2));
+    }
   },
   watch: {
     queryParams: {
@@ -242,108 +258,9 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
-.table-container {
-  margin-top: 0px;
-  overflow: visible;
-  width: 100%;
-  position: relative;
-  
-  ::v-deep .el-table {
-    width: 100%;
-    border-radius: 8px;
-    overflow: visible;
-  }
-}
-
-/* 表头不显示滚动条，但可以同步滚动 */
+<style scoped>
 ::v-deep .el-table__header-wrapper {
   overflow-x: hidden !important;
   overflow-y: hidden !important;
-}
-
-/* 表体可以滚动（水平和垂直），显示滚动条 */
-::v-deep .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  max-height: none !important;
-}
-
-/* 隐藏表头滚动条 */
-::v-deep .el-table__header-wrapper::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-::v-deep .el-table__header-wrapper {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-/* 垂直滚动条样式 */
-::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  border-radius: 6px;
-  background-color: #c0c4cc;
-}
-
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-  background-color: #f5f7fa;
-}
-
-/* 表格头部样式优化 */
-::v-deep .el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266;
-  font-weight: 500;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-/* 表格行样式优化 */
-::v-deep .el-table td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-::v-deep .el-table tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
-}
-
-/* 分页样式优化 */
-::v-deep .pagination-container {
-  margin-top: 16px;
-  padding: 16px 0;
-  background: #fff;
-}
-
-/* 确保表头和表体列宽一致，对齐 */
-::v-deep .el-table__header,
-::v-deep .el-table__body {
-  width: 100% !important;
-}
-
-::v-deep .el-table__header table,
-::v-deep .el-table__body table {
-  width: 100% !important;
-}
-
-/* 确保表头和表体的列宽完全一致 */
-::v-deep .el-table__header th,
-::v-deep .el-table__body td {
-  box-sizing: border-box;
-}
-
-/* 固定列样式 - 只保留左侧固定 */
-::v-deep .el-table__fixed-right {
-  display: none !important;
 }
 </style>
