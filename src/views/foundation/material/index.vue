@@ -758,18 +758,20 @@
               <!-- 第八行 - 开关控件容器 -->
           <el-row :gutter="20">
             <el-col :span="24">
-              <div class="switch-container">
-                <div class="switch-row">
-                  <el-form-item label="启用：" prop="isUse" class="switch-form-item">
-                    <el-switch
-                      v-model="form.isUse"
-                      :active-value="'1'"
-                      :inactive-value="'2'"
-                      @change="onIsUseChange"
-                    ></el-switch>
-                  </el-form-item>
-                  <el-form-item v-if="form.id && form.isUse !== originalIsUse" label="状态变更原因：" prop="statusChangeReason" class="status-reason-form-item">
-                    <el-input v-model="form.statusChangeReason" type="textarea" :rows="2" :placeholder="form.isUse === '1' ? '请填写启用原因' : '请填写停用原因'" />
+              <div class="switch-container switch-container--square">
+                <div class="switch-row switch-row-single">
+                  <el-form-item label="" prop="isUse" class="switch-form-item switch-form-item-is-use">
+                    <div class="switch-with-label-left">
+                      <span class="switch-label" :class="{ active: form.isUse === '1' }">
+                        <span class="switch-required-mark">*</span>启用
+                      </span>
+                      <el-switch
+                        v-model="form.isUse"
+                        :active-value="'1'"
+                        :inactive-value="'2'"
+                        @change="onIsUseChange"
+                      />
+                    </div>
                   </el-form-item>
                   <el-form-item label="" prop="isTemporaryPurchase" class="switch-form-item">
                     <div class="switch-with-label-left">
@@ -778,11 +780,9 @@
                         v-model="form.isTemporaryPurchase"
                         :active-value="'1'"
                         :inactive-value="'2'"
-                      ></el-switch>
+                      />
                     </div>
                   </el-form-item>
-                </div>
-                <div class="switch-row">
                   <el-form-item label="" prop="isBilling" class="switch-form-item">
                     <div class="switch-with-label-left">
                       <span class="switch-label" :class="{ 'active': form.isBilling === '1' }">计费</span>
@@ -790,7 +790,7 @@
                         v-model="form.isBilling"
                         :active-value="'1'"
                         :inactive-value="'2'"
-                      ></el-switch>
+                      />
                     </div>
                   </el-form-item>
                   <el-form-item label="" prop="isServiceFee" class="switch-form-item">
@@ -800,7 +800,7 @@
                         v-model="form.isServiceFee"
                         :active-value="'1'"
                         :inactive-value="'2'"
-                      ></el-switch>
+                      />
                     </div>
                   </el-form-item>
                   <el-form-item label="" prop="isGz" class="switch-form-item">
@@ -810,7 +810,7 @@
                         v-model="form.isGz"
                         :active-value="'1'"
                         :inactive-value="'2'"
-                      ></el-switch>
+                      />
                     </div>
                   </el-form-item>
                   <el-form-item label="" prop="isFollow" class="switch-form-item">
@@ -820,7 +820,7 @@
                         v-model="form.isFollow"
                         :active-value="'1'"
                         :inactive-value="'2'"
-                      ></el-switch>
+                      />
                     </div>
                   </el-form-item>
                   <el-form-item label="" prop="isMonitor" class="switch-form-item">
@@ -830,7 +830,7 @@
                         v-model="form.isMonitor"
                         :active-value="'1'"
                         :inactive-value="'2'"
-                      ></el-switch>
+                      />
                     </div>
                   </el-form-item>
                   <el-form-item label="" prop="isCentralizedProcurement" class="switch-form-item">
@@ -840,7 +840,7 @@
                         v-model="form.isProcure"
                         :active-value="'1'"
                         :inactive-value="'2'"
-                      ></el-switch>
+                      />
                     </div>
                   </el-form-item>
                   <el-form-item label="" prop="isSunshineProcurement" class="switch-form-item">
@@ -850,8 +850,21 @@
                         v-model="form.isSunshineProcurement"
                         :active-value="'1'"
                         :inactive-value="'2'"
-                      ></el-switch>
+                      />
                     </div>
+                  </el-form-item>
+                </div>
+                <div
+                  v-if="form.id && form.isUse !== originalIsUse"
+                  class="switch-status-reason-row"
+                >
+                  <el-form-item label="状态变更原因：" prop="statusChangeReason" class="status-reason-form-item">
+                    <el-input
+                      v-model="form.statusChangeReason"
+                      type="textarea"
+                      :rows="2"
+                      :placeholder="form.isUse === '1' ? '请填写启用原因' : '请填写停用原因'"
+                    />
                   </el-form-item>
                 </div>
               </div>
@@ -3130,6 +3143,60 @@ export default {
   font-size: 48px;
   color: #8c939d;
 }
+
+/* 耗材弹窗开关：方形 + 加大点击区域（scoped 穿透） */
+.material-modal-content ::v-deep .switch-container--square .el-switch__core {
+  width: 52px !important;
+  height: 28px !important;
+  border-radius: 3px !important;
+}
+.material-modal-content ::v-deep .switch-container--square .el-switch__core::after {
+  width: 24px !important;
+  height: 24px !important;
+  top: 2px !important;
+  left: 2px !important;
+  border-radius: 2px !important;
+}
+.material-modal-content ::v-deep .switch-container--square .el-switch.is-checked .el-switch__core {
+  border-color: #409eff !important;
+  background-color: #409eff !important;
+}
+.material-modal-content ::v-deep .switch-container--square .el-switch.is-checked .el-switch__core::after {
+  left: 100% !important;
+  margin-left: -26px !important;
+}
+.material-modal-content ::v-deep .switch-container--square .switch-form-item-is-use .el-switch__core {
+  width: 56px !important;
+  height: 30px !important;
+}
+.material-modal-content ::v-deep .switch-container--square .switch-form-item-is-use .el-switch__core::after {
+  width: 26px !important;
+  height: 26px !important;
+}
+.material-modal-content ::v-deep .switch-container--square .switch-form-item-is-use .el-switch.is-checked .el-switch__core::after {
+  margin-left: -28px !important;
+}
+.material-modal-content ::v-deep .switch-container--square .el-switch {
+  line-height: 30px;
+  height: 30px;
+}
+
+.material-modal-content ::v-deep .switch-container--square .switch-row-single {
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.material-modal-content ::v-deep .switch-container--square .switch-row-single .el-form-item {
+  margin-right: 0 !important;
+}
+
+.material-modal-content ::v-deep .switch-container--square .switch-row-single .switch-with-label-left {
+  gap: 6px;
+}
+
+.material-modal-content ::v-deep .switch-container--square .switch-row-single .switch-label {
+  min-width: unset;
+}
 </style>
 
 <style>
@@ -3269,11 +3336,63 @@ export default {
   gap: 12px;
 }
 
-.switch-container .switch-row {
+.switch-container .switch-row:not(.switch-row-single) {
   display: flex;
   flex-direction: row;
   gap: 20px;
   align-items: center;
+}
+
+.switch-container .switch-row.switch-row-single {
+  display: flex;
+  flex-direction: row;
+}
+
+/* 操作开关单行排列（最多约 10 项，超出横向滚动） */
+.switch-container .switch-row-single {
+  flex-wrap: nowrap;
+  gap: 10px;
+  width: auto;
+  max-width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+
+.switch-container .switch-row-single .switch-form-item {
+  flex: 0 0 auto;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.switch-container .switch-row-single .switch-form-item .el-form-item__content {
+  margin-left: 0 !important;
+  line-height: 30px;
+}
+
+.switch-container .switch-row-single .switch-with-label-left {
+  gap: 6px;
+  padding: 2px 0;
+  min-height: 32px;
+}
+
+.switch-container .switch-row-single .switch-with-label-left .switch-label {
+  min-width: unset;
+  width: auto;
+}
+
+.switch-status-reason-row {
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #ebeef5;
+}
+
+.switch-status-reason-row .status-reason-form-item {
+  width: 100%;
+  margin-bottom: 0;
 }
 
 /* HIS对照框样式 */
@@ -3365,6 +3484,51 @@ export default {
 .switch-with-label-left .switch-label.active {
   color: #409eff;
   font-weight: 500;
+}
+
+.switch-with-label-left .switch-required-mark {
+  color: #f56c6c;
+  margin-right: 2px;
+}
+
+/* 耗材弹窗开关：方形 + 加大（与 scoped 一致，非 scoped 块勿用 >>>） */
+.material-modal-content .switch-container--square .el-switch__core {
+  width: 52px !important;
+  height: 28px !important;
+  border-radius: 3px !important;
+}
+.material-modal-content .switch-container--square .el-switch__core::after {
+  width: 24px !important;
+  height: 24px !important;
+  top: 2px !important;
+  left: 2px !important;
+  border-radius: 2px !important;
+}
+.material-modal-content .switch-container--square .el-switch.is-checked .el-switch__core {
+  border-color: #409eff !important;
+  background-color: #409eff !important;
+}
+.material-modal-content .switch-container--square .el-switch.is-checked .el-switch__core::after {
+  left: 100% !important;
+  margin-left: -26px !important;
+}
+.material-modal-content .switch-container--square .switch-form-item-is-use .el-switch__core {
+  width: 56px !important;
+  height: 30px !important;
+}
+.material-modal-content .switch-container--square .switch-form-item-is-use .el-switch__core::after {
+  width: 26px !important;
+  height: 26px !important;
+}
+.material-modal-content .switch-container--square .switch-form-item-is-use .el-switch.is-checked .el-switch__core::after {
+  margin-left: -28px !important;
+}
+.material-modal-content .switch-container--square .switch-form-item-is-use .switch-label {
+  min-width: 48px;
+  font-size: 14px;
+}
+.material-modal-content .switch-container--square .switch-form-item .el-form-item__content {
+  line-height: 30px;
 }
 
 /* 表格滚动条样式 - 加粗滚动条 */
