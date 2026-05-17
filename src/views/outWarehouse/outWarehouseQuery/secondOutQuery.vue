@@ -131,7 +131,6 @@
 
     <div class="table-container">
     <el-table v-loading="loading" :data="warehouseList"
-              show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="60vh" border stripe>
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -308,28 +307,6 @@ export default {
     // 汇总表在父组件切换到此 tab 时再加载（见 index.vue handleTabClick），避免与明细表同时请求
   },
   methods: {
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill('');
-
-      const totalQty = (data || []).reduce((acc, r) => acc + Number(r.materialQty || 0), 0);
-      const totalAmt = (data || []).reduce((acc, r) => acc + Number(r.materialAmt || 0), 0);
-      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-      if (sums.length > 0) {
-        const amtText = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-        sums[0] = `合计(数量:${totalQty.toFixed(2)} 金额:${amtText})`;
-      }
-
-      columns.forEach((column, index) => {
-        if (column.property === 'materialQty') {
-          sums[index] = totalQty.toFixed(2);
-        }
-        if (column.property === 'materialAmt') {
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-        }
-      });
-      return sums;
-    },
     /** 查询出/退货列表 */
     getList() {
       this.loading = true;
@@ -917,6 +894,19 @@ export default {
 
 .table-container ::v-deep .el-table td.el-table__cell {
   padding: 10px 12px !important;
+}
+
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
+.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 23px;
+  word-break: normal;
+}
+
+.table-container ::v-deep .el-table .cell {
+  padding: 0 4px;
 }
 </style>
 

@@ -163,7 +163,6 @@
 
     <div class="table-container">
     <el-table v-loading="loading" :data="warehouseList"
-              show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="60vh" border stripe>
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -216,9 +215,9 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="批次" align="center" prop="batchNo" width="220" resizable>
+      <el-table-column label="批次" align="center" prop="batchNo" width="220" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span class="batch-no-text">{{ scope.row.batchNo || '--' }}</span>
+          <span>{{ scope.row.batchNo || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="批号" align="center" prop="batchNumber" width="80" show-overflow-tooltip resizable/>
@@ -405,24 +404,6 @@ export default {
     },
     formatAmount(value) {
       return this.formatNumber(value, 4);
-    },
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill('');
-      const totalQty = (data || []).reduce((acc, r) => acc + Number(r.materialQty || 0), 0);
-      const totalAmt = (data || []).reduce((acc, r) => acc + Number(r.materialAmt || 0), 0);
-      if (sums.length > 0) {
-        sums[0] = `合计(数量:${this.formatQty(totalQty)} 金额:${this.formatAmount(totalAmt)})`;
-      }
-      columns.forEach((column, index) => {
-        if (column.property === 'materialQty') {
-          sums[index] = this.formatQty(totalQty);
-        }
-        if (column.property === 'materialAmt') {
-          sums[index] = this.formatAmount(totalAmt);
-        }
-      });
-      return sums;
     },
     /** 查询出/退货列表 */
     getList() {
@@ -998,27 +979,13 @@ export default {
   position: relative;
 }
 
-/* 保持 Element 默认合计行行为，避免合计列错位/缺失 */
+/* 表内合计行已关闭；全量/当前页合计见下方 pagination-summary */
 .table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 0;
+  padding-bottom: 16px;
   overflow-x: auto !important;
   overflow-y: auto !important;
   scrollbar-width: thin;
   scrollbar-color: #a0a0a0 #e8e8e8;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: static;
-  bottom: auto;
-  z-index: auto;
-  background: #fff;
-}
-
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: static;
-  bottom: auto;
-  z-index: auto;
-  background: #fff;
 }
 
 /* 表格底部横向滚动条：默认 10px，鼠标悬停 12px */
@@ -1061,17 +1028,17 @@ export default {
   padding: 10px 12px !important;
 }
 
-.table-container ::v-deep .el-table thead th.el-table__cell > .cell {
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
+.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 23px;
+  word-break: normal;
 }
 
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell > .cell,
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell > .cell {
-  white-space: nowrap;
-  word-break: normal;
-  overflow: visible;
-  line-height: 23px;
+.table-container ::v-deep .el-table .cell {
+  padding: 0 4px;
 }
 </style>
 
