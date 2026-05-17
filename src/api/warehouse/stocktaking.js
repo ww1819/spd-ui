@@ -35,12 +35,21 @@ export function updateStocktaking(data) {
   })
 }
 
-/** 向已存在的仓库盘点单追加明细（新行无明细 id），返回完整单据 */
-export function appendStocktakingEntries(billId, entries) {
+/** 精简保存：主表 + 有变更的明细实盘/账面/已盘 */
+export function patchSaveStocktaking(data) {
+  return request({
+    url: '/stocktaking/in/patch-save',
+    method: 'put',
+    data
+  })
+}
+
+/** 向已存在的仓库盘点单追加明细（新行无明细 id），返回完整单据；body: { entries, expectedUpdateTime } */
+export function appendStocktakingEntries(billId, body) {
   return request({
     url: '/stocktaking/in/' + billId + '/entries',
     method: 'post',
-    data: entries
+    data: body
   })
 }
 
@@ -61,12 +70,13 @@ export function delStocktaking(id) {
   })
 }
 
-// 审核盘点（可传 qtyAdjustList：账面与仓库实物不一致时逐条确认后的盘点数量）
+// 审核盘点（可传 qtyAdjustList；501 会逐条对齐库存并写明细，明细多时可能超过默认 10s）
 export function auditStocktaking(data) {
   return request({
     url: '/stocktaking/in/auditStocktaking',
     method: 'put',
-    data: data
+    data: data,
+    timeout: 120000
   })
 }
 
@@ -75,7 +85,8 @@ export function checkStocktakingQty(data) {
   return request({
     url: '/stocktaking/in/auditStocktaking/checkQty',
     method: 'post',
-    data: data
+    data: data,
+    timeout: 120000
   })
 }
 

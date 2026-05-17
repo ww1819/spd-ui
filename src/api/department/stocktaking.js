@@ -35,7 +35,7 @@ export function addStocktaking(data) {
   })
 }
 
-// 修改科室盘点
+// 修改科室盘点（全量明细，追加新行等场景仍可用）
 export function updateStocktaking(data) {
   return request({
     url: '/department/stocktaking',
@@ -44,12 +44,21 @@ export function updateStocktaking(data) {
   })
 }
 
-/** 向已存在的科室盘点单追加明细（新行，无明细 id），返回完整单据 */
-export function appendDeptStocktakingEntries(billId, entries) {
+/** 精简保存：主表 + 有变更的明细实盘/账面/已盘 */
+export function patchSaveStocktaking(data) {
+  return request({
+    url: '/department/stocktaking/patch-save',
+    method: 'put',
+    data
+  })
+}
+
+/** 向已存在的科室盘点单追加明细（新行，无明细 id），返回完整单据；body: { entries, expectedUpdateTime } */
+export function appendDeptStocktakingEntries(billId, body) {
   return request({
     url: '/department/stocktaking/' + billId + '/entries',
     method: 'post',
-    data: entries
+    data: body
   })
 }
 
@@ -70,12 +79,13 @@ export function delStocktaking(id) {
   })
 }
 
-// 审核科室盘点
+// 审核科室盘点（服务端逐条落科室库存/流水，明细多时可能超过默认 10s）
 export function auditStocktaking(data) {
   return request({
     url: '/department/stocktaking/auditStocktaking',
     method: 'put',
-    data: data
+    data: data,
+    timeout: 120000
   })
 }
 

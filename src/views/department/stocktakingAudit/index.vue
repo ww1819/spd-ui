@@ -329,14 +329,19 @@
                     <span>{{ scope.row.unitPrice ? parseFloat(scope.row.unitPrice).toFixed(2) : '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="库存数量" prop="qty" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="明细账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.qty || '--' }}</span>
+                    <span>{{ formatEntryQtyDisplay(scope.row, 'qty') }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="盘点数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="实盘数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.stockQty || '--' }}</span>
+                    <span>{{ formatEntryQtyDisplay(scope.row, 'stockQty') }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="当前库存数量" width="120" align="center" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ formatEntryCurrentInventoryQty(scope.row) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
@@ -409,40 +414,12 @@
       </div>
     </transition>
 
-    <el-dialog title="库存数量不一致校验" :visible.sync="qtyMismatchDialogVisible" width="980px" append-to-body>
-      <div style="margin-bottom: 8px; color: #e6a23c;">检测到明细「库存数量」与当前科室账面库存不一致（非普通盘盈/盘亏），请逐条确认盘点数量后再审核；确认后系统将按当前科室库存更新账面并回写盈亏。</div>
-      <el-table :data="qtyMismatchList" border size="small">
-        <el-table-column label="耗材" prop="materialName" min-width="150" />
-        <el-table-column label="批次号" prop="batchNo" min-width="150" />
-        <el-table-column label="明细内库存数量" prop="detailQty" width="140" />
-        <el-table-column label="科室账面库存数量" prop="currentQty" width="140" />
-        <el-table-column label="盘点数量" min-width="140">
-          <template slot-scope="scope">
-            <el-input
-              v-model="scope.row.adjustedStockQty"
-              type="number"
-              :disabled="scope.row.confirmed"
-              placeholder="请输入盘点数量"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100">
-          <template slot-scope="scope">
-            <el-button type="text" @click="confirmMismatchRow(scope.row)">{{ scope.row.confirmed ? '已确定' : '确定' }}</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer">
-        <el-button @click="qtyMismatchDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="confirmQtyMismatchAndAudit">确 定</el-button>
-      </div>
-    </el-dialog>
-
   </div>
 </template>
 
 <script>
-import { listStocktakingAudit, getStocktakingAudit, auditStocktaking, rejectStocktaking, checkStocktakingQty } from "@/api/department/stocktakingAudit";
+import { listStocktakingAudit, getStocktakingAudit, auditStocktaking, rejectStocktaking } from "@/api/department/stocktakingAudit";
+import { listInventoryPick } from "@/api/department/depInventory";
 import { listStocktakingExportRows } from "@/api/department/stocktaking";
 import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -487,10 +464,6 @@ export default {
       },
       // 表单参数
       form: {},
-      qtyMismatchDialogVisible: false,
-      qtyMismatchList: [],
-      pendingAuditId: null,
-      pendingAuditStockNo: null,
       // 表单校验
       rules: {
         rejectReason: [
@@ -515,8 +488,15 @@ export default {
         return '未审核';
       }
     },
-    // 计算总金额
+    // 计算总金额（优先主单汇总字段，避免明细未映射时显示 0）
     totalAmountText() {
+      const head = this.form && this.form.totalAmount;
+      if (head != null && head !== '') {
+        const n = parseFloat(head);
+        if (Number.isFinite(n)) {
+          return '￥' + n.toFixed(2);
+        }
+      }
       let total = 0;
       if (this.stkIoStocktakingEntryList && this.stkIoStocktakingEntryList.length > 0) {
         this.stkIoStocktakingEntryList.forEach(item => {
@@ -601,17 +581,123 @@ export default {
     handleView(row){
       const id = row.id
       getStocktakingAudit(id).then(response => {
-        this.form = response.data;
-        this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList || [];
+        const data = response && response.data;
+        if (!data) {
+          this.$modal.msgError('获取盘点单失败');
+          return;
+        }
+        this.form = data;
+        this.stkIoStocktakingEntryList = this.normalizeAuditEntries(data.stkIoStocktakingEntryList || []);
         this.open = true;
         this.form.stockType = 502;
         this.title = "查看科室盘点";
+        this.$nextTick(() => {
+          this.hydrateDeptEntryCurrentInventoryQty();
+        });
       });
+    },
+    normalizeAuditEntries(list) {
+      return (list || []).map((row) => {
+        if (!row) return row;
+        if (row.countedFlag == null || row.countedFlag === '') {
+          row.countedFlag = 0;
+        } else {
+          row.countedFlag = Number(row.countedFlag) === 1 ? 1 : 0;
+        }
+        return row;
+      });
+    },
+    formatEntryQtyDisplay(row, field) {
+      if (!row) return '0';
+      const v = row[field];
+      if (v == null || v === '') return '0';
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? String(n) : '0';
+    },
+    formatEntryCurrentInventoryQty(row) {
+      if (!row) return '--';
+      if (row._currentInventoryQtyLoading) return '加载中…';
+      const v = row._currentInventoryQty;
+      if (v == null || v === '') return '--';
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? String(n) : '--';
+    },
+    async _fetchAllDeptInventoryPickForView(departmentId) {
+      const pageSize = 500;
+      const allRows = [];
+      const fetchNext = async (pageNum) => {
+        const res = await listInventoryPick({
+          departmentId,
+          pageNum,
+          pageSize,
+          receiptConfirmStatus: 1
+        });
+        const rows = (res && res.rows) || [];
+        allRows.push(...rows);
+        if (rows.length === 0 || rows.length < pageSize) {
+          return allRows;
+        }
+        return fetchNext(pageNum + 1);
+      };
+      return fetchNext(1);
+    },
+    async hydrateDeptEntryCurrentInventoryQty() {
+      const list = this.stkIoStocktakingEntryList || [];
+      list.forEach((row) => {
+        if (!row) return;
+        this.$set(row, '_currentInventoryQty', null);
+        this.$set(row, '_currentInventoryQtyLoading', true);
+      });
+      const deptId = this.form && this.form.departmentId;
+      let invById = null;
+      try {
+        if (deptId != null && deptId !== '') {
+          const invRows = await this._fetchAllDeptInventoryPickForView(deptId);
+          invById = new Map();
+          (invRows || []).forEach((inv) => {
+            if (inv && inv.id != null) {
+              invById.set(String(inv.id), inv);
+            }
+          });
+        }
+        for (const row of list) {
+          if (!row) continue;
+          let live = null;
+          if (row.depInventoryId) {
+            const idStr = String(row.depInventoryId).trim();
+            if (invById && invById.has(idStr)) {
+              const inv = invById.get(idStr);
+              live = inv && inv.qty != null && inv.qty !== '' ? inv.qty : 0;
+            } else if (!invById) {
+              const idNum = parseInt(idStr, 10);
+              if (Number.isFinite(idNum)) {
+                try {
+                  const res = await listInventoryPick({ id: idNum, pageNum: 1, pageSize: 1 });
+                  const pickRows = (res && res.rows) || [];
+                  if (pickRows[0] && pickRows[0].qty != null && pickRows[0].qty !== '') {
+                    live = pickRows[0].qty;
+                  }
+                } catch (e) {
+                  live = null;
+                }
+              }
+            }
+          }
+          this.$set(row, '_currentInventoryQty', live);
+          this.$set(row, '_currentInventoryQtyLoading', false);
+        }
+      } catch (e) {
+        list.forEach((row) => {
+          if (!row) return;
+          this.$set(row, '_currentInventoryQty', null);
+          this.$set(row, '_currentInventoryQtyLoading', false);
+        });
+      }
     },
     /** 审核按钮操作 */
     handleAudit(row) {
       const id = row.id || this.ids[0];
-      this.runAuditWithQtyCheck(id, row.stockNo, false);
+      this.runAuditWithQtyCheck(id, row.stockNo, false, row.updateTime || row.createTime);
     },
     /** 批量审核 */
     handleBatchAudit() {
@@ -632,35 +718,12 @@ export default {
       }
       const unAuditedIds = unAuditedRows.map(row => row.id);
       this.$modal.confirm('是否确认审核选中的' + unAuditedIds.length + '条数据项？').then(() => {
-        // 批量审核也做数量校验：存在库存不一致的单据需改走单条逐条确认
-        const checkTasks = unAuditedRows.map((row) =>
-          checkStocktakingQty({ id: row.id }).then((res) => {
-            const mismatches = (res && res.data) || [];
-            const needManualConfirm = mismatches.length > 0;
-            return {
-              id: row.id,
-              stockNo: row.stockNo,
-              needManualConfirm
-            };
-          })
+        const auditTasks = unAuditedRows.map((row) =>
+          auditStocktaking({ id: row.id, expectedUpdateTime: row.updateTime || row.createTime })
         );
-        return Promise.all(checkTasks);
-      }).then((checkResults) => {
-        const canAuditIds = (checkResults || []).filter((r) => !r.needManualConfirm).map((r) => r.id);
-        const blockedStockNos = (checkResults || []).filter((r) => r.needManualConfirm).map((r) => r.stockNo);
-        if (!canAuditIds.length) {
-          this.$modal.msgWarning("所选单据均存在需逐条确认的数量差异，请改用单条审核处理。");
-          return null;
-        }
-        const auditTasks = canAuditIds.map((id) => auditStocktaking({ id }));
-        return Promise.all(auditTasks).then(() => ({ blockedStockNos, auditedCount: canAuditIds.length }));
-      }).then((result) => {
-        if (!result) return;
+        return Promise.all(auditTasks);
+      }).then(() => {
         this.getList();
-        if (result.blockedStockNos && result.blockedStockNos.length) {
-          this.$modal.msgWarning("已审核" + result.auditedCount + "条；以下单据需单条逐条确认后审核：" + result.blockedStockNos.join("、"));
-          return;
-        }
         this.$modal.msgSuccess("批量审核成功");
       }).catch(() => {});
     },
@@ -696,58 +759,16 @@ export default {
         this.$modal.msgError("数据异常，无法审核");
         return;
       }
-      this.runAuditWithQtyCheck(id, this.form.stockNo, true);
+      this.runAuditWithQtyCheck(id, this.form.stockNo, true, this.form.updateTime || this.form.createTime);
     },
-    runAuditWithQtyCheck(id, stockNo, closeOnSuccess) {
+    runAuditWithQtyCheck(id, stockNo, closeOnSuccess, expectedUpdateTime) {
       this.$modal.confirm('是否确认审核盘点编号为"' + stockNo + '"的数据项？').then(() => {
-        return checkStocktakingQty({ id });
-      }).then((res) => {
-        const rows = (res && res.data) || [];
-        if (!rows.length) {
-          return auditStocktaking({ id });
-        }
-        this.pendingAuditId = id;
-        this.pendingAuditStockNo = stockNo;
-        this.qtyMismatchList = rows.map((r) => ({
-          ...r,
-          adjustedStockQty: r.stockQty != null ? r.stockQty : r.currentQty,
-          confirmed: false
-        }));
-        this.qtyMismatchDialogVisible = true;
-        return null;
-      }).then((result) => {
-        if (!result) return;
+        return auditStocktaking({ id, expectedUpdateTime });
+      }).then(() => {
         this.getList();
         if (closeOnSuccess) this.open = false;
         this.$modal.msgSuccess("审核成功");
       }).catch(() => {});
-    },
-    confirmMismatchRow(row) {
-      const v = parseFloat(row.adjustedStockQty);
-      if (!Number.isFinite(v) || v < 0) {
-        this.$modal.msgWarning('请输入有效的盘点数量');
-        return;
-      }
-      row.adjustedStockQty = v;
-      row.confirmed = true;
-    },
-    confirmQtyMismatchAndAudit() {
-      const unconfirmed = (this.qtyMismatchList || []).some((r) => !r.confirmed);
-      if (unconfirmed) {
-        this.$modal.msgWarning('请先逐条点击“确定”后再提交');
-        return;
-      }
-      const qtyAdjustList = (this.qtyMismatchList || []).map((r) => ({
-        entryId: r.entryId,
-        stockQty: r.adjustedStockQty
-      }));
-      auditStocktaking({ id: this.pendingAuditId, qtyAdjustList }).then(() => {
-        this.qtyMismatchDialogVisible = false;
-        this.qtyMismatchList = [];
-        this.getList();
-        this.open = false;
-        this.$modal.msgSuccess("审核成功");
-      });
     },
     /** 驳回提交 */
     handleRejectSubmit() {
@@ -761,7 +782,11 @@ export default {
         return;
       }
       this.$modal.confirm('是否确认驳回盘点编号为"' + this.form.stockNo + '"的数据项？').then(() => {
-        return rejectStocktaking({ id: id, rejectReason: this.form.rejectReason });
+        return rejectStocktaking({
+          id: id,
+          rejectReason: this.form.rejectReason,
+          expectedUpdateTime: this.form.updateTime || this.form.createTime
+        });
       }).then(() => {
         this.getList();
         this.open = false;
