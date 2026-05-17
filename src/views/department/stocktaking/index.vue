@@ -83,16 +83,11 @@
     <el-table v-loading="loading" :data="stocktakingList" class="table-compact" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="盘点单号" align="center" prop="stockNo" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="盘点单号" align="center" prop="stockNo" width="150" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <el-button type="text" @click="handleView(scope.row)">
+          <el-button type="text" class="stock-no-link" @click="handleView(scope.row)">
             <span>{{ scope.row.stockNo }}</span>
           </el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="制单人" align="center" prop="createBy" width="110" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.createUserNickName || scope.row.createBy || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="制单时间" align="center" prop="createTime" width="160" show-overflow-tooltip resizable>
@@ -102,6 +97,11 @@
         </template>
       </el-table-column>
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" prop="createBy" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.createUserNickName || scope.row.createBy || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="盘点日期" align="center" prop="stockDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.stockDate, '{y}-{m}-{d}') }}</span>
@@ -225,30 +225,28 @@
                       </el-date-picker>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="8">
+                  <el-col :span="6">
                     <el-form-item label="科室" prop="departmentId">
                       <SelectDepartment v-model="form.departmentId" :disabled="!action || isDepartmentLocked || departmentLockedByAction"/>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="8">
+                  <el-col :span="4">
+                    <el-form-item label="制单人">
+                      <el-input :value="deptFormCreatorName" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
                     <el-form-item label="盘点单号" prop="stockNo">
                       <el-input
                         v-model="form.stockNo"
-                        type="textarea"
-                        :autosize="{ minRows: 1, maxRows: 2 }"
                         :disabled="true"
                         placeholder="保存后生成"
-                        class="input-stock-no-fullwidth"
+                        class="input-stock-no-ellipsis"
                       />
                     </el-form-item>
                   </el-col>
                 </el-row>
                 <el-row :gutter="8">
-                  <el-col :span="6">
-                    <el-form-item label="制单人">
-                      <el-input :value="deptFormCreatorName" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
                   <el-col :span="6">
                     <el-form-item label="制单时间">
                       <el-input :value="deptFormCreateTimeText" :disabled="true" />
@@ -264,14 +262,11 @@
                       <el-input :value="deptFormAuditTimeText" :disabled="true" />
                     </el-form-item>
                   </el-col>
-                </el-row>
-                <el-row :gutter="8">
-                  <el-col :span="4">
+                  <el-col :span="6">
                     <el-form-item label="总金额">
-                      <el-input :value="totalAmountText" :disabled="true" />
+                      <el-input :value="totalAmountText" :disabled="true" class="input-total-amount-inline" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="20" />
                 </el-row>
               </div>
 
@@ -2483,21 +2478,26 @@ export default {
   margin-bottom: 0;
 }
 
-/* 盘点单号：独占一行，换行完整展示（避免窄列截断） */
-.stocktaking-form-row-stockno {
-  margin-top: 4px;
-}
-.local-modal-content .form-item-stock-no-full >>> .el-textarea__inner,
-.local-modal-content .input-stock-no-fullwidth >>> .el-textarea__inner {
-  word-break: break-all;
-  white-space: pre-wrap;
-  resize: none;
-  min-height: 32px !important;
-  line-height: 1.45;
-  font-family: inherit;
-}
-.local-modal-content .form-item-stock-no-full >>> .el-form-item__content {
+/* 盘点单号：单行省略，悬停看全文 */
+.stock-no-link {
   max-width: 100%;
+}
+.stock-no-link span {
+  display: inline-block;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+.local-modal-content .input-stock-no-ellipsis >>> .el-input__inner {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.local-modal-content .input-total-amount-inline >>> .el-input__inner {
+  font-weight: 600;
+  color: #409eff;
 }
 
 /* 弹窗内明细区 */

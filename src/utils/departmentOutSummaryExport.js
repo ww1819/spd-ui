@@ -2292,7 +2292,7 @@ function depInventoryNearExpiryDays(row) {
 
 /** 科室库存查询 — 库存明细 */
 export async function exportDepInventoryDetailStyledXlsx(options) {
-  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  const { rows = [], beginDate = '', endDate = '', fileName, includeNearExpiryDays = false } = options;
   const headers = [
     '序号',
     '耗材编码',
@@ -2303,7 +2303,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '单位',
     '单价',
     '数量',
-    '近效期天数',
+    ...(includeNearExpiryDays ? ['近效期天数'] : []),
     '金额',
     '生产批号',
     '耗材批次号',
@@ -2324,7 +2324,9 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '归属仓库',
     '收货确认状态',
   ];
-  const numericCols = [8, 9, 11];
+  const qtyCol = 8;
+  const amtCol = includeNearExpiryDays ? 11 : 9;
+  const numericCols = [qtyCol, amtCol];
   return exportInventoryQueryStyledXlsx({
     sheetName: '科室库存明细',
     titleBoldText: '科室库存明细查询表',
@@ -2334,8 +2336,8 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     rows,
     numericCols1Based: numericCols,
     sumExtractors: {
-      9: (row) => Number(row.qty || 0),
-      11: (row) => Number(row.amt || 0),
+      [qtyCol]: (row) => Number(row.qty || 0),
+      [amtCol]: (row) => Number(row.amt || 0),
     },
     buildCells: (row) => {
       const m = row.material || {};
@@ -2344,7 +2346,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
       const sup =
         (row.supplier && row.supplier.name) || (m.supplier && m.supplier.name) || '';
       const near = depInventoryNearExpiryDays(row);
-      return [
+      const head = [
         0,
         m.code || '',
         m.name || '',
@@ -2354,7 +2356,12 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
         (m.fdUnit && m.fdUnit.unitName) || '',
         depInventoryUnitPrice(row),
         Number(row.qty || 0),
-        near === '--' ? '--' : near,
+      ];
+      if (includeNearExpiryDays) {
+        head.push(near === '--' ? '--' : near);
+      }
+      return [
+        ...head,
         Number(row.amt || 0),
         row.batchNumber || '',
         row.materialNo || '',

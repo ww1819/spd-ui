@@ -99,15 +99,15 @@
     <el-table v-loading="loading" :data="stocktakingList" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="58vh" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="盘点单号" align="center" prop="stockNo" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="盘点单号" align="center" prop="stockNo" width="150" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <el-button type="text" @click="handleView(scope.row)">
+          <el-button type="text" class="stock-no-link" @click="handleView(scope.row)">
             <span>{{ scope.row.stockNo }}</span>
           </el-button>
         </template>
       </el-table-column>
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="制单人" align="center" prop="createBy" width="110" show-overflow-tooltip resizable>
+      <el-table-column label="制单人" align="center" prop="createBy" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.createUserNickName || scope.row.createBy || '--' }}</span>
         </template>
@@ -221,11 +221,6 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="5">
-                    <el-form-item label="盘点单号" prop="stockNo" label-width="100px">
-                      <el-input v-model="form.stockNo" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="5">
                     <el-form-item label="盘点日期" prop="stockDate" label-width="100px">
                       <el-date-picker clearable
                                       v-model="form.stockDate"
@@ -237,18 +232,23 @@
                       </el-date-picker>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="6">
+                  <el-col :span="5">
                     <el-form-item label="科室" prop="departmentId" label-width="80px">
                       <SelectDepartment v-model="form.departmentId" :disabled="true"/>
                     </el-form-item>
                   </el-col>
-                </el-row>
-                <el-row>
-                  <el-col :span="5">
+                  <el-col :span="4">
                     <el-form-item label="制单人" prop="createBy" label-width="100px">
                       <el-input :value="deptFormCreatorName" :disabled="true" />
                     </el-form-item>
                   </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="盘点单号" prop="stockNo" label-width="100px">
+                      <el-input v-model="form.stockNo" :disabled="true" class="input-stock-no-ellipsis" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row>
                   <el-col :span="5">
                     <el-form-item label="制单时间" label-width="100px">
                       <el-input :value="deptFormCreateTimeText" :disabled="true" />
@@ -264,9 +264,9 @@
                       <el-input :value="deptFormAuditTimeText" :disabled="true" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col :span="5">
                     <el-form-item label="总金额" label-width="100px">
-                      <el-input :value="totalAmountText" :disabled="true" style="width: 150px; font-weight: bold; color: #409EFF;" />
+                      <el-input :value="totalAmountText" :disabled="true" class="input-total-amount-inline" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -1089,6 +1089,27 @@ export default {
 .mb8 {
   margin-top: 0 !important;
   margin-bottom: 8px !important;
+}
+
+.stock-no-link {
+  max-width: 100%;
+}
+.stock-no-link span {
+  display: inline-block;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+.input-stock-no-ellipsis >>> .el-input__inner {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.input-total-amount-inline >>> .el-input__inner {
+  font-weight: 600;
+  color: #409eff;
 }
 </style>
 

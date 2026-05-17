@@ -116,7 +116,14 @@
           </template>
         </el-table-column>
         <el-table-column label="数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable/>
-        <el-table-column label="近效期天数" align="center" min-width="140" width="140" resizable>
+        <el-table-column
+          v-if="listVariant === 'nearExpiry'"
+          label="近效期天数"
+          align="center"
+          min-width="140"
+          width="140"
+          resizable
+        >
           <template slot-scope="scope">
             <span
               class="near-expiry-days-cell"
@@ -399,6 +406,7 @@ export default {
           beginDate: "",
           endDate: "",
           fileName: `${this.exportFileBaseName}${dateStr}.xlsx`,
+          includeNearExpiryDays: this.listVariant === "nearExpiry",
         });
       } catch (e) {
         console.error(e);
