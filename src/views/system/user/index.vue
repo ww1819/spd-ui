@@ -471,6 +471,7 @@
         </div>
         <el-tree
           ref="authMenuTree"
+          class="auth-menu-tree"
           :data="menuOptions"
           :props="defaultProps"
           node-key="id"
@@ -482,7 +483,7 @@
           @check="handleAuthMenuCheck"
           style="max-height: 300px; overflow-y: auto;"
         >
-          <span class="custom-tree-node" slot-scope="{ node, data }">
+          <span class="custom-tree-node" :class="{ 'menu-folder-only': data.checkable === false }" slot-scope="{ node, data }">
             <span>{{ node.label }}</span>
           </span>
         </el-tree>
@@ -710,7 +711,8 @@ export default {
       form: {},
       defaultProps: {
         children: "children",
-        label: "label"
+        label: "label",
+        disabled: "disabled"
       },
       // 查询参数
       queryParams: {
@@ -914,6 +916,34 @@ export default {
       });
       return ids;
     },
+    /** 授权树：仅客户已开通、可勾选的菜单 ID */
+    getCheckableMenuIds(menuList) {
+      let ids = [];
+      if (!menuList) return ids;
+      menuList.forEach(menu => {
+        if (menu.checkable !== false) {
+          ids.push(menu.id);
+        }
+        if (menu.children && menu.children.length > 0) {
+          ids = ids.concat(this.getCheckableMenuIds(menu.children));
+        }
+      });
+      return ids;
+    },
+    /** 授权树：目录节点不可勾选 */
+    normalizeAuthMenuTree(nodes) {
+      if (!Array.isArray(nodes)) return [];
+      return nodes.map(n => {
+        const item = { ...n };
+        if (item.checkable === false) {
+          item.disabled = true;
+        }
+        if (item.children && item.children.length > 0) {
+          item.children = this.normalizeAuthMenuTree(item.children);
+        }
+        return item;
+      });
+    },
     /** 获取所有选中的菜单ID（包括半选中的父节点） */
     getAuthMenuAllCheckedKeys() {
       if (!this.$refs.authMenuTree) {
@@ -972,8 +1002,8 @@ export default {
         // 租户用户：树展示本客户 hc_customer_menu 已开通的全部功能，勾选来自接口 checkedKeys
         if (cid) {
           return roleMenuTreeselectUser(userId).then(res => {
-            this.menuOptions = res.menus || [];
-            const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+            this.menuOptions = this.normalizeAuthMenuTree(res.menus || []);
+            const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
             const ck = res.checkedKeys != null ? res.checkedKeys : [];
             this.authForm.menuIds = ck.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
             return res;
@@ -983,7 +1013,7 @@ export default {
       }).then(() => {
         this.$nextTick(() => {
           if (this.$refs.authMenuTree) {
-            const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+            const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
             const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
             console.log('设置菜单树选中状态 - menuIds:', menuIds);
             this.$refs.authMenuTree.setCheckedKeys(menuIds);
@@ -995,7 +1025,7 @@ export default {
         // 确保弹窗打开后再设置一次（有时候需要延迟）
         setTimeout(() => {
           if (this.$refs.authMenuTree && this.authForm.menuIds && this.authForm.menuIds.length > 0) {
-            const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+            const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
             const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
             console.log('延迟设置菜单树选中状态 - menuIds:', menuIds);
             this.$refs.authMenuTree.setCheckedKeys(menuIds);
@@ -1010,7 +1040,7 @@ export default {
     handleAuthMenuAll(val) {
       if (this.$refs.authMenuTree) {
         if (val) {
-          const allMenuIds = this.getAllMenuIds(this.menuOptions);
+          const allMenuIds = this.getCheckableMenuIds(this.menuOptions);
           this.$refs.authMenuTree.setCheckedKeys(allMenuIds);
           this.authForm.menuIds = allMenuIds;
         } else {
@@ -1039,32 +1069,39 @@ export default {
         this.cleanupAuthMenuAncestorsUnchecked(currentId);
       }
 
-      // 同步表单 menuIds（check-strictly=true 时不需要 halfCheckedKeys 兜底）
-      const finalCheckedKeys = this.$refs.authMenuTree.getCheckedKeys() || [];
+      // 同步表单 menuIds（仅保留可勾选节点，排除客户未开通的目录占位节点）
+      const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
+      const finalCheckedKeys = (this.$refs.authMenuTree.getCheckedKeys() || [])
+        .map(id => Number(id)).filter(id => !isNaN(id) && allowed.has(id));
       this.authForm.menuIds = finalCheckedKeys;
       this.updateAuthMenuCheckState(finalCheckedKeys, []);
     },
 
-    /** 授权菜单：勾选时仅补齐父链路（不级联子节点） */
+    /** 授权菜单：勾选时仅补齐可勾选父链路（不级联子节点） */
     ensureAuthMenuAncestorsChecked(nodeId) {
       if (!this.$refs.authMenuTree) return;
       const node = this.$refs.authMenuTree.getNode(nodeId);
       if (!node) return;
       let p = node.parent;
       while (p && p.data && p.data.id != null) {
-        // setChecked(key, checked, deep) deep=false 避免把父节点的子树全部勾上
-        this.$refs.authMenuTree.setChecked(p.data.id, true, false);
+        if (p.data.checkable !== false) {
+          this.$refs.authMenuTree.setChecked(p.data.id, true, false);
+        }
         p = p.parent;
       }
     },
 
-    /** 授权菜单：取消勾选时按需回收父链路（父节点无任何勾选子项则取消父节点） */
+    /** 授权菜单：取消勾选时按需回收可勾选父链路 */
     cleanupAuthMenuAncestorsUnchecked(nodeId) {
       if (!this.$refs.authMenuTree) return;
       const node = this.$refs.authMenuTree.getNode(nodeId);
       if (!node) return;
       let p = node.parent;
       while (p && p.data && p.data.id != null) {
+        if (p.data.checkable === false) {
+          p = p.parent;
+          continue;
+        }
         const anyChildChecked = (p.childNodes || []).some(c => c.checked || c.indeterminate);
         if (anyChildChecked) {
           break;
@@ -1077,7 +1114,7 @@ export default {
     updateAuthMenuCheckState(checkedKeysParam, halfCheckedKeysParam) {
       const checkedKeys = checkedKeysParam || (this.$refs.authMenuTree ? this.$refs.authMenuTree.getCheckedKeys() : []);
       const halfCheckedKeys = halfCheckedKeysParam || (this.$refs.authMenuTree ? this.$refs.authMenuTree.getHalfCheckedKeys() : []);
-      const allMenuIds = this.getAllMenuIds(this.menuOptions);
+      const allMenuIds = this.getCheckableMenuIds(this.menuOptions);
       if (!checkedKeys || checkedKeys.length === 0) {
         this.authMenuCheckAll = false;
         this.authMenuIndeterminate = false;
@@ -1111,8 +1148,8 @@ export default {
     },
     /** 授权提交 */
     submitAuth() {
-      const allowedSet = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
-      // 严格树：仅以实际勾选为准；再与客户可分配菜单树求交，避免提交客户未开通的菜单
+      const allowedSet = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
+      // 严格树：仅以实际勾选为准；再与客户可勾选菜单求交，避免提交客户未开通的菜单
       let menuIds = [];
       if (this.$refs.authMenuTree) {
         menuIds = this.$refs.authMenuTree.getCheckedKeys() || [];
@@ -1178,7 +1215,7 @@ export default {
         console.log('保存后重新获取的菜单权限:', menuIds, '完整响应:', response);
         this.authForm.menuIds = menuIds;
         if (this.$refs.authMenuTree) {
-          const allowed = new Set((this.getAllMenuIds(this.menuOptions) || []).map(Number));
+          const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
           const keys = (menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
           this.$refs.authMenuTree.setCheckedKeys(keys);
           keys.forEach(id => this.ensureAuthMenuAncestorsChecked(id));
@@ -1589,6 +1626,10 @@ export default {
 </script>
 
 <style scoped>
+/* 授权树：客户未开通的目录节点不显示勾选框 */
+.auth-menu-tree ::v-deep .el-tree-node:has(.menu-folder-only) > .el-tree-node__content > .el-checkbox {
+  display: none;
+}
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
