@@ -9,6 +9,15 @@ export function listInventory(query) {
   })
 }
 
+/** 库存分布分析：按维度 SQL 聚合 */
+export function listInventoryDistribution(query) {
+  return request({
+    url: '/warehouse/inventory/listDistribution',
+    method: 'get',
+    params: query
+  })
+}
+
 /** 盘点/弹窗对账：仅需登录，与 list 同源；支持 params.id 精确查一条（替代 GET /warehouse/inventory/:id）。 */
 export function listInventoryPick(query) {
   return request({

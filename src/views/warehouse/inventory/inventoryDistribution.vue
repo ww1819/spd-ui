@@ -115,7 +115,7 @@
 
 <script>
 import * as echarts from 'echarts'
-import { listInventory } from '@/api/warehouse/inventory'
+import { listInventoryDistribution } from '@/api/warehouse/inventory'
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier'
 import MaterialAutocomplete from '@/components/SelectModel/MaterialAutocomplete'
@@ -246,34 +246,23 @@ export default {
         }, true)
       }
     },
-    getGroupName(row) {
-      const g = this.queryParams.groupBy
-      if (g === 'warehouse') return (row.warehouse && row.warehouse.name) || (row.warehouseName) || '未填写'
-      if (g === 'supplier') return (row.supplier && row.supplier.name) || '未填写'
-      if (g === 'factory') return (row.material && row.material.fdFactory && row.material.fdFactory.factoryName) || '未填写'
-      if (g === 'warehouseCategory') return (row.material && row.material.fdWarehouseCategory && row.material.fdWarehouseCategory.warehouseCategoryName) || '未填写'
-      return '未填写'
-    },
     handleQuery() {
       this.loading = true
       const q = {
-        ...this.queryParams,
-        pageNum: 1,
-        pageSize: 10000,
-        orderByColumn: 'warehouse_date',
-        isAsc: 'desc'
+        warehouseId: this.queryParams.warehouseId,
+        supplierId: this.queryParams.supplierId,
+        materialName: this.queryParams.materialName,
+        beginDate: this.queryParams.beginDate,
+        endDate: this.queryParams.endDate,
+        distributionGroupBy: this.queryParams.groupBy || 'warehouse'
       }
-      listInventory(q).then(res => {
-        const rows = (res && res.rows) ? res.rows : []
-        const map = new Map()
-        rows.forEach(r => {
-          const name = this.getGroupName(r)
-          const prev = map.get(name) || { groupName: name, qty: 0, amt: 0 }
-          prev.qty += Number(r.qty || 0)
-          prev.amt += Number(r.amt || 0)
-          map.set(name, prev)
-        })
-        let list = Array.from(map.values())
+      listInventoryDistribution(q).then(res => {
+        const rows = (res && res.data) ? res.data : []
+        let list = rows.map(r => ({
+          groupName: r.groupName != null ? String(r.groupName) : '未填写',
+          qty: Number(r.qty || 0),
+          amt: Number(r.amt || 0)
+        }))
         const metric = this.queryParams.metric
         list.sort((a, b) => Number(b[metric] || 0) - Number(a[metric] || 0))
         const topN = Number(this.queryParams.topN) || 10
