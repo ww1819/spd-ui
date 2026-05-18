@@ -280,15 +280,15 @@
               <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" @selection-change="handleBasApplyEntrySelectionChange" ref="basApplyEntry" :height="detailTableHeight" border :summary-method="getSummaries" show-summary>
                 <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
+                <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.material && scope.row.material.code ? scope.row.material.code : '—' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="产品名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
                 <el-table-column label="型号" align="center" prop="material.model" width="140" show-overflow-tooltip resizable/>
                 <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="库存仓库" align="center" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ (scope.row.stockWarehouse && scope.row.stockWarehouse.name) ? scope.row.stockWarehouse.name : '—' }}</span>
-                  </template>
-                </el-table-column>
                 <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.unitPrice || '--' }}</span>
@@ -314,9 +314,20 @@
                     <span>{{ scope.row.amt || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="剩余可用库存" prop="availableStockQty" width="118" align="right" show-overflow-tooltip resizable>
+                <el-table-column label="仓库库存" prop="availableStockQty" width="100" align="right" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ fmtQty(scope.row.availableStockQty) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="最小包装数" align="center" width="100" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ fmtMinPackageQty(scope.row) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="120" show-overflow-tooltip resizable/>
+                <el-table-column label="库存仓库" align="center" width="120" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ (scope.row.stockWarehouse && scope.row.stockWarehouse.name) ? scope.row.stockWarehouse.name : '—' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column v-if="!action" label="待出库数量" prop="pendingOutboundQty" width="100" align="right" show-overflow-tooltip resizable>
@@ -350,7 +361,6 @@
                   </template>
                 </el-table-column>
                 <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
-                <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="120" show-overflow-tooltip resizable/>
                 <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
                 <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable/>
                 <el-table-column label="注册证号" align="center" prop="material.registerNo" width="120" show-overflow-tooltip resizable/>
@@ -1592,6 +1602,18 @@ export default {
         return '—';
       }
       return v;
+    },
+    fmtMinPackageQty(row) {
+      const src = row && typeof row === 'object' ? row : {};
+      const m = src.material && typeof src.material === 'object' ? src.material : {};
+      const keys = ['minPackageQty', 'minPackQty', 'minimumPackageQty', 'min_package_qty'];
+      for (const key of keys) {
+        const v = src[key] != null ? src[key] : m[key];
+        if (v != null && String(v).trim() !== '') {
+          return v;
+        }
+      }
+      return '—';
     },
     openOutboundRefDialog(entryId) {
       this.outboundRefFilterEntryId = entryId;
