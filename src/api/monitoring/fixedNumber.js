@@ -27,6 +27,15 @@ export function listFixedNumberForPurchase(query) {
   })
 }
 
+/** 科室汇总申购：查询全部仓库定数（带出 warehouseId），不按单仓过滤 */
+export function listFixedNumberForPurchaseAgg(query) {
+  return request({
+    url: '/monitoring/fixedNumber/listForPurchaseAgg',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询定数监测详细
 export function getFixedNumber(id) {
   return request({
