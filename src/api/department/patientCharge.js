@@ -106,3 +106,19 @@ export function applyMirrorHighConsume(data) {
     data
   })
 }
+
+/** 租户计费自动处理开关（衡水三院：抓取后自动消耗 / 自动退费） */
+export function getTenantBillingSetting() {
+  return request({
+    url: '/his/patientCharge/tenant/billingSetting',
+    method: 'get'
+  })
+}
+
+export function saveTenantBillingSetting(data) {
+  return request({
+    url: '/his/patientCharge/tenant/billingSetting',
+    method: 'put',
+    data
+  })
+}
