@@ -440,12 +440,13 @@ export default {
       const m = {
         PENDING_CONSUME: '待处理',
         PARTIALLY_CONSUMED: '部分消耗',
-        CONSUMED: '已处理'
+        CONSUMED: '已处理',
+        REFUNDED: '已退费返还'
       }
       return m[v] || v || ''
     },
     processTypeText(v) {
-      const m = { LOW_VALUE: '低值耗材', HIGH_VALUE: '高值耗材' }
+      const m = { LOW_VALUE: '低值耗材', HIGH_VALUE: '高值耗材', REFUND: '计费退费' }
       return m[v] || v || ''
     },
     valueLevelText(v) {

@@ -10,8 +10,12 @@ export function buildAggEntryPickKey(row) {
 }
 
 export function fillAggEntryFromFixedNumber(row, material) {
-  const mid = material.materialId != null ? material.materialId : material.id;
+  const mid = resolveMaterialId(material);
   row.materialId = mid;
+  // 勿将选品行的 id/pickKey 当作明细主键
+  if (row.id != null) {
+    delete row.id;
+  }
   row.materialCode = material.code || '';
   row.materialName = material.name || '';
   row.materialSpec = material.speci || material.specification || '';
@@ -32,6 +36,22 @@ export function fillAggEntryFromFixedNumber(row, material) {
     row.amt = (q * p).toFixed(2);
   }
   return row;
+}
+
+function resolveMaterialId(material) {
+  if (!material) return null;
+  if (material.materialId != null && material.materialId !== '') {
+    return material.materialId;
+  }
+  const raw = material.id;
+  if (raw == null || raw === '') return null;
+  const s = String(raw);
+  if (s.includes('_')) {
+    const part = s.split('_')[0];
+    const n = Number(part);
+    return Number.isFinite(n) ? n : part;
+  }
+  return raw;
 }
 
 function getDefaultPurchaseQtyFromMaterial(material) {
