@@ -1424,6 +1424,7 @@
 <script>
 import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel } from "@/api/foundation/material";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
+import { runConfiguredTableExport } from "@/utils/tableExportRunner";
 import { mapGetters } from "vuex";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectFactory from '@/components/SelectModel/SelectFactory';
@@ -2341,59 +2342,116 @@ export default {
     materialIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
-    /** 导出按钮操作 */
+    /** 导出：与列表相同筛选条件分页拉全量，列展示与表格一致（runConfiguredTableExport） */
     async handleExport() {
-      // 后端导出接口在部分环境未按筛选参数生效，这里改为：
-      // 用相同筛选条件拉取筛选后的全量数据，再由前端生成 Excel，保证“页面搜到什么就导出什么”
-      const params = this.buildMaterialQueryParams(false);
+      const yesNoDict = (this.dict && this.dict.type && this.dict.type.is_yes_no) || [];
+      const wayDict = (this.dict && this.dict.type && this.dict.type.way_status) || [];
+      const dictLabel = (options, value) => {
+        const v = value === null || value === undefined ? "" : String(value);
+        const hit = (options || []).find((d) => String(d.value) === v);
+        return hit ? hit.label : v;
+      };
+      const yesNoText = (v) => (String(v) === "1" ? "是" : "否");
+      const fmtCreateDate = (v) => (v ? this.parseTime(v, "{y}-{m}-{d}") : "");
+
       try {
         this.loading = true;
-        const resp = await listMaterialAll(params);
-        const rows = (() => {
-          if (Array.isArray(resp)) return resp;
-          if (Array.isArray(resp?.rows)) return resp.rows;
-          if (Array.isArray(resp?.data)) return resp.data;
-          if (Array.isArray(resp?.data?.rows)) return resp.data.rows;
-          return [];
-        })();
-        if (!rows.length) {
-          this.$modal.msgWarning('没有可导出的数据');
-          return;
-        }
-
-        const dictLabel = (options, value) => {
-          const v = value === null || value === undefined ? '' : String(value);
-          const hit = (options || []).find(d => String(d.value) === v);
-          return hit ? hit.label : v;
-        };
-
-        const exportRows = rows.map(r => ({
-          '耗材编码': r?.code ?? '',
-          '耗材名称': r?.name ?? '',
-          '规格': r?.speci ?? '',
-          '型号': r?.model ?? '',
-          '医保编码': r?.medicalNo ?? '',
-          '注册证号': r?.registerNo ?? '',
-          '财务分类': r?.fdFinanceCategory?.financeCategoryName ?? '',
-          '价格': this.formatPrice4(r?.price),
-          '单位': r?.fdUnit?.unitName ?? '',
-          '生产厂家': r?.fdFactory?.factoryName ?? '',
-          '供应商': r?.supplier?.name ?? '',
-          '库房分类': r?.fdWarehouseCategory?.warehouseCategoryName ?? '',
-          '储存方式': dictLabel(this.dict?.type?.way_status, r?.isWay),
-          '货位': r?.fdLocation?.locationName ?? '',
-          '启用': dictLabel(this.dict?.type?.is_use_status, r?.isUse),
-          '高值': dictLabel(this.dict?.type?.is_yes_no, r?.isGz),
-          '跟台': dictLabel(this.dict?.type?.is_yes_no, r?.isFollow),
-          '计费': dictLabel(this.dict?.type?.is_yes_no, r?.isBilling),
-          '品牌': r?.brand ?? '',
-          '创建日期': r?.createTime ?? ''
-        }));
-
-        await exportPreviewRowsToXlsx(exportRows, `material_${new Date().getTime()}.xlsx`);
-        this.$modal.msgSuccess('已导出');
+        const baseQuery = this.buildMaterialQueryParams(false);
+        const result = await runConfiguredTableExport({
+          reportTitle: "耗材产品维护",
+          dateRangeKeys: { start: "beginDate", end: "endDate" },
+          query: baseQuery,
+          pageSize: 500,
+          mode: "all",
+          fetchPage: (params) =>
+            listMaterial({
+              ...baseQuery,
+              pageNum: params.pageNum,
+              pageSize: params.pageSize,
+            }),
+          sheetName: "耗材产品",
+          columns: [
+            { label: "序号", valueGetter: (_, index) => index + 1 },
+            { label: "耗材编码", prop: "code" },
+            { label: "耗材名称", prop: "name" },
+            { label: "his收费项目编码", prop: "hisChargeItemId" },
+            {
+              label: "收费项目名称",
+              valueGetter: (row) => {
+                const v = row && row.hisChargeItemName;
+                return v != null && String(v).trim() !== "" ? v : "--";
+              },
+            },
+            {
+              label: "收费项目规格",
+              valueGetter: (row) => {
+                const v = row && row.hisChargeItemSpeci;
+                return v != null && String(v).trim() !== "" ? v : "--";
+              },
+            },
+            {
+              label: "收费单价(HIS)",
+              valueGetter: (row) => {
+                const v = row && row.hisChargeItemPrice;
+                return v != null && v !== "" ? this.formatPrice4(v) : "--";
+              },
+            },
+            { label: "规格", prop: "speci" },
+            {
+              label: "价格",
+              valueGetter: (row) => this.formatPrice4(row && row.price),
+            },
+            { label: "单位", prop: "fdUnit.unitName" },
+            { label: "生产厂家", prop: "fdFactory.factoryName" },
+            { label: "供应商", prop: "supplier.name" },
+            { label: "库房分类", prop: "fdWarehouseCategory.warehouseCategoryName" },
+            { label: "材料类别", prop: "fdMaterialCategory.materialCategoryName" },
+            { label: "财务分类", prop: "fdFinanceCategory.financeCategoryName" },
+            { label: "注册证号", prop: "registerNo" },
+            { label: "医保编码", prop: "medicalNo" },
+            { label: "型号", prop: "model" },
+            {
+              label: "储存方式",
+              valueGetter: (row) => dictLabel(wayDict, row && row.isWay),
+            },
+            {
+              label: "货位",
+              valueGetter: (row) => {
+                const v = row && row.fdLocation && row.fdLocation.locationName;
+                return v ? v : "--";
+              },
+            },
+            {
+              label: "启用",
+              valueGetter: (row) => yesNoText(row && row.isUse),
+            },
+            {
+              label: "高值",
+              valueGetter: (row) => dictLabel(yesNoDict, row && row.isGz),
+            },
+            {
+              label: "跟台",
+              valueGetter: (row) => dictLabel(yesNoDict, row && row.isFollow),
+            },
+            {
+              label: "集采",
+              valueGetter: (row) => dictLabel(yesNoDict, row && row.isProcure),
+            },
+            {
+              label: "计费",
+              valueGetter: (row) => yesNoText(row && row.isBilling),
+            },
+            { label: "品牌", prop: "brand" },
+            {
+              label: "创建日期",
+              valueGetter: (row) => fmtCreateDate(row && row.createTime),
+            },
+            { label: "最小包装数", prop: "minPackageQty" },
+          ],
+        });
+        this.$modal.msgSuccess(`已导出 ${result.rowCount} 条`);
       } catch (e) {
-        this.$modal.msgError(e?.message || '导出失败');
+        this.$modal.msgWarning((e && e.message) || "导出失败");
       } finally {
         this.loading = false;
       }
