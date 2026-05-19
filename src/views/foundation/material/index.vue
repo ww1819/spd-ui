@@ -108,20 +108,20 @@
             />
           </el-form-item>
 
-              <el-form-item prop="storeroomId" class="query-item-inline">
-                <div class="query-select-wrapper query-select-wrapper-small" style="width: 100px !important;">
-                  <SelectWarehouseCategory v-model="queryParams.storeroomId" placeholder="库房分类" style="width: 100%"/>
+              <el-form-item prop="storeroomIds" class="query-item-inline">
+                <div class="query-select-wrapper query-select-wrapper-small" style="width: 160px !important;">
+                  <SelectWarehouseCategory v-model="queryParams.storeroomIds" :multiple="true" placeholder="库房分类" style="width: 100%"/>
                 </div>
               </el-form-item>
 
-              <el-form-item prop="financeCategoryId" class="query-item-inline">
-                <div class="query-select-wrapper query-select-wrapper-small" style="width: 100px !important;">
-                  <SelectFinanceCategory v-model="queryParams.financeCategoryId" placeholder="财务分类" style="width: 100%"/>
+              <el-form-item prop="financeCategoryIds" class="query-item-inline">
+                <div class="query-select-wrapper query-select-wrapper-small" style="width: 160px !important;">
+                  <SelectFinanceCategory v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类" style="width: 100%"/>
                 </div>
               </el-form-item>
-              <el-form-item prop="materialCategoryId" class="query-item-inline">
-                <div class="query-select-wrapper query-select-wrapper-small" style="width: 120px !important;">
-                  <SelectMaterialCategory v-model="queryParams.materialCategoryId" placeholder="材料类别" style="width: 100%"/>
+              <el-form-item prop="materialCategoryIds" class="query-item-inline">
+                <div class="query-select-wrapper query-select-wrapper-small" style="width: 160px !important;">
+                  <SelectMaterialCategory v-model="queryParams.materialCategoryIds" :multiple="true" placeholder="材料类别" style="width: 100%"/>
                 </div>
               </el-form-item>
 
@@ -226,6 +226,15 @@
           @click="handleUpdateReferred"
           v-hasPermi="['foundation:material:updateReferred']"
         >更新简码</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="medium"
+          :disabled="multiple"
+          @click="openBatchUpdateDialog"
+          v-hasPermi="['foundation:material:edit']"
+        >批量修改</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
@@ -1340,6 +1349,67 @@
     </el-dialog>
 
     <el-dialog
+      title="批量修改产品档案"
+      :visible.sync="batchUpdateDialog.visible"
+      width="560px"
+      append-to-body
+      @close="resetBatchUpdateForm"
+    >
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-bottom: 16px;"
+        :title="'已选 ' + (ids ? ids.length : 0) + ' 条；留空的项不修改'"
+      />
+      <el-form ref="batchUpdateForm" :model="batchUpdateDialog.form" label-width="100px" size="small">
+        <el-form-item label="库房分类">
+          <SelectWarehouseCategory v-model="batchUpdateDialog.form.storeroomId" placeholder="不修改请留空" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="财务分类">
+          <SelectFinanceCategory v-model="batchUpdateDialog.form.financeCategoryId" placeholder="不修改请留空" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="材料类别">
+          <SelectMaterialCategory v-model="batchUpdateDialog.form.materialCategoryId" placeholder="不修改请留空" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="启用">
+          <el-select v-model="batchUpdateDialog.form.isUse" placeholder="不修改" clearable style="width: 100%">
+            <el-option v-for="dict in dict.type.is_use_status" :key="dict.value" :label="dict.label" :value="dict.value"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="计费">
+          <el-select v-model="batchUpdateDialog.form.isBilling" placeholder="不修改" clearable style="width: 100%">
+            <el-option v-for="dict in dict.type.is_yes_no" :key="'b'+dict.value" :label="dict.label" :value="dict.value"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="高值">
+          <el-select v-model="batchUpdateDialog.form.isGz" placeholder="不修改" clearable style="width: 100%">
+            <el-option v-for="dict in dict.type.is_yes_no" :key="'g'+dict.value" :label="dict.label" :value="dict.value"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="跟台">
+          <el-select v-model="batchUpdateDialog.form.isFollow" placeholder="不修改" clearable style="width: 100%">
+            <el-option v-for="dict in dict.type.is_yes_no" :key="'f'+dict.value" :label="dict.label" :value="dict.value"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="集采">
+          <el-select v-model="batchUpdateDialog.form.isProcure" placeholder="不修改" clearable style="width: 100%">
+            <el-option v-for="dict in dict.type.is_yes_no" :key="'p'+dict.value" :label="dict.label" :value="dict.value"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="阳采">
+          <el-select v-model="batchUpdateDialog.form.isSunshineProcurement" placeholder="不修改" clearable style="width: 100%">
+            <el-option v-for="dict in dict.type.is_yes_no" :key="'s'+dict.value" :label="dict.label" :value="dict.value"/>
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="batchUpdateDialog.visible = false">取 消</el-button>
+        <el-button type="primary" :loading="batchUpdateDialog.loading" @click="submitBatchUpdate">确 定</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog
       title="收费项目维护"
       :visible.sync="chargeItemDialog.visible"
       width="86%"
@@ -1422,7 +1492,7 @@
 </template>
 
 <script>
-import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel } from "@/api/foundation/material";
+import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, batchUpdateMaterial, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel } from "@/api/foundation/material";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import { runConfiguredTableExport } from "@/utils/tableExportRunner";
 import { mapGetters } from "vuex";
@@ -1462,6 +1532,21 @@ export default {
       loading: true,
       // 选中数组
       ids: [],
+      batchUpdateDialog: {
+        visible: false,
+        loading: false,
+        form: {
+          storeroomId: null,
+          financeCategoryId: null,
+          materialCategoryId: null,
+          isUse: null,
+          isBilling: null,
+          isGz: null,
+          isFollow: null,
+          isProcure: null,
+          isSunshineProcurement: null
+        }
+      },
       isDisabled: false,
       // 非单个禁用
       single: true,
@@ -1490,9 +1575,9 @@ export default {
         model: undefined,
         price: undefined,
         isGz: '', // 默认全部
-        storeroomId: undefined,
-        materialCategoryId: undefined,
-        financeCategoryId: undefined,
+        storeroomIds: [],
+        materialCategoryIds: [],
+        financeCategoryIds: [],
         factoryId: undefined,
         locationId: undefined,
         isFollow: '', // 默认全部
@@ -1750,6 +1835,18 @@ export default {
         delete merged.pageNum;
         delete merged.pageSize;
       }
+      if (Array.isArray(merged.storeroomIds) && merged.storeroomIds.length === 0) {
+        delete merged.storeroomIds;
+      }
+      if (Array.isArray(merged.financeCategoryIds) && merged.financeCategoryIds.length === 0) {
+        delete merged.financeCategoryIds;
+      }
+      if (Array.isArray(merged.materialCategoryIds) && merged.materialCategoryIds.length === 0) {
+        delete merged.materialCategoryIds;
+      }
+      delete merged.storeroomId;
+      delete merged.financeCategoryId;
+      delete merged.materialCategoryId;
       return merged;
     },
 
@@ -1897,6 +1994,9 @@ export default {
       this.queryParams.isFollow = '';
       this.queryParams.isProcure = '';
       this.queryParams.isBilling = '';
+      this.queryParams.storeroomIds = [];
+      this.queryParams.financeCategoryIds = [];
+      this.queryParams.materialCategoryIds = [];
       // 清空派生搜索参数，避免残留影响查询/导出
       this.queryParams.code = undefined;
       this.queryParams.nameSearch = undefined;
@@ -2468,6 +2568,82 @@ export default {
         this.$modal.msgSuccess("更新简码成功");
         this.getList();
       }).catch(() => {});
+    },
+    openBatchUpdateDialog() {
+      if (!this.ids || this.ids.length === 0) {
+        this.$modal.msgWarning("请先选择要批量修改的产品档案");
+        return;
+      }
+      this.resetBatchUpdateForm();
+      this.batchUpdateDialog.visible = true;
+    },
+    resetBatchUpdateForm() {
+      this.batchUpdateDialog.form = {
+        storeroomId: null,
+        financeCategoryId: null,
+        materialCategoryId: null,
+        isUse: null,
+        isBilling: null,
+        isGz: null,
+        isFollow: null,
+        isProcure: null,
+        isSunshineProcurement: null
+      };
+    },
+    submitBatchUpdate() {
+      const f = this.batchUpdateDialog.form;
+      const payload = { ids: this.ids };
+      let hasField = false;
+      if (f.storeroomId != null && f.storeroomId !== "") {
+        payload.storeroomId = f.storeroomId;
+        hasField = true;
+      }
+      if (f.financeCategoryId != null && f.financeCategoryId !== "") {
+        payload.financeCategoryId = f.financeCategoryId;
+        hasField = true;
+      }
+      if (f.materialCategoryId != null && f.materialCategoryId !== "") {
+        payload.materialCategoryId = f.materialCategoryId;
+        hasField = true;
+      }
+      if (f.isUse != null && f.isUse !== "") {
+        payload.isUse = f.isUse;
+        hasField = true;
+      }
+      if (f.isBilling != null && f.isBilling !== "") {
+        payload.isBilling = f.isBilling;
+        hasField = true;
+      }
+      if (f.isGz != null && f.isGz !== "") {
+        payload.isGz = f.isGz;
+        hasField = true;
+      }
+      if (f.isFollow != null && f.isFollow !== "") {
+        payload.isFollow = f.isFollow;
+        hasField = true;
+      }
+      if (f.isProcure != null && f.isProcure !== "") {
+        payload.isProcure = f.isProcure;
+        hasField = true;
+      }
+      if (f.isSunshineProcurement != null && f.isSunshineProcurement !== "") {
+        payload.isSunshineProcurement = f.isSunshineProcurement;
+        hasField = true;
+      }
+      if (!hasField) {
+        this.$modal.msgWarning("请至少选择一项要修改的内容");
+        return;
+      }
+      this.$modal.confirm("确认对选中的 " + this.ids.length + " 条产品档案执行批量修改？").then(() => {
+        this.batchUpdateDialog.loading = true;
+        return batchUpdateMaterial(payload);
+      }).then(() => {
+        this.$modal.msgSuccess("批量修改成功");
+        this.batchUpdateDialog.visible = false;
+        this.getList();
+      }).catch(() => {}).finally(() => {
+        this.batchUpdateDialog.loading = false;
+      });
     },
     /** 推送档案按钮操作 */
     handlePushArchive() {

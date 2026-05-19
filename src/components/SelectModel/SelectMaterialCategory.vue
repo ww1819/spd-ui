@@ -1,10 +1,13 @@
 <template>
   <el-select
-    v-model="materialCategory"
+    v-model="innerValue"
     filterable
     :filter-method="filterMethod"
     clearable
-    :placeholder="placeholder || '材料类别编码/名称/拼音搜索'"
+    :multiple="multiple"
+    :collapse-tags="multiple"
+    :collapse-tags-tooltip="multiple"
+    :placeholder="placeholder || (multiple ? '材料类别多选' : '材料类别编码/名称/拼音搜索')"
     :disabled="value2"
   >
     <el-option
@@ -21,7 +24,24 @@ import { listMaterialCategory } from "@/api/foundation/materialCategory";
 import { pinyin } from "pinyin-pro";
 
 export default {
-  props: ['value', 'value2', 'placeholder'],
+  props: {
+    value: {
+      type: [String, Number, Array],
+      default: null
+    },
+    value2: {
+      type: Boolean,
+      default: false
+    },
+    placeholder: {
+      type: String,
+      default: ""
+    },
+    multiple: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       materialCategoryOptions: [],
@@ -29,12 +49,15 @@ export default {
     };
   },
   computed: {
-    materialCategory: {
+    innerValue: {
       get() {
+        if (this.multiple) {
+          return Array.isArray(this.value) ? this.value : [];
+        }
         return this.value;
       },
       set(v) {
-        this.$emit('input', v);
+        this.$emit("input", v);
       }
     }
   },

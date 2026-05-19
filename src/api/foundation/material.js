@@ -157,6 +157,15 @@ export function pushMaterialArchive(supplierId) {
 }
 
 // 批量更新耗材产品名称简码
+/** 批量修改产品档案（仅提交需修改的字段） */
+export function batchUpdateMaterial(data) {
+  return request({
+    url: '/foundation/material/batchUpdate',
+    method: 'post',
+    data
+  })
+}
+
 export function updateMaterialReferred(ids) {
   return request({
     url: '/foundation/material/updateReferred',
