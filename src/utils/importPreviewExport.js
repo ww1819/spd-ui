@@ -1,36 +1,14 @@
-/** 使用 xlsx-js-style，支持导出单元格样式（加粗、字号、对齐等） */
-const XLSX_STYLE_CDN =
-  'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js'
+/**
+ * xlsx-js-style 随前端打包，内网环境无需访问外网 CDN
+ */
+import * as XLSX from 'xlsx-js-style'
 
 /**
- * 导入解析结果导出为 xlsx（与后端 previewRows 结构一致：对象数组，key 为表头中文名）
+ * 兼容旧调用（已无 CDN 加载，直接 resolve）
+ * @deprecated 请直接使用 exportPreviewRowsToXlsx
  */
 export function loadXlsxScript() {
-  return new Promise((resolve, reject) => {
-    const marked = document.querySelector('script[data-spd-xlsx-export="1"]')
-    if (marked && marked.getAttribute('data-loaded') === 'true') {
-      resolve()
-      return
-    }
-    if (marked) {
-      marked.addEventListener('load', () => {
-        marked.setAttribute('data-loaded', 'true')
-        resolve()
-      })
-      marked.addEventListener('error', () => reject(new Error('加载 Excel 库失败')))
-      return
-    }
-    const script = document.createElement('script')
-    script.src = XLSX_STYLE_CDN
-    script.setAttribute('data-spd-xlsx-export', '1')
-    script.async = true
-    script.onload = () => {
-      script.setAttribute('data-loaded', 'true')
-      resolve()
-    }
-    script.onerror = () => reject(new Error('加载 Excel 库失败'))
-    document.head.appendChild(script)
-  })
+  return Promise.resolve()
 }
 
 /**
@@ -41,12 +19,10 @@ export function loadXlsxScript() {
  * @param {string} [extra.sheetName] 工作表名称，默认「解析结果」
  * @param {string} [extra.sheetTopTitle] 首行大标题（跨列合并），在表头行之上
  */
-export async function exportPreviewRowsToXlsx(previewRows, fileName, extra = {}) {
+export function exportPreviewRowsToXlsx(previewRows, fileName, extra = {}) {
   if (!previewRows || !previewRows.length) {
     return
   }
-  await loadXlsxScript()
-  const XLSX = window.XLSX
   const headers = Object.keys(previewRows[0])
   const topTitle = extra && extra.sheetTopTitle && String(extra.sheetTopTitle).trim()
     ? String(extra.sheetTopTitle).trim()

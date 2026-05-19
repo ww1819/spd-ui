@@ -1,8 +1,10 @@
 <template>
-  <div class="app-container">
-    <el-tabs v-model="activeMainTab" @tab-click="onMainTabClick">
+  <div class="app-container patient-charge-page">
+    <el-tabs v-model="activeMainTab" class="pc-tabs" @tab-click="onMainTabClick">
       <el-tab-pane label="患者费用明细" name="detail">
-        <el-form :model="detailQuery" inline size="small" class="mb8">
+        <div class="pc-detail-layout">
+        <div class="pc-query-wrap">
+        <el-form :model="detailQuery" inline size="small" class="pc-query-form">
           <el-form-item label="类型">
             <el-radio-group v-model="detailVisitType" @change="handleDetailQuery">
               <el-radio-button label="ALL">全部</el-radio-button>
@@ -101,13 +103,16 @@
             >门诊收费抓取</el-button>
           </el-form-item>
         </el-form>
+        </div>
 
         <el-table
           ref="detailTable"
           v-loading="detailLoading"
           :data="detailList"
+          height="60vh"
           border
           stripe
+          class="pc-detail-table"
           @sort-change="handleDetailSort"
           @selection-change="rows => (detailSelection = rows)"
         >
@@ -186,13 +191,16 @@
             </template>
           </el-table-column>
         </el-table>
-        <pagination
-          v-show="detailTotal > 0"
-          :total="detailTotal"
-          :page.sync="detailQuery.pageNum"
-          :limit.sync="detailQuery.pageSize"
-          @pagination="loadDetailList"
-        />
+        <div class="pc-pagination-wrap">
+          <pagination
+            v-show="detailTotal > 0"
+            :total="detailTotal"
+            :page.sync="detailQuery.pageNum"
+            :limit.sync="detailQuery.pageSize"
+            @pagination="loadDetailList"
+          />
+        </div>
+        </div>
       </el-tab-pane>
 
       <el-tab-pane label="患者费用汇总" name="summary">
@@ -411,7 +419,16 @@ export default {
     this.loadDeptOptions()
     this.loadDetailList()
   },
+  mounted() {
+    this.$nextTick(() => this.layoutDetailTable())
+  },
   methods: {
+    layoutDetailTable() {
+      const table = this.$refs.detailTable
+      if (table && table.doLayout) {
+        table.doLayout()
+      }
+    },
     loadDeptOptions() {
       const uid = this.$store.getters.userId
       if (!uid) {
@@ -540,7 +557,10 @@ export default {
         listInpatientMirror(q).then(res => {
           this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'INPATIENT', chargeIdTf: r.hisInpatientChargeIdTf }))
           this.detailTotal = res.total || 0
-        }).finally(() => { this.detailLoading = false })
+        }).finally(() => {
+          this.detailLoading = false
+          this.$nextTick(() => this.layoutDetailTable())
+        })
       } else if (this.detailVisitType === 'OUT') {
         q.outpatientNo = q.visitNo
         q.hisOutpatientChargeIdTf = q.chargeIdTf
@@ -549,12 +569,18 @@ export default {
         listOutpatientMirror(q).then(res => {
           this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'OUTPATIENT', chargeIdTf: r.hisOutpatientChargeIdTf }))
           this.detailTotal = res.total || 0
-        }).finally(() => { this.detailLoading = false })
+        }).finally(() => {
+          this.detailLoading = false
+          this.$nextTick(() => this.layoutDetailTable())
+        })
       } else {
         listAllMirror(q).then(res => {
           this.detailList = res.rows || []
           this.detailTotal = res.total || 0
-        }).finally(() => { this.detailLoading = false })
+        }).finally(() => {
+          this.detailLoading = false
+          this.$nextTick(() => this.layoutDetailTable())
+        })
       }
     },
     handleSummaryQuery() {
@@ -731,5 +757,51 @@ export default {
   vertical-align: top;
   line-height: 1.45;
   text-align: left;
+}
+</style>
+
+<style>
+/* 与耗材产品维护一致：表格 height="60vh"；分页覆盖 ruoyi 绝对定位避免被 app-main 裁切 */
+.patient-charge-page {
+  padding: 1vh 0.8vw 1.5vh !important;
+  box-sizing: border-box;
+}
+
+.patient-charge-page .pc-tabs >>> .el-tabs__header {
+  margin-bottom: 0.8vh;
+}
+
+.patient-charge-page .pc-query-wrap {
+  max-height: 18vh;
+  overflow-y: auto;
+  margin-bottom: 0.8vh;
+}
+
+.patient-charge-page .pc-detail-table {
+  width: 100%;
+}
+
+.patient-charge-page .pc-pagination-wrap {
+  margin-top: 0.5vh;
+  min-height: 8vh;
+  height: 8vh;
+  box-sizing: border-box;
+}
+
+.patient-charge-page .pc-pagination-wrap >>> .pagination-container {
+  position: relative !important;
+  height: 100% !important;
+  min-height: 8vh !important;
+  margin: 0 !important;
+  padding: 0.8vh 1vw !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  box-sizing: border-box;
+}
+
+.patient-charge-page .pc-pagination-wrap >>> .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
 }
 </style>

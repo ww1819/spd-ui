@@ -96,7 +96,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="stocktakingList" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="58vh" border stripe>
+    <el-table v-loading="loading" :data="stocktakingList" class="table-compact" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="calc(100vh - 360px)" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="盘点单号" align="center" prop="stockNo" width="150" show-overflow-tooltip resizable>
@@ -1121,7 +1121,16 @@ export default {
   box-sizing: border-box;
   padding-left: 8px !important;
   padding-right: 8px !important;
-  padding-bottom: 8px !important;
+  padding-bottom: 16px !important;
+}
+
+/* 列表区：表格高度由 calc 预留查询区/工具栏/分页，分页完整露出 */
+.app-container.stocktaking-audit-page > .el-table.table-compact {
+  margin-bottom: 4px;
+}
+
+.app-container.stocktaking-audit-page > .pagination-container {
+  flex-shrink: 0;
 }
 
 .app-container.stocktaking-audit-page > .el-form.query-form-compact {

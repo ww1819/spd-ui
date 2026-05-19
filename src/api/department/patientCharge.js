@@ -45,11 +45,14 @@ export function listChargeSummary(query) {
   })
 }
 
+/** 住院/门诊计费抓取：数据量大，超时 5 分钟 */
+const PATIENT_CHARGE_FETCH_TIMEOUT_MS = 300000
+
 export function fetchInpatientMirror(data) {
   return request({
     url: '/his/patientCharge/mirror/fetch/inpatient',
     method: 'post',
-    timeout: 120000,
+    timeout: PATIENT_CHARGE_FETCH_TIMEOUT_MS,
     data
   })
 }
@@ -58,7 +61,7 @@ export function fetchOutpatientMirror(data) {
   return request({
     url: '/his/patientCharge/mirror/fetch/outpatient',
     method: 'post',
-    timeout: 120000,
+    timeout: PATIENT_CHARGE_FETCH_TIMEOUT_MS,
     data
   })
 }
