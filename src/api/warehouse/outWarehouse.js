@@ -123,6 +123,24 @@ export function listWhApplyForCk(query) {
   })
 }
 
+/** 出库引用：科室申购单分页列表（按引用状态页签） */
+export function listDepPurchaseApplyForCk(query) {
+  return request({
+    url: '/warehouse/outWarehouse/depPurchaseApplyListForCk',
+    method: 'get',
+    params: query
+  })
+}
+
+/** 按科室申购单生成出库明细 */
+export function createCkEntriesByDepPurchaseApply(data) {
+  return request({
+    url: '/warehouse/outWarehouse/createCkEntriesByDepPurchaseApply',
+    method: 'get',
+    params: data
+  })
+}
+
 // 查询单据明细变更记录
 export function listEntryChangeLog(billType, billId) {
   return request({

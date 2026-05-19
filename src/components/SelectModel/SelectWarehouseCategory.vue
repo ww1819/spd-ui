@@ -1,43 +1,64 @@
 <template>
-  <el-select v-model="warehouseCategory"
-             size="small"
-             filterable
-             :filter-method="filterMethod"
-             clearable
-             :placeholder="placeholder || '库房分类编码/名称/简码搜索'"
-             :disabled="value2"
+  <el-select
+    v-model="innerValue"
+    size="small"
+    filterable
+    :filter-method="filterMethod"
+    clearable
+    :multiple="multiple"
+    :collapse-tags="multiple"
+    :collapse-tags-tooltip="multiple"
+    :placeholder="placeholder || (multiple ? '库房分类多选' : '库房分类编码/名称/简码搜索')"
+    :disabled="value2"
   >
     <el-option
       v-for="item in warehouseCategoryOptions"
       :key="item.warehouseCategoryId"
       :label="item.warehouseCategoryName"
       :value="item.warehouseCategoryId"
-    ></el-option>
+    />
   </el-select>
 </template>
 
 <script>
-import { listWarehouseCategoryAll} from "@/api/foundation/warehouseCategory";
+import { listWarehouseCategoryAll } from "@/api/foundation/warehouseCategory";
 import { pinyin } from "pinyin-pro";
 
 export default {
-  props: ['value','value2','placeholder'],
-  data() {
-    return {
-      // 库房分类选项
-      warehouseCategoryOptions: [],
-      allWarehouseCategoryOptions: [],
-      // 表单参数
-      form: {},
+  props: {
+    value: {
+      type: [Number, String, Array],
+      default: null
+    },
+    value2: {
+      type: Boolean,
+      default: false
+    },
+    placeholder: {
+      type: String,
+      default: ""
+    },
+    multiple: {
+      type: Boolean,
+      default: false
     }
   },
+  data() {
+    return {
+      warehouseCategoryOptions: [],
+      allWarehouseCategoryOptions: []
+    };
+  },
   computed: {
-    warehouseCategory: {
+    innerValue: {
       get() {
+        if (this.multiple) {
+          return Array.isArray(this.value) ? this.value : [];
+        }
         return this.value;
       },
       set(v) {
-        this.$emit('input', v);
+        this.$emit("input", v);
       }
     }
   },
@@ -45,9 +66,7 @@ export default {
     this.getList();
   },
   methods: {
-    /** 查询库房分类列表 */
     getList() {
-      this.loading = true;
       listWarehouseCategoryAll().then(response => {
         this.allWarehouseCategoryOptions = response || [];
         this.warehouseCategoryOptions = this.allWarehouseCategoryOptions;
@@ -75,5 +94,5 @@ export default {
       }
     }
   }
-}
+};
 </script>

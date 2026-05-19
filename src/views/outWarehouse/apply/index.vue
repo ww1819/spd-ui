@@ -320,6 +320,9 @@
               <el-button type="outline" icon="el-icon-ref" size="small" :disabled="stkIoBillEntryList.length > 0" @click="refDeptApply">引用仓库申请单</el-button>
             </el-col>
             <el-col :span="1.5">
+              <el-button type="outline" icon="el-icon-ref" size="small" :disabled="stkIoBillEntryList.length > 0" @click="refDepPurchaseApply">引用科室申购单</el-button>
+            </el-col>
+            <el-col :span="1.5">
               <el-button type="outline" icon="el-icon-ref" size="small" :disabled="stkIoBillEntryList.length > 0" @click="refRkApply">引用入库单</el-button>
             </el-col>
             <el-col :span="1.5">
@@ -528,6 +531,14 @@
     >
 
     </SelectDApply>
+    <SelectDepPurchaseApply
+      v-if="DialogDepPurchaseApplyComponentShow"
+      :DialogComponentShow="DialogDepPurchaseApplyComponentShow"
+      :departmentValue="departmentValue"
+      :warehouseValue="warehouseValue"
+      @closeDialog="closeDepPurchaseApplyDialog"
+      @selectDepPurchaseApplyData="selectDepPurchaseApplyData"
+    />
     <SelectRkApply
       v-if="DialogRkApplyComponentShow"
       :DialogComponentShow="DialogRkApplyComponentShow"
@@ -640,7 +651,7 @@ import {
   addOutWarehouse,
   updateOutWarehouse,
   listCTKWarehouse,
-  createCkEntriesByRkApply, createCkEntriesByWhApply, listEntryChangeLog
+  createCkEntriesByRkApply, createCkEntriesByWhApply, createCkEntriesByDepPurchaseApply, listEntryChangeLog
 } from "@/api/warehouse/outWarehouse";
 import { getInWarehouse } from "@/api/warehouse/warehouse";
 import { listInventoryMaterialAll } from "@/api/warehouse/inventory";
@@ -651,6 +662,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 import SelectDApply from "@/components/SelectModel/SelectDApply";
+import SelectDepPurchaseApply from "@/components/SelectModel/SelectDepPurchaseApply";
 import SelectRkApply from "@/components/SelectModel/SelectRkApply";
 import outOrderPrint from "@/views/outWarehouse/audit/outOrderPrint";
 import { buildOutboundPrintRowFromDetail } from '@/views/warehouse/print/outboundPrintRow'
@@ -665,7 +677,7 @@ import {
 export default {
   name: "OutWarehouseApply",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectDApply,SelectRkApply,outOrderPrint},
+  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectDApply,SelectDepPurchaseApply,SelectRkApply,outOrderPrint},
   data() {
     return {
       docRefStatusOptions: DOC_REF_STATUS_OPTIONS,
@@ -673,6 +685,7 @@ export default {
       loading: true,
       DialogComponentShow: false,
       DialogDApplyComponentShow: false,
+      DialogDepPurchaseApplyComponentShow: false,
       DialogRkApplyComponentShow: false,
       warehouseValue: "",
       departmentValue: "",
@@ -979,6 +992,15 @@ export default {
       this.warehouseValue = this.form.warehouseId;
       this.departmentValue = this.form.departmentId;
     },
+    refDepPurchaseApply() {
+      if (this.stkIoBillEntryList.length > 0) {
+        this.$message({ message: '已有出库明细时不能引用单据', type: 'warning' });
+        return;
+      }
+      this.DialogDepPurchaseApplyComponentShow = true;
+      this.warehouseValue = this.form.warehouseId;
+      this.departmentValue = this.form.departmentId;
+    },
     refRkApply() {
       if (this.stkIoBillEntryList.length > 0) {
         this.$message({ message: '已有出库明细时不能引用单据', type: 'warning' });
@@ -1051,6 +1073,9 @@ export default {
     closeDApplyDialog() {
       //关闭“弹窗组件”
       this.DialogDApplyComponentShow = false
+    },
+    closeDepPurchaseApplyDialog() {
+      this.DialogDepPurchaseApplyComponentShow = false
     },
     closeRkApplyDialog() {
       //关闭“弹窗组件”
@@ -1178,6 +1203,30 @@ export default {
         }
       }).catch(() => {
         this.$message.error("加载仓库申请单生成出库明细失败");
+      });
+    },
+    /** 科室申购单：带出 dep_purchase_apply_id、明细 dep_pur_apply_entry_id，保存后写入 dep_pur_apply_ck_entry_ref */
+    selectDepPurchaseApplyData(row) {
+      if (!row || !row.id) return;
+      const keepCreater = this.form.createrName;
+      const keepCreateBy = this.form.createBy;
+      createCkEntriesByDepPurchaseApply({ depPurchaseApplyId: row.id }).then(response => {
+        if (response && response.data) {
+          this.form = response.data;
+          if (!this.form.createrName && keepCreater) {
+            this.form.createrName = keepCreater;
+          }
+          if (!this.form.createBy && keepCreateBy) {
+            this.form.createBy = keepCreateBy;
+          }
+          this.stkIoBillEntryList = response.data.stkIoBillEntryList || [];
+          this.$set(this.form, 'docRefList', Array.isArray(response.data.docRefList) ? response.data.docRefList : []);
+          this.form.billStatus = '1';
+          this.form.billType = '201';
+          this.DialogDepPurchaseApplyComponentShow = false;
+        }
+      }).catch(() => {
+        this.$message.error("加载科室申购单生成出库明细失败");
       });
     },
     async selectRkApplyData(val) {

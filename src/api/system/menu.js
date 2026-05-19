@@ -91,3 +91,30 @@ export function delMenu(menuId) {
     method: 'delete'
   })
 }
+
+// 批量赋权：在库租户检索
+export function searchBatchGrantTenants(query) {
+  return request({
+    url: '/system/menu/batchGrant/tenants',
+    method: 'get',
+    params: query
+  })
+}
+
+// 批量赋权：所选租户已有菜单
+export function getBatchGrantExistingMenuIds(customerIds) {
+  return request({
+    url: '/system/menu/batchGrant/existingMenuIds',
+    method: 'get',
+    params: { customerIds: Array.isArray(customerIds) ? customerIds.join(',') : customerIds }
+  })
+}
+
+// 批量赋权：提交
+export function batchGrantMenus(data) {
+  return request({
+    url: '/system/menu/batchGrant',
+    method: 'post',
+    data: data
+  })
+}

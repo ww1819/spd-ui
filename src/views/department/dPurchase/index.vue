@@ -114,7 +114,11 @@
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="制单人" align="center" prop="user.userName" width="100" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatCreatorName(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="申购状态" align="center" prop="purchaseBillStatus" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag v-if="scope.row.purchaseBillStatus != '1' && scope.row.purchaseBillStatus != 1" :options="dict.type.purchase_status" :value="scope.row.purchaseBillStatus"/>
@@ -135,6 +139,17 @@
       <el-table-column label="期望到货日期" align="center" prop="expectedDeliveryDate" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.expectedDeliveryDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核人" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatAuditPersonName(scope.row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核时间" align="center" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="isAuditedPurchase(scope.row) && scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
@@ -236,7 +251,19 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="制单人" prop="userId">
-                      <el-input v-model="form.userName" :disabled="true" placeholder="—" />
+                      <el-input :value="creatorDisplayName" :disabled="true" placeholder="—" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="8" v-if="isAuditedPurchase(form)">
+                  <el-col :span="4">
+                    <el-form-item label="审核人">
+                      <el-input :value="formatAuditPersonName(form)" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="审核时间">
+                      <el-input :value="form.auditDate ? parseTime(form.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') : '--'" :disabled="true" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -490,12 +517,57 @@ export default {
       return (this.depPurchaseApplyEntryList || [])
         .map(item => item && item.materialId)
         .filter(id => id !== null && id !== undefined && id !== '');
+    },
+    /** 制单人展示：优先中文姓名 */
+    creatorDisplayName() {
+      if (this.form.createrPersonName) {
+        return this.form.createrPersonName;
+      }
+      if (this.form.user) {
+        return this.form.user.nickName || this.form.user.userName || '';
+      }
+      return this.form.userName || '';
     }
   },
   created() {
     this.getList();
   },
   methods: {
+    formatCreatorName(row) {
+      if (!row) return '--';
+      const name = row.createrPersonName
+        || (row.user && (row.user.nickName || row.user.userName));
+      return name || '--';
+    },
+    formatAuditPersonName(row) {
+      if (!row || !this.isAuditedPurchase(row)) return '--';
+      return row.auditPersonName || '--';
+    },
+    isAuditedPurchase(row) {
+      const s = row && row.purchaseBillStatus;
+      return s === 2 || s === '2';
+    },
+    ensureFormCreatorUserId() {
+      const uid = this.$store.state.user && this.$store.state.user.userId;
+      if (uid != null && uid !== '') {
+        this.form.userId = uid;
+      }
+    },
+    /** 同步制单人/审核人展示字段 */
+    syncCreatorAndAuditDisplay(data) {
+      if (!data) return;
+      if (data.createrPersonName) {
+        this.form.userName = data.createrPersonName;
+      } else if (data.user) {
+        this.form.userName =
+          data.user.nickName || data.user.name || data.user.userName || this.form.userName;
+      } else if (!this.form.userName && data.userId) {
+        const currentUser = this.$store.state.user;
+        if (currentUser && currentUser.userId == data.userId) {
+          this.form.userName = currentUser.nickName || currentUser.name || currentUser.userName || '';
+        }
+      }
+    },
     /** 查询科室申购列表 */
     getList() {
       this.loading = true;
@@ -637,6 +709,7 @@ export default {
       const id = row.id
       getPurchase(id).then(response => {
         this.form = response.data;
+        this.syncCreatorAndAuditDisplay(response.data);
         this.depPurchaseApplyEntryList = response.data.depPurchaseApplyEntryList || [];
         this.open = true;
         this.action = false;
@@ -679,19 +752,7 @@ export default {
       const id = row.id || this.ids
       getPurchase(id).then(response => {
         this.form = response.data;
-        // 优先使用后端返回的用户中文姓名，其次使用当前登录用户信息
-        if (response.data.user) {
-          this.form.userName =
-            response.data.user.nickName ||
-            response.data.user.name ||
-            response.data.user.userName ||
-            this.form.userName;
-        } else if (!this.form.userName && this.form.userId) {
-          const currentUser = this.$store.state.user;
-          if (currentUser && currentUser.userId == this.form.userId) {
-            this.form.userName = currentUser.nickName || currentUser.name || currentUser.userName || '';
-          }
-        }
+        this.syncCreatorAndAuditDisplay(response.data);
         this.depPurchaseApplyEntryList = response.data.depPurchaseApplyEntryList || [];
         // 设置紧急程度文本显示
         this.setUrgencyLevelText(response.data.urgencyLevel);
@@ -721,6 +782,9 @@ export default {
             return;
           }
           this.form.depPurchaseApplyEntryList = this.depPurchaseApplyEntryList;
+          if (!this.form.id) {
+            this.ensureFormCreatorUserId();
+          }
           if (this.form.id != null) {
             updatePurchase(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -1062,7 +1126,9 @@ export default {
             },
             { label: '仓库', prop: 'warehouse.name' },
             { label: '科室', prop: 'department.name' },
-            { label: '制单人', prop: 'user.userName' },
+            { label: '制单人', prop: 'createrPersonName' },
+            { label: '审核人', prop: 'auditPersonName' },
+            { label: '审核时间', prop: 'auditDate' },
             {
               label: '申购状态',
               valueGetter: (row) => {

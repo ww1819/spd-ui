@@ -73,3 +73,12 @@ export function rejectPurchase(data) {
     data: data
   })
 }
+
+/** 科室申购整单作废（出库引用弹窗） */
+export function voidDepPurchaseApplyWhole(data) {
+  return request({
+    url: '/department/purchase/voidWhole',
+    method: 'post',
+    data
+  })
+}

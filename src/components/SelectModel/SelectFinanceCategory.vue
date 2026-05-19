@@ -4,7 +4,10 @@
              filterable
              :filter-method="filterMethod"
              clearable
-             :placeholder="placeholder || '财务分类编码/名称/简码搜索'"
+             :multiple="multiple"
+             :collapse-tags="multiple"
+             :collapse-tags-tooltip="multiple"
+             :placeholder="placeholder || (multiple ? '财务分类多选' : '财务分类编码/名称/简码搜索')"
              :disabled="value2"
   >
     <el-option
@@ -32,7 +35,24 @@ import { pinyin } from "pinyin-pro";
 
 export default {
   // props: ['value','size'],
-  props: ['value','value2','placeholder'],
+  props: {
+    value: {
+      type: [Number, String, Array],
+      default: null
+    },
+    value2: {
+      type: Boolean,
+      default: false
+    },
+    placeholder: {
+      type: String,
+      default: ""
+    },
+    multiple: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       // 财务分类选项
@@ -45,6 +65,9 @@ export default {
   computed: {
     financeCategory: {
       get() {
+        if (this.multiple) {
+          return Array.isArray(this.value) ? this.value : [];
+        }
         // 确保返回的值类型与选项中的value类型一致
         if (this.value != null && this.financeCategoryOptions.length > 0) {
           // 如果value是字符串，转换为数字；如果是数字，保持原样
