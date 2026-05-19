@@ -116,7 +116,7 @@
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="制单人" align="center" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.createrPersonName || (scope.row.user && (scope.row.user.nickName || scope.row.user.userName)) || '--' }}</span>
+          <span>{{ formatCreatorName(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="申购状态" align="center" prop="purchaseBillStatus" width="100" show-overflow-tooltip resizable>
@@ -141,10 +141,14 @@
           <span>{{ parseTime(scope.row.expectedDeliveryDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="审核人" align="center" prop="auditPersonName" width="100" show-overflow-tooltip resizable />
-      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核人" align="center" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span>{{ formatAuditPersonName(scope.row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核时间" align="center" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="isAuditedPurchase(scope.row) && scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -251,10 +255,10 @@
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <el-row :gutter="8" v-if="form.purchaseBillStatus == 2 || form.purchaseBillStatus === '2'">
+                <el-row :gutter="8" v-if="isAuditedPurchase(form)">
                   <el-col :span="4">
                     <el-form-item label="审核人">
-                      <el-input :value="form.auditPersonName || '--'" :disabled="true" />
+                      <el-input :value="formatAuditPersonName(form)" :disabled="true" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -529,6 +533,26 @@ export default {
     this.getList();
   },
   methods: {
+    formatCreatorName(row) {
+      if (!row) return '--';
+      const name = row.createrPersonName
+        || (row.user && (row.user.nickName || row.user.userName));
+      return name || '--';
+    },
+    formatAuditPersonName(row) {
+      if (!row || !this.isAuditedPurchase(row)) return '--';
+      return row.auditPersonName || '--';
+    },
+    isAuditedPurchase(row) {
+      const s = row && row.purchaseBillStatus;
+      return s === 2 || s === '2';
+    },
+    ensureFormCreatorUserId() {
+      const uid = this.$store.state.user && this.$store.state.user.userId;
+      if (uid != null && uid !== '') {
+        this.form.userId = uid;
+      }
+    },
     /** 同步制单人/审核人展示字段 */
     syncCreatorAndAuditDisplay(data) {
       if (!data) return;
@@ -758,6 +782,9 @@ export default {
             return;
           }
           this.form.depPurchaseApplyEntryList = this.depPurchaseApplyEntryList;
+          if (!this.form.id) {
+            this.ensureFormCreatorUserId();
+          }
           if (this.form.id != null) {
             updatePurchase(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");

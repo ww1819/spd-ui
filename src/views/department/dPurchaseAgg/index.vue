@@ -119,7 +119,11 @@
           <el-tag v-else type="info" size="small">未拆分</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="制单人" align="center" prop="user.userName" width="100" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatCreatorName(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="申购状态" align="center" prop="purchaseBillStatus" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag v-if="scope.row.purchaseBillStatus != '1' && scope.row.purchaseBillStatus != 1" :options="dict.type.purchase_status" :value="scope.row.purchaseBillStatus"/>
@@ -140,6 +144,17 @@
       <el-table-column label="期望到货日期" align="center" prop="expectedDeliveryDate" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.expectedDeliveryDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核人" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatAuditPersonName(scope.row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核时间" align="center" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="isAuditedPurchase(scope.row) && scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
@@ -500,6 +515,20 @@ export default {
     this.getList();
   },
   methods: {
+    formatCreatorName(row) {
+      if (!row) return '--';
+      const name = row.createrPersonName
+        || (row.user && (row.user.nickName || row.user.userName));
+      return name || '--';
+    },
+    formatAuditPersonName(row) {
+      if (!row || !this.isAuditedPurchase(row)) return '--';
+      return row.auditPersonName || '--';
+    },
+    isAuditedPurchase(row) {
+      const s = row && row.purchaseBillStatus;
+      return s === 2 || s === '2';
+    },
     /** 查询汇总申购列表 */
     getList() {
       this.loading = true;
