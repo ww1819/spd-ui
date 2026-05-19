@@ -184,7 +184,7 @@
       :closable="false"
       show-icon
       style="margin-bottom: 12px;"
-      title="此处保存的是工作组（岗位）权限；用户实际登录与按钮权限以「用户管理」中的用户菜单为准。列表勾选至少一个工作组后使用「同步菜单/科室/仓库」：可多选，系统会对每个已勾选工作组分别提交同步任务；支持「复制工作组权限」或「补全权限」。菜单树默认父子独立勾选，勾选「父子联动」后勾选父级会自动勾选下级。"
+      title="此处保存的是工作组（岗位）权限。菜单树左列为已有权限（锁定），右列为本次选择，父子不联动。用户实际权限以「用户管理」为准；可通过「同步菜单」将工作组权限同步给用户。"
     />
     <el-tabs type="card">
       <el-tab-pane label="菜单权限">
@@ -192,24 +192,15 @@
           <el-button size="mini" @click="handleAuthMenuAll(true)">全选</el-button>
           <el-button size="mini" @click="handleAuthMenuAll(false)">取消</el-button>
         </div>
-        <el-tree
-          ref="authMenuTree"
-          class="auth-menu-tree"
+        <menu-auth-dual-tree
+          ref="menuAuthDualTree"
+          v-model="authForm.menuIds"
           :data="menuOptions"
-          :props="defaultProps"
           node-key="id"
-          show-checkbox
-          :check-strictly="true"
-          :default-expand-all="false"
-          :expand-on-click-node="false"
-          :check-on-click-node="true"
-          @check="handleAuthMenuCheck"
-          style="max-height: 300px; overflow-y: auto;"
-        >
-          <span class="custom-tree-node" :class="{ 'menu-folder-only': data.checkable === false }" slot-scope="{ node, data }">
-            <span>{{ node.label }}</span>
-          </span>
-        </el-tree>
+          :tree-props="defaultProps"
+          :existing-menu-ids="authExistingMenuIds"
+          max-height="300px"
+        />
       </el-tab-pane>
       <el-tab-pane label="科室权限">
         <div style="margin-bottom: 8px;">
@@ -272,9 +263,11 @@ import { deptTreeSelect, getUser, updateUser } from "@/api/system/user";
 import { getOptionselect as getWarehouseOptionselect } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
 import { getToken } from "@/utils/auth";
+import MenuAuthDualTree from "@/components/MenuAuthDualTree";
 
 export default {
   name: "Post",
+  components: { MenuAuthDualTree },
   dicts: ['sys_normal_disable'],
   data() {
     return {
@@ -319,6 +312,8 @@ export default {
       savedPostPermissions: {},
       authMenuCheckAll: false,
       authMenuIndeterminate: false,
+      /** 打开授权时已有的菜单 ID（锁定展示） */
+      authExistingMenuIds: [],
       // 菜单选项
       menuOptions: [],
       // 仓库选项
@@ -883,6 +878,7 @@ export default {
           departmentIds: departmentIds,
           warehouseIds: warehouseIds
         };
+        this.authExistingMenuIds = Array.isArray(menuIds) ? menuIds.slice() : [];
         console.log('初始化授权数据 - authForm:', this.authForm);
         // 获取菜单树
         return this.getMenuTree();
@@ -926,28 +922,7 @@ export default {
         // 使用多个 nextTick 确保菜单树完全渲染
         this.$nextTick(() => {
           this.$nextTick(() => {
-            if (this.$refs.authMenuTree) {
-              const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
-              const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
-              console.log('设置菜单树选中状态 - menuIds:', menuIds);
-              this.$refs.authMenuTree.setCheckedKeys(menuIds);
-              menuIds.forEach(id => this.ensurePostAuthMenuAncestorsChecked(id));
-              this.updateAuthMenuCheckState();
-              // 如果第一次设置失败，延迟再试一次
-              setTimeout(() => {
-                if (this.$refs.authMenuTree) {
-                  const currentKeys = this.$refs.authMenuTree.getCheckedKeys();
-                  if (!currentKeys || currentKeys.length === 0) {
-                    console.log('菜单树选中状态未设置成功，重试设置');
-                    this.$refs.authMenuTree.setCheckedKeys(menuIds);
-                    menuIds.forEach(id => this.ensurePostAuthMenuAncestorsChecked(id));
-                    this.updateAuthMenuCheckState();
-                  }
-                }
-              }, 200);
-            } else {
-              console.warn('菜单树引用不存在');
-            }
+            this.applyAuthMenuSelectionFromForm();
           });
         });
       }).catch(error => {
@@ -968,6 +943,7 @@ export default {
         if (response.checkedKeys != null) {
           const keys = response.checkedKeys.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
           this.authForm.menuIds = keys;
+          this.authExistingMenuIds = keys.slice();
         }
         return response;
       });
@@ -1011,73 +987,28 @@ export default {
         return item;
       });
     },
+    applyAuthMenuSelectionFromForm() {
+      const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
+      const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
+      if (this.$refs.menuAuthDualTree) {
+        this.$refs.menuAuthDualTree.setSelectedIds(menuIds);
+      }
+      this.updateAuthMenuCheckState(menuIds, []);
+    },
     /** 授权菜单全选/取消 */
     handleAuthMenuAll(val) {
-      if (this.$refs.authMenuTree) {
-        if (val) {
-          const allMenuIds = this.getCheckableMenuIds(this.menuOptions);
-          this.$refs.authMenuTree.setCheckedKeys(allMenuIds);
-          this.authForm.menuIds = allMenuIds;
-        } else {
-          this.$refs.authMenuTree.setCheckedKeys([]);
-          this.authForm.menuIds = [];
-        }
-        this.updateAuthMenuCheckState();
-      }
-    },
-    /** 授权菜单选择变化（父子独立：勾选子级时仅向上补齐父链路；取消时按需回收父级） */
-    handleAuthMenuCheck(data, checked) {
-      if (!this.$refs.authMenuTree || !data) {
-        return;
-      }
-      const checkedKeys = (checked && checked.checkedKeys) ? checked.checkedKeys : (this.$refs.authMenuTree.getCheckedKeys() || []);
-      const currentId = data.id;
-      const isNowChecked = Array.isArray(checkedKeys) && checkedKeys.includes(currentId);
-      if (isNowChecked) {
-        this.ensurePostAuthMenuAncestorsChecked(currentId);
+      if (!this.$refs.menuAuthDualTree) return;
+      if (val) {
+        this.$refs.menuAuthDualTree.selectAllCheckable();
       } else {
-        this.cleanupPostAuthMenuAncestorsUnchecked(currentId);
+        this.$refs.menuAuthDualTree.clearSelection();
       }
-      const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
-      const finalCheckedKeys = (this.$refs.authMenuTree.getCheckedKeys() || [])
-        .map(id => Number(id)).filter(id => !isNaN(id) && allowed.has(id));
-      this.authForm.menuIds = finalCheckedKeys;
-      this.updateAuthMenuCheckState(finalCheckedKeys, []);
-    },
-    ensurePostAuthMenuAncestorsChecked(nodeId) {
-      if (!this.$refs.authMenuTree) return;
-      const node = this.$refs.authMenuTree.getNode(nodeId);
-      if (!node) return;
-      let p = node.parent;
-      while (p && p.data && p.data.id != null) {
-        if (p.data.checkable !== false) {
-          this.$refs.authMenuTree.setChecked(p.data.id, true, false);
-        }
-        p = p.parent;
-      }
-    },
-    cleanupPostAuthMenuAncestorsUnchecked(nodeId) {
-      if (!this.$refs.authMenuTree) return;
-      const node = this.$refs.authMenuTree.getNode(nodeId);
-      if (!node) return;
-      let p = node.parent;
-      while (p && p.data && p.data.id != null) {
-        if (p.data.checkable === false) {
-          p = p.parent;
-          continue;
-        }
-        const anyChildChecked = (p.childNodes || []).some(c => c.checked || c.indeterminate);
-        if (anyChildChecked) {
-          break;
-        }
-        this.$refs.authMenuTree.setChecked(p.data.id, false, false);
-        p = p.parent;
-      }
+      this.updateAuthMenuCheckState(this.authForm.menuIds, []);
     },
     /** 更新授权菜单全选/半选状态 */
     updateAuthMenuCheckState(checkedKeysParam, halfCheckedKeysParam) {
-      const checkedKeys = checkedKeysParam || (this.$refs.authMenuTree ? this.$refs.authMenuTree.getCheckedKeys() : []);
-      const halfCheckedKeys = halfCheckedKeysParam || (this.$refs.authMenuTree ? this.$refs.authMenuTree.getHalfCheckedKeys() : []);
+      const checkedKeys = checkedKeysParam || (this.$refs.menuAuthDualTree ? this.$refs.menuAuthDualTree.getSelectedIds() : (this.authForm.menuIds || []));
+      const halfCheckedKeys = halfCheckedKeysParam || [];
       const allMenuIds = this.getCheckableMenuIds(this.menuOptions);
       if (!checkedKeys || checkedKeys.length === 0) {
         this.authMenuCheckAll = false;
@@ -1110,8 +1041,11 @@ export default {
     submitAuth() {
       const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
       // 确保 menuIds 是数字数组，且仅保留客户已开通可勾选节点
-      const menuIds = Array.isArray(this.authForm.menuIds)
-        ? this.authForm.menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id))
+      const rawMenuIds = this.$refs.menuAuthDualTree
+        ? this.$refs.menuAuthDualTree.getSelectedIds()
+        : (this.authForm.menuIds || []);
+      const menuIds = Array.isArray(rawMenuIds)
+        ? rawMenuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id))
         : [];
       
       const departmentIds = Array.isArray(this.authForm.departmentIds)
@@ -1164,16 +1098,8 @@ export default {
           this.authForm.menuIds = post.menuIds || [];
           this.authForm.departmentIds = post.departmentIds || [];
           this.authForm.warehouseIds = post.warehouseIds || [];
-          // 更新菜单树选中状态
-          this.$nextTick(() => {
-            if (this.$refs.authMenuTree) {
-              const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
-              const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
-              this.$refs.authMenuTree.setCheckedKeys(menuIds);
-              menuIds.forEach(id => this.ensurePostAuthMenuAncestorsChecked(id));
-              this.updateAuthMenuCheckState();
-            }
-          });
+          this.authExistingMenuIds = Array.isArray(post.menuIds) ? post.menuIds.slice() : [];
+          this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
         } else if (post.remark) {
           // 兼容旧数据：如果新字段为空，尝试从remark字段解析
           try {
@@ -1182,17 +1108,8 @@ export default {
             this.authForm.menuIds = savedPermissions.menuIds || [];
             this.authForm.departmentIds = savedPermissions.departmentIds || [];
             this.authForm.warehouseIds = savedPermissions.warehouseIds || [];
-            // 更新菜单树选中状态
-            this.$nextTick(() => {
-              if (this.$refs.authMenuTree) {
-                const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
-                const menuIds = (this.authForm.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
-                console.log('更新菜单树选中状态 - menuIds:', menuIds);
-                this.$refs.authMenuTree.setCheckedKeys(menuIds);
-                menuIds.forEach(id => this.ensurePostAuthMenuAncestorsChecked(id));
-                this.updateAuthMenuCheckState();
-              }
-            });
+            this.authExistingMenuIds = Array.isArray(savedPermissions.menuIds) ? savedPermissions.menuIds.slice() : [];
+            this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
           } catch (e) {
             console.error('解析保存的权限失败:', e);
           }

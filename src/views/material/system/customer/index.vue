@@ -134,16 +134,25 @@
         <el-button @click="openFullInit = false">取 消</el-button>
       </div>
     </el-dialog>
-    <el-dialog title="耗材客户权限" :visible.sync="openMenu" width="480px" append-to-body>
+    <el-dialog title="耗材客户权限" :visible.sync="openMenu" width="560px" append-to-body>
       <el-form label-width="80px">
         <el-form-item label="客户名称"><el-input v-model="menuForm.customerName" disabled /></el-form-item>
         <el-form-item>
           <el-checkbox v-model="menuExpand" @change="handleMenuTreeExpand">展开/折叠</el-checkbox>
-          <el-checkbox v-model="menuNodeAll" @change="handleMenuTreeNodeAll">全选/全不选</el-checkbox>
-          <el-checkbox v-model="menuParentChildLinked" @change="handleMenuTreeConnect">父子联动</el-checkbox>
+          <el-button size="mini" style="margin-left: 8px;" @click="handleMenuSelectAll(true)">全选</el-button>
+          <el-button size="mini" @click="handleMenuSelectAll(false)">全不选</el-button>
         </el-form-item>
-        <el-form-item>
-          <el-tree class="tree-border" :data="menuOptions" show-checkbox ref="menuTree" node-key="menuId" :check-strictly="!menuParentChildLinked" :default-expand-all="menuExpand" empty-text="加载中，请稍候" :props="{ label: 'menuName', children: 'children' }" />
+        <el-form-item label-width="0">
+          <menu-auth-dual-tree
+            ref="menuAuthDualTree"
+            v-model="menuSelectedIds"
+            :data="menuOptions"
+            node-key="menuId"
+            :tree-props="{ label: 'menuName', children: 'children' }"
+            :existing-menu-ids="menuExistingIds"
+            :default-expand-all="menuExpand"
+            max-height="360px"
+          />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -157,9 +166,11 @@
 <script>
 import { addCustomer, delCustomer, getTenantEnumList } from '@/api/system/customer'
 import { listHcCustomers, getHcCustomer, updateHcCustomer, changeHcStatus, getCustomerStatusLogs, getCustomerPeriodLogs, treeselectHcMenu, getHcCustomerMenuIds, saveHcCustomerMenus, resetEquipmentFunctions, resetMaterialFunctions, initFullDatabase, purgeConsumablesData, purgeEquipmentData } from '@/api/material/customer'
+import MenuAuthDualTree from '@/components/MenuAuthDualTree'
 
 export default {
   name: 'HcCustomer',
+  components: { MenuAuthDualTree },
   dicts: ['sys_normal_disable'],
   data() {
     return {
@@ -184,9 +195,8 @@ export default {
       periodLogList: [],
       menuOptions: [],
       menuExpand: false,
-      menuNodeAll: false,
-      /** false=父子独立勾选（默认），避免无客户权限的节点因父级联动显示为已选 */
-      menuParentChildLinked: false,
+      menuExistingIds: [],
+      menuSelectedIds: [],
       menuForm: { customerId: '', customerName: '' },
       openFullInit: false,
       fullInitTokenInput: '',
@@ -267,7 +277,11 @@ export default {
         const ids = idsRes.data || []
         const allowed = this.collectCustomerMenuTreeIds(this.menuOptions)
         const filtered = ids.map(String).filter(id => allowed.has(id))
-        this.$nextTick(() => { if (this.$refs.menuTree) this.$refs.menuTree.setCheckedKeys(filtered) })
+        this.menuExistingIds = filtered.slice()
+        this.menuSelectedIds = filtered.map(id => {
+          const n = Number(id)
+          return isNaN(n) ? id : n
+        })
       })
     },
     mapTreeToMenuKeys(nodes) {
@@ -278,9 +292,14 @@ export default {
         children: n.children && n.children.length ? this.mapTreeToMenuKeys(n.children) : undefined
       }))
     },
-    handleMenuTreeExpand(v) { const tree = this.$refs.menuTree; if (!tree) return; const nodes = (tree.store && tree.store.nodesMap) ? Object.values(tree.store.nodesMap) : []; nodes.forEach(n => { n.expanded = v }) },
-    handleMenuTreeNodeAll(v) { const tree = this.$refs.menuTree; if (!tree) return; if (v) tree.setCheckedNodes(this.menuOptions); else tree.setCheckedKeys([]) },
-    handleMenuTreeConnect(v) { this.menuParentChildLinked = !!v },
+    handleMenuTreeExpand(v) {
+      if (this.$refs.menuAuthDualTree) this.$refs.menuAuthDualTree.setExpandAll(!!v)
+    },
+    handleMenuSelectAll(v) {
+      if (!this.$refs.menuAuthDualTree) return
+      if (v) this.$refs.menuAuthDualTree.selectAllCheckable()
+      else this.$refs.menuAuthDualTree.clearSelection()
+    },
     handleChangeStatus(row, status) {
       this.statusForm = { customerId: row.customerId, customerName: row.customerName, status: status, statusChangeReason: '' }
       this.statusDialogTitle = status === '0' ? '启用客户' : '停用客户'
@@ -340,10 +359,10 @@ export default {
       }).catch(() => {})
     },
     submitMenuForm() {
-      const tree = this.$refs.menuTree
-      const checkedKeys = tree.getCheckedKeys()
-      const halfKeys = this.menuParentChildLinked ? (tree.getHalfCheckedKeys() || []) : []
-      const menuIds = [...checkedKeys, ...halfKeys].map(String)
+      const menuIds = (this.$refs.menuAuthDualTree
+        ? this.$refs.menuAuthDualTree.getSelectedIds()
+        : this.menuSelectedIds || []
+      ).map(String)
       saveHcCustomerMenus(this.menuForm.customerId, menuIds).then(() => { this.$modal.msgSuccess('保存成功'); this.openMenu = false })
     }
   }
