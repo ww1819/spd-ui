@@ -231,7 +231,6 @@
         <el-button
           type="primary"
           size="medium"
-          :disabled="multiple"
           @click="openBatchUpdateDialog"
           v-hasPermi="['foundation:material:edit']"
         >批量修改</el-button>
@@ -289,8 +288,8 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </el-row>
 
-      <el-table v-loading="loading" :data="materialList" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="60vh" border stripe>
-      <el-table-column type="selection" width="55" align="center" fixed="left" />
+      <el-table ref="materialTable" v-loading="loading" :data="materialList" :row-key="getMaterialRowKey" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="60vh" border stripe>
+      <el-table-column type="selection" width="55" align="center" fixed="left" :reserve-selection="true" />
       <el-table-column type="index" label="序号" align="center" width="80" key="index" v-if="columns[0].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
@@ -1360,7 +1359,7 @@
         :closable="false"
         show-icon
         style="margin-bottom: 16px;"
-        :title="'已选 ' + (ids ? ids.length : 0) + ' 条；留空的项不修改'"
+        :title="'已跨页选中 ' + crossPageSelectedCount + ' 条；当前查询共 ' + (total || 0) + ' 条；留空的项不修改'"
       />
       <el-form ref="batchUpdateForm" :model="batchUpdateDialog.form" label-width="100px" size="small">
         <el-form-item label="库房分类">
@@ -1524,14 +1523,19 @@ export default {
     },
     isViewMode() {
       return this.dialogMode === 'view';
+    },
+    crossPageSelectedCount() {
+      return Object.keys(this.selectedRowMap || {}).length;
     }
   },
   data() {
     return {
       // 遮罩层
       loading: true,
-      // 选中数组
+      // 选中数组（当前页同步；跨页完整集合见 selectedRowMap）
       ids: [],
+      /** 跨页勾选缓存：key 为 material.id */
+      selectedRowMap: {},
       batchUpdateDialog: {
         visible: false,
         loading: false,
@@ -1857,7 +1861,45 @@ export default {
         this.materialList = response.rows;
         this.total = response.total;
         this.loading = false;
+        this.$nextTick(() => this.restorePageSelection());
       });
+    },
+    getMaterialRowKey(row) {
+      return row && row.id != null ? String(row.id) : null;
+    },
+    getCrossPageSelectedIds() {
+      return Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key);
+        return Number.isNaN(n) ? key : n;
+      });
+    },
+    restorePageSelection() {
+      const table = this.$refs.materialTable;
+      if (!table || !this.materialList || this.materialList.length === 0) {
+        return;
+      }
+      this.materialList.forEach((row) => {
+        const key = this.getMaterialRowKey(row);
+        if (key && this.selectedRowMap[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
+    clearCrossPageSelection() {
+      this.selectedRowMap = {};
+      this.ids = [];
+      this.single = true;
+      this.multiple = true;
+      const table = this.$refs.materialTable;
+      if (table) {
+        table.clearSelection();
+      }
+    },
+    syncSelectionStateFromMap() {
+      const ids = this.getCrossPageSelectedIds();
+      this.ids = ids;
+      this.single = ids.length !== 1;
+      this.multiple = !ids.length;
     },
     // 取消按钮
     cancel() {
@@ -1976,6 +2018,7 @@ export default {
     handleQuery() {
       this.queryParams.udiNo = sanitizeUdiNo(this.queryParams.udiNo);
       this.queryParams.pageNum = 1;
+      this.clearCrossPageSelection();
       this.getList();
     },
     onQueryUdiNoBlur() {
@@ -2077,11 +2120,23 @@ export default {
         this.upload.isUploading = false;
       }
     },
-    // 多选框选中数据
+    // 多选框选中数据（跨页缓存）
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      const pageKeys = (this.materialList || [])
+        .map((row) => this.getMaterialRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          delete this.selectedRowMap[key];
+        }
+      });
+      (selection || []).forEach((row) => {
+        const key = this.getMaterialRowKey(row);
+        if (key) {
+          this.selectedRowMap[key] = row;
+        }
+      });
+      this.syncSelectionStateFromMap();
     },
     /** 按库房分类规则生成编码（衡水三院：GZ/DZ/SJ+5位；其他租户：6位数字） */
     async generateCode() {
@@ -2570,12 +2625,98 @@ export default {
       }).catch(() => {});
     },
     openBatchUpdateDialog() {
-      if (!this.ids || this.ids.length === 0) {
-        this.$modal.msgWarning("请先选择要批量修改的产品档案");
+      if (!this.total || this.total <= 0) {
+        this.$modal.msgWarning("当前查询没有可批量修改的产品档案，请先搜索");
         return;
       }
       this.resetBatchUpdateForm();
       this.batchUpdateDialog.visible = true;
+    },
+    buildBatchUpdatePatchPayload() {
+      const f = this.batchUpdateDialog.form;
+      const payload = {};
+      let hasField = false;
+      const assignIfSet = (key, val) => {
+        if (val != null && val !== "") {
+          payload[key] = val;
+          hasField = true;
+        }
+      };
+      assignIfSet("storeroomId", f.storeroomId);
+      assignIfSet("financeCategoryId", f.financeCategoryId);
+      assignIfSet("materialCategoryId", f.materialCategoryId);
+      assignIfSet("isUse", f.isUse);
+      assignIfSet("isBilling", f.isBilling);
+      assignIfSet("isGz", f.isGz);
+      assignIfSet("isFollow", f.isFollow);
+      assignIfSet("isProcure", f.isProcure);
+      assignIfSet("isSunshineProcurement", f.isSunshineProcurement);
+      return { payload, hasField };
+    },
+    promptBatchUpdateScope() {
+      const selectedCount = this.crossPageSelectedCount || 0;
+      const totalCount = Number(this.total) || 0;
+      if (selectedCount === 0 && totalCount === 0) {
+        this.$modal.msgWarning("当前没有可更新的产品档案");
+        return Promise.reject("empty");
+      }
+      if (selectedCount > 0 && totalCount > 0) {
+        return this.$msgbox({
+          title: "选择更新范围",
+          message: `当前查询共 ${totalCount} 条；已跨页选中 ${selectedCount} 条。请选择要更新的范围：`,
+          showCancelButton: true,
+          showConfirmButton: true,
+          distinguishCancelAndClose: true,
+          confirmButtonText: `仅更新选中（${selectedCount}条）`,
+          cancelButtonText: `更新查询全部（${totalCount}条）`,
+          type: "warning"
+        })
+          .then(() => "selected")
+          .catch((action) => {
+            if (action === "cancel") {
+              return "all";
+            }
+            return Promise.reject(action);
+          });
+      }
+      if (selectedCount > 0) {
+        return this.$modal
+          .confirm(`确认仅更新选中的 ${selectedCount} 条产品档案？`)
+          .then(() => "selected");
+      }
+      return this.$modal
+        .confirm(`未勾选记录，确认更新当前查询结果全部 ${totalCount} 条产品档案？`)
+        .then(() => "all");
+    },
+    runBatchUpdate(scope) {
+      const { payload, hasField } = this.buildBatchUpdatePatchPayload();
+      if (!hasField) {
+        this.$modal.msgWarning("请至少选择一项要修改的内容");
+        return Promise.reject("no-field");
+      }
+      const requestBody = { ...payload };
+      if (scope === "all") {
+        const totalCount = Number(this.total) || 0;
+        if (totalCount > 5000) {
+          return this.$modal
+            .confirm(`当前查询共 ${totalCount} 条，批量修改可能耗时较长，是否继续？`)
+            .then(() => {
+              requestBody.updateAll = true;
+              requestBody.queryCriteria = this.buildMaterialQueryParams(false);
+              return batchUpdateMaterial(requestBody);
+            });
+        }
+        requestBody.updateAll = true;
+        requestBody.queryCriteria = this.buildMaterialQueryParams(false);
+      } else {
+        const ids = this.getCrossPageSelectedIds();
+        if (!ids || ids.length === 0) {
+          this.$modal.msgWarning("请先勾选要批量修改的产品档案");
+          return Promise.reject("no-selection");
+        }
+        requestBody.ids = ids;
+      }
+      return batchUpdateMaterial(requestBody);
     },
     resetBatchUpdateForm() {
       this.batchUpdateDialog.form = {
@@ -2591,59 +2732,26 @@ export default {
       };
     },
     submitBatchUpdate() {
-      const f = this.batchUpdateDialog.form;
-      const payload = { ids: this.ids };
-      let hasField = false;
-      if (f.storeroomId != null && f.storeroomId !== "") {
-        payload.storeroomId = f.storeroomId;
-        hasField = true;
-      }
-      if (f.financeCategoryId != null && f.financeCategoryId !== "") {
-        payload.financeCategoryId = f.financeCategoryId;
-        hasField = true;
-      }
-      if (f.materialCategoryId != null && f.materialCategoryId !== "") {
-        payload.materialCategoryId = f.materialCategoryId;
-        hasField = true;
-      }
-      if (f.isUse != null && f.isUse !== "") {
-        payload.isUse = f.isUse;
-        hasField = true;
-      }
-      if (f.isBilling != null && f.isBilling !== "") {
-        payload.isBilling = f.isBilling;
-        hasField = true;
-      }
-      if (f.isGz != null && f.isGz !== "") {
-        payload.isGz = f.isGz;
-        hasField = true;
-      }
-      if (f.isFollow != null && f.isFollow !== "") {
-        payload.isFollow = f.isFollow;
-        hasField = true;
-      }
-      if (f.isProcure != null && f.isProcure !== "") {
-        payload.isProcure = f.isProcure;
-        hasField = true;
-      }
-      if (f.isSunshineProcurement != null && f.isSunshineProcurement !== "") {
-        payload.isSunshineProcurement = f.isSunshineProcurement;
-        hasField = true;
-      }
+      const { hasField } = this.buildBatchUpdatePatchPayload();
       if (!hasField) {
         this.$modal.msgWarning("请至少选择一项要修改的内容");
         return;
       }
-      this.$modal.confirm("确认对选中的 " + this.ids.length + " 条产品档案执行批量修改？").then(() => {
-        this.batchUpdateDialog.loading = true;
-        return batchUpdateMaterial(payload);
-      }).then(() => {
-        this.$modal.msgSuccess("批量修改成功");
-        this.batchUpdateDialog.visible = false;
-        this.getList();
-      }).catch(() => {}).finally(() => {
-        this.batchUpdateDialog.loading = false;
-      });
+      this.promptBatchUpdateScope()
+        .then((scope) => {
+          this.batchUpdateDialog.loading = true;
+          return this.runBatchUpdate(scope);
+        })
+        .then(() => {
+          this.$modal.msgSuccess("批量修改成功");
+          this.batchUpdateDialog.visible = false;
+          this.clearCrossPageSelection();
+          this.getList();
+        })
+        .catch(() => {})
+        .finally(() => {
+          this.batchUpdateDialog.loading = false;
+        });
     },
     /** 推送档案按钮操作 */
     handlePushArchive() {
