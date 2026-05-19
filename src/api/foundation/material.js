@@ -3,6 +3,9 @@ import request from '@/utils/request'
 /** 耗材导入（校验/落库）数据量大时耗时较长，需大于默认 10s 与 devServer proxy 超时 */
 const MATERIAL_IMPORT_TIMEOUT_MS = 300000
 
+/** 产品档案批量修改（可能数千条） */
+const MATERIAL_BATCH_UPDATE_TIMEOUT_MS = 600000
+
 // 查询耗材产品列表（GET）
 export function listMaterial(query) {
   return request({
@@ -162,7 +165,8 @@ export function batchUpdateMaterial(data) {
   return request({
     url: '/foundation/material/batchUpdate',
     method: 'post',
-    data
+    data,
+    timeout: MATERIAL_BATCH_UPDATE_TIMEOUT_MS
   })
 }
 

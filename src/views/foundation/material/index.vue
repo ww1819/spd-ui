@@ -2742,8 +2742,8 @@ export default {
           this.batchUpdateDialog.loading = true;
           return this.runBatchUpdate(scope);
         })
-        .then(() => {
-          this.$modal.msgSuccess("批量修改成功");
+        .then((res) => {
+          this.$modal.msgSuccess((res && res.msg) || "批量修改成功");
           this.batchUpdateDialog.visible = false;
           this.clearCrossPageSelection();
           this.getList();
