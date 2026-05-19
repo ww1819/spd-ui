@@ -184,13 +184,14 @@
       :closable="false"
       show-icon
       style="margin-bottom: 12px;"
-      title="此处保存的是工作组（岗位）权限。菜单树左列为已有权限（锁定），右列为本次选择，父子不联动。用户实际权限以「用户管理」为准；可通过「同步菜单」将工作组权限同步给用户。"
+      title="此处保存的是工作组（岗位）权限。左列已有权限（锁定），右列本次选择；可勾选「父子联动」控制是否级联勾选。用户实际权限以「用户管理」为准。"
     />
     <el-tabs type="card">
       <el-tab-pane label="菜单权限">
         <div style="margin-bottom: 8px;">
           <el-button size="mini" @click="handleAuthMenuAll(true)">全选</el-button>
           <el-button size="mini" @click="handleAuthMenuAll(false)">取消</el-button>
+          <el-checkbox v-model="authMenuParentChildLinked" style="margin-left: 12px;">父子联动</el-checkbox>
         </div>
         <menu-auth-dual-tree
           ref="menuAuthDualTree"
@@ -199,6 +200,7 @@
           node-key="id"
           :tree-props="defaultProps"
           :existing-menu-ids="authExistingMenuIds"
+          :parent-child-linked="authMenuParentChildLinked"
           max-height="300px"
         />
       </el-tab-pane>
@@ -314,6 +316,7 @@ export default {
       authMenuIndeterminate: false,
       /** 打开授权时已有的菜单 ID（锁定展示） */
       authExistingMenuIds: [],
+      authMenuParentChildLinked: false,
       // 菜单选项
       menuOptions: [],
       // 仓库选项

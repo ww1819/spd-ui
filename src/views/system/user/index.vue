@@ -468,6 +468,7 @@
         <div style="margin-bottom: 8px;">
           <el-button size="mini" @click="handleAuthMenuAll(true)">全选</el-button>
           <el-button size="mini" @click="handleAuthMenuAll(false)">取消</el-button>
+          <el-checkbox v-model="authMenuParentChildLinked" style="margin-left: 12px;">父子联动</el-checkbox>
         </div>
         <menu-auth-dual-tree
           ref="menuAuthDualTree"
@@ -476,6 +477,7 @@
           node-key="id"
           :tree-props="defaultProps"
           :existing-menu-ids="authExistingMenuIds"
+          :parent-child-linked="authMenuParentChildLinked"
           max-height="300px"
         />
       </el-tab-pane>
@@ -700,6 +702,7 @@ export default {
       authMenuCheckAll: false,
       authMenuIndeterminate: false,
       authExistingMenuIds: [],
+      authMenuParentChildLinked: false,
       // 表单参数
       form: {},
       defaultProps: {

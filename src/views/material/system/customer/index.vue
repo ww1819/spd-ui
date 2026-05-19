@@ -141,6 +141,7 @@
           <el-checkbox v-model="menuExpand" @change="handleMenuTreeExpand">展开/折叠</el-checkbox>
           <el-button size="mini" style="margin-left: 8px;" @click="handleMenuSelectAll(true)">全选</el-button>
           <el-button size="mini" @click="handleMenuSelectAll(false)">全不选</el-button>
+          <el-checkbox v-model="menuParentChildLinked" style="margin-left: 12px;">父子联动</el-checkbox>
         </el-form-item>
         <el-form-item label-width="0">
           <menu-auth-dual-tree
@@ -150,6 +151,7 @@
             node-key="menuId"
             :tree-props="{ label: 'menuName', children: 'children' }"
             :existing-menu-ids="menuExistingIds"
+            :parent-child-linked="menuParentChildLinked"
             :default-expand-all="menuExpand"
             max-height="360px"
           />
@@ -195,6 +197,7 @@ export default {
       periodLogList: [],
       menuOptions: [],
       menuExpand: false,
+      menuParentChildLinked: false,
       menuExistingIds: [],
       menuSelectedIds: [],
       menuForm: { customerId: '', customerName: '' },

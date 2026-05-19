@@ -24,7 +24,8 @@
         />
         <el-checkbox
           class="legend-col legend-select"
-          :value="isSelected(nodeData)"
+          :value="isSelectChecked(nodeData)"
+          :indeterminate="isSelectIndeterminate(nodeData)"
           :disabled="!isNodeSelectable(nodeData)"
           @change="val => toggleSelect(nodeData, val)"
         />
@@ -44,6 +45,8 @@ export default {
     value: { type: Array, default: () => [] },
     /** 打开弹窗时已有的菜单 ID（锁定展示，不随本次勾选变化） */
     existingMenuIds: { type: Array, default: () => [] },
+    /** 开启后勾选父级自动勾选子孙，勾选子级自动勾选父级；关闭则仅勾选当前节点 */
+    parentChildLinked: { type: Boolean, default: false },
     nodeKey: { type: String, default: 'id' },
     treeProps: {
       type: Object,
@@ -68,6 +71,9 @@ export default {
         if (id != null && id !== '') s.add(String(id));
       });
       return s;
+    },
+    childrenKey() {
+      return (this.treeProps && this.treeProps.children) || 'children';
     }
   },
   watch: {
@@ -92,9 +98,37 @@ export default {
       const id = this.resolveNodeId(nodeData);
       return id != null && this.existingSet.has(id);
     },
-    isSelected(nodeData) {
-      const id = this.resolveNodeId(nodeData);
-      return id != null && !!this.selectedMap[id];
+    /** 当前节点及全部可勾选子孙 ID */
+    getSelectableSubtreeIds(nodeData) {
+      const ids = [];
+      if (!nodeData) return ids;
+      if (this.isNodeSelectable(nodeData)) {
+        const id = this.resolveNodeId(nodeData);
+        if (id) ids.push(id);
+      }
+      const children = nodeData[this.childrenKey] || [];
+      children.forEach(child => {
+        ids.push(...this.getSelectableSubtreeIds(child));
+      });
+      return ids;
+    },
+    hasSelectableChildren(nodeData) {
+      const children = nodeData && nodeData[this.childrenKey];
+      if (!children || !children.length) return false;
+      return this.getSelectableSubtreeIds(nodeData).length > 1;
+    },
+    isSelectChecked(nodeData) {
+      const ids = this.parentChildLinked && this.hasSelectableChildren(nodeData)
+        ? this.getSelectableSubtreeIds(nodeData)
+        : [this.resolveNodeId(nodeData)].filter(Boolean);
+      if (!ids.length) return false;
+      return ids.every(id => !!this.selectedMap[id]);
+    },
+    isSelectIndeterminate(nodeData) {
+      if (!this.parentChildLinked || !this.hasSelectableChildren(nodeData)) return false;
+      const ids = this.getSelectableSubtreeIds(nodeData);
+      const n = ids.filter(id => !!this.selectedMap[id]).length;
+      return n > 0 && n < ids.length;
     },
     syncSelectedFromValue(ids) {
       const map = {};
@@ -113,11 +147,64 @@ export default {
       this.$emit('input', ids);
       this.$emit('change', ids);
     },
+    setSelectedForIds(ids, checked) {
+      (ids || []).forEach(id => {
+        if (id != null && id !== '') {
+          this.$set(this.selectedMap, String(id), !!checked);
+        }
+      });
+    },
+    getAncestorSelectableIds(nodeData) {
+      const tree = this.$refs.tree;
+      if (!tree || !nodeData) return [];
+      const node = tree.getNode(this.resolveNodeId(nodeData));
+      if (!node) return [];
+      const ids = [];
+      let p = node.parent;
+      while (p && p.data) {
+        const pid = this.resolveNodeId(p.data);
+        if (pid && this.isNodeSelectable(p.data)) {
+          ids.push(pid);
+        }
+        p = p.parent;
+      }
+      return ids;
+    },
+    cleanupAncestorsAfterUncheck(nodeData) {
+      const tree = this.$refs.tree;
+      if (!tree || !nodeData) return;
+      const node = tree.getNode(this.resolveNodeId(nodeData));
+      if (!node) return;
+      let p = node.parent;
+      while (p && p.data) {
+        if (!this.isNodeSelectable(p.data)) {
+          p = p.parent;
+          continue;
+        }
+        const anyChildSelected = (p.childNodes || []).some(c => {
+          const cid = c.data ? this.resolveNodeId(c.data) : null;
+          return cid && !!this.selectedMap[cid];
+        });
+        if (anyChildSelected) break;
+        const pid = this.resolveNodeId(p.data);
+        if (pid) this.$set(this.selectedMap, pid, false);
+        p = p.parent;
+      }
+    },
     toggleSelect(nodeData, checked) {
       if (!this.isNodeSelectable(nodeData)) return;
-      const id = this.resolveNodeId(nodeData);
-      if (!id) return;
-      this.$set(this.selectedMap, id, !!checked);
+      if (this.parentChildLinked) {
+        const subtreeIds = this.getSelectableSubtreeIds(nodeData);
+        this.setSelectedForIds(subtreeIds, checked);
+        if (checked) {
+          this.setSelectedForIds(this.getAncestorSelectableIds(nodeData), true);
+        } else {
+          this.cleanupAncestorsAfterUncheck(nodeData);
+        }
+      } else {
+        const id = this.resolveNodeId(nodeData);
+        if (id) this.$set(this.selectedMap, id, !!checked);
+      }
       this.emitValue();
     },
     getSelectedIds() {
@@ -143,9 +230,9 @@ export default {
             list.push(isNaN(num) ? id : num);
           }
         }
-        const chKey = (this.treeProps && this.treeProps.children) || 'children';
-        if (n[chKey] && n[chKey].length) {
-          this.getCheckableIds(n[chKey], list);
+        const ch = n[this.childrenKey];
+        if (ch && ch.length) {
+          this.getCheckableIds(ch, list);
         }
       });
       return list;
