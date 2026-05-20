@@ -92,15 +92,9 @@
             <el-button
               type="success"
               plain
-              @click="openFetchDialog('IN')"
-              v-hasPermi="['department:patientCharge:fetchInpatient']"
-            >住院收费抓取</el-button>
-            <el-button
-              type="success"
-              plain
-              @click="openFetchDialog('OUT')"
-              v-hasPermi="['department:patientCharge:fetchOutpatient']"
-            >门诊收费抓取</el-button>
+              @click="openFetchDialog"
+              v-hasPermi="['department:patientCharge:fetchInpatient', 'department:patientCharge:fetchOutpatient']"
+            >HIS收费数据抓取</el-button>
           </el-form-item>
         </el-form>
         </div>
@@ -323,7 +317,7 @@
             default-time="23:59:59"
           />
         </el-form-item>
-        <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
+        <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；确定后先执行住院抓取，再执行门诊抓取；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="fetchDialogVisible = false">取 消</el-button>
@@ -335,6 +329,7 @@
 
 <script>
 import { parseTime } from '@/utils/ruoyi'
+import { checkPermi } from '@/utils/permission'
 import { listdepartAll } from '@/api/foundation/depart'
 import {
   listInpatientMirror,
@@ -386,7 +381,6 @@ export default {
       },
       fetchDialogVisible: false,
       fetchSubmitting: false,
-      fetchKind: 'IN',
       fetchForm: {
         beginDate: undefined,
         endDate: undefined
@@ -407,7 +401,7 @@ export default {
   },
   computed: {
     fetchDialogTitle() {
-      return this.fetchKind === 'IN' ? '住院收费数据抓取' : '门诊收费数据抓取'
+      return 'HIS收费数据抓取'
     },
     currentVisitKind() {
       if (this.detailVisitType === 'IN') return 'INPATIENT'
@@ -599,8 +593,7 @@ export default {
         this.summaryList = res.rows || []
       }).finally(() => { this.summaryLoading = false })
     },
-    openFetchDialog(kind) {
-      this.fetchKind = kind
+    openFetchDialog() {
       const day = parseTime(new Date(), '{y}-{m}-{d}')
       this.fetchForm = {
         beginDate: `${day} 00:00:00`,
@@ -728,22 +721,51 @@ export default {
         this.handleDetailQuery()
       }).finally(() => { this.highSubmitting = false })
     },
+    formatFetchResult(label, d) {
+      const data = d || {}
+      return `${label} 批次 ${data.fetchBatchId || ''}：新增 ${data.insertedCount || 0}，跳过 ${data.skippedCount || 0}，指纹不一致 ${data.driftCount || 0}`
+    },
     submitFetch() {
       if (!this.fetchForm.beginDate || !this.fetchForm.endDate) {
         this.$modal.msgWarning('请选择起止时间')
         return
       }
+      const canIn = checkPermi(['department:patientCharge:fetchInpatient'])
+      const canOut = checkPermi(['department:patientCharge:fetchOutpatient'])
+      if (!canIn && !canOut) {
+        this.$modal.msgWarning('无住院/门诊抓取权限')
+        return
+      }
       this.fetchSubmitting = true
       const body = { beginDate: this.fetchForm.beginDate, endDate: this.fetchForm.endDate }
-      const req = this.fetchKind === 'IN' ? fetchInpatientMirror(body) : fetchOutpatientMirror(body)
-      req.then(res => {
-        const d = res.data || {}
-        this.$modal.msgSuccess(
-          `批次 ${d.fetchBatchId || ''}：新增 ${d.insertedCount || 0}，跳过 ${d.skippedCount || 0}，指纹不一致 ${d.driftCount || 0}`
-        )
-        this.fetchDialogVisible = false
-        this.handleDetailQuery()
-      }).finally(() => { this.fetchSubmitting = false })
+      const runInpatient = () => {
+        if (!canIn) {
+          return Promise.resolve(null)
+        }
+        return fetchInpatientMirror(body).then(res => res.data)
+      }
+      const runOutpatient = () => {
+        if (!canOut) {
+          return Promise.resolve(null)
+        }
+        return fetchOutpatientMirror(body).then(res => res.data)
+      }
+      runInpatient()
+        .then(inData => runOutpatient().then(outData => ({ inData, outData })))
+        .then(({ inData, outData }) => {
+          const msgs = []
+          if (inData) {
+            msgs.push(this.formatFetchResult('住院', inData))
+          }
+          if (outData) {
+            msgs.push(this.formatFetchResult('门诊', outData))
+          }
+          this.$modal.msgSuccess(msgs.join('；'))
+          this.fetchDialogVisible = false
+          this.handleDetailQuery()
+        })
+        .catch(() => {})
+        .finally(() => { this.fetchSubmitting = false })
     }
   }
 }
