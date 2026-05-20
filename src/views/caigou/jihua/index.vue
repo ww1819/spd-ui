@@ -245,7 +245,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" :disabled="isPlanWarehouseLocked" excludeWarehouseType="设备,高值"/>
+                      <SelectWarehouse v-model="form.warehouseId" :value2="isPlanWarehouseLocked" excludeWarehouseType="设备,高值"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -1008,9 +1008,11 @@ export default {
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
     },
-    /** 已有明细时锁定仓库，避免跨仓混入明细 */
+    /** 已有明细或已引用申购单时锁定仓库，避免跨仓混入明细 */
     isPlanWarehouseLocked() {
-      return (this.stkIoBillEntryList || []).length > 0;
+      const hasEntries = (this.stkIoBillEntryList || []).length > 0;
+      const hasRef = this.form.referenceBillNo && String(this.form.referenceBillNo).trim();
+      return hasEntries || !!hasRef;
     }
   },
   watch: {
