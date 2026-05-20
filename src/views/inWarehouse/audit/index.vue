@@ -584,6 +584,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMaterialFilter from "@/components/SelectModel/SelectMaterialFilter";
+import { assertBillHasEntries } from '@/utils/billEntryValidate';
 import orderPrint from "@/views/inWarehouse/audit/orderPrint";
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
@@ -1071,6 +1072,9 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (!assertBillHasEntries(this.stkIoBillEntryList, this, '请至少添加一条入库明细')) {
+            return;
+          }
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           var totalAmt = 0;
           this.stkIoBillEntryList.forEach(item => {

@@ -676,6 +676,7 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 
 import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
+import { assertBillHasEntries } from '@/utils/billEntryValidate';
 
 export default {
   name: "SettlementApply",
@@ -1395,6 +1396,9 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (!assertBillHasEntries(this.stkIoBillEntryList, this, '请至少添加一条结算明细')) {
+            return;
+          }
           // 新增数量非空校验
           const hasEmptyQty = this.stkIoBillEntryList.some(item =>
             !item.qty || String(item.qty).trim() === ''

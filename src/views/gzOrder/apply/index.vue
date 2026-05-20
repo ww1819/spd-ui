@@ -639,6 +639,7 @@ import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
 import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
 import { GZ_BARCODE_SESSION_KEY } from '@/views/gzOrder/apply/GzBarcodePrintPage'
+import { assertBillHasEntries } from '@/utils/billEntryValidate'
 import RMBConverter from "@/utils/tools";
 import { parseTime } from "@/utils/ruoyi";
 import { normalizeUdiScanInput, parseGs1UdiScan, buildUdiQueryVariants } from '@/utils/udi';
@@ -2215,6 +2216,9 @@ export default {
     doSubmit() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (!assertBillHasEntries(this.gzOrderEntryList, this, '请至少添加一条明细')) {
+            return;
+          }
           this.form.gzOrderEntryList = this.gzOrderEntryList;
           this.form.gzOrderEntryList = this.form.gzOrderEntryList.map(item => ({
             ...item,

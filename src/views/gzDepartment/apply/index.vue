@@ -250,6 +250,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDeptApplyOperator from '@/components/SelectModel/SelectDeptApplyOperator';
 import SelectMaterial from '@/components/SelectModel/SelectMaterialDept';
 import SelectGzDepotInventory from '@/components/SelectModel/SelectGzDepotInventory';
+import { assertBillHasMaterialEntries } from '@/utils/billEntryValidate';
 
 export default {
   name: "GZDepartmentApply",
@@ -451,6 +452,9 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (!assertBillHasMaterialEntries(this.gzDepApplyEntryList, this)) {
+            return;
+          }
           this.form.gzDepApplyEntryList = this.gzDepApplyEntryList.map(item => ({
             ...item,
             supplierId: item.supplierId || (item.supplier && item.supplier.id) || (item.material && item.material.supplier && item.material.supplier.id) || null,

@@ -441,6 +441,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 import {auditWarehouse, getWarehouse} from "@/api/warehouse/warehouse";
 import { checkPermi } from "@/utils/permission";
+import { assertBillHasMaterialEntries } from "@/utils/billEntryValidate";
 
 export default {
   name: "dAudit",
@@ -1061,6 +1062,9 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (!assertBillHasMaterialEntries(this.basApplyEntryList, this)) {
+            return;
+          }
           this.form.basApplyEntryList = this.basApplyEntryList;
           let totalAmt = 0;
           this.basApplyEntryList.forEach(item => {

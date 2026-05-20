@@ -794,6 +794,7 @@ import SelectSupplierFromOptions from '@/components/SelectModel/SelectSupplierFr
 import { listSupplierAll } from '@/api/foundation/supplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
+import { assertBillHasMaterialEntries } from '@/utils/billEntryValidate';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 
@@ -1783,6 +1784,9 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (!assertBillHasMaterialEntries(this.stkIoBillEntryList, this, '请至少添加一条采购计划明细')) {
+            return;
+          }
           const list = this.stkIoBillEntryList || [];
           const invalidQty = list.filter(e => e.materialId && (e.qty == null || e.qty === '' || Number(e.qty) <= 0));
           if (invalidQty.length > 0) {
