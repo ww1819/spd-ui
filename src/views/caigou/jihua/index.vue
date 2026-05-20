@@ -477,7 +477,7 @@
     <!-- 引用申购单对话框 - 只在主内容区域内显示 -->
     <div v-if="referencePurchaseDialogVisible" class="local-modal-mask">
       <transition name="modal-zoom">
-        <div v-if="referencePurchaseDialogVisible" class="local-modal-content">
+        <div v-if="referencePurchaseDialogVisible" class="local-modal-content ref-purchase-modal">
           <div class="modal-header">
             <div class="modal-title">引用申购单</div>
             <el-button type="text" @click="closeReferencePurchaseDialog" class="close-btn" style="font-size:14px;padding:0;color:#909399;">关闭</el-button>
@@ -522,12 +522,13 @@
                         />
                       </el-form-item>
                     </el-col>
-                    <el-col :span="4">
-                      <el-form-item label="状态">
-                        <el-select v-model="purchaseQueryParams.planStatus" placeholder="全部" clearable style="width: 100%;">
-                          <el-option label="未生成" value="0" />
-                          <el-option label="已生成" value="1" />
-                          <el-option label="驳回" value="2" />
+                    <el-col :span="5">
+                      <el-form-item label="计划引用">
+                        <el-select v-model="purchaseQueryParams.purchasePlanRefStatus" placeholder="全部" clearable style="width: 100%;">
+                          <el-option label="未引用" :value="0" />
+                          <el-option label="部分引用" :value="1" />
+                          <el-option label="全部引用" :value="2" />
+                          <el-option label="计划驳回" :value="3" />
                         </el-select>
                       </el-form-item>
                     </el-col>
@@ -544,9 +545,12 @@
                   :disabled="isRejectDisabled"
                   @click="handleBatchReject"
                 >驳 回</el-button>
-                <el-button type="primary" icon="el-icon-search" size="medium" @click="getPurchaseList">搜索</el-button>
+                <el-button type="primary" icon="el-icon-search" size="medium" @click="handlePurchaseSearch">搜索</el-button>
                 <el-button icon="el-icon-refresh" size="medium" @click="resetPurchaseQuery">重置</el-button>
                 <el-button size="medium" @click="closeReferencePurchaseDialog">取 消</el-button>
+                <span v-if="selectedPurchaseCrossPageCount > 0" class="ref-purchase-selected-tip">
+                  已选 {{ selectedPurchaseCrossPageCount }} 张申购单（含跨页）
+                </span>
                 <el-button
                   type="primary"
                   size="medium"
@@ -560,15 +564,26 @@
             <div class="reference-purchase-layout">
               <!-- 左边：申购单列表（可多选） -->
               <div class="purchase-list-container">
+                <div class="purchase-list-table-wrap">
                 <el-table
+                  ref="purchaseListTable"
                   v-loading="purchaseLoading"
                   :data="purchaseList"
                   border
+                  row-key="id"
                   :cell-style="{padding: '8px 4px'}"
                   @selection-change="handlePurchaseListSelectionChange"
-                  :height="purchaseTableHeight"
+                  :height="purchaseTableBodyHeight"
+                  :row-class-name="purchaseApplyRowClassName"
                 >
-                  <el-table-column type="selection" width="50" align="center" fixed="left" />
+                  <el-table-column
+                    type="selection"
+                    width="50"
+                    align="center"
+                    fixed="left"
+                    :reserve-selection="true"
+                    :selectable="isPurchaseApplyRowSelectable"
+                  />
                   <el-table-column label="序号" align="center" width="70" show-overflow-tooltip>
                     <template slot-scope="scope">
                       {{ (purchaseQueryParams.pageNum - 1) * purchaseQueryParams.pageSize + scope.$index + 1 }}
@@ -593,12 +608,18 @@
                       <span>{{ scope.row.user && scope.row.user.userName ? scope.row.user.userName : (scope.row.user && scope.row.user.nickName ? scope.row.user.nickName : '--') }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="状态" prop="planStatus" width="100" show-overflow-tooltip>
+                  <el-table-column label="计划引用" prop="purchasePlanRefStatus" width="96" show-overflow-tooltip>
                     <template slot-scope="scope">
-                      <el-tag v-if="scope.row.planStatus == null || scope.row.planStatus === '' || scope.row.planStatus === '0' || scope.row.planStatus === 0" type="info" size="small">未生成</el-tag>
-                      <el-tag v-else-if="scope.row.planStatus === '1' || scope.row.planStatus === 1" type="success" size="small">已生成</el-tag>
-                      <el-tag v-else-if="scope.row.planStatus === '2' || scope.row.planStatus === 2" type="danger" size="small">驳回</el-tag>
-                      <span v-else>--</span>
+                      <el-tag :type="purchasePlanRefTagType(scope.row.purchasePlanRefStatus)" size="small">
+                        {{ purchasePlanRefLabel(scope.row.purchasePlanRefStatus) }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="出库引用" prop="outboundRefStatus" width="96" show-overflow-tooltip>
+                    <template slot-scope="scope">
+                      <el-tag :type="outboundRefTagType(scope.row.outboundRefStatus)" size="small">
+                        {{ outboundRefLabel(scope.row.outboundRefStatus) }}
+                      </el-tag>
                     </template>
                   </el-table-column>
                   <el-table-column label="驳回原因" prop="rejectReason" width="150" show-overflow-tooltip>
@@ -607,7 +628,8 @@
                     </template>
                   </el-table-column>
                 </el-table>
-                <div class="pagination-container">
+                </div>
+                <div class="ref-purchase-pagination-wrap">
                   <pagination
                     :total="purchaseTotal"
                     :page.sync="purchaseQueryParams.pageNum"
@@ -624,9 +646,15 @@
                   border
                   :cell-style="{padding: '8px 4px'}"
                   @selection-change="handlePurchaseEntrySelectionChange"
-                  :height="purchaseDetailTableHeight"
+                  :height="purchaseTableBodyHeight"
                 >
-                  <el-table-column type="selection" width="50" align="center" fixed="left" />
+                  <el-table-column
+                    type="selection"
+                    width="50"
+                    align="center"
+                    fixed="left"
+                    :selectable="isPurchaseApplyEntryRowSelectable"
+                  />
                   <el-table-column label="耗材编码" width="120" show-overflow-tooltip>
                     <template slot-scope="scope">
                       <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
@@ -873,11 +901,14 @@ export default {
         purchaseBillNo: null,
         beginDate: null,
         endDate: null,
-        planStatus: null, // 计划状态：0-未生成，1-已生成，2-驳回
+        purchasePlanRefStatus: null, // 采购计划引用：0未引用 1部分 2全部 3计划驳回
         purchaseBillStatus: 2, // 只显示已审核的申购单
       },
       selectedPurchaseEntryList: [], // 多张申购单合并后的明细列表
-      selectedPurchaseRows: [], // 选中的申购单行（多选）
+      selectedPurchaseRows: [], // 选中的申购单行（多选，由跨页缓存同步）
+      /** 引用申购单：跨页勾选缓存，key 为申购单 id */
+      selectedPurchaseRowMap: {},
+      purchaseSelectionRestoring: false,
       selectedPurchaseEntryIds: [], // 选中的申购单明细ID列表（右侧明细多选）
       // 查看申购明细弹窗
       applyDetailDialogVisible: false,
@@ -946,16 +977,46 @@ export default {
       // 视口高度减去导航栏(50px)、弹窗头部(约60px)、分页(约60px)、底部按钮(约60px)、内边距等
       return 'calc(100vh - 280px)';
     },
-    // 左边申购单列表表格高度
-    purchaseTableHeight() {
-      // 弹窗内容区域高度减去查询区域、按钮区域、分页区域
-      // 大约：100vh - 顶部导航(60px) - 弹窗头部(60px) - 查询区域(80px) - 按钮区域(50px) - 分页区域(60px) - 内边距(40px) = 约450px
-      return 450;
+    /** 当前计划明细已引用的申购单号 */
+    planReferencedPurchaseBillNos() {
+      const set = new Set();
+      const add = (billNoStr) => {
+        if (!billNoStr || !String(billNoStr).trim()) {
+          return;
+        }
+        String(billNoStr).split(/[,，]/).forEach((s) => {
+          const t = (s || '').trim();
+          if (t) {
+            set.add(t);
+          }
+        });
+      };
+      add(this.form && this.form.referenceBillNo);
+      (this.stkIoBillEntryList || []).forEach((row) => add(row.applyBillNos));
+      return set;
     },
-    // 右边明细列表表格高度
-    purchaseDetailTableHeight() {
-      // 与左边表格相同高度
-      return 450;
+    planReferencedPurchaseBillNoList() {
+      return [...this.planReferencedPurchaseBillNos];
+    },
+    /** 当前计划明细已关联的科室申购明细 id */
+    planReferencedDepApplyEntryIdSet() {
+      const set = new Set();
+      (this.stkIoBillEntryList || []).forEach((row) => {
+        (row.depApplyEntryIds || []).forEach((id) => {
+          if (id != null && id !== '') {
+            set.add(String(id));
+          }
+        });
+      });
+      return set;
+    },
+    // 左边申购单列表表格高度（为底部分页固定预留约 52px）
+    purchaseTableBodyHeight() {
+      const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+      return Math.max(200, vh - 380);
+    },
+    selectedPurchaseCrossPageCount() {
+      return Object.keys(this.selectedPurchaseRowMap || {}).length;
     },
     // 操作人姓名
     operatorName() {
@@ -978,16 +1039,17 @@ export default {
     },
     // 驳回按钮是否禁用
     isRejectDisabled() {
-      if (!this.selectedPurchaseRows || this.selectedPurchaseRows.length !== 1) {
+      const rows = Object.values(this.selectedPurchaseRowMap || {});
+      if (rows.length !== 1) {
         return true;
       }
-      const row = this.selectedPurchaseRows[0];
-      const status = row && (row.planStatus !== undefined ? row.planStatus : row.plan_status);
-      return status === 2 || status === '2' || status === 1 || status === '1';
+      const row = rows[0];
+      const status = row && (row.purchasePlanRefStatus !== undefined ? row.purchasePlanRefStatus : row.purchase_plan_ref_status);
+      return status === 1 || status === '1' || status === 2 || status === '2' || status === 3 || status === '3';
     },
     // 确认按钮是否禁用（未选申购单时禁用）
     isConfirmDisabled() {
-      return !this.selectedPurchaseRows || this.selectedPurchaseRows.length === 0;
+      return this.selectedPurchaseCrossPageCount === 0;
     },
     // 表头计划来源：由明细内计划来源去重后逗号拼接
     planSourceDisplay() {
@@ -1047,9 +1109,35 @@ export default {
     }
   },
   methods: {
+    purchasePlanRefLabel(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: '未引用', 1: '部分引用', 2: '全部引用', 3: '计划驳回' };
+      return map[s] != null ? map[s] : '--';
+    },
+    purchasePlanRefTagType(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger' };
+      return map[s] || 'info';
+    },
+    outboundRefLabel(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: '未引用', 1: '部分引用', 2: '全部引用' };
+      return map[s] != null ? map[s] : '--';
+    },
+    outboundRefTagType(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: 'info', 1: 'warning', 2: 'success' };
+      return map[s] || 'info';
+    },
     /** 引用申购单/汇总：供应商取产品档案默认供应商 */
     materialArchiveSupplierId(entry) {
-      const m = entry && entry.material;
+      if (!entry) {
+        return null;
+      }
+      if (entry.supplierId != null && entry.supplierId !== '') {
+        return entry.supplierId;
+      }
+      const m = entry.material;
       if (!m) {
         return null;
       }
@@ -1060,6 +1148,27 @@ export default {
         return m.supplier.id;
       }
       return null;
+    },
+    /** 引用申购单生成计划行时，补全 material 上的供应商信息供下拉展示 */
+    buildPlanEntryMaterialFromPurchase(entry) {
+      if (!entry || !entry.material) {
+        return entry && entry.material ? { ...entry.material } : null;
+      }
+      const m = { ...entry.material };
+      const sid = this.materialArchiveSupplierId(entry);
+      if (sid != null && sid !== '') {
+        m.supplierId = sid;
+        if (!m.supplier || m.supplier.id == null) {
+          const sname = entry.supplierName
+            || (entry.material.supplier && entry.material.supplier.name)
+            || '';
+          m.supplier = { id: sid, name: sname };
+        }
+      }
+      if (m.fdUnit == null && entry.unit) {
+        m.fdUnit = { unitName: entry.unit };
+      }
+      return m;
     },
     /** 从表头、明细行收集可能不在全量列表中的供应商（合并进下拉，避免已选显示为空） */
     collectPlanExtraSuppliers() {
@@ -1746,14 +1855,52 @@ export default {
       }).catch(() => {});
     },
     /** 删除按钮操作 */
-    handleDelete(row) {
+    async handleDelete(row) {
       const ids = row.id || this.ids;
-      this.$modal.confirm('是否确认删除计划编号为"' + ids + '"的数据项？').then(function() {
-        return delPurchasePlan(ids);
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("删除成功");
-      }).catch(() => {});
+      const planLabel = (row && row.planNo) ? row.planNo : ids;
+      const idList = Array.isArray(ids)
+        ? ids.map(String)
+        : String(ids).split(',').map(s => s.trim()).filter(Boolean);
+      let hasDepApplyRefs = false;
+      try {
+        for (const planId of idList) {
+          const res = await getApplyBillNoList(planId);
+          const list = (res && res.data) ? res.data : [];
+          if (list.length > 0) {
+            hasDepApplyRefs = true;
+            break;
+          }
+        }
+      } catch (e) {
+        this.$modal.msgError('检查计划引用申购单失败，请稍后重试');
+        return;
+      }
+      const doDelete = (restoreDepApplyPlanRefStatus) => {
+        return delPurchasePlan(ids, restoreDepApplyPlanRefStatus).then(() => {
+          this.getList();
+          this.$modal.msgSuccess(restoreDepApplyPlanRefStatus
+            ? '删除成功，相关申购单计划引用状态已恢复'
+            : '删除成功');
+        });
+      };
+      if (hasDepApplyRefs) {
+        this.$confirm(
+          `确认删除采购计划「${planLabel}」？\n\n本计划曾引用科室申购单。删除后请选择：\n·「恢复申购单状态」：将相关申购单的「计划引用」按当前实际情况重算（无其它计划引用时为未引用）\n·「保持原状态」：申购单上的计划引用状态不变`,
+          '删除采购计划',
+          {
+            distinguishCancelAndClose: true,
+            confirmButtonText: '删除并恢复申购单状态',
+            cancelButtonText: '删除且保持原状态',
+            type: 'warning'
+          }
+        ).then(() => doDelete(true)).catch(action => {
+          if (action === 'cancel') {
+            return doDelete(false);
+          }
+        });
+      } else {
+        this.$modal.confirm(`是否确认删除计划编号为「${planLabel}」的数据项？`).then(() => doDelete(false)).catch(() => {});
+      }
     },
     /** 查看计划：供应商列纯文本展示，避免每行 SelectSupplier 重复请求 listAll */
     entrySupplierDisplay(row) {
@@ -1929,37 +2076,114 @@ export default {
       // 设置查询参数中的仓库ID
       this.purchaseQueryParams.warehouseId = this.form.warehouseId;
       this.purchaseQueryParams.pageNum = 1;
-      // 清空选中的明细
-      this.selectedPurchaseEntryList = [];
-      this.currentPurchaseRow = null;
-      this.selectedPurchaseId = null;
-      this.selectedPurchaseEntryIds = [];
+      // 清空选中的明细与跨页缓存
+      this.clearSelectedPurchaseCache();
       // 打开引用申购单对话框
       this.referencePurchaseDialogVisible = true;
+      this.getPurchaseList();
+    },
+    handlePurchaseSearch() {
+      this.purchaseQueryParams.pageNum = 1;
       this.getPurchaseList();
     },
     /** 查询申购单列表（排除已被引用的申购单） */
     getPurchaseList() {
       this.purchaseLoading = true;
-      const params = { ...this.purchaseQueryParams, excludeReferenced: true };
+      const params = {
+        ...this.purchaseQueryParams,
+        excludeReferenced: true,
+        // 编辑已有计划时：仅排除「其他计划」已引用的申购单，本计划已引用的仍可在列表中补选未加入的明细
+        excludeReferencedPlanId: this.form && this.form.id != null ? this.form.id : undefined
+      };
       listPurchase(params).then(response => {
         this.purchaseList = response.rows || [];
-        this.purchaseTotal = response.total || 0;
+        this.purchaseTotal = response.total != null ? Number(response.total) : 0;
         this.purchaseLoading = false;
+        this.purgeReferencedFromPurchaseSelection();
+        this.$nextTick(() => {
+          this.restorePurchaseListSelection();
+        });
       }).catch(() => {
         this.purchaseLoading = false;
       });
     },
-    /** 多选申购单变化时，合并加载所有选中申购单的明细 */
-    handlePurchaseListSelectionChange(selection) {
-      this.selectedPurchaseRows = selection || [];
+    isPurchaseApplyRowSelectable() {
+      return true;
+    },
+    purchaseApplyRowClassName() {
+      return '';
+    },
+    isPurchaseApplyEntryRowSelectable(row) {
+      if (!row) {
+        return true;
+      }
+      const entryId = row.id != null ? String(row.id) : '';
+      return !(entryId && this.planReferencedDepApplyEntryIdSet.has(entryId));
+    },
+    /** 刷新右侧明细：剔除计划明细中已存在的申购明细行 */
+    purgeReferencedFromPurchaseSelection() {
+      this.reloadSelectedPurchaseEntries();
+    },
+    clearSelectedPurchaseCache() {
+      this.selectedPurchaseRowMap = {};
+      this.selectedPurchaseRows = [];
+      this.selectedPurchaseEntryList = [];
       this.selectedPurchaseEntryIds = [];
-      if (!selection || selection.length === 0) {
+      this.currentPurchaseRow = null;
+      this.selectedPurchaseId = null;
+    },
+    syncSelectedPurchaseRowsFromMap() {
+      this.selectedPurchaseRows = Object.values(this.selectedPurchaseRowMap || {});
+    },
+    /** 翻页后恢复当前页勾选状态 */
+    restorePurchaseListSelection() {
+      const table = this.$refs.purchaseListTable;
+      if (!table) {
+        return;
+      }
+      this.purchaseSelectionRestoring = true;
+      table.clearSelection();
+      (this.purchaseList || []).forEach((row) => {
+        const key = row && row.id != null ? String(row.id) : '';
+        if (key && this.selectedPurchaseRowMap[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+      this.$nextTick(() => {
+        this.purchaseSelectionRestoring = false;
+      });
+    },
+    /** 多选申购单（跨页缓存） */
+    handlePurchaseListSelectionChange(selection) {
+      if (this.purchaseSelectionRestoring) {
+        return;
+      }
+      const pageKeys = (this.purchaseList || [])
+        .map((row) => (row && row.id != null ? String(row.id) : ''))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedPurchaseRowMap[key]) {
+          this.$delete(this.selectedPurchaseRowMap, key);
+        }
+      });
+      (selection || []).forEach((row) => {
+        if (row && row.id != null && this.isPurchaseApplyRowSelectable(row)) {
+          this.$set(this.selectedPurchaseRowMap, String(row.id), row);
+        }
+      });
+      this.syncSelectedPurchaseRowsFromMap();
+      this.selectedPurchaseEntryIds = [];
+      this.reloadSelectedPurchaseEntries();
+    },
+    /** 按跨页已选申购单加载合并明细 */
+    reloadSelectedPurchaseEntries() {
+      const selection = Object.values(this.selectedPurchaseRowMap || {});
+      if (!selection.length) {
         this.selectedPurchaseEntryList = [];
         return;
       }
-      const promises = selection.map(row => getPurchase(row.id));
-      Promise.all(promises).then(responses => {
+      const promises = selection.map((row) => getPurchase(row.id));
+      Promise.all(promises).then((responses) => {
         const allEntries = [];
         responses.forEach((response, idx) => {
           const purchaseData = response.data;
@@ -1967,9 +2191,21 @@ export default {
           if (purchaseData && purchaseData.depPurchaseApplyEntryList && purchaseData.depPurchaseApplyEntryList.length > 0) {
             const purchaseBillNo = (selection[idx] && selection[idx].purchaseBillNo) || '';
             const departmentId = (selection[idx] && selection[idx].departmentId) != null ? selection[idx].departmentId : (selection[idx] && selection[idx].department && selection[idx].department.id);
-            purchaseData.depPurchaseApplyEntryList.forEach(entry => {
+            purchaseData.depPurchaseApplyEntryList.forEach((entry) => {
+              const entryId = entry.id != null ? String(entry.id) : '';
+              if (entryId && this.planReferencedDepApplyEntryIdSet.has(entryId)) {
+                return;
+              }
+              const material = entry.material ? { ...entry.material } : null;
+              const archiveSupplierId = material && (material.supplierId != null && material.supplierId !== ''
+                ? material.supplierId
+                : (material.supplier && material.supplier.id != null ? material.supplier.id : null));
+              if (material && archiveSupplierId != null && archiveSupplierId !== '') {
+                material.supplierId = archiveSupplierId;
+              }
               allEntries.push({
                 ...entry,
+                supplierId: archiveSupplierId,
                 _departmentName: departmentName,
                 _purchaseBillNo: purchaseBillNo,
                 _departmentId: departmentId,
@@ -1982,7 +2218,7 @@ export default {
                 qty: entry.qty || 0,
                 amt: entry.amt || (entry.qty || 0) * (entry.unitPrice || (entry.material && entry.material.price) || 0),
                 supplierName: entry.supplierName || (entry.material && entry.material.supplier && entry.material.supplier.name) || '',
-                material: entry.material
+                material
               });
             });
           }
@@ -2003,26 +2239,24 @@ export default {
       this.purchaseQueryParams.purchaseBillNo = null;
       this.purchaseQueryParams.beginDate = null;
       this.purchaseQueryParams.endDate = null;
-      this.purchaseQueryParams.planStatus = null;
+      this.purchaseQueryParams.purchasePlanRefStatus = null;
       this.purchaseQueryParams.pageNum = 1;
-      this.selectedPurchaseRows = [];
-      this.selectedPurchaseEntryIds = [];
-      this.selectedPurchaseEntryList = [];
+      this.clearSelectedPurchaseCache();
       this.getPurchaseList();
     },
     /** 关闭引用申购单弹窗 */
     closeReferencePurchaseDialog() {
       this.referencePurchaseDialogVisible = false;
-      this.selectedPurchaseRows = [];
-      this.selectedPurchaseEntryIds = [];
-      this.selectedPurchaseEntryList = [];
+      this.clearSelectedPurchaseCache();
     },
     /** 批量驳回（仅支持单选一条申购单驳回） */
     handleBatchReject() {
-      if (!this.selectedPurchaseRows || this.selectedPurchaseRows.length !== 1) {
+      const rows = Object.values(this.selectedPurchaseRowMap || {});
+      if (rows.length !== 1) {
         this.$modal.msgWarning("请选择一条申购单进行驳回");
         return;
       }
+      this.selectedPurchaseRows = rows;
       this.rejectForm.rejectReason = '';
       this.rejectDialogVisible = true;
     },
@@ -2048,6 +2282,7 @@ export default {
     },
     /** 选择申购单 - 将明细添加到计划明细（支持多选申购单，按计划明细生成方式：拆分或汇总） */
     handleSelectPurchase() {
+      this.syncSelectedPurchaseRowsFromMap();
       if (!this.selectedPurchaseRows || this.selectedPurchaseRows.length === 0) {
         this.$modal.msgWarning("请先选择至少一张申购单");
         return;
@@ -2056,14 +2291,19 @@ export default {
         this.$modal.msgWarning("所选申购单没有明细数据");
         return;
       }
-      const entriesToAdd = this.selectedPurchaseEntryIds.length > 0
+      let entriesToAdd = this.selectedPurchaseEntryIds.length > 0
         ? this.selectedPurchaseEntryList.filter(entry => {
             const entryId = entry.id || entry.materialId;
             return this.selectedPurchaseEntryIds.includes(entryId);
           })
         : this.selectedPurchaseEntryList;
+      const skippedInPlan = entriesToAdd.length;
+      entriesToAdd = entriesToAdd.filter((entry) => this.isPurchaseApplyEntryRowSelectable(entry));
+      if (skippedInPlan > entriesToAdd.length) {
+        this.$modal.msgWarning(`已跳过 ${skippedInPlan - entriesToAdd.length} 条已在计划明细中的申购明细`);
+      }
       if (entriesToAdd.length === 0) {
-        this.$modal.msgWarning("请至少选择一条明细数据");
+        this.$modal.msgWarning("请至少选择一条未加入计划的明细数据");
         return;
       }
       const mode = this.form.planEntryMode || '1';
@@ -2074,7 +2314,7 @@ export default {
           const mid = entry.materialId || (entry.material && entry.material.id);
           const row = {
             materialId: mid,
-            material: entry.material ? { ...entry.material, fdUnit: entry.material.fdUnit || (entry.unit ? { unitName: entry.unit } : null) } : null,
+            material: this.buildPlanEntryMaterialFromPurchase(entry),
             applyQty: Number(entry.qty) || 0,
             qty: Number(entry.qty) || 0,
             price: entry.unitPrice || entry.price || (entry.material && entry.material.price) || 0,
@@ -2103,7 +2343,7 @@ export default {
           if (!byKey[aggKey]) {
             byKey[aggKey] = {
               materialId: mid,
-              material: entry.material ? { ...entry.material, fdUnit: entry.material.fdUnit || (entry.unit ? { unitName: entry.unit } : null) } : null,
+              material: this.buildPlanEntryMaterialFromPurchase(entry),
               applyQty: 0,
               qty: 0,
               price: entry.unitPrice || entry.price || (entry.material && entry.material.price) || 0,
@@ -2132,6 +2372,7 @@ export default {
         });
       }
       this.stkIoBillEntryList = (this.stkIoBillEntryList || []).concat(newRows);
+      this.syncHeaderSupplierForValidate();
       this.form.planSource = '引用申购单';
       this.form.referenceBillNo = (this.selectedPurchaseRows || []).map(r => r.purchaseBillNo).filter(Boolean).join(', ');
       this.calculateTotalAmount();
@@ -2927,15 +3168,21 @@ export default {
     overflow: hidden;
   }
 
+  .ref-purchase-modal .modal-body {
+    overflow: hidden;
+  }
+
   .reference-purchase-layout {
     display: flex;
     gap: 16px;
-    flex: 1;
-    overflow: hidden;
+    flex: 1 1 auto;
     min-height: 0;
+    height: calc(100vh - 300px);
+    max-height: calc(100vh - 300px);
     margin-left: -20px;
     margin-right: -20px;
     width: calc(100% + 40px);
+    overflow: hidden;
   }
 
   .purchase-list-container {
@@ -2944,17 +3191,21 @@ export default {
     flex-direction: column;
     border: 1px solid #EBEEF5;
     border-radius: 4px;
-    overflow: hidden;
     margin-left: -20px;
     min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: visible;
+  }
+
+  .purchase-list-table-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .purchase-list-container .el-table {
-    flex: 1;
     margin-bottom: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
   }
 
   .purchase-list-container ::v-deep .el-table__body-wrapper {
@@ -3012,6 +3263,8 @@ export default {
     border-radius: 4px;
     overflow: hidden;
     min-height: 0;
+    height: 100%;
+    max-height: 100%;
   }
 
   .purchase-detail-container .el-table {
@@ -3042,13 +3295,44 @@ export default {
     height: 100% !important;
   }
 
-  .purchase-list-container .pagination-container {
-    padding: 10px;
+  .ref-purchase-pagination-wrap {
+    flex: 0 0 50px;
+    height: 50px;
+    min-height: 50px;
+    box-sizing: border-box;
     border-top: 1px solid #EBEEF5;
-    background: #F5F7FA;
-    flex-shrink: 0;
+    background: #fff;
     display: flex;
+    align-items: center;
     justify-content: flex-end;
+    padding: 0 8px;
+    overflow: visible;
+    z-index: 2;
+  }
+
+  .ref-purchase-pagination-wrap ::v-deep .pagination-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    width: 100%;
+    display: flex !important;
+    justify-content: flex-end;
+  }
+
+  .ref-purchase-pagination-wrap ::v-deep .el-pagination {
+    white-space: nowrap;
+  }
+
+  ::v-deep .purchase-apply-row-disabled {
+    color: #c0c4cc;
+    background-color: #f5f7fa !important;
+  }
+
+  .ref-purchase-selected-tip {
+    margin: 0 12px;
+    font-size: 13px;
+    color: #409eff;
+    line-height: 36px;
   }
 </style>
 

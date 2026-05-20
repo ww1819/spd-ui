@@ -125,6 +125,20 @@
           <el-tag v-else type="primary">未审核</el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="计划引用" align="center" prop="purchasePlanRefStatus" width="96" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag :type="purchasePlanRefTagType(scope.row.purchasePlanRefStatus)" size="small">
+            {{ purchasePlanRefLabel(scope.row.purchasePlanRefStatus) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="出库引用" align="center" prop="outboundRefStatus" width="96" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag :type="outboundRefTagType(scope.row.outboundRefStatus)" size="small">
+            {{ outboundRefLabel(scope.row.outboundRefStatus) }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="紧急程度" align="center" prop="urgencyLevel" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.urgency_level" :value="scope.row.urgencyLevel"/>
@@ -543,6 +557,26 @@ export default {
       const name = row.createrPersonName
         || (row.user && (row.user.nickName || row.user.userName));
       return name || '--';
+    },
+    purchasePlanRefLabel(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: '未引用', 1: '部分引用', 2: '全部引用', 3: '计划驳回' };
+      return map[s] != null ? map[s] : '--';
+    },
+    purchasePlanRefTagType(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger' };
+      return map[s] || 'info';
+    },
+    outboundRefLabel(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: '未引用', 1: '部分引用', 2: '全部引用' };
+      return map[s] != null ? map[s] : '--';
+    },
+    outboundRefTagType(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: 'info', 1: 'warning', 2: 'success' };
+      return map[s] || 'info';
     },
     formatAuditPersonName(row) {
       if (!row || !this.isAuditedPurchase(row)) return '--';
