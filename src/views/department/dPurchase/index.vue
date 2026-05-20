@@ -125,6 +125,20 @@
           <el-tag v-else type="primary">未审核</el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="计划引用" align="center" prop="purchasePlanRefStatus" width="96" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag :type="purchasePlanRefTagType(scope.row.purchasePlanRefStatus)" size="small">
+            {{ purchasePlanRefLabel(scope.row.purchasePlanRefStatus) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="出库引用" align="center" prop="outboundRefStatus" width="96" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag :type="outboundRefTagType(scope.row.outboundRefStatus)" size="small">
+            {{ outboundRefLabel(scope.row.outboundRefStatus) }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="紧急程度" align="center" prop="urgencyLevel" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.urgency_level" :value="scope.row.urgencyLevel"/>
@@ -331,6 +345,11 @@
               <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" :height="detailTableHeight" border :summary-method="getPurchaseSummaries" show-summary>
                 <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
+                <el-table-column label="申购单号" align="center" prop="purchaseBillNo" width="160" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.purchaseBillNo || (form && form.purchaseBillNo) || '--' }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>
@@ -538,6 +557,26 @@ export default {
       const name = row.createrPersonName
         || (row.user && (row.user.nickName || row.user.userName));
       return name || '--';
+    },
+    purchasePlanRefLabel(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: '未引用', 1: '部分引用', 2: '全部引用', 3: '计划驳回' };
+      return map[s] != null ? map[s] : '--';
+    },
+    purchasePlanRefTagType(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger' };
+      return map[s] || 'info';
+    },
+    outboundRefLabel(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: '未引用', 1: '部分引用', 2: '全部引用' };
+      return map[s] != null ? map[s] : '--';
+    },
+    outboundRefTagType(status) {
+      const s = status == null || status === '' ? 0 : Number(status);
+      const map = { 0: 'info', 1: 'warning', 2: 'success' };
+      return map[s] || 'info';
     },
     formatAuditPersonName(row) {
       if (!row || !this.isAuditedPurchase(row)) return '--';
@@ -837,6 +876,7 @@ export default {
       obj.model = "";
       obj.producer = "";
       obj.remark = "";
+      obj.purchaseBillNo = (this.form && this.form.purchaseBillNo) || "";
       this.depPurchaseApplyEntryList.push(obj);
     },
     /** 添加耗材行 */
@@ -942,6 +982,7 @@ export default {
       row.amt = row.amt || '';
       row.reason = row.reason || '';
       row.remark = row.remark || '';
+      row.purchaseBillNo = (this.form && this.form.purchaseBillNo) || row.purchaseBillNo || '';
 
       // 如果有数量，自动计算金额
       if (row.qty && row.unitPrice) {

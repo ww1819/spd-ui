@@ -107,7 +107,6 @@
           border
           stripe
           class="pc-detail-table"
-          @sort-change="handleDetailSort"
           @selection-change="rows => (detailSelection = rows)"
         >
           <el-table-column type="selection" width="48" align="center" :selectable="row => row.processStatus === 'PENDING_CONSUME'" />
@@ -145,8 +144,6 @@
           <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
           <el-table-column label="数量" prop="quantity" width="90" align="right" />
           <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
-          <el-table-column label="高值耗材库存数量" prop="highValueStockQty" width="150" align="right" sortable="custom" />
-          <el-table-column label="低值耗材库存数量" prop="lowValueStockQty" width="150" align="right" sortable="custom" />
           <el-table-column label="处理状态" prop="processStatus" width="120" show-overflow-tooltip>
             <template slot-scope="scope">
               <span>{{ processStatusText(scope.row.processStatus) }}</span>
@@ -369,9 +366,7 @@ export default {
         beginChargeDate: undefined,
         endChargeDate: undefined,
         beginProcessTime: undefined,
-        endProcessTime: undefined,
-        orderByColumn: undefined,
-        isAsc: undefined
+        endProcessTime: undefined
       },
       summaryLoading: false,
       summaryList: [],
@@ -508,32 +503,9 @@ export default {
         beginChargeDate: undefined,
         endChargeDate: undefined,
         beginProcessTime: undefined,
-        endProcessTime: undefined,
-        orderByColumn: undefined,
-        isAsc: undefined
+        endProcessTime: undefined
       }
       this.detailSelection = []
-      if (this.$refs.detailTable && this.$refs.detailTable.clearSort) {
-        this.$refs.detailTable.clearSort()
-      }
-      this.loadDetailList()
-    },
-    handleDetailSort({ prop, order }) {
-      if (prop !== 'highValueStockQty' && prop !== 'lowValueStockQty') {
-        this.detailQuery.orderByColumn = undefined
-        this.detailQuery.isAsc = undefined
-      } else {
-        this.detailQuery.orderByColumn = prop
-        if (order === 'ascending') {
-          this.detailQuery.isAsc = 'asc'
-        } else if (order === 'descending') {
-          this.detailQuery.isAsc = 'desc'
-        } else {
-          this.detailQuery.isAsc = undefined
-          this.detailQuery.orderByColumn = undefined
-        }
-      }
-      this.detailQuery.pageNum = 1
       this.loadDetailList()
     },
     loadDetailList() {
