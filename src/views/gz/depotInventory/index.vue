@@ -29,6 +29,15 @@
                   @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
+              <el-form-item prop="hisChargeItemId" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.hisChargeItemId"
+                  placeholder="收费项目ID"
+                  clearable
+                  style="width: 160px"
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
               <el-form-item prop="materialId" class="query-item-inline">
                 <div class="query-select-wrapper query-input-material-name">
                   <MaterialAutocomplete v-model="queryParams.materialName" />
@@ -119,6 +128,12 @@ import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import RightToolbar from "@/components/RightToolbar";
 import DepotInventoryDetail from "./components/DepotInventoryDetail.vue";
 import DepotInventorySummary from "./components/DepotInventorySummary.vue";
+import { listDepotInventory } from "@/api/gz/depotInventory";
+import {
+  buildGzDepotInventorySummaryRows,
+  exportGzDepotInventoryDetailStyledXlsx,
+  exportGzDepotInventorySummaryStyledXlsx,
+} from "@/utils/departmentOutSummaryExport";
 
 export default {
   name: "DepotInventory",
@@ -148,7 +163,8 @@ export default {
         orderNo: null,
         inHospitalCode: null,
         beginDate: null,
-        endDate: null
+        endDate: null,
+        hisChargeItemId: null
       }
     };
   },
@@ -200,10 +216,50 @@ export default {
       this.single = selection.length !== 1;
       this.multiple = !selection.length;
     },
-    handleExport() {
-      this.download('gz/depotInventory/export', {
-        ...this.queryParams
-      }, `depotInventory_${new Date().getTime()}.xlsx`);
+    async handleExport() {
+      const requestParams = {
+        ...this.queryParams,
+        pageNum: 1,
+        pageSize: 10000,
+      };
+      const loading = this.$loading({ lock: true, text: '正在导出...', spinner: 'el-icon-loading' });
+      try {
+        const response = await listDepotInventory(requestParams);
+        const detailList = response.rows || [];
+        if (!detailList.length) {
+          this.$message && this.$message.warning('暂无数据可导出');
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        const exportOpts = {
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+        };
+        if (this.activeName === 'summary') {
+          const summaryRows = buildGzDepotInventorySummaryRows(detailList);
+          if (!summaryRows.length) {
+            this.$message && this.$message.warning('暂无数据可导出');
+            return;
+          }
+          await exportGzDepotInventorySummaryStyledXlsx({
+            ...exportOpts,
+            rows: summaryRows,
+            fileName: `高值仓库库存汇总查询表${dateStr}.xlsx`,
+          });
+        } else {
+          await exportGzDepotInventoryDetailStyledXlsx({
+            ...exportOpts,
+            rows: detailList,
+            fileName: `高值仓库库存明细查询表${dateStr}.xlsx`,
+          });
+        }
+      } catch (e) {
+        console.error(e);
+        this.$message && this.$message.error('导出失败，请稍后重试');
+      } finally {
+        loading.close();
+      }
     }
   }
 };

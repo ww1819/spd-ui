@@ -23,6 +23,15 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
+            <el-form-item label="收费项目ID" prop="hisChargeItemId" class="query-item-inline">
+              <el-input
+                v-model="queryParams.hisChargeItemId"
+                placeholder="收费项目ID模糊"
+                clearable
+                style="width: 160px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
             <el-form-item label="科室" prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
@@ -96,6 +105,19 @@
         </el-table-column>
         <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="耗材" align="center" prop="material.name" width="160" show-overflow-tooltip resizable />
+        <el-table-column
+          v-for="col in hisChargeItemColumnDefs"
+          :key="'his-charge-' + col.key"
+          :label="col.label"
+          :width="col.width"
+          align="center"
+          show-overflow-tooltip
+          resizable
+        >
+          <template slot-scope="scope">
+            <span>{{ col.text(scope.row) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="规格" align="center" prop="material.speci" width="80" show-overflow-tooltip resizable/>
         <el-table-column label="型号" align="center" prop="material.model" width="80" show-overflow-tooltip resizable/>
@@ -251,10 +273,12 @@ import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import RightToolbar from "@/components/RightToolbar";
+import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 
 export default {
   name: "InventoryDetail",
   dicts: ['is_use_status'],
+  mixins: [hisChargeItemTableColumnsMixin],
   components: {SelectDepartment,SelectWarehouse,SelectSupplier,RightToolbar},
   props: {
     /** detail：库存明细；alert：科室库存预警；nearExpiry：近效期（与后端查询参数一致） */
@@ -279,6 +303,7 @@ export default {
         warehouseId: null,
         supplierId: null,
         materialKeyword: '',
+        hisChargeItemId: null,
         departmentId: null,
         isBilling: '',
         materialIsUse: '',

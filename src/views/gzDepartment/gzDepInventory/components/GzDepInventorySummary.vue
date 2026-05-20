@@ -8,6 +8,19 @@
       </el-table-column>
       <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
+      <el-table-column
+        v-for="col in hisChargeItemColumnDefs"
+        :key="'his-charge-' + col.key"
+        :label="col.label"
+        :width="col.width"
+        align="center"
+        show-overflow-tooltip
+        resizable
+      >
+        <template slot-scope="scope">
+          <span>{{ col.text(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="规格" align="center" prop="materialSpeci" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
@@ -43,9 +56,11 @@
 
 <script>
 import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
+import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 
 export default {
   name: "GzDepInventorySummary",
+  mixins: [hisChargeItemTableColumnsMixin],
   props: {
     queryParams: {
       type: Object,
@@ -54,6 +69,7 @@ export default {
   },
   data() {
     return {
+      hisChargeFlatRow: true,
       loading: true,
       summaryList: [],
       total: 0
@@ -142,7 +158,12 @@ export default {
               unitPrice: item.unitPrice || 0,
               totalQty: 0,
               totalAmt: 0,
-              departmentName: departmentName
+              departmentName: departmentName,
+              hisChargeItemCode: material.hisChargeItemCode || material.hisChargeItemId || '',
+              hisChargeItemName: material.hisChargeItemName || '',
+              hisChargeItemSpeci: material.hisChargeItemSpeci || '',
+              hisChargeItemUnit: material.hisChargeItemUnit || '',
+              hisChargeItemPrice: material.hisChargeItemPrice,
             };
           }
           

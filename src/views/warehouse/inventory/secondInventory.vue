@@ -36,6 +36,15 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
+            <el-form-item label="收费项目ID" prop="hisChargeItemId" class="query-item-inline">
+              <el-input
+                v-model="queryParams.hisChargeItemId"
+                placeholder="收费项目ID模糊"
+                clearable
+                style="width: 160px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
             <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['设备', '高值']"/>
@@ -125,6 +134,19 @@
       </el-table-column>
       <el-table-column label="耗材编码" align="center" prop="materialCode" width="100" min-width="100" show-overflow-tooltip resizable/>
       <el-table-column label="耗材名称" align="center" prop="materialName" width="160" min-width="120" show-overflow-tooltip resizable/>
+      <el-table-column
+        v-for="col in hisChargeItemColumnDefs"
+        :key="'his-charge-' + col.key"
+        :label="col.label"
+        :width="col.width"
+        align="center"
+        show-overflow-tooltip
+        resizable
+      >
+        <template slot-scope="scope">
+          <span>{{ col.text(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="90" show-overflow-tooltip resizable/>
       <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" min-width="70" show-overflow-tooltip resizable/>
@@ -193,14 +215,17 @@ import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import RightToolbar from "@/components/RightToolbar";
+import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 import { listWarehouse } from "@/api/foundation/warehouse";
 
 export default {
   name: "secondInventory",
   dicts: ['is_use_status'],
+  mixins: [hisChargeItemTableColumnsMixin],
   components: {SelectMaterial,SelectWarehouse,SelectSupplier,RightToolbar},
   data() {
     return {
+      hisChargeFlatRow: true,
       // 遮罩层
       loading: true,
       activeName: 'first',
@@ -238,7 +263,8 @@ export default {
         beginDate: null,
         endDate: null,
         isBilling: null,
-        materialIsUse: null
+        materialIsUse: null,
+        hisChargeItemId: null
       },
       // 表单参数
       form: {},

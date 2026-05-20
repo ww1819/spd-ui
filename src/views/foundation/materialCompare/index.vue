@@ -103,6 +103,15 @@
                         style="width: 200px"
                       />
                     </el-form-item>
+                    <el-form-item prop="hisChargeItemId" class="query-item-inline">
+                      <el-input
+                        v-model="queryParams.hisChargeItemId"
+                        placeholder="收费项目ID"
+                        clearable
+                        @keyup.enter.native="handleQuery"
+                        style="width: 160px"
+                      />
+                    </el-form-item>
                   </el-col>
                 </el-row>
               </el-form>
@@ -433,6 +442,7 @@ export default {
         hisBindStatus: null,
         isBilling: null,
         speci: null,
+        hisChargeItemId: null,
         supplierId: null
       },
       // HIS弹窗相关

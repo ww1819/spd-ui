@@ -12,6 +12,19 @@
       <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
       <!-- 3. 耗材名称 -->
       <el-table-column label="耗材名称" align="center" prop="material.name" width="160" show-overflow-tooltip resizable/>
+      <el-table-column
+        v-for="col in hisChargeItemColumnDefs"
+        :key="'his-charge-' + col.key"
+        :label="col.label"
+        :width="col.width"
+        align="center"
+        show-overflow-tooltip
+        resizable
+      >
+        <template slot-scope="scope">
+          <span>{{ col.text(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <!-- 4. 规格 -->
       <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable/>
       <!-- 5. 型号 -->
@@ -123,9 +136,11 @@
 
 <script>
 import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
+import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 
 export default {
   name: "GzDepInventoryDetail",
+  mixins: [hisChargeItemTableColumnsMixin],
   props: {
     queryParams: {
       type: Object,

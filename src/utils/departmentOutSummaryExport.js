@@ -3,6 +3,10 @@
  */
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import {
+  hisChargeItemExportCellsFromMaterial,
+  hisChargeItemExportCellsFromRow,
+} from '@/utils/hisChargeItemDisplay';
 
 function formatCnDate(ymd) {
   if (!ymd) return '';
@@ -1521,6 +1525,11 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
     '序号',
     '耗材编码',
     '耗材名称',
+    '收费项目编码',
+    '收费项目名称',
+    '收费项目规格',
+    '收费项目单位',
+    '收费项目单价',
     '规格',
     '型号',
     '生产厂家',
@@ -1546,7 +1555,7 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
     '审核日期',
     '审核人',
   ];
-  const numericCols = [9, 11, 12];
+  const numericCols = [8, 14, 16, 17];
   return exportInventoryQueryStyledXlsx({
     sheetName: '库存明细查询',
     titleBoldText: '库存明细查询表',
@@ -1556,8 +1565,8 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
     rows,
     numericCols1Based: numericCols,
     sumExtractors: {
-      11: (row) => Number(row.qty || 0),
-      12: (row) => Number(row.amt || 0),
+      16: (row) => Number(row.qty || 0),
+      17: (row) => Number(row.amt || 0),
     },
     buildCells: (row) => {
       const m = row.material || {};
@@ -1570,6 +1579,7 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
         0,
         m.code || '',
         m.name || '',
+        ...hisChargeItemExportCellsFromMaterial(m),
         m.speci || '',
         m.model || '',
         (m.fdFactory && m.fdFactory.factoryName) || '',
@@ -1707,6 +1717,11 @@ export async function exportWarehouseInventorySummaryStyledXlsx(options) {
     '序号',
     '耗材编码',
     '耗材名称',
+    '收费项目编码',
+    '收费项目名称',
+    '收费项目规格',
+    '收费项目单位',
+    '收费项目单价',
     '规格',
     '型号',
     '单位',
@@ -1721,7 +1736,7 @@ export async function exportWarehouseInventorySummaryStyledXlsx(options) {
     '厂家',
     '供应商',
   ];
-  const numericCols = [7, 8, 9];
+  const numericCols = [8, 13, 14, 15];
   return exportInventoryQueryStyledXlsx({
     sheetName: '库存汇总查询',
     titleBoldText: '库存汇总查询表',
@@ -1731,8 +1746,8 @@ export async function exportWarehouseInventorySummaryStyledXlsx(options) {
     rows,
     numericCols1Based: numericCols,
     sumExtractors: {
-      8: (row) => Number(row.materialQty || 0),
-      9: (row) => Number(row.materialAmt || 0),
+      14: (row) => Number(row.materialQty || 0),
+      15: (row) => Number(row.materialAmt || 0),
     },
     buildCells: (row) => {
       let billing = '--';
@@ -1743,6 +1758,7 @@ export async function exportWarehouseInventorySummaryStyledXlsx(options) {
         0,
         row.materialCode || '',
         row.materialName || '',
+        ...hisChargeItemExportCellsFromRow(row),
         row.materialSpeci || '',
         row.materialModel || '',
         row.unitName || '',
@@ -2297,6 +2313,11 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '序号',
     '耗材编码',
     '耗材',
+    '收费项目编码',
+    '收费项目名称',
+    '收费项目规格',
+    '收费项目单位',
+    '收费项目单价',
     '科室',
     '规格',
     '型号',
@@ -2324,9 +2345,9 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '归属仓库',
     '收货确认状态',
   ];
-  const qtyCol = 8;
-  const amtCol = includeNearExpiryDays ? 11 : 9;
-  const numericCols = [qtyCol, amtCol];
+  const qtyCol = 13;
+  const amtCol = includeNearExpiryDays ? 16 : 14;
+  const numericCols = [8, qtyCol, amtCol];
   return exportInventoryQueryStyledXlsx({
     sheetName: '科室库存明细',
     titleBoldText: '科室库存明细查询表',
@@ -2350,6 +2371,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
         0,
         m.code || '',
         m.name || '',
+        ...hisChargeItemExportCellsFromMaterial(m),
         (row.department && row.department.name) || '',
         m.speci || '',
         m.model || '',
@@ -2394,6 +2416,11 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
     '序号',
     '耗材编码',
     '耗材名称',
+    '收费项目编码',
+    '收费项目名称',
+    '收费项目规格',
+    '收费项目单位',
+    '收费项目单价',
     '规格',
     '型号',
     '单位',
@@ -2408,7 +2435,7 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
     '注册证号',
     '注册证有效期',
   ];
-  const numericCols = [8, 9, 10];
+  const numericCols = [8, 13, 14, 15];
   return exportInventoryQueryStyledXlsx({
     sheetName: '科室库存汇总',
     titleBoldText: '科室库存汇总查询表',
@@ -2418,8 +2445,8 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
     rows,
     numericCols1Based: numericCols,
     sumExtractors: {
-      9: (row) => Number(row.totalQty || 0),
-      10: (row) => Number(row.totalAmount || 0),
+      14: (row) => Number(row.totalQty || 0),
+      15: (row) => Number(row.totalAmount || 0),
     },
     buildCells: (row) => {
       let billing = '--';
@@ -2430,6 +2457,7 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
         0,
         row.materialCode || '',
         row.materialName || '',
+        ...hisChargeItemExportCellsFromRow(row),
         row.specification || '',
         row.model || '',
         row.unit || '',
@@ -2784,6 +2812,350 @@ export async function exportDepartmentConsumptionSummaryStyledXlsx(options) {
       row.averagePrice != null && row.averagePrice !== '' ? Number(row.averagePrice) : null,
       formatConsumptionUsageRatePct(row.usageRate),
       row.category || '',
+    ],
+    fileName,
+  });
+}
+
+/** 高值仓库库存明细 → 汇总行（与 DepotInventorySummary 前端聚合一致） */
+export function buildGzDepotInventorySummaryRows(detailList) {
+  const summaryMap = {};
+  (detailList || []).forEach((item) => {
+    const material = item.material || {};
+    const materialId = item.materialId || material.id;
+    const warehouseName = (item.warehouse && item.warehouse.name) || '';
+    const supplierName = (item.supplier && item.supplier.name) || '';
+    const key = `${materialId}_${warehouseName}_${supplierName}`;
+    if (!summaryMap[key]) {
+      summaryMap[key] = {
+        materialCode: material.code || material.id || '',
+        materialName: material.name || '',
+        materialSpeci: material.speci || '',
+        unitName:
+          (material.fdUnit && material.fdUnit.unitName) || material.unitName || '',
+        unitPrice: item.unitPrice || 0,
+        totalQty: 0,
+        totalAmt: 0,
+        warehouseName,
+        supplierName,
+        factoryName: (material.fdFactory && material.fdFactory.factoryName) || '',
+        hisChargeItemCode: material.hisChargeItemCode || material.hisChargeItemId || '',
+        hisChargeItemName: material.hisChargeItemName || '',
+        hisChargeItemSpeci: material.hisChargeItemSpeci || '',
+        hisChargeItemUnit: material.hisChargeItemUnit || '',
+        hisChargeItemPrice: material.hisChargeItemPrice,
+      };
+    }
+    summaryMap[key].totalQty += Number(item.qty) || 0;
+    summaryMap[key].totalAmt += Number(item.amt) || 0;
+  });
+  return Object.values(summaryMap);
+}
+
+/** 高值科室库存明细 → 汇总行 */
+export function buildGzDepInventorySummaryRows(detailList) {
+  const summaryMap = {};
+  (detailList || []).forEach((item) => {
+    const material = item.material || {};
+    const materialId = item.materialId || material.id;
+    const departmentName = (item.department && item.department.name) || '';
+    const key = `${materialId}_${departmentName}`;
+    if (!summaryMap[key]) {
+      summaryMap[key] = {
+        materialCode: material.code || material.id || '',
+        materialName: material.name || '',
+        materialSpeci: material.speci || '',
+        unitName:
+          (material.fdUnit && material.fdUnit.unitName) || material.unitName || '',
+        unitPrice: item.unitPrice || 0,
+        totalQty: 0,
+        totalAmt: 0,
+        departmentName,
+        hisChargeItemCode: material.hisChargeItemCode || material.hisChargeItemId || '',
+        hisChargeItemName: material.hisChargeItemName || '',
+        hisChargeItemSpeci: material.hisChargeItemSpeci || '',
+        hisChargeItemUnit: material.hisChargeItemUnit || '',
+        hisChargeItemPrice: material.hisChargeItemPrice,
+      };
+    }
+    summaryMap[key].totalQty += Number(item.qty) || 0;
+    summaryMap[key].totalAmt += Number(item.amt) || 0;
+  });
+  return Object.values(summaryMap);
+}
+
+/** 高值仓库库存 — 明细查询导出 */
+export async function exportGzDepotInventoryDetailStyledXlsx(options) {
+  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  const headers = [
+    '序号',
+    '耗材编码',
+    '耗材名称',
+    '收费项目编码',
+    '收费项目名称',
+    '收费项目规格',
+    '收费项目单位',
+    '收费项目单价',
+    '规格',
+    '型号',
+    '单位',
+    '库存数量',
+    '单价',
+    '金额',
+    '生产日期',
+    '有效期',
+    '批号',
+    '院内码',
+    '批次号',
+    '注册证号',
+    '注册证有效期',
+    '仓库',
+    '供应商',
+    'UDI码',
+    '库房分类',
+    '财务分类',
+    '阳光平台编码',
+    '入库单号',
+    '制单人',
+    '制单日期',
+    '审核人',
+    '审核日期',
+    '医保编码',
+    '备注',
+  ];
+  const numericCols = [8, 12, 13, 14];
+  return exportInventoryQueryStyledXlsx({
+    sheetName: '高值仓库库存明细',
+    titleBoldText: '高值耗材仓库库存明细查询表',
+    beginDate,
+    endDate,
+    headers,
+    rows,
+    numericCols1Based: numericCols,
+    sumExtractors: {
+      12: (row) => Number(row.qty || 0),
+      14: (row) => Number(row.amt || 0),
+    },
+    buildCells: (row) => {
+      const m = row.material || {};
+      const order = row.order || {};
+      return [
+        0,
+        m.code || '',
+        m.name || '',
+        ...hisChargeItemExportCellsFromMaterial(m),
+        m.speci || '',
+        m.model || '',
+        (m.fdUnit && m.fdUnit.unitName) || '',
+        Number(row.qty || 0),
+        row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null,
+        Number(row.amt || 0),
+        fmtYmd(row.materialDate),
+        fmtYmd(row.endTime),
+        row.materialNo || '',
+        row.inHospitalCode || '',
+        row.batchNo || '',
+        m.registerNo || '',
+        m.periodDate ? fmtYmd(m.periodDate) : '',
+        (row.warehouse && row.warehouse.name) || '',
+        (row.supplier && row.supplier.name) || '',
+        m.udiNo || row.masterBarcode || row.secondaryBarcode || '',
+        (m.fdWarehouseCategory && m.fdWarehouseCategory.warehouseCategoryName) || '',
+        (m.fdFinanceCategory && m.fdFinanceCategory.financeCategoryName) || '',
+        m.countryNo || '',
+        row.orderNo || order.orderNo || '',
+        order.createBy || '',
+        fmtYmd(order.orderDate || row.warehouseDate),
+        order.updateBy || '',
+        fmtYmd(order.auditDate),
+        m.medicalNo || '',
+        order.remark || '',
+      ];
+    },
+    fileName,
+  });
+}
+
+/** 高值仓库库存 — 汇总查询导出 */
+export async function exportGzDepotInventorySummaryStyledXlsx(options) {
+  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  const headers = [
+    '序号',
+    '耗材编码',
+    '耗材名称',
+    '收费项目编码',
+    '收费项目名称',
+    '收费项目规格',
+    '收费项目单位',
+    '收费项目单价',
+    '规格',
+    '单位',
+    '单价',
+    '数量',
+    '金额',
+    '仓库',
+    '供应商',
+    '厂家',
+  ];
+  const numericCols = [8, 11, 12, 13];
+  return exportInventoryQueryStyledXlsx({
+    sheetName: '高值仓库库存汇总',
+    titleBoldText: '高值耗材仓库库存汇总查询表',
+    beginDate,
+    endDate,
+    headers,
+    rows,
+    numericCols1Based: numericCols,
+    sumExtractors: {
+      12: (row) => Number(row.totalQty || 0),
+      13: (row) => Number(row.totalAmt || 0),
+    },
+    buildCells: (row) => [
+      0,
+      row.materialCode || '',
+      row.materialName || '',
+      ...hisChargeItemExportCellsFromRow(row),
+      row.materialSpeci || '',
+      row.unitName || '',
+      row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null,
+      Number(row.totalQty || 0),
+      Number(row.totalAmt || 0),
+      row.warehouseName || '',
+      row.supplierName || '',
+      row.factoryName || '',
+    ],
+    fileName,
+  });
+}
+
+/** 高值科室库存 — 明细查询导出 */
+export async function exportGzDepInventoryDetailStyledXlsx(options) {
+  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  const headers = [
+    '序号',
+    '耗材编码',
+    '耗材名称',
+    '收费项目编码',
+    '收费项目名称',
+    '收费项目规格',
+    '收费项目单位',
+    '收费项目单价',
+    '规格',
+    '型号',
+    '单位',
+    '数量',
+    '单价',
+    '金额',
+    '生产日期',
+    '有效期',
+    '批号',
+    '院内码',
+    '主条码',
+    '辅条码',
+    '科室',
+    '仓库',
+    '批次',
+    '生产厂家',
+    '供应商',
+    '出库单号',
+    '制单人',
+    '制单日期',
+    '审核人',
+    '审核日期',
+    '备注',
+  ];
+  const numericCols = [8, 12, 13, 14];
+  return exportInventoryQueryStyledXlsx({
+    sheetName: '高值科室库存明细',
+    titleBoldText: '高值耗材科室库存明细查询表',
+    beginDate,
+    endDate,
+    headers,
+    rows,
+    numericCols1Based: numericCols,
+    sumExtractors: {
+      12: (row) => Number(row.qty || 0),
+      14: (row) => Number(row.amt || 0),
+    },
+    buildCells: (row) => {
+      const m = row.material || {};
+      return [
+        0,
+        m.code || '',
+        m.name || '',
+        ...hisChargeItemExportCellsFromMaterial(m),
+        m.speci || '',
+        m.model || '',
+        (m.fdUnit && m.fdUnit.unitName) || '',
+        Number(row.qty || 0),
+        row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null,
+        Number(row.amt || 0),
+        fmtYmd(row.materialDate),
+        fmtYmd(row.endTime),
+        row.materialNo || '',
+        row.inHospitalCode || '',
+        row.masterBarcode || '',
+        row.secondaryBarcode || '',
+        (row.department && row.department.name) || '',
+        (row.warehouse && row.warehouse.name) || '',
+        row.batchNo || '',
+        (m.fdFactory && m.fdFactory.factoryName) || '',
+        (m.supplier && m.supplier.name) || '',
+        row.shipmentNo || '',
+        row.createBy || '',
+        fmtYmd(row.createTime),
+        row.auditBy || '',
+        fmtYmd(row.auditDate),
+        row.remark || '',
+      ];
+    },
+    fileName,
+  });
+}
+
+/** 高值科室库存 — 汇总查询导出 */
+export async function exportGzDepInventorySummaryStyledXlsx(options) {
+  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  const headers = [
+    '序号',
+    '耗材编码',
+    '耗材名称',
+    '收费项目编码',
+    '收费项目名称',
+    '收费项目规格',
+    '收费项目单位',
+    '收费项目单价',
+    '规格',
+    '单位',
+    '单价',
+    '数量',
+    '金额',
+    '科室',
+  ];
+  const numericCols = [8, 11, 12, 13];
+  return exportInventoryQueryStyledXlsx({
+    sheetName: '高值科室库存汇总',
+    titleBoldText: '高值耗材科室库存汇总查询表',
+    beginDate,
+    endDate,
+    headers,
+    rows,
+    numericCols1Based: numericCols,
+    sumExtractors: {
+      12: (row) => Number(row.totalQty || 0),
+      13: (row) => Number(row.totalAmt || 0),
+    },
+    buildCells: (row) => [
+      0,
+      row.materialCode || '',
+      row.materialName || '',
+      ...hisChargeItemExportCellsFromRow(row),
+      row.materialSpeci || '',
+      row.unitName || '',
+      row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null,
+      Number(row.totalQty || 0),
+      Number(row.totalAmt || 0),
+      row.departmentName || '',
     ],
     fileName,
   });

@@ -50,6 +50,15 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
+            <el-form-item label="收费项目ID" prop="hisChargeItemId" class="query-item-inline">
+              <el-input
+                v-model="queryParams.hisChargeItemId"
+                placeholder="收费项目ID模糊"
+                clearable
+                style="width: 160px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
           </el-col>
         </el-row>
 
@@ -175,6 +184,19 @@
       </el-table-column>
       <el-table-column key="materialCode" label="耗材编码" align="center" prop="material.code" width="150" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" v-if="columns[1].visible"/>
       <el-table-column key="materialName" label="耗材名称" align="center" prop="material.name" width="160" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" v-if="columns[2].visible"/>
+      <el-table-column
+        v-for="col in hisChargeItemColumnDefs"
+        :key="'his-charge-' + col.key"
+        :label="col.label"
+        :width="col.width"
+        align="center"
+        show-overflow-tooltip
+        resizable
+      >
+        <template slot-scope="scope">
+          <span>{{ col.text(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column key="speci" label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" v-if="columns[3].visible">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
@@ -312,11 +334,13 @@ import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import RightToolbar from "@/components/RightToolbar";
+import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 import { listWarehouse } from "@/api/foundation/warehouse";
 
 export default {
   name: "firstInventory",
   dicts: ['is_use_status'],
+  mixins: [hisChargeItemTableColumnsMixin],
   components: {SelectMaterial,SelectWarehouse,SelectSupplier,SelectWarehouseCategory,RightToolbar},
   data() {
     return {
@@ -360,7 +384,8 @@ export default {
         materialNo: null,
         isBilling: null,
         warehouseCategoryId: null,
-        materialIsUse: null
+        materialIsUse: null,
+        hisChargeItemId: null
       },
       // 表单参数
       form: {},

@@ -13,6 +13,15 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
+            <el-form-item label="收费项目ID" prop="hisChargeItemId" class="query-item-inline">
+              <el-input
+                v-model="queryParams.hisChargeItemId"
+                placeholder="收费项目ID模糊"
+                clearable
+                style="width: 160px"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
             <el-form-item label="科室" prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
                 <SelectDepartment v-model="queryParams.departmentId" />
@@ -87,6 +96,19 @@
         </el-table-column>
         <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable />
+        <el-table-column
+          v-for="col in hisChargeItemColumnDefs"
+          :key="'his-charge-' + col.key"
+          :label="col.label"
+          :width="col.width"
+          align="center"
+          show-overflow-tooltip
+          resizable
+        >
+          <template slot-scope="scope">
+            <span>{{ col.text(scope.row) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="规格" align="center" prop="specification" width="80" show-overflow-tooltip resizable/>
         <el-table-column label="型号" align="center" prop="model" width="80" show-overflow-tooltip resizable/>
         <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable/>
@@ -160,13 +182,16 @@ import { exportDepInventorySummaryStyledXlsx } from "@/utils/departmentOutSummar
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import RightToolbar from "@/components/RightToolbar";
+import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 
 export default {
   name: "InventorySummary",
   dicts: ['is_use_status'],
+  mixins: [hisChargeItemTableColumnsMixin],
   components: { SelectDepartment, SelectSupplier, RightToolbar },
   data() {
     return {
+      hisChargeFlatRow: true,
       loading: true,
       showSearch: true,
       total: 0,
@@ -179,6 +204,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         materialKeyword: '',
+        hisChargeItemId: null,
         departmentId: null,
         warehouseId: null,
         supplierId: null,

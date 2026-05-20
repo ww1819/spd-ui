@@ -25,6 +25,15 @@
                   <SelectSupplier v-model="queryParams.supplierId" />
                 </div>
               </el-form-item>
+              <el-form-item prop="hisChargeItemId" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.hisChargeItemId"
+                  placeholder="收费项目ID"
+                  clearable
+                  style="width: 160px"
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
               <el-form-item prop="batchNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.batchNo"
@@ -145,6 +154,12 @@ import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import RightToolbar from "@/components/RightToolbar";
 import GzDepInventoryDetail from "./components/GzDepInventoryDetail.vue";
 import GzDepInventorySummary from "./components/GzDepInventorySummary.vue";
+import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
+import {
+  buildGzDepInventorySummaryRows,
+  exportGzDepInventoryDetailStyledXlsx,
+  exportGzDepInventorySummaryStyledXlsx,
+} from "@/utils/departmentOutSummaryExport";
 
 export default {
   name: "GzDepInventory",
@@ -175,7 +190,8 @@ export default {
         materialNo: null,
         materialDate: null,
         warehouseDate: null,
-        showZeroStock: false
+        showZeroStock: false,
+        hisChargeItemId: null
       }
     };
   },
@@ -222,10 +238,44 @@ export default {
       this.single = selection.length !== 1;
       this.multiple = !selection.length;
     },
-    handleExport() {
-      this.download('gzDepartment/gzDepInventory/export', {
-        ...this.queryParams
-      }, `gzDepInventory_${new Date().getTime()}.xlsx`);
+    async handleExport() {
+      const requestParams = {
+        ...this.queryParams,
+        pageNum: 1,
+        pageSize: 10000,
+      };
+      const loading = this.$loading({ lock: true, text: '正在导出...', spinner: 'el-icon-loading' });
+      try {
+        const response = await listGzDepInventory(requestParams);
+        const detailList = response.rows || [];
+        if (!detailList.length) {
+          this.$message && this.$message.warning('暂无数据可导出');
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        if (this.activeName === 'summary') {
+          const summaryRows = buildGzDepInventorySummaryRows(detailList);
+          if (!summaryRows.length) {
+            this.$message && this.$message.warning('暂无数据可导出');
+            return;
+          }
+          await exportGzDepInventorySummaryStyledXlsx({
+            rows: summaryRows,
+            fileName: `高值科室库存汇总查询表${dateStr}.xlsx`,
+          });
+        } else {
+          await exportGzDepInventoryDetailStyledXlsx({
+            rows: detailList,
+            fileName: `高值科室库存明细查询表${dateStr}.xlsx`,
+          });
+        }
+      } catch (e) {
+        console.error(e);
+        this.$message && this.$message.error('导出失败，请稍后重试');
+      } finally {
+        loading.close();
+      }
     }
   }
 };
