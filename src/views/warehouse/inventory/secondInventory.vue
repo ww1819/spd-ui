@@ -118,9 +118,9 @@
               height="60vh"
               border>
       <el-table-column type="selection" width="48" align="center" fixed="left"/>
-      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
+      <el-table-column label="序号" width="80" align="center" header-align="center" class-name="col-serial-center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          {{ scope.$index + 1 }}
+          <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
       <el-table-column label="耗材编码" align="center" prop="materialCode" width="100" min-width="100" show-overflow-tooltip resizable/>
@@ -590,5 +590,16 @@ export default {
 }
 .table-container ::v-deep .el-table .cell {
   padding: 0 4px;
+}
+
+.table-container ::v-deep .el-table th.col-serial-center .cell,
+.table-container ::v-deep .el-table td.col-serial-center .cell {
+  text-align: center !important;
+}
+
+.table-container ::v-deep .col-serial-center-text {
+  display: block;
+  width: 100%;
+  text-align: center;
 }
 </style>

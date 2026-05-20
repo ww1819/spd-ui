@@ -124,8 +124,6 @@
 
     <div class="table-container">
       <el-table v-loading="loading" :data="pagedList"
-              show-summary
-              :summary-method="getTotalSummaries"
               height="60vh"
               border
               stripe>
@@ -134,7 +132,7 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="80" show-overflow-tooltip resizable v-if="columns[0].visible"/>
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" min-width="120" class-name="col-material-code" show-overflow-tooltip resizable v-if="columns[0].visible"/>
       <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable v-if="columns[1].visible"/>
       <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable v-if="columns[2].visible"/>
       <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable v-if="columns[3].visible"/>
@@ -142,13 +140,13 @@
       <el-table-column label="规格" align="center" prop="materialSpeci" width="120" show-overflow-tooltip resizable v-if="columns[5].visible"/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable v-if="columns[6].visible"/>
       <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable v-if="columns[7].visible"/>
-      <el-table-column label="单价" align="center" prop="unitPrice" width="120" class-name="col-in-sum-price" show-overflow-tooltip resizable v-if="columns[8].visible">
+      <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable v-if="columns[8].visible">
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== ''">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" align="center" prop="materialQty" width="120" class-name="col-in-sum-qty" show-overflow-tooltip resizable v-if="columns[9].visible"/>
+      <el-table-column label="数量" align="center" prop="materialQty" width="120" show-overflow-tooltip resizable v-if="columns[9].visible"/>
       <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable v-if="columns[10].visible">
         <template slot-scope="scope">
           <span v-if="scope.row.materialAmt != null && scope.row.materialAmt !== undefined && scope.row.materialAmt !== ''">{{ scope.row.materialAmt | formatCurrency}}</span>
@@ -320,35 +318,6 @@ export default {
     this.getList();
   },
   methods: {
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill('');
-      if (sums.length > 0) sums[0] = '合计';
-
-      const totalQty = (data || []).reduce((acc, r) => acc + Number(r.materialQty || 0), 0);
-      const totalAmt = (data || []).reduce((acc, r) => acc + Number(r.materialAmt || 0), 0);
-      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-
-      const hasPriceCol = columns.some(c => c.property === 'unitPrice');
-      const hasQtyCol = columns.some(c => c.property === 'materialQty');
-
-      columns.forEach((column, index) => {
-        if (column.property === 'materialAmt') {
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-          return;
-        }
-        if (column.property === 'unitPrice') {
-          if (hasQtyCol) {
-            sums[index] = totalQty.toFixed(2);
-          }
-          return;
-        }
-        if (column.property === 'materialQty') {
-          sums[index] = hasPriceCol ? '' : totalQty.toFixed(2);
-        }
-      });
-      return sums;
-    },
     /** 查询入/退货汇总列表 */
     getList() {
       this.loading = true;
@@ -844,42 +813,8 @@ export default {
   position: relative;
 }
 
-.table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 32px;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
-  background: #fff;
-}
-
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
-  background: #fff;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell,
-.table-container ::v-deep .el-table__footer-wrapper .cell {
+.table-container ::v-deep .el-table th.col-material-code .cell {
   white-space: nowrap;
-  overflow: visible;
-  text-overflow: initial;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell,
-.table-container ::v-deep .el-table__fixed-footer-wrapper .cell {
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: initial;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper td.col-in-sum-qty {
-  border-left: none !important;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.col-in-sum-qty {
-  border-left: none !important;
 }
 
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
