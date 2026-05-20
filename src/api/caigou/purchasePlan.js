@@ -37,11 +37,14 @@ export function updatePurchasePlan(data, axiosConfig) {
   })
 }
 
-// 删除采购计划
-export function delPurchasePlan(id) {
+// 删除采购计划；restoreDepApplyPlanRefStatus=true 时删除后重算相关科室申购单的计划引用状态
+export function delPurchasePlan(id, restoreDepApplyPlanRefStatus) {
   return request({
     url: '/caigou/jihua/' + id,
-    method: 'delete'
+    method: 'delete',
+    params: {
+      restoreDepApplyPlanRefStatus: restoreDepApplyPlanRefStatus === true
+    }
   })
 }
 
