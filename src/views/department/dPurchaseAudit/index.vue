@@ -321,6 +321,11 @@
               <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" ref="depPurchaseApplyEntry" height="100%" border :summary-method="getPurchaseSummaries" show-summary>
                 <el-table-column type="selection" width="55" align="center" fixed="left" resizable />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
+                <el-table-column label="申购单号" align="center" prop="purchaseBillNo" width="160" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.purchaseBillNo || (form && form.purchaseBillNo) || '--' }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>

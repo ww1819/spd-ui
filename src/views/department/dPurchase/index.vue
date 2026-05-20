@@ -331,6 +331,11 @@
               <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" :height="detailTableHeight" border :summary-method="getPurchaseSummaries" show-summary>
                 <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
+                <el-table-column label="申购单号" align="center" prop="purchaseBillNo" width="160" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.purchaseBillNo || (form && form.purchaseBillNo) || '--' }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>
@@ -837,6 +842,7 @@ export default {
       obj.model = "";
       obj.producer = "";
       obj.remark = "";
+      obj.purchaseBillNo = (this.form && this.form.purchaseBillNo) || "";
       this.depPurchaseApplyEntryList.push(obj);
     },
     /** 添加耗材行 */
@@ -942,6 +948,7 @@ export default {
       row.amt = row.amt || '';
       row.reason = row.reason || '';
       row.remark = row.remark || '';
+      row.purchaseBillNo = (this.form && this.form.purchaseBillNo) || row.purchaseBillNo || '';
 
       // 如果有数量，自动计算金额
       if (row.qty && row.unitPrice) {

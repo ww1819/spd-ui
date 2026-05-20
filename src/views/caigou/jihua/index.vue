@@ -245,7 +245,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" :disabled="isPlanWarehouseLocked" excludeWarehouseType="设备,高值"/>
+                      <SelectWarehouse v-model="form.warehouseId" :value2="isPlanWarehouseLocked" excludeWarehouseType="设备,高值"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -470,7 +470,6 @@
       :DialogComponentShow="DialogComponentShow"
       :supplierValue="supplierValue"
       :warehouseValue="form.warehouseId"
-      :excludeMaterialIds="purchasePlanExcludeMaterialIds"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMMaterialFilter>
@@ -1009,26 +1008,11 @@ export default {
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
     },
-    /** 当前计划已有明细中的产品档案 id，选耗材时用 excludeMaterialIds 排除，避免重复 */
-    purchasePlanExcludeMaterialIds() {
-      const list = this.stkIoBillEntryList || [];
-      const ids = [];
-      list.forEach(row => {
-        const mid =
-          row.materialId != null && row.materialId !== ""
-            ? row.materialId
-            : row.material && row.material.id != null
-              ? row.material.id
-              : null;
-        if (mid != null && mid !== "") {
-          ids.push(mid);
-        }
-      });
-      return [...new Set(ids)];
-    },
-    /** 采购计划：打开新增明细后或已有明细时锁定仓库，避免跨仓混入明细 */
+    /** 已有明细或已引用申购单时锁定仓库，避免跨仓混入明细 */
     isPlanWarehouseLocked() {
-      return this.DialogComponentShow || (this.stkIoBillEntryList || []).length > 0;
+      const hasEntries = (this.stkIoBillEntryList || []).length > 0;
+      const hasRef = this.form.referenceBillNo && String(this.form.referenceBillNo).trim();
+      return hasEntries || !!hasRef;
     }
   },
   watch: {
@@ -1063,6 +1047,20 @@ export default {
     }
   },
   methods: {
+    /** 引用申购单/汇总：供应商取产品档案默认供应商 */
+    materialArchiveSupplierId(entry) {
+      const m = entry && entry.material;
+      if (!m) {
+        return null;
+      }
+      if (m.supplierId != null && m.supplierId !== '') {
+        return m.supplierId;
+      }
+      if (m.supplier && m.supplier.id != null) {
+        return m.supplier.id;
+      }
+      return null;
+    },
     /** 从表头、明细行收集可能不在全量列表中的供应商（合并进下拉，避免已选显示为空） */
     collectPlanExtraSuppliers() {
       const out = [];
@@ -1273,19 +1271,17 @@ export default {
       const t0 = performance.now();
       const toAppend = [];
       const list = lightRows || [];
-      const existsSet = new Set((this.purchasePlanExcludeMaterialIds || []).map(id => String(id)));
-      let skippedCount = 0;
       list.forEach((item) => {
-        const materialId = item && item.id != null ? String(item.id) : null;
-        if (!materialId || existsSet.has(materialId)) {
-          skippedCount++;
+        const materialId = item && item.id != null ? item.id : null;
+        if (!materialId) {
           return;
         }
-        existsSet.add(materialId);
+        const supplierId = item.supplierId || (item.supplier && item.supplier.id) || null;
         const defQty = this.getDefaultPurchaseQtyFromMaterial(item);
         toAppend.push({
           materialId: item.id,
-          supplierId: item.supplierId || (item.supplier && item.supplier.id) || null,
+          supplierId,
+          applyDepartmentId: null,
           applyQty: null,
           qty: String(defQty),
           price: item.price,
@@ -1299,9 +1295,6 @@ export default {
           material: Object.freeze(item),
         });
       });
-      if (skippedCount > 0) {
-        this.$modal.msgWarning(`已过滤 ${skippedCount} 条重复产品档案明细`);
-      }
       const t1 = performance.now();
       console.log('[Plan] select rows=', list.length, 'build objects(ms)=', (t1 - t0).toFixed(1));
       if (!toAppend.length) {
@@ -2074,9 +2067,8 @@ export default {
         return;
       }
       const mode = this.form.planEntryMode || '1';
-      const departmentName = (this.selectedPurchaseRows[0] && this.selectedPurchaseRows[0].department && this.selectedPurchaseRows[0].department.name) ? this.selectedPurchaseRows[0].department.name : '引用申购单';
+      const newRows = [];
       if (mode === '2') {
-        // 按申购单明细拆分：一条申购明细对应一条计划明细，关联 depApplyEntryIds
         entriesToAdd.forEach(entry => {
           if (!entry.materialId && !(entry.material && entry.material.id)) return;
           const mid = entry.materialId || (entry.material && entry.material.id);
@@ -2089,25 +2081,27 @@ export default {
             speci: entry.materialSpec || entry.speci || (entry.material && entry.material.speci) || '',
             model: entry.model || (entry.material && entry.material.model) || '',
             remark: entry.remark || '',
-            supplierId: entry.supplierId || (entry.material && entry.material.supplier && entry.material.supplier.id) || null,
+            supplierId: this.materialArchiveSupplierId(entry),
             planSource: '引用申购单',
             depApplyEntryIds: entry.id != null ? [entry.id] : [],
             applyBillNos: entry._purchaseBillNo || '',
             applyDepartmentId: entry._departmentId != null ? entry._departmentId : undefined
           };
           row.amt = (row.qty || 0) * (row.price || 0);
-          this.stkIoBillEntryList.push(row);
+          newRows.push(row);
         });
       } else {
-        // 按产品档案汇总：同一产品汇总申购数量，关联 depApplyEntryIds
-        const byMaterial = {};
+        // 按产品档案 + 产品档案默认供应商汇总（不考虑申请科室）
+        const byKey = {};
         entriesToAdd.forEach(entry => {
           if (!entry.material && !entry.materialId) return;
           const mid = entry.materialId || (entry.material && entry.material.id);
+          const supplierId = this.materialArchiveSupplierId(entry);
+          const aggKey = `${mid}|${supplierId != null ? supplierId : ''}`;
           const q = Number(entry.qty) || 0;
           const entryId = entry.id;
-          if (!byMaterial[mid]) {
-            byMaterial[mid] = {
+          if (!byKey[aggKey]) {
+            byKey[aggKey] = {
               materialId: mid,
               material: entry.material ? { ...entry.material, fdUnit: entry.material.fdUnit || (entry.unit ? { unitName: entry.unit } : null) } : null,
               applyQty: 0,
@@ -2116,27 +2110,28 @@ export default {
               speci: entry.materialSpec || entry.speci || (entry.material && entry.material.speci) || '',
               model: entry.model || (entry.material && entry.material.model) || '',
               remark: entry.remark || '',
-              supplierId: entry.supplierId || (entry.material && entry.material.supplier && entry.material.supplier.id) || null,
+              supplierId,
               planSource: '引用申购单',
               depApplyEntryIds: [],
               _billNoSet: []
             };
           }
-          byMaterial[mid].applyQty += q;
-          if (entryId != null) byMaterial[mid].depApplyEntryIds.push(entryId);
-          if (entry._purchaseBillNo && byMaterial[mid]._billNoSet.indexOf(entry._purchaseBillNo) === -1) {
-            byMaterial[mid]._billNoSet.push(entry._purchaseBillNo);
+          byKey[aggKey].applyQty += q;
+          if (entryId != null) byKey[aggKey].depApplyEntryIds.push(entryId);
+          if (entry._purchaseBillNo && byKey[aggKey]._billNoSet.indexOf(entry._purchaseBillNo) === -1) {
+            byKey[aggKey]._billNoSet.push(entry._purchaseBillNo);
           }
         });
-        Object.keys(byMaterial).forEach(mid => {
-          const row = byMaterial[mid];
+        Object.keys(byKey).forEach((key) => {
+          const row = byKey[key];
           row.qty = row.applyQty;
           row.amt = (row.qty || 0) * (row.price || 0);
           row.applyBillNos = (row._billNoSet && row._billNoSet.length) ? row._billNoSet.join(',') : '';
           delete row._billNoSet;
-          this.stkIoBillEntryList.push(row);
+          newRows.push(row);
         });
       }
+      this.stkIoBillEntryList = (this.stkIoBillEntryList || []).concat(newRows);
       this.form.planSource = '引用申购单';
       this.form.referenceBillNo = (this.selectedPurchaseRows || []).map(r => r.purchaseBillNo).filter(Boolean).join(', ');
       this.calculateTotalAmount();

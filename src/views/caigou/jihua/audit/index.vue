@@ -741,24 +741,6 @@ export default {
       this.auditForm.auditOpinion = '同意';
       this.auditDialogVisible = true;
     },
-    /** 提交审核 */
-    submitAudit() {
-      if (!this.currentAuditRow) {
-        return;
-      }
-      const id = this.currentAuditRow.id;
-      const auditBy = this.$store.state.user.userId;
-      const auditOpinion = this.auditForm.auditOpinion || '';
-
-      auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion}).then(() => {
-        this.auditDialogVisible = false;
-        this.getList();
-        this.$modal.msgSuccess("审核成功！");
-        this.currentAuditRow = null;
-        this.auditForm.planNo = '';
-        this.auditForm.auditOpinion = '';
-      }).catch(() => {});
-    },
     /** 批量审核按钮操作 */
     handleBatchAudit() {
       if (this.ids.length === 0) {
@@ -833,7 +815,10 @@ export default {
         });
       } else {
         const id = this.currentAuditRow.id;
-        Promise.all([this.validatePlanEntriesSupplier(id), this.validatePlanEntriesQty(id)]).then(() => {
+        Promise.all([
+          this.validatePlanEntriesSupplier(id),
+          this.validatePlanEntriesQty(id)
+        ]).then(() => {
           return auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion});
         }).then(() => {
           this.auditDialogVisible = false;
