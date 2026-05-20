@@ -45,8 +45,8 @@ export function listChargeSummary(query) {
   })
 }
 
-/** 住院/门诊计费抓取：数据量大，超时 5 分钟 */
-const PATIENT_CHARGE_FETCH_TIMEOUT_MS = 300000
+/** 住院/门诊计费抓取：按天分段多次查 HIS，整次请求需覆盖多段（默认后端 600s/段 × 最多约 31 段） */
+const PATIENT_CHARGE_FETCH_TIMEOUT_MS = 3600000
 
 export function fetchInpatientMirror(data) {
   return request({

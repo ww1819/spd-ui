@@ -164,48 +164,25 @@
     <div class="table-container">
     <el-table v-loading="loading" :data="warehouseList"
               @selection-change="handleSelectionChange" height="60vh" border stripe>
-      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
+      <el-table-column label="序号" width="80" align="center" header-align="center" class-name="col-serial-center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          {{ scope.$index + 1 }}
+          <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
       <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="业务单号" align="center" prop="billNo" width="160" show-overflow-tooltip resizable />
-      <el-table-column label="制单日期" align="center" prop="createTime" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="制单人" align="center" prop="createrNickName" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.createrNickName || scope.row.createrUserName || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="审核人" align="center" prop="auditNickName" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.auditNickName || scope.row.auditUserName || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="100" show-overflow-tooltip resizable/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="100" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="价格" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined">{{ formatAmount(scope.row.unitPrice) }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
       <el-table-column label="数量" align="center" prop="materialQty" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.materialQty !== null && scope.row.materialQty !== undefined">{{ formatQty(scope.row.materialQty) }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined">{{ formatAmount(scope.row.unitPrice) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -215,35 +192,69 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="批号" align="center" prop="batchNumber" width="100" show-overflow-tooltip resizable/>
+      <el-table-column label="生产日期" align="center" prop="beginDate" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="有效期" align="center" prop="endDate" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="生产厂家" align="center" prop="factoryName" width="140" show-overflow-tooltip resizable/>
+      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.supplierName || (scope.row.supplier && scope.row.supplier.name) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="业务单号" align="center" prop="billNo" width="160" show-overflow-tooltip resizable />
+      <el-table-column label="制单日期" align="center" prop="createTime" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="制单人" align="center" prop="createrNickName" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.createrNickName || scope.row.createrUserName || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核人" align="center" prop="auditNickName" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.auditNickName || scope.row.auditUserName || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="批次" align="center" prop="batchNo" width="220" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.batchNo || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="批号" align="center" prop="batchNumber" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="生产日期" align="center" prop="beginDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="注册证号" align="center" prop="material.registerNo" width="140" show-overflow-tooltip resizable/>
+      <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="储存方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>
+          <dict-tag v-if="scope.row.material" :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+          <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="有效期" align="center" prop="endDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="计费" align="center" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ formatBillingYesNo(scope.row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="集采明细" align="center" width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.supplierName || (scope.row.supplier && scope.row.supplier.name) || '--' }}</span>
+          <span>{{ formatProcureYesNo(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="180" show-overflow-tooltip resizable>
@@ -404,6 +415,18 @@ export default {
     },
     formatAmount(value) {
       return this.formatNumber(value, 4);
+    },
+    formatBillingYesNo(row) {
+      const v = row && row.material ? row.material.isBilling : null;
+      if (v === '1' || v === 1) return '是';
+      if (v === '0' || v === 0 || v === '2' || v === 2) return '否';
+      return '--';
+    },
+    formatProcureYesNo(row) {
+      const v = row && row.material ? row.material.isProcure : null;
+      if (v === '1' || v === 1) return '是';
+      if (v === '2' || v === 2) return '否';
+      return '--';
     },
     /** 查询出/退货列表 */
     getList() {
@@ -1039,6 +1062,19 @@ export default {
 
 .table-container ::v-deep .el-table .cell {
   padding: 0 4px;
+}
+
+/* 序号列：表头与单元格内容居中 */
+.table-container ::v-deep .el-table th.col-serial-center .cell,
+.table-container ::v-deep .el-table td.col-serial-center .cell {
+  text-align: center !important;
+  justify-content: center;
+}
+
+.table-container ::v-deep .col-serial-center-text {
+  display: block;
+  width: 100%;
+  text-align: center;
 }
 </style>
 

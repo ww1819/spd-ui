@@ -132,9 +132,9 @@
     <div class="table-container">
     <el-table v-loading="loading" :data="warehouseList"
               @selection-change="handleSelectionChange" height="60vh" border stripe>
-      <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
+      <el-table-column label="序号" width="80" align="center" header-align="center" class-name="col-serial-center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          {{ scope.$index + 1 }}
+          <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
       <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable/>
@@ -907,6 +907,18 @@ export default {
 
 .table-container ::v-deep .el-table .cell {
   padding: 0 4px;
+}
+
+/* 序号列：表头与单元格内容居中 */
+.table-container ::v-deep .el-table th.col-serial-center .cell,
+.table-container ::v-deep .el-table td.col-serial-center .cell {
+  text-align: center !important;
+}
+
+.table-container ::v-deep .col-serial-center-text {
+  display: block;
+  width: 100%;
+  text-align: center;
 }
 </style>
 
