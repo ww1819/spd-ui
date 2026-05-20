@@ -197,19 +197,19 @@
       <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable/>
       <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="价格" align="right" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="价格" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined">{{ formatAmount(scope.row.unitPrice) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" align="right" prop="materialQty" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="数量" align="center" prop="materialQty" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.materialQty !== null && scope.row.materialQty !== undefined">{{ formatQty(scope.row.materialQty) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="right" prop="materialAmt" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.materialAmt !== null && scope.row.materialAmt !== undefined">{{ formatAmount(scope.row.materialAmt) }}</span>
           <span v-else>--</span>
