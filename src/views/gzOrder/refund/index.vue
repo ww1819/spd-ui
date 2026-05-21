@@ -1199,8 +1199,9 @@ export default {
           const promises = this.ids.map(id => auditGoods({id: id}));
           return Promise.all(promises);
         }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("批量审核退库成功！");
+          this.getList();
+          this.$modal.msgSuccess("批量审核退库成功！");
+        }).catch(() => {});
       }).catch(() => {});
     },
     handleBatchPrint() {
