@@ -434,6 +434,7 @@
 <script>
 import { listApply, getApply, delApply, addApply, updateApply,auditApply } from "@/api/department/apply";
 import { listPurchase, getPurchase, delPurchase, updatePurchase, auditPurchase } from "@/api/department/purchase";
+import { assertBillEntriesReadyForAudit } from "@/utils/billEntryValidate";
 import { listDepartmentTransfer, getDepartmentTransfer, delDepartmentTransfer, updateDepartmentTransfer, auditDepartmentTransfer } from "@/api/department/departmentTransfer";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -441,7 +442,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 import {auditWarehouse, getWarehouse} from "@/api/warehouse/warehouse";
 import { checkPermi } from "@/utils/permission";
-import { assertBillHasMaterialEntries } from "@/utils/billEntryValidate";
+import { assertBillHasMaterialEntries, normalizeBillMaterialLineQtyDefaultOne } from "@/utils/billEntryValidate";
 
 export default {
   name: "dAudit",
@@ -929,8 +930,12 @@ export default {
         if (this.currentBillType === '1') {
           return auditApply({id: id,auditBy:auditBy});
         } else if (this.currentBillType === '2') {
-          // 申购单审核
-          return auditPurchase({id: id,auditBy:auditBy});
+          return getPurchase(id).then(resp => {
+            if (!assertBillEntriesReadyForAudit(resp.data.depPurchaseApplyEntryList, this, '科室申购单')) {
+              return Promise.reject(new Error('audit_validate_failed'));
+            }
+            return auditPurchase({ id: id, auditBy: auditBy });
+          });
         } else if (this.currentBillType === '3') {
           // 转科申请单审核
           return auditDepartmentTransfer({id: id,auditBy:auditBy});
@@ -938,7 +943,10 @@ export default {
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("审核成功！");
-      }).catch(() => {
+      }).catch((err) => {
+        if (err && err.message === 'audit_validate_failed') {
+          return;
+        }
       });
     },
     /** 批量审核按钮操作 */
@@ -979,9 +987,15 @@ export default {
           promises.push(auditApply({id: id, auditBy: auditBy}));
         });
       } else if (this.currentBillType === '2') {
-        // 申购单批量审核
         ids.forEach(id => {
-          promises.push(auditPurchase({id: id, auditBy: auditBy}));
+          promises.push(
+            getPurchase(id).then(resp => {
+              if (!assertBillEntriesReadyForAudit(resp.data.depPurchaseApplyEntryList, this, '科室申购单')) {
+                return Promise.reject(new Error('audit_validate_failed'));
+              }
+              return auditPurchase({ id: id, auditBy: auditBy });
+            })
+          );
         });
       } else if (this.currentBillType === '3') {
         // 转科申请单批量审核
@@ -994,7 +1008,10 @@ export default {
         this.getList();
         this.$modal.msgSuccess("批量审核成功！");
         this.ids = [];
-      }).catch(() => {
+      }).catch((err) => {
+        if (err && err.message === 'audit_validate_failed') {
+          return;
+        }
         this.$modal.msgError("批量审核失败，请重试");
       });
     },
@@ -1064,6 +1081,9 @@ export default {
         if (valid) {
           if (!assertBillHasMaterialEntries(this.basApplyEntryList, this)) {
             return;
+          }
+          if (this.currentBillType === '2') {
+            normalizeBillMaterialLineQtyDefaultOne(this.basApplyEntryList);
           }
           this.form.basApplyEntryList = this.basApplyEntryList;
           let totalAmt = 0;
