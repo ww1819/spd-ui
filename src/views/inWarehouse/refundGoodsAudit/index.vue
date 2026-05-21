@@ -508,6 +508,7 @@
 import { listThInventory, getThInventory, delThInventory, addThInventory, updateThInventory,auditThInventory } from "@/api/warehouse/thInventory";
 import { listEntryChangeLog } from "@/api/warehouse/warehouse";
 import { collectCkThScopeErrors } from '@/utils/auditBillScopeValidate';
+import { assertBillEntriesForAudit } from '@/utils/billEntryValidate';
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -909,6 +910,9 @@ export default {
       const auditBy = this.$store.state.user.userId;
       getThInventory(id).then(async res => {
         const data = res.data
+        if (!assertBillEntriesForAudit(data.stkIoBillEntryList, this, '退货单')) {
+          return
+        }
         const errs = await collectCkThScopeErrors(data, data.stkIoBillEntryList, data.billType)
         if (errs.length) {
           this.$modal.msgError(errs.join('；'))

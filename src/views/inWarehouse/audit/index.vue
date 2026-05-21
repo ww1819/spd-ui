@@ -584,7 +584,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMaterialFilter from "@/components/SelectModel/SelectMaterialFilter";
-import { assertBillHasEntries } from '@/utils/billEntryValidate';
+import { assertBillHasEntries, assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import orderPrint from "@/views/inWarehouse/audit/orderPrint";
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
@@ -1027,12 +1027,16 @@ export default {
       this.reset();
       const id = row.id || this.ids
       const auditBy = this.$store.state.user.userId;
-
-      this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(function() {
-        return auditWarehouse({id:id,auditBy:auditBy});
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("审核入库成功！");
+      getInWarehouse(id).then(res => {
+        if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
+          return;
+        }
+        this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+          return auditWarehouse({ id: id, auditBy: auditBy });
+        }).then(() => {
+          this.getList();
+          this.$modal.msgSuccess("审核入库成功！");
+        }).catch(() => {});
       }).catch(() => {});
     },
     /** 批量审核按钮操作 */
@@ -1047,12 +1051,24 @@ export default {
       const auditBy = this.$store.state.user.userId;
       const skipTip = pending.length < rows.length ? "（已跳过" + (rows.length - pending.length) + "条已审核单据）" : "";
       this.$modal.confirm('确定要审核选中的"' + pending.length + '"条待审核数据？' + skipTip).then(() => {
-        const promises = ids.map(id => auditWarehouse({id: id, auditBy: auditBy}));
-        return Promise.all(promises);
+        const validatePromises = ids.map(id =>
+          getInWarehouse(id).then(res => {
+            if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
+              return Promise.reject(new Error('audit_entry_validate_failed'));
+            }
+          })
+        );
+        return Promise.all(validatePromises).then(() =>
+          Promise.all(ids.map(id => auditWarehouse({ id: id, auditBy: auditBy })))
+        );
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("批量审核成功！");
-      }).catch(() => {});
+      }).catch(err => {
+        if (err && err.message === 'audit_entry_validate_failed') {
+          return;
+        }
+      });
     },
     /** 修改按钮操作 */
     handleUpdate(row) {

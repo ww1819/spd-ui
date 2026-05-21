@@ -462,6 +462,7 @@
 
 <script>
 import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, auditStocktaking, checkStocktakingQty } from "@/api/warehouse/stocktaking";
+import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listPDFilter } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
@@ -747,9 +748,13 @@ export default {
     handleAudit(row) {
       const id = row.id || this.ids;
       const stockNo = row && row.stockNo != null ? row.stockNo : id;
-      this.$modal
-        .confirm('确定要审核"' + stockNo + '"的数据项？')
-        .then(() => checkStocktakingQty({ id }))
+      getStocktaking(id).then(res => {
+        if (!assertBillHasActiveEntriesForAudit(res.data.stkIoStocktakingEntryList, this, '仓库盘点')) {
+          return;
+        }
+        this.$modal
+          .confirm('确定要审核"' + stockNo + '"的数据项？')
+          .then(() => checkStocktakingQty({ id }))
         .then((res) => {
           const rows = (res && res.data) || [];
           if (!rows.length) {
@@ -765,12 +770,13 @@ export default {
           this.whAuditQtyMismatchVisible = true;
           return null;
         })
-        .then((result) => {
-          if (!result) return;
-          this.getList();
-          this.$modal.msgSuccess('审核成功！');
-        })
-        .catch(() => {});
+          .then((result) => {
+            if (!result) return;
+            this.getList();
+            this.$modal.msgSuccess('审核成功！');
+          })
+          .catch(() => {});
+      }).catch(() => {});
     },
     confirmWhAuditMismatchRow(row) {
       const v = parseFloat(row.adjustedStockQty);

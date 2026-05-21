@@ -477,6 +477,7 @@
 import { listTkInventory, getTkInventory, delTkInventory, addTkInventory, updateTkInventory,auditTkInventory } from "@/api/warehouse/tkInventory";
 import { listEntryChangeLog } from "@/api/warehouse/outWarehouse";
 import { collectTkScopeErrors } from '@/utils/auditBillScopeValidate';
+import { assertBillEntriesForAudit } from '@/utils/billEntryValidate';
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -892,6 +893,9 @@ export default {
       const auditBy = this.$store.state.user.userId;
       getTkInventory(id).then(async res => {
         const data = res.data
+        if (!assertBillEntriesForAudit(data.stkIoBillEntryList, this, '退库单')) {
+          return
+        }
         const errs = await collectTkScopeErrors(data, data.stkIoBillEntryList)
         if (errs.length) {
           this.$modal.msgError(errs.join('；'))

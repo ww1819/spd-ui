@@ -1,3 +1,38 @@
+/** 明细行未逻辑删除（delFlag 为空、0 或非 1） */
+export function isEntryNotDeleted(row) {
+  if (!row) {
+    return false;
+  }
+  const df = row.delFlag;
+  if (df == null || df === '') {
+    return true;
+  }
+  if (typeof df === 'string') {
+    return df.trim() !== '1';
+  }
+  return Number(df) !== 1;
+}
+
+/**
+ * 审核前：至少一条未删除明细
+ */
+export function assertBillHasActiveEntriesForAudit(entryList, vm, docLabel) {
+  const label = docLabel || '单据';
+  const active = (entryList || []).filter(isEntryNotDeleted);
+  if (active.length === 0) {
+    if (vm && vm.$modal) {
+      vm.$modal.msgError(`${label}无有效明细，不允许审核`);
+    }
+    return false;
+  }
+  return true;
+}
+
+/** @deprecated 请使用 assertBillHasActiveEntriesForAudit */
+export function assertBillEntriesForAudit(entryList, vm, docLabel) {
+  return assertBillHasActiveEntriesForAudit(entryList, vm, docLabel);
+}
+
 /**
  * 主从单据保存前：至少一条明细（前端校验，与后端 MasterDetailValidateUtil 一致）
  * @param {Array} entryList 明细列表

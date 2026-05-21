@@ -419,6 +419,7 @@
 
 <script>
 import { listStocktakingAudit, getStocktakingAudit, auditStocktaking, rejectStocktaking } from "@/api/department/stocktakingAudit";
+import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listInventoryPick } from "@/api/department/depInventory";
 import { listStocktakingExportRows } from "@/api/department/stocktaking";
 import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
@@ -717,14 +718,23 @@ export default {
         this.$modal.msgWarning("部分选中的数据不是未审核状态，将只审核未审核的记录");
       }
       const unAuditedIds = unAuditedRows.map(row => row.id);
-      this.$modal.confirm('是否确认审核选中的' + unAuditedIds.length + '条数据项？').then(() => {
-        const auditTasks = unAuditedRows.map((row) =>
-          auditStocktaking({ id: row.id, expectedUpdateTime: row.updateTime || row.createTime })
-        );
-        return Promise.all(auditTasks);
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("批量审核成功");
+      const validations = unAuditedRows.map(row =>
+        getStocktakingAudit(row.id).then(res => {
+          if (!assertBillHasActiveEntriesForAudit(res.data.stkIoStocktakingEntryList, this, '科室盘点')) {
+            return Promise.reject(new Error('no active entries'));
+          }
+        })
+      );
+      Promise.all(validations).then(() => {
+        this.$modal.confirm('是否确认审核选中的' + unAuditedIds.length + '条数据项？').then(() => {
+          const auditTasks = unAuditedRows.map((row) =>
+            auditStocktaking({ id: row.id, expectedUpdateTime: row.updateTime || row.createTime })
+          );
+          return Promise.all(auditTasks);
+        }).then(() => {
+          this.getList();
+          this.$modal.msgSuccess("批量审核成功");
+        }).catch(() => {});
       }).catch(() => {});
     },
     /** 驳回按钮操作 */
@@ -762,13 +772,28 @@ export default {
       this.runAuditWithQtyCheck(id, this.form.stockNo, true, this.form.updateTime || this.form.createTime);
     },
     runAuditWithQtyCheck(id, stockNo, closeOnSuccess, expectedUpdateTime) {
-      this.$modal.confirm('是否确认审核盘点编号为"' + stockNo + '"的数据项？').then(() => {
-        return auditStocktaking({ id, expectedUpdateTime });
-      }).then(() => {
-        this.getList();
-        if (closeOnSuccess) this.open = false;
-        this.$modal.msgSuccess("审核成功");
-      }).catch(() => {});
+      const doAudit = () => {
+        this.$modal.confirm('是否确认审核盘点编号为"' + stockNo + '"的数据项？').then(() => {
+          return auditStocktaking({ id, expectedUpdateTime });
+        }).then(() => {
+          this.getList();
+          if (closeOnSuccess) this.open = false;
+          this.$modal.msgSuccess("审核成功");
+        }).catch(() => {});
+      };
+      if (closeOnSuccess && !assertBillHasActiveEntriesForAudit(this.stkIoStocktakingEntryList, this, '科室盘点')) {
+        return;
+      }
+      if (!closeOnSuccess) {
+        getStocktakingAudit(id).then(res => {
+          if (!assertBillHasActiveEntriesForAudit(res.data.stkIoStocktakingEntryList, this, '科室盘点')) {
+            return;
+          }
+          doAudit();
+        }).catch(() => {});
+        return;
+      }
+      doAudit();
     },
     /** 驳回提交 */
     handleRejectSubmit() {
