@@ -489,6 +489,11 @@
               <div class="query-container">
                 <el-form :model="purchaseQueryParams" :inline="true" size="small" label-width="70px">
                   <el-row :gutter="10">
+                    <el-col :span="5">
+                      <el-form-item label="计划仓库">
+                        <el-input :value="referencePlanWarehouseLabel" disabled placeholder="请先在计划表头选择仓库" style="width: 100%;" />
+                      </el-form-item>
+                    </el-col>
                     <el-col :span="4">
                       <el-form-item label="科室">
                         <SelectDepartment v-model="purchaseQueryParams.departmentId" style="width: 100%;" />
@@ -590,6 +595,11 @@
                     </template>
                   </el-table-column>
                   <el-table-column label="单号" prop="purchaseBillNo" width="150" show-overflow-tooltip />
+                  <el-table-column label="仓库" align="center" width="100" show-overflow-tooltip>
+                    <template slot-scope="scope">
+                      <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
+                    </template>
+                  </el-table-column>
                   <el-table-column label="科室" prop="department.name" width="80" show-overflow-tooltip />
                   <el-table-column label="金额" prop="totalAmount" width="100" align="right" show-overflow-tooltip>
                     <template slot-scope="scope">
@@ -789,6 +799,7 @@
 import { listPurchasePlan, getPurchasePlan, delPurchasePlan, addPurchasePlan, updatePurchasePlan, auditPurchasePlan, getApplyDetails, getApplyBillNoList, getApplyBillHeaderList } from "@/api/caigou/purchasePlan";
 import { listUserAll } from "@/api/system/user";
 import { listPurchase, getPurchase, rejectPurchase } from "@/api/department/purchase";
+import { listWarehouseAll } from "@/api/foundation/warehouse";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectSupplierFromOptions from '@/components/SelectModel/SelectSupplierFromOptions';
 import { listSupplierAll } from '@/api/foundation/supplier';
@@ -910,6 +921,8 @@ export default {
       /** 引用申购单：跨页勾选缓存，key 为申购单 id */
       selectedPurchaseRowMap: {},
       purchaseSelectionRestoring: false,
+      /** 引用申购单弹窗展示：计划表头仓库名称 */
+      referencePlanWarehouseName: '',
       selectedPurchaseEntryIds: [], // 选中的申购单明细ID列表（右侧明细多选）
       // 查看申购明细弹窗
       applyDetailDialogVisible: false,
@@ -1076,6 +1089,21 @@ export default {
       const hasEntries = (this.stkIoBillEntryList || []).length > 0;
       const hasRef = this.form.referenceBillNo && String(this.form.referenceBillNo).trim();
       return hasEntries || !!hasRef;
+    },
+    /** 引用申购单弹窗：展示计划表头所选仓库名称 */
+    referencePlanWarehouseLabel() {
+      if (this.referencePlanWarehouseName) {
+        return this.referencePlanWarehouseName;
+      }
+      const w = this.form && this.form.warehouse;
+      if (w && w.name) {
+        return w.name;
+      }
+      const wid = this.form && this.form.warehouseId;
+      if (wid == null || wid === '') {
+        return '';
+      }
+      return '';
     }
   },
   watch: {
@@ -2070,6 +2098,39 @@ export default {
       }
       return '--';
     },
+    /** 引用申购单查询条件与计划表头仓库对齐 */
+    syncPurchaseQueryWarehouseFromForm() {
+      const wid = this.form && this.form.warehouseId;
+      if (wid != null && wid !== '') {
+        const n = Number(wid);
+        this.purchaseQueryParams.warehouseId = Number.isFinite(n) ? n : wid;
+      } else {
+        this.purchaseQueryParams.warehouseId = null;
+      }
+    },
+    /** 解析计划表头仓库名称（新增计划仅有 warehouseId 时） */
+    resolveReferencePlanWarehouseName() {
+      const w = this.form && this.form.warehouse;
+      if (w && w.name) {
+        this.referencePlanWarehouseName = w.name;
+        return Promise.resolve(w.name);
+      }
+      const wid = this.form && this.form.warehouseId;
+      if (wid == null || wid === '') {
+        this.referencePlanWarehouseName = '';
+        return Promise.resolve('');
+      }
+      const userId = this.$store.state.user.userId;
+      return listWarehouseAll(userId).then(res => {
+        const rows = res || res.data || res.rows || [];
+        const hit = rows.find(item => String(item.id) === String(wid) || item.id == wid);
+        this.referencePlanWarehouseName = hit && hit.name ? hit.name : '';
+        return this.referencePlanWarehouseName;
+      }).catch(() => {
+        this.referencePlanWarehouseName = '';
+        return '';
+      });
+    },
     /** 引用申购单按钮操作 */
     handleReferencePurchase() {
       // 验证是否已选择仓库
@@ -2077,21 +2138,33 @@ export default {
         this.$modal.msgWarning("请先选择仓库");
         return;
       }
-      // 设置查询参数中的仓库ID
-      this.purchaseQueryParams.warehouseId = this.form.warehouseId;
+      this.syncPurchaseQueryWarehouseFromForm();
       this.purchaseQueryParams.pageNum = 1;
       // 清空选中的明细与跨页缓存
       this.clearSelectedPurchaseCache();
       // 打开引用申购单对话框
       this.referencePurchaseDialogVisible = true;
-      this.getPurchaseList();
+      this.resolveReferencePlanWarehouseName().finally(() => {
+        this.getPurchaseList();
+      });
     },
     handlePurchaseSearch() {
+      if (!this.form.warehouseId) {
+        this.$modal.msgWarning("请先在计划表头选择仓库");
+        return;
+      }
+      this.syncPurchaseQueryWarehouseFromForm();
       this.purchaseQueryParams.pageNum = 1;
       this.getPurchaseList();
     },
     /** 查询申购单列表（排除已被引用的申购单） */
     getPurchaseList() {
+      if (!this.form.warehouseId) {
+        this.purchaseList = [];
+        this.purchaseTotal = 0;
+        return;
+      }
+      this.syncPurchaseQueryWarehouseFromForm();
       this.purchaseLoading = true;
       const params = {
         ...this.purchaseQueryParams,
@@ -2245,12 +2318,14 @@ export default {
       this.purchaseQueryParams.endDate = null;
       this.purchaseQueryParams.purchasePlanRefStatus = null;
       this.purchaseQueryParams.pageNum = 1;
+      this.syncPurchaseQueryWarehouseFromForm();
       this.clearSelectedPurchaseCache();
       this.getPurchaseList();
     },
     /** 关闭引用申购单弹窗 */
     closeReferencePurchaseDialog() {
       this.referencePurchaseDialogVisible = false;
+      this.referencePlanWarehouseName = '';
       this.clearSelectedPurchaseCache();
     },
     /** 批量驳回（仅支持单选一条申购单驳回） */
