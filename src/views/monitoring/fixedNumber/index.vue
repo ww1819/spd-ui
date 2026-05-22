@@ -130,6 +130,12 @@
                       <SelectWarehouse v-model="queryParams.warehouseId"/>
                     </div>
                   </el-form-item>
+                  <el-form-item v-if="queryParams.fixedNumberType === '1'" label="启用状态" prop="enableStatus" class="query-item-inline">
+                    <el-select v-model="queryParams.enableStatus" clearable placeholder="全部" style="width: 120px">
+                      <el-option label="启用" value="0" />
+                      <el-option label="停用" value="1" />
+                    </el-select>
+                  </el-form-item>
                   <el-form-item label="集采" prop="isProcure" class="query-item-inline">
                     <el-select v-model="queryParams.isProcure" clearable placeholder="全部" style="width: 120px">
                       <el-option label="是" value="1" />
@@ -185,6 +191,16 @@
                   :disabled="multiple"
                   @click="handleBatchDisable"
                 >停用</el-button>
+          </el-col>
+          <el-col v-if="queryParams.fixedNumberType === '1'" :span="1.5">
+                <el-button
+                  v-hasPermi="['monitoring:fixedNumber:enable']"
+                  type="success"
+                  icon="el-icon-check"
+              size="medium"
+                  :disabled="multiple"
+                  @click="handleBatchEnable"
+                >启用</el-button>
           </el-col>
           <el-col :span="1.5">
                 <el-button
@@ -248,15 +264,15 @@
       </el-table-column>
       <el-table-column label="高值" align="center" prop="isGz" width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.isGz === '1' || scope.row.isGz === 1">高值</span>
-          <span v-else-if="scope.row.isGz === '2' || scope.row.isGz === 2">非高值</span>
+          <span v-if="isMaterialGz(scope.row)">是</span>
+          <span v-else-if="isMaterialNonGz(scope.row)">否</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column v-if="queryParams.fixedNumberType === '1'" label="停用状态" align="center" prop="enableStatus" width="100" show-overflow-tooltip resizable>
+      <el-table-column v-if="queryParams.fixedNumberType === '1'" label="是否启用" align="center" prop="enableStatus" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <el-tag v-if="isRowDisabled(scope.row)" type="info" size="small">已停用</el-tag>
-          <el-tag v-else type="success" size="small">正常</el-tag>
+          <el-tag v-if="isRowDisabled(scope.row)" type="info" size="small">否</el-tag>
+          <el-tag v-else type="success" size="small">是</el-tag>
         </template>
       </el-table-column>
       <el-table-column v-if="queryParams.fixedNumberType === '1'" label="停用人" align="center" prop="disableBy" width="110" show-overflow-tooltip resizable>
@@ -601,8 +617,8 @@
                 </el-table-column>
                 <el-table-column label="高值" align="center" prop="isGz" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span v-if="scope.row.isGz === '1' || scope.row.isGz === 1">高值</span>
-                    <span v-else-if="scope.row.isGz === '2' || scope.row.isGz === 2">非高值</span>
+                    <span v-if="isMaterialGz(scope.row)">是</span>
+                    <span v-else-if="isMaterialNonGz(scope.row)">否</span>
                     <span v-else>--</span>
                   </template>
                 </el-table-column>
@@ -716,6 +732,7 @@ export default {
         departmentId: null,
         isProcure: null,
         isGz: null,
+        enableStatus: null,
         fixedNumberType: '1' // 默认为仓库定数监测
       },
       // 表单参数
@@ -759,6 +776,7 @@ export default {
     'queryParams.fixedNumberType'(newVal, oldVal) {
       this.queryParams.warehouseId = null;
       this.queryParams.departmentId = null;
+      this.queryParams.enableStatus = null;
       this.queryParams.pageNum = 1;
       this.fixedNumberList = [];
       this.allFixedNumberList = [];
@@ -1474,6 +1492,21 @@ export default {
     isRowDisabled(row) {
       return row && (row.enableStatus === '1' || row.enableStatus === 1);
     },
+    /** 耗材是否高值（1=高值） */
+    resolveMaterialIsGz(row) {
+      if (!row) return null;
+      const v = row.isGz != null ? row.isGz : (row.material && row.material.isGz != null ? row.material.isGz : null);
+      if (v == null || v === '') return null;
+      return String(v).trim();
+    },
+    isMaterialGz(row) {
+      const v = this.resolveMaterialIsGz(row);
+      return v === '1';
+    },
+    isMaterialNonGz(row) {
+      const v = this.resolveMaterialIsGz(row);
+      return v === '2';
+    },
     /** 单行停用 */
     handleDisable(row) {
       if (!row || !row.id) {
@@ -1527,6 +1560,29 @@ export default {
         return disableFixedNumberBatch(ids);
       }).then(() => {
         this.$modal.msgSuccess("停用成功");
+        this.getList();
+      }).catch(() => {});
+    },
+    /** 批量启用 */
+    handleBatchEnable() {
+      if (this.queryParams.fixedNumberType !== '1') {
+        this.$modal.msgWarning("仅仓库定数监测支持启用");
+        return;
+      }
+      if (!this.selectedRows || this.selectedRows.length === 0) {
+        this.$modal.msgWarning("请先勾选要启用的记录");
+        return;
+      }
+      const toEnable = this.selectedRows.filter(r => r && r.id && this.isRowDisabled(r));
+      if (toEnable.length === 0) {
+        this.$modal.msgWarning("所选记录均已处于启用状态");
+        return;
+      }
+      const ids = toEnable.map(r => r.id);
+      this.$modal.confirm(`是否确认启用选中的 ${ids.length} 条定数关联？启用后可在科室申购、入库等业务中再次选择这些产品。`).then(() => {
+        return enableFixedNumberBatch(ids);
+      }).then(() => {
+        this.$modal.msgSuccess("启用成功");
         this.getList();
       }).catch(() => {});
     },
