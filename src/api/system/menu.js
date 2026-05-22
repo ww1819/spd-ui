@@ -34,11 +34,16 @@ export function batchSetDefaultOpenToCustomer(menuIds) {
   })
 }
 
-// 查询菜单下拉树结构
-export function treeselect() {
+// 查询菜单下拉树结构（传 tenantId 时仅返回该租户 hc_customer_menu 已开通菜单）
+export function treeselect(tenantId) {
+  const params = {}
+  if (tenantId != null && String(tenantId).trim() !== '') {
+    params.tenantId = tenantId
+  }
   return request({
     url: '/system/menu/treeselect',
-    method: 'get'
+    method: 'get',
+    params
   })
 }
 

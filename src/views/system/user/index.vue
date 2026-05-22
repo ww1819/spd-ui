@@ -879,10 +879,11 @@ export default {
       this.form.departmentIds = val ? checkeddepartmentIds : [];
       this.departmentIndeterminate = false;
     },
-    /** 获取菜单树 */
-    getMenuTree() {
-      return menuTreeselect().then(response => {
-        this.menuOptions = response.data || [];
+    /** 获取菜单树（租户用户仅展示 hc_customer_menu 已开通菜单） */
+    getMenuTree(tenantId) {
+      const tid = tenantId || (this.form && this.form.customerId) || this.$store.getters.customerId;
+      return menuTreeselect(tid).then(response => {
+        this.menuOptions = tid ? this.normalizeAuthMenuTree(response.data || []) : (response.data || []);
         return response;
       });
     },
@@ -1001,7 +1002,9 @@ export default {
             return res;
           });
         }
-        return this.getMenuTree();
+        this.menuOptions = [];
+        this.$modal.msgWarning('该用户未绑定租户，无法分配耗材菜单权限');
+        return Promise.resolve();
       }).then(() => {
         this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
         this.authOpen = true;
