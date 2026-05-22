@@ -178,7 +178,7 @@
           <el-table-column label="处理情况" prop="processSituation" min-width="200" show-overflow-tooltip />
           <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
           <el-table-column label="本地入库" prop="createTime" width="160" />
-          <el-table-column label="操作" align="center" width="230" fixed="right">
+          <el-table-column label="操作" align="center" width="280" fixed="right">
             <template slot-scope="scope">
               <el-button
                 type="text"
@@ -194,6 +194,13 @@
                 :disabled="scope.row.processStatus === 'CONSUMED'"
                 @click="openHighDialog(scope.row)"
               >高值</el-button>
+              <el-button
+                type="text"
+                size="mini"
+                v-hasPermi="['department:patientCharge:writeOffLow']"
+                :disabled="!canWriteOffLow(scope.row)"
+                @click="handleWriteOffLow(scope.row)"
+              >冲销</el-button>
               <el-button
                 type="text"
                 size="mini"
@@ -364,7 +371,8 @@ import {
   processMirrorLowValueBatch,
   scanMirrorHighBarcode,
   applyMirrorHighConsume,
-  listMirrorConsumeRecords
+  listMirrorConsumeRecords,
+  writeOffMirrorLowValue
 } from '@/api/department/patientCharge'
 
 export default {
@@ -631,6 +639,50 @@ export default {
         fetchInpatient: true,
         fetchOutpatient: true
       }
+    },
+    isRefundMirrorRow(row) {
+      const tf = row && (row.chargeIdTf || row.hisInpatientChargeIdTf || row.hisOutpatientChargeIdTf)
+      return tf != null && String(tf).trim() !== ''
+    },
+    canWriteOffLow(row) {
+      if (!row || row.valueLevel === '1' || row.valueLevel === 1) {
+        return false
+      }
+      if (row.processStatus === 'CONSUMED' && row.processType === 'LOW_VALUE') {
+        return true
+      }
+      if (row.processStatus === 'REFUNDED') {
+        return true
+      }
+      return false
+    },
+    handleWriteOffLow(row) {
+      const visitKind = row && row.visitType ? row.visitType : this.currentVisitKind
+      if (!visitKind) {
+        this.$modal.msgWarning('请先切换到住院或门诊后再冲销')
+        return
+      }
+      const isCharge = !this.isRefundMirrorRow(row)
+      const tip = isCharge
+        ? '将反消耗本行低值核销并返还科室库存；若存在已核销或已退费返还的关联退费行，将一并冲销并恢复为待处理。是否继续？'
+        : '将撤销本退费行的低值处理/退费返还，恢复为待处理并调整科室库存。是否继续？'
+      this.$modal.confirm(tip).then(() => {
+        return writeOffMirrorLowValue({ visitKind, mirrorRowId: row.id })
+      }).then(res => {
+        const d = res.data || {}
+        const rev = (d.reverseConsumeBillIds || []).length
+        const reapply = (d.reapplyConsumeBillIds || []).length
+        const rel = d.relatedRefundWriteOffCount != null ? d.relatedRefundWriteOffCount : 0
+        let msg = `冲销完成：反消耗单 ${rev} 张`
+        if (reapply > 0) {
+          msg += `，撤销退费扣减单 ${reapply} 张`
+        }
+        if (rel > 0) {
+          msg += `，联动退费 ${rel} 条`
+        }
+        this.$modal.msgSuccess(msg)
+        this.handleDetailQuery()
+      }).catch(() => {})
     },
     processLowValue(row) {
       const visitKind = row && row.visitType ? row.visitType : this.currentVisitKind
