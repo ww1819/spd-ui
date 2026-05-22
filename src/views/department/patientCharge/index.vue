@@ -248,7 +248,7 @@
       </el-tab-pane>
     </el-tabs>
 
-    <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="920px" append-to-body>
+    <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="92%" append-to-body class="consume-record-dialog">
       <el-table
         v-loading="consumeRecordDialog.loading"
         :data="consumeRecordDialog.rows"
@@ -257,19 +257,62 @@
         max-height="420"
         empty-text="暂无消耗记录"
       >
-        <el-table-column label="关联时间" prop="createTime" width="165" show-overflow-tooltip />
-        <el-table-column label="分摊数量" prop="allocQty" width="100" align="right" />
-        <el-table-column label="消耗单号" prop="consumeBillNo" min-width="140" show-overflow-tooltip />
-        <el-table-column label="消耗日期" prop="consumeBillDate" width="110" show-overflow-tooltip />
-        <el-table-column label="单状态" width="88" align="center">
+        <el-table-column label="类型" width="64" align="center" fixed="left">
+          <template slot-scope="scope">
+            <span>{{ consumeRecordTypeText(scope.row.recordType) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="消耗单号" prop="consumeBillNo" min-width="178" show-overflow-tooltip />
+        <el-table-column label="冲销来源单号" prop="reverseOfBillNo" min-width="178" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.reverseOfBillNo || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="消耗日期" prop="consumeBillDate" width="158" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateTime(scope.row.consumeBillDate) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单状态" width="80" align="center">
           <template slot-scope="scope">
             <span>{{ consumeBillStatusText(scope.row.consumeBillStatus) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材" prop="materialName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="批次号" prop="batchNo" min-width="130" show-overflow-tooltip />
-        <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="130" show-overflow-tooltip />
-        <el-table-column label="明细数量" prop="entryQty" width="96" align="right" />
+        <el-table-column label="耗材" prop="materialName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="单价" prop="unitPrice" width="88" align="right" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatMoney(scope.row.unitPrice) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="数量" prop="entryQty" width="80" align="right" show-overflow-tooltip />
+        <el-table-column label="金额" prop="amt" width="96" align="right" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatMoney(scope.row.amt) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="批次号" prop="batchNo" min-width="200" show-overflow-tooltip />
+        <el-table-column label="批号" prop="batchNumber" min-width="120" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.batchNumber || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="有效期" prop="endTime" width="108" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateOnly(scope.row.endTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="生产日期" prop="beginTime" width="108" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateOnly(scope.row.beginTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="分摊数量" prop="allocQty" width="88" align="right" />
+        <el-table-column label="关联时间" prop="createTime" width="158" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateTime(scope.row.createTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="120" show-overflow-tooltip />
       </el-table>
       <div slot="footer" class="dialog-footer">
         <el-button @click="consumeRecordDialog.visible = false">关 闭</el-button>
@@ -506,6 +549,24 @@ export default {
       if (v === 1 || v === '1') return '未审核'
       if (v === 2 || v === '2') return '已审核'
       return v != null && v !== '' ? String(v) : '--'
+    },
+    consumeRecordTypeText(v) {
+      if (v === 'REVERSE') return '冲销'
+      return '消耗'
+    },
+    formatDateTime(v) {
+      if (!v) return '--'
+      return parseTime(v, '{y}-{m}-{d} {h}:{i}:{s}')
+    },
+    formatDateOnly(v) {
+      if (!v) return '--'
+      return parseTime(v, '{y}-{m}-{d}')
+    },
+    formatMoney(v) {
+      if (v == null || v === '') return '--'
+      const n = Number(v)
+      if (isNaN(n)) return String(v)
+      return n.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 4 })
     },
     openConsumeRecordDialog(row) {
       if (!row || !row.id) {
