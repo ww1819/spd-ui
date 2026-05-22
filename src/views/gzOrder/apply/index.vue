@@ -1518,6 +1518,7 @@ export default {
                 return listFixedNumber({
                   warehouseId: warehouse.id,
                   fixedNumberType: '1',
+                  onlyEnabled: true,
                   pageNum: 1,
                   pageSize: 1000
                 }).then(fixedResponse => {
