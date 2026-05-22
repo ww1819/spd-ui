@@ -33,6 +33,15 @@
               @keyup.enter.native="handleDetailQuery"
             />
           </el-form-item>
+          <el-form-item label="费用明细主键">
+            <el-input
+              v-model="detailQuery.hisChargeId"
+              placeholder="HIS费用明细主键"
+              clearable
+              style="width:160px"
+              @keyup.enter.native="handleDetailQuery"
+            />
+          </el-form-item>
           <el-form-item label="退费关联ID">
             <el-input
               v-model="detailQuery.chargeIdTf"
@@ -78,6 +87,7 @@
           <el-form-item>
             <el-button type="primary" icon="el-icon-search" @click="handleDetailQuery">查询</el-button>
             <el-button icon="el-icon-refresh" @click="resetDetailQuery">重置</el-button>
+            <el-button type="warning" plain icon="el-icon-download" @click="handleExport">导出</el-button>
           </el-form-item>
           <el-form-item>
             <el-button
@@ -129,6 +139,11 @@
           </template>
           <el-table-column label="患者" prop="patientName" width="100" show-overflow-tooltip />
           <el-table-column label="收费项ID" prop="chargeItemId" width="120" show-overflow-tooltip />
+          <el-table-column label="费用明细主键" prop="hisChargeId" width="130" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ scope.row.hisChargeId || scope.row.hisInpatientChargeId || scope.row.hisOutpatientChargeId || '' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="退费关联ID" width="130" show-overflow-tooltip>
             <template slot-scope="scope">
               <span>{{ scope.row.chargeIdTf || scope.row.hisInpatientChargeIdTf || scope.row.hisOutpatientChargeIdTf || '' }}</span>
@@ -144,18 +159,24 @@
           <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
           <el-table-column label="数量" prop="quantity" width="90" align="right" />
           <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
-          <el-table-column label="处理状态" prop="processStatus" width="120" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ processStatusText(scope.row.processStatus) }}</span>
-            </template>
-          </el-table-column>
           <el-table-column label="处理类型" prop="processType" width="120" show-overflow-tooltip>
             <template slot-scope="scope">
               <span>{{ processTypeText(scope.row.processType) }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="处理状态" prop="processStatus" width="120" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ processStatusText(scope.row.processStatus) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="处理方" prop="processParty" width="100" show-overflow-tooltip />
+          <el-table-column label="处理人" prop="processByName" width="100" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ scope.row.processByName || scope.row.processBy || '' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="处理情况" prop="processSituation" min-width="200" show-overflow-tooltip />
           <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
-          <el-table-column label="处理人" prop="processBy" width="100" show-overflow-tooltip />
           <el-table-column label="本地入库" prop="createTime" width="160" />
           <el-table-column label="操作" align="center" width="230" fixed="right">
             <template slot-scope="scope">
@@ -363,6 +384,7 @@ export default {
         patientName: undefined,
         visitNo: undefined,
         chargeItemId: undefined,
+        hisChargeId: undefined,
         chargeIdTf: undefined,
         departmentId: undefined,
         processed: undefined,
@@ -508,6 +530,7 @@ export default {
         patientName: undefined,
         visitNo: undefined,
         chargeItemId: undefined,
+        hisChargeId: undefined,
         chargeIdTf: undefined,
         departmentId: undefined,
         processed: undefined,
@@ -529,11 +552,18 @@ export default {
       q.endProcessTime = this.toQueryDayEnd(q.endProcessTime)
       if (this.detailVisitType === 'IN') {
         q.inpatientNo = q.visitNo
+        q.hisInpatientChargeId = q.hisChargeId
         q.hisInpatientChargeIdTf = q.chargeIdTf
         delete q.visitNo
+        delete q.hisChargeId
         delete q.chargeIdTf
         listInpatientMirror(q).then(res => {
-          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'INPATIENT', chargeIdTf: r.hisInpatientChargeIdTf }))
+          this.detailList = (res.rows || []).map(r => ({
+            ...r,
+            visitType: 'INPATIENT',
+            hisChargeId: r.hisInpatientChargeId,
+            chargeIdTf: r.hisInpatientChargeIdTf
+          }))
           this.detailTotal = res.total || 0
         }).finally(() => {
           this.detailLoading = false
@@ -541,11 +571,18 @@ export default {
         })
       } else if (this.detailVisitType === 'OUT') {
         q.outpatientNo = q.visitNo
+        q.hisOutpatientChargeId = q.hisChargeId
         q.hisOutpatientChargeIdTf = q.chargeIdTf
         delete q.visitNo
+        delete q.hisChargeId
         delete q.chargeIdTf
         listOutpatientMirror(q).then(res => {
-          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'OUTPATIENT', chargeIdTf: r.hisOutpatientChargeIdTf }))
+          this.detailList = (res.rows || []).map(r => ({
+            ...r,
+            visitType: 'OUTPATIENT',
+            hisChargeId: r.hisOutpatientChargeId,
+            chargeIdTf: r.hisOutpatientChargeIdTf
+          }))
           this.detailTotal = res.total || 0
         }).finally(() => {
           this.detailLoading = false
@@ -711,6 +748,37 @@ export default {
         this.highDialogVisible = false
         this.handleDetailQuery()
       }).finally(() => { this.highSubmitting = false })
+    },
+    buildExportParams() {
+      const q = { ...this.detailQuery }
+      delete q.pageNum
+      delete q.pageSize
+      q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
+      q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
+      q.beginProcessTime = this.toQueryDayStart(q.beginProcessTime)
+      q.endProcessTime = this.toQueryDayEnd(q.endProcessTime)
+      if (this.detailVisitType === 'IN') {
+        q.visitKind = 'INPATIENT'
+        q.inpatientNo = q.visitNo
+        q.hisInpatientChargeId = q.hisChargeId
+        delete q.visitNo
+        delete q.hisChargeId
+      } else if (this.detailVisitType === 'OUT') {
+        q.visitKind = 'OUTPATIENT'
+        q.outpatientNo = q.visitNo
+        q.hisOutpatientChargeId = q.hisChargeId
+        delete q.visitNo
+        delete q.hisChargeId
+      }
+      return q
+    },
+    handleExport() {
+      const label = this.detailVisitType === 'IN' ? '住院' : (this.detailVisitType === 'OUT' ? '门诊' : '全部')
+      this.download(
+        'his/patientCharge/mirror/export',
+        this.buildExportParams(),
+        `患者费用明细_${label}_${new Date().getTime()}.xlsx`
+      )
     },
     formatFetchResult(label, d) {
       const data = d || {}
