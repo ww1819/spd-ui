@@ -314,7 +314,11 @@
             default-time="23:59:59"
           />
         </el-form-item>
-        <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；确定后先执行住院抓取，再执行门诊抓取；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
+        <el-form-item label="抓取范围">
+          <el-checkbox v-model="fetchForm.fetchInpatient" :disabled="!canFetchInpatient">住院</el-checkbox>
+          <el-checkbox v-model="fetchForm.fetchOutpatient" :disabled="!canFetchOutpatient" style="margin-left:16px">门诊</el-checkbox>
+        </el-form-item>
+        <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；勾选住院/门诊后确定抓取；多选时先住院后门诊；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="fetchDialogVisible = false">取 消</el-button>
@@ -378,7 +382,9 @@ export default {
       fetchSubmitting: false,
       fetchForm: {
         beginDate: undefined,
-        endDate: undefined
+        endDate: undefined,
+        fetchInpatient: true,
+        fetchOutpatient: true
       },
       highDialogVisible: false,
       highSubmitting: false,
@@ -397,6 +403,12 @@ export default {
   computed: {
     fetchDialogTitle() {
       return 'HIS收费数据抓取'
+    },
+    canFetchInpatient() {
+      return checkPermi(['department:patientCharge:fetchInpatient'])
+    },
+    canFetchOutpatient() {
+      return checkPermi(['department:patientCharge:fetchOutpatient'])
     },
     currentVisitKind() {
       if (this.detailVisitType === 'IN') return 'INPATIENT'
@@ -569,12 +581,19 @@ export default {
       const day = parseTime(new Date(), '{y}-{m}-{d}')
       this.fetchForm = {
         beginDate: `${day} 00:00:00`,
-        endDate: `${day} 23:59:59`
+        endDate: `${day} 23:59:59`,
+        fetchInpatient: true,
+        fetchOutpatient: true
       }
       this.fetchDialogVisible = true
     },
     resetFetchForm() {
-      this.fetchForm = { beginDate: undefined, endDate: undefined }
+      this.fetchForm = {
+        beginDate: undefined,
+        endDate: undefined,
+        fetchInpatient: true,
+        fetchOutpatient: true
+      }
     },
     processLowValue(row) {
       const visitKind = row && row.visitType ? row.visitType : this.currentVisitKind
@@ -702,22 +721,36 @@ export default {
         this.$modal.msgWarning('请选择起止时间')
         return
       }
-      const canIn = checkPermi(['department:patientCharge:fetchInpatient'])
-      const canOut = checkPermi(['department:patientCharge:fetchOutpatient'])
+      const wantIn = !!this.fetchForm.fetchInpatient
+      const wantOut = !!this.fetchForm.fetchOutpatient
+      if (!wantIn && !wantOut) {
+        this.$modal.msgWarning('请至少勾选住院或门诊其中一项')
+        return
+      }
+      const canIn = this.canFetchInpatient
+      const canOut = this.canFetchOutpatient
       if (!canIn && !canOut) {
         this.$modal.msgWarning('无住院/门诊抓取权限')
+        return
+      }
+      if (wantIn && !canIn) {
+        this.$modal.msgWarning('已勾选住院但无住院抓取权限')
+        return
+      }
+      if (wantOut && !canOut) {
+        this.$modal.msgWarning('已勾选门诊但无门诊抓取权限')
         return
       }
       this.fetchSubmitting = true
       const body = { beginDate: this.fetchForm.beginDate, endDate: this.fetchForm.endDate }
       const runInpatient = () => {
-        if (!canIn) {
+        if (!wantIn || !canIn) {
           return Promise.resolve(null)
         }
         return fetchInpatientMirror(body).then(res => res.data)
       }
       const runOutpatient = () => {
-        if (!canOut) {
+        if (!wantOut || !canOut) {
           return Promise.resolve(null)
         }
         return fetchOutpatientMirror(body).then(res => res.data)
@@ -731,6 +764,10 @@ export default {
           }
           if (outData) {
             msgs.push(this.formatFetchResult('门诊', outData))
+          }
+          if (!msgs.length) {
+            this.$modal.msgWarning('未执行任何抓取')
+            return
           }
           this.$modal.msgSuccess(msgs.join('；'))
           this.fetchDialogVisible = false
