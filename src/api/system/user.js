@@ -161,6 +161,33 @@ export function updateAuthRole(data) {
   })
 }
 
+/** 仅更新用户菜单权限（不触碰用户主表/密码） */
+export function updateUserMenus(userId, menuIds) {
+  return request({
+    url: '/system/user/' + parseStrEmpty(userId) + '/menus',
+    method: 'put',
+    data: { menuIds: menuIds || [] }
+  })
+}
+
+/** 仅更新用户科室权限 */
+export function updateUserDepartments(userId, departmentIds) {
+  return request({
+    url: '/system/user/' + parseStrEmpty(userId) + '/departments',
+    method: 'put',
+    data: { departmentIds: departmentIds || [] }
+  })
+}
+
+/** 仅更新用户仓库权限 */
+export function updateUserWarehouses(userId, warehouseIds) {
+  return request({
+    url: '/system/user/' + parseStrEmpty(userId) + '/warehouses',
+    method: 'put',
+    data: { warehouseIds: warehouseIds || [] }
+  })
+}
+
 // 查询部门下拉树结构
 export function deptTreeSelect() {
   return request({

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container fixed-number-page">
     <el-row :gutter="20">
       <!-- 左侧：仓库列表面板 -->
