@@ -136,6 +136,12 @@
                       <el-option label="否" value="2" />
                     </el-select>
                   </el-form-item>
+                  <el-form-item label="是否高值" prop="isGz" class="query-item-inline">
+                    <el-select v-model="queryParams.isGz" clearable placeholder="全部" style="width: 120px">
+                      <el-option label="高值" value="1" />
+                      <el-option label="非高值" value="2" />
+                    </el-select>
+                  </el-form-item>
                 </el-col>
               </el-row>
             </el-form>
@@ -227,6 +233,13 @@
         <template slot-scope="scope">
           <span v-if="scope.row.isProcure === '1' || scope.row.isProcure === 1">是</span>
           <span v-else-if="scope.row.isProcure === '2' || scope.row.isProcure === 2">否</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="高值" align="center" prop="isGz" width="90" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.isGz === '1' || scope.row.isGz === 1">高值</span>
+          <span v-else-if="scope.row.isGz === '2' || scope.row.isGz === 2">非高值</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -395,12 +408,12 @@
               <div class="form-fields-container">
                 <el-form :model="addQueryParams" ref="addQueryForm" :inline="true" v-show="showSearch" label-width="100px">
                   <el-row :gutter="20">
-                    <el-col :span="6">
+                    <el-col :span="8">
                       <el-form-item label="供应商" prop="supplierId">
                         <SelectSupplier v-model="addQueryParams.supplierId"/>
                       </el-form-item>
                     </el-col>
-                    <el-col :span="6">
+                    <el-col :span="8">
                       <el-form-item label="名称" prop="materialName">
                         <el-input
                           v-model="addQueryParams.materialName"
@@ -410,7 +423,7 @@
                         />
                       </el-form-item>
                     </el-col>
-                    <el-col :span="6">
+                    <el-col :span="8">
                       <el-form-item label="规格型号" prop="speci">
                         <el-input
                           v-model="addQueryParams.speci"
@@ -420,6 +433,8 @@
                         />
                       </el-form-item>
                     </el-col>
+                  </el-row>
+                  <el-row :gutter="20">
                     <el-col :span="6">
                       <el-form-item label="是否集采" prop="isProcure">
                         <el-select
@@ -430,6 +445,19 @@
                         >
                           <el-option label="是" value="1" />
                           <el-option label="否" value="2" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                      <el-form-item label="是否高值" prop="isGz">
+                        <el-select
+                          v-model="addQueryParams.isGz"
+                          clearable
+                          placeholder="全部"
+                          style="width: 100%"
+                        >
+                          <el-option label="高值" value="1" />
+                          <el-option label="非高值" value="2" />
                         </el-select>
                       </el-form-item>
                     </el-col>
@@ -521,6 +549,13 @@
                   <template slot-scope="scope">
                     <span v-if="scope.row.isProcure === '1' || scope.row.isProcure === 1">是</span>
                     <span v-else-if="scope.row.isProcure === '2' || scope.row.isProcure === 2">否</span>
+                    <span v-else>--</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="高值" align="center" prop="isGz" width="90" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span v-if="scope.row.isGz === '1' || scope.row.isGz === 1">高值</span>
+                    <span v-else-if="scope.row.isGz === '2' || scope.row.isGz === 2">非高值</span>
                     <span v-else>--</span>
                   </template>
                 </el-table-column>
@@ -618,7 +653,8 @@ export default {
         supplierId: null,
         materialName: null,
         speci: null,
-        isProcure: null
+        isProcure: null,
+        isGz: null
       },
       // 查询参数
       queryParams: {
@@ -631,6 +667,7 @@ export default {
         warehouseId: null,
         departmentId: null,
         isProcure: null,
+        isGz: null,
         fixedNumberType: '1' // 默认为仓库定数监测
       },
       // 表单参数
@@ -1189,7 +1226,8 @@ export default {
         materialName: this.addQueryParams.materialName,
         speci: this.addQueryParams.speci,
         supplierId: this.addQueryParams.supplierId,
-        isProcure: this.addQueryParams.isProcure
+        isProcure: this.addQueryParams.isProcure,
+        isGz: this.addQueryParams.isGz
       };
       if (this.addQueryParams.materialName) {
         query.name = this.addQueryParams.materialName;
@@ -1233,7 +1271,8 @@ export default {
         supplierId: null,
         materialName: null,
         speci: null,
-        isProcure: null
+        isProcure: null,
+        isGz: null
       };
       this.addMaterialList = [];
       this.addSelectedMaterials = [];
