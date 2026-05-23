@@ -796,7 +796,7 @@
 </template>
 
 <script>
-import { listPurchasePlan, getPurchasePlan, delPurchasePlan, addPurchasePlan, updatePurchasePlan, auditPurchasePlan, getApplyDetails, getApplyBillNoList, getApplyBillHeaderList } from "@/api/caigou/purchasePlan";
+import { listPurchasePlan, getPurchasePlan, delPurchasePlan, addPurchasePlan, updatePurchasePlan, auditPurchasePlan, getApplyDetails, getApplyBillNoList, getApplyBillHeaderList, getMaterialStockQty } from "@/api/caigou/purchasePlan";
 import { listUserAll } from "@/api/system/user";
 import { listPurchase, getPurchase, rejectPurchase } from "@/api/department/purchase";
 import { listWarehouseAll } from "@/api/foundation/warehouse";
@@ -1441,9 +1441,11 @@ export default {
       }
 
       const afterAppend = () => {
-        toAppend.forEach((row) => this.qtyChange(row));
-        this.debouncedAutoSavePlan();
-        console.timeEnd('[Plan] selectData total');
+        this.fillStockQtyForEntryRows(toAppend).finally(() => {
+          toAppend.forEach((row) => this.qtyChange(row));
+          this.debouncedAutoSavePlan();
+          console.timeEnd('[Plan] selectData total');
+        });
       };
 
       // 小批量（<=30）直接同步合并，避免 rAF 等待造成 1s+ 延迟
@@ -1467,6 +1469,26 @@ export default {
           this.$nextTick(afterAppend);
         });
       });
+    },
+    /** 为明细行填充当前仓库库存数量 */
+    fillStockQtyForEntryRows(rows) {
+      if (!this.form.warehouseId || !rows || !rows.length) {
+        return Promise.resolve();
+      }
+      const materialIds = [...new Set(rows.map((r) => r.materialId).filter((id) => id != null))];
+      if (!materialIds.length) {
+        return Promise.resolve();
+      }
+      return getMaterialStockQty(this.form.warehouseId, materialIds.join(',')).then((res) => {
+        const map = (res && res.data) ? res.data : {};
+        rows.forEach((row) => {
+          if (row.materialId == null) {
+            return;
+          }
+          const v = map[row.materialId] != null ? map[row.materialId] : map[String(row.materialId)];
+          row.stockQty = v != null ? v : 0;
+        });
+      }).catch(() => {});
     },
     /**
      * 从产品档案取默认采购数量：最小包装数量；为空/0/无效则 1。
@@ -2451,12 +2473,14 @@ export default {
         });
       }
       this.stkIoBillEntryList = (this.stkIoBillEntryList || []).concat(newRows);
-      this.syncHeaderSupplierForValidate();
-      this.form.planSource = '引用申购单';
-      this.form.referenceBillNo = (this.selectedPurchaseRows || []).map(r => r.purchaseBillNo).filter(Boolean).join(', ');
-      this.calculateTotalAmount();
-      this.$modal.msgSuccess("引用申购单成功");
-      this.referencePurchaseDialogVisible = false;
+      this.fillStockQtyForEntryRows(newRows).finally(() => {
+        this.syncHeaderSupplierForValidate();
+        this.form.planSource = '引用申购单';
+        this.form.referenceBillNo = (this.selectedPurchaseRows || []).map(r => r.purchaseBillNo).filter(Boolean).join(', ');
+        this.calculateTotalAmount();
+        this.$modal.msgSuccess("引用申购单成功");
+        this.referencePurchaseDialogVisible = false;
+      });
     },
     /** 查看申购明细（采购计划明细行末按钮） */
     handleViewApplyDetails(row) {

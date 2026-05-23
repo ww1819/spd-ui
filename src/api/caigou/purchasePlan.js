@@ -101,3 +101,12 @@ export function getApplyBillHeaderList(planId) {
     params: { planId }
   })
 }
+
+// 按仓库查询物资库存数量（materialIds 逗号分隔）
+export function getMaterialStockQty(warehouseId, materialIds) {
+  return request({
+    url: '/caigou/jihua/materialStockQty',
+    method: 'get',
+    params: { warehouseId, materialIds }
+  })
+}
