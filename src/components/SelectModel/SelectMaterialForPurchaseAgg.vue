@@ -137,6 +137,7 @@
 
 <script>
 import { listFixedNumberForPurchaseAgg } from "@/api/monitoring/fixedNumber";
+import { normalizeMaterialSearchKeyword } from "@/utils/materialSearch";
 
 export default {
   name: "SelectMaterialForPurchaseAgg",
@@ -163,7 +164,7 @@ export default {
       open: false,
       queryParams: {
         pageNum: 1,
-        pageSize: 10,
+        pageSize: 20,
         code: null,
         name: null,
         speci: null,
@@ -218,11 +219,21 @@ export default {
     buildPurchaseQueryParams() {
       const q = {
         pageNum: this.queryParams.pageNum,
-        pageSize: this.queryParams.pageSize,
-        materialName: this.queryParams.name || this.queryParams.code || undefined
+        pageSize: this.queryParams.pageSize
       };
-      if (this.queryParams.speci) {
-        q["material.speci"] = this.queryParams.speci;
+      const name = normalizeMaterialSearchKeyword(this.queryParams.name);
+      const code = normalizeMaterialSearchKeyword(this.queryParams.code);
+      const speci = normalizeMaterialSearchKeyword(this.queryParams.speci);
+      if (name) {
+        q.materialName = name;
+      } else if (code) {
+        q.materialName = code;
+      }
+      if (code && name) {
+        q.materialCode = code;
+      }
+      if (speci) {
+        q.materialSpeci = speci;
       }
       return q;
     },

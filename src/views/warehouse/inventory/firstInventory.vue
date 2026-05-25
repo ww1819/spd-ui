@@ -555,16 +555,10 @@ export default {
       })
       cb(results);
     },
-    /** 查询库存明细列表 */
+    /** 查询库存明细列表（默认按耗材品名排序，同品名相邻便于查找） */
     getList() {
       this.loading = true;
-      // 添加排序参数，让最新的业务显示在最前面
-      const queryParams = {
-        ...this.queryParams,
-        orderByColumn: 'warehouse_date',
-        isAsc: 'desc'
-      };
-      listInventory(queryParams).then(response => {
+      listInventory(this.queryParams).then(response => {
         this.inventoryList = response.rows || [];
         this.total = response.total;
         this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0, subTotalAmt: 0, subTotalQty: 0 };
@@ -634,8 +628,6 @@ export default {
         ...this.queryParams,
         pageNum: 1,
         pageSize: 10000,
-        orderByColumn: 'warehouse_date',
-        isAsc: 'desc',
       };
       this.loading = true;
       try {

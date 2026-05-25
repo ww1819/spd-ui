@@ -114,6 +114,22 @@ export function getApplyBillHeaderList(planId) {
   })
 }
 
+/** 引用申购单确认：按申购单主键批量拉取明细（不依赖前端右侧预览） */
+export function fetchReferenceApplyEntries(applyIds, excludeEntryIds) {
+  const params = {
+    applyIds: Array.isArray(applyIds) ? applyIds.join(',') : applyIds
+  }
+  if (excludeEntryIds != null && excludeEntryIds !== '') {
+    params.excludeEntryIds = Array.isArray(excludeEntryIds) ? excludeEntryIds.join(',') : excludeEntryIds
+  }
+  return request({
+    url: '/caigou/jihua/referenceApplyEntries',
+    method: 'get',
+    params,
+    timeout: 120000
+  })
+}
+
 // 按仓库查询物资库存数量（materialIds 逗号分隔）
 export function getMaterialStockQty(warehouseId, materialIds) {
   return request({

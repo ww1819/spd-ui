@@ -268,12 +268,15 @@
               <el-input v-model="form.invoiceNumber" placeholder="发票号" />
             </el-form-item>
           </el-col>
-          <el-col :span="3">
-            <el-form-item label="制单人" prop="createrName">
-              <SelectUser v-model="form.createrName"/>
+          <el-col v-if="!action" :span="3">
+            <el-form-item label="制单人">
+              <el-input
+                :value="(form.creater && (form.creater.nickName || form.creater.userName)) || form.createrName || '--'"
+                disabled
+              />
             </el-form-item>
           </el-col>
-          <el-col :span="3">
+          <el-col :span="action ? 6 : 3">
             <el-form-item label="发票时间" prop="invoiceTime">
               <el-date-picker clearable
                               v-model="form.invoiceTime"
@@ -333,7 +336,7 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="9">
+          <el-col :span="7">
             <el-form-item label="扫描条码" label-width="80px" class="detail-scan-form-item">
               <el-input
                 ref="scanBarcodeInputRef"
@@ -349,6 +352,11 @@
                   <i class="el-icon-s-operation"></i>
                 </template>
               </el-input>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="科室" prop="departmentId" label-width="52px" class="inbound-dept-form-item">
+              <SelectDepartment v-model="form.departmentId" clearable style="width: 100%;" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -1619,6 +1627,10 @@ export default {
           if (hasEmptyQty) {
             this.$modal.msgError("入库明细数量不能为空");
             return;
+          }
+
+          if (!this.form.createBy && this.$store.state.user && this.$store.state.user.userId) {
+            this.form.createBy = this.$store.state.user.userId;
           }
 
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;

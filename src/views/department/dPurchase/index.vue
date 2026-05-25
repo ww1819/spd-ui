@@ -454,6 +454,7 @@
 <script>
 import { listPurchase, getPurchase, delPurchase, addPurchase, updatePurchase } from "@/api/department/purchase";
 import { assertBillHasMaterialEntries, normalizeBillMaterialLineQtyDefaultOne } from '@/utils/billEntryValidate';
+import { assertMinPackageQtyOnSave } from '@/utils/minPackageQty';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
@@ -812,6 +813,10 @@ export default {
           if (!assertBillHasMaterialEntries(this.depPurchaseApplyEntryList, this, '请至少添加一条有效明细（选择耗材）')) {
             return;
           }
+          const materialLines = (this.depPurchaseApplyEntryList || []).filter(item => item && item.materialId);
+          if (!assertMinPackageQtyOnSave(this, materialLines, '科室申购')) {
+            return;
+          }
           normalizeBillMaterialLineQtyDefaultOne(this.depPurchaseApplyEntryList);
           this.calculateTotalAmount();
           this.form.depPurchaseApplyEntryList = this.depPurchaseApplyEntryList;
@@ -955,6 +960,8 @@ export default {
       row.materialId = material.id;
       row.materialCode = material.code || '';
       row.materialName = material.name;
+      row.minPackageQty = material.minPackageQty != null ? material.minPackageQty : null;
+      row.material = material;
       row.materialSpec = material.speci || '';
       // 单位：支持多种字段路径
       row.unit = (material.fdUnit && material.fdUnit.unitName) ||
@@ -1041,6 +1048,9 @@ export default {
       }
       const list = (this.depPurchaseApplyEntryList || []).filter(item => item && item.materialId);
       if (!list.length || !this.form.warehouseId || !this.form.departmentId) {
+        return;
+      }
+      if (!assertMinPackageQtyOnSave(this, list, '科室申购')) {
         return;
       }
       normalizeBillMaterialLineQtyDefaultOne(this.depPurchaseApplyEntryList);

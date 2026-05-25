@@ -737,12 +737,14 @@ import { listApply, getApply, delApply, addApply, updateApply } from "@/api/depa
 import { listApplyTemplate, getApplyTemplate, addApplyTemplate, updateApplyTemplate, deleteApplyTemplate } from "@/api/department/applyTemplate";
 import { listMaterialDeptSafe } from "@/api/foundation/material";
 import { pinyin } from 'pinyin-pro';
+import { matchMaterialKeyword, normalizeMaterialSearchKeyword } from '@/utils/materialSearch';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectDeptApplyOperator from '@/components/SelectModel/SelectDeptApplyOperator';
 import SelectSupplier from '@/components/SelectModel/SelectSupplierDept';
 import SelectDepartmentApplyAvailableStock from '@/components/SelectModel/SelectDepartmentApplyAvailableStock';
 import SelectInventory from '@/components/SelectModel/SelectInventory';
+import { assertMinPackageQtyOnSave } from '@/utils/minPackageQty';
 
 export default {
   name: "dApply",
@@ -871,24 +873,14 @@ export default {
         list = list.filter(row => row.supplierId === supplierId);
       }
       if (kw) {
-        const k = kw.toLowerCase();
-        const kFirst = this._getFirstLetters(kw);
-        list = list.filter(row => {
-          const name = (row.name || '').toLowerCase();
-          const code = (row.code || '').toLowerCase();
-          const referred = (row.referredName || '').toLowerCase();
-          const first = this._getFirstLetters((row.name || '') + (row.code || '') + (row.referredName || ''));
-          return name.indexOf(k) !== -1 || code.indexOf(k) !== -1 || referred.indexOf(k) !== -1 ||
-            (kFirst && first && first.toLowerCase().indexOf(kFirst.toLowerCase()) !== -1);
-        });
+        const normalizedKw = normalizeMaterialSearchKeyword(kw);
+        list = list.filter(row => matchMaterialKeyword(row, normalizedKw));
       }
       if (spec) {
-        const s = spec.toLowerCase();
-        const sFirst = this._getFirstLetters(spec);
+        const normalizedSpec = normalizeMaterialSearchKeyword(spec);
         list = list.filter(row => {
-          const speci = (row.speci || '').toLowerCase();
-          const first = this._getFirstLetters(row.speci || '');
-          return speci.indexOf(s) !== -1 || (sFirst && first && first.toLowerCase().indexOf(sFirst.toLowerCase()) !== -1);
+          const speci = row.speci || '';
+          return speci.includes(normalizedSpec) || matchMaterialKeyword(row, normalizedSpec);
         });
       }
       return list;
@@ -1474,6 +1466,9 @@ export default {
       if (invalidQty) {
         return;
       }
+      if (!assertMinPackageQtyOnSave(this, list, '科室申领')) {
+        return;
+      }
       this.form.basApplyEntryList = this.basApplyEntryList;
       let totalAmt = 0;
       this.basApplyEntryList.forEach(item => {
@@ -1731,6 +1726,9 @@ export default {
           );
           if (invalidQty.length > 0) {
             this.$modal.msgError("存在明细数量为空或0，请填写有效数量后再保存。");
+            return;
+          }
+          if (!assertMinPackageQtyOnSave(this, validEntries, '科室申领')) {
             return;
           }
           this.form.basApplyEntryList = this.basApplyEntryList;

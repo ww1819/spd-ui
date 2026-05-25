@@ -225,246 +225,38 @@
       class="table-pagination"
     />
 
-    <!-- 添加或修改计划对话框 -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
-            </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
-              <!-- 顶部容器 -->
-              <div class="form-fields-container">
-                <el-row :gutter="8">
-                  <el-col :span="4">
-                    <el-form-item label="单号" prop="planNo">
-                      <el-input v-model="form.planNo" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" :value2="isPlanWarehouseLocked" excludeWarehouseType="设备,高值"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item prop="planDate">
-                      <template slot="label">
-                        <span style="white-space: nowrap;">制单时间</span>
-                      </template>
-                      <el-input :value="form.createTime ? parseTime(form.createTime, '{y}-{m}-{d} {h}:{i}:{s}') : (form.planDate ? parseTime(form.planDate, '{y}-{m}-{d} {h}:{i}:{s}') : '')" :disabled="true" placeholder="制单时间" style="width: 100%" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="操作人" prop="createBy">
-                      <el-input :value="operatorName" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="联系电话" prop="telephone">
-                      <el-input v-model="form.telephone" placeholder="联系电话" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4" />
-                </el-row>
 
-                <el-row :gutter="8">
-                  <el-col :span="4">
-                    <el-form-item label="采购员" prop="proPerson">
-                      <SelectUser v-model="form.proPerson" v-if="action"/>
-                      <el-input :value="purchaserName" :disabled="true" v-else/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="总金额" prop="totalAmount">
-                      <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="计划来源" prop="planSource">
-                      <el-input :value="planSourceDisplay" disabled placeholder="由明细聚合" style="width: 100%;" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="明细生成" prop="planEntryMode" class="plan-entry-mode-item">
-                      <el-radio-group v-model="form.planEntryMode" :disabled="planEntryModeDisabled">
-                        <el-radio label="1">按产品档案汇总</el-radio>
-                        <el-radio label="2">按申购单明细拆分</el-radio>
-                      </el-radio-group>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row v-if="form.referenceBillNo && String(form.referenceBillNo).trim()" :gutter="8">
-                  <el-col :span="12">
-                    <el-form-item label="引用申购单号" prop="referenceBillNo">
-                      <el-button type="primary" link @click="handleShowApplyBillNoList">查看引用申购单号</el-button>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </div>
+    <PlanEditDialog
+      v-if="open"
+      ref="planEditDialog"
+      :visible.sync="open"
+      :title="title"
+      :form="form"
+      :rules="rules"
+      :editable="action"
+      :entry-list="stkIoBillEntryList"
+      :user-options="userOptions"
+      :supplier-options="planDetailSupplierOptions"
+      :supplier-loading="planDetailSupplierListLoading"
+      :warehouse-locked="isPlanWarehouseLocked"
+      :plan-entry-mode-disabled="planEntryModeDisabled"
+      :plan-source-display="planSourceDisplay"
+      :table-height="detailTableHeight"
+      :summary-method="getSummaries"
+      :supplier-display-fn="entrySupplierDisplay"
+      @cancel="cancel"
+      :submit-loading="planSaveSubmitting"
+      @submit="submitForm"
+      @reference-purchase="handleReferencePurchase"
+      @add-material="checkMaterialBtn"
+      @delete-entries="handleDeleteStkIoBillEntry"
+      @entry-selection-change="handleStkIoBillEntrySelectionChange"
+      @qty-input="debounceQtyChange"
+      @qty-blur="qtyChange"
+      @view-apply-details="handleViewApplyDetails"
+      @show-apply-bills="handleShowApplyBillNoList"
+    />
 
-              <div class="modal-detail-section">
-              <el-row :gutter="10" class="detail-toolbar-row">
-                <el-col :span="1.5">
-                  <span>计划明细信息</span>
-                </el-col>
-
-                <div v-show="action">
-                  <el-col :span="1.5">
-                    <el-button type="info" plain icon="el-icon-document" size="small" @click="handleReferencePurchase">引用申购单</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button size="small" @click="cancel">取 消</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">确 定</el-button>
-                  </el-col>
-                </div>
-              </el-row>
-              <div class="table-wrapper">
-                <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
-                          show-summary :summary-method="getSummaries"
-                          @selection-change="handleStkIoBillEntrySelectionChange"
-                          ref="stkIoBillEntry"
-                          border
-                          :height="detailTableHeight"
-                >
-          <el-table-column type="selection" width="60" align="center" resizable />
-          <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <!-- 耗材列隐藏 -->
-          <!--<el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
-            </template>
-          </el-table-column>-->
-          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="规格" align="center" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.speci || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="型号" align="center" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.fdUnit ? scope.row.material.fdUnit.unitName : '' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="申购数量" align="center" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.applyQty != null ? scope.row.applyQty : '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="库存数量" align="center" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.stockQty != null ? scope.row.stockQty : '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="采购数量" prop="qty" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input
-                clearable
-                v-model="scope.row.qty"
-                placeholder="请输入采购数量"
-                @input="debounceQtyChange(scope.row)"
-                @blur="qtyChange(scope.row)"
-              />
-            </template>
-          </el-table-column>
-          <el-table-column label="价格" prop="price" width="120" align="right" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span v-if="scope.row.price">{{ parseFloat(scope.row.price).toFixed(2) }}</span>
-              <span v-else>0.00</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="金额" prop="amt" width="120" align="right" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span v-if="scope.row.amt">{{ parseFloat(scope.row.amt).toFixed(2) }}</span>
-              <span v-else>0.00</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="供应商" align="center" width="200" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <SelectSupplierFromOptions
-                v-if="action"
-                v-model="scope.row.supplierId"
-                :options="planDetailSupplierOptions"
-                :loading="planDetailSupplierListLoading"
-                placeholder="请选择供应商"
-                clearable
-              />
-              <span v-else>{{ entrySupplierDisplay(scope.row) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="库房分类" align="center" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="财务分类" align="center" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="申购单号" align="center" width="140" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.applyBillNos || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="申请科室" align="center" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.applyDepartment && scope.row.applyDepartment.name) || scope.row.applyDepartmentName || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="计划来源" align="center" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.planSource || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <dict-tag :options="dict.type.way_status" :value="scope.row.material && scope.row.material.isWay"/>
-            </template>
-          </el-table-column>
-          <el-table-column label="备注" align="center" width="140" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="请输入备注" />
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" align="center" width="120" fixed="right">
-            <template slot-scope="scope">
-              <el-button v-if="scope.row.id" type="text" size="small" @click="handleViewApplyDetails(scope.row)">查看申购明细</el-button>
-              <span v-else>--</span>
-            </template>
-          </el-table-column>
-                </el-table>
-              </div>
-              </div>
-            </el-form>
-          </div>
-        </transition>
-      </div>
-    </transition>
-
-    <!-- 3、使用组件 -->
     <SelectMMaterialFilter
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
@@ -472,325 +264,21 @@
       :warehouseValue="form.warehouseId"
       @closeDialog="closeDialog"
       @selectData="selectData"
-    ></SelectMMaterialFilter>
+    />
 
-    <!-- 引用申购单对话框 - 只在主内容区域内显示 -->
-    <div v-if="referencePurchaseDialogVisible" class="local-modal-mask">
-      <transition name="modal-zoom">
-        <div v-if="referencePurchaseDialogVisible" class="local-modal-content ref-purchase-modal">
-          <div class="modal-header">
-            <div class="modal-title">引用申购单</div>
-            <el-button type="text" @click="closeReferencePurchaseDialog" class="close-btn" style="font-size:14px;padding:0;color:#909399;">关闭</el-button>
-          </div>
-          <div class="modal-body">
-            <!-- 固定查询条件容器 -->
-            <div class="query-container-fixed">
-              <!-- 查询条件容器 -->
-              <div class="query-container">
-                <el-form :model="purchaseQueryParams" :inline="true" size="small" label-width="70px">
-                  <el-row :gutter="10">
-                    <el-col :span="5">
-                      <el-form-item label="计划仓库">
-                        <el-input :value="referencePlanWarehouseLabel" disabled placeholder="请先在计划表头选择仓库" style="width: 100%;" />
-                      </el-form-item>
-                    </el-col>
-                    <el-col :span="4">
-                      <el-form-item label="科室">
-                        <SelectDepartment v-model="purchaseQueryParams.departmentId" style="width: 100%;" />
-                      </el-form-item>
-                    </el-col>
-                    <el-col :span="4">
-                      <el-form-item label="单号">
-                        <el-input v-model="purchaseQueryParams.purchaseBillNo" placeholder="申购单号" clearable style="width: 100%;" />
-                      </el-form-item>
-                    </el-col>
-                  </el-row>
-                  <el-row :gutter="10">
-                    <el-col :span="6">
-                      <el-form-item label="日期">
-                        <el-date-picker
-                          v-model="purchaseQueryParams.beginDate"
-                          type="date"
-                          value-format="yyyy-MM-dd"
-                          placeholder="起"
-                          clearable
-                          style="width: 40%; margin-right: 2%;"
-                        />
-                        <span style="margin: 0 2%;">止</span>
-                        <el-date-picker
-                          v-model="purchaseQueryParams.endDate"
-                          type="date"
-                          value-format="yyyy-MM-dd"
-                          placeholder="止"
-                          clearable
-                          style="width: 40%; margin-left: 2%;"
-                        />
-                      </el-form-item>
-                    </el-col>
-                    <el-col :span="5">
-                      <el-form-item label="计划引用">
-                        <el-select v-model="purchaseQueryParams.purchasePlanRefStatus" placeholder="全部" clearable style="width: 100%;">
-                          <el-option label="未引用" :value="0" />
-                          <el-option label="部分引用" :value="1" />
-                          <el-option label="全部引用" :value="2" />
-                          <el-option label="计划驳回" :value="3" />
-                        </el-select>
-                      </el-form-item>
-                    </el-col>
-                  </el-row>
-                </el-form>
-              </div>
+    <ReferencePurchaseDialog
+      v-if="referencePurchaseDialogVisible"
+      :visible.sync="referencePurchaseDialogVisible"
+      :warehouse-id="form.warehouseId"
+      :plan-id="form.id"
+      :plan-entry-mode="form.planEntryMode"
+      :referenced-entry-id-set="planReferencedDepApplyEntryIdSet"
+      @confirm="onReferencePurchaseConfirm"
+    />
 
-              <!-- 搜索、重置、取消、确认按钮 -->
-              <div class="button-container">
-                <el-button
-                  type="warning"
-                  icon="el-icon-close"
-                  size="medium"
-                  :disabled="isRejectDisabled"
-                  @click="handleBatchReject"
-                >驳 回</el-button>
-                <el-button type="primary" icon="el-icon-search" size="medium" @click="handlePurchaseSearch">搜索</el-button>
-                <el-button icon="el-icon-refresh" size="medium" @click="resetPurchaseQuery">重置</el-button>
-                <el-button size="medium" @click="closeReferencePurchaseDialog">取 消</el-button>
-                <span v-if="selectedPurchaseCrossPageCount > 0" class="ref-purchase-selected-tip">
-                  已选 {{ selectedPurchaseCrossPageCount }} 张申购单（含跨页）
-                </span>
-                <el-button
-                  type="primary"
-                  size="medium"
-                  :disabled="isConfirmDisabled"
-                  @click="handleSelectPurchase"
-                >确 定</el-button>
-              </div>
-            </div>
-
-            <!-- 左右分栏布局 -->
-            <div class="reference-purchase-layout">
-              <!-- 左边：申购单列表（可多选） -->
-              <div class="purchase-list-container">
-                <div class="purchase-list-table-wrap">
-                <el-table
-                  ref="purchaseListTable"
-                  v-loading="purchaseLoading"
-                  :data="purchaseList"
-                  border
-                  row-key="id"
-                  :cell-style="{padding: '8px 4px'}"
-                  @selection-change="handlePurchaseListSelectionChange"
-                  :height="purchaseTableBodyHeight"
-                  :row-class-name="purchaseApplyRowClassName"
-                >
-                  <el-table-column
-                    type="selection"
-                    width="50"
-                    align="center"
-                    fixed="left"
-                    :reserve-selection="true"
-                    :selectable="isPurchaseApplyRowSelectable"
-                  />
-                  <el-table-column label="序号" align="center" width="70" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      {{ (purchaseQueryParams.pageNum - 1) * purchaseQueryParams.pageSize + scope.$index + 1 }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="单号" prop="purchaseBillNo" width="150" show-overflow-tooltip />
-                  <el-table-column label="仓库" align="center" width="100" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="科室" prop="department.name" width="80" show-overflow-tooltip />
-                  <el-table-column label="金额" prop="totalAmount" width="100" align="right" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span v-if="scope.row.totalAmount">{{ parseFloat(scope.row.totalAmount).toFixed(2) }}</span>
-                      <span v-else>0.00</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="制单日期" prop="purchaseBillDate" width="120" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span v-if="scope.row.purchaseBillDate">{{ parseTime(scope.row.purchaseBillDate, '{y}-{m}-{d}') }}</span>
-                      <span v-else>--</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="制单人" prop="user.userName" width="120" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span>{{ scope.row.user && scope.row.user.userName ? scope.row.user.userName : (scope.row.user && scope.row.user.nickName ? scope.row.user.nickName : '--') }}</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="计划引用" prop="purchasePlanRefStatus" width="96" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <el-tag :type="purchasePlanRefTagType(scope.row.purchasePlanRefStatus)" size="small">
-                        {{ purchasePlanRefLabel(scope.row.purchasePlanRefStatus) }}
-                      </el-tag>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="出库引用" prop="outboundRefStatus" width="96" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <el-tag :type="outboundRefTagType(scope.row.outboundRefStatus)" size="small">
-                        {{ outboundRefLabel(scope.row.outboundRefStatus) }}
-                      </el-tag>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="驳回原因" prop="rejectReason" width="150" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span>{{ scope.row.rejectReason || '--' }}</span>
-                    </template>
-                  </el-table-column>
-                </el-table>
-                </div>
-                <div class="ref-purchase-pagination-wrap">
-                  <pagination
-                    :total="purchaseTotal"
-                    :page.sync="purchaseQueryParams.pageNum"
-                    :limit.sync="purchaseQueryParams.pageSize"
-                    @pagination="getPurchaseList"
-                  />
-                </div>
-              </div>
-
-              <!-- 右边：明细框 -->
-              <div class="purchase-detail-container">
-                <el-table
-                  :data="selectedPurchaseEntryList"
-                  border
-                  :cell-style="{padding: '8px 4px'}"
-                  @selection-change="handlePurchaseEntrySelectionChange"
-                  :height="purchaseTableBodyHeight"
-                >
-                  <el-table-column
-                    type="selection"
-                    width="50"
-                    align="center"
-                    fixed="left"
-                    :selectable="isPurchaseApplyEntryRowSelectable"
-                  />
-                  <el-table-column label="耗材编码" width="120" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="耗材名称" prop="materialName" width="180" show-overflow-tooltip />
-                  <el-table-column label="规格" prop="materialSpec" width="120" show-overflow-tooltip />
-                  <el-table-column label="型号" prop="model" width="120" show-overflow-tooltip />
-                  <el-table-column label="单位" prop="unit" width="80" show-overflow-tooltip />
-                  <el-table-column label="数量" prop="qty" width="100" align="right" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span v-if="scope.row.qty">{{ parseFloat(scope.row.qty).toFixed(2) }}</span>
-                      <span v-else>0.00</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="单价" prop="unitPrice" width="100" align="right" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span v-if="scope.row.unitPrice">{{ parseFloat(scope.row.unitPrice).toFixed(2) }}</span>
-                      <span v-else>0.00</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="金额" prop="amt" width="100" align="right" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span v-if="scope.row.amt">{{ parseFloat(scope.row.amt).toFixed(2) }}</span>
-                      <span v-else>0.00</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="生产厂家" width="150" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="供应商" width="150" show-overflow-tooltip>
-                    <template slot-scope="scope">
-                      <span>{{ scope.row.supplierName || (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </transition>
-    </div>
-
-    <!-- 查看申购单列表弹窗（表头：科室申购单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间） -->
-    <el-dialog title="查看申购单" :visible.sync="applyBillNoDialogVisible" width="95%" append-to-body>
-      <el-table :data="applyBillHeaderList" border max-height="450">
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column label="科室申购单号" prop="applyBillNo" min-width="140" show-overflow-tooltip />
-        <el-table-column label="仓库" prop="warehouseName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="制单人" prop="createByName" width="100" show-overflow-tooltip />
-        <el-table-column label="制单时间" prop="createTime" width="160" show-overflow-tooltip />
-        <el-table-column label="提交人" prop="submitByName" width="100" show-overflow-tooltip />
-        <el-table-column label="提交时间" prop="submitTime" width="160" show-overflow-tooltip />
-        <el-table-column label="审核人" prop="auditByName" width="100" show-overflow-tooltip />
-        <el-table-column label="审核时间" prop="auditTime" width="160" show-overflow-tooltip />
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="applyBillNoDialogVisible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
-
-    <!-- 查看申购明细弹窗 -->
-    <el-dialog title="申购明细" :visible.sync="applyDetailDialogVisible" width="900px" append-to-body>
-      <el-table :data="applyDetailList" border max-height="400">
-        <el-table-column label="科室申购单单号" prop="applyBillNo" width="140" show-overflow-tooltip />
-        <el-table-column label="申购科室" prop="departmentName" width="120" show-overflow-tooltip />
-        <el-table-column label="申购数量" prop="qty" width="100" align="right">
-          <template slot-scope="scope">
-            <span>{{ scope.row.qty != null ? Number(scope.row.qty) : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="制单人" prop="createByName" width="100" show-overflow-tooltip />
-        <el-table-column label="制单时间" prop="createTime" width="160" show-overflow-tooltip />
-        <el-table-column label="审核人" prop="auditByName" width="100" show-overflow-tooltip />
-        <el-table-column label="审核时间" prop="auditTime" width="160" show-overflow-tooltip />
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="applyDetailDialogVisible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
-
-    <!-- 驳回原因弹窗 -->
-    <el-dialog title="驳回原因" :visible.sync="rejectDialogVisible" width="500px" :close-on-click-modal="false">
-      <el-form :model="rejectForm" :rules="rejectRules" ref="rejectForm" label-width="100px">
-        <el-form-item label="驳回原因" prop="rejectReason">
-          <el-input
-            v-model="rejectForm.rejectReason"
-            type="textarea"
-            :rows="4"
-            placeholder="驳回原因"
-            maxlength="500"
-            show-word-limit
-          />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="rejectDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="submitReject">确 定</el-button>
-      </div>
-    </el-dialog>
-
-    <!-- 进度对话框 -->
-    <el-dialog title="采购计划进度" :visible.sync="progressDialogVisible" width="600px" :close-on-click-modal="false">
-      <div v-if="currentProgressRow" style="margin-bottom: 20px;">
-        <p><strong>计划单号：</strong>{{ currentProgressRow.planNo }}</p>
-        <p><strong>仓库：</strong>{{ currentProgressRow.warehouse && currentProgressRow.warehouse.name ? currentProgressRow.warehouse.name : '' }}</p>
-        <p><strong>金额：</strong>{{ currentProgressRow.totalAmount ? parseFloat(currentProgressRow.totalAmount).toFixed(2) : '0.00' }}</p>
-        <p><strong>单据状态：</strong>
-          <dict-tag :options="dict.type.plan_status" :value="currentProgressRow.planStatus"/>
-        </p>
-      </div>
-      <el-steps :active="getActiveStep()" direction="vertical" finish-status="success">
-        <el-step
-          v-for="(step, index) in progressSteps"
-          :key="index"
-          :title="step.title"
-          :description="step.description"
-          :status="step.status"
-        />
-      </el-steps>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="progressDialogVisible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
+    <ApplyBillHeaderDialog :visible.sync="applyBillNoDialogVisible" :list="applyBillHeaderList" />
+    <ApplyDetailDialog :visible.sync="applyDetailDialogVisible" :list="applyDetailList" />
+    <PlanProgressDialog :visible.sync="progressDialogVisible" :row="currentProgressRow" />
 
   </div>
 </template>
@@ -798,23 +286,25 @@
 <script>
 import { listPurchasePlan, getPurchasePlan, delPurchasePlan, addPurchasePlan, updatePurchasePlan, auditPurchasePlan, getApplyDetails, getApplyBillNoList, getApplyBillHeaderList, getMaterialStockQty, getPlanEntryStockQty } from "@/api/caigou/purchasePlan";
 import { listUserAll } from "@/api/system/user";
-import { listPurchase, getPurchase, rejectPurchase } from "@/api/department/purchase";
-import { listWarehouseAll } from "@/api/foundation/warehouse";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
-import SelectSupplierFromOptions from '@/components/SelectModel/SelectSupplierFromOptions';
-import { listSupplierAll } from '@/api/foundation/supplier';
-import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
+import { listSupplierAll } from '@/api/foundation/supplier';
 import { assertBillHasMaterialEntries } from '@/utils/billEntryValidate';
-import SelectDepartment from '@/components/SelectModel/SelectDepartment';
-import SelectUser from '@/components/SelectModel/SelectUser';
-
-import SelectMMaterialFilter from '@/components/SelectModel/SelectMMaterialFilter';
+import { concatListInChunks, fetchStockQtyMapBatched, yieldToMain, assignPlanEntryRowUid, buildLeanPlanEntryPayload } from './utils/planEntryUtils';
 
 export default {
-  name: "InWarehouse",
+  name: "CaigouJihua",
   dicts: ['biz_status','plan_status','bill_type','way_status'],
-  components: {SelectSupplier, SelectSupplierFromOptions, SelectMaterial, SelectWarehouse, SelectDepartment, SelectUser, SelectMMaterialFilter},
+  components: {
+    SelectSupplier,
+    SelectWarehouse,
+    PlanEditDialog: () => import('./components/PlanEditDialog'),
+    ReferencePurchaseDialog: () => import('./components/ReferencePurchaseDialog'),
+    PlanProgressDialog: () => import('./components/PlanProgressDialog'),
+    ApplyBillHeaderDialog: () => import('./components/ApplyBillHeaderDialog'),
+    ApplyDetailDialog: () => import('./components/ApplyDetailDialog'),
+    SelectMMaterialFilter: () => import('@/components/SelectModel/SelectMMaterialFilter')
+  },
   data() {
     return {
       // 遮罩层
@@ -827,6 +317,11 @@ export default {
       /** 添加明细后自动保存草稿 */
       planAutoSaveTimer: null,
       planDraftSaving: false,
+      planSaveSubmitting: false,
+      planSkipAutoSaveUntil: 0,
+      /** 大批量合并明细时暂停表格 layout，避免卡死 */
+      entryListBulkUpdating: false,
+      _layoutEntryTimer: null,
       // 选中数组
       ids: [],
       // 子表选中数据
@@ -900,68 +395,11 @@ export default {
       // 进度对话框
       progressDialogVisible: false,
       currentProgressRow: null,
-      // 引用申购单对话框
       referencePurchaseDialogVisible: false,
-      purchaseList: [],
-      purchaseLoading: false,
-      purchaseTotal: 0,
-      purchaseQueryParams: {
-        pageNum: 1,
-        pageSize: 10,
-        warehouseId: null,
-        departmentId: null,
-        purchaseBillNo: null,
-        beginDate: null,
-        endDate: null,
-        purchasePlanRefStatus: null, // 采购计划引用：0未引用 1部分 2全部 3计划驳回
-        purchaseBillStatus: 2, // 只显示已审核的申购单
-      },
-      selectedPurchaseEntryList: [], // 多张申购单合并后的明细列表
-      selectedPurchaseRows: [], // 选中的申购单行（多选，由跨页缓存同步）
-      /** 引用申购单：跨页勾选缓存，key 为申购单 id */
-      selectedPurchaseRowMap: {},
-      purchaseSelectionRestoring: false,
-      /** 引用申购单弹窗展示：计划表头仓库名称 */
-      referencePlanWarehouseName: '',
-      selectedPurchaseEntryIds: [], // 选中的申购单明细ID列表（右侧明细多选）
-      // 查看申购明细弹窗
       applyDetailDialogVisible: false,
       applyDetailList: [],
       applyBillNoDialogVisible: false,
-      applyBillNoList: [],
-      applyBillHeaderList: [],
-      // 驳回相关
-      rejectDialogVisible: false,
-      rejectForm: {
-        rejectReason: ''
-      },
-      rejectRules: {
-        rejectReason: [
-          { required: true, message: '驳回原因不能为空', trigger: 'blur' }
-        ]
-      },
-      progressSteps: [
-        {
-          title: '创建计划',
-          description: '采购计划已创建，等待提交审核',
-          status: 'wait'
-        },
-        {
-          title: '提交审核',
-          description: '采购计划已提交，等待审核',
-          status: 'wait'
-        },
-        {
-          title: '审核通过',
-          description: '采购计划已审核通过，等待执行',
-          status: 'wait'
-        },
-        {
-          title: '执行完成',
-          description: '采购计划已执行完成',
-          status: 'wait'
-        }
-      ]
+      applyBillHeaderList: []
     };
   },
   created() {
@@ -984,34 +422,11 @@ export default {
     if (this.planAutoSaveTimer) {
       clearTimeout(this.planAutoSaveTimer);
     }
+    if (this._layoutEntryTimer) {
+      clearTimeout(this._layoutEntryTimer);
+    }
   },
   computed: {
-    // 引用申购单弹窗表格高度
-    tableHeight() {
-      // 视口高度减去导航栏(50px)、弹窗头部(约60px)、分页(约60px)、底部按钮(约60px)、内边距等
-      return 'calc(100vh - 280px)';
-    },
-    /** 当前计划明细已引用的申购单号 */
-    planReferencedPurchaseBillNos() {
-      const set = new Set();
-      const add = (billNoStr) => {
-        if (!billNoStr || !String(billNoStr).trim()) {
-          return;
-        }
-        String(billNoStr).split(/[,，]/).forEach((s) => {
-          const t = (s || '').trim();
-          if (t) {
-            set.add(t);
-          }
-        });
-      };
-      add(this.form && this.form.referenceBillNo);
-      (this.stkIoBillEntryList || []).forEach((row) => add(row.applyBillNos));
-      return set;
-    },
-    planReferencedPurchaseBillNoList() {
-      return [...this.planReferencedPurchaseBillNos];
-    },
     /** 当前计划明细已关联的科室申购明细 id */
     planReferencedDepApplyEntryIdSet() {
       const set = new Set();
@@ -1023,47 +438,6 @@ export default {
         });
       });
       return set;
-    },
-    // 左边申购单列表表格高度（为底部分页固定预留约 52px）
-    purchaseTableBodyHeight() {
-      const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
-      return Math.max(200, vh - 380);
-    },
-    selectedPurchaseCrossPageCount() {
-      return Object.keys(this.selectedPurchaseRowMap || {}).length;
-    },
-    // 操作人姓名
-    operatorName() {
-      if (this.form.creater && this.form.creater.nickName) {
-        return this.form.creater.nickName;
-      }
-      if (this.form.createBy) {
-        const user = this.userOptions.find(u => u.userName === this.form.createBy || u.userId === this.form.createBy);
-        return user ? user.nickName || user.userName : this.form.createBy;
-      }
-      return '';
-    },
-    // 采购员姓名
-    purchaserName() {
-      if (this.form.proPerson) {
-        const user = this.userOptions.find(u => u.userId === this.form.proPerson || u.userId === String(this.form.proPerson));
-        return user ? user.nickName || user.userName : '';
-      }
-      return '';
-    },
-    // 驳回按钮是否禁用
-    isRejectDisabled() {
-      const rows = Object.values(this.selectedPurchaseRowMap || {});
-      if (rows.length !== 1) {
-        return true;
-      }
-      const row = rows[0];
-      const status = row && (row.purchasePlanRefStatus !== undefined ? row.purchasePlanRefStatus : row.purchase_plan_ref_status);
-      return status === 1 || status === '1' || status === 2 || status === '2' || status === 3 || status === '3';
-    },
-    // 确认按钮是否禁用（未选申购单时禁用）
-    isConfirmDisabled() {
-      return this.selectedPurchaseCrossPageCount === 0;
     },
     // 表头计划来源：由明细内计划来源去重后逗号拼接
     planSourceDisplay() {
@@ -1090,21 +464,6 @@ export default {
       const hasRef = this.form.referenceBillNo && String(this.form.referenceBillNo).trim();
       return hasEntries || !!hasRef;
     },
-    /** 引用申购单弹窗：展示计划表头所选仓库名称 */
-    referencePlanWarehouseLabel() {
-      if (this.referencePlanWarehouseName) {
-        return this.referencePlanWarehouseName;
-      }
-      const w = this.form && this.form.warehouse;
-      if (w && w.name) {
-        return w.name;
-      }
-      const wid = this.form && this.form.warehouseId;
-      if (wid == null || wid === '') {
-        return '';
-      }
-      return '';
-    }
   },
   watch: {
     open(val) {
@@ -1112,12 +471,7 @@ export default {
         this.loadPlanDetailSupplierOptions();
       }
       if (val) {
-        this.$nextTick(() => {
-          const t = this.$refs.stkIoBillEntry;
-          if (t && typeof t.doLayout === 'function') {
-            t.doLayout();
-          }
-        });
+        this.$nextTick(() => this.layoutPlanEntryTable());
       }
     },
     action(val) {
@@ -1125,16 +479,13 @@ export default {
         this.loadPlanDetailSupplierOptions();
       }
     },
-    stkIoBillEntryList: {
-      deep: true,
-      handler() {
-        this.$nextTick(() => {
-          const t = this.$refs.stkIoBillEntry;
-          if (t && typeof t.doLayout === 'function') {
-            t.doLayout();
-          }
-        });
-      }
+    'stkIoBillEntryList.length'() {
+      if (this.entryListBulkUpdating) return;
+      if (this._layoutEntryTimer) clearTimeout(this._layoutEntryTimer);
+      this._layoutEntryTimer = setTimeout(() => {
+        this._layoutEntryTimer = null;
+        this.layoutPlanEntryTable();
+      }, 150);
     },
     'form.warehouseId'(val, oldVal) {
       if (!this.open || val == null || val === '' || val === oldVal) {
@@ -1145,20 +496,22 @@ export default {
   },
   methods: {
     /** 按当前计划仓库刷新明细「库存数量」 */
-    refreshPlanEntryStockQty() {
+    refreshPlanEntryStockQty(onlyMaterialIds) {
       const warehouseId = this.form.warehouseId;
       const list = this.stkIoBillEntryList || [];
       if (!warehouseId || !list.length) {
         return Promise.resolve();
       }
-      const materialIds = [...new Set(list.map((e) => e.materialId).filter((id) => id != null))];
+      const materialIds = onlyMaterialIds && onlyMaterialIds.length
+        ? [...new Set(onlyMaterialIds.filter((id) => id != null))]
+        : [...new Set(list.map((e) => e.materialId).filter((id) => id != null))];
       if (!materialIds.length) {
         return Promise.resolve();
       }
-      return getPlanEntryStockQty(warehouseId, materialIds).then((res) => {
-        const map = (res && res.data) || {};
+      const idSet = new Set(materialIds.map((id) => String(id)));
+      return fetchStockQtyMapBatched(warehouseId, materialIds, getPlanEntryStockQty).then((map) => {
         list.forEach((entry) => {
-          if (entry.materialId == null) {
+          if (entry.materialId == null || !idSet.has(String(entry.materialId))) {
             return;
           }
           const raw = map[String(entry.materialId)] != null
@@ -1168,11 +521,6 @@ export default {
           this.$set(entry, 'stockQty', Number.isFinite(q) ? q : 0);
         });
       }).catch(() => {});
-    },
-    purchasePlanRefLabel(status) {
-      const s = status == null || status === '' ? 0 : Number(status);
-      const map = { 0: '未引用', 1: '部分引用', 2: '全部引用', 3: '计划驳回' };
-      return map[s] != null ? map[s] : '--';
     },
     purchasePlanRefTagType(status) {
       const s = status == null || status === '' ? 0 : Number(status);
@@ -1188,47 +536,6 @@ export default {
       const s = status == null || status === '' ? 0 : Number(status);
       const map = { 0: 'info', 1: 'warning', 2: 'success' };
       return map[s] || 'info';
-    },
-    /** 引用申购单/汇总：供应商取产品档案默认供应商 */
-    materialArchiveSupplierId(entry) {
-      if (!entry) {
-        return null;
-      }
-      if (entry.supplierId != null && entry.supplierId !== '') {
-        return entry.supplierId;
-      }
-      const m = entry.material;
-      if (!m) {
-        return null;
-      }
-      if (m.supplierId != null && m.supplierId !== '') {
-        return m.supplierId;
-      }
-      if (m.supplier && m.supplier.id != null) {
-        return m.supplier.id;
-      }
-      return null;
-    },
-    /** 引用申购单生成计划行时，补全 material 上的供应商信息供下拉展示 */
-    buildPlanEntryMaterialFromPurchase(entry) {
-      if (!entry || !entry.material) {
-        return entry && entry.material ? { ...entry.material } : null;
-      }
-      const m = { ...entry.material };
-      const sid = this.materialArchiveSupplierId(entry);
-      if (sid != null && sid !== '') {
-        m.supplierId = sid;
-        if (!m.supplier || m.supplier.id == null) {
-          const sname = entry.supplierName
-            || (entry.material.supplier && entry.material.supplier.name)
-            || '';
-          m.supplier = { id: sid, name: sname };
-        }
-      }
-      if (m.fdUnit == null && entry.unit) {
-        m.fdUnit = { unitName: entry.unit };
-      }
-      return m;
     },
     /** 从表头、明细行收集可能不在全量列表中的供应商（合并进下拉，避免已选显示为空） */
     collectPlanExtraSuppliers() {
@@ -1470,37 +777,17 @@ export default {
         console.timeEnd('[Plan] selectData total');
         return;
       }
+      assignPlanEntryRowUid(toAppend);
 
-      const afterAppend = () => {
-        this.fillStockQtyForEntryRows(toAppend).finally(() => {
-          this.refreshPlanEntryStockQty().finally(() => {
+      this.appendPlanEntryRows(toAppend, {
+        showLoading: toAppend.length > 50,
+        afterMerged: async () => {
           toAppend.forEach((row) => this.qtyChange(row));
-            this.debouncedAutoSavePlan();
-            console.timeEnd('[Plan] selectData total');
-        });
-        });
-      };
-
-      // 小批量（<=30）直接同步合并，避免 rAF 等待造成 1s+ 延迟
-      if (toAppend.length <= 30) {
-        const t2 = performance.now();
-        this.stkIoBillEntryList = this.stkIoBillEntryList.concat(toAppend);
-        const t3 = performance.now();
-        console.log('[Plan] concat small size=', toAppend.length, 'concat(ms)=', (t3 - t2).toFixed(1));
-        this.$nextTick(afterAppend);
-        return;
-      }
-
-      // 大批量使用 rAF 合并，避免主线程长阻塞
-      this.$nextTick(() => {
-        const t2 = performance.now();
-        requestAnimationFrame(() => {
-          const t3 = performance.now();
-          this.stkIoBillEntryList = this.stkIoBillEntryList.concat(toAppend);
-          const t4 = performance.now();
-          console.log('[Plan] concat large size=', toAppend.length, 'raf wait(ms)=', (t3 - t2).toFixed(1), 'concat(ms)=', (t4 - t3).toFixed(1));
-          this.$nextTick(afterAppend);
-        });
+          this.debouncedAutoSavePlan();
+          console.timeEnd('[Plan] selectData total');
+        }
+      }).catch(() => {
+        console.timeEnd('[Plan] selectData total');
       });
     },
     /** 为明细行填充当前仓库库存数量 */
@@ -1512,8 +799,7 @@ export default {
       if (!materialIds.length) {
         return Promise.resolve();
       }
-      return getMaterialStockQty(this.form.warehouseId, materialIds.join(',')).then((res) => {
-        const map = (res && res.data) ? res.data : {};
+      return fetchStockQtyMapBatched(this.form.warehouseId, materialIds, getMaterialStockQty).then((map) => {
         rows.forEach((row) => {
           if (row.materialId == null) {
             return;
@@ -1578,13 +864,17 @@ export default {
       if (!this.open || !this.action) {
         return;
       }
+      const list = this.stkIoBillEntryList || [];
+      if (list.length > 80 || Date.now() < this.planSkipAutoSaveUntil) {
+        return;
+      }
       if (this.planAutoSaveTimer) {
         clearTimeout(this.planAutoSaveTimer);
       }
       this.planAutoSaveTimer = setTimeout(() => {
         this.planAutoSaveTimer = null;
         this.savePlanDraftSilently();
-      }, 500);
+      }, 2000);
     },
     /** 添加明细后静默落库，避免切换页面丢失（不关闭弹窗、不打断操作） */
     savePlanDraftSilently() {
@@ -1607,16 +897,16 @@ export default {
       if (noSupplier.length) {
         return;
       }
-      if (!this.$refs.form) {
+      if (!this.$refs.planEditDialog) {
         return;
       }
       this.syncHeaderSupplierForValidate();
-      this.$refs.form.validate((valid) => {
+      this.$refs.planEditDialog.validate((valid) => {
         if (!valid) {
           return;
         }
         this.planDraftSaving = true;
-        this.form.purchasePlanEntryList = list;
+        this.form.purchasePlanEntryList = buildLeanPlanEntryPayload(list);
         if (this.form.id == null && (this.form.planStatus == null || this.form.planStatus === "")) {
           this.form.planStatus = "0";
         }
@@ -1722,7 +1012,13 @@ export default {
       this.planDetailSupplierListLoading = false;
       this.planDetailSupplierLoadPromise = null;
       this.planDetailSupplierLoadAttempted = false;
-      this.resetForm("form");
+      this.$nextTick(() => {
+        const dlg = this.$refs.planEditDialog;
+        const f = dlg && dlg.$refs && dlg.$refs.form;
+        if (f && typeof f.clearValidate === 'function') {
+          f.clearValidate();
+        }
+      });
     },
     //数量改变事件
     qtyChange(row){
@@ -1773,50 +1069,9 @@ export default {
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
-    /** 进度按钮操作 */
     handleProgress(row) {
-      this.progressDialogVisible = true;
       this.currentProgressRow = row;
-      // 根据计划状态设置步骤状态
-      this.updateProgressSteps(row.planStatus);
-    },
-    /** 更新进度步骤状态 */
-    updateProgressSteps(planStatus) {
-      // 重置所有步骤
-      this.progressSteps.forEach(step => {
-        step.status = 'wait';
-      });
-
-      // 根据计划状态设置步骤
-      // planStatus: 0=未提交, 1=待审核, 2=已审核, 3=已执行, 4=已取消
-      if (planStatus === '0') {
-        this.progressSteps[0].status = 'finish';
-      } else if (planStatus === '1') {
-        this.progressSteps[0].status = 'finish';
-        this.progressSteps[1].status = 'process';
-      } else if (planStatus === '2') {
-        this.progressSteps[0].status = 'finish';
-        this.progressSteps[1].status = 'finish';
-        this.progressSteps[2].status = 'process';
-      } else if (planStatus === '3') {
-        this.progressSteps.forEach(step => {
-          step.status = 'finish';
-        });
-      } else if (planStatus === '4') {
-        this.progressSteps.forEach(step => {
-          step.status = 'error';
-        });
-      }
-    },
-    /** 获取当前激活的步骤索引 */
-    getActiveStep() {
-      if (!this.currentProgressRow) return 0;
-      const status = this.currentProgressRow.planStatus;
-      if (status === '0') return 0;
-      if (status === '1') return 1;
-      if (status === '2') return 2;
-      if (status === '3') return 3;
-      return 0;
+      this.progressDialogVisible = true;
     },
     /** 根据明细数据填充计划来源（引用申购单/手工新增），用于展示 */
     fillPlanSourceForEntries() {
@@ -1831,7 +1086,7 @@ export default {
       const id = row.id
       getPurchasePlan(id).then(response => {
         this.form = response.data;
-        this.stkIoBillEntryList = response.data.purchasePlanEntryList;
+        this.stkIoBillEntryList = assignPlanEntryRowUid(response.data.purchasePlanEntryList || []);
         this.fillPlanSourceForEntries();
         this.open = true;
         this.action = false;
@@ -1857,7 +1112,7 @@ export default {
       const id = row.id || this.ids
       getPurchasePlan(id).then(response => {
         this.form = response.data;
-        this.stkIoBillEntryList = response.data.purchasePlanEntryList;
+        this.stkIoBillEntryList = assignPlanEntryRowUid(response.data.purchasePlanEntryList || []);
         this.fillPlanSourceForEntries();
         this.open = true;
         this.title = "修改计划";
@@ -1867,7 +1122,7 @@ export default {
     },
     /** 提交按钮（保存表单） */
     submitForm() {
-      this.$refs["form"].validate(valid => {
+      this.$refs.planEditDialog.validate(valid => {
         if (valid) {
           if (!assertBillHasMaterialEntries(this.stkIoBillEntryList, this, '请至少添加一条采购计划明细')) {
             return;
@@ -1883,25 +1138,23 @@ export default {
             this.$modal.msgError("请为每条计划明细指定供应商后再保存。存在 " + noSupplier.length + " 条明细未选择供应商。");
             return;
           }
-          this.form.purchasePlanEntryList = this.stkIoBillEntryList;
-          // 保存时保持原有状态，不自动改变状态
-          // 新增时如果没有设置状态，则默认为"未提交"（0）
+          const leanEntries = buildLeanPlanEntryPayload(list);
+          this.form.purchasePlanEntryList = leanEntries;
           if (this.form.id == null && (this.form.planStatus == null || this.form.planStatus === '')) {
-            this.form.planStatus = '0'; // 未提交状态
+            this.form.planStatus = '0';
           }
-          if (this.form.id != null) {
-            updatePurchasePlan(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
-          } else {
-            addPurchasePlan(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
-          }
+          this.planSaveSubmitting = true;
+          const saveAx = { timeout: 120000 };
+          const saveReq = this.form.id != null
+            ? updatePurchasePlan(this.form, saveAx)
+            : addPurchasePlan(this.form, saveAx);
+          saveReq.then(() => {
+            this.$modal.msgSuccess(this.form.id != null ? '修改成功' : '新增成功');
+            this.open = false;
+            this.getList();
+          }).finally(() => {
+            this.planSaveSubmitting = false;
+          });
         }
       });
     },
@@ -1991,22 +1244,22 @@ export default {
         this.$modal.confirm(`是否确认删除计划编号为「${planLabel}」的数据项？`).then(() => doDelete(false)).catch(() => {});
       }
     },
-    /** 查看计划：供应商列纯文本展示，避免每行 SelectSupplier 重复请求 listAll */
+    /** 明细行供应商展示：优先行上名称，再按 supplierId 从全量下拉选项解析 */
     entrySupplierDisplay(row) {
       if (!row) return '--';
       if (row.supplierName) return row.supplierName;
+      const rid = row.supplierId != null && row.supplierId !== '' ? Number(row.supplierId) : null;
+      if (rid != null) {
+        const opts = this.planDetailSupplierOptions || [];
+        const hit = opts.find((s) => s != null && Number(s.id) === rid);
+        if (hit && hit.name) return hit.name;
+        if (row.supplier && Number(row.supplier.id) === rid && row.supplier.name) {
+          return row.supplier.name;
+        }
+      }
       const ms = row.material && row.material.supplier;
       if (ms && ms.name) return ms.name;
-      const rid = row.supplierId != null && row.supplierId !== '' ? Number(row.supplierId) : null;
-      const hid = this.form && this.form.supplierId != null && this.form.supplierId !== '' ? Number(this.form.supplierId) : null;
-      if (rid != null && hid != null && rid === hid && this.form.supplier && this.form.supplier.name) {
-        return this.form.supplier.name;
-      }
       return '--';
-    },
-    /** 计划明细序号 */
-    rowStkIoBillEntryIndex({ row, rowIndex }) {
-      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 计划明细添加按钮操作 */
     handleAddStkIoBillEntry() {
@@ -2024,20 +1277,26 @@ export default {
       this.stkIoBillEntryList.push(obj);
     },
     /** 计划明细删除按钮操作 */
+    planEntryRowKey(row) {
+      if (!row) return '';
+      if (row.id != null) return `e-${row.id}`;
+      if (row._entryUid) return `u-${row._entryUid}`;
+      return `m-${row.materialId != null ? row.materialId : ''}`;
+    },
     handleDeleteStkIoBillEntry() {
       if (this.checkedStkIoBillEntry.length == 0) {
         this.$modal.msgError("请先选择要删除的计划明细数据");
       } else {
-        const stkIoBillEntryList = this.stkIoBillEntryList;
-        const checkedStkIoBillEntry = this.checkedStkIoBillEntry;
-        this.stkIoBillEntryList = stkIoBillEntryList.filter(function(item) {
-          return checkedStkIoBillEntry.indexOf(item.index) == -1
-        });
+        const checked = new Set(this.checkedStkIoBillEntry);
+        this.stkIoBillEntryList = (this.stkIoBillEntryList || []).filter(
+          (item) => !checked.has(this.planEntryRowKey(item))
+        );
+        this.checkedStkIoBillEntry = [];
       }
     },
     /** 复选框选中数据 */
     handleStkIoBillEntrySelectionChange(selection) {
-      this.checkedStkIoBillEntry = selection.map(item => item.index)
+      this.checkedStkIoBillEntry = (selection || []).map((item) => this.planEntryRowKey(item));
     },
     /** 导出计划明细（供货清单）：有勾选时仅导出所选计划；否则按当前筛选导出全部匹配明细 */
     handleExport() {
@@ -2155,369 +1414,60 @@ export default {
       }
       return '--';
     },
-    /** 引用申购单查询条件与计划表头仓库对齐 */
-    syncPurchaseQueryWarehouseFromForm() {
-      const wid = this.form && this.form.warehouseId;
-      if (wid != null && wid !== '') {
-        const n = Number(wid);
-        this.purchaseQueryParams.warehouseId = Number.isFinite(n) ? n : wid;
-      } else {
-        this.purchaseQueryParams.warehouseId = null;
+
+    layoutPlanEntryTable() {
+      const dlg = this.$refs.planEditDialog;
+      if (dlg && typeof dlg.layoutEntryTable === 'function') {
+        dlg.layoutEntryTable();
       }
     },
-    /** 解析计划表头仓库名称（新增计划仅有 warehouseId 时） */
-    resolveReferencePlanWarehouseName() {
-      const w = this.form && this.form.warehouse;
-      if (w && w.name) {
-        this.referencePlanWarehouseName = w.name;
-        return Promise.resolve(w.name);
-      }
-      const wid = this.form && this.form.warehouseId;
-      if (wid == null || wid === '') {
-        this.referencePlanWarehouseName = '';
-        return Promise.resolve('');
-      }
-      const userId = this.$store.state.user.userId;
-      return listWarehouseAll(userId).then(res => {
-        const rows = res || res.data || res.rows || [];
-        const hit = rows.find(item => String(item.id) === String(wid) || item.id == wid);
-        this.referencePlanWarehouseName = hit && hit.name ? hit.name : '';
-        return this.referencePlanWarehouseName;
-      }).catch(() => {
-        this.referencePlanWarehouseName = '';
-        return '';
-      });
-    },
-    /** 引用申购单按钮操作 */
     handleReferencePurchase() {
-      // 验证是否已选择仓库
       if (!this.form.warehouseId) {
         this.$modal.msgWarning("请先选择仓库");
         return;
       }
-      this.syncPurchaseQueryWarehouseFromForm();
-      this.purchaseQueryParams.pageNum = 1;
-      // 清空选中的明细与跨页缓存
-      this.clearSelectedPurchaseCache();
-      // 打开引用申购单对话框
       this.referencePurchaseDialogVisible = true;
-      this.resolveReferencePlanWarehouseName().finally(() => {
-        this.getPurchaseList();
-      });
     },
-    handlePurchaseSearch() {
-      if (!this.form.warehouseId) {
-        this.$modal.msgWarning("请先在计划表头选择仓库");
-        return;
+    async onReferencePurchaseConfirm({ newRows, referenceBillNo, planSource }) {
+      this.form.planSource = planSource || '引用申购单';
+      this.form.referenceBillNo = referenceBillNo || '';
+      try {
+        await this.appendPlanEntryRows(newRows || [], { showLoading: true });
+        this.$modal.msgSuccess('引用申购单成功');
+      } catch (e) {
+        this.$modal.msgError('合并明细失败，请减少勾选后重试');
       }
-      this.syncPurchaseQueryWarehouseFromForm();
-      this.purchaseQueryParams.pageNum = 1;
-      this.getPurchaseList();
     },
-    /** 查询申购单列表（排除已被引用的申购单） */
-    getPurchaseList() {
-      if (!this.form.warehouseId) {
-        this.purchaseList = [];
-        this.purchaseTotal = 0;
-        return;
-      }
-      this.syncPurchaseQueryWarehouseFromForm();
-      this.purchaseLoading = true;
-      const params = {
-        ...this.purchaseQueryParams,
-        excludeReferenced: true,
-        // 编辑已有计划时：仅排除「其他计划」已引用的申购单，本计划已引用的仍可在列表中补选未加入的明细
-        excludeReferencedPlanId: this.form && this.form.id != null ? this.form.id : undefined
-      };
-      listPurchase(params).then(response => {
-        this.purchaseList = response.rows || [];
-        this.purchaseTotal = response.total != null ? Number(response.total) : 0;
-        this.purchaseLoading = false;
-        this.purgeReferencedFromPurchaseSelection();
-        this.$nextTick(() => {
-          this.restorePurchaseListSelection();
-        });
-      }).catch(() => {
-        this.purchaseLoading = false;
-      });
-    },
-    isPurchaseApplyRowSelectable() {
-      return true;
-    },
-    purchaseApplyRowClassName() {
-      return '';
-    },
-    isPurchaseApplyEntryRowSelectable(row) {
-      if (!row) {
-        return true;
-      }
-      const entryId = row.id != null ? String(row.id) : '';
-      return !(entryId && this.planReferencedDepApplyEntryIdSet.has(entryId));
-    },
-    /** 刷新右侧明细：剔除计划明细中已存在的申购明细行 */
-    purgeReferencedFromPurchaseSelection() {
-      this.reloadSelectedPurchaseEntries();
-    },
-    clearSelectedPurchaseCache() {
-      this.selectedPurchaseRowMap = {};
-      this.selectedPurchaseRows = [];
-      this.selectedPurchaseEntryList = [];
-      this.selectedPurchaseEntryIds = [];
-      this.currentPurchaseRow = null;
-      this.selectedPurchaseId = null;
-    },
-    syncSelectedPurchaseRowsFromMap() {
-      this.selectedPurchaseRows = Object.values(this.selectedPurchaseRowMap || {});
-    },
-    /** 翻页后恢复当前页勾选状态 */
-    restorePurchaseListSelection() {
-      const table = this.$refs.purchaseListTable;
-      if (!table) {
-        return;
-      }
-      this.purchaseSelectionRestoring = true;
-      table.clearSelection();
-      (this.purchaseList || []).forEach((row) => {
-        const key = row && row.id != null ? String(row.id) : '';
-        if (key && this.selectedPurchaseRowMap[key]) {
-          table.toggleRowSelection(row, true);
-        }
-      });
-      this.$nextTick(() => {
-        this.purchaseSelectionRestoring = false;
-      });
-    },
-    /** 多选申购单（跨页缓存） */
-    handlePurchaseListSelectionChange(selection) {
-      if (this.purchaseSelectionRestoring) {
-        return;
-      }
-      const pageKeys = (this.purchaseList || [])
-        .map((row) => (row && row.id != null ? String(row.id) : ''))
-        .filter(Boolean);
-      pageKeys.forEach((key) => {
-        if (this.selectedPurchaseRowMap[key]) {
-          this.$delete(this.selectedPurchaseRowMap, key);
-        }
-      });
-      (selection || []).forEach((row) => {
-        if (row && row.id != null && this.isPurchaseApplyRowSelectable(row)) {
-          this.$set(this.selectedPurchaseRowMap, String(row.id), row);
-        }
-      });
-      this.syncSelectedPurchaseRowsFromMap();
-      this.selectedPurchaseEntryIds = [];
-      this.reloadSelectedPurchaseEntries();
-    },
-    /** 按跨页已选申购单加载合并明细 */
-    reloadSelectedPurchaseEntries() {
-      const selection = Object.values(this.selectedPurchaseRowMap || {});
-      if (!selection.length) {
-        this.selectedPurchaseEntryList = [];
-        return;
-      }
-      const promises = selection.map((row) => getPurchase(row.id));
-      Promise.all(promises).then((responses) => {
-        const allEntries = [];
-        responses.forEach((response, idx) => {
-          const purchaseData = response.data;
-          const departmentName = (selection[idx] && selection[idx].department && selection[idx].department.name) || '引用申购单';
-          if (purchaseData && purchaseData.depPurchaseApplyEntryList && purchaseData.depPurchaseApplyEntryList.length > 0) {
-            const purchaseBillNo = (selection[idx] && selection[idx].purchaseBillNo) || '';
-            const departmentId = (selection[idx] && selection[idx].departmentId) != null ? selection[idx].departmentId : (selection[idx] && selection[idx].department && selection[idx].department.id);
-            purchaseData.depPurchaseApplyEntryList.forEach((entry) => {
-              const entryId = entry.id != null ? String(entry.id) : '';
-              if (entryId && this.planReferencedDepApplyEntryIdSet.has(entryId)) {
-                return;
-              }
-              const material = entry.material ? { ...entry.material } : null;
-              const archiveSupplierId = material && (material.supplierId != null && material.supplierId !== ''
-                ? material.supplierId
-                : (material.supplier && material.supplier.id != null ? material.supplier.id : null));
-              if (material && archiveSupplierId != null && archiveSupplierId !== '') {
-                material.supplierId = archiveSupplierId;
-              }
-              allEntries.push({
-                ...entry,
-                supplierId: archiveSupplierId,
-                _departmentName: departmentName,
-                _purchaseBillNo: purchaseBillNo,
-                _departmentId: departmentId,
-                materialCode: entry.materialCode || (entry.material && entry.material.code) || '',
-                materialName: entry.materialName || (entry.material && entry.material.name) || '',
-                materialSpec: entry.materialSpec || (entry.material && entry.material.speci) || '',
-                model: entry.model || (entry.material && entry.material.model) || '',
-                unit: entry.unit || (entry.material && entry.material.fdUnit && entry.material.fdUnit.unitName) || '',
-                unitPrice: entry.unitPrice || (entry.material && entry.material.price) || 0,
-                qty: entry.qty || 0,
-                amt: entry.amt || (entry.qty || 0) * (entry.unitPrice || (entry.material && entry.material.price) || 0),
-                supplierName: entry.supplierName || (entry.material && entry.material.supplier && entry.material.supplier.name) || '',
-                material
-              });
-            });
-          }
-        });
-        this.selectedPurchaseEntryList = allEntries;
-      }).catch(() => {
-        this.$modal.msgError("获取申购单详情失败");
-        this.selectedPurchaseEntryList = [];
-      });
-    },
-    /** 处理申购单明细选择变化（右侧明细表多选） */
-    handlePurchaseEntrySelectionChange(selection) {
-      this.selectedPurchaseEntryIds = selection.map(item => item.id || item.materialId);
-    },
-    /** 重置查询条件 */
-    resetPurchaseQuery() {
-      this.purchaseQueryParams.departmentId = null;
-      this.purchaseQueryParams.purchaseBillNo = null;
-      this.purchaseQueryParams.beginDate = null;
-      this.purchaseQueryParams.endDate = null;
-      this.purchaseQueryParams.purchasePlanRefStatus = null;
-      this.purchaseQueryParams.pageNum = 1;
-      this.syncPurchaseQueryWarehouseFromForm();
-      this.clearSelectedPurchaseCache();
-      this.getPurchaseList();
-    },
-    /** 关闭引用申购单弹窗 */
-    closeReferencePurchaseDialog() {
-      this.referencePurchaseDialogVisible = false;
-      this.referencePlanWarehouseName = '';
-      this.clearSelectedPurchaseCache();
-    },
-    /** 批量驳回（仅支持单选一条申购单驳回） */
-    handleBatchReject() {
-      const rows = Object.values(this.selectedPurchaseRowMap || {});
-      if (rows.length !== 1) {
-        this.$modal.msgWarning("请选择一条申购单进行驳回");
-        return;
-      }
-      this.selectedPurchaseRows = rows;
-      this.rejectForm.rejectReason = '';
-      this.rejectDialogVisible = true;
-    },
-    /** 提交驳回 */
-    submitReject() {
-      this.$refs["rejectForm"].validate(valid => {
-        if (valid) {
-          if (!this.selectedPurchaseRows || this.selectedPurchaseRows.length !== 1) {
-            this.$modal.msgWarning("请选择一条申购单进行驳回");
-            return;
-          }
-          const id = this.selectedPurchaseRows[0].id;
-          rejectPurchase({ id: String(id), rejectReason: this.rejectForm.rejectReason }).then(() => {
-            this.$modal.msgSuccess("驳回成功");
-            this.rejectDialogVisible = false;
-            this.selectedPurchaseRows = [];
-            this.getPurchaseList();
-          }).catch(() => {
-            this.$modal.msgError("驳回失败");
-          });
-        }
-      });
-    },
-    /** 选择申购单 - 将明细添加到计划明细（支持多选申购单，按计划明细生成方式：拆分或汇总） */
-    handleSelectPurchase() {
-      this.syncSelectedPurchaseRowsFromMap();
-      if (!this.selectedPurchaseRows || this.selectedPurchaseRows.length === 0) {
-        this.$modal.msgWarning("请先选择至少一张申购单");
-        return;
-      }
-      if (!this.selectedPurchaseEntryList || this.selectedPurchaseEntryList.length === 0) {
-        this.$modal.msgWarning("所选申购单没有明细数据");
-        return;
-      }
-      let entriesToAdd = this.selectedPurchaseEntryIds.length > 0
-        ? this.selectedPurchaseEntryList.filter(entry => {
-            const entryId = entry.id || entry.materialId;
-            return this.selectedPurchaseEntryIds.includes(entryId);
-          })
-        : this.selectedPurchaseEntryList;
-      const skippedInPlan = entriesToAdd.length;
-      entriesToAdd = entriesToAdd.filter((entry) => this.isPurchaseApplyEntryRowSelectable(entry));
-      if (skippedInPlan > entriesToAdd.length) {
-        this.$modal.msgWarning(`已跳过 ${skippedInPlan - entriesToAdd.length} 条已在计划明细中的申购明细`);
-      }
-      if (entriesToAdd.length === 0) {
-        this.$modal.msgWarning("请至少选择一条未加入计划的明细数据");
-        return;
-      }
-      const mode = this.form.planEntryMode || '1';
-      const newRows = [];
-      if (mode === '2') {
-        entriesToAdd.forEach(entry => {
-          if (!entry.materialId && !(entry.material && entry.material.id)) return;
-          const mid = entry.materialId || (entry.material && entry.material.id);
-          const row = {
-            materialId: mid,
-            material: this.buildPlanEntryMaterialFromPurchase(entry),
-            applyQty: Number(entry.qty) || 0,
-            qty: Number(entry.qty) || 0,
-            price: entry.unitPrice || entry.price || (entry.material && entry.material.price) || 0,
-            speci: entry.materialSpec || entry.speci || (entry.material && entry.material.speci) || '',
-            model: entry.model || (entry.material && entry.material.model) || '',
-            remark: entry.remark || '',
-            supplierId: this.materialArchiveSupplierId(entry),
-            planSource: '引用申购单',
-            depApplyEntryIds: entry.id != null ? [entry.id] : [],
-            applyBillNos: entry._purchaseBillNo || '',
-            applyDepartmentId: entry._departmentId != null ? entry._departmentId : undefined
-          };
-          row.amt = (row.qty || 0) * (row.price || 0);
-          newRows.push(row);
-        });
-      } else {
-        // 按产品档案 + 产品档案默认供应商汇总（不考虑申请科室）
-        const byKey = {};
-        entriesToAdd.forEach(entry => {
-          if (!entry.material && !entry.materialId) return;
-          const mid = entry.materialId || (entry.material && entry.material.id);
-          const supplierId = this.materialArchiveSupplierId(entry);
-          const aggKey = `${mid}|${supplierId != null ? supplierId : ''}`;
-          const q = Number(entry.qty) || 0;
-          const entryId = entry.id;
-          if (!byKey[aggKey]) {
-            byKey[aggKey] = {
-              materialId: mid,
-              material: this.buildPlanEntryMaterialFromPurchase(entry),
-              applyQty: 0,
-              qty: 0,
-              price: entry.unitPrice || entry.price || (entry.material && entry.material.price) || 0,
-              speci: entry.materialSpec || entry.speci || (entry.material && entry.material.speci) || '',
-              model: entry.model || (entry.material && entry.material.model) || '',
-              remark: entry.remark || '',
-              supplierId,
-              planSource: '引用申购单',
-              depApplyEntryIds: [],
-              _billNoSet: []
-            };
-          }
-          byKey[aggKey].applyQty += q;
-          if (entryId != null) byKey[aggKey].depApplyEntryIds.push(entryId);
-          if (entry._purchaseBillNo && byKey[aggKey]._billNoSet.indexOf(entry._purchaseBillNo) === -1) {
-            byKey[aggKey]._billNoSet.push(entry._purchaseBillNo);
-          }
-        });
-        Object.keys(byKey).forEach((key) => {
-          const row = byKey[key];
-          row.qty = row.applyQty;
-          row.amt = (row.qty || 0) * (row.price || 0);
-          row.applyBillNos = (row._billNoSet && row._billNoSet.length) ? row._billNoSet.join(',') : '';
-          delete row._billNoSet;
-          newRows.push(row);
+    async appendPlanEntryRows(newRows, options = {}) {
+      if (!newRows || !newRows.length) return;
+      const showLoading = options.showLoading !== false && newRows.length > 50;
+      this.entryListBulkUpdating = true;
+      let loading = null;
+      if (showLoading) {
+        loading = this.$loading({
+          lock: true,
+          text: `正在合并 ${newRows.length} 条明细…`,
+          background: 'rgba(0, 0, 0, 0.35)'
         });
       }
-      this.stkIoBillEntryList = (this.stkIoBillEntryList || []).concat(newRows);
-      this.fillStockQtyForEntryRows(newRows).finally(() => {
-        this.syncHeaderSupplierForValidate();
-        this.form.planSource = '引用申购单';
-        this.form.referenceBillNo = (this.selectedPurchaseRows || []).map(r => r.purchaseBillNo).filter(Boolean).join(', ');
+      try {
+        const prev = this.stkIoBillEntryList || [];
+        this.stkIoBillEntryList = assignPlanEntryRowUid(await concatListInChunks(prev, newRows, 200));
+        this.planSkipAutoSaveUntil = Date.now() + 60000;
+        await yieldToMain();
+        const newMaterialIds = [...new Set(newRows.map((r) => r.materialId).filter((id) => id != null))];
+        await this.fillStockQtyForEntryRows(newRows);
+        await this.refreshPlanEntryStockQty(newMaterialIds);
         this.calculateTotalAmount();
-        this.refreshPlanEntryStockQty().then(() => {
-        this.$modal.msgSuccess("引用申购单成功");
-          this.referencePurchaseDialogVisible = false;
-      });
-      });
+        this.syncHeaderSupplierForValidate();
+        if (typeof options.afterMerged === 'function') {
+          await options.afterMerged(newRows);
+        }
+      } finally {
+        this.entryListBulkUpdating = false;
+        if (loading) loading.close();
+        this.$nextTick(() => this.layoutPlanEntryTable());
+      }
     },
     /** 查看申购明细（采购计划明细行末按钮） */
     handleViewApplyDetails(row) {

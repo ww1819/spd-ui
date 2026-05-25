@@ -24,7 +24,7 @@
 
 <script>
 import { listMaterialDeptSafe } from "@/api/foundation/material";
-import { pinyin } from "pinyin-pro";
+import { matchMaterialKeyword, normalizeMaterialSearchKeyword } from "@/utils/materialSearch";
 
 export default {
   props: {
@@ -103,46 +103,13 @@ export default {
         return;
       }
       this.loading = true;
-      const q = query.trim();
-      const upperQuery = q.toUpperCase();
+      const q = normalizeMaterialSearchKeyword(query);
       this.searchTimer = setTimeout(() => {
-        this.materialOptions = (this.allMaterials || []).filter((item) => {
-          if (!item || !item.name) return false;
-          const name = item.name || "";
-          const code = item.code || "";
-          const referredName = item.referredName || "";
-          const speci = item.speci || "";
-          const model = item.model || "";
-          if (
-            name.includes(q) ||
-            name.toUpperCase().includes(upperQuery) ||
-            code.toUpperCase().includes(upperQuery) ||
-            referredName.toUpperCase().includes(upperQuery) ||
-            speci.toUpperCase().includes(upperQuery) ||
-            model.toUpperCase().includes(upperQuery)
-          ) {
-            return true;
-          }
-          if (/^[a-zA-Z]+$/.test(q)) {
-            return this.getPinyinInitials(name).includes(upperQuery);
-          }
-          return false;
-        });
+        this.materialOptions = (this.allMaterials || [])
+          .filter((item) => matchMaterialKeyword(item, q))
+          .slice(0, 100);
         this.loading = false;
       }, 200);
-    },
-    getPinyinInitials(str) {
-      try {
-        return pinyin(str, {
-          pattern: "first",
-          toneType: "none",
-          type: "array",
-        })
-          .join("")
-          .toUpperCase();
-      } catch (e) {
-        return "";
-      }
     },
   },
 };

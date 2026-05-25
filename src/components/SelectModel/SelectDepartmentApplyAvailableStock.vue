@@ -125,6 +125,7 @@
 
 <script>
 import { listDeptApplyAvailableStock } from "@/api/warehouse/inventory";
+import { normalizeMaterialSearchKeyword } from "@/utils/materialSearch";
 
 export default {
   name: "SelectDepartmentApplyAvailableStock",
@@ -141,7 +142,7 @@ export default {
       rowList: [],
       queryParams: {
         pageNum: 1,
-        pageSize: 10,
+        pageSize: 20,
         materialName: null,
         materialSpeci: null,
         materialModel: null,
@@ -187,10 +188,19 @@ export default {
       if (limit != null) this.queryParams.pageSize = limit;
       this.getList();
     },
+    buildListQueryParams() {
+      const q = { ...this.queryParams };
+      q.materialName = normalizeMaterialSearchKeyword(q.materialName) || null;
+      q.materialSpeci = normalizeMaterialSearchKeyword(q.materialSpeci) || null;
+      q.materialModel = normalizeMaterialSearchKeyword(q.materialModel) || null;
+      q.warehouseName = normalizeMaterialSearchKeyword(q.warehouseName) || null;
+      return q;
+    },
     getList() {
       this.loading = true;
-      this.queryParams.excludeMaterialWarehousePairs = this.buildExcludePairsParam();
-      listDeptApplyAvailableStock(this.queryParams)
+      const q = this.buildListQueryParams();
+      q.excludeMaterialWarehousePairs = this.buildExcludePairsParam();
+      listDeptApplyAvailableStock(q)
         .then(response => {
           const rows = response.rows || [];
           // 保持查询结果完整展示；重复明细在父页面 selectData 阶段做去重拦截。

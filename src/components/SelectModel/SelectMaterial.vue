@@ -1,5 +1,6 @@
 ﻿<template>
   <el-select v-model="material" filterable
+             :filter-method="useDeptSafeList ? filterDeptSafeOption : null"
              clearable
              placeholder="请选择耗材"
              :disabled="value2"
@@ -15,6 +16,7 @@
 
 <script>
 import { listMaterialAll, listMaterialDeptSafe } from "@/api/foundation/material";
+import { matchMaterialKeyword, normalizeMaterialSearchKeyword } from "@/utils/materialSearch";
 
 export default {
   props: {
@@ -56,11 +58,27 @@ export default {
         : listMaterialAll();
       req
         .then(response => {
-          this.materialOptions = Array.isArray(response) ? response : (response && response.data) || [];
+          const list = Array.isArray(response) ? response : (response && response.data) || [];
+          if (this.useDeptSafeList) {
+            this.allDeptSafeMaterials = list;
+            this.materialOptions = list.slice(0, 100);
+          } else {
+            this.materialOptions = list;
+          }
         })
         .finally(() => {
           this.loading = false;
         });
+    },
+    filterDeptSafeOption(query) {
+      const q = normalizeMaterialSearchKeyword(query);
+      if (!q) {
+        this.materialOptions = (this.allDeptSafeMaterials || []).slice(0, 100);
+        return;
+      }
+      this.materialOptions = (this.allDeptSafeMaterials || [])
+        .filter((item) => matchMaterialKeyword(item, q))
+        .slice(0, 100);
     },
   }
 }

@@ -153,6 +153,7 @@
 <script>
 import { listMaterialDeptSafe } from "@/api/foundation/material";
 import { listFixedNumberForPurchase } from "@/api/monitoring/fixedNumber";
+import { matchMaterialKeyword, normalizeMaterialSearchKeyword } from "@/utils/materialSearch";
 /** 科室场景用低敏供应商接口 listDeptSafe，避免依赖 foundation:supplier:list */
 import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 
@@ -182,7 +183,7 @@ export default {
       open: false,
       queryParams: {
         pageNum: 1,
-        pageSize: 10,
+        pageSize: 20,
         code: null,
         name: null,
         speci: null,
@@ -237,16 +238,41 @@ export default {
       const q = {
         warehouseId: this.warehouseValue,
         pageNum: this.queryParams.pageNum,
-        pageSize: this.queryParams.pageSize,
-        materialName: this.queryParams.name || this.queryParams.code || undefined
+        pageSize: this.queryParams.pageSize
       };
-      if (this.queryParams.speci) {
-        q["material.speci"] = this.queryParams.speci;
+      const name = normalizeMaterialSearchKeyword(this.queryParams.name);
+      const code = normalizeMaterialSearchKeyword(this.queryParams.code);
+      const speci = normalizeMaterialSearchKeyword(this.queryParams.speci);
+      if (name) {
+        q.materialName = name;
+      } else if (code) {
+        q.materialName = code;
+      }
+      if (code && name) {
+        q.materialCode = code;
+      }
+      if (speci) {
+        q.materialSpeci = speci;
       }
       if (this.excludeMaterialIds && this.excludeMaterialIds.length > 0) {
         q.excludeMaterialIds = this.excludeMaterialIds.join(",");
       }
       return q;
+    },
+    buildDeptSafeQueryParams() {
+      const name = normalizeMaterialSearchKeyword(this.queryParams.name);
+      const code = normalizeMaterialSearchKeyword(this.queryParams.code);
+      const speci = normalizeMaterialSearchKeyword(this.queryParams.speci);
+      const params = {};
+      if (name) {
+        params.name = name;
+      } else if (code) {
+        params.name = code;
+      }
+      if (speci) {
+        params.speci = speci;
+      }
+      return params;
     },
     handlePagination({ page, limit }) {
       if (page != null) this.queryParams.pageNum = page;
@@ -270,21 +296,19 @@ export default {
           });
         return;
       }
-      listMaterialDeptSafe()
+      listMaterialDeptSafe(this.buildDeptSafeQueryParams())
         .then(response => {
           let materialList = Array.isArray(response) ? response : [];
-          const code = (this.queryParams.code || "").toLowerCase();
-          const name = (this.queryParams.name || "").toLowerCase();
-          const speci = (this.queryParams.speci || "").toLowerCase();
-          const brand = (this.queryParams.brand || "").toLowerCase();
+          const code = normalizeMaterialSearchKeyword(this.queryParams.code);
+          const name = normalizeMaterialSearchKeyword(this.queryParams.name);
+          const brand = normalizeMaterialSearchKeyword(this.queryParams.brand);
           const supplierId = this.queryParams.supplierId;
           materialList = materialList.filter(item => {
-            const okCode = !code || (item.code || "").toLowerCase().includes(code);
-            const okName = !name || (item.name || "").toLowerCase().includes(name);
-            const okSpec = !speci || (item.speci || "").toLowerCase().includes(speci);
-            const okBrand = !brand || (item.brand || "").toLowerCase().includes(brand);
+            const okCode = !code || matchMaterialKeyword(item, code);
+            const okName = !name || matchMaterialKeyword(item, name);
+            const okBrand = !brand || matchMaterialKeyword(item, brand);
             const okSupplier = !supplierId || String(item.supplierId) === String(supplierId);
-            return okCode && okName && okSpec && okBrand && okSupplier;
+            return okCode && okName && okBrand && okSupplier;
           });
           const excludes = new Set((this.excludeMaterialIds || []).map(id => String(id)));
           materialList = materialList.filter(item => !excludes.has(String(item.id)));
