@@ -33,6 +33,15 @@
               @keyup.enter.native="handleDetailQuery"
             />
           </el-form-item>
+          <el-form-item label="费用明细主键">
+            <el-input
+              v-model="detailQuery.hisChargeId"
+              placeholder="HIS费用明细主键"
+              clearable
+              style="width:160px"
+              @keyup.enter.native="handleDetailQuery"
+            />
+          </el-form-item>
           <el-form-item label="退费关联ID">
             <el-input
               v-model="detailQuery.chargeIdTf"
@@ -78,6 +87,7 @@
           <el-form-item>
             <el-button type="primary" icon="el-icon-search" @click="handleDetailQuery">查询</el-button>
             <el-button icon="el-icon-refresh" @click="resetDetailQuery">重置</el-button>
+            <el-button type="warning" plain icon="el-icon-download" @click="handleExport">导出</el-button>
           </el-form-item>
           <el-form-item>
             <el-button
@@ -129,6 +139,11 @@
           </template>
           <el-table-column label="患者" prop="patientName" width="100" show-overflow-tooltip />
           <el-table-column label="收费项ID" prop="chargeItemId" width="120" show-overflow-tooltip />
+          <el-table-column label="费用明细主键" prop="hisChargeId" width="130" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ scope.row.hisChargeId || scope.row.hisInpatientChargeId || scope.row.hisOutpatientChargeId || '' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="退费关联ID" width="130" show-overflow-tooltip>
             <template slot-scope="scope">
               <span>{{ scope.row.chargeIdTf || scope.row.hisInpatientChargeIdTf || scope.row.hisOutpatientChargeIdTf || '' }}</span>
@@ -144,22 +159,27 @@
           <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
           <el-table-column label="数量" prop="quantity" width="90" align="right" />
           <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
-          <el-table-column label="处理状态" prop="processStatus" width="120" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ processStatusText(scope.row.processStatus) }}</span>
-            </template>
-          </el-table-column>
           <el-table-column label="处理类型" prop="processType" width="120" show-overflow-tooltip>
             <template slot-scope="scope">
               <span>{{ processTypeText(scope.row.processType) }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="处理状态" prop="processStatus" width="120" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ processStatusText(scope.row.processStatus) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="处理方" prop="processParty" width="100" show-overflow-tooltip />
+          <el-table-column label="处理人" prop="processByName" width="100" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ scope.row.processByName || scope.row.processBy || '' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="处理情况" prop="processSituation" min-width="200" show-overflow-tooltip />
           <el-table-column label="处理方" prop="processParty" width="100" show-overflow-tooltip />
           <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
-          <el-table-column label="处理人" prop="processBy" width="100" show-overflow-tooltip />
           <el-table-column label="本地入库" prop="createTime" width="160" />
-          <el-table-column label="操作" align="center" width="230" fixed="right">
+          <el-table-column label="操作" align="center" width="280" fixed="right">
             <template slot-scope="scope">
               <el-button
                 type="text"
@@ -175,6 +195,13 @@
                 :disabled="scope.row.processStatus === 'CONSUMED'"
                 @click="openHighDialog(scope.row)"
               >高值</el-button>
+              <el-button
+                type="text"
+                size="mini"
+                v-hasPermi="['department:patientCharge:writeOffLow']"
+                :disabled="!canWriteOffLow(scope.row)"
+                @click="handleWriteOffLow(scope.row)"
+              >冲销</el-button>
               <el-button
                 type="text"
                 size="mini"
@@ -222,7 +249,7 @@
       </el-tab-pane>
     </el-tabs>
 
-    <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="920px" append-to-body>
+    <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="92%" append-to-body class="consume-record-dialog">
       <el-table
         v-loading="consumeRecordDialog.loading"
         :data="consumeRecordDialog.rows"
@@ -231,19 +258,62 @@
         max-height="420"
         empty-text="暂无消耗记录"
       >
-        <el-table-column label="关联时间" prop="createTime" width="165" show-overflow-tooltip />
-        <el-table-column label="分摊数量" prop="allocQty" width="100" align="right" />
-        <el-table-column label="消耗单号" prop="consumeBillNo" min-width="140" show-overflow-tooltip />
-        <el-table-column label="消耗日期" prop="consumeBillDate" width="110" show-overflow-tooltip />
-        <el-table-column label="单状态" width="88" align="center">
+        <el-table-column label="类型" width="64" align="center" fixed="left">
+          <template slot-scope="scope">
+            <span>{{ consumeRecordTypeText(scope.row.recordType) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="消耗单号" prop="consumeBillNo" min-width="178" show-overflow-tooltip />
+        <el-table-column label="冲销来源单号" prop="reverseOfBillNo" min-width="178" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.reverseOfBillNo || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="消耗日期" prop="consumeBillDate" width="158" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateTime(scope.row.consumeBillDate) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单状态" width="80" align="center">
           <template slot-scope="scope">
             <span>{{ consumeBillStatusText(scope.row.consumeBillStatus) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材" prop="materialName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="批次号" prop="batchNo" min-width="130" show-overflow-tooltip />
-        <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="130" show-overflow-tooltip />
-        <el-table-column label="明细数量" prop="entryQty" width="96" align="right" />
+        <el-table-column label="耗材" prop="materialName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="单价" prop="unitPrice" width="88" align="right" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatMoney(scope.row.unitPrice) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="数量" prop="entryQty" width="80" align="right" show-overflow-tooltip />
+        <el-table-column label="金额" prop="amt" width="96" align="right" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatMoney(scope.row.amt) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="批次号" prop="batchNo" min-width="200" show-overflow-tooltip />
+        <el-table-column label="批号" prop="batchNumber" min-width="120" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.batchNumber || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="有效期" prop="endTime" width="108" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateOnly(scope.row.endTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="生产日期" prop="beginTime" width="108" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateOnly(scope.row.beginTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="分摊数量" prop="allocQty" width="88" align="right" />
+        <el-table-column label="关联时间" prop="createTime" width="158" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateTime(scope.row.createTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="120" show-overflow-tooltip />
       </el-table>
       <div slot="footer" class="dialog-footer">
         <el-button @click="consumeRecordDialog.visible = false">关 闭</el-button>
@@ -316,7 +386,11 @@
             default-time="23:59:59"
           />
         </el-form-item>
-        <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；确定后先执行住院抓取，再执行门诊抓取；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
+        <el-form-item label="抓取范围">
+          <el-checkbox v-model="fetchForm.fetchInpatient" :disabled="!canFetchInpatient">住院</el-checkbox>
+          <el-checkbox v-model="fetchForm.fetchOutpatient" :disabled="!canFetchOutpatient" style="margin-left:16px">门诊</el-checkbox>
+        </el-form-item>
+        <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；勾选住院/门诊后确定抓取；多选时先住院后门诊；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="fetchDialogVisible = false">取 消</el-button>
@@ -341,7 +415,8 @@ import {
   processMirrorLowValueBatch,
   scanMirrorHighBarcode,
   applyMirrorHighConsume,
-  listMirrorConsumeRecords
+  listMirrorConsumeRecords,
+  writeOffMirrorLowValue
 } from '@/api/department/patientCharge'
 
 export default {
@@ -361,6 +436,7 @@ export default {
         patientName: undefined,
         visitNo: undefined,
         chargeItemId: undefined,
+        hisChargeId: undefined,
         chargeIdTf: undefined,
         departmentId: undefined,
         processed: undefined,
@@ -380,7 +456,9 @@ export default {
       fetchSubmitting: false,
       fetchForm: {
         beginDate: undefined,
-        endDate: undefined
+        endDate: undefined,
+        fetchInpatient: true,
+        fetchOutpatient: true
       },
       highDialogVisible: false,
       highSubmitting: false,
@@ -399,6 +477,12 @@ export default {
   computed: {
     fetchDialogTitle() {
       return 'HIS收费数据抓取'
+    },
+    canFetchInpatient() {
+      return checkPermi(['department:patientCharge:fetchInpatient'])
+    },
+    canFetchOutpatient() {
+      return checkPermi(['department:patientCharge:fetchOutpatient'])
     },
     currentVisitKind() {
       if (this.detailVisitType === 'IN') return 'INPATIENT'
@@ -467,6 +551,24 @@ export default {
       if (v === 2 || v === '2') return '已审核'
       return v != null && v !== '' ? String(v) : '--'
     },
+    consumeRecordTypeText(v) {
+      if (v === 'REVERSE') return '冲销'
+      return '消耗'
+    },
+    formatDateTime(v) {
+      if (!v) return '--'
+      return parseTime(v, '{y}-{m}-{d} {h}:{i}:{s}')
+    },
+    formatDateOnly(v) {
+      if (!v) return '--'
+      return parseTime(v, '{y}-{m}-{d}')
+    },
+    formatMoney(v) {
+      if (v == null || v === '') return '--'
+      const n = Number(v)
+      if (isNaN(n)) return String(v)
+      return n.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 4 })
+    },
     openConsumeRecordDialog(row) {
       if (!row || !row.id) {
         return
@@ -498,6 +600,7 @@ export default {
         patientName: undefined,
         visitNo: undefined,
         chargeItemId: undefined,
+        hisChargeId: undefined,
         chargeIdTf: undefined,
         departmentId: undefined,
         processed: undefined,
@@ -519,11 +622,18 @@ export default {
       q.endProcessTime = this.toQueryDayEnd(q.endProcessTime)
       if (this.detailVisitType === 'IN') {
         q.inpatientNo = q.visitNo
+        q.hisInpatientChargeId = q.hisChargeId
         q.hisInpatientChargeIdTf = q.chargeIdTf
         delete q.visitNo
+        delete q.hisChargeId
         delete q.chargeIdTf
         listInpatientMirror(q).then(res => {
-          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'INPATIENT', chargeIdTf: r.hisInpatientChargeIdTf }))
+          this.detailList = (res.rows || []).map(r => ({
+            ...r,
+            visitType: 'INPATIENT',
+            hisChargeId: r.hisInpatientChargeId,
+            chargeIdTf: r.hisInpatientChargeIdTf
+          }))
           this.detailTotal = res.total || 0
         }).finally(() => {
           this.detailLoading = false
@@ -531,11 +641,18 @@ export default {
         })
       } else if (this.detailVisitType === 'OUT') {
         q.outpatientNo = q.visitNo
+        q.hisOutpatientChargeId = q.hisChargeId
         q.hisOutpatientChargeIdTf = q.chargeIdTf
         delete q.visitNo
+        delete q.hisChargeId
         delete q.chargeIdTf
         listOutpatientMirror(q).then(res => {
-          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'OUTPATIENT', chargeIdTf: r.hisOutpatientChargeIdTf }))
+          this.detailList = (res.rows || []).map(r => ({
+            ...r,
+            visitType: 'OUTPATIENT',
+            hisChargeId: r.hisOutpatientChargeId,
+            chargeIdTf: r.hisOutpatientChargeIdTf
+          }))
           this.detailTotal = res.total || 0
         }).finally(() => {
           this.detailLoading = false
@@ -571,12 +688,63 @@ export default {
       const day = parseTime(new Date(), '{y}-{m}-{d}')
       this.fetchForm = {
         beginDate: `${day} 00:00:00`,
-        endDate: `${day} 23:59:59`
+        endDate: `${day} 23:59:59`,
+        fetchInpatient: true,
+        fetchOutpatient: true
       }
       this.fetchDialogVisible = true
     },
     resetFetchForm() {
-      this.fetchForm = { beginDate: undefined, endDate: undefined }
+      this.fetchForm = {
+        beginDate: undefined,
+        endDate: undefined,
+        fetchInpatient: true,
+        fetchOutpatient: true
+      }
+    },
+    isRefundMirrorRow(row) {
+      const tf = row && (row.chargeIdTf || row.hisInpatientChargeIdTf || row.hisOutpatientChargeIdTf)
+      return tf != null && String(tf).trim() !== ''
+    },
+    canWriteOffLow(row) {
+      if (!row || row.valueLevel === '1' || row.valueLevel === 1) {
+        return false
+      }
+      if (row.processStatus === 'CONSUMED' && row.processType === 'LOW_VALUE') {
+        return true
+      }
+      if (row.processStatus === 'REFUNDED') {
+        return true
+      }
+      return false
+    },
+    handleWriteOffLow(row) {
+      const visitKind = row && row.visitType ? row.visitType : this.currentVisitKind
+      if (!visitKind) {
+        this.$modal.msgWarning('请先切换到住院或门诊后再冲销')
+        return
+      }
+      const isCharge = !this.isRefundMirrorRow(row)
+      const tip = isCharge
+        ? '将反消耗本行低值核销并返还科室库存；若存在已核销或已退费返还的关联退费行，将一并冲销并恢复为待处理。是否继续？'
+        : '将撤销本退费行的低值处理/退费返还，恢复为待处理并调整科室库存。是否继续？'
+      this.$modal.confirm(tip).then(() => {
+        return writeOffMirrorLowValue({ visitKind, mirrorRowId: row.id })
+      }).then(res => {
+        const d = res.data || {}
+        const rev = (d.reverseConsumeBillIds || []).length
+        const reapply = (d.reapplyConsumeBillIds || []).length
+        const rel = d.relatedRefundWriteOffCount != null ? d.relatedRefundWriteOffCount : 0
+        let msg = `冲销完成：反消耗单 ${rev} 张`
+        if (reapply > 0) {
+          msg += `，撤销退费扣减单 ${reapply} 张`
+        }
+        if (rel > 0) {
+          msg += `，联动退费 ${rel} 条`
+        }
+        this.$modal.msgSuccess(msg)
+        this.handleDetailQuery()
+      }).catch(() => {})
     },
     processLowValue(row) {
       const visitKind = row && row.visitType ? row.visitType : this.currentVisitKind
@@ -695,6 +863,37 @@ export default {
         this.handleDetailQuery()
       }).finally(() => { this.highSubmitting = false })
     },
+    buildExportParams() {
+      const q = { ...this.detailQuery }
+      delete q.pageNum
+      delete q.pageSize
+      q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
+      q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
+      q.beginProcessTime = this.toQueryDayStart(q.beginProcessTime)
+      q.endProcessTime = this.toQueryDayEnd(q.endProcessTime)
+      if (this.detailVisitType === 'IN') {
+        q.visitKind = 'INPATIENT'
+        q.inpatientNo = q.visitNo
+        q.hisInpatientChargeId = q.hisChargeId
+        delete q.visitNo
+        delete q.hisChargeId
+      } else if (this.detailVisitType === 'OUT') {
+        q.visitKind = 'OUTPATIENT'
+        q.outpatientNo = q.visitNo
+        q.hisOutpatientChargeId = q.hisChargeId
+        delete q.visitNo
+        delete q.hisChargeId
+      }
+      return q
+    },
+    handleExport() {
+      const label = this.detailVisitType === 'IN' ? '住院' : (this.detailVisitType === 'OUT' ? '门诊' : '全部')
+      this.download(
+        'his/patientCharge/mirror/export',
+        this.buildExportParams(),
+        `患者费用明细_${label}_${new Date().getTime()}.xlsx`
+      )
+    },
     formatFetchResult(label, d) {
       const data = d || {}
       return `${label} 批次 ${data.fetchBatchId || ''}：新增 ${data.insertedCount || 0}，跳过 ${data.skippedCount || 0}，指纹不一致 ${data.driftCount || 0}`
@@ -704,22 +903,36 @@ export default {
         this.$modal.msgWarning('请选择起止时间')
         return
       }
-      const canIn = checkPermi(['department:patientCharge:fetchInpatient'])
-      const canOut = checkPermi(['department:patientCharge:fetchOutpatient'])
+      const wantIn = !!this.fetchForm.fetchInpatient
+      const wantOut = !!this.fetchForm.fetchOutpatient
+      if (!wantIn && !wantOut) {
+        this.$modal.msgWarning('请至少勾选住院或门诊其中一项')
+        return
+      }
+      const canIn = this.canFetchInpatient
+      const canOut = this.canFetchOutpatient
       if (!canIn && !canOut) {
         this.$modal.msgWarning('无住院/门诊抓取权限')
+        return
+      }
+      if (wantIn && !canIn) {
+        this.$modal.msgWarning('已勾选住院但无住院抓取权限')
+        return
+      }
+      if (wantOut && !canOut) {
+        this.$modal.msgWarning('已勾选门诊但无门诊抓取权限')
         return
       }
       this.fetchSubmitting = true
       const body = { beginDate: this.fetchForm.beginDate, endDate: this.fetchForm.endDate }
       const runInpatient = () => {
-        if (!canIn) {
+        if (!wantIn || !canIn) {
           return Promise.resolve(null)
         }
         return fetchInpatientMirror(body).then(res => res.data)
       }
       const runOutpatient = () => {
-        if (!canOut) {
+        if (!wantOut || !canOut) {
           return Promise.resolve(null)
         }
         return fetchOutpatientMirror(body).then(res => res.data)
@@ -733,6 +946,10 @@ export default {
           }
           if (outData) {
             msgs.push(this.formatFetchResult('门诊', outData))
+          }
+          if (!msgs.length) {
+            this.$modal.msgWarning('未执行任何抓取')
+            return
           }
           this.$modal.msgSuccess(msgs.join('；'))
           this.fetchDialogVisible = false

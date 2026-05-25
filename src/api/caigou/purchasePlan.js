@@ -17,6 +17,18 @@ export function getPurchasePlan(id) {
   })
 }
 
+/** 按仓库+耗材批量查询当前库存数量（明细「库存数量」列） */
+export function getPlanEntryStockQty(warehouseId, materialIds) {
+  return request({
+    url: '/caigou/jihua/entryStockQty',
+    method: 'get',
+    params: {
+      warehouseId,
+      materialIds: Array.isArray(materialIds) ? materialIds.join(',') : materialIds
+    }
+  })
+}
+
 // 新增采购计划（可选 axios 配置，如 headers.repeatSubmit）
 export function addPurchasePlan(data, axiosConfig) {
   return request({
@@ -99,5 +111,14 @@ export function getApplyBillHeaderList(planId) {
     url: '/caigou/jihua/applyBillHeaderList',
     method: 'get',
     params: { planId }
+  })
+}
+
+// 按仓库查询物资库存数量（materialIds 逗号分隔）
+export function getMaterialStockQty(warehouseId, materialIds) {
+  return request({
+    url: '/caigou/jihua/materialStockQty',
+    method: 'get',
+    params: { warehouseId, materialIds }
   })
 }

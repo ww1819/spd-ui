@@ -125,3 +125,13 @@ export function saveTenantBillingSetting(data) {
     data
   })
 }
+
+/** 低值冲销：反消耗并恢复待处理（计费行联动关联退费行） */
+export function writeOffMirrorLowValue(data) {
+  return request({
+    url: '/his/patientCharge/mirror/writeOffLowValue',
+    method: 'post',
+    timeout: 120000,
+    data
+  })
+}

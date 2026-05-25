@@ -560,7 +560,7 @@
 </template>
 
 <script>
-import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser, batchSetUserWorkgroup } from "@/api/system/user";
+import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser, batchSetUserWorkgroup, updateUserMenus, updateUserDepartments, updateUserWarehouses } from "@/api/system/user";
 import { workgroupTreeSelect } from "@/api/system/workgroup";
 import { listPost } from "@/api/system/post";
 import { getConfigKey, listConfig } from "@/api/system/config";
@@ -879,10 +879,11 @@ export default {
       this.form.departmentIds = val ? checkeddepartmentIds : [];
       this.departmentIndeterminate = false;
     },
-    /** 获取菜单树 */
-    getMenuTree() {
-      return menuTreeselect().then(response => {
-        this.menuOptions = response.data || [];
+    /** 获取菜单树（租户用户仅展示 hc_customer_menu 已开通菜单） */
+    getMenuTree(tenantId) {
+      const tid = tenantId || (this.form && this.form.customerId) || this.$store.getters.customerId;
+      return menuTreeselect(tid).then(response => {
+        this.menuOptions = tid ? this.normalizeAuthMenuTree(response.data || []) : (response.data || []);
         return response;
       });
     },
@@ -1001,7 +1002,9 @@ export default {
             return res;
           });
         }
-        return this.getMenuTree();
+        this.menuOptions = [];
+        this.$modal.msgWarning('该用户未绑定租户，无法分配耗材菜单权限');
+        return Promise.resolve();
       }).then(() => {
         this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
         this.authOpen = true;
@@ -1061,79 +1064,36 @@ export default {
         this.authForm.warehouseIds = [];
       }
     },
-    /** 授权提交 */
+    /** 授权提交（菜单/科室/仓库分接口保存，不调用用户主表 updateUser） */
     submitAuth() {
       const allowedSet = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
-      // 严格树：仅以实际勾选为准；再与客户可勾选菜单求交，避免提交客户未开通的菜单
       let menuIds = [];
       if (this.$refs.menuAuthDualTree) {
         menuIds = this.$refs.menuAuthDualTree.getSelectedIds() || [];
       } else {
         menuIds = Array.isArray(this.authForm.menuIds) ? this.authForm.menuIds : [];
       }
-      
-      console.log('开始提交授权 - 当前 menuIds:', menuIds);
-      
-      // 先获取完整的用户信息，然后合并权限数据
-      getUser(this.authForm.userId).then(response => {
-        const userData = response.data ? { ...response.data } : {};
-        // 详情接口把 postIds/roleIds 放在响应根级；仅展开 data 会导致 postIds 为空，updateUser 先删 sys_user_post 再插 → 耗材工作组丢失。
-        delete userData.postIds;
-        delete userData.roleIds;
-        delete userData.workGroupIds;
-        const postIdsSrc = response.postIds != null ? response.postIds : [];
-        const postIdsNorm = Array.isArray(postIdsSrc)
-          ? postIdsSrc.map(id => Number(id)).filter(id => !isNaN(id))
-          : [];
-        const roleIdsSrc = response.roleIds != null ? response.roleIds : [];
-        const roleIdsNorm = Array.isArray(roleIdsSrc)
-          ? roleIdsSrc.map(id => Number(id)).filter(id => !isNaN(id))
-          : [];
-        // 确保 menuIds 是数字数组
-        const finalMenuIds = menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowedSet.has(id));
-        console.log('处理后的 menuIds:', finalMenuIds);
-        console.log('userData 中的 menuIds:', userData.menuIds);
-        
-        if (finalMenuIds.length === 0) {
-          this.$modal.msgWarning("请至少选择一个菜单权限");
-          return Promise.reject(new Error("菜单权限不能为空"));
-        }
-        
-        // 合并权限数据到用户对象，确保 menuIds 不被覆盖
-        const payload = {
-          ...userData,
-          userId: this.authForm.userId,
-          menuIds: finalMenuIds, // 明确设置 menuIds，确保不被 userData 中的值覆盖
-          departmentIds: this.authForm.departmentIds || [],
-          warehouseIds: this.authForm.warehouseIds || [],
-          postIds: postIdsNorm,
-          roleIds: roleIdsNorm
-        };
-        // 授权弹窗不传 workGroupIds，由后端保留设备侧 sb_work_group_user
-        // 再次确认 menuIds 没有被覆盖
-        if (payload.menuIds !== finalMenuIds) {
-          console.warn('警告：menuIds 被覆盖！原始值:', finalMenuIds, '当前值:', payload.menuIds);
-          payload.menuIds = finalMenuIds;
-        }
-        console.log('提交授权数据 - userId:', payload.userId, 'menuIds:', payload.menuIds, 'menuIds类型:', typeof payload.menuIds, '是数组:', Array.isArray(payload.menuIds));
-        console.log('完整 payload:', JSON.stringify(payload, null, 2));
-        return updateUser(payload);
-      }).then(response => {
-        console.log('保存授权响应:', response);
+      const finalMenuIds = menuIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowedSet.has(id));
+      if (finalMenuIds.length === 0) {
+        this.$modal.msgWarning("请至少选择一个菜单权限");
+        return;
+      }
+      const userId = this.authForm.userId;
+      const departmentIds = (this.authForm.departmentIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+      const warehouseIds = (this.authForm.warehouseIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+      Promise.all([
+        updateUserMenus(userId, finalMenuIds),
+        updateUserDepartments(userId, departmentIds),
+        updateUserWarehouses(userId, warehouseIds)
+      ]).then(() => {
         this.$modal.msgSuccess("授权成功");
-        // 不关闭弹窗，刷新授权数据
-        const userId = this.authForm.userId;
-        // 重新获取用户信息以刷新菜单权限
         return getUser(userId);
       }).then(response => {
-        const menuIds = response.menuIds || [];
-        console.log('保存后重新获取的菜单权限:', menuIds, '完整响应:', response);
-        this.authForm.menuIds = menuIds;
-        this.authExistingMenuIds = Array.isArray(menuIds) ? menuIds.slice() : [];
+        const savedMenuIds = response.menuIds || [];
+        this.authForm.menuIds = savedMenuIds;
+        this.authExistingMenuIds = Array.isArray(savedMenuIds) ? savedMenuIds.slice() : [];
         this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
       }).catch(error => {
-        console.error('授权保存失败 - 错误详情:', error);
-        console.error('错误堆栈:', error.stack);
         this.$modal.msgError("授权保存失败：" + (error.msg || error.message || error || '未知错误'));
       });
     },
@@ -1437,7 +1397,22 @@ export default {
             if (!pw) {
               delete payload.password;
             }
-            updateUser(payload).then(response => {
+            const userId = this.form.userId;
+            const menuIdsForGrant = (payload.menuIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            const departmentIdsForGrant = (payload.departmentIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            const warehouseIdsForGrant = (payload.warehouseIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+            delete payload.menuIds;
+            delete payload.departmentIds;
+            delete payload.warehouseIds;
+            updateUser(payload).then(() => {
+              const grantCalls = [];
+              if (menuIdsForGrant.length > 0) {
+                grantCalls.push(updateUserMenus(userId, menuIdsForGrant));
+              }
+              grantCalls.push(updateUserDepartments(userId, departmentIdsForGrant));
+              grantCalls.push(updateUserWarehouses(userId, warehouseIdsForGrant));
+              return Promise.all(grantCalls);
+            }).then(() => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
