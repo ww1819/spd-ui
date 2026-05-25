@@ -154,6 +154,8 @@
               <span>{{ processTypeText(scope.row.processType) }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="处理情况" prop="processSituation" min-width="200" show-overflow-tooltip />
+          <el-table-column label="处理方" prop="processParty" width="100" show-overflow-tooltip />
           <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
           <el-table-column label="处理人" prop="processBy" width="100" show-overflow-tooltip />
           <el-table-column label="本地入库" prop="createTime" width="160" />
