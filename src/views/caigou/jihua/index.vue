@@ -786,7 +786,7 @@
 </template>
 
 <script>
-import { listPurchasePlan, getPurchasePlan, delPurchasePlan, addPurchasePlan, updatePurchasePlan, auditPurchasePlan, getApplyDetails, getApplyBillNoList, getApplyBillHeaderList } from "@/api/caigou/purchasePlan";
+import { listPurchasePlan, getPurchasePlan, delPurchasePlan, addPurchasePlan, updatePurchasePlan, auditPurchasePlan, getApplyDetails, getApplyBillNoList, getApplyBillHeaderList, getPlanEntryStockQty } from "@/api/caigou/purchasePlan";
 import { listUserAll } from "@/api/system/user";
 import { listPurchase, getPurchase, rejectPurchase } from "@/api/department/purchase";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
@@ -1106,9 +1106,40 @@ export default {
           }
         });
       }
+    },
+    'form.warehouseId'(val, oldVal) {
+      if (!this.open || val == null || val === '' || val === oldVal) {
+        return;
+      }
+      this.refreshPlanEntryStockQty();
     }
   },
   methods: {
+    /** 按当前计划仓库刷新明细「库存数量」 */
+    refreshPlanEntryStockQty() {
+      const warehouseId = this.form.warehouseId;
+      const list = this.stkIoBillEntryList || [];
+      if (!warehouseId || !list.length) {
+        return Promise.resolve();
+      }
+      const materialIds = [...new Set(list.map((e) => e.materialId).filter((id) => id != null))];
+      if (!materialIds.length) {
+        return Promise.resolve();
+      }
+      return getPlanEntryStockQty(warehouseId, materialIds).then((res) => {
+        const map = (res && res.data) || {};
+        list.forEach((entry) => {
+          if (entry.materialId == null) {
+            return;
+          }
+          const raw = map[String(entry.materialId)] != null
+            ? map[String(entry.materialId)]
+            : map[entry.materialId];
+          const q = raw != null ? Number(raw) : 0;
+          this.$set(entry, 'stockQty', Number.isFinite(q) ? q : 0);
+        });
+      }).catch(() => {});
+    },
     purchasePlanRefLabel(status) {
       const s = status == null || status === '' ? 0 : Number(status);
       const map = { 0: '未引用', 1: '部分引用', 2: '全部引用', 3: '计划驳回' };
@@ -1412,9 +1443,11 @@ export default {
       }
 
       const afterAppend = () => {
-        toAppend.forEach((row) => this.qtyChange(row));
-        this.debouncedAutoSavePlan();
-        console.timeEnd('[Plan] selectData total');
+        this.refreshPlanEntryStockQty().finally(() => {
+          toAppend.forEach((row) => this.qtyChange(row));
+          this.debouncedAutoSavePlan();
+          console.timeEnd('[Plan] selectData total');
+        });
       };
 
       // 小批量（<=30）直接同步合并，避免 rAF 等待造成 1s+ 延迟
@@ -1752,6 +1785,7 @@ export default {
         this.open = true;
         this.action = false;
         this.title = "查看计划";
+        this.$nextTick(() => this.refreshPlanEntryStockQty());
       });
     },
     /** 新增按钮操作 */
@@ -1777,6 +1811,7 @@ export default {
         this.open = true;
         this.title = "修改计划";
         this.action = true;
+        this.$nextTick(() => this.refreshPlanEntryStockQty());
       });
     },
     /** 提交按钮（保存表单） */
@@ -2376,8 +2411,10 @@ export default {
       this.form.planSource = '引用申购单';
       this.form.referenceBillNo = (this.selectedPurchaseRows || []).map(r => r.purchaseBillNo).filter(Boolean).join(', ');
       this.calculateTotalAmount();
-      this.$modal.msgSuccess("引用申购单成功");
-      this.referencePurchaseDialogVisible = false;
+      this.refreshPlanEntryStockQty().then(() => {
+        this.$modal.msgSuccess("引用申购单成功");
+        this.referencePurchaseDialogVisible = false;
+      });
     },
     /** 查看申购明细（采购计划明细行末按钮） */
     handleViewApplyDetails(row) {
