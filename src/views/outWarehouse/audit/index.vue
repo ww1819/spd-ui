@@ -527,6 +527,7 @@
 import { listOutWarehouse, getOutWarehouse,
   delOutWarehouse, updateOutWarehouse,auditOutWarehouse, listEntryChangeLog } from "@/api/warehouse/outWarehouse";
 import { collectCkThScopeErrors } from '@/utils/auditBillScopeValidate';
+import { assertBillEntriesForAudit } from '@/utils/billEntryValidate';
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -1037,6 +1038,10 @@ export default {
       const auditBy = this.$store.state.user.userId;
       getOutWarehouse(id).then(async res => {
         const data = res.data
+        const docLabel = data.billType == 301 ? '退货单' : '出库单'
+        if (!assertBillEntriesForAudit(data.stkIoBillEntryList, this, docLabel)) {
+          return
+        }
         const errs = await collectCkThScopeErrors(data, data.stkIoBillEntryList, data.billType)
         if (errs.length) {
           this.$modal.msgError(errs.join('；'))
@@ -1059,13 +1064,27 @@ export default {
       }
       const auditBy = this.$store.state.user.userId;
       this.$modal.confirm('确定要审核选中的"' + ids.length + '"条数据项？').then(() => {
-        // 批量审核：循环调用审核接口
+        const validatePromises = ids.map(id =>
+          getOutWarehouse(id).then(res => {
+            const data = res.data
+            const docLabel = data.billType == 301 ? '退货单' : '出库单'
+            if (!assertBillEntriesForAudit(data.stkIoBillEntryList, this, docLabel)) {
+              return Promise.reject(new Error('audit_validate_failed'))
+            }
+          })
+        )
+        return Promise.all(validatePromises)
+      }).then(() => {
         const promises = ids.map(id => auditOutWarehouse({id: id, auditBy: auditBy}));
         return Promise.all(promises);
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("批量审核成功！");
-      }).catch(() => {});
+      }).catch(err => {
+        if (err && err.message !== 'audit_validate_failed') {
+          this.$modal.msgError('批量审核失败');
+        }
+      });
     },
     /** 修改按钮操作 */
     handleUpdate(row) {

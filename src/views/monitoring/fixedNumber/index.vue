@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container fixed-number-page">
     <el-row :gutter="20">
       <!-- 左侧：仓库列表面板 -->
@@ -130,10 +130,22 @@
                       <SelectWarehouse v-model="queryParams.warehouseId"/>
                     </div>
                   </el-form-item>
+                  <el-form-item v-if="queryParams.fixedNumberType === '1'" label="启用状态" prop="enableStatus" class="query-item-inline">
+                    <el-select v-model="queryParams.enableStatus" clearable placeholder="全部" style="width: 120px">
+                      <el-option label="启用" value="0" />
+                      <el-option label="停用" value="1" />
+                    </el-select>
+                  </el-form-item>
                   <el-form-item label="集采" prop="isProcure" class="query-item-inline">
                     <el-select v-model="queryParams.isProcure" clearable placeholder="全部" style="width: 120px">
                       <el-option label="是" value="1" />
                       <el-option label="否" value="2" />
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item label="是否高值" prop="isGz" class="query-item-inline">
+                    <el-select v-model="queryParams.isGz" clearable placeholder="全部" style="width: 120px">
+                      <el-option label="高值" value="1" />
+                      <el-option label="非高值" value="2" />
                     </el-select>
                   </el-form-item>
                 </el-col>
@@ -169,6 +181,26 @@
                   :disabled="multiple"
                   @click="handleBatchDelete"
                 >删除</el-button>
+          </el-col>
+          <el-col v-if="queryParams.fixedNumberType === '1'" :span="1.5">
+                <el-button
+                  v-hasPermi="['monitoring:fixedNumber:disable']"
+                  type="warning"
+                  icon="el-icon-close"
+              size="medium"
+                  :disabled="multiple"
+                  @click="handleBatchDisable"
+                >停用</el-button>
+          </el-col>
+          <el-col v-if="queryParams.fixedNumberType === '1'" :span="1.5">
+                <el-button
+                  v-hasPermi="['monitoring:fixedNumber:enable']"
+                  type="success"
+                  icon="el-icon-check"
+              size="medium"
+                  :disabled="multiple"
+                  @click="handleBatchEnable"
+                >启用</el-button>
           </el-col>
           <el-col :span="1.5">
                 <el-button
@@ -230,6 +262,30 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="高值" align="center" prop="isGz" width="90" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="isMaterialGz(scope.row)">是</span>
+          <span v-else-if="isMaterialNonGz(scope.row)">否</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="queryParams.fixedNumberType === '1'" label="是否启用" align="center" prop="enableStatus" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag v-if="isRowDisabled(scope.row)" type="info" size="small">否</el-tag>
+          <el-tag v-else type="success" size="small">是</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="queryParams.fixedNumberType === '1'" label="停用人" align="center" prop="disableBy" width="110" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.disableBy || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="queryParams.fixedNumberType === '1'" label="停用时间" align="center" prop="disableTime" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.disableTime">{{ parseTime(scope.row.disableTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
       <el-table-column label="上限" align="center" prop="upperLimit" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-input-number
@@ -238,6 +294,7 @@
             :precision="0"
             size="small"
             style="width: 100%;"
+            :disabled="isRowDisabled(scope.row)"
             @change="handleFieldChange(scope.row)"
           ></el-input-number>
         </template>
@@ -250,6 +307,7 @@
             :precision="0"
             size="small"
             style="width: 100%;"
+            :disabled="isRowDisabled(scope.row)"
             @change="handleFieldChange(scope.row)"
           ></el-input-number>
         </template>
@@ -350,15 +408,33 @@
           />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150" fixed="right">
         <template slot-scope="scope">
+          <template v-if="queryParams.fixedNumberType === '1'">
+            <el-button
+              v-if="!isRowDisabled(scope.row)"
+              v-hasPermi="['monitoring:fixedNumber:disable']"
+              size="small"
+              type="text"
+              @click="handleDisable(scope.row)"
+              style="color: #E6A23C;"
+            >停用</el-button>
+            <el-button
+              v-else
+              v-hasPermi="['monitoring:fixedNumber:enable']"
+              size="small"
+              type="text"
+              @click="handleEnable(scope.row)"
+              style="color: #67C23A;"
+            >启用</el-button>
+          </template>
           <el-button
             size="small"
             type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
-            :disabled="scope.row.hasInventoryRecord"
-            :style="scope.row.hasInventoryRecord ? 'color: #C0C4CC; cursor: not-allowed;' : 'color: #F56C6C;'"
+            :disabled="scope.row.hasInventoryRecord || isRowDisabled(scope.row)"
+            :style="(scope.row.hasInventoryRecord || isRowDisabled(scope.row)) ? 'color: #C0C4CC; cursor: not-allowed;' : 'color: #F56C6C;'"
           >删除</el-button>
         </template>
       </el-table-column>
@@ -395,12 +471,12 @@
               <div class="form-fields-container">
                 <el-form :model="addQueryParams" ref="addQueryForm" :inline="true" v-show="showSearch" label-width="100px">
                   <el-row :gutter="20">
-                    <el-col :span="6">
+                    <el-col :span="8">
                       <el-form-item label="供应商" prop="supplierId">
                         <SelectSupplier v-model="addQueryParams.supplierId"/>
                       </el-form-item>
                     </el-col>
-                    <el-col :span="6">
+                    <el-col :span="8">
                       <el-form-item label="名称" prop="materialName">
                         <el-input
                           v-model="addQueryParams.materialName"
@@ -410,7 +486,7 @@
                         />
                       </el-form-item>
                     </el-col>
-                    <el-col :span="6">
+                    <el-col :span="8">
                       <el-form-item label="规格型号" prop="speci">
                         <el-input
                           v-model="addQueryParams.speci"
@@ -420,6 +496,8 @@
                         />
                       </el-form-item>
                     </el-col>
+                  </el-row>
+                  <el-row :gutter="20">
                     <el-col :span="6">
                       <el-form-item label="是否集采" prop="isProcure">
                         <el-select
@@ -430,6 +508,19 @@
                         >
                           <el-option label="是" value="1" />
                           <el-option label="否" value="2" />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                      <el-form-item label="是否高值" prop="isGz">
+                        <el-select
+                          v-model="addQueryParams.isGz"
+                          clearable
+                          placeholder="全部"
+                          style="width: 100%"
+                        >
+                          <el-option label="高值" value="1" />
+                          <el-option label="非高值" value="2" />
                         </el-select>
                       </el-form-item>
                     </el-col>
@@ -524,6 +615,13 @@
                     <span v-else>--</span>
                   </template>
                 </el-table-column>
+                <el-table-column label="高值" align="center" prop="isGz" width="90" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span v-if="isMaterialGz(scope.row)">是</span>
+                    <span v-else-if="isMaterialNonGz(scope.row)">否</span>
+                    <span v-else>--</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="150" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span v-if="scope.row.fdFactory && scope.row.fdFactory.factoryName">{{ scope.row.fdFactory.factoryName }}</span>
@@ -556,7 +654,8 @@
 
 <script>
 import { pinyin } from "pinyin-pro";
-import { listFixedNumber, addFixedNumber, delFixedNumber, delFixedNumberBatch, listFixedNumberMaterialDetailPick } from "@/api/monitoring/fixedNumber";
+import { listFixedNumber, addFixedNumber, delFixedNumber, delFixedNumberBatch, disableFixedNumberBatch, enableFixedNumberBatch, listFixedNumberMaterialDetailPick } from "@/api/monitoring/fixedNumber";
+import { parseTime } from "@/utils/ruoyi";
 import { listLocationAll } from "@/api/foundation/location";
 import { listWarehouse } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
@@ -618,7 +717,8 @@ export default {
         supplierId: null,
         materialName: null,
         speci: null,
-        isProcure: null
+        isProcure: null,
+        isGz: null
       },
       // 查询参数
       queryParams: {
@@ -631,6 +731,8 @@ export default {
         warehouseId: null,
         departmentId: null,
         isProcure: null,
+        isGz: null,
+        enableStatus: null,
         fixedNumberType: '1' // 默认为仓库定数监测
       },
       // 表单参数
@@ -674,6 +776,7 @@ export default {
     'queryParams.fixedNumberType'(newVal, oldVal) {
       this.queryParams.warehouseId = null;
       this.queryParams.departmentId = null;
+      this.queryParams.enableStatus = null;
       this.queryParams.pageNum = 1;
       this.fixedNumberList = [];
       this.allFixedNumberList = [];
@@ -1146,7 +1249,7 @@ export default {
         fixedNumberType: this.queryParams.fixedNumberType,
         warehouseId: this.queryParams.warehouseId,
         departmentId: this.queryParams.departmentId,
-        detailList: this.fixedNumberList.map(item => {
+        detailList: this.fixedNumberList.filter(item => !this.isRowDisabled(item)).map(item => {
           const materialId = item.material ? item.material.id : item.materialId || null;
           return {
             materialId: materialId,
@@ -1189,7 +1292,8 @@ export default {
         materialName: this.addQueryParams.materialName,
         speci: this.addQueryParams.speci,
         supplierId: this.addQueryParams.supplierId,
-        isProcure: this.addQueryParams.isProcure
+        isProcure: this.addQueryParams.isProcure,
+        isGz: this.addQueryParams.isGz
       };
       if (this.addQueryParams.materialName) {
         query.name = this.addQueryParams.materialName;
@@ -1233,7 +1337,8 @@ export default {
         supplierId: null,
         materialName: null,
         speci: null,
-        isProcure: null
+        isProcure: null,
+        isGz: null
       };
       this.addMaterialList = [];
       this.addSelectedMaterials = [];
@@ -1381,6 +1486,105 @@ export default {
         const matchSpeci = speciKeyword ? this.matchWithPinyin(speci, speciKeyword) : true;
         return matchName && matchSpeci;
       });
+    },
+    parseTime,
+    /** 是否已停用 */
+    isRowDisabled(row) {
+      return row && (row.enableStatus === '1' || row.enableStatus === 1);
+    },
+    /** 耗材是否高值（1=高值） */
+    resolveMaterialIsGz(row) {
+      if (!row) return null;
+      const v = row.isGz != null ? row.isGz : (row.material && row.material.isGz != null ? row.material.isGz : null);
+      if (v == null || v === '') return null;
+      return String(v).trim();
+    },
+    isMaterialGz(row) {
+      const v = this.resolveMaterialIsGz(row);
+      return v === '1';
+    },
+    isMaterialNonGz(row) {
+      const v = this.resolveMaterialIsGz(row);
+      return v === '2';
+    },
+    /** 单行停用 */
+    handleDisable(row) {
+      if (!row || !row.id) {
+        this.$modal.msgWarning("未找到要停用的定数记录ID");
+        return;
+      }
+      if (this.isRowDisabled(row)) {
+        this.$modal.msgWarning("该记录已停用");
+        return;
+      }
+      this.$modal.confirm('停用后该产品将不再出现在科室申购、低值入库、高值备货验收等业务的选料列表中，是否确认停用？').then(() => {
+        return disableFixedNumberBatch([row.id]);
+      }).then(() => {
+        this.$modal.msgSuccess("停用成功");
+        this.getList();
+      }).catch(() => {});
+    },
+    /** 单行启用 */
+    handleEnable(row) {
+      if (!row || !row.id) {
+        this.$modal.msgWarning("未找到要启用的定数记录ID");
+        return;
+      }
+      if (!this.isRowDisabled(row)) {
+        return;
+      }
+      this.$modal.confirm('是否确认重新启用该定数关联？').then(() => {
+        return enableFixedNumberBatch([row.id]);
+      }).then(() => {
+        this.$modal.msgSuccess("启用成功");
+        this.getList();
+      }).catch(() => {});
+    },
+    /** 批量停用 */
+    handleBatchDisable() {
+      if (this.queryParams.fixedNumberType !== '1') {
+        this.$modal.msgWarning("仅仓库定数监测支持停用");
+        return;
+      }
+      if (!this.selectedRows || this.selectedRows.length === 0) {
+        this.$modal.msgWarning("请先勾选要停用的记录");
+        return;
+      }
+      const toDisable = this.selectedRows.filter(r => r && r.id && !this.isRowDisabled(r));
+      if (toDisable.length === 0) {
+        this.$modal.msgWarning("所选记录均已停用");
+        return;
+      }
+      const ids = toDisable.map(r => r.id);
+      this.$modal.confirm(`是否确认停用选中的 ${ids.length} 条定数关联？停用后相关业务将无法选择这些产品。`).then(() => {
+        return disableFixedNumberBatch(ids);
+      }).then(() => {
+        this.$modal.msgSuccess("停用成功");
+        this.getList();
+      }).catch(() => {});
+    },
+    /** 批量启用 */
+    handleBatchEnable() {
+      if (this.queryParams.fixedNumberType !== '1') {
+        this.$modal.msgWarning("仅仓库定数监测支持启用");
+        return;
+      }
+      if (!this.selectedRows || this.selectedRows.length === 0) {
+        this.$modal.msgWarning("请先勾选要启用的记录");
+        return;
+      }
+      const toEnable = this.selectedRows.filter(r => r && r.id && this.isRowDisabled(r));
+      if (toEnable.length === 0) {
+        this.$modal.msgWarning("所选记录均已处于启用状态");
+        return;
+      }
+      const ids = toEnable.map(r => r.id);
+      this.$modal.confirm(`是否确认启用选中的 ${ids.length} 条定数关联？启用后可在科室申购、入库等业务中再次选择这些产品。`).then(() => {
+        return enableFixedNumberBatch(ids);
+      }).then(() => {
+        this.$modal.msgSuccess("启用成功");
+        this.getList();
+      }).catch(() => {});
     },
     /** 删除按钮操作 */
     handleDelete(row) {

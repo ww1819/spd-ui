@@ -462,6 +462,7 @@ export default {
         const params = {
           fixedNumberType: '1',
           warehouseId: this.queryParams.warehouseId,
+          onlyEnabled: true,
           pageNum: this.queryParams.pageNum,
           pageSize: this.queryParams.pageSize
         };

@@ -453,6 +453,7 @@
 
 <script>
 import { listPurchase, getPurchase, delPurchase, addPurchase, updatePurchase } from "@/api/department/purchase";
+import { assertBillHasMaterialEntries, normalizeBillMaterialLineQtyDefaultOne } from '@/utils/billEntryValidate';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
@@ -808,18 +809,11 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          const validEntries = this.depPurchaseApplyEntryList.filter(item => item.materialId);
-          if (validEntries.length === 0) {
-            this.$modal.msgError("请至少添加一条有效明细（选择耗材）");
+          if (!assertBillHasMaterialEntries(this.depPurchaseApplyEntryList, this, '请至少添加一条有效明细（选择耗材）')) {
             return;
           }
-          const invalidQty = this.depPurchaseApplyEntryList.filter(item =>
-            item.materialId && (item.qty == null || item.qty === '' || Number(item.qty) <= 0)
-          );
-          if (invalidQty.length > 0) {
-            this.$modal.msgError("存在明细数量为空或0，请填写有效数量后再保存。");
-            return;
-          }
+          normalizeBillMaterialLineQtyDefaultOne(this.depPurchaseApplyEntryList);
+          this.calculateTotalAmount();
           this.form.depPurchaseApplyEntryList = this.depPurchaseApplyEntryList;
           if (!this.form.id) {
             this.ensureFormCreatorUserId();
@@ -1049,10 +1043,8 @@ export default {
       if (!list.length || !this.form.warehouseId || !this.form.departmentId) {
         return;
       }
-      const invalidQty = list.some(item => item.qty == null || item.qty === '' || Number(item.qty) <= 0);
-      if (invalidQty) {
-        return;
-      }
+      normalizeBillMaterialLineQtyDefaultOne(this.depPurchaseApplyEntryList);
+      this.calculateTotalAmount();
       this.purchaseDraftSaving = true;
       this.form.depPurchaseApplyEntryList = this.depPurchaseApplyEntryList;
       const ax = { headers: { repeatSubmit: false, hideError: true } };

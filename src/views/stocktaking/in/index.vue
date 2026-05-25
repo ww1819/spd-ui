@@ -548,6 +548,7 @@
 
 <script>
 import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, patchSaveStocktaking, auditStocktaking, updateStocktakingEntryCounted, appendStocktakingEntries, initWarehouseStocktakingFromInventory } from "@/api/warehouse/stocktaking";
+import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listInventoryPick, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
@@ -1452,19 +1453,24 @@ export default {
     handleAudit(row) {
       const id = row.id || this.ids;
       const stockNo = row && row.stockNo != null ? row.stockNo : id;
-      this.$modal
-        .confirm('确定要审核"' + stockNo + '"的数据项？')
-        .then(() =>
-          auditStocktaking({
-            id,
-            expectedUpdateTime: (row && (row.updateTime || row.createTime)) || undefined
+      getStocktaking(id).then(res => {
+        if (!assertBillHasActiveEntriesForAudit(res.data.stkIoStocktakingEntryList, this, '仓库盘点')) {
+          return;
+        }
+        this.$modal
+          .confirm('确定要审核"' + stockNo + '"的数据项？')
+          .then(() =>
+            auditStocktaking({
+              id,
+              expectedUpdateTime: (row && (row.updateTime || row.createTime)) || undefined
+            })
+          )
+          .then(() => {
+            this.getList();
+            this.$modal.msgSuccess('审核成功！');
           })
-        )
-        .then(() => {
-          this.getList();
-          this.$modal.msgSuccess('审核成功！');
-        })
-        .catch(() => {});
+          .catch(() => {});
+      }).catch(() => {});
     },
     /** 修改按钮操作 */
     handleUpdate(row) {

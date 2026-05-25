@@ -241,13 +241,21 @@
         <div class="form-fields-container">
         <el-row :gutter="8">
           <el-col :span="4">
-            <el-form-item label="单据号" prop="billNo">
-              <el-input v-model="form.billNo" :disabled="true" />
+            <el-form-item label="单据号" prop="billNo" class="form-item-header-billno">
+              <el-input v-model="form.billNo" :disabled="true" :title="form.billNo || ''" />
             </el-form-item>
           </el-col>
-          <el-col :span="4">
-            <el-form-item label="供应商" prop="supplerId">
-              <SelectSupplier v-model="form.supplerId" :value2="stkIoBillEntryList.length > 0"/>
+          <el-col :span="6">
+            <el-form-item label="供应商" prop="supplerId" class="form-item-header-wide">
+              <el-input
+                v-if="isHeaderSupplierReadonly"
+                type="textarea"
+                :autosize="{ minRows: 1, maxRows: 2 }"
+                :value="supplierHeaderDisplayName"
+                disabled
+                class="header-field-textarea"
+              />
+              <SelectSupplier v-else v-model="form.supplerId" class="header-field-select-wide"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -260,12 +268,12 @@
               <el-input v-model="form.invoiceNumber" placeholder="发票号" />
             </el-form-item>
           </el-col>
-          <el-col :span="4">
+          <el-col :span="3">
             <el-form-item label="制单人" prop="createrName">
               <SelectUser v-model="form.createrName"/>
             </el-form-item>
           </el-col>
-          <el-col :span="4">
+          <el-col :span="3">
             <el-form-item label="发票时间" prop="invoiceTime">
               <el-date-picker clearable
                               v-model="form.invoiceTime"
@@ -597,22 +605,18 @@
             label="批次号"
             align="center"
             prop="batchNo"
-            width="200"
-            min-width="180"
-            show-overflow-tooltip
+            width="300"
+            min-width="260"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-batch-no"
             resizable
             sortable
           >
             <template slot-scope="scope">
-              <div style="text-align: center;">
-                <el-input
-                  v-model="scope.row.batchNo"
-                  :disabled="true"
-                  placeholder="批次号"
-                  size="small"
-                  style="width: 100%"
-                />
-              </div>
+              <span
+                class="detail-batch-no-cell"
+                :title="scope.row.batchNo || ''"
+              >{{ scope.row.batchNo || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column
@@ -911,6 +915,16 @@ export default {
     },
     deliveryRefBlockTitle() {
       return this.deliveryRefBlocked ? '已有入库明细时不可引用配送单，请先清空明细' : '';
+    },
+    /** 查看/已有明细时表头供应商只读展示（支持换行） */
+    isHeaderSupplierReadonly() {
+      return !this.action || (Array.isArray(this.stkIoBillEntryList) && this.stkIoBillEntryList.length > 0);
+    },
+    supplierHeaderDisplayName() {
+      if (this.form && this.form.supplier && this.form.supplier.name) {
+        return this.form.supplier.name;
+      }
+      return '';
     }
   },
   created() {
@@ -2263,6 +2277,44 @@ export default {
   max-width: 140px;
 }
 
+/* 单据号：列宽适中，过长时省略号，悬停看全文 */
+.local-modal-content .modal-form-compact .form-item-header-billno .el-input {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.local-modal-content .modal-form-compact .form-item-header-billno ::v-deep .el-input__inner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 供应商：占满列宽并支持换行 */
+.local-modal-content .modal-form-compact .form-item-header-wide .el-form-item__content {
+  line-height: normal;
+}
+.local-modal-content .modal-form-compact .form-item-header-wide .header-field-textarea,
+.local-modal-content .modal-form-compact .form-item-header-wide .header-field-select-wide {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.local-modal-content .modal-form-compact .form-item-header-wide ::v-deep .header-field-textarea .el-textarea__inner {
+  min-height: 28px !important;
+  line-height: 1.45 !important;
+  padding: 4px 8px;
+  word-break: break-all;
+  white-space: pre-wrap;
+  resize: none;
+}
+.local-modal-content .modal-form-compact .form-item-header-wide ::v-deep .header-field-select-wide .el-input__inner {
+  height: auto !important;
+  min-height: 28px;
+  line-height: 1.45 !important;
+  white-space: normal !important;
+  word-break: break-all;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
 /* 缩小所有输入框高度 */
 .local-modal-content .modal-form-compact .el-input__inner {
   height: 28px !important;
@@ -2609,6 +2661,23 @@ export default {
   white-space: pre-wrap;
   padding: 4px 8px;
   resize: vertical;
+}
+
+/* 批次号：完整展示，自动换行 */
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-batch-no .cell {
+  white-space: normal;
+  word-break: break-all;
+  vertical-align: middle;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-batch-no .detail-batch-no-cell {
+  display: block;
+  width: 100%;
+  line-height: 1.45;
+  word-break: break-all;
+  white-space: pre-wrap;
+  text-align: center;
 }
 
 /* 名称、规格、型号、生产厂家：左上对齐，最多两行；行高随内容在 1～2 行间变化；列可拖拽加宽 */

@@ -404,6 +404,7 @@
 
 <script>
 import { listPurchaseAggAudit, getPurchaseAggAudit, auditPurchaseAgg, rejectPurchaseAgg } from "@/api/department/purchaseAggAudit";
+import { assertBillEntriesReadyForAudit } from '@/utils/billEntryValidate';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 
@@ -578,12 +579,10 @@ export default {
         this.$modal.msgError("请先选择要审核的申购单");
         return;
       }
-      const list = this.entryList || [];
-      const invalidQty = list.filter(e => e.materialId && (e.qty == null || e.qty === '' || Number(e.qty) <= 0));
-      if (invalidQty.length > 0) {
-        this.$modal.msgError("存在明细数量为空或0，不允许审核。请先修正数量后再审核。");
+      if (!assertBillEntriesReadyForAudit(this.entryList, this, '汇总申购单')) {
         return;
       }
+      const list = this.entryList || [];
       const missingWh = list.filter(e => e.materialId && !e.warehouseId);
       if (missingWh.length > 0) {
         this.$modal.msgError("存在明细未关联仓库，不允许审核。");
@@ -637,9 +636,23 @@ export default {
         const validatePromises = pendingList.map(row =>
           getPurchaseAggAudit(row.id).then(resp => {
             const list = resp.data.entryList || [];
-            const invalid = list.filter(e => e.materialId && (e.qty == null || e.qty === '' || Number(e.qty) <= 0));
-            if (invalid.length > 0) {
-              return Promise.reject(new Error((resp.data.purchaseBillNo || row.id) + '：存在明细数量为空或0，不允许审核。'));
+            const billNo = resp.data.purchaseBillNo || row.id;
+            if (!list.length) {
+              return Promise.reject(new Error(billNo + '：无明细，不允许审核。'));
+            }
+            for (let i = 0; i < list.length; i++) {
+              const e = list[i];
+              const lineLabel = (e && (e.materialName || e.materialCode)) || `第${i + 1}行`;
+              if (!e || e.materialId == null || e.materialId === '') {
+                return Promise.reject(new Error(billNo + '：明细【' + lineLabel + '】产品档案不能为空，不允许审核。'));
+              }
+              const n = Number(e.qty);
+              if (e.qty == null || e.qty === '' || !Number.isFinite(n) || n <= 0) {
+                return Promise.reject(new Error(billNo + '：明细【' + lineLabel + '】申购数量不能为空且必须大于0，不允许审核。'));
+              }
+              if (!e.warehouseId) {
+                return Promise.reject(new Error(billNo + '：明细【' + lineLabel + '】未关联仓库，不允许审核。'));
+              }
             }
             return Promise.resolve();
           })

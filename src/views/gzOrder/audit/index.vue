@@ -539,6 +539,7 @@
 
 <script>
 import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, checkInHospitalCode, getDepotByInHospitalCodeForOutbound, listEntryChangeLog } from "@/api/gz/shipment";
+import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listDepotInventory } from "@/api/gz/depotInventory";
 import { listAuditedAcceptance, listAcceptanceDepotLines } from "@/api/gz/refDoc";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -1369,16 +1370,22 @@ export default {
       const route = this.$route;
       const isOutbound = route && route.meta && route.meta.title && route.meta.title.includes('出库');
       const orderType = isOutbound ? 102 : 101;
+      const docLabel = isOutbound ? '高值出库' : '高值入库';
 
-      this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
-        return auditOrder({id: id, orderType: orderType});
-      }).then(() => {
+      getOrder(id, orderType).then(res => {
+        if (!assertBillHasActiveEntriesForAudit(res.data.gzOrderEntryList, this, docLabel)) {
+          return;
+        }
+        this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+          return auditOrder({id: id, orderType: orderType});
+        }).then(() => {
         this.getList();
         if (isOutbound) {
           this.$modal.msgSuccess("审核出库成功！");
         } else {
           this.$modal.msgSuccess("审核入库成功！");
         }
+        }).catch(() => {});
       }).catch(() => {});
     },
     /** 批量审核按钮操作 */
@@ -1391,17 +1398,27 @@ export default {
       const route = this.$route;
       const isOutbound = route && route.meta && route.meta.title && route.meta.title.includes('出库');
       const orderType = isOutbound ? 102 : 101;
-      
-      this.$modal.confirm('确定要审核选中的' + this.ids.length + '条数据项？').then(() => {
-        const promises = this.ids.map(id => auditOrder({id: id, orderType: orderType}));
-        return Promise.all(promises);
-      }).then(() => {
+      const docLabel = isOutbound ? '高值出库' : '高值入库';
+
+      const validations = this.ids.map(id =>
+        getOrder(id, orderType).then(res => {
+          if (!assertBillHasActiveEntriesForAudit(res.data.gzOrderEntryList, this, docLabel)) {
+            return Promise.reject(new Error('no active entries'));
+          }
+        })
+      );
+      Promise.all(validations).then(() => {
+        this.$modal.confirm('确定要审核选中的' + this.ids.length + '条数据项？').then(() => {
+          const promises = this.ids.map(id => auditOrder({id: id, orderType: orderType}));
+          return Promise.all(promises);
+        }).then(() => {
         this.getList();
         if (isOutbound) {
           this.$modal.msgSuccess("批量审核出库成功！");
         } else {
           this.$modal.msgSuccess("批量审核入库成功！");
         }
+        }).catch(() => {});
       }).catch(() => {});
     },
     /** 批量打印按钮操作（仅打印已审核单据） */
@@ -1743,6 +1760,10 @@ export default {
       const route = this.$route;
       const isOutbound = route && route.meta && route.meta.title && route.meta.title.includes('出库');
       const orderType = isOutbound ? 102 : 101;
+      const docLabel = isOutbound ? '高值出库' : '高值入库';
+      if (!assertBillHasActiveEntriesForAudit(this.gzOrderEntryList, this, docLabel)) {
+        return;
+      }
       this.$modal.confirm(`确定要审核单据"${this.form.orderNo || this.form.id}"吗？`).then(() => {
         return auditOrder({ id: this.form.id, orderType: orderType });
       }).then(() => {

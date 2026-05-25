@@ -83,6 +83,24 @@ export function delFixedNumberBatch(ids) {
   })
 }
 
+// 批量停用仓库定数监测
+export function disableFixedNumberBatch(ids) {
+  return request({
+    url: '/monitoring/fixedNumber/batchDisable',
+    method: 'post',
+    data: { ids }
+  })
+}
+
+// 批量启用仓库定数监测
+export function enableFixedNumberBatch(ids) {
+  return request({
+    url: '/monitoring/fixedNumber/batchEnable',
+    method: 'post',
+    data: { ids }
+  })
+}
+
 // 导出定数监测
 export function exportFixedNumber(query) {
   return request({

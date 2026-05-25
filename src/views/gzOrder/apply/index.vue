@@ -257,17 +257,25 @@
                 </el-row>
 
                 <el-row :gutter="8">
-                  <el-col :span="4">
+                  <el-col :span="8">
                     <el-form-item label="UDI码" prop="ztm">
-                      <el-input v-model="form.ztm"
-                                :placeholder="form.warehouseId ? '请扫描UDI码' : '请先选择仓库'"
-                                clearable
-                                style="width: 140px"
-                                :disabled="!form.warehouseId"
-                                @input="onZtmInput"
-                                @paste.native="onZtmPaste"
-                                @keyup.enter.native="sm"
-                      />
+                      <div class="udi-scan-inline">
+                        <el-input v-model="form.ztm"
+                                  class="udi-scan-inline-input"
+                                  :placeholder="form.warehouseId ? '请扫描UDI码' : '请先选择仓库'"
+                                  clearable
+                                  :disabled="!form.warehouseId || isAudited"
+                                  @input="onZtmInput"
+                                  @paste.native="onZtmPaste"
+                                  @keyup.enter.native="openUdiScanDialog"
+                        />
+                        <el-button
+                          type="primary"
+                          icon="el-icon-full-screen"
+                          :disabled="!form.warehouseId || isAudited"
+                          @click="openUdiScanDialog"
+                        >扫描</el-button>
+                      </div>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -593,6 +601,143 @@
       </span>
     </el-dialog>
 
+    <!-- UDI 扫描核对 -->
+    <el-dialog
+      title="UDI 扫描核对"
+      :visible.sync="udiScanDialog.visible"
+      width="96%"
+      top="4vh"
+      append-to-body
+      :close-on-click-modal="false"
+      custom-class="udi-scan-verify-dialog"
+      @closed="onUdiScanDialogClosed"
+    >
+      <el-form label-width="88px" size="small" v-loading="udiScanDialog.loading">
+        <el-form-item label="扫描结果">
+          <el-input
+            v-model="udiScanDialog.scanResult"
+            type="textarea"
+            :autosize="{ minRows: 2, maxRows: 6 }"
+            placeholder="请扫描或粘贴完整条码"
+            class="udi-scan-mono"
+            @input="onUdiScanResultInput"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button size="mini" type="primary" :loading="udiScanDialog.loading" @click="parseUdiScanDialog">解析</el-button>
+        </el-form-item>
+        <el-form-item label="主条码">
+          <el-input
+            v-model="udiScanDialog.masterBarcode"
+            type="textarea"
+            :autosize="{ minRows: 1, maxRows: 4 }"
+            placeholder="GTIN / 主条码，可手工修正"
+            class="udi-scan-mono"
+          />
+        </el-form-item>
+        <el-form-item label="辅条码">
+          <el-input
+            v-model="udiScanDialog.secondaryBarcode"
+            type="textarea"
+            :autosize="{ minRows: 1, maxRows: 4 }"
+            placeholder="生产日期、批号、序列号等段，可手工修正"
+            class="udi-scan-mono"
+          />
+        </el-form-item>
+        <el-form-item label="耗材信息" class="udi-scan-preview-form-item">
+          <el-table
+            :data="udiScanPreviewTableData"
+            border
+            size="small"
+            empty-text="请点击「解析」自动检索产品；列与单据明细一致，批号/生产日期/有效期可编辑"
+            class="udi-scan-preview-table"
+          >
+            <el-table-column label="耗材编码" align="center" prop="materialCode" width="110" show-overflow-tooltip>
+              <template slot-scope="scope">
+                {{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="耗材名称" align="center" prop="materialName" width="130" show-overflow-tooltip>
+              <template slot-scope="scope">{{ scope.row.materialName || '--' }}</template>
+            </el-table-column>
+            <el-table-column label="规格" align="center" prop="speci" width="90" show-overflow-tooltip>
+              <template slot-scope="scope">
+                {{ scope.row.speci || (scope.row.material && scope.row.material.speci) || '--' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="型号" align="center" prop="model" width="90" show-overflow-tooltip>
+              <template slot-scope="scope">
+                {{ scope.row.model || (scope.row.material && scope.row.material.model) || '--' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="单位" align="center" prop="unit" width="70" show-overflow-tooltip>
+              <template slot-scope="scope">
+                <span v-if="scope.row.unit">
+                  {{ typeof scope.row.unit === 'string' ? scope.row.unit : (scope.row.unit.unitName || scope.row.unit.name || '--') }}
+                </span>
+                <span v-else-if="scope.row.material">
+                  {{ (scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}
+                </span>
+                <span v-else>--</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="数量" align="center" prop="qty" width="70">
+              <template slot-scope="scope">{{ scope.row.qty != null ? scope.row.qty : '1' }}</template>
+            </el-table-column>
+            <el-table-column label="价格" align="center" prop="price" width="88">
+              <template slot-scope="scope">
+                {{ scope.row.price ? parseFloat(scope.row.price).toFixed(2) : '0.00' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="金额" align="center" prop="amt" width="88">
+              <template slot-scope="scope">{{ scope.row.amt || '0.00' }}</template>
+            </el-table-column>
+            <el-table-column label="总金额" align="center" width="88">
+              <template slot-scope="scope">{{ scope.row.amt || '0.00' }}</template>
+            </el-table-column>
+            <el-table-column label="批号" align="center" prop="batchNumber" min-width="140">
+              <template slot-scope="scope">
+                <el-input v-model="scope.row.batchNumber" placeholder="批号" size="small" class="gz-detail-cell-input" />
+              </template>
+            </el-table-column>
+            <el-table-column label="生产日期" align="center" prop="beginTime" width="150">
+              <template slot-scope="scope">
+                <el-date-picker
+                  v-model="scope.row.beginTime"
+                  class="gz-detail-cell-date"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  :picker-options="pickerBeginTimeOptions"
+                  placeholder="生产日期"
+                  size="small"
+                  clearable
+                />
+              </template>
+            </el-table-column>
+            <el-table-column label="有效期" align="center" prop="endTime" width="150">
+              <template slot-scope="scope">
+                <el-date-picker
+                  v-model="scope.row.endTime"
+                  class="gz-detail-cell-date"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  :picker-options="pickerEndTimeOptions"
+                  placeholder="有效期"
+                  size="small"
+                  clearable
+                />
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-form-item>
+        <div v-if="udiScanDialog.lookupHint" class="udi-scan-hint udi-scan-hint-block">{{ udiScanDialog.lookupHint }}</div>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="udiScanDialog.visible = false">取 消</el-button>
+        <el-button type="primary" :loading="udiScanDialog.loading" @click="confirmUdiScanAddToEntry">添加到明细</el-button>
+      </span>
+    </el-dialog>
+
     <el-dialog
       title="明细变更记录"
       :visible.sync="entryChangeLogDialog.visible"
@@ -639,6 +784,7 @@ import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
 import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
 import { GZ_BARCODE_SESSION_KEY } from '@/views/gzOrder/apply/GzBarcodePrintPage'
+import { assertBillHasEntries } from '@/utils/billEntryValidate'
 import RMBConverter from "@/utils/tools";
 import { parseTime } from "@/utils/ruoyi";
 import { normalizeUdiScanInput, parseGs1UdiScan, buildUdiQueryVariants } from '@/utils/udi';
@@ -745,6 +891,16 @@ export default {
         loading: false,
         rows: []
       },
+      udiScanDialog: {
+        visible: false,
+        loading: false,
+        scanResult: '',
+        masterBarcode: '',
+        secondaryBarcode: '',
+        previewEntry: null,
+        materialRow: null,
+        lookupHint: ''
+      },
       // 表单校验
       rules: {
         supplerId: [
@@ -766,6 +922,9 @@ export default {
     },
     isAudited() {
       return this.form.orderStatus == 2 || this.form.orderStatus == '2';
+    },
+    udiScanPreviewTableData() {
+      return this.udiScanDialog.previewEntry ? [this.udiScanDialog.previewEntry] : [];
     }
   },
   watch: {
@@ -1020,67 +1179,277 @@ export default {
         this.form.ztm = normalizeUdiScanInput(this.form.ztm);
       });
     },
-    /** 查询高值入库列表 */
-    sm(){
+    /** 打开 UDI 扫描核对窗（表头 UDI 框回车 / 扫描按钮） */
+    openUdiScanDialog() {
       const wid = this.form.warehouseId;
       if (wid === null || wid === undefined || String(wid).trim() === '') {
-        this.$modal.msgWarning("请先选择仓库，再扫描UDI码");
+        this.$modal.msgWarning('请先选择仓库，再扫描UDI码');
         return;
       }
-      if (!this.form.ztm || !this.form.ztm.trim()) {
-        this.$modal.msgWarning("请输入UDI码");
+      if (this.isAudited) {
+        this.$modal.msgWarning('单据已审核，不能扫码入库');
         return;
       }
-      this.form.ztm = normalizeUdiScanInput(this.form.ztm);
-      const parsedUDI = this.parseUDIString(this.form.ztm);
-      if (!parsedUDI || !parsedUDI.udiCodeForQuery) {
-        this.$modal.msgWarning("UDI码格式不正确，请输入完整的UDI码或UDI码数字部分");
+      this.udiScanDialog.scanResult = normalizeUdiScanInput(this.form.ztm || '');
+      this.udiScanDialog.masterBarcode = '';
+      this.udiScanDialog.secondaryBarcode = '';
+      this.udiScanDialog.previewEntry = null;
+      this.udiScanDialog.materialRow = null;
+      this.udiScanDialog.lookupHint = '';
+      this.udiScanDialog.visible = true;
+      if (this.udiScanDialog.scanResult) {
+        this.$nextTick(() => this.parseUdiScanDialog());
+      }
+    },
+    onUdiScanDialogClosed() {
+      this.udiScanDialog.loading = false;
+      this.udiScanDialog.lookupHint = '';
+    },
+    onUdiScanResultInput() {
+      this.udiScanDialog.scanResult = normalizeUdiScanInput(this.udiScanDialog.scanResult);
+    },
+    /** 解析条码并自动检索产品字典 */
+    parseUdiScanDialog() {
+      const parsed = this.reparseUdiScanDialog(true);
+      if (!parsed) {
+        this.udiScanDialog.previewEntry = null;
+        this.udiScanDialog.materialRow = null;
+        return Promise.resolve();
+      }
+      return this.lookupUdiScanMaterial();
+    },
+    reparseUdiScanDialog(showHint) {
+      const raw = (this.udiScanDialog.scanResult || '').trim();
+      if (!raw) {
+        this.udiScanDialog.masterBarcode = '';
+        this.udiScanDialog.secondaryBarcode = '';
+        if (showHint !== false) {
+          this.udiScanDialog.lookupHint = '请输入或扫描完整条码后解析';
+        }
+        return null;
+      }
+      const parsed = this.parseUDIString(raw);
+      if (!parsed) {
+        this.udiScanDialog.lookupHint = '条码格式无法识别，请检查扫描结果或手工填写主条码';
+        return null;
+      }
+      this.udiScanDialog.masterBarcode = parsed.udiCode || parsed.udiCodeForQuery || '';
+      this.udiScanDialog.secondaryBarcode = parsed.secondaryBarcode || '';
+      this.syncUdiScanPreviewFromParsed(parsed);
+      if (showHint !== false) {
+        this.udiScanDialog.lookupHint = '正在检索产品…';
+      }
+      return parsed;
+    },
+    buildUdiScanPreviewEntry(item, parsedUDI) {
+      const priceNum = item && item.price != null ? parseFloat(item.price) : 0;
+      const qty = '1';
+      const amt = (Number.isFinite(priceNum) ? priceNum : 0).toFixed(2);
+      const batch = (parsedUDI && parsedUDI.batchNo) || '';
+      return {
+        materialId: item.id,
+        material: item,
+        materialName: item.name || '',
+        materialCode: item.code || '',
+        speci: item.speci || '',
+        model: item.model || '',
+        unit: item.unit || item.fdUnit || null,
+        qty,
+        price: item.price,
+        amt,
+        batchNo: batch,
+        batchNumber: batch,
+        beginTime: (parsedUDI && parsedUDI.productionDate) || '',
+        endTime: (parsedUDI && parsedUDI.expiryDate) || '',
+        serialNo: (parsedUDI && parsedUDI.serialNo) || ''
+      };
+    },
+    syncUdiScanPreviewFromParsed(parsedUDI) {
+      if (!parsedUDI || !this.udiScanDialog.previewEntry) {
         return;
       }
-      
-      // 优先用完整扫码串查产品字典（与耗材维护 udi_no 一致），再尝试 GS1 解析出的 GTIN 等格式
-      const udiCodeForQuery = parsedUDI.udiCodeForQuery;
-      const uniqueVariants = buildUdiQueryVariants(this.form.ztm, parsedUDI);
-      
-      // 添加调试日志
-      console.log('查询UDI码:', {
-        input: this.form.ztm,
-        parsedUDI: parsedUDI,
-        udiVariants: uniqueVariants
+      const pe = this.udiScanDialog.previewEntry;
+      if (parsedUDI.batchNo) {
+        pe.batchNo = parsedUDI.batchNo;
+        pe.batchNumber = parsedUDI.batchNo;
+      }
+      if (parsedUDI.productionDate) {
+        pe.beginTime = parsedUDI.productionDate;
+      }
+      if (parsedUDI.expiryDate) {
+        pe.endTime = parsedUDI.expiryDate;
+      }
+      if (parsedUDI.serialNo) {
+        pe.serialNo = parsedUDI.serialNo;
+      }
+    },
+    applyUdiScanPreviewToParsed(parsedUDI) {
+      const pe = this.udiScanDialog.previewEntry;
+      if (!pe || !parsedUDI) {
+        return parsedUDI;
+      }
+      const batch = (pe.batchNumber || pe.batchNo || '').trim();
+      if (batch) {
+        parsedUDI.batchNo = batch;
+      }
+      if (pe.beginTime) {
+        parsedUDI.productionDate = pe.beginTime;
+      }
+      if (pe.endTime) {
+        parsedUDI.expiryDate = pe.endTime;
+      }
+      if (pe.serialNo) {
+        parsedUDI.serialNo = pe.serialNo;
+      }
+      return parsedUDI;
+    },
+    buildParsedUdiFromScanDialog() {
+      const raw = normalizeUdiScanInput(this.udiScanDialog.scanResult || '');
+      let parsed = raw ? this.parseUDIString(raw) : null;
+      if (!parsed) {
+        parsed = {
+          udiCode: '',
+          udiCodeForQuery: '',
+          secondaryBarcode: '',
+          productionDate: '',
+          expiryDate: '',
+          batchNo: '',
+          serialNo: ''
+        };
+      }
+      const master = (this.udiScanDialog.masterBarcode || '').trim();
+      const secondary = (this.udiScanDialog.secondaryBarcode || '').trim();
+      if (master) {
+        parsed.udiCode = master;
+        if (master.startsWith('01') && master.length >= 16 && /^\d+$/.test(master)) {
+          parsed.udiCodeForQuery = master.substring(2, 16);
+        } else {
+          parsed.udiCodeForQuery = master.replace(/\D/g, '') || master;
+        }
+      }
+      if (secondary) {
+        parsed.secondaryBarcode = secondary;
+        const sec = this.parseSecondaryBarcode(secondary);
+        if (sec.productionDate) {
+          parsed.productionDate = sec.productionDate;
+        }
+        if (sec.expiryDate) {
+          parsed.expiryDate = sec.expiryDate;
+        }
+        if (sec.batchNo) {
+          parsed.batchNo = sec.batchNo;
+        }
+        if (sec.serialNo) {
+          parsed.serialNo = sec.serialNo;
+        }
+      }
+      return this.applyUdiScanPreviewToParsed(parsed);
+    },
+    queryMaterialByUdiVariants(rawInput, parsedUDI) {
+      const uniqueVariants = buildUdiQueryVariants(rawInput, parsedUDI);
+      const masterOnly = (this.udiScanDialog.masterBarcode || '').trim();
+      if (masterOnly && !uniqueVariants.includes(masterOnly)) {
+        uniqueVariants.unshift(masterOnly);
+      }
+      return new Promise((resolve, reject) => {
+        const tryQuery = (index) => {
+          if (index >= uniqueVariants.length) {
+            resolve({ rows: [], variants: uniqueVariants });
+            return;
+          }
+          listMaterial({ udiNo: uniqueVariants[index] }).then(response => {
+            if (response.rows && response.rows.length > 0) {
+              resolve({ rows: response.rows, variants: uniqueVariants, matchedVariant: uniqueVariants[index] });
+            } else {
+              tryQuery(index + 1);
+            }
+          }).catch(err => {
+            if (index + 1 < uniqueVariants.length) {
+              tryQuery(index + 1);
+            } else {
+              reject(err);
+            }
+          });
+        };
+        tryQuery(0);
       });
-      
-      // 依次尝试各种格式
-      const tryQueryUDI = (index) => {
-        if (index >= uniqueVariants.length) {
-          this.$modal.msgWarning(`未找到UDI码为 ${this.form.ztm} 的产品，请检查产品字典。已尝试的格式：${uniqueVariants.join(', ')}`);
+    },
+    lookupUdiScanMaterial() {
+      const raw = (this.udiScanDialog.scanResult || '').trim();
+      const master = (this.udiScanDialog.masterBarcode || '').trim();
+      if (!raw && !master) {
+        this.$modal.msgWarning('请先输入扫描结果或主条码');
+        return Promise.resolve();
+      }
+      const parsedUDI = this.buildParsedUdiFromScanDialog();
+      if (!parsedUDI.udiCodeForQuery && !master) {
+        this.$modal.msgWarning('主条码无效，请核对后重试');
+        return Promise.resolve();
+      }
+      this.udiScanDialog.loading = true;
+      this.udiScanDialog.lookupHint = '正在查询产品字典…';
+      return this.queryMaterialByUdiVariants(raw || master, parsedUDI).then(({ rows, variants, matchedVariant }) => {
+        if (!rows || rows.length === 0) {
+          this.udiScanDialog.materialRow = null;
+          this.udiScanDialog.previewEntry = null;
+          this.udiScanDialog.lookupHint = `未匹配到产品，已尝试：${variants.join('、')}`;
           return;
         }
-        
-        const udiinfo = {
-          "udiNo": uniqueVariants[index]
-        };
-        
-        listMaterial(udiinfo).then(response => {
-          console.log(`查询结果 (${uniqueVariants[index]}):`, response);
-          if (response.rows && response.rows.length > 0) {
-            // 找到了，继续后续处理
-            this.processMaterialResponse(response, parsedUDI);
-          } else {
-            // 没找到，尝试下一个格式
-            tryQueryUDI(index + 1);
-          }
-        }).catch(error => {
-          console.error('查询UDI码失败:', error);
-          // 出错时尝试下一个格式
-          if (index + 1 < uniqueVariants.length) {
-            tryQueryUDI(index + 1);
-          } else {
-            this.$modal.msgError("查询产品失败：" + (error.message || "未知错误"));
-          }
-        });
+        const item = rows[0];
+        this.udiScanDialog.materialRow = item;
+        this.udiScanDialog.previewEntry = this.buildUdiScanPreviewEntry(item, parsedUDI);
+        this.udiScanDialog.lookupHint = matchedVariant
+          ? `已匹配产品（查询键：${matchedVariant}），请核对条码段落后添加明细`
+          : '已匹配产品，请核对条码段落后添加明细';
+      }).catch(error => {
+        this.udiScanDialog.materialRow = null;
+        this.udiScanDialog.previewEntry = null;
+        this.udiScanDialog.lookupHint = '';
+        this.$modal.msgError('查询产品失败：' + (error.message || '未知错误'));
+      }).finally(() => {
+        this.udiScanDialog.loading = false;
+      });
+    },
+    confirmUdiScanAddToEntry() {
+      const raw = (this.udiScanDialog.scanResult || '').trim();
+      if (!raw) {
+        this.$modal.msgWarning('请填写扫描结果');
+        return;
+      }
+      if (!this.udiScanDialog.previewEntry || !this.udiScanDialog.materialRow) {
+        this.$modal.msgWarning('请先点击「解析」并核对耗材信息');
+        return;
+      }
+      const parsedUDI = this.buildParsedUdiFromScanDialog();
+      if (!parsedUDI.udiCodeForQuery && !(this.udiScanDialog.masterBarcode || '').trim()) {
+        this.$modal.msgWarning('主条码无效，请核对后重试');
+        return;
+      }
+      const finishAdd = (rows) => {
+        this.form.ztm = '';
+        this.udiScanDialog.visible = false;
+        this.processMaterialResponse({ rows }, parsedUDI);
       };
-      
-      tryQueryUDI(0);
+      if (this.udiScanDialog.materialRow) {
+        finishAdd([this.udiScanDialog.materialRow]);
+        return;
+      }
+      this.udiScanDialog.loading = true;
+      this.queryMaterialByUdiVariants(raw, parsedUDI).then(({ rows, variants }) => {
+        if (!rows || rows.length === 0) {
+          this.$modal.msgWarning(`未找到匹配产品，请调整主条码后重试。已尝试：${variants.join('、')}`);
+          return;
+        }
+        finishAdd(rows);
+      }).catch(error => {
+        this.$modal.msgError('查询产品失败：' + (error.message || '未知错误'));
+      }).finally(() => {
+        this.udiScanDialog.loading = false;
+      });
+    },
+    /** @deprecated 请使用 openUdiScanDialog 核对后添加 */
+    sm() {
+      this.openUdiScanDialog();
     },
     /** 处理产品查询响应 */
     processMaterialResponse(response, parsedUDI) {
@@ -1149,6 +1518,7 @@ export default {
                 return listFixedNumber({
                   warehouseId: warehouse.id,
                   fixedNumberType: '1',
+                  onlyEnabled: true,
                   pageNum: 1,
                   pageSize: 1000
                 }).then(fixedResponse => {
@@ -2215,6 +2585,9 @@ export default {
     doSubmit() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (!assertBillHasEntries(this.gzOrderEntryList, this, '请至少添加一条明细')) {
+            return;
+          }
           this.form.gzOrderEntryList = this.gzOrderEntryList;
           this.form.gzOrderEntryList = this.form.gzOrderEntryList.map(item => ({
             ...item,
@@ -2953,6 +3326,45 @@ export default {
   line-height: 1.4;
   word-break: break-all;
   white-space: normal;
+}
+
+.udi-scan-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.udi-scan-inline-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.udi-scan-mono ::v-deep textarea {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.udi-scan-hint {
+  margin: -8px 0 0 88px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+}
+
+.udi-scan-hint-block {
+  margin: 0 0 8px 0;
+}
+
+.udi-scan-preview-table {
+  width: 100%;
+}
+
+::v-deep .udi-scan-verify-dialog .el-dialog__body {
+  padding-top: 12px;
 }
 
 </style>

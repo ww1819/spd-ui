@@ -483,6 +483,7 @@
 
 <script>
 import { listGoods, getGoods, delGoods, addGoods, updateGoods, auditGoods } from "@/api/gz/refundStock";
+import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listAuditedShipment, listShipmentLinesForTk } from "@/api/gz/refDoc";
 import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -1168,11 +1169,16 @@ export default {
     handleAudit(row) {
       this.reset();
       const id = row.id || this.ids
-      this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
-        return auditGoods({id: id});
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("审核退库成功！");
+      getGoods(id).then(res => {
+        if (!assertBillHasActiveEntriesForAudit(res.data.gzRefundGoodsEntryList, this, '高值退库')) {
+          return;
+        }
+        this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+          return auditGoods({id: id});
+        }).then(() => {
+          this.getList();
+          this.$modal.msgSuccess("审核退库成功！");
+        }).catch(() => {});
       }).catch(() => {});
     },
     /** 批量审核按钮操作 */
@@ -1181,12 +1187,21 @@ export default {
         this.$modal.msgError('请先选择要审核的数据');
         return;
       }
-      this.$modal.confirm('确定要审核选中的' + this.ids.length + '条数据项？').then(() => {
-        const promises = this.ids.map(id => auditGoods({id: id}));
-        return Promise.all(promises);
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("批量审核退库成功！");
+      const validations = this.ids.map(id =>
+        getGoods(id).then(res => {
+          if (!assertBillHasActiveEntriesForAudit(res.data.gzRefundGoodsEntryList, this, '高值退库')) {
+            return Promise.reject(new Error('no active entries'));
+          }
+        })
+      );
+      Promise.all(validations).then(() => {
+        this.$modal.confirm('确定要审核选中的' + this.ids.length + '条数据项？').then(() => {
+          const promises = this.ids.map(id => auditGoods({id: id}));
+          return Promise.all(promises);
+        }).then(() => {
+          this.getList();
+          this.$modal.msgSuccess("批量审核退库成功！");
+        }).catch(() => {});
       }).catch(() => {});
     },
     handleBatchPrint() {
@@ -1285,6 +1300,9 @@ export default {
       if (!this.form.id) return this.$modal.msgWarning('请先保存单据后再审核');
       if (this.hasDialogUnsavedChanges) return this.$modal.msgWarning('当前有未保存修改，请先保存后再审核');
       if (this.isAuditedForm) return this.$modal.msgWarning('该单据已审核');
+      if (!assertBillHasActiveEntriesForAudit(this.gzRefundGoodsEntryList, this, '高值退库')) {
+        return;
+      }
       this.$modal.confirm(`确定审核单据"${this.form.goodsNo || this.form.id}"吗？`).then(() => {
         return auditGoods({ id: this.form.id });
       }).then(() => {

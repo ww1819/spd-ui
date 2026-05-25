@@ -33,12 +33,53 @@ function formatGs1DateYyMmDd(dateStr) {
   return `${year}-${month}-${day}`;
 }
 
-const VARIABLE_AIS = ['11', '17', '10', '21'];
+/** GS1 日期 AI(11/17) 后 6 位：YYMMDD，须为合法月日，避免批号内 11/17 误判 */
+function isValidGs1YyMmDd(dateStr) {
+  if (!dateStr || dateStr.length !== 6 || !/^\d{6}$/.test(dateStr)) {
+    return false;
+  }
+  const mm = parseInt(dateStr.substring(2, 4), 10);
+  const dd = parseInt(dateStr.substring(4, 6), 10);
+  return mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31;
+}
 
+/** 从 from 起找首个带合法日期的 AI(11 或 17) 下标 */
+function findFirstAiWithDate(s, from, aiCode) {
+  for (let i = from; i < s.length - 1; i++) {
+    if (s.substring(i, i + 2) === aiCode) {
+      const datePart = s.substring(i + 2, i + 8);
+      if (i + 8 <= s.length && isValidGs1YyMmDd(datePart)) {
+        return i;
+      }
+    }
+  }
+  return s.length;
+}
+
+/**
+ * 批号(10)变长段结束位置：取「17 之前」最后一个合法 11+日期（避免 K251134 内 11 误判为生产日期）
+ */
 function findNextAiIndex(s, from) {
+  const idx17 = findFirstAiWithDate(s, from, '17');
+  const limit = idx17 < s.length ? idx17 : s.length;
+  let last11 = s.length;
+  for (let i = from; i < limit - 1; i++) {
+    if (s.substring(i, i + 2) === '11') {
+      const datePart = s.substring(i + 2, i + 8);
+      if (i + 8 <= s.length && isValidGs1YyMmDd(datePart)) {
+        last11 = i;
+      }
+    }
+  }
+  if (last11 < s.length && last11 >= from) {
+    return last11;
+  }
+  if (idx17 < s.length) {
+    return idx17;
+  }
   for (let i = from; i < s.length - 1; i++) {
     const ai = s.substring(i, i + 2);
-    if (VARIABLE_AIS.includes(ai)) {
+    if (ai === '10' || ai === '21') {
       return i;
     }
   }
@@ -73,30 +114,42 @@ export function parseGs1UdiScan(raw) {
     result.udiCodeForQuery = gtin;
     result.udiCode = gtin;
     let i = 16;
-    while (i < s.length) {
+    let guard = 0;
+    const guardMax = s.length + 8;
+    while (i < s.length && guard++ < guardMax) {
       const ai = s.substring(i, i + 2);
-      if (ai === '11' && i + 8 <= s.length) {
-        const d = s.substring(i + 2, i + 8);
-        result.productionDate = formatGs1DateYyMmDd(d);
-        i += 8;
-      } else if (ai === '17' && i + 8 <= s.length) {
-        const d = s.substring(i + 2, i + 8);
-        result.expiryDate = formatGs1DateYyMmDd(d);
-        i += 8;
-      } else if (ai === '10') {
+      if (ai === '10') {
         const next = findNextAiIndex(s, i + 2);
         result.batchNo = s.substring(i + 2, next);
-        i = next;
-      } else if (ai === '21') {
+        i = next > i ? next : i + 1;
+        continue;
+      }
+      if (ai === '11' && i + 8 <= s.length) {
+        const d = s.substring(i + 2, i + 8);
+        if (isValidGs1YyMmDd(d)) {
+          result.productionDate = formatGs1DateYyMmDd(d);
+          i += 8;
+          continue;
+        }
+      }
+      if (ai === '17' && i + 8 <= s.length) {
+        const d = s.substring(i + 2, i + 8);
+        if (isValidGs1YyMmDd(d)) {
+          result.expiryDate = formatGs1DateYyMmDd(d);
+          i += 8;
+          continue;
+        }
+      }
+      if (ai === '21') {
         result.serialNo = s.substring(i + 2);
-        i = s.length;
-      } else {
         break;
       }
+      // 非合法 AI 或批号内假 11/17：逐字符前移，避免死循环
+      i += 1;
     }
-    const idx11 = s.indexOf('11', 16);
-    if (idx11 >= 16) {
-      result.secondaryBarcode = s.substring(idx11);
+    // 辅条码 = (01)GTIN 之后的全部段（含 10 批号、11 生产日期、17 有效期等），勿从首个 11 截取否则会丢掉 10 段
+    if (s.length > 16) {
+      result.secondaryBarcode = s.substring(16);
     }
     return result;
   }

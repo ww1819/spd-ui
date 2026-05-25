@@ -435,6 +435,7 @@
 
 <script>
 import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, listEntryChangeLog} from "@/api/gz/order";
+import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -629,11 +630,20 @@ export default {
         this.$modal.msgWarning('请选择要审核的数据');
         return;
       }
-      this.$modal.confirm('确定要审核选中的数据项？').then(() => {
-        return auditOrder({ids: ids, orderType: 301});
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("审核成功！");
+      const validations = ids.map(id =>
+        getOrder(id, 301).then(res => {
+          if (!assertBillHasActiveEntriesForAudit(res.data.gzOrderEntryList, this, '高值退库')) {
+            return Promise.reject(new Error('no active entries'));
+          }
+        })
+      );
+      Promise.all(validations).then(() => {
+        this.$modal.confirm('确定要审核选中的数据项？').then(() => {
+          return auditOrder({ids: ids, orderType: 301});
+        }).then(() => {
+          this.getList();
+          this.$modal.msgSuccess("审核成功！");
+        }).catch(() => {});
       }).catch(() => {});
     },
     handleBatchPrint() {
@@ -854,11 +864,16 @@ export default {
       this.reset();
       const id = row.id || this.ids
 
-      this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
-        return auditOrder({id: id, orderType: 301});
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("审核退库成功！");
+      getOrder(id, 301).then(res => {
+        if (!assertBillHasActiveEntriesForAudit(res.data.gzOrderEntryList, this, '高值退库')) {
+          return;
+        }
+        this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+          return auditOrder({id: id, orderType: 301});
+        }).then(() => {
+          this.getList();
+          this.$modal.msgSuccess("审核退库成功！");
+        }).catch(() => {});
       }).catch(() => {});
     },
     /** 修改按钮操作 */
@@ -1097,6 +1112,9 @@ export default {
       if (!this.form.id) return this.$modal.msgWarning('请先保存单据后再审核');
       if (this.hasDialogUnsavedChanges) return this.$modal.msgWarning('当前有未保存修改，请先保存后再审核');
       if (this.isAuditedForm) return this.$modal.msgWarning('该单据已审核');
+      if (!assertBillHasActiveEntriesForAudit(this.gzOrderEntryList, this, '高值退库')) {
+        return;
+      }
       this.$modal.confirm(`确定审核单据"${this.form.orderNo || this.form.id}"吗？`).then(() => {
         return auditOrder({ id: this.form.id, orderType: 301 });
       }).then(() => {

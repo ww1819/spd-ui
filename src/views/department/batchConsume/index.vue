@@ -428,6 +428,8 @@ export default {
       selectRow: [],
       // 科室批量消耗明细表格数据
       deptBatchConsumeEntryList: [],
+      /** 打开已保存单据时服务端原有明细条数（用于删光明细时整单删除确认） */
+      originalEntryCount: 0,
       // 合计数量
       totalQty: 0,
       // 合计金额
@@ -642,6 +644,7 @@ export default {
         remark: null
       };
       this.deptBatchConsumeEntryList = [];
+      this.originalEntryCount = 0;
       this.calculateTotals();
       this.resetForm("form");
     },
@@ -696,6 +699,7 @@ export default {
       getConsume(id).then(response => {
         this.form = response.data;
         this.deptBatchConsumeEntryList = response.data.deptBatchConsumeEntryList || [];
+        this.originalEntryCount = this.deptBatchConsumeEntryList.length;
         this.open = true;
         this.calculateTotals();
         this.action = false;
@@ -727,6 +731,7 @@ export default {
       getConsume(id).then(response => {
         this.form = response.data;
         this.deptBatchConsumeEntryList = response.data.deptBatchConsumeEntryList || [];
+        this.originalEntryCount = this.deptBatchConsumeEntryList.length;
         this.open = true;
         this.calculateTotals();
         this.action = true;
@@ -734,11 +739,27 @@ export default {
         this.title = "修改科室批量消耗";
       });
     },
+    /** 已保存单据删光全部明细时确认并删除整单 */
+    confirmDeleteBillWhenClearAllEntries() {
+      const billNo = this.form.consumeBillNo || '';
+      return this.$modal.confirm(
+        '若删除所有明细，消耗单' + (billNo ? '「' + billNo + '」' : '') + '将一并删除，是否继续？'
+      ).then(() => delConsume(this.form.id)).then(() => {
+        this.$modal.msgSuccess('删除成功');
+        this.open = false;
+        this.reset();
+        this.getList();
+      });
+    },
     /** 提交按钮 */
     submitForm() {
       // 验证科室是否选择
       if (!this.form.departmentId) {
         this.$modal.msgError("请先选择科室");
+        return;
+      }
+      if (!this.deptBatchConsumeEntryList || this.deptBatchConsumeEntryList.length === 0) {
+        this.$modal.msgError("请至少添加一条消耗明细");
         return;
       }
       
@@ -757,6 +778,7 @@ export default {
               this.$modal.msgSuccess((response && response.msg) || "修改成功");
               const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
               if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
+              this.originalEntryCount = (this.deptBatchConsumeEntryList || []).length;
               this.getList();
             });
           } else {
@@ -773,6 +795,7 @@ export default {
                 }
                 this.title = "修改科室批量消耗";
               }
+              this.originalEntryCount = (this.deptBatchConsumeEntryList || []).length;
               this.getList();
             }).catch(error => {
               console.error("新增失败:", error);
@@ -796,17 +819,25 @@ export default {
     handleDeleteConsumeEntry() {
       if (this.checkedConsumeEntry.length == 0) {
         this.$modal.msgError("请先选择要删除的科室批量消耗明细数据");
-      } else {
-        const consumeEntryList = this.deptBatchConsumeEntryList;
-        const checkedConsumeEntry = this.checkedConsumeEntry;
-        this.deptBatchConsumeEntryList = consumeEntryList.filter(function(item) {
-          return checkedConsumeEntry.indexOf(item.index) == -1
-        });
-        this.calculateTotals();
+        return;
       }
+      const checkedConsumeEntry = this.checkedConsumeEntry;
+      const nextList = this.deptBatchConsumeEntryList.filter(function(item) {
+        return checkedConsumeEntry.indexOf(item.index) == -1;
+      });
+      if (this.form.id && this.originalEntryCount > 0 && nextList.length === 0) {
+        this.confirmDeleteBillWhenClearAllEntries().catch(() => {});
+        return;
+      }
+      this.deptBatchConsumeEntryList = nextList;
+      this.calculateTotals();
     },
     /** 删除明细行 */
     handleDeleteDetailRow(index) {
+      if (this.form.id && this.originalEntryCount > 0 && this.deptBatchConsumeEntryList.length === 1) {
+        this.confirmDeleteBillWhenClearAllEntries().catch(() => {});
+        return;
+      }
       this.deptBatchConsumeEntryList.splice(index, 1);
       this.calculateTotals();
     },

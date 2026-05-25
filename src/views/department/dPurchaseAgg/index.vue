@@ -165,7 +165,7 @@
               size="small"
               type="text"
               @click="handleView(scope.row)"
-              v-if="scope.row.purchaseBillStatus == 2"
+              v-if="isViewOnlyPurchase(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >查看</el-button>
             <el-button
@@ -182,7 +182,7 @@
               
               @click="handleUpdate(scope.row)"
               v-hasPermi="['department:purchase:edit']"
-              v-if="scope.row.purchaseBillStatus != 2"
+              v-if="isEditablePurchase(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >修改</el-button>
             <el-button
@@ -190,7 +190,7 @@
               type="text"
               @click="handleDelete(scope.row)"
               v-hasPermi="['department:purchase:remove']"
-              v-if="scope.row.purchaseBillStatus != 2"
+              v-if="isEditablePurchase(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >删除</el-button>
           </span>
@@ -430,6 +430,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectMaterialForPurchaseAgg from '@/components/SelectModel/SelectMaterialForPurchaseAgg';
 import { buildAggEntryPickKey, fillAggEntryFromFixedNumber } from '@/utils/purchaseAggEntry';
+import { assertBillHasMaterialEntries, normalizeBillMaterialLineQtyDefaultOne } from '@/utils/billEntryValidate';
 import { runConfiguredTableExport } from '@/utils/tableExportRunner'
 
 export default {
@@ -528,6 +529,37 @@ export default {
     isAuditedPurchase(row) {
       const s = row && row.purchaseBillStatus;
       return s === 2 || s === '2';
+    },
+    isRejectedPurchase(row) {
+      const s = row && row.purchaseBillStatus;
+      return s === 3 || s === '3';
+    },
+    /** 已审核或已驳回：仅查看，不可改 */
+    isViewOnlyPurchase(row) {
+      return this.isAuditedPurchase(row) || this.isRejectedPurchase(row);
+    },
+    /** 仅待审核且未拆分可编辑 */
+    isEditablePurchase(row) {
+      if (!row) {
+        return false;
+      }
+      const s = row.purchaseBillStatus;
+      const pending = s === 1 || s === '1';
+      const split = row.splitStatus;
+      const notSplit = split == null || split === 0 || split === '0';
+      return pending && notSplit;
+    },
+    normalizePurchaseBillStatus(status) {
+      if (status == 1 || status === '1') {
+        return '1';
+      }
+      if (status == 2 || status === '2') {
+        return '2';
+      }
+      if (status == 3 || status === '3') {
+        return '3';
+      }
+      return status != null ? String(status) : null;
     },
     /** 查询汇总申购列表 */
     getList() {
@@ -673,13 +705,7 @@ export default {
         this.open = true;
         this.action = false;
 
-        if (response.data.purchaseBillStatus == 1) {
-          this.form.purchaseBillStatus = '1';
-        }else if(response.data.purchaseBillStatus == 2){
-          this.form.purchaseBillStatus = '2';
-        }else{
-          this.form.purchaseBillStatus = '3';
-        }
+        this.form.purchaseBillStatus = this.normalizePurchaseBillStatus(response.data.purchaseBillStatus);
         // 设置紧急程度文本显示
         this.setUrgencyLevelText(response.data.urgencyLevel);
         // 确保紧急程度下拉框使用字符串值，避免显示纯数字
@@ -707,9 +733,28 @@ export default {
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
+      if (row && !this.isEditablePurchase(row)) {
+        if (this.isRejectedPurchase(row)) {
+          this.$modal.msgWarning('已驳回的汇总申购单不可修改');
+        } else if (this.isAuditedPurchase(row)) {
+          this.$modal.msgWarning('已审核的汇总申购单不可修改');
+        } else {
+          this.$modal.msgWarning('当前状态的汇总申购单不可修改');
+        }
+        return;
+      }
       this.reset();
       const id = row.id || this.ids
       getPurchaseAgg(id).then(response => {
+        const data = response.data || {};
+        if (!this.isEditablePurchase(data)) {
+          if (this.isRejectedPurchase(data)) {
+            this.$modal.msgWarning('已驳回的汇总申购单不可修改');
+          } else {
+            this.$modal.msgWarning('当前状态的汇总申购单不可修改');
+          }
+          return;
+        }
         this.form = response.data;
         // 优先使用后端返回的用户中文姓名，其次使用当前登录用户信息
         if (response.data.user) {
@@ -730,28 +775,30 @@ export default {
         // 确保紧急程度下拉框使用字符串值，避免显示纯数字
         this.form.urgencyLevel = response.data.urgencyLevel != null ? String(response.data.urgencyLevel) : '';
 
+        this.form.purchaseBillStatus = this.normalizePurchaseBillStatus(data.purchaseBillStatus);
         this.open = true;
         this.action = true;
-        this.form.purchaseBillStatus = '1';
         this.title = "修改汇总申购";
       });
     },
     /** 提交按钮 */
     submitForm() {
+      if (this.form.id != null && !this.isEditablePurchase(this.form)) {
+        if (this.isRejectedPurchase(this.form)) {
+          this.$modal.msgError('已驳回的汇总申购单不可保存');
+        } else {
+          this.$modal.msgError('当前状态的汇总申购单不可保存');
+        }
+        return;
+      }
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (!assertBillHasMaterialEntries(this.entryList, this)) {
+            return;
+          }
+          normalizeBillMaterialLineQtyDefaultOne(this.entryList);
+          this.calculateTotalAmount();
           const validEntries = this.entryList.filter(item => item.materialId);
-          if (validEntries.length === 0) {
-            this.$modal.msgError("请至少添加一条有效明细（选择耗材）");
-            return;
-          }
-          const invalidQty = this.entryList.filter(item =>
-            item.materialId && (item.qty == null || item.qty === '' || Number(item.qty) <= 0)
-          );
-          if (invalidQty.length > 0) {
-            this.$modal.msgError("存在明细数量为空或0，请填写有效数量后再保存。");
-            return;
-          }
           const missingWh = validEntries.filter(item => !item.warehouseId);
           if (missingWh.length > 0) {
             this.$modal.msgError("存在明细未关联仓库，请从仓库定数重新选品。");
@@ -910,6 +957,9 @@ export default {
       if (!this.open || !this.action || this.purchaseDraftSaving) {
         return;
       }
+      if (this.form.id != null && !this.isEditablePurchase(this.form)) {
+        return;
+      }
       const list = (this.entryList || []).filter(item => item && item.materialId);
       if (!list.length || !this.form.departmentId) {
         return;
@@ -917,10 +967,8 @@ export default {
       if (list.some(item => !item.warehouseId)) {
         return;
       }
-      const invalidQty = list.some(item => item.qty == null || item.qty === '' || Number(item.qty) <= 0);
-      if (invalidQty) {
-        return;
-      }
+      normalizeBillMaterialLineQtyDefaultOne(this.entryList);
+      this.calculateTotalAmount();
       this.purchaseDraftSaving = true;
       this.form.entryList = this.entryList;
       const ax = { headers: { repeatSubmit: false, hideError: true } };

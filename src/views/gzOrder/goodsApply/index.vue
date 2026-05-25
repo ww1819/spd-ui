@@ -450,6 +450,7 @@
 
 <script>
 import { listGoods, getGoods, delGoods, addGoods, updateGoods, auditGoods } from "@/api/gz/goods";
+import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listDepotInventory } from "@/api/gz/depotInventory";
 import { listAuditedAcceptance, listAcceptanceDepotLines } from "@/api/gz/refDoc";
 import { parseTime } from "@/utils/ruoyi";
@@ -1094,11 +1095,16 @@ export default {
         this.$modal.msgError('请先选择要审核的数据');
         return;
       }
-      this.$modal.confirm('确定要审核选中的数据项？').then(() => {
-        return auditGoods({id: id});
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("审核成功");
+      getGoods(id).then(res => {
+        if (!assertBillHasActiveEntriesForAudit(res.data.gzRefundGoodsEntryList, this, '高值退货')) {
+          return;
+        }
+        this.$modal.confirm('确定要审核选中的数据项？').then(() => {
+          return auditGoods({id: id});
+        }).then(() => {
+          this.getList();
+          this.$modal.msgSuccess("审核成功");
+        }).catch(() => {});
       }).catch(() => {});
     },
     handleBatchPrint() {
@@ -1122,6 +1128,9 @@ export default {
       if (!this.form.id) return this.$modal.msgWarning('请先保存单据后再审核');
       if (this.hasDialogUnsavedChanges) return this.$modal.msgWarning('当前有未保存修改，请先保存后再审核');
       if (this.isAuditedForm) return this.$modal.msgWarning('该单据已审核');
+      if (!assertBillHasActiveEntriesForAudit(this.gzRefundGoodsEntryList, this, '高值退货')) {
+        return;
+      }
       this.$modal.confirm(`确定审核单据"${this.form.goodsNo || this.form.id}"吗？`).then(() => {
         return auditGoods({ id: this.form.id });
       }).then(() => {

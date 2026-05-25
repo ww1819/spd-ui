@@ -765,6 +765,17 @@ export default {
       this.auditForm.auditOpinion = '同意';
       this.auditDialogVisible = true;
     },
+    /** 至少一条未删除明细 */
+    validatePlanEntriesActive(planId) {
+      return getPurchasePlan(planId).then(response => {
+        const list = response.data.purchasePlanEntryList || [];
+        const active = list.filter(e => e && (e.delFlag == null || e.delFlag === '' || String(e.delFlag) !== '1'));
+        if (active.length === 0) {
+          return Promise.reject(new Error(response.data.planNo + '：无有效明细，不允许审核。'));
+        }
+        return Promise.resolve();
+      });
+    },
     /** 校验计划明细是否全部指定供应商，返回 Promise，不通过时 reject */
     validatePlanEntriesSupplier(planId) {
       return getPurchasePlan(planId).then(response => {
@@ -798,9 +809,10 @@ export default {
 
       if (this.currentAuditRow.isBatch) {
         // 批量审核：先校验每个计划的明细供应商与数量
+        const validateActive = this.ids.map(id => this.validatePlanEntriesActive(id));
         const validateSupplier = this.ids.map(id => this.validatePlanEntriesSupplier(id));
         const validateQty = this.ids.map(id => this.validatePlanEntriesQty(id));
-        Promise.all([...validateSupplier, ...validateQty]).then(() => {
+        Promise.all([...validateActive, ...validateSupplier, ...validateQty]).then(() => {
           const auditPromises = this.ids.map(id => auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion}));
           return Promise.all(auditPromises);
         }).then(() => {
@@ -816,6 +828,7 @@ export default {
       } else {
         const id = this.currentAuditRow.id;
         Promise.all([
+          this.validatePlanEntriesActive(id),
           this.validatePlanEntriesSupplier(id),
           this.validatePlanEntriesQty(id)
         ]).then(() => {

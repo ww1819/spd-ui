@@ -168,8 +168,7 @@ export default {
         name: null,
         speci: null,
         supplierId: null,
-        brand: null,
-        isGz: "2"
+        brand: null
       },
       form: {},
       allFilteredMaterials: [],
@@ -262,7 +261,6 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
-      this.queryParams.isGz = "2";
       this.handleQuery();
     },
     handleSelectionChange(val) {

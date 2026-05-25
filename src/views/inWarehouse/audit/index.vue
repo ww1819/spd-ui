@@ -223,13 +223,19 @@
         <div class="form-fields-container">
         <el-row :gutter="8">
           <el-col :span="4">
-            <el-form-item label="单据号" prop="billNo">
-              <el-input v-model="form.billNo" :disabled="true" />
+            <el-form-item label="单据号" prop="billNo" class="form-item-header-billno">
+              <el-input v-model="form.billNo" :disabled="true" :title="form.billNo || ''" />
             </el-form-item>
           </el-col>
-          <el-col :span="4">
-            <el-form-item label="供应商" prop="supplerId">
-              <SelectSupplier v-model="form.supplerId" :disabled="true" />
+          <el-col :span="6">
+            <el-form-item label="供应商" prop="supplerId" class="form-item-header-wide">
+              <el-input
+                type="textarea"
+                :autosize="{ minRows: 1, maxRows: 2 }"
+                :value="supplierHeaderDisplayName"
+                disabled
+                class="header-field-textarea"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -242,12 +248,12 @@
               <el-input v-model="form.invoiceNumber" :disabled="true" placeholder="发票号" />
             </el-form-item>
           </el-col>
-          <el-col :span="4">
+          <el-col :span="3">
             <el-form-item label="制单人" prop="createrName">
               <SelectUser v-model="form.createrName" :disabled="true"/>
             </el-form-item>
           </el-col>
-          <el-col :span="4">
+          <el-col :span="3">
             <el-form-item label="发票时间" prop="invoiceTime">
               <el-date-picker clearable
                               v-model="form.invoiceTime"
@@ -452,9 +458,20 @@
               </el-date-picker>
             </template>
           </el-table-column>
-          <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
+          <el-table-column
+            label="批次号"
+            prop="batchNo"
+            width="300"
+            min-width="260"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-batch-no"
+            resizable
+          >
             <template slot-scope="scope">
-              <span>{{ scope.row.batchNo || '--' }}</span>
+              <span
+                class="detail-batch-no-cell"
+                :title="scope.row.batchNo || ''"
+              >{{ scope.row.batchNo || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column
@@ -584,6 +601,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMaterialFilter from "@/components/SelectModel/SelectMaterialFilter";
+import { assertBillHasEntries, assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import orderPrint from "@/views/inWarehouse/audit/orderPrint";
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
@@ -717,6 +735,12 @@ export default {
         }
       });
       return [...new Set(ids)];
+    },
+    supplierHeaderDisplayName() {
+      if (this.form && this.form.supplier && this.form.supplier.name) {
+        return this.form.supplier.name;
+      }
+      return '';
     }
   },
   created() {
@@ -1026,12 +1050,16 @@ export default {
       this.reset();
       const id = row.id || this.ids
       const auditBy = this.$store.state.user.userId;
-
-      this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(function() {
-        return auditWarehouse({id:id,auditBy:auditBy});
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("审核入库成功！");
+      getInWarehouse(id).then(res => {
+        if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
+          return;
+        }
+        this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+          return auditWarehouse({ id: id, auditBy: auditBy });
+        }).then(() => {
+          this.getList();
+          this.$modal.msgSuccess("审核入库成功！");
+        }).catch(() => {});
       }).catch(() => {});
     },
     /** 批量审核按钮操作 */
@@ -1046,12 +1074,24 @@ export default {
       const auditBy = this.$store.state.user.userId;
       const skipTip = pending.length < rows.length ? "（已跳过" + (rows.length - pending.length) + "条已审核单据）" : "";
       this.$modal.confirm('确定要审核选中的"' + pending.length + '"条待审核数据？' + skipTip).then(() => {
-        const promises = ids.map(id => auditWarehouse({id: id, auditBy: auditBy}));
-        return Promise.all(promises);
+        const validatePromises = ids.map(id =>
+          getInWarehouse(id).then(res => {
+            if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
+              return Promise.reject(new Error('audit_entry_validate_failed'));
+            }
+          })
+        );
+        return Promise.all(validatePromises).then(() =>
+          Promise.all(ids.map(id => auditWarehouse({ id: id, auditBy: auditBy })))
+        );
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("批量审核成功！");
-      }).catch(() => {});
+      }).catch(err => {
+        if (err && err.message === 'audit_entry_validate_failed') {
+          return;
+        }
+      });
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -1071,6 +1111,9 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (!assertBillHasEntries(this.stkIoBillEntryList, this, '请至少添加一条入库明细')) {
+            return;
+          }
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           var totalAmt = 0;
           this.stkIoBillEntryList.forEach(item => {
@@ -1502,6 +1545,32 @@ export default {
   max-width: 140px;
 }
 
+.local-modal-content .modal-form-compact .form-item-header-billno .el-input {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.local-modal-content .modal-form-compact .form-item-header-billno ::v-deep .el-input__inner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.local-modal-content .modal-form-compact .form-item-header-wide .el-form-item__content {
+  line-height: normal;
+}
+.local-modal-content .modal-form-compact .form-item-header-wide .header-field-textarea {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.local-modal-content .modal-form-compact .form-item-header-wide ::v-deep .header-field-textarea .el-textarea__inner {
+  min-height: 28px !important;
+  line-height: 1.45 !important;
+  padding: 4px 8px;
+  word-break: break-all;
+  white-space: pre-wrap;
+  resize: none;
+}
+
 /* 缩小所有输入框高度 */
 .local-modal-content .modal-form-compact .el-input__inner {
   height: 28px !important;
@@ -1721,6 +1790,22 @@ export default {
   word-break: break-word;
   line-height: 1.45;
   max-height: calc(1.45em * 2 + 2px);
+}
+
+.app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .el-table td.detail-col-batch-no .cell {
+  white-space: normal;
+  word-break: break-all;
+  vertical-align: middle;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .el-table td.detail-col-batch-no .detail-batch-no-cell {
+  display: block;
+  width: 100%;
+  line-height: 1.45;
+  word-break: break-all;
+  white-space: pre-wrap;
+  text-align: center;
 }
 </style>
 

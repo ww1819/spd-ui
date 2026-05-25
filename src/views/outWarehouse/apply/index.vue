@@ -667,6 +667,7 @@ import SelectRkApply from "@/components/SelectModel/SelectRkApply";
 import outOrderPrint from "@/views/outWarehouse/audit/outOrderPrint";
 import { buildOutboundPrintRowFromDetail } from '@/views/warehouse/print/outboundPrintRow'
 import {STOCK_OUT_TEMPLATE} from '@/utils/printData'
+import { assertBillHasEntries } from '@/utils/billEntryValidate'
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import { collectCkThScopeErrors } from '@/utils/auditBillScopeValidate'
 import {
@@ -1385,6 +1386,9 @@ export default {
     async submitForm() {
       this.$refs["form"].validate(async (valid) => {
         if (valid) {
+          if (!assertBillHasEntries(this.stkIoBillEntryList, this, '请至少添加一条出库明细')) {
+            return;
+          }
           for (const [index, entry] of this.stkIoBillEntryList.entries()) {
             const bn = entry && entry.batchNo != null ? String(entry.batchNo).trim() : ''
             if (!bn) {
