@@ -20,6 +20,14 @@
                     <SelectWarehouse v-model="form.warehouseId" :value2="warehouseLocked" excludeWarehouseType="设备"/>
                   </el-form-item>
                 </el-col>
+                <el-col :span="4">
+                  <el-form-item label="高值/低值" prop="isGz">
+                    <el-select v-model="form.isGz" placeholder="请选择" clearable :disabled="!editable || headerLocked" style="width: 100%;">
+                      <el-option label="高值" value="1" />
+                      <el-option label="低值" value="2" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
                 <el-col :span="6">
                   <el-form-item label="制单时间" prop="planDate" class="plan-plan-date-item">
                     <el-input
@@ -137,6 +145,7 @@ export default {
     supplierOptions: { type: Array, default: () => [] },
     supplierLoading: { type: Boolean, default: false },
     warehouseLocked: { type: Boolean, default: false },
+    headerLocked: { type: Boolean, default: false },
     planEntryModeDisabled: { type: Boolean, default: false },
     planSourceDisplay: { type: String, default: '' },
     tableHeight: { type: String, default: 'max(260px, calc(100vh - 368px))' },

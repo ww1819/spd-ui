@@ -1,8 +1,17 @@
 /**
- * 汇总申购明细：从仓库定数选品结果填充行数据（含 warehouseId）
+ * 汇总申购明细：从仓库定数选品结果填充行数据（含 warehouseId、isGz）
  */
+export function formatIsGzLabel(isGz) {
+  if (isGz === '1' || isGz === 1) return '高值';
+  if (isGz === '2' || isGz === 2) return '低值';
+  return '--';
+}
+
 export function buildAggEntryPickKey(row) {
   if (!row) return '';
+  if (row.materialId != null && row.warehouseId != null && row.isGz != null) {
+    return `${row.materialId}_${row.warehouseId}_${row.isGz}`;
+  }
   if (row.materialId != null && row.warehouseId != null) {
     return `${row.materialId}_${row.warehouseId}`;
   }
@@ -27,6 +36,7 @@ export function fillAggEntryFromFixedNumber(row, material) {
   row.producer = (material.fdFactory && material.fdFactory.factoryName) || material.factoryName || '';
   row.warehouseId = material.warehouseId != null ? String(material.warehouseId) : null;
   row.warehouseName = material.warehouseName || '';
+  row.isGz = material.isGz != null ? String(material.isGz) : null;
   if (row.qty == null || row.qty === '') {
     row.qty = String(getDefaultPurchaseQtyFromMaterial(material));
   }

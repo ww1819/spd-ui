@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div v-show="show" class="local-modal-mask">
     <div class="local-modal-content">
       <div class="modal-header">
@@ -150,6 +150,11 @@ export default {
       default() {
         return [];
       }
+    },
+    /** 高值/低值过滤：1高值 2低值 */
+    isGzValue: {
+      type: [String, Number],
+      default: null
     }
   },
   data() {
@@ -220,6 +225,12 @@ export default {
         this.getList();
       }
     },
+    isGzValue() {
+      if (this.show) {
+        this.queryParams.pageNum = 1;
+        this.getList();
+      }
+    },
     excludeMaterialIds: {
       deep: true,
       handler() {
@@ -266,6 +277,9 @@ export default {
         name: this.queryParams.name,
         supplierId: this.queryParams.supplierId || undefined
       };
+      if (this.isGzValue != null && this.isGzValue !== '') {
+        q.isGz = String(this.isGzValue);
+      }
       const exclude = (this.excludeMaterialIds || []).filter(
         id => id !== null && id !== undefined && id !== ""
       );

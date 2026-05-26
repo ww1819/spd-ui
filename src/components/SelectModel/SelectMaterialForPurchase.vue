@@ -166,6 +166,11 @@ export default {
     excludeMaterialIds: {
       type: Array,
       default: () => []
+    },
+    /** 高值/低值过滤：1高值 2低值 */
+    isGzValue: {
+      type: [String, Number],
+      default: null
     }
   },
   data() {
@@ -256,6 +261,9 @@ export default {
       }
       if (this.excludeMaterialIds && this.excludeMaterialIds.length > 0) {
         q.excludeMaterialIds = this.excludeMaterialIds.join(",");
+      }
+      if (this.isGzValue != null && this.isGzValue !== '') {
+        q.isGz = String(this.isGzValue);
       }
       return q;
     },

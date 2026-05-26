@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container d-purchase-agg-page" :class="{ 'is-modal-open': open }">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
@@ -334,6 +334,11 @@
                     <span>{{ scope.row.warehouseName || '--' }}</span>
                   </template>
                 </el-table-column>
+                <el-table-column label="高值/低值" align="center" width="90" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ formatIsGzLabel(scope.row.isGz) }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="规格" align="center" prop="materialSpec" width="150" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialSpec || '--' }}</span>
@@ -429,7 +434,7 @@ import { listPurchaseAgg, getPurchaseAgg, delPurchaseAgg, addPurchaseAgg, update
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectMaterialForPurchaseAgg from '@/components/SelectModel/SelectMaterialForPurchaseAgg';
-import { buildAggEntryPickKey, fillAggEntryFromFixedNumber } from '@/utils/purchaseAggEntry';
+import { buildAggEntryPickKey, fillAggEntryFromFixedNumber, formatIsGzLabel } from '@/utils/purchaseAggEntry';
 import { assertBillHasMaterialEntries, normalizeBillMaterialLineQtyDefaultOne } from '@/utils/billEntryValidate';
 import { runConfiguredTableExport } from '@/utils/tableExportRunner'
 
@@ -516,6 +521,7 @@ export default {
     this.getList();
   },
   methods: {
+    formatIsGzLabel,
     formatCreatorName(row) {
       if (!row) return '--';
       const name = row.createrPersonName
@@ -804,6 +810,11 @@ export default {
             this.$modal.msgError("存在明细未关联仓库，请从仓库定数重新选品。");
             return;
           }
+          const missingGz = validEntries.filter(item => !item.isGz);
+          if (missingGz.length > 0) {
+            this.$modal.msgError("存在明细缺少高值/低值标志，请重新从定数选品。");
+            return;
+          }
           this.form.entryList = this.entryList;
           if (this.form.id != null) {
             updatePurchaseAgg(this.form).then(response => {
@@ -902,7 +913,8 @@ export default {
           const material = val[0];
           const pickKey = buildAggEntryPickKey({
             materialId: material.materialId != null ? material.materialId : material.id,
-            warehouseId: material.warehouseId
+            warehouseId: material.warehouseId,
+            isGz: material.isGz
           });
           if (pickKey && exist.has(pickKey)) {
             this.$modal.msgWarning("该耗材在该仓库已存在，请勿重复添加");
@@ -920,7 +932,8 @@ export default {
             }
             const pickKey = buildAggEntryPickKey({
               materialId: material.materialId != null ? material.materialId : material.id,
-              warehouseId: material.warehouseId
+              warehouseId: material.warehouseId,
+              isGz: material.isGz
             });
             if (!pickKey || exist.has(pickKey)) {
               skip++;
@@ -964,9 +977,12 @@ export default {
       if (!list.length || !this.form.departmentId) {
         return;
       }
-      if (list.some(item => !item.warehouseId)) {
-        return;
-      }
+          if (list.some(item => !item.warehouseId)) {
+            return;
+          }
+          if (list.some(item => !item.isGz)) {
+            return;
+          }
       normalizeBillMaterialLineQtyDefaultOne(this.entryList);
       this.calculateTotalAmount();
       this.purchaseDraftSaving = true;

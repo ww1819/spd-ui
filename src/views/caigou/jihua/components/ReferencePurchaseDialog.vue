@@ -17,6 +17,11 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
+                    <el-form-item label="高值/低值">
+                      <el-input :value="isGzLabel" disabled placeholder="请先在计划表头选择" style="width: 100%;" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
                     <el-form-item label="科室">
                       <SelectDepartment v-model="queryParams.departmentId" style="width: 100%;" />
                     </el-form-item>
@@ -91,6 +96,9 @@
                   <el-table-column label="单号" prop="purchaseBillNo" width="150" show-overflow-tooltip />
                   <el-table-column label="仓库" width="100" show-overflow-tooltip>
                     <template slot-scope="scope">{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</template>
+                  </el-table-column>
+                  <el-table-column label="高值/低值" width="90" show-overflow-tooltip>
+                    <template slot-scope="scope">{{ formatIsGzLabel(scope.row.isGz) }}</template>
                   </el-table-column>
                   <el-table-column label="科室" prop="department.name" width="80" show-overflow-tooltip />
                   <el-table-column label="金额" prop="totalAmount" width="100" align="right">
@@ -199,6 +207,7 @@ import {
   formatReferenceBillNo,
   yieldToMain
 } from '../utils/planEntryUtils'
+import { formatIsGzLabel } from '@/utils/purchaseAggEntry'
 
 const ENTRY_PAGE_SIZE = 200
 const RELOAD_DEBOUNCE_MS = 320
@@ -210,6 +219,7 @@ export default {
   props: {
     visible: { type: Boolean, default: false },
     warehouseId: { type: [Number, String], default: null },
+    isGz: { type: [Number, String], default: null },
     planId: { type: [Number, String], default: null },
     planEntryMode: { type: String, default: '1' },
     referencedEntryIdSet: { type: Object, default: () => new Set() }
@@ -256,6 +266,9 @@ export default {
     },
     selectedCount() {
       return Object.keys(this.selectedRowMap || {}).length
+    },
+    isGzLabel() {
+      return formatIsGzLabel(this.isGz)
     },
     /** 主内容区高度（vh），左侧列表区 = 该区高度 - 分页条 */
     listTableHeight() {
@@ -306,6 +319,7 @@ export default {
     this.unbindLayoutResize()
   },
   methods: {
+    formatIsGzLabel,
     _layoutMetrics() {
       const vh = typeof window !== 'undefined' ? window.innerHeight : 800
       const modalH = Math.round(vh * 0.94)
@@ -410,10 +424,16 @@ export default {
         this.total = 0
         return
       }
+      if (!this.isGz) {
+        this.purchaseList = []
+        this.total = 0
+        return
+      }
       this.syncWarehouseFromProp()
       this.loading = true
       const params = {
         ...this.queryParams,
+        isGz: this.isGz,
         excludeReferenced: true,
         excludeReferencedPlanId: this.planId != null ? this.planId : undefined
       }

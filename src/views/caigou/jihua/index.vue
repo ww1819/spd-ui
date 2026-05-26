@@ -133,6 +133,11 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" width="180" show-overflow-tooltip resizable />
+      <el-table-column label="高值/低值" align="center" width="90" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatIsGzLabel(scope.row.isGz) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="金额" align="center" prop="totalAmount" width="180" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
@@ -239,6 +244,7 @@
       :supplier-options="planDetailSupplierOptions"
       :supplier-loading="planDetailSupplierListLoading"
       :warehouse-locked="isPlanWarehouseLocked"
+      :header-locked="isPlanWarehouseLocked"
       :plan-entry-mode-disabled="planEntryModeDisabled"
       :plan-source-display="planSourceDisplay"
       :table-height="detailTableHeight"
@@ -262,6 +268,7 @@
       :DialogComponentShow="DialogComponentShow"
       :supplierValue="supplierValue"
       :warehouseValue="form.warehouseId"
+      :isGzValue="form.isGz"
       @closeDialog="closeDialog"
       @selectData="selectData"
     />
@@ -270,6 +277,7 @@
       v-if="referencePurchaseDialogVisible"
       :visible.sync="referencePurchaseDialogVisible"
       :warehouse-id="form.warehouseId"
+      :is-gz="form.isGz"
       :plan-id="form.id"
       :plan-entry-mode="form.planEntryMode"
       :referenced-entry-id-set="planReferencedDepApplyEntryIdSet"
@@ -291,6 +299,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import { listSupplierAll } from '@/api/foundation/supplier';
 import { assertBillHasMaterialEntries } from '@/utils/billEntryValidate';
 import { concatListInChunks, fetchStockQtyMapBatched, yieldToMain, assignPlanEntryRowUid, buildLeanPlanEntryPayload } from './utils/planEntryUtils';
+import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
 
 export default {
   name: "CaigouJihua",
@@ -370,6 +379,7 @@ export default {
         supplierId: null,
         planDate: null,
         warehouseId: null,
+        isGz: null,
         departmentId: null,
         planStatus: null,
         proPerson: null,
@@ -390,6 +400,9 @@ export default {
         ],
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
+        ],
+        isGz: [
+          { required: true, message: "请选择高值/低值", trigger: "change" }
         ],
       },
       // 进度对话框
@@ -495,6 +508,7 @@ export default {
     }
   },
   methods: {
+    formatIsGzLabel,
     /** 按当前计划仓库刷新明细「库存数量」 */
     refreshPlanEntryStockQty(onlyMaterialIds) {
       const warehouseId = this.form.warehouseId;
@@ -725,12 +739,14 @@ export default {
       }
     },
     checkMaterialBtn() {
-      // 验证是否已选择仓库
       if (!this.form.warehouseId) {
         this.$modal.msgWarning("请先选择仓库");
         return;
       }
-      //打开"弹窗组件"
+      if (!this.form.isGz) {
+        this.$modal.msgWarning("请先选择高值/低值");
+        return;
+      }
       this.DialogComponentShow = true
     },
     closeDialog() {
@@ -990,6 +1006,7 @@ export default {
         supplierId: null,
         planDate: null,
         warehouseId: null,
+        isGz: null,
         departmentId: null,
         planStatus: null,
         proPerson: null,
@@ -1424,6 +1441,10 @@ export default {
     handleReferencePurchase() {
       if (!this.form.warehouseId) {
         this.$modal.msgWarning("请先选择仓库");
+        return;
+      }
+      if (!this.form.isGz) {
+        this.$modal.msgWarning("请先选择高值/低值");
         return;
       }
       this.referencePurchaseDialogVisible = true;

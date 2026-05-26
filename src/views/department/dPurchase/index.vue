@@ -113,6 +113,11 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="高值/低值" align="center" width="90" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatIsGzLabel(scope.row.isGz) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="制单人" align="center" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -288,6 +293,14 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
+                    <el-form-item label="高值/低值" prop="isGz">
+                      <el-select v-model="form.isGz" placeholder="请选择" clearable :disabled="!action || isDeptWhLocked" style="width: 100%;">
+                        <el-option label="高值" value="1" />
+                        <el-option label="低值" value="2" />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
                     <el-form-item label="紧急程度" prop="urgencyLevel" class="form-item-urgency">
                       <el-select
                         v-if="action"
@@ -327,7 +340,7 @@
                 </el-col>
                 <div v-show="action">
                   <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-plus" size="small" @click="addMaterialRow" :disabled="!form.warehouseId || !form.departmentId">添加耗材</el-button>
+                    <el-button type="primary" icon="el-icon-plus" size="small" @click="addMaterialRow" :disabled="!form.warehouseId || !form.departmentId || !form.isGz">添加耗材</el-button>
                   </el-col>
                   <el-col :span="1.5">
                     <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteDepPurchaseApplyEntry">删除</el-button>
@@ -444,6 +457,7 @@
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
       :warehouseValue="form.warehouseId"
+      :isGzValue="form.isGz"
       :excludeMaterialIds="selectedMaterialIds"
       @closeDialog="closeDialog"
       @selectData="selectData"
@@ -460,6 +474,7 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMaterialForPurchase from '@/components/SelectModel/SelectMaterialForPurchase';
 import { runConfiguredTableExport } from '@/utils/tableExportRunner'
+import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
 
 export default {
   name: "dPurchase",
@@ -506,6 +521,7 @@ export default {
         beginDate: null,
         endDate: null,
         warehouseId: null,
+        isGz: null,
         departmentId: null,
         userId: null,
         purchaseBillStatus: null,
@@ -517,6 +533,9 @@ export default {
       rules: {
         warehouseId: [
           { required: true, message: "仓库不能为空", trigger: "blur" }
+        ],
+        isGz: [
+          { required: true, message: "请选择高值/低值", trigger: "change" }
         ],
         urgencyLevel: [
           { required: true, message: "紧急程度不能为空", trigger: "blur" }
@@ -554,6 +573,7 @@ export default {
     this.getList();
   },
   methods: {
+    formatIsGzLabel,
     formatCreatorName(row) {
       if (!row) return '--';
       const name = row.createrPersonName
@@ -642,6 +662,7 @@ export default {
         purchaseBillNo: null,
         purchaseBillDate: null,
         warehouseId: null,
+        isGz: null,
         departmentId: null,
         userId: null,
         userName: null,
@@ -882,6 +903,10 @@ export default {
     addMaterialRow() {
       if (!this.form.warehouseId) {
         this.$modal.msgWarning("请先选择仓库");
+        return;
+      }
+      if (!this.form.isGz) {
+        this.$modal.msgWarning("请先选择高值/低值");
         return;
       }
       if (!this.form.departmentId) {

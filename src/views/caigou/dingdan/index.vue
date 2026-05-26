@@ -129,6 +129,11 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" />
+      <el-table-column label="高值/低值" align="center" width="90">
+        <template slot-scope="scope">
+          <span>{{ formatIsGzLabel(scope.row.isGz) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="金额" align="center" prop="totalAmount" >
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
@@ -230,6 +235,11 @@
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId" label-width="100px">
               <SelectWarehouse v-model="form.warehouseId"/>
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
+            <el-form-item label="高值/低值" label-width="100px">
+              <el-input :value="formatIsGzLabel(form.isGz)" disabled />
             </el-form-item>
           </el-col>
 
@@ -434,6 +444,7 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 
 import SelectMMaterialFilter from '@/components/SelectModel/SelectMMaterialFilter';
+import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
 
 export default {
   name: "PurchaseOrder",
@@ -541,6 +552,7 @@ export default {
     this.getUserList();
   },
   methods: {
+    formatIsGzLabel,
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
