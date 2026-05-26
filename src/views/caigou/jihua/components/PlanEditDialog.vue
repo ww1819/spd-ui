@@ -17,7 +17,7 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="仓库" prop="warehouseId">
-                    <SelectWarehouse v-model="form.warehouseId" :value2="warehouseLocked" excludeWarehouseType="设备,高值"/>
+                    <SelectWarehouse v-model="form.warehouseId" :value2="warehouseLocked" excludeWarehouseType="设备"/>
                   </el-form-item>
                 </el-col>
                 <el-col :span="6">

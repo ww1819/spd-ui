@@ -18,7 +18,7 @@
           </el-form-item>
           <el-form-item prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="设备,高值"/>
+              <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="设备"/>
             </div>
           </el-form-item>
         </el-col>

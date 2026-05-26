@@ -264,8 +264,7 @@ export default {
         storeroomId: this.queryParams.storeroomId,
         factoryId: this.queryParams.factoryId,
         name: this.queryParams.name,
-        supplierId: this.queryParams.supplierId || undefined,
-        isGz: "2"
+        supplierId: this.queryParams.supplierId || undefined
       };
       const exclude = (this.excludeMaterialIds || []).filter(
         id => id !== null && id !== undefined && id !== ""
@@ -282,7 +281,6 @@ export default {
     /** 查询耗材信息列表（服务端分页；已选明细通过 excludeMaterialIds 在后端排除） */
     getList() {
       this.loading = true;
-      this.queryParams.isGz = "2";
       this.deptSafePagingMode = false;
       this.deptSafeAllRows = [];
       listMaterialPurchasePlanPickPost(this.buildPurchasePlanPickBody())

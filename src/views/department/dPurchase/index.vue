@@ -284,7 +284,7 @@
                 <el-row :gutter="8">
                   <el-col :span="4">
                     <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action || isDeptWhLocked" exclude-warehouse-type="高值,设备"/>
+                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action || isDeptWhLocked" exclude-warehouse-type="设备"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
