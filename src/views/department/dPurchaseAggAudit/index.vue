@@ -339,6 +339,16 @@
                     <span>{{ scope.row.warehouseName || '--' }}</span>
                   </template>
                 </el-table-column>
+                <el-table-column label="高值/低值" align="center" width="90" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ formatIsGzLabel(scope.row.isGz) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="拆分科室申购单号" align="center" prop="splitDepPurchaseBillNo" min-width="160" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.splitDepPurchaseBillNo || '--' }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="规格" align="center" prop="materialSpec" width="150" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialSpec || '--' }}</span>
@@ -405,6 +415,7 @@
 <script>
 import { listPurchaseAggAudit, getPurchaseAggAudit, auditPurchaseAgg, rejectPurchaseAgg } from "@/api/department/purchaseAggAudit";
 import { assertBillEntriesReadyForAudit } from '@/utils/billEntryValidate';
+import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 
@@ -469,6 +480,7 @@ export default {
     }
   },
   methods: {
+    formatIsGzLabel,
     /** 消息提醒双击等：路由带入申购单号 */
     applyRoutePurchaseBillQuery() {
       const ref = this.$route.query && this.$route.query.purchaseBillNo

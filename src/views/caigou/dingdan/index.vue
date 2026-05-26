@@ -26,6 +26,15 @@
         </el-col>
 
         <el-col :span="6">
+          <el-form-item prop="isGz">
+            <el-select v-model="queryParams.isGz" placeholder="高值/低值" clearable style="width: 100%">
+              <el-option label="高值" value="1" />
+              <el-option label="低值" value="2" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+
+        <el-col :span="6">
           <el-form-item prop="orderStatus">
             <el-select v-model="queryParams.orderStatus" placeholder="单据状态" clearable style="width: 150px">
               <el-option v-for="dict in dict.type.biz_status"
@@ -500,6 +509,7 @@ export default {
         supplierId: null,
         orderDate: null,
         warehouseId: null,
+        isGz: null,
         departmentId: null,
         orderStatus: null,
         orderType: null,

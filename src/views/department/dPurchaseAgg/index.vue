@@ -220,6 +220,11 @@
             <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
               <div class="form-fields-container">
                 <el-row :gutter="8">
+                  <el-col :span="5">
+                    <el-form-item label="汇总申购单号" prop="purchaseBillNo" label-width="84px">
+                      <el-input v-model="form.purchaseBillNo" :disabled="true" placeholder="—" />
+                    </el-form-item>
+                  </el-col>
                   <el-col :span="4">
                     <el-form-item label="科室" prop="departmentId">
                       <SelectDepartment v-model="form.departmentId" :disabled="!action || isDeptWhLocked" filterable/>
@@ -337,6 +342,11 @@
                 <el-table-column label="高值/低值" align="center" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ formatIsGzLabel(scope.row.isGz) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="拆分科室申购单号" align="center" prop="splitDepPurchaseBillNo" min-width="160" show-overflow-tooltip resizable>
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.splitDepPurchaseBillNo || '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="规格" align="center" prop="materialSpec" width="150" show-overflow-tooltip resizable>

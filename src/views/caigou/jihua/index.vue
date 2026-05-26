@@ -21,6 +21,12 @@
               <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="设备"/>
             </div>
           </el-form-item>
+          <el-form-item prop="isGz" class="query-item-inline">
+            <el-select v-model="queryParams.isGz" placeholder="高值/低值" clearable style="width: 120px">
+              <el-option label="高值" value="1" />
+              <el-option label="低值" value="2" />
+            </el-select>
+          </el-form-item>
         </el-col>
       </el-row>
       <el-row :gutter="16" class="query-row-second">
