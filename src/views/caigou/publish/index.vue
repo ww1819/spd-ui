@@ -31,11 +31,24 @@
               />
             </el-select>
           </el-form-item>
+          <el-form-item prop="pushStatus" class="query-item-inline">
+            <el-select v-model="queryParams.pushStatus" placeholder="是否发布" clearable style="width: 120px">
+              <el-option label="已发布" value="1" />
+              <el-option label="未发布" value="0" />
+            </el-select>
+          </el-form-item>
         </el-col>
       </el-row>
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="24">
+          <el-form-item prop="dateType" class="query-item-inline">
+            <el-select v-model="queryParams.dateType" placeholder="时间类型" style="width: 120px">
+              <el-option label="制单时间" value="createTime" />
+              <el-option label="审核时间" value="auditDate" />
+              <el-option label="发布时间" value="pushTime" />
+            </el-select>
+          </el-form-item>
           <el-form-item style="display: flex; align-items: center;">
             <el-date-picker
               v-model="queryParams.beginDate"
@@ -92,6 +105,14 @@
           :disabled="multiple"
         >发布</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="danger"
+          size="medium"
+          @click="handleBatchVoid"
+          :disabled="multiple"
+        >作废</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -128,9 +149,52 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="订单状态" align="center" prop="orderStatus" show-overflow-tooltip resizable>
+      <el-table-column label="订单状态" align="center" prop="orderStatus" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
+        </template>
+      </el-table-column>
+      <el-table-column label="制单时间" align="center" prop="createTime" width="165" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.createTime ? parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') : '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="制单人" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.createByName || resolveUserName(scope.row.createBy) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="发布状态" align="center" width="90" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.pushStatus == 1 || scope.row.pushStatus === '1'" type="success" size="small">已发布</el-tag>
+          <el-tag v-else-if="scope.row.pushStatus == 2 || scope.row.pushStatus === '2'" type="warning" size="small">发布失败</el-tag>
+          <el-tag v-else type="info" size="small">未发布</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="发布人" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.pushByName || resolveUserName(scope.row.pushBy) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="发布时间" align="center" prop="pushTime" width="165" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.pushTime ? parseTime(scope.row.pushTime, '{y}-{m}-{d} {h}:{i}:{s}') : '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="作废状态" align="center" width="90" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.voidWholeFlag == 1 || scope.row.voidWholeFlag === 1" type="danger" size="small">已作废</el-tag>
+          <el-tag v-else type="info" size="small">正常</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="作废人" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.voidWholeByName || resolveUserName(scope.row.voidWholeBy) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="作废时间" align="center" prop="voidWholeTime" width="165" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.voidWholeTime ? parseTime(scope.row.voidWholeTime, '{y}-{m}-{d} {h}:{i}:{s}') : '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
@@ -473,7 +537,7 @@
 </template>
 
 <script>
-import { listDingdan, getDingdan, publishDingdan , auditDingdan} from "@/api/caigou/dingdan";
+import { listDingdan, getDingdan, publishDingdan, auditDingdan, voidWholeDingdan } from "@/api/caigou/dingdan";
 import { getApplyDetails, getApplyBillNoList, getApplyBillHeaderList, getPurchasePlan } from "@/api/caigou/purchasePlan";
 import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier.vue';
@@ -522,6 +586,8 @@ export default {
         warehouseId: null,
         departmentId: null,
         orderStatus: null, // 单据状态查询条件
+        pushStatus: null,
+        dateType: 'createTime',
         userId: null,
         orderType: "1", // 采购订单类型
         beginDate: this.getStatDate(),
@@ -748,8 +814,9 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      this.queryParams.beginDate = null;
-      this.queryParams.endDate = null;
+      this.queryParams.dateType = 'createTime';
+      this.queryParams.beginDate = this.getStatDate();
+      this.queryParams.endDate = this.getEndDate();
       this.handleQuery();
     },
     // 多选框选中数据
@@ -777,8 +844,15 @@ export default {
         return;
       }
 
-      // 检查选中的订单是否都是已审核状态（状态为2）
       const selectedOrders = this.orderList.filter(item => this.ids.includes(item.id));
+      const voidedOrders = selectedOrders.filter(item => item.voidWholeFlag == 1 || item.voidWholeFlag === 1);
+      if (voidedOrders.length > 0) {
+        const info = voidedOrders.map(o => o.orderNo).join('、');
+        this.$modal.msgError(`已作废订单不能发布：${info}`);
+        return;
+      }
+
+      // 检查选中的订单是否都是已审核状态（状态为2）
       const invalidOrders = selectedOrders.filter(item => item.orderStatus !== '2' && item.orderStatus !== 2);
 
       if (invalidOrders.length > 0) {
@@ -797,6 +871,54 @@ export default {
       }).catch(() => {
         // 取消或失败都不处理
       }).catch(() => {});
+    },
+    /** 批量作废 */
+    handleBatchVoid() {
+      if (this.ids.length === 0) {
+        this.$modal.msgError("请先选择要作废的订单！");
+        return;
+      }
+      const selectedOrders = this.orderList.filter(item => this.ids.includes(item.id));
+      const published = selectedOrders.filter(item => item.pushStatus == 1 || item.pushStatus === '1');
+      if (published.length > 0) {
+        this.$modal.msgError(`已发布订单不能作废：${published.map(o => o.orderNo).join('、')}`);
+        return;
+      }
+      const voided = selectedOrders.filter(item => item.voidWholeFlag == 1 || item.voidWholeFlag === 1);
+      if (voided.length > 0) {
+        this.$modal.msgError(`以下订单已作废：${voided.map(o => o.orderNo).join('、')}`);
+        return;
+      }
+      const invalidStatus = selectedOrders.filter(item => {
+        const st = item.orderStatus;
+        return st !== '0' && st !== 0 && st !== '2' && st !== 2;
+      });
+      if (invalidStatus.length > 0) {
+        this.$modal.msgError(`仅待审核、已审核订单可作废：${invalidStatus.map(o => o.orderNo).join('、')}`);
+        return;
+      }
+      const orderNos = selectedOrders.map(item => item.orderNo).join('、');
+      this.$prompt('作废原因（选填）', '整单作废', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputType: 'textarea',
+        inputPlaceholder: '可填写作废说明'
+      }).then(({ value }) => {
+        return voidWholeDingdan(this.ids, value);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess('作废成功，共 ' + this.ids.length + ' 个订单');
+      }).catch(() => {});
+    },
+    resolveUserName(userKey) {
+      if (!userKey) return '--';
+      const user = this.userOptions.find(u =>
+        u.userId == userKey || String(u.userId) === String(userKey) ||
+        u.userName === userKey || u.nickName === userKey
+      );
+      if (user) return user.nickName || user.userName;
+      if (!/^\d+$/.test(String(userKey))) return userKey;
+      return '--';
     },
     /** 批量审核按钮操作 */
     handleBatchAudit() {

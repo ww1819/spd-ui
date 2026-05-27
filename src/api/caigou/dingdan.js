@@ -60,3 +60,12 @@ export function publishDingdan(ids) {
     data: { ids: ids }
   })
 }
+
+// 整单作废
+export function voidWholeDingdan(ids, reason) {
+  return request({
+    url: '/caigou/dingdan/voidWhole',
+    method: 'put',
+    data: { ids: ids, reason: reason || '' }
+  })
+}
