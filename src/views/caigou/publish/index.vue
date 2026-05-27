@@ -136,7 +136,26 @@
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="200" min-width="180" class-name="publish-col-supplier" resizable>
+        <template slot-scope="scope">
+          <span class="publish-cell-wrap">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="供应商编码" align="center" width="100" min-width="90" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatSpdSupplierCode(scope.row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="对照平台编码" align="center" width="165" min-width="150" class-name="publish-col-platform-code" resizable>
+        <template slot-scope="scope">
+          <span class="publish-cell-wrap publish-cell-code">{{ formatBindScmSupplierCode(scope.row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="发布平台编码" align="center" width="165" min-width="150" class-name="publish-col-platform-code" resizable>
+        <template slot-scope="scope">
+          <span class="publish-cell-wrap publish-cell-code">{{ formatOrderScmSupplierCode(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="订单时间" align="center" prop="orderDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.orderDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
@@ -269,6 +288,21 @@
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId" label-width="100px">
               <SelectWarehouse v-model="form.warehouseId" :disabled="true"/>
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
+            <el-form-item label="供应商编码" label-width="100px">
+              <el-input :value="formatSpdSupplierCode(form)" :disabled="true" placeholder="fd_supplier.code" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
+            <el-form-item label="对照平台编码" label-width="100px">
+              <el-input :value="formatBindScmSupplierCode(form)" :disabled="true" placeholder="绑定表当前对照" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
+            <el-form-item label="发布平台编码" label-width="100px">
+              <el-input :value="formatOrderScmSupplierCode(form)" :disabled="true" placeholder="订单发布回写" />
             </el-form-item>
           </el-col>
 
@@ -861,6 +895,12 @@ export default {
         return;
       }
 
+      const noBind = selectedOrders.filter(item => !this.formatBindScmSupplierCode(item) || this.formatBindScmSupplierCode(item) === '--');
+      if (noBind.length > 0) {
+        this.$modal.msgError(`以下订单供应商未维护平台供应商编码，无法发布：${noBind.map(o => o.orderNo).join('、')}`);
+        return;
+      }
+
       const orderNos = selectedOrders.map(item => item.orderNo).join('、');
 
       this.$modal.confirm('确定要发布选中的 ' + this.ids.length + ' 个订单吗？\n订单编号：' + orderNos).then(() => {
@@ -909,6 +949,24 @@ export default {
         this.getList();
         this.$modal.msgSuccess('作废成功，共 ' + this.ids.length + ' 个订单');
       }).catch(() => {});
+    },
+    /** SPD 系统供应商编码：fd_supplier.code */
+    formatSpdSupplierCode(row) {
+      if (!row) return '--';
+      const code = row.supplier && row.supplier.code != null ? String(row.supplier.code).trim() : '';
+      return code || '--';
+    },
+    /** 绑定表当前对照：spd_scm_supplier_bind.scm_supplier_code */
+    formatBindScmSupplierCode(row) {
+      if (!row) return '--';
+      const bind = row.bindScmSupplierCode != null ? String(row.bindScmSupplierCode).trim() : '';
+      return bind || '--';
+    },
+    /** 订单发布回写：purchase_order.scm_supplier_code */
+    formatOrderScmSupplierCode(row) {
+      if (!row) return '--';
+      const snap = row.scmSupplierCode != null ? String(row.scmSupplierCode).trim() : '';
+      return snap || '--';
     },
     resolveUserName(userKey) {
       if (!userKey) return '--';
@@ -1311,9 +1369,43 @@ export default {
 }
 
 .app-container.caigou-publish-page > .el-table.table-compact td {
-  padding: 12px 0;
+  padding: 6px 0;
   color: #606266;
   border-bottom: 1px solid #EBEEF5;
+}
+
+/* 供应商名称换行；平台编码完整显示：固定单元格可视高度，不撑高表格行 */
+.app-container.caigou-publish-page > .el-table.table-compact td.publish-col-supplier .cell,
+.app-container.caigou-publish-page > .el-table.table-compact td.publish-col-platform-code .cell {
+  height: 44px !important;
+  max-height: 44px !important;
+  padding: 4px 8px !important;
+  line-height: 18px !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+.app-container.caigou-publish-page .publish-cell-wrap {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  word-break: break-all;
+  word-wrap: break-word;
+  text-align: center;
+  width: 100%;
+  max-height: 36px;
+  line-height: 18px;
+}
+
+.app-container.caigou-publish-page .publish-cell-code {
+  font-size: 12px;
+  letter-spacing: 0;
 }
 
 .app-container.caigou-publish-page > .el-table.table-compact tr:hover > td {
