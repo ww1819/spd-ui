@@ -130,7 +130,7 @@
                       <SelectWarehouse v-model="queryParams.warehouseId"/>
                     </div>
                   </el-form-item>
-                  <el-form-item v-if="queryParams.fixedNumberType === '1'" label="启用状态" prop="enableStatus" class="query-item-inline">
+                  <el-form-item v-if="queryParams.fixedNumberType === '1'" label="监测启用" prop="enableStatus" class="query-item-inline">
                     <el-select v-model="queryParams.enableStatus" clearable placeholder="全部" style="width: 120px">
                       <el-option label="启用" value="0" />
                       <el-option label="停用" value="1" />
@@ -269,9 +269,15 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column v-if="queryParams.fixedNumberType === '1'" label="是否启用" align="center" prop="enableStatus" width="100" show-overflow-tooltip resizable>
+      <el-table-column v-if="queryParams.fixedNumberType === '1'" label="监测是否启用" align="center" prop="enableStatus" width="110" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-tag v-if="isRowDisabled(scope.row)" type="info" size="small">否</el-tag>
+          <el-tag v-else type="success" size="small">是</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="queryParams.fixedNumberType === '1'" label="档案是否启用" align="center" prop="materialIsUse" width="110" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <el-tag v-if="isMaterialArchiveDisabled(scope.row)" type="info" size="small">否</el-tag>
           <el-tag v-else type="success" size="small">是</el-tag>
         </template>
       </el-table-column>
@@ -1488,9 +1494,20 @@ export default {
       });
     },
     parseTime,
-    /** 是否已停用 */
+    /** 监测是否已停用（wh_fixed_number.enable_status：0启用 1停用） */
     isRowDisabled(row) {
       return row && (row.enableStatus === '1' || row.enableStatus === 1);
+    },
+    /** 产品档案是否停用（fd_material.is_use：1启用 2停用） */
+    resolveMaterialIsUse(row) {
+      if (!row) return null;
+      const v = row.materialIsUse != null ? row.materialIsUse
+        : (row.material && row.material.isUse != null ? row.material.isUse : null);
+      if (v == null || v === '') return null;
+      return String(v).trim();
+    },
+    isMaterialArchiveDisabled(row) {
+      return this.resolveMaterialIsUse(row) === '2';
     },
     /** 耗材是否高值（1=高值） */
     resolveMaterialIsGz(row) {
