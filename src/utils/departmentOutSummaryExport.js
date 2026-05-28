@@ -395,8 +395,47 @@ function detailSupplierGroupKey(row) {
   return s || '未维护供应商';
 }
 
+/** 出退库导出：按产品档案 storeroom_id 划分材料/试剂/未识别分类（与财务结算口径一致） */
+function resolveCtkMaterialKind(row) {
+  if (!row) return '未识别分类';
+
+  // 兼容：后端 Map key 可能被驱动/序列化变成不同大小写/下划线
+  const pick = (obj, keys) => {
+    for (const k of keys) {
+      if (!obj) continue;
+      if (Object.prototype.hasOwnProperty.call(obj, k)) {
+        const v = obj[k];
+        if (v != null && String(v).trim() !== '') return v;
+      }
+    }
+    return null;
+  };
+
+  const mkRaw = pick(row, ['materialKind', 'materialkind', 'material_kind', 'MATERIALKIND', 'MATERIAL_KIND']);
+  if (mkRaw != null) {
+    return String(mkRaw).trim();
+  }
+
+  let sidRaw = pick(row, ['storeroomId', 'storeroomid', 'storeroom_id', 'STOREROOMID', 'STOREROOM_ID']);
+  if (sidRaw == null && row.material) {
+    sidRaw = pick(row.material, ['storeroomId', 'storeroomid', 'storeroom_id']);
+  }
+
+  const sid = sidRaw == null ? NaN : Number(sidRaw);
+  if (sid === 11 || sid === 12) return '材料';
+  if (sid === 13) return '试剂';
+  return '未识别分类';
+}
+
+const CTK_KIND_BLOCKS = [
+  { kind: '材料', title: '材料数据' },
+  { kind: '试剂', title: '试剂数据' },
+  { kind: '未识别分类', title: '未识别分类数据' },
+];
+
 /**
- * 出/退库明细表：按供应商分段；每段标题为「供应商名称 + 出/退库明细 + 日期范围」；每段内序号从 1 起，段末合计数量、金额（红色）
+ * 出/退库明细表：先按库房分类分大块（材料/试剂/未识别分类），每块内再按供应商分段导出；
+ * 供应商段标题为「供应商名称 + 出/退库明细 + 日期范围」；段内序号从 1 起，段末合计数量、金额（红色）
  * @param {Object[]} options.rows listCTKWarehouse 返回行
  * @param {string} [options.beginDate]
  * @param {string} [options.endDate]
@@ -443,15 +482,16 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
   const qtyCol = 15;
   const amtCol = 16;
 
-  const bySupplier = new Map();
+  const byKind = new Map();
   rows.forEach((row) => {
-    const k = detailSupplierGroupKey(row);
-    if (!bySupplier.has(k)) bySupplier.set(k, []);
-    bySupplier.get(k).push(row);
+    const k = resolveCtkMaterialKind(row);
+    if (!byKind.has(k)) byKind.set(k, []);
+    byKind.get(k).push(row);
   });
-  const supplierNames = Array.from(bySupplier.keys()).sort((a, b) =>
-    a.localeCompare(b, 'zh-Hans-CN')
-  );
+  const kindBlocks = CTK_KIND_BLOCKS.filter((b) => {
+    const grp = byKind.get(b.kind);
+    return grp && grp.length > 0;
+  });
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('出退库明细', { views: [{ showGridLines: false }] });
@@ -530,62 +570,21 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
     r += 1;
   };
 
-  supplierNames.forEach((supplierName, blockIdx) => {
-    const grp = bySupplier.get(supplierName);
-    if (blockIdx > 0) {
-      r += 1;
-    }
-
-    ws.mergeCells(`A${r}:${colToLetter(colCount)}${r}`);
-    const titleCell = ws.getCell(r, 1);
-    titleCell.value = {
-      richText: [
-        { font: { ...FONT_TITLE, bold: true }, text: supplierName },
-        { font: { ...FONT_TITLE, bold: false }, text: `出/退库明细${datePart || ''}` },
-      ],
-    };
-    titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-    titleCell.border = {
-      top: BORDER_THIN,
-      left: BORDER_THIN,
-      bottom: BORDER_THIN,
-      right: BORDER_THIN,
-    };
-    ws.getRow(r).height = 26;
-    r += 1;
-
-    writeHeaderRow();
-
-    grp.forEach((row, ri) => {
-      writeDetailBodyRow(row, ri + 1);
-    });
-
-    for (let c = 1; c <= colCount; c++) {
-      const cell = ws.getCell(r, c);
-      cell.value = '';
-      cell.font = FONT_BODY;
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      setCellBorder(cell);
-    }
-    r += 1;
-
-    const totalQty = grp.reduce((s, row) => s + Number(row.materialQty || 0), 0);
-    const totalAmt = grp.reduce((s, row) => s + Number(row.materialAmt || 0), 0);
-
+  const writeTotalRow = (label, totalQty, totalAmt) => {
     for (let c = 1; c <= colCount; c++) {
       const cell = ws.getCell(r, c);
       setCellBorder(cell);
       if (c === 1) {
-        cell.value = '合计';
+        cell.value = label || '合计';
         cell.font = { ...FONT_BODY, bold: true };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       } else if (c === qtyCol) {
-        cell.value = totalQty;
+        cell.value = Number(totalQty || 0);
         cell.numFmt = '#,##0.00';
         cell.font = RED_NUM;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
       } else if (c === amtCol) {
-        cell.value = totalAmt;
+        cell.value = Number(totalAmt || 0);
         cell.numFmt = '#,##0.00';
         cell.font = RED_NUM;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -596,7 +595,110 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
       }
     }
     r += 1;
+  };
+
+  let grandTotalQty = 0;
+  let grandTotalAmt = 0;
+
+  kindBlocks.forEach((kb, kindIdx) => {
+    const kindRows = byKind.get(kb.kind) || [];
+    if (!kindRows.length) return;
+    if (kindIdx > 0) {
+      r += 1;
+    }
+
+    // 大块标题：材料数据 / 试剂数据 / 未识别分类数据
+    ws.mergeCells(`A${r}:${colToLetter(colCount)}${r}`);
+    const kindTitleCell = ws.getCell(r, 1);
+    kindTitleCell.value = {
+      richText: [
+        { font: { ...FONT_TITLE, bold: true }, text: kb.title },
+        { font: { ...FONT_TITLE, bold: false }, text: `${datePart || ''}` },
+      ],
+    };
+    kindTitleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    kindTitleCell.border = {
+      top: BORDER_THIN,
+      left: BORDER_THIN,
+      bottom: BORDER_THIN,
+      right: BORDER_THIN,
+    };
+    ws.getRow(r).height = 26;
+    r += 1;
+
+    // 供应商分段：保持原有格式
+    const bySupplier = new Map();
+    kindRows.forEach((row) => {
+      const k = detailSupplierGroupKey(row);
+      if (!bySupplier.has(k)) bySupplier.set(k, []);
+      bySupplier.get(k).push(row);
+    });
+    const supplierNames = Array.from(bySupplier.keys()).sort((a, b) =>
+      a.localeCompare(b, 'zh-Hans-CN')
+    );
+
+    let kindTotalQty = 0;
+    let kindTotalAmt = 0;
+
+    supplierNames.forEach((supplierName, blockIdx) => {
+      const grp = bySupplier.get(supplierName) || [];
+      if (!grp.length) return;
+      if (blockIdx > 0) {
+        r += 1;
+      }
+
+      ws.mergeCells(`A${r}:${colToLetter(colCount)}${r}`);
+      const titleCell = ws.getCell(r, 1);
+      titleCell.value = {
+        richText: [
+          { font: { ...FONT_TITLE, bold: true }, text: supplierName },
+          { font: { ...FONT_TITLE, bold: false }, text: `出/退库明细${datePart || ''}` },
+        ],
+      };
+      titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      titleCell.border = {
+        top: BORDER_THIN,
+        left: BORDER_THIN,
+        bottom: BORDER_THIN,
+        right: BORDER_THIN,
+      };
+      ws.getRow(r).height = 26;
+      r += 1;
+
+      writeHeaderRow();
+
+      grp.forEach((row, ri) => {
+        writeDetailBodyRow(row, ri + 1);
+      });
+
+      for (let c = 1; c <= colCount; c++) {
+        const cell = ws.getCell(r, c);
+        cell.value = '';
+        cell.font = FONT_BODY;
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        setCellBorder(cell);
+      }
+      r += 1;
+
+      const totalQty = grp.reduce((s, row) => s + Number(row.materialQty || 0), 0);
+      const totalAmt = grp.reduce((s, row) => s + Number(row.materialAmt || 0), 0);
+      kindTotalQty += totalQty;
+      kindTotalAmt += totalAmt;
+
+      writeTotalRow('合计', totalQty, totalAmt);
+    });
+
+    // 分类合计（材料/试剂/未识别分类）
+    writeTotalRow(`${kb.title}合计`, kindTotalQty, kindTotalAmt);
+    grandTotalQty += kindTotalQty;
+    grandTotalAmt += kindTotalAmt;
   });
+
+  // 最后一行总计
+  if (kindBlocks && kindBlocks.length) {
+    r += 1;
+  }
+  writeTotalRow('总计', grandTotalQty, grandTotalAmt);
 
   ws.getColumn(1).width = 8;
   ws.getColumn(2).width = 14;
