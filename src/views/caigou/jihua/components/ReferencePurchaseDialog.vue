@@ -565,7 +565,7 @@ export default {
           return
         }
         await yieldToMain()
-        const newRows = buildPlanRowsFromPurchaseEntries(entriesToAdd, this.planEntryMode)
+        const newRows = buildPlanRowsFromPurchaseEntries(entriesToAdd, this.planEntryMode, { isGz: this.isGz })
         if (!newRows.length) {
           this.$modal.msgWarning('未能生成计划明细，请检查申购单数据')
           return

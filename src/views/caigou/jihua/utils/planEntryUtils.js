@@ -65,10 +65,11 @@ export function normalizePurchaseEntry(entry, meta) {
   }
 }
 
-/** 引用申购明细 → 计划明细行 */
-export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode) {
+/** 引用申购明细 → 计划明细行；高值且按产品档案汇总时按 materialId+科室 汇总 */
+export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode, options = {}) {
   const newRows = []
   const mode = planEntryMode || '1'
+  const isGzHigh = options.isGz === '1' || options.isGz === 1
   if (mode === '2') {
     entriesToAdd.forEach(entry => {
       if (!entry.materialId && !(entry.material && entry.material.id)) return
@@ -99,7 +100,10 @@ export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode) {
     if (!entry.material && !entry.materialId) return
     const mid = entry.materialId || (entry.material && entry.material.id)
     const supplierId = materialArchiveSupplierId(entry)
-    const aggKey = `${mid}|${supplierId != null ? supplierId : ''}`
+    const deptId = entry._departmentId != null && entry._departmentId !== '' ? entry._departmentId : ''
+    const aggKey = isGzHigh
+      ? `${mid}|${deptId}`
+      : `${mid}|${supplierId != null ? supplierId : ''}`
     const q = Number(entry.qty) || 0
     const entryId = entry.id
     if (!byKey[aggKey]) {
@@ -114,6 +118,7 @@ export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode) {
         remark: entry.remark || '',
         supplierId,
         planSource: '引用申购单',
+        applyDepartmentId: isGzHigh && deptId !== '' ? deptId : undefined,
         depApplyEntryIds: [],
         _billNoSet: new Set()
       }
