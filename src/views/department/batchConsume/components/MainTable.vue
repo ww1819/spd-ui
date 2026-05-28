@@ -54,7 +54,7 @@
       </template>
     </el-table-column>
     <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-    <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+    <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right">
       <template slot-scope="scope">
         <span style="white-space: nowrap; display: inline-block;">
           <el-button
@@ -64,6 +64,15 @@
             v-if="scope.row.consumeBillStatus == 2"
             style="padding: 0 5px; margin: 0;"
           >查看</el-button>
+          <el-button
+            size="small"
+            type="text"
+            class="reverse-action-btn"
+            @click="handleReverse(scope.row)"
+            v-hasPermi="['department:batchConsume:reverse']"
+            v-if="isRowReverseable(scope.row)"
+            style="padding: 0 5px; margin: 0;"
+          >退消耗</el-button>
           <el-button
             size="small"
             type="text"
@@ -102,9 +111,16 @@ export default {
     queryParams: {
       type: Object,
       default: () => ({})
+    },
+    canRowReverse: {
+      type: Function,
+      default: null
     }
   },
   methods: {
+    isRowReverseable(row) {
+      return typeof this.canRowReverse === 'function' && this.canRowReverse(row);
+    },
     rowClassName({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
@@ -119,7 +135,16 @@ export default {
     },
     handleDelete(row) {
       this.$emit('delete', row);
+    },
+    handleReverse(row) {
+      this.$emit('reverse', row);
     }
   }
 };
 </script>
+
+<style scoped>
+.reverse-action-btn {
+  color: #e6a23c;
+}
+</style>

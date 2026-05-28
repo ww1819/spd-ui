@@ -118,10 +118,12 @@
       :loading="loading"
       :table-data="consumeList"
       :query-params="queryParams"
+      :can-row-reverse="canReverseConsumeRow"
       @selection-change="handleSelectionChange"
       @view="handleView"
       @update="handleUpdate"
       @delete="handleDelete"
+      @reverse="handleRowReverse"
     />
 
     <div class="pagination-bottom-wrap">
@@ -845,17 +847,19 @@ export default {
     handleConsumeEntrySelectionChange(selection) {
       this.checkedConsumeEntry = selection.map(item => item.index)
     },
+    canReverseConsumeRow(row) {
+      if (!row) return false;
+      const audited = row.consumeBillStatus == 2 || row.consumeBillStatus === '2';
+      const isReverseBill = row.reverseFlag == 1 || row.reverseFlag === '1';
+      const hisBlocked = row.disallowReverse == 1 || row.disallowReverse === '1';
+      return audited && !isReverseBill && !hisBlocked;
+    },
     canReverseSelected() {
       if (!this.ids || this.ids.length !== 1) {
         return false;
       }
       const selected = (this.consumeList || []).find(item => item.id === this.ids[0]);
-      if (!selected) {
-        return false;
-      }
-      const audited = (selected.consumeBillStatus == 2 || selected.consumeBillStatus === '2');
-      const isReverseBill = (selected.reverseFlag == 1 || selected.reverseFlag === '1');
-      return audited && !isReverseBill;
+      return this.canReverseConsumeRow(selected);
     },
     getReverseButtonTip() {
       if (!this.ids || this.ids.length === 0) return '请先选择一条单据';
@@ -864,7 +868,13 @@ export default {
       if (!selected) return '未找到选中单据';
       if (!(selected.consumeBillStatus == 2 || selected.consumeBillStatus === '2')) return '仅已审核单据可退消耗';
       if (selected.reverseFlag == 1 || selected.reverseFlag === '1') return '退消耗单不能再次退消耗';
+      if (selected.disallowReverse == 1 || selected.disallowReverse === '1') {
+        return 'HIS计费产生的消耗请到「患者收费查询」冲销';
+      }
       return '对当前已审核正向消耗单执行退消耗';
+    },
+    handleRowReverse(row) {
+      this.openReverseDialogForRow(row);
     },
     openReverseDialog() {
       if (!this.ids || this.ids.length !== 1) {
@@ -872,16 +882,25 @@ export default {
         return;
       }
       const selected = (this.consumeList || []).find(item => item.id === this.ids[0]);
-      if (!selected) {
+      this.openReverseDialogForRow(selected);
+    },
+    openReverseDialogForRow(row) {
+      if (!row || row.id == null) {
         this.$modal.msgError("未找到选中的消耗单");
         return;
       }
-      if (!(selected.consumeBillStatus == 2 || selected.consumeBillStatus === '2')) {
-        this.$modal.msgError("仅支持对已审核消耗单执行退消耗");
+      if (!this.canReverseConsumeRow(row)) {
+        if (row.disallowReverse == 1 || row.disallowReverse === '1') {
+          this.$modal.msgError("该单来源于HIS计费消耗，请到「患者收费查询」冲销");
+        } else if (row.reverseFlag == 1 || row.reverseFlag === '1') {
+          this.$modal.msgError("退消耗单不能再次退消耗");
+        } else {
+          this.$modal.msgError("仅支持对已审核正向消耗单执行退消耗");
+        }
         return;
       }
-      this.reverseTargetConsumeId = selected.id;
-      reverseEntryList(selected.id).then(response => {
+      this.reverseTargetConsumeId = row.id;
+      reverseEntryList(row.id).then(response => {
         const rows = (response && response.data) || [];
         if (!rows.length) {
           this.$modal.msgError("该单据没有可退消耗明细");
