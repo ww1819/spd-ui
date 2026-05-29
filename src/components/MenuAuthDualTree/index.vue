@@ -5,6 +5,7 @@
       <span class="legend-col legend-select">本次选择</span>
       <span class="legend-name">菜单名称</span>
     </div>
+    <p v-if="showHint" class="menu-auth-dual-tree-hint">{{ hintText }}</p>
     <el-tree
       ref="tree"
       class="menu-auth-dual-tree-body"
@@ -47,6 +48,13 @@ export default {
     existingMenuIds: { type: Array, default: () => [] },
     /** 开启后勾选父级自动勾选子孙，勾选子级自动勾选父级；关闭则仅勾选当前节点 */
     parentChildLinked: { type: Boolean, default: false },
+    /** 树加载后把「已有权限」同步勾选到「本次选择」，避免误以为只需勾新增项 */
+    autoPreselectExisting: { type: Boolean, default: true },
+    showHint: { type: Boolean, default: true },
+    hintText: {
+      type: String,
+      default: '左列为打开时的已有权限（只读）；右列已预填当前权限，保存以右列勾选结果为准（全量替换，非增量补充）。'
+    },
     nodeKey: { type: String, default: 'id' },
     treeProps: {
       type: Object,
@@ -58,7 +66,8 @@ export default {
   },
   data() {
     return {
-      selectedMap: {}
+      selectedMap: {},
+      didAutoPreselect: false
     };
   },
   computed: {
@@ -82,6 +91,15 @@ export default {
       handler(ids) {
         this.syncSelectedFromValue(ids);
       }
+    },
+    data(nodes) {
+      if (nodes && nodes.length) {
+        this.syncSelectedFromValue(this.value);
+        this.tryAutoPreselectExisting();
+      }
+    },
+    existingMenuIds() {
+      this.tryAutoPreselectExisting();
     }
   },
   methods: {
@@ -250,6 +268,29 @@ export default {
       Object.values(tree.store.nodesMap).forEach(n => {
         n.expanded = !!expanded;
       });
+    },
+    tryAutoPreselectExisting() {
+      if (!this.autoPreselectExisting || this.didAutoPreselect) return;
+      if (!this.data || !this.data.length) return;
+      if (!this.existingMenuIds || !this.existingMenuIds.length) return;
+      const allowed = new Set(this.getCheckableIds(this.data).map(id => String(id)));
+      let changed = false;
+      (this.existingMenuIds || []).forEach(id => {
+        const s = String(id);
+        if (allowed.has(s) && !this.selectedMap[s]) {
+          this.$set(this.selectedMap, s, true);
+          changed = true;
+        }
+      });
+      if (changed) {
+        this.didAutoPreselect = true;
+        this.emitValue();
+      } else {
+        this.didAutoPreselect = true;
+      }
+    },
+    resetAutoPreselectState() {
+      this.didAutoPreselect = false;
     }
   }
 };
@@ -262,6 +303,15 @@ export default {
   align-items: center;
   width: 100%;
   font-size: 13px;
+}
+.menu-auth-dual-tree-hint {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e6a23c;
+  background: #fdf6ec;
+  border-radius: 4px;
 }
 .menu-auth-dual-tree-legend {
   padding: 6px 0 8px;

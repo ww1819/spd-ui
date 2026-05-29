@@ -266,6 +266,7 @@ import { getOptionselect as getWarehouseOptionselect } from "@/api/foundation/wa
 import { listdepartAll } from "@/api/foundation/depart";
 import { getToken } from "@/utils/auth";
 import MenuAuthDualTree from "@/components/MenuAuthDualTree";
+import { mergeMenuAuthIds, filterMenuIdsByAllowed, toMenuIdNumbers } from "@/utils/menuAuthUtils";
 
 export default {
   name: "Post",
@@ -703,7 +704,7 @@ export default {
           departmentIds: departmentIds,
           warehouseIds: warehouseIds
         };
-        this.authExistingMenuIds = Array.isArray(menuIds) ? menuIds.slice() : [];
+        this.authExistingMenuIds = toMenuIdNumbers(menuIds);
         console.log('初始化授权数据 - authForm:', this.authForm);
         // 获取菜单树
         return this.getMenuTree();
@@ -746,6 +747,9 @@ export default {
         this.authOpen = true;
         // 使用多个 nextTick 确保菜单树完全渲染
         this.$nextTick(() => {
+          if (this.$refs.menuAuthDualTree) {
+            this.$refs.menuAuthDualTree.resetAutoPreselectState();
+          }
           this.$nextTick(() => {
             this.applyAuthMenuSelectionFromForm();
           });
@@ -762,14 +766,14 @@ export default {
         this.menuOptions = [];
         return Promise.resolve();
       }
+      const savedExisting = toMenuIdNumbers(this.authExistingMenuIds);
       return roleMenuTreeselectPost(postId).then(response => {
         this.menuOptions = this.normalizeAuthMenuTree(response.menus || []);
         const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
-        if (response.checkedKeys != null) {
-          const keys = response.checkedKeys.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
-          this.authForm.menuIds = keys;
-          this.authExistingMenuIds = keys.slice();
-        }
+        const checked = response.checkedKeys != null ? response.checkedKeys : [];
+        const merged = mergeMenuAuthIds(savedExisting, checked);
+        this.authForm.menuIds = filterMenuIdsByAllowed(merged, allowed);
+        this.authExistingMenuIds = filterMenuIdsByAllowed(savedExisting, allowed);
         return response;
       });
     },
@@ -923,8 +927,16 @@ export default {
           this.authForm.menuIds = post.menuIds || [];
           this.authForm.departmentIds = post.departmentIds || [];
           this.authForm.warehouseIds = post.warehouseIds || [];
-          this.authExistingMenuIds = Array.isArray(post.menuIds) ? post.menuIds.slice() : [];
-          this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
+          const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
+          const filtered = filterMenuIdsByAllowed(post.menuIds || [], allowed);
+          this.authExistingMenuIds = filtered.slice();
+          this.authForm.menuIds = filtered;
+          this.$nextTick(() => {
+            if (this.$refs.menuAuthDualTree) {
+              this.$refs.menuAuthDualTree.resetAutoPreselectState();
+            }
+            this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
+          });
         } else if (post.remark) {
           // 兼容旧数据：如果新字段为空，尝试从remark字段解析
           try {
@@ -933,8 +945,16 @@ export default {
             this.authForm.menuIds = savedPermissions.menuIds || [];
             this.authForm.departmentIds = savedPermissions.departmentIds || [];
             this.authForm.warehouseIds = savedPermissions.warehouseIds || [];
-            this.authExistingMenuIds = Array.isArray(savedPermissions.menuIds) ? savedPermissions.menuIds.slice() : [];
-            this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
+            const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
+            const filtered = filterMenuIdsByAllowed(savedPermissions.menuIds || [], allowed);
+            this.authExistingMenuIds = filtered.slice();
+            this.authForm.menuIds = filtered;
+            this.$nextTick(() => {
+              if (this.$refs.menuAuthDualTree) {
+                this.$refs.menuAuthDualTree.resetAutoPreselectState();
+              }
+              this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
+            });
           } catch (e) {
             console.error('解析保存的权限失败:', e);
           }

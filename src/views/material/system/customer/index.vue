@@ -168,6 +168,7 @@
 <script>
 import { addCustomer, delCustomer, getTenantEnumList } from '@/api/system/customer'
 import { listHcCustomers, getHcCustomer, updateHcCustomer, changeHcStatus, getCustomerStatusLogs, getCustomerPeriodLogs, treeselectHcMenu, getHcCustomerMenuIds, saveHcCustomerMenus, resetEquipmentFunctions, resetMaterialFunctions, initFullDatabase, purgeConsumablesData, purgeEquipmentData } from '@/api/material/customer'
+import { toMenuIdNumbers } from '@/utils/menuAuthUtils'
 import MenuAuthDualTree from '@/components/MenuAuthDualTree'
 
 export default {
@@ -281,9 +282,12 @@ export default {
         const allowed = this.collectCustomerMenuTreeIds(this.menuOptions)
         const filtered = ids.map(String).filter(id => allowed.has(id))
         this.menuExistingIds = filtered.slice()
-        this.menuSelectedIds = filtered.map(id => {
-          const n = Number(id)
-          return isNaN(n) ? id : n
+        this.menuSelectedIds = toMenuIdNumbers(filtered)
+        this.$nextTick(() => {
+          if (this.$refs.menuAuthDualTree) {
+            this.$refs.menuAuthDualTree.resetAutoPreselectState()
+            this.$refs.menuAuthDualTree.setSelectedIds(this.menuSelectedIds)
+          }
         })
       })
     },

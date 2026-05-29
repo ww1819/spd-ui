@@ -571,6 +571,7 @@ import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import MenuAuthDualTree from "@/components/MenuAuthDualTree";
+import { mergeMenuAuthIds, filterMenuIdsByAllowed, toMenuIdNumbers } from "@/utils/menuAuthUtils";
 
 export default {
   name: "User",
@@ -980,25 +981,25 @@ export default {
         this.userWarehouseOptions = response.warehouses;
         this.userDepartmentOptions = response.departments;
         // 载入授权数据
-        const menuIds = response.menuIds || [];
-        console.log('获取到的菜单权限:', menuIds);
+        const savedMenuIds = response.menuIds || [];
+        console.log('获取到的菜单权限:', savedMenuIds);
         this.authForm = {
           userId: response.data.userId,
-          menuIds: menuIds,
+          menuIds: savedMenuIds,
           departmentIds: response.departmentIds || [],
           warehouseIds: response.warehouseIds || []
         };
-        this.authExistingMenuIds = Array.isArray(menuIds) ? menuIds.slice() : [];
+        this.authExistingMenuIds = toMenuIdNumbers(savedMenuIds);
         const cid = response.data && response.data.customerId;
-        // 租户用户：树展示本客户 hc_customer_menu 已开通的全部功能，勾选来自接口 checkedKeys
+        // 租户用户：树展示本客户已开通菜单；右列预填「已有 + 树接口勾选」并集，避免误以为只需勾新增项
         if (cid) {
           return roleMenuTreeselectUser(userId).then(res => {
             this.menuOptions = this.normalizeAuthMenuTree(res.menus || []);
             const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
-            const ck = res.checkedKeys != null ? res.checkedKeys : [];
-            const keys = ck.map(id => Number(id)).filter(id => !isNaN(id) && id > 0 && allowed.has(id));
-            this.authForm.menuIds = keys;
-            this.authExistingMenuIds = keys.slice();
+            const checked = res.checkedKeys != null ? res.checkedKeys : [];
+            const merged = mergeMenuAuthIds(savedMenuIds, checked);
+            this.authForm.menuIds = filterMenuIdsByAllowed(merged, allowed);
+            this.authExistingMenuIds = filterMenuIdsByAllowed(savedMenuIds, allowed);
             return res;
           });
         }
@@ -1006,8 +1007,13 @@ export default {
         this.$modal.msgWarning('该用户未绑定租户，无法分配耗材菜单权限');
         return Promise.resolve();
       }).then(() => {
-        this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
         this.authOpen = true;
+        this.$nextTick(() => {
+          if (this.$refs.menuAuthDualTree) {
+            this.$refs.menuAuthDualTree.resetAutoPreselectState();
+          }
+          this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
+        });
       });
     },
     applyAuthMenuSelectionFromForm() {
@@ -1090,9 +1096,16 @@ export default {
         return getUser(userId);
       }).then(response => {
         const savedMenuIds = response.menuIds || [];
-        this.authForm.menuIds = savedMenuIds;
-        this.authExistingMenuIds = Array.isArray(savedMenuIds) ? savedMenuIds.slice() : [];
-        this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
+        const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
+        const filtered = filterMenuIdsByAllowed(savedMenuIds, allowed);
+        this.authForm.menuIds = filtered;
+        this.authExistingMenuIds = filtered.slice();
+        this.$nextTick(() => {
+          if (this.$refs.menuAuthDualTree) {
+            this.$refs.menuAuthDualTree.resetAutoPreselectState();
+          }
+          this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
+        });
       }).catch(error => {
         this.$modal.msgError("授权保存失败：" + (error.msg || error.message || error || '未知错误'));
       });
