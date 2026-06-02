@@ -87,6 +87,27 @@ export function updateHisChargeItemValueLevel(data) {
   })
 }
 
+// 批量维护 HIS 收费项目高低值属性
+export function batchUpdateHisChargeItemValueLevel(data) {
+  return request({
+    url: '/foundation/material/hisChargeItem/valueLevel/batch',
+    method: 'put',
+    // 大批量跨页勾选时，给后端分批更新留足时间
+    timeout: 120000,
+    data
+  })
+}
+
+// 将产品档案 is_gz 同步到已对照 HIS 收费项目的 value_level
+export function syncMaterialValueLevelToHisChargeItem(data) {
+  return request({
+    url: '/foundation/material/syncHisChargeItemValueLevel',
+    method: 'put',
+    timeout: 120000,
+    data
+  })
+}
+
 // 绑定耗材与 HIS 收费项目（his_id = charge_item_id）
 export function bindMaterialHisChargeItem(data) {
   return request({
