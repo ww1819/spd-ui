@@ -686,18 +686,26 @@ export default {
       const postId = row.postId || row;
       const postName = row.postName || (typeof row === 'string' ? row : '');
       this.authTitle = `授权 - ${postName || postId}`;
-      getPost(postId).then(response => {
-        const post = response.data;
+      const currentUserId = this.$store?.state?.user?.userId || 1;
+      Promise.all([
+        getPost(postId),
+        roleMenuTreeselectPost(postId),
+        getWarehouseOptionselect().catch(error => {
+          console.error('获取仓库列表失败:', error);
+          return { data: [] };
+        }),
+        listdepartAll(currentUserId).catch(error => {
+          console.error('获取科室列表失败:', error);
+          return [];
+        })
+      ]).then(([postRes, menuRes, warehouseRes, departmentRes]) => {
+        const post = postRes.data;
         console.log('打开授权弹窗 - 获取工作组信息:', post);
-        
-        // 从后端返回的权限字段加载权限数据
+
         const menuIds = post.menuIds || [];
         const departmentIds = post.departmentIds || [];
         const warehouseIds = post.warehouseIds || [];
-        
-        console.log('获取到的权限数据 - menuIds:', menuIds, 'departmentIds:', departmentIds, 'warehouseIds:', warehouseIds);
-        
-        // 初始化授权数据
+
         this.authForm = {
           postId: postId,
           menuIds: menuIds,
@@ -705,54 +713,32 @@ export default {
           warehouseIds: warehouseIds
         };
         this.authExistingMenuIds = toMenuIdNumbers(menuIds);
-        console.log('初始化授权数据 - authForm:', this.authForm);
-        // 获取菜单树
-        return this.getMenuTree();
-      }).then(() => {
-        // 获取科室和仓库选项
-        // 获取当前登录用户ID（用于获取所有仓库和科室）
-        const currentUserId = this.$store?.state?.user?.userId || 1; // 默认使用管理员ID
-        return Promise.all([
-          // 获取所有仓库
-          getWarehouseOptionselect().then(response => {
-            console.log('获取仓库列表 - response:', response);
-            // 将仓库数据转换为 {id, name} 格式
-            const warehouses = response.data || response || [];
-            this.userWarehouseOptions = warehouses.map(item => ({
-              id: item.id,
-              name: item.name
-            }));
-            console.log('处理后的仓库列表:', this.userWarehouseOptions);
-          }).catch(error => {
-            console.error('获取仓库列表失败:', error);
-            this.userWarehouseOptions = [];
-          }),
-          // 获取所有科室
-          listdepartAll(currentUserId).then(response => {
-            console.log('获取科室列表 - response:', response);
-            // 将科室数据转换为 {id, name} 格式
-            const departments = response || [];
-            this.userDepartmentOptions = departments.map(item => ({
-              id: item.id,
-              name: item.name
-            }));
-            console.log('处理后的科室列表:', this.userDepartmentOptions);
-          }).catch(error => {
-            console.error('获取科室列表失败:', error);
-            this.userDepartmentOptions = [];
-          })
-        ]);
-      }).then(() => {
-        // 确保弹窗打开后再设置菜单树选中状态
+
+        const warehouses = warehouseRes.data || warehouseRes || [];
+        this.userWarehouseOptions = warehouses.map(item => ({
+          id: item.id,
+          name: item.name
+        }));
+
+        const departments = departmentRes || [];
+        this.userDepartmentOptions = departments.map(item => ({
+          id: item.id,
+          name: item.name
+        }));
+
+        this.menuOptions = this.normalizeAuthMenuTree(menuRes.menus || []);
+        const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
+        const checked = menuRes.checkedKeys != null ? menuRes.checkedKeys : [];
+        const merged = mergeMenuAuthIds(this.authExistingMenuIds, checked);
+        this.authForm.menuIds = filterMenuIdsByAllowed(merged, allowed);
+        this.authExistingMenuIds = filterMenuIdsByAllowed(toMenuIdNumbers(menuIds), allowed);
+
         this.authOpen = true;
-        // 使用多个 nextTick 确保菜单树完全渲染
         this.$nextTick(() => {
           if (this.$refs.menuAuthDualTree) {
             this.$refs.menuAuthDualTree.resetAutoPreselectState();
           }
-          this.$nextTick(() => {
-            this.applyAuthMenuSelectionFromForm();
-          });
+          this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
         });
       }).catch(error => {
         console.error('打开授权弹窗失败:', error);
