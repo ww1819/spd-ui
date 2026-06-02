@@ -92,24 +92,6 @@ export function processMirrorLowValueBatch(data) {
   })
 }
 
-export function scanMirrorHighBarcode(data) {
-  return request({
-    url: '/his/patientCharge/mirror/scanHighBarcode',
-    method: 'post',
-    timeout: 60000,
-    data
-  })
-}
-
-export function applyMirrorHighConsume(data) {
-  return request({
-    url: '/his/patientCharge/mirror/applyHighConsume',
-    method: 'post',
-    timeout: 120000,
-    data
-  })
-}
-
 /** 租户计费自动处理开关（衡水三院：抓取后自动消耗 / 自动退费） */
 export function getTenantBillingSetting() {
   return request({

@@ -72,6 +72,7 @@
             <el-select v-model="detailQuery.valueLevel" placeholder="全部" clearable style="width:120px">
               <el-option label="高值收费项" value="1" />
               <el-option label="低值收费项" value="2" />
+              <el-option label="未识别" value="0" />
             </el-select>
           </el-form-item>
           <el-form-item label="计费日期">
@@ -119,7 +120,7 @@
           class="pc-detail-table"
           @selection-change="rows => (detailSelection = rows)"
         >
-          <el-table-column type="selection" width="48" align="center" :selectable="row => row.processStatus === 'PENDING_CONSUME'" />
+          <el-table-column type="selection" width="48" align="center" :selectable="row => canProcessLow(row)" />
           <el-table-column label="类型" prop="visitType" width="80">
             <template slot-scope="scope">
               <span>{{ scope.row.visitType === 'INPATIENT' ? '住院' : '门诊' }}</span>
@@ -179,22 +180,15 @@
           <el-table-column label="处理方" prop="processParty" width="100" show-overflow-tooltip />
           <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
           <el-table-column label="本地入库" prop="createTime" width="160" />
-          <el-table-column label="操作" align="center" width="280" fixed="right">
+          <el-table-column label="操作" align="center" width="220" fixed="right">
             <template slot-scope="scope">
               <el-button
                 type="text"
                 size="mini"
                 v-hasPermi="['department:patientCharge:generateConsume','department:patientCharge:processMirrorLow']"
-                :disabled="scope.row.processStatus !== 'PENDING_CONSUME'"
+                :disabled="!canProcessLow(scope.row)"
                 @click="processLowValue(scope.row)"
               >低值</el-button>
-              <el-button
-                type="text"
-                size="mini"
-                v-hasPermi="['department:patientCharge:generateConsume','department:patientCharge:processMirrorHigh']"
-                :disabled="scope.row.processStatus === 'CONSUMED'"
-                @click="openHighDialog(scope.row)"
-              >高值</el-button>
               <el-button
                 type="text"
                 size="mini"
@@ -320,50 +314,6 @@
       </div>
     </el-dialog>
 
-    <el-dialog title="高值计费扫码消耗" :visible.sync="highDialogVisible" width="960px" append-to-body @closed="resetHighDialog">
-      <div v-if="highMirrorRow" class="mb8">
-        <span>患者 {{ highMirrorRow.patientName }} · 计费数量 {{ highMirrorRow.quantity }} · </span>
-        <span v-if="highBillRemaining != null">当前剩余计费数量 {{ highBillRemaining }}</span>
-      </div>
-      <el-alert type="warning" :closable="false" show-icon class="mb8" title="请扫描本科室高值院内码；虚拟库存满足才可带出；可多次扫码、修改本次消耗数量后一次保存并审核；审核时再次校验库存。" />
-      <el-input
-        ref="highScanInput"
-        v-model="highScanCode"
-        placeholder="扫描或输入院内码后回车"
-        clearable
-        @keyup.enter.native="doHighScan"
-      />
-      <el-table :data="highLines" border size="small" class="mt8 high-consume-dialog-table" empty-text="请先扫码添加行">
-        <el-table-column label="院内码" prop="inHospitalCode" min-width="220" align="left" class-name="high-col-code-wrap" />
-        <el-table-column label="耗材" prop="materialName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="批次号" prop="batchNo" min-width="200" align="left" class-name="high-col-code-wrap" />
-        <el-table-column label="虚拟库存" prop="gzAvailableQty" width="90" align="right" />
-        <el-table-column label="本次消耗" width="130" align="center">
-          <template slot-scope="scope">
-            <el-input-number
-              v-model="scope.row.applyQty"
-              :min="0.000001"
-              :max="Number(scope.row.maxApplyQty)"
-              :precision="6"
-              :step="1"
-              size="mini"
-              controls-position="right"
-              style="width:120px"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="80" align="center">
-          <template slot-scope="scope">
-            <el-button type="text" size="mini" @click="removeHighLine(scope.$index)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="highDialogVisible = false">取 消</el-button>
-        <el-button type="primary" :loading="highSubmitting" :disabled="highLines.length === 0" @click="submitHighConsume">保存并审核</el-button>
-      </div>
-    </el-dialog>
-
     <el-dialog :title="fetchDialogTitle" :visible.sync="fetchDialogVisible" width="520px" append-to-body @close="resetFetchForm">
       <el-form :model="fetchForm" label-width="100px" size="small">
         <el-form-item label="开始时间" required>
@@ -413,8 +363,6 @@ import {
   fetchOutpatientMirror,
   processMirrorLowValue,
   processMirrorLowValueBatch,
-  scanMirrorHighBarcode,
-  applyMirrorHighConsume,
   listMirrorConsumeRecords,
   writeOffMirrorLowValue
 } from '@/api/department/patientCharge'
@@ -460,12 +408,6 @@ export default {
         fetchInpatient: true,
         fetchOutpatient: true
       },
-      highDialogVisible: false,
-      highSubmitting: false,
-      highMirrorRow: null,
-      highScanCode: '',
-      highLines: [],
-      highBillRemaining: null,
       consumeRecordDialog: {
         visible: false,
         loading: false,
@@ -544,7 +486,22 @@ export default {
     valueLevelText(v) {
       if (v === '1' || v === 1) return '高值'
       if (v === '2' || v === 2) return '低值'
-      return v ? String(v) : '未对照'
+      if (v === '0' || v === 0) return '未识别'
+      return v ? String(v) : '未识别'
+    },
+    isUnknownValueLevel(row) {
+      const v = row && row.valueLevel
+      return v === '0' || v === 0 || v == null || v === ''
+    },
+    isLowValueLevel(row) {
+      const v = row && row.valueLevel
+      return v === '2' || v === 2
+    },
+    canProcessLow(row) {
+      if (!row || row.processStatus !== 'PENDING_CONSUME') {
+        return false
+      }
+      return this.isLowValueLevel(row)
     },
     consumeBillStatusText(v) {
       if (v === 1 || v === '1') return '未审核'
@@ -707,7 +664,7 @@ export default {
       return tf != null && String(tf).trim() !== ''
     },
     canWriteOffLow(row) {
-      if (!row || row.valueLevel === '1' || row.valueLevel === 1) {
+      if (!row || !this.isLowValueLevel(row)) {
         return false
       }
       if (row.processStatus === 'CONSUMED' && row.processType === 'LOW_VALUE') {
@@ -747,6 +704,14 @@ export default {
       }).catch(() => {})
     },
     processLowValue(row) {
+      if (this.isUnknownValueLevel(row)) {
+        this.$modal.msgWarning('收费项目未维护高低值标识，请先在耗材档案维护是否高值后再核销')
+        return
+      }
+      if (!this.isLowValueLevel(row)) {
+        this.$modal.msgWarning('该行为高值收费项，请至高值管理-高值使用-高值扫描核销处理')
+        return
+      }
       const visitKind = row && row.visitType ? row.visitType : this.currentVisitKind
       this.$modal.confirm('按低值一次性扣减：须一次满足整行计费数量的科室二级库库存；不足则不会生成消耗，本行仍为「待处理」。是否继续？').then(() => {
         return processMirrorLowValue({ visitKind, mirrorRowId: row.id })
@@ -760,7 +725,7 @@ export default {
     },
     batchProcessLowValue() {
       if (!this.detailSelection.length) {
-        this.$modal.msgWarning('请先勾选待处理的计费明细')
+        this.$modal.msgWarning('请先勾选待处理的低值计费明细')
         return
       }
       if (this.detailVisitType === 'ALL') {
@@ -787,81 +752,6 @@ export default {
           this.handleDetailQuery()
         })
         .catch(() => {})
-    },
-    openHighDialog(row) {
-      this.highMirrorRow = row
-      this.highLines = []
-      this.highScanCode = ''
-      this.highBillRemaining = null
-      this.highDialogVisible = true
-      this.$nextTick(() => {
-        if (this.$refs.highScanInput && this.$refs.highScanInput.focus) {
-          this.$refs.highScanInput.focus()
-        }
-      })
-    },
-    resetHighDialog() {
-      this.highMirrorRow = null
-      this.highLines = []
-      this.highScanCode = ''
-      this.highBillRemaining = null
-    },
-    doHighScan() {
-      const code = (this.highScanCode || '').trim()
-      if (!code || !this.highMirrorRow) {
-        return
-      }
-      scanMirrorHighBarcode({
-        visitKind: this.highMirrorRow && this.highMirrorRow.visitType ? this.highMirrorRow.visitType : this.currentVisitKind,
-        mirrorRowId: this.highMirrorRow.id,
-        inHospitalCode: code
-      }).then(res => {
-        const d = res.data || {}
-        if (d.billRemainingQty != null) {
-          this.highBillRemaining = d.billRemainingQty
-        }
-        const maxQ = Number(d.maxApplyQty)
-        const line = {
-          gzDepInventoryId: d.gzDepInventoryId,
-          inHospitalCode: d.inHospitalCode,
-          materialName: d.materialName,
-          batchNo: d.batchNo,
-          gzAvailableQty: d.gzAvailableQty,
-          maxApplyQty: d.maxApplyQty,
-          applyQty: maxQ > 0 ? maxQ : undefined
-        }
-        this.highLines.push(line)
-        this.highScanCode = ''
-      })
-    },
-    removeHighLine(index) {
-      this.highLines.splice(index, 1)
-    },
-    submitHighConsume() {
-      if (!this.highMirrorRow || this.highLines.length === 0) {
-        return
-      }
-      for (const ln of this.highLines) {
-        if (ln.applyQty == null || Number(ln.applyQty) <= 0) {
-          this.$modal.msgWarning('请填写每行本次消耗数量')
-          return
-        }
-        if (Number(ln.applyQty) > Number(ln.maxApplyQty)) {
-          this.$modal.msgWarning('本次消耗不能超过「最大可消耗」')
-          return
-        }
-      }
-      this.highSubmitting = true
-      applyMirrorHighConsume({
-        visitKind: this.highMirrorRow && this.highMirrorRow.visitType ? this.highMirrorRow.visitType : this.currentVisitKind,
-        mirrorRowId: this.highMirrorRow.id,
-        lines: this.highLines.map(l => ({ gzDepInventoryId: l.gzDepInventoryId, qty: l.applyQty }))
-      }).then(res => {
-        const d = res.data || {}
-        this.$modal.msgSuccess(`消耗单 ${d.consumeBillId || ''} 已审核；镜像状态 ${d.mirrorProcessStatus || ''}；剩余计费数量 ${d.remainingBillQty != null ? d.remainingBillQty : ''}`)
-        this.highDialogVisible = false
-        this.handleDetailQuery()
-      }).finally(() => { this.highSubmitting = false })
     },
     buildExportParams() {
       const q = { ...this.detailQuery }
@@ -961,17 +851,6 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-/* 高值计费扫码弹窗：院内码、批次号换行完整展示 */
-.high-consume-dialog-table >>> td.high-col-code-wrap .cell {
-  white-space: normal;
-  word-break: break-all;
-  vertical-align: top;
-  line-height: 1.45;
-  text-align: left;
-}
-</style>
 
 <style>
 /* 与耗材产品维护一致：表格 height="60vh"；分页覆盖 ruoyi 绝对定位避免被 app-main 裁切 */
