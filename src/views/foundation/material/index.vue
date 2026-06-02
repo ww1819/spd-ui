@@ -237,6 +237,15 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="primary"
+          size="medium"
+          :loading="syncGzToChargeItemLoading"
+          @click="handleSyncGzToChargeItem"
+          v-hasPermi="['foundation:material:edit','foundation:chargeItem:edit']"
+        >同步高低值到收费项目</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="primary" size="medium"
           @click="handleExport"
           v-hasPermi="['foundation:material:export']"
@@ -1435,7 +1444,7 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="loadChargeItemList">查询</el-button>
+          <el-button type="primary" @click="handleChargeItemQuery">查询</el-button>
           <el-button @click="resetChargeItemQuery">重置</el-button>
           <el-button
             type="success"
@@ -1452,7 +1461,49 @@
         </el-form-item>
       </el-form>
 
-      <el-table v-loading="chargeItemDialog.loading" :data="chargeItemDialog.list" border stripe max-height="58vh">
+      <el-row :gutter="10" class="mb8">
+        <el-col :span="1.5">
+          <span class="charge-item-batch-hint">
+            已选 {{ chargeItemCrossPageSelectedCount }} 条<span v-if="chargeItemCrossPageSelectedCount > 0">（含跨页）</span>
+          </span>
+        </el-col>
+        <el-col :span="1.5">
+          <el-select
+            v-model="chargeItemDialog.batchValueLevel"
+            placeholder="批量高低值"
+            size="small"
+            clearable
+            style="width: 120px"
+          >
+            <el-option v-for="opt in chargeItemValueLevelOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+          </el-select>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+            type="primary"
+            size="small"
+            :loading="chargeItemDialog.batchSaving"
+            :disabled="chargeItemCrossPageSelectedCount === 0"
+            v-hasPermi="['foundation:chargeItem:edit','foundation:material:edit']"
+            @click="handleChargeItemBatchSave"
+          >批量设置</el-button>
+        </el-col>
+        <el-col :span="1.5" v-if="chargeItemCrossPageSelectedCount > 0">
+          <el-button type="text" size="small" @click="clearChargeItemCrossPageSelection">清空已选</el-button>
+        </el-col>
+      </el-row>
+
+      <el-table
+        ref="chargeItemTable"
+        v-loading="chargeItemDialog.loading"
+        :data="chargeItemDialog.list"
+        :row-key="getChargeItemRowKey"
+        border
+        stripe
+        max-height="58vh"
+        @selection-change="handleChargeItemSelectionChange"
+      >
+        <el-table-column type="selection" width="55" align="center" fixed="left" :reserve-selection="true" />
         <el-table-column label="收费项ID" prop="chargeItemId" width="140" show-overflow-tooltip />
         <el-table-column label="收费编码" prop="chargeCode" width="130" show-overflow-tooltip />
         <el-table-column label="收费名称" prop="chargeName" min-width="180" show-overflow-tooltip />
@@ -1491,7 +1542,7 @@
 </template>
 
 <script>
-import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, batchUpdateMaterial, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel } from "@/api/foundation/material";
+import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, batchUpdateMaterial, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel, batchUpdateHisChargeItemValueLevel, syncMaterialValueLevelToHisChargeItem } from "@/api/foundation/material";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import { runConfiguredTableExport } from "@/utils/tableExportRunner";
 import { mapGetters } from "vuex";
@@ -1526,6 +1577,9 @@ export default {
     },
     crossPageSelectedCount() {
       return Object.keys(this.selectedRowMap || {}).length;
+    },
+    chargeItemCrossPageSelectedCount() {
+      return Object.keys(this.chargeItemDialog.selectedRowMap || {}).length;
     }
   },
   data() {
@@ -1740,13 +1794,17 @@ export default {
         { label: '高值', value: '1' },
         { label: '低值', value: '2' }
       ],
+      syncGzToChargeItemLoading: false,
       chargeItemDialog: {
         visible: false,
         loading: false,
         fetching: false,
         exporting: false,
+        batchSaving: false,
         list: [],
         total: 0,
+        selectedRowMap: {},
+        batchValueLevel: undefined,
         query: {
           pageNum: 1,
           pageSize: 10,
@@ -2127,13 +2185,13 @@ export default {
         .filter(Boolean);
       pageKeys.forEach((key) => {
         if (this.selectedRowMap[key]) {
-          delete this.selectedRowMap[key];
+          this.$delete(this.selectedRowMap, key);
         }
       });
       (selection || []).forEach((row) => {
         const key = this.getMaterialRowKey(row);
         if (key) {
-          this.selectedRowMap[key] = row;
+          this.$set(this.selectedRowMap, key, row);
         }
       });
       this.syncSelectionStateFromMap();
@@ -2832,7 +2890,49 @@ export default {
     openChargeItemDialog() {
       this.chargeItemDialog.visible = true;
     },
+    getChargeItemRowKey(row) {
+      return row && row.chargeItemId != null ? String(row.chargeItemId).trim() : null;
+    },
+    getChargeItemCrossPageSelectedIds() {
+      return Object.keys(this.chargeItemDialog.selectedRowMap || {}).map(k => String(k).trim()).filter(Boolean);
+    },
+    restoreChargeItemPageSelection() {
+      const table = this.$refs.chargeItemTable;
+      if (!table || !this.chargeItemDialog.list || this.chargeItemDialog.list.length === 0) {
+        return;
+      }
+      this.chargeItemDialog.list.forEach(row => {
+        const key = this.getChargeItemRowKey(row);
+        if (key && this.chargeItemDialog.selectedRowMap[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
+    clearChargeItemCrossPageSelection() {
+      this.chargeItemDialog.selectedRowMap = {};
+      const table = this.$refs.chargeItemTable;
+      if (table) {
+        table.clearSelection();
+      }
+    },
+    handleChargeItemSelectionChange(selection) {
+      const pageKeys = (this.chargeItemDialog.list || [])
+        .map(row => this.getChargeItemRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach(key => {
+        if (this.chargeItemDialog.selectedRowMap[key]) {
+          this.$delete(this.chargeItemDialog.selectedRowMap, key);
+        }
+      });
+      (selection || []).forEach(row => {
+        const key = this.getChargeItemRowKey(row);
+        if (key) {
+          this.$set(this.chargeItemDialog.selectedRowMap, key, row);
+        }
+      });
+    },
     resetChargeItemQuery() {
+      this.clearChargeItemCrossPageSelection();
       this.chargeItemDialog.query = {
         pageNum: 1,
         pageSize: 10,
@@ -2842,6 +2942,7 @@ export default {
         speci: undefined,
         valueLevel: undefined
       };
+      this.chargeItemDialog.batchValueLevel = undefined;
       this.loadChargeItemList();
     },
     loadChargeItemList() {
@@ -2853,10 +2954,132 @@ export default {
           valueLevel: item && item.valueLevel ? String(item.valueLevel) : '2',
           _saving: false
         }));
-        this.chargeItemDialog.total = res && res.total ? res.total : 0;
+        this.chargeItemDialog.total = res != null && res.total != null ? Number(res.total) : 0;
+        this.$nextTick(() => this.restoreChargeItemPageSelection());
       }).finally(() => {
         this.chargeItemDialog.loading = false;
       });
+    },
+    handleChargeItemQuery() {
+      this.chargeItemDialog.query.pageNum = 1;
+      this.clearChargeItemCrossPageSelection();
+      this.loadChargeItemList();
+    },
+    handleChargeItemBatchSave() {
+      const chargeItemIds = Array.from(new Set(this.getChargeItemCrossPageSelectedIds()));
+      if (!chargeItemIds.length) {
+        this.$modal.msgWarning('请先勾选要批量设置的收费项目');
+        return;
+      }
+      if (!this.chargeItemDialog.batchValueLevel) {
+        this.$modal.msgWarning('请选择要批量设置的高低值属性');
+        return;
+      }
+      const levelLabel = this.chargeItemValueLevelOptions.find(o => o.value === this.chargeItemDialog.batchValueLevel)?.label || '';
+      this.$modal.confirm(`确认将已选 ${chargeItemIds.length} 条收费项目（含跨页）批量设置为「${levelLabel}」？`).then(() => {
+        this.chargeItemDialog.batchSaving = true;
+        return batchUpdateHisChargeItemValueLevel({
+          chargeItemIds,
+          valueLevel: this.chargeItemDialog.batchValueLevel
+        });
+      }).then(res => {
+        this.$modal.msgSuccess((res && res.msg) || '批量保存成功');
+        this.chargeItemDialog.batchValueLevel = undefined;
+        this.clearChargeItemCrossPageSelection();
+        this.loadChargeItemList();
+      }).catch(() => {}).finally(() => {
+        this.chargeItemDialog.batchSaving = false;
+      });
+    },
+    promptSyncGzToChargeItemScope() {
+      const selectedCount = this.crossPageSelectedCount || 0;
+      const totalCount = Number(this.total) || 0;
+      if (selectedCount === 0 && totalCount === 0) {
+        this.$modal.msgWarning('当前没有可同步的产品档案，请先搜索');
+        return Promise.reject('empty');
+      }
+      if (selectedCount > 0 && totalCount > 0) {
+        return this.$msgbox({
+          title: '选择同步范围',
+          message: `将把产品档案的「高值/低值」同步到其已对照的 HIS 收费项目。\n当前查询共 ${totalCount} 条；已跨页选中 ${selectedCount} 条。请选择同步范围：`,
+          showCancelButton: true,
+          showConfirmButton: true,
+          distinguishCancelAndClose: true,
+          confirmButtonText: `仅同步选中（${selectedCount}条）`,
+          cancelButtonText: `同步查询全部（${totalCount}条）`,
+          type: 'warning'
+        })
+          .then(() => 'selected')
+          .catch((action) => {
+            if (action === 'cancel') {
+              return 'all';
+            }
+            return Promise.reject(action);
+          });
+      }
+      if (selectedCount > 0) {
+        return this.$modal
+          .confirm(`确认仅将选中的 ${selectedCount} 条产品档案的高低值，同步到其已对照的收费项目？`)
+          .then(() => 'selected');
+      }
+      return this.$modal
+        .confirm(`未勾选记录，确认将当前查询结果全部 ${totalCount} 条产品档案的高低值，同步到其已对照的收费项目？`)
+        .then(() => 'all');
+    },
+    runSyncGzToChargeItem(scope) {
+      const requestBody = {};
+      if (scope === 'all') {
+        const totalCount = Number(this.total) || 0;
+        if (totalCount > 5000) {
+          return this.$modal
+            .confirm(`当前查询共 ${totalCount} 条，同步可能耗时较长，是否继续？`)
+            .then(() => {
+              requestBody.syncAll = true;
+              requestBody.queryCriteria = this.buildMaterialQueryParams(false);
+              return syncMaterialValueLevelToHisChargeItem(requestBody);
+            });
+        }
+        requestBody.syncAll = true;
+        requestBody.queryCriteria = this.buildMaterialQueryParams(false);
+      } else {
+        const materialIds = this.getCrossPageSelectedIds();
+        if (!materialIds || materialIds.length === 0) {
+          this.$modal.msgWarning('请先勾选要同步的产品档案');
+          return Promise.reject('no-selection');
+        }
+        requestBody.materialIds = materialIds;
+      }
+      return syncMaterialValueLevelToHisChargeItem(requestBody);
+    },
+    formatSyncGzResultMessage(res) {
+      const d = res && res.data;
+      let tip = (res && res.msg) || '同步完成';
+      if (d) {
+        const parts = [];
+        if (d.updatedCount != null) parts.push(`更新收费项目 ${d.updatedCount} 条`);
+        if (d.skippedNoBind > 0) parts.push(`未对照收费项目 ${d.skippedNoBind} 条`);
+        if (d.skippedInvalidGz > 0) parts.push(`高低值无效 ${d.skippedInvalidGz} 条`);
+        if (parts.length) tip += '（' + parts.join('，') + '）';
+      }
+      return tip;
+    },
+    handleSyncGzToChargeItem() {
+      this.promptSyncGzToChargeItemScope()
+        .then((scope) => {
+          this.syncGzToChargeItemLoading = true;
+          return this.runSyncGzToChargeItem(scope);
+        })
+        .then(res => {
+          this.$modal.msgSuccess(this.formatSyncGzResultMessage(res));
+          if (this.crossPageSelectedCount > 0) {
+            this.clearCrossPageSelection();
+          }
+          this.getList();
+        })
+        .catch(() => {})
+        .finally(() => {
+          this.syncGzToChargeItemLoading = false;
+        });
     },
     handleFetchChargeItem() {
       this.chargeItemDialog.fetching = true;
@@ -2890,13 +3113,14 @@ export default {
       }
     },
     saveChargeItemValueLevel(row) {
-      if (!row || !row.chargeItemId || !row.valueLevel) {
+      const chargeItemId = row && row.chargeItemId != null ? String(row.chargeItemId).trim() : '';
+      if (!chargeItemId || !row.valueLevel) {
         this.$modal.msgWarning('收费项ID或高低值属性不能为空');
         return;
       }
       row._saving = true;
       updateHisChargeItemValueLevel({
-        chargeItemId: row.chargeItemId,
+        chargeItemId,
         valueLevel: row.valueLevel
       }).then(res => {
         this.$modal.msgSuccess((res && res.msg) || '保存成功');
@@ -2909,6 +3133,11 @@ export default {
 </script>
 
 <style scoped>
+.charge-item-batch-hint {
+  line-height: 32px;
+  font-size: 13px;
+  color: #606266;
+}
 .local-modal-mask {
   position: absolute;
   left: 0; top: 0; right: 0; bottom: 0;

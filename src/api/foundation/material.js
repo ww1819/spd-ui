@@ -98,6 +98,16 @@ export function batchUpdateHisChargeItemValueLevel(data) {
   })
 }
 
+// 将产品档案 is_gz 同步到已对照 HIS 收费项目的 value_level
+export function syncMaterialValueLevelToHisChargeItem(data) {
+  return request({
+    url: '/foundation/material/syncHisChargeItemValueLevel',
+    method: 'put',
+    timeout: 120000,
+    data
+  })
+}
+
 // 绑定耗材与 HIS 收费项目（his_id = charge_item_id）
 export function bindMaterialHisChargeItem(data) {
   return request({
