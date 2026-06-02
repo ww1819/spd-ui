@@ -429,7 +429,7 @@ import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
-import { buildCode128DataUrl, normalizeBarcodePayload } from "@/utils/code128DataUrl";
+import { buildCode128Label, normalizeBarcodePayload } from "@/utils/code128DataUrl";
 
 export default {
   name: "Follow",
@@ -1039,7 +1039,9 @@ export default {
           printContent += '.label-cell{width:34%;font-weight:bold;background-color:#f9f9f9;text-align:left;vertical-align:top;padding-left:0.6mm;padding-right:1.35mm;white-space:nowrap;}';
           printContent += '.value-cell{width:66%;text-align:left;vertical-align:top;white-space:normal;overflow:visible;word-break:break-all;overflow-wrap:anywhere;padding-left:1mm;padding-right:0.35mm;}';
           printContent += '.barcode-row{flex-shrink:0;width:100%;max-width:100%;margin:0 auto;text-align:center;padding:0.3mm 0 0;box-sizing:border-box;background-color:#fff;}';
-          printContent += '.linear-barcode-img{display:block;margin:0 auto;max-width:35mm;width:auto;height:auto;max-height:8.6mm;object-fit:contain;border:none!important;outline:none!important;box-shadow:none!important;}';
+          printContent += '.linear-barcode-svg-wrap{display:block;margin:0 auto;overflow:hidden;background:#fff;}';
+          printContent += '.linear-barcode-svg-wrap svg{display:block;width:100%;height:100%;shape-rendering:crispEdges;}';
+          printContent += '.linear-barcode-img{display:block;margin:0 auto;border:none!important;outline:none!important;box-shadow:none!important;}';
           printContent += '.barcode-code-text{font-size:9px;line-height:1.2;text-align:center;margin-top:0.3mm;padding:0 0.8mm;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}';
           printContent += '.barcode-placeholder{font-size:10px;color:#666;text-align:center;padding:1mm 0;}';
           printContent += '@media print{body{margin:0;padding:0;}@page{margin:0;size:40mm 60mm;}';
@@ -1071,9 +1073,18 @@ export default {
             printContent += '<div class="barcode-row">';
             if (inHospitalCode) {
               const codeNorm = normalizeBarcodePayload(String(inHospitalCode));
-              const linearDataUrl = codeNorm ? buildCode128DataUrl(codeNorm) : "";
-              if (linearDataUrl) {
-                printContent += '<img src="' + linearDataUrl + '" alt="院内码条码" class="linear-barcode-img" />';
+              const label = codeNorm ? buildCode128Label(codeNorm) : { dataUrl: "", svgHtml: "", widthMm: 0, heightMm: 0 };
+              if (label.svgHtml) {
+                const wMm = label.widthMm;
+                const hMm = label.heightMm;
+                printContent += '<div class="linear-barcode-svg-wrap" style="width:' + wMm + 'mm;height:' + hMm + 'mm;">' + label.svgHtml + "</div>";
+              } else if (label.dataUrl) {
+                const linearDataUrl = label.dataUrl;
+                const wMm = label.widthMm;
+                const hMm = label.heightMm;
+                const wPx = label.widthPx;
+                const hPx = label.heightPx;
+                printContent += '<img src="' + linearDataUrl + '" alt="院内码条码" class="linear-barcode-img" width="' + wPx + '" height="' + hPx + '" style="width:' + wMm + 'mm;height:' + hMm + 'mm;" />';
                 const codeEsc = String(codeNorm)
                   .replace(/&/g, "&amp;")
                   .replace(/</g, "&lt;")

@@ -1,6 +1,12 @@
 <template>
-  <div class="barcode-print-container" ref="barcodePrintRef" v-bind="containerBindAttrs">
-    <div v-for="(barcode, index) in barcodeListForPrint" :key="index" class="barcode-page">
+  <div
+    class="barcode-print-container"
+    :class="{ 'is-embed-preview': embedPreview }"
+    ref="barcodePrintRef"
+    v-bind="containerBindAttrs"
+  >
+    <div v-for="(barcode, index) in barcodeListForPrint" :key="index" class="barcode-item-wrap">
+      <div class="barcode-page">
       <div class="container">
         <div class="title-block">
           <div class="title">高值备货码</div>
@@ -38,18 +44,27 @@
             </table>
             <!-- 一维码 + 底部明文院内码 -->
             <div class="barcode-row">
+              <div
+                v-if="barcode.linearBarcodeSvg"
+                class="linear-barcode-svg-wrap"
+                :style="linearBarcodeImgStyle(barcode)"
+                v-html="barcode.linearBarcodeSvg"
+              />
               <img
-                v-if="barcode.linearBarcodeUrl"
+                v-else-if="barcode.linearBarcodeUrl"
                 :src="barcode.linearBarcodeUrl"
                 alt="院内码条码"
                 class="linear-barcode-img"
+                :width="barcode.linearBarcodeWidthPx"
+                :height="barcode.linearBarcodeHeightPx"
+                :style="linearBarcodeImgStyle(barcode)"
                 @error="handleBarcodeImageError"
                 @load="handleBarcodeImageLoad"
               />
-              <div v-if="barcode.linearBarcodeUrl && barcode.inHospitalCode" class="barcode-code-text">
+              <div v-if="(barcode.linearBarcodeSvg || barcode.linearBarcodeUrl) && barcode.inHospitalCode" class="barcode-code-text">
                 {{ barcode.inHospitalCode }}
               </div>
-              <div v-if="!barcode.linearBarcodeUrl" class="barcode-placeholder">
+              <div v-if="!barcode.linearBarcodeSvg && !barcode.linearBarcodeUrl" class="barcode-placeholder">
                 <span v-if="!barcode.inHospitalCode">无院内码</span>
                 <span v-else>条码未生成</span>
               </div>
@@ -57,12 +72,23 @@
           </div>
         </div>
       </div>
+      </div>
+      <!-- 预览页专用：标签外放大扫码区，不影响标签排版比例 -->
+      <div v-if="embedPreview && barcode.linearBarcodeSvg" class="screen-scan-panel no-print">
+        <div class="screen-scan-hint">屏幕扫码请扫下方放大条码（上方为实际打印效果）</div>
+        <div
+          class="screen-scan-barcode"
+          :style="screenScanBarcodeStyle(barcode)"
+          v-html="barcode.linearBarcodeSvg"
+        />
+        <div v-if="barcode.inHospitalCode" class="screen-scan-code">{{ barcode.inHospitalCode }}</div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { buildCode128DataUrl, normalizeBarcodePayload } from "@/utils/code128DataUrl";
+import { buildCode128Label, normalizeBarcodePayload } from "@/utils/code128DataUrl";
 
 export default {
   name: "BarcodePrint",
@@ -86,23 +112,64 @@ export default {
     barcodeListForPrint() {
       return this.barcodeList.map((barcode) => {
         const codeNorm = normalizeBarcodePayload(barcode.inHospitalCode);
-        const linearBarcodeUrl = codeNorm ? buildCode128DataUrl(codeNorm) : "";
+        const label = codeNorm ? buildCode128Label(codeNorm) : { dataUrl: "", svgHtml: "", widthMm: 0, heightMm: 0, widthPx: 0, heightPx: 0 };
         return {
           ...barcode,
           inHospitalCode: codeNorm,
-          linearBarcodeUrl
+          linearBarcodeUrl: label.dataUrl,
+          linearBarcodeSvg: label.svgHtml,
+          linearBarcodeWidthMm: label.widthMm,
+          linearBarcodeHeightMm: label.heightMm,
+          linearBarcodeWidthPx: label.widthPx,
+          linearBarcodeHeightPx: label.heightPx,
         };
       });
     }
   },
   methods: {
+    linearBarcodeImgStyle(barcode) {
+      if (!barcode.linearBarcodeWidthMm || !barcode.linearBarcodeHeightMm) {
+        return {};
+      }
+      const wMm = barcode.linearBarcodeWidthMm;
+      const hMm = barcode.linearBarcodeHeightMm;
+      return {
+        width: `${wMm}mm`,
+        height: `${hMm}mm`,
+      };
+    },
+    /** 标签外屏幕扫码区：放大显示，不改变标签内比例 */
+    screenScanBarcodeStyle(barcode) {
+      if (!barcode.linearBarcodeWidthMm || !barcode.linearBarcodeHeightMm) {
+        return {};
+      }
+      const aspect = barcode.linearBarcodeHeightMm / barcode.linearBarcodeWidthMm;
+      const scanWidthPx = 360;
+      return {
+        width: `${scanWidthPx}px`,
+        height: `${Math.max(44, Math.round(scanWidthPx * aspect))}px`,
+      };
+    },
     start() {
       this.$nextTick(() => {
         const root = this.$refs.barcodePrintRef || this.$el;
         if (!root || !root.querySelectorAll) return;
         const images = root.querySelectorAll(".linear-barcode-img");
+        const svgWraps = root.querySelectorAll(".linear-barcode-svg-wrap");
         let loadedCount = 0;
         const totalImages = images.length;
+        const totalSvgs = svgWraps.length;
+
+        const doPrint = () => {
+          setTimeout(() => {
+            this.$print(root, {}, "60mm 40mm");
+          }, 100);
+        };
+
+        if (totalImages === 0 && totalSvgs > 0) {
+          doPrint();
+          return;
+        }
 
         if (totalImages === 0) {
           this.$print(root, {}, "60mm 40mm");
@@ -112,9 +179,7 @@ export default {
         const checkAllLoaded = () => {
           loadedCount++;
           if (loadedCount >= totalImages) {
-            setTimeout(() => {
-              this.$print(root, {}, "60mm 40mm");
-            }, 100);
+            doPrint();
           }
         };
 
@@ -368,25 +433,40 @@ export default {
     text-align: center;
   }
 
+  .linear-barcode-svg-wrap {
+    display: block;
+    flex-shrink: 0;
+    margin: 0 auto;
+    overflow: hidden;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .linear-barcode-svg-wrap >>> svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
   .linear-barcode-img {
     display: block;
     flex-shrink: 0;
-    margin: 0;
-    max-width: 58mm;
-    width: auto;
-    height: auto;
-    max-height: 5.2mm;
-    object-fit: contain;
+    margin: 0 auto;
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .barcode-code-text {
     display: block;
     width: 100%;
     max-width: 58mm;
-    margin: 0.15mm 0 0;
+    margin: 0.6mm 0 0;
     padding: 0;
     box-sizing: border-box;
     font-size: 7.5px;
@@ -627,25 +707,36 @@ export default {
   text-align: center;
 }
 
+.linear-barcode-svg-wrap {
+  display: block;
+  flex-shrink: 0;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #fff;
+}
+
+.linear-barcode-svg-wrap >>> svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .linear-barcode-img {
   display: block;
   flex-shrink: 0;
-  margin: 0;
-  max-width: 58mm;
-  width: auto;
-  height: auto;
-  max-height: 5.2mm;
-  object-fit: contain;
+  margin: 0 auto;
   border: none;
   outline: none;
   box-shadow: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .barcode-code-text {
   display: block;
   width: 100%;
   max-width: 58mm;
-  margin: 0.15mm 0 0;
+  margin: 0.6mm 0 0;
   padding: 0;
   box-sizing: border-box;
   font-size: 7.5px;
@@ -668,5 +759,52 @@ export default {
   text-align: center;
   padding: 1mm 0;
   box-sizing: border-box;
+}
+
+.barcode-item-wrap {
+  box-sizing: border-box;
+}
+
+.screen-scan-panel {
+  margin: 16px auto 24px;
+  padding: 12px 16px 16px;
+  max-width: 420px;
+  text-align: center;
+  background: #fafafa;
+  border: 1px dashed #dcdfe6;
+  border-radius: 6px;
+}
+
+.screen-scan-hint {
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #909399;
+}
+
+.screen-scan-barcode {
+  display: block;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #fff;
+}
+
+.screen-scan-barcode >>> svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.screen-scan-code {
+  margin-top: 8px;
+  font-size: 15px;
+  letter-spacing: 0.6px;
+  color: #000;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }
 </style>

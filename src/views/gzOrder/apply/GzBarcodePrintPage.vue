@@ -12,6 +12,9 @@
       >打印</el-button>
     </div>
     <div v-if="loadError" class="gz-barcode-print-error no-print">{{ loadError }}</div>
+    <p v-else-if="canPrint" class="gz-barcode-scan-tip no-print">
+      上方为实际标签效果；屏幕扫码请用标签下方「放大条码」区域。浏览器缩放保持 <strong>100%</strong>，扫码枪距屏幕 10–20cm。
+    </p>
     <div v-loading="loading" class="gz-barcode-print-body">
       <barcode-print
         v-if="barcodeList.length"
@@ -135,6 +138,16 @@ export default {
 .gz-barcode-print-error {
   color: #f56c6c;
   margin-bottom: 8px;
+}
+.gz-barcode-scan-tip {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #606266;
+  background: #ecf5ff;
+  border-radius: 4px;
+  border-left: 3px solid #409eff;
 }
 @media print {
   .no-print {
