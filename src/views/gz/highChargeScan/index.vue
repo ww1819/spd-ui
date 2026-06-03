@@ -36,9 +36,9 @@
           </el-select>
         </el-form-item>
         <el-form-item label="高低值类型">
-          <el-select v-model="detailQuery.valueLevel" placeholder="高值+未识别" clearable style="width:120px">
+          <el-select v-model="detailQuery.valueLevel" placeholder="默认仅高值" clearable style="width:130px">
             <el-option label="高值收费项" value="1" />
-            <el-option label="未识别" value="0" />
+            <el-option label="低值收费项" value="2" />
           </el-select>
         </el-form-item>
         <el-form-item label="计费日期">
@@ -211,7 +211,7 @@ export default {
         chargeItemId: undefined,
         departmentId: undefined,
         processed: undefined,
-        valueLevel: undefined,
+        valueLevel: '1',
         beginChargeDate: undefined,
         endChargeDate: undefined
       },
@@ -289,13 +289,12 @@ export default {
     },
     valueLevelText(v) {
       if (v === '1' || v === 1) return '高值'
-      if (v === '2' || v === 2) return '低值'
-      if (v === '0' || v === 0) return '未识别'
-      return v ? String(v) : '未识别'
+      if (v === '2' || v === 2 || v === '0' || v === 0) return '低值'
+      return v ? String(v) : '低值'
     },
-    isUnknownValueLevel(row) {
+    isLowValueLevel(row) {
       const v = row && row.valueLevel
-      return v === '0' || v === 0 || v == null || v === ''
+      return v !== '1' && v !== 1
     },
     canScanHigh(row) {
       if (!row || row.valueLevel !== '1' && row.valueLevel !== 1) {
@@ -304,12 +303,8 @@ export default {
       return row.processStatus !== 'CONSUMED'
     },
     openHighDialog(row) {
-      if (this.isUnknownValueLevel(row)) {
-        this.$modal.msgWarning('收费项目未维护高低值标识，请先在耗材档案维护是否高值后再核销')
-        return
-      }
-      if (row.valueLevel === '2' || row.valueLevel === 2) {
-        this.$modal.msgWarning('该行为低值收费项，请至患者收费查询进行低值核销')
+      if (this.isLowValueLevel(row)) {
+        this.$modal.msgWarning('该行为低值收费项（未维护高低值视同低值），请至患者收费查询进行低值核销')
         return
       }
       if (row.processStatus === 'CONSUMED') {
@@ -414,7 +409,7 @@ export default {
         chargeItemId: undefined,
         departmentId: undefined,
         processed: undefined,
-        valueLevel: undefined,
+        valueLevel: '1',
         beginChargeDate: undefined,
         endChargeDate: undefined
       }
