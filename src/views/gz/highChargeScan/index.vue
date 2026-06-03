@@ -12,10 +12,10 @@
         <el-form-item label="患者姓名">
           <el-input v-model="detailQuery.patientName" placeholder="姓名" clearable style="width:140px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
-        <el-form-item :label="detailVisitType === 'IN' ? '住院号' : '门诊号'">
+        <el-form-item :label="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院/门诊号')">
           <el-input
             v-model="detailQuery.visitNo"
-            :placeholder="detailVisitType === 'IN' ? '住院号' : '门诊号'"
+            :placeholder="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院号或门诊号')"
             clearable
             style="width:160px"
             @keyup.enter.native="handleDetailQuery"
@@ -198,7 +198,7 @@ export default {
   name: 'GzHighChargeScan',
   data() {
     return {
-      detailVisitType: 'IN',
+      detailVisitType: 'ALL',
       detailLoading: false,
       detailList: [],
       detailTotal: 0,
@@ -406,6 +406,7 @@ export default {
       this.loadDetailList()
     },
     resetDetailQuery() {
+      this.detailVisitType = 'ALL'
       this.detailQuery = {
         pageNum: 1,
         pageSize: 10,
