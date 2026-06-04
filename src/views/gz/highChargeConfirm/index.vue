@@ -79,7 +79,7 @@
       <el-table-column label="单价" prop="unitPrice" width="80" align="right" />
       <el-table-column label="金额" prop="amt" width="90" align="right" />
       <el-table-column label="供应商" prop="supplierName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="消耗单号" prop="consumeBillNo" width="130" show-overflow-tooltip />
+      <el-table-column label="计费单号" prop="consumeBillNo" width="130" show-overflow-tooltip />
       <el-table-column label="确认批次" prop="confirmNo" width="150" show-overflow-tooltip />
     </el-table>
 
