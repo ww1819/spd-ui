@@ -1,6 +1,6 @@
 <template>
   <div class="app-container high-charge-confirm-page">
-    <div class="hc-query-wrap">
+    <div class="hc-filter-panel">
       <el-form :model="query" inline size="small" class="hc-query-form">
         <el-form-item label="科室">
           <el-select v-model="query.departmentId" placeholder="按权限科室" clearable filterable style="width:200px">
@@ -8,94 +8,113 @@
           </el-select>
         </el-form-item>
         <el-form-item label="确认状态">
-          <el-select v-model="query.confirmStatus" placeholder="全部" clearable style="width:120px">
+          <el-select v-model="query.confirmStatus" placeholder="全部" clearable style="width:110px">
             <el-option label="未确认" value="0" />
             <el-option label="已确认" value="1" />
           </el-select>
         </el-form-item>
-        <el-form-item label="核销日期">
-          <el-date-picker v-model="query.beginConsumeAuditTime" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
-          <span style="margin:0 6px">至</span>
-          <el-date-picker v-model="query.endConsumeAuditTime" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
-        </el-form-item>
         <el-form-item label="患者姓名">
-          <el-input v-model="query.patientName" placeholder="姓名" clearable style="width:120px" @keyup.enter.native="handleQuery" />
+          <el-input v-model="query.patientName" placeholder="姓名" clearable style="width:140px" @keyup.enter.native="handleQuery" />
         </el-form-item>
-        <el-form-item label="号">
-          <el-input v-model="query.visitNo" placeholder="住院/门诊号" clearable style="width:140px" @keyup.enter.native="handleQuery" />
+        <el-form-item label="住院/门诊号">
+          <el-input v-model="query.visitNo" placeholder="住院号或门诊号" clearable style="width:160px" @keyup.enter.native="handleQuery" />
         </el-form-item>
-        <el-form-item label="耗材">
-          <el-input v-model="query.materialName" placeholder="耗材名称" clearable style="width:140px" @keyup.enter.native="handleQuery" />
+        <el-form-item label="产品名称">
+          <el-input v-model="query.materialName" placeholder="产品名称" clearable style="width:160px" @keyup.enter.native="handleQuery" />
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="el-icon-search" @click="handleQuery">查询</el-button>
-          <el-button icon="el-icon-refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
+        <div class="hc-query-form-second-row">
+          <el-form-item label="核销日期">
+            <el-date-picker v-model="query.beginConsumeAuditTime" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
+            <span style="margin:0 6px">至</span>
+            <el-date-picker v-model="query.endConsumeAuditTime" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
+          </el-form-item>
+        </div>
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-check"
-          size="mini"
-          :disabled="selectedRows.length === 0"
-          v-hasPermi="['gz:highChargeConfirm:confirm']"
-          @click="openConfirmDialog"
-        >消耗确认</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <span v-if="selectedRows.length" class="selected-tip">已选 {{ selectedRows.length }} 条</span>
-      </el-col>
-    </el-row>
+    <div class="hc-action-bar">
+      <el-button
+        type="primary"
+        plain
+        icon="el-icon-check"
+        size="small"
+        :disabled="selectedRows.length === 0"
+        v-hasPermi="['gz:highChargeConfirm:confirm']"
+        @click="openConfirmDialog"
+      >消耗确认</el-button>
+      <span v-if="selectedRows.length" class="hc-selected-tip">已选 {{ selectedRows.length }} 条</span>
+      <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">查询</el-button>
+      <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+    </div>
 
-    <el-table
-      ref="table"
-      v-loading="loading"
-      :data="list"
-      height="58vh"
-      border
-      stripe
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column type="selection" width="48" :selectable="rowSelectable" />
-      <el-table-column label="确认状态" width="90">
-        <template slot-scope="scope">
-          <el-tag v-if="scope.row.confirmStatus === 1" type="success" size="mini">已确认</el-tag>
-          <el-tag v-else type="info" size="mini">未确认</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="核销时间" prop="consumeAuditTime" width="160" show-overflow-tooltip />
-      <el-table-column label="科室" prop="departmentName" min-width="100" show-overflow-tooltip />
-      <el-table-column label="患者" prop="patientName" width="90" show-overflow-tooltip />
-      <el-table-column label="号" prop="visitNo" width="110" show-overflow-tooltip />
-      <el-table-column label="收费项" prop="chargeItemId" width="100" show-overflow-tooltip />
-      <el-table-column label="项目名称" prop="itemName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="耗材" prop="materialName" min-width="140" show-overflow-tooltip />
-      <el-table-column label="院内码" prop="inHospitalCode" width="120" show-overflow-tooltip />
-      <el-table-column label="数量" prop="entryQty" width="70" align="right" />
-      <el-table-column label="单价" prop="unitPrice" width="80" align="right" />
-      <el-table-column label="金额" prop="amt" width="90" align="right" />
-      <el-table-column label="供应商" prop="supplierName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="消耗单号" prop="consumeBillNo" width="130" show-overflow-tooltip />
-      <el-table-column label="确认批次" prop="confirmNo" width="150" show-overflow-tooltip />
-    </el-table>
+    <div class="hc-detail-box">
+      <el-table
+        ref="table"
+        v-loading="loading"
+        :data="list"
+        height="60vh"
+        border
+        stripe
+        class="hc-detail-table"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="48" align="center" :selectable="rowSelectable" fixed="left" />
+        <el-table-column label="确认状态" width="100" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span :class="confirmStatusClass(scope.row.confirmStatus)">{{ confirmStatusText(scope.row.confirmStatus) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="核销时间" prop="consumeAuditTime" width="160" show-overflow-tooltip />
+        <el-table-column label="科室" prop="departmentName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="患者姓名" prop="patientName" width="100" show-overflow-tooltip />
+        <el-table-column label="住院/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
+        <el-table-column label="收费编码" prop="chargeItemId" width="120" show-overflow-tooltip />
+        <el-table-column label="项目名称" prop="itemName" min-width="160" show-overflow-tooltip />
+        <el-table-column label="项目规格" prop="itemSpec" width="100" show-overflow-tooltip />
+        <el-table-column label="项目型号" prop="itemModel" width="100" show-overflow-tooltip />
+        <el-table-column label="产品名称" prop="materialName" min-width="140" show-overflow-tooltip />
+        <el-table-column label="规格" prop="materialSpeci" width="100" show-overflow-tooltip />
+        <el-table-column label="型号" prop="materialModel" width="100" show-overflow-tooltip />
+        <el-table-column label="院内码" prop="inHospitalCode" width="120" show-overflow-tooltip />
+        <el-table-column label="数量" prop="entryQty" width="90" align="center" />
+        <el-table-column label="单价" prop="unitPrice" width="80" align="right" />
+        <el-table-column label="金额" prop="amt" width="100" align="right" />
+        <el-table-column label="批号" prop="batchNumber" width="110" show-overflow-tooltip />
+        <el-table-column label="生产日期" prop="productionDate" width="110" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateCell(scope.row.productionDate) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="有效期" prop="endTime" width="110" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateCell(scope.row.endTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="生产厂家" prop="factoryName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="注册证号" prop="registerNo" min-width="140" show-overflow-tooltip />
+        <el-table-column label="供应商" prop="supplierName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="消耗单号" prop="consumeBillNo" width="130" show-overflow-tooltip />
+        <el-table-column label="确认批次" prop="confirmNo" width="150" show-overflow-tooltip />
+        <el-table-column label="入库单号" prop="inboundBillNo" width="150" show-overflow-tooltip />
+        <el-table-column label="出库单号" prop="outboundBillNo" width="150" show-overflow-tooltip />
+      </el-table>
+    </div>
 
-    <pagination
-      v-show="total > 0"
-      :total="total"
-      :page.sync="query.pageNum"
-      :limit.sync="query.pageSize"
-      @pagination="loadList"
-    />
+    <div class="hc-pagination-wrap">
+      <pagination
+        v-show="total > 0"
+        :total="total"
+        :page.sync="query.pageNum"
+        :limit.sync="query.pageSize"
+        @pagination="loadList"
+      />
+    </div>
 
     <el-dialog title="消耗确认" :visible.sync="confirmDialogVisible" width="520px" append-to-body @close="resetConfirmDialog">
       <p>已选 <strong>{{ selectedRows.length }}</strong> 条明细，合计数量 <strong>{{ selectedTotalQty }}</strong>，合计金额 <strong>{{ selectedTotalAmt }}</strong></p>
       <el-form label-width="100px" size="small">
-        <el-form-item label="高值仓库" required>
-          <el-select v-model="confirmWarehouseId" placeholder="请选择高值仓库" filterable style="width:100%">
+        <el-form-item label="仓库" required>
+          <el-select v-model="confirmWarehouseId" placeholder="请选择仓库（不含高值仓）" filterable style="width:100%">
             <el-option v-for="w in warehouseOptions" :key="w.id" :label="w.name" :value="w.id" />
           </el-select>
         </el-form-item>
@@ -181,7 +200,26 @@ export default {
     this.loadDeptOptions()
     this.loadList()
   },
+  mounted() {
+    this.$nextTick(() => this.layoutTable())
+  },
   methods: {
+    layoutTable() {
+      const table = this.$refs.table
+      if (table && table.doLayout) {
+        table.doLayout()
+      }
+    },
+    confirmStatusText(v) {
+      return v === 1 ? '已确认' : '未确认'
+    },
+    confirmStatusClass(v) {
+      return v === 1 ? 'hc-writeoff-done' : 'hc-writeoff-pending'
+    },
+    formatDateCell(v) {
+      if (!v) return '--'
+      return this.parseTime(v, '{y}-{m}-{d}')
+    },
     loadDeptOptions() {
       const uid = this.$store.getters.userId
       if (!uid) return
@@ -191,8 +229,8 @@ export default {
       })
     },
     loadWarehouseOptions() {
-      listWarehouse({ pageNum: 1, pageSize: 500, warehouseType: '高值' }).then(res => {
-        this.warehouseOptions = (res.rows || []).filter(w => w && w.id != null && w.warehouseType === '高值')
+      listWarehouse({ pageNum: 1, pageSize: 500 }).then(res => {
+        this.warehouseOptions = (res.rows || []).filter(w => w && w.id != null && w.warehouseType !== '高值')
       })
     },
     toQueryDayStart(s) {
@@ -240,11 +278,7 @@ export default {
         this.total = res.total || 0
       }).finally(() => {
         this.loading = false
-        this.$nextTick(() => {
-          if (this.$refs.table && this.$refs.table.doLayout) {
-            this.$refs.table.doLayout()
-          }
-        })
+        this.$nextTick(() => this.layoutTable())
       })
     },
     openConfirmDialog() {
@@ -267,7 +301,7 @@ export default {
     },
     submitConfirm() {
       if (!this.confirmWarehouseId) {
-        this.$modal.msgWarning('请选择高值仓库')
+        this.$modal.msgWarning('请选择仓库')
         return
       }
       this.confirmSubmitting = true
@@ -292,16 +326,120 @@ export default {
 }
 </script>
 
-<style scoped>
-.selected-tip {
-  line-height: 28px;
-  color: #606266;
-  font-size: 13px;
-}
-</style>
-
 <style>
-.high-charge-confirm-page .hc-query-wrap {
-  margin-bottom: 12px;
+.high-charge-confirm-page {
+  padding: 1vh 0.8vw 1.5vh !important;
+  box-sizing: border-box;
+}
+
+.high-charge-confirm-page .hc-filter-panel,
+.high-charge-confirm-page .hc-detail-box {
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.high-charge-confirm-page .hc-filter-panel {
+  padding: 10px 12px 4px;
+  margin-bottom: 0;
+}
+
+.high-charge-confirm-page .hc-action-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 4px 12px;
+  margin-bottom: 10px;
+}
+
+.high-charge-confirm-page .hc-filter-panel .hc-query-form .el-form-item {
+  margin-bottom: 8px;
+}
+
+.high-charge-confirm-page .hc-query-form-second-row {
+  display: block;
+  width: 100%;
+  clear: both;
+}
+
+.high-charge-confirm-page .hc-query-form-second-row .el-form-item {
+  margin-bottom: 0;
+}
+
+.high-charge-confirm-page .hc-detail-box {
+  padding: 0;
+  overflow: hidden;
+}
+
+.high-charge-confirm-page .hc-detail-table {
+  width: 100%;
+}
+
+.high-charge-confirm-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 8px !important;
+  transition: height 0.2s ease;
+}
+.high-charge-confirm-page .hc-detail-table.el-table .el-table__body-wrapper:hover::-webkit-scrollbar:horizontal {
+  height: 16px !important;
+}
+.high-charge-confirm-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+.high-charge-confirm-page .hc-detail-table.el-table .el-table__body-wrapper:hover::-webkit-scrollbar:vertical {
+  width: 12px !important;
+}
+.high-charge-confirm-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #eef0f3 !important;
+  border-radius: 6px !important;
+}
+.high-charge-confirm-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 6px !important;
+  border: 2px solid #eef0f3 !important;
+  background-clip: padding-box !important;
+  min-width: 40px !important;
+  min-height: 8px !important;
+}
+.high-charge-confirm-page .hc-detail-table.el-table .el-table__body-wrapper:hover::-webkit-scrollbar-thumb {
+  background: #606266 !important;
+  border-color: #e4e7ed !important;
+}
+.high-charge-confirm-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #303133 !important;
+}
+.high-charge-confirm-page .hc-detail-table.el-table .el-table__body-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: #909399 #eef0f3;
+}
+.high-charge-confirm-page .hc-detail-table.el-table .el-table__body-wrapper:hover {
+  scrollbar-width: auto;
+  scrollbar-color: #606266 #e4e7ed;
+}
+
+.high-charge-confirm-page .hc-pagination-wrap {
+  margin-top: 12px;
+  padding: 0 4px 8px;
+}
+.high-charge-confirm-page .hc-pagination-wrap .pagination-container {
+  position: relative !important;
+  margin: 0 !important;
+  padding: 10px 16px !important;
+}
+
+.high-charge-confirm-page .hc-writeoff-done {
+  color: #67c23a;
+  font-weight: 500;
+}
+.high-charge-confirm-page .hc-writeoff-pending {
+  color: #f56c6c;
+  font-weight: 500;
+}
+
+.high-charge-confirm-page .hc-selected-tip {
+  font-size: 13px;
+  color: #606266;
+  line-height: 32px;
 }
 </style>
