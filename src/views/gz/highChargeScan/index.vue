@@ -1,6 +1,6 @@
 <template>
   <div class="app-container high-charge-scan-page">
-    <div class="hc-query-wrap">
+    <div class="hc-filter-panel">
       <el-form :model="detailQuery" inline size="small" class="hc-query-form">
         <el-form-item label="类型">
           <el-radio-group v-model="detailVisitType" @change="handleDetailQuery">
@@ -53,6 +53,18 @@
       </el-form>
     </div>
 
+    <div class="hc-action-bar">
+      <span class="hc-action-label">类型</span>
+      <el-radio-group v-model="detailVisitType" size="small" @change="handleDetailQuery">
+        <el-radio-button label="ALL">全部</el-radio-button>
+        <el-radio-button label="IN">住院</el-radio-button>
+        <el-radio-button label="OUT">门诊</el-radio-button>
+      </el-radio-group>
+      <el-button type="primary" icon="el-icon-search" size="small" @click="handleDetailQuery">查询</el-button>
+      <el-button icon="el-icon-refresh" size="small" @click="resetDetailQuery">重置</el-button>
+    </div>
+
+    <div class="hc-detail-box">
     <el-table
       ref="detailTable"
       v-loading="detailLoading"
@@ -62,7 +74,8 @@
       stripe
       class="hc-detail-table"
     >
-      <el-table-column label="类型" prop="visitType" width="80">
+      <el-table-column label="序号" type="index" width="60" align="center" :index="detailRowIndex" fixed="left" />
+      <el-table-column label="就诊类型" prop="visitType" width="80">
         <template slot-scope="scope">
           <span>{{ scope.row.visitType === 'INPATIENT' ? '住院' : '门诊' }}</span>
         </template>
@@ -76,44 +89,53 @@
         <el-table-column label="就诊" prop="clinicName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else>
-        <el-table-column label="号" prop="visitNo" width="120" show-overflow-tooltip />
+        <el-table-column label="住院号/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
         <el-table-column label="科室/就诊" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
       </template>
-      <el-table-column label="患者" prop="patientName" width="100" show-overflow-tooltip />
-      <el-table-column label="收费项ID" prop="chargeItemId" width="120" show-overflow-tooltip />
+      <el-table-column label="姓名" prop="patientName" width="100" show-overflow-tooltip />
+      <el-table-column label="性别" prop="patientSex" width="60" align="center" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ formatPatientSex(scope.row.patientSex) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="收费编码" prop="chargeItemId" width="120" show-overflow-tooltip />
       <el-table-column label="项目名称" prop="itemName" min-width="160" show-overflow-tooltip />
       <el-table-column label="规格" prop="specModel" width="100" show-overflow-tooltip />
-      <el-table-column label="高低值类型" prop="valueLevel" width="110" align="center">
+      <el-table-column label="数量" prop="quantity" width="90" align="center" />
+      <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
+      <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
+      <el-table-column label="核销状态" prop="processStatus" width="100" align="center" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span :class="writeOffStatusClass(scope.row.processStatus)">{{ writeOffStatusText(scope.row.processStatus) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="处理情况" prop="processSituation" min-width="160" show-overflow-tooltip />
+      <el-table-column label="类型" prop="valueLevel" width="90" align="center">
         <template slot-scope="scope">
           <span>{{ valueLevelText(scope.row.valueLevel) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
-      <el-table-column label="数量" prop="quantity" width="90" align="right" />
-      <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
-      <el-table-column label="处理状态" prop="processStatus" width="120" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <span>{{ processStatusText(scope.row.processStatus) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="处理情况" prop="processSituation" min-width="160" show-overflow-tooltip />
       <el-table-column label="操作" align="center" width="180" fixed="right">
         <template slot-scope="scope">
           <el-button
             type="text"
-            size="mini"
+            size="small"
+            class="hc-table-op-btn"
             v-hasPermi="highScanPermi"
             @click="openHighDialog(scope.row)"
           >高值</el-button>
           <el-button
             type="text"
-            size="mini"
+            size="small"
+            class="hc-table-op-btn"
             v-hasPermi="['gz:highChargeScan:list','department:patientCharge:list']"
             @click="openConsumeRecordDialog(scope.row)"
           >消耗记录</el-button>
         </template>
       </el-table-column>
     </el-table>
+    </div>
+
     <div class="hc-pagination-wrap">
       <pagination
         v-show="detailTotal > 0"
@@ -183,7 +205,6 @@
 </template>
 
 <script>
-import { parseTime } from '@/utils/ruoyi'
 import { listdepartAll } from '@/api/foundation/depart'
 import {
   listHighChargeInpatientMirror,
@@ -260,6 +281,11 @@ export default {
         table.doLayout()
       }
     },
+    detailRowIndex(index) {
+      const page = Number(this.detailQuery.pageNum) || 1
+      const size = Number(this.detailQuery.pageSize) || 10
+      return (page - 1) * size + index + 1
+    },
     loadDeptOptions() {
       const uid = this.$store.getters.userId
       if (!uid) return
@@ -278,14 +304,12 @@ export default {
       const t = String(s).trim()
       return t.length > 10 ? t : `${t} 23:59:59`
     },
-    processStatusText(v) {
-      const m = {
-        PENDING_CONSUME: '待处理',
-        PARTIALLY_CONSUMED: '部分消耗',
-        CONSUMED: '已处理',
-        REFUNDED: '已退费返还'
-      }
-      return m[v] || v || ''
+    /** 列表展示：已核销 / 未核销 */
+    writeOffStatusText(v) {
+      return v === 'CONSUMED' ? '已核销' : '未核销'
+    },
+    writeOffStatusClass(v) {
+      return v === 'CONSUMED' ? 'hc-writeoff-done' : 'hc-writeoff-pending'
     },
     valueLevelText(v) {
       if (v === '1' || v === 1) return '高值'
@@ -308,7 +332,7 @@ export default {
         return
       }
       if (row.processStatus === 'CONSUMED') {
-        this.$modal.msgWarning('该行已处理完成')
+        this.$modal.msgWarning('该行已核销')
         return
       }
       if (row.valueLevel !== '1' && row.valueLevel !== 1) {
@@ -466,18 +490,111 @@ export default {
   padding: 1vh 0.8vw 1.5vh !important;
   box-sizing: border-box;
 }
-.high-charge-scan-page .hc-query-wrap {
-  max-height: 14vh;
-  overflow-y: auto;
-  margin-bottom: 0.8vh;
+
+.high-charge-scan-page .hc-filter-panel,
+.high-charge-scan-page .hc-detail-box {
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  box-sizing: border-box;
 }
+
+.high-charge-scan-page .hc-filter-panel {
+  padding: 10px 12px 4px;
+  margin-bottom: 0;
+}
+
+.high-charge-scan-page .hc-action-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 4px 12px;
+  margin-bottom: 10px;
+}
+
+.high-charge-scan-page .hc-action-label {
+  font-size: 14px;
+  color: #606266;
+  line-height: 32px;
+  margin-right: 4px;
+}
+
+.high-charge-scan-page .hc-filter-panel .hc-query-form .el-form-item {
+  margin-bottom: 8px;
+}
+
+.high-charge-scan-page .hc-detail-box {
+  padding: 0;
+  overflow: hidden;
+}
+
+.high-charge-scan-page .hc-detail-table {
+  width: 100%;
+}
+
+/* 横向滚动条：默认可见；鼠标移入表格数据区时加粗，便于拖拽（不用 padding 撑高页面） */
+.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 8px !important;
+  transition: height 0.2s ease;
+}
+.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper:hover::-webkit-scrollbar:horizontal {
+  height: 16px !important;
+}
+.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper:hover::-webkit-scrollbar:vertical {
+  width: 12px !important;
+}
+.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #eef0f3 !important;
+  border-radius: 6px !important;
+}
+.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 6px !important;
+  border: 2px solid #eef0f3 !important;
+  background-clip: padding-box !important;
+  min-width: 40px !important;
+  min-height: 8px !important;
+}
+.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper:hover::-webkit-scrollbar-thumb {
+  background: #606266 !important;
+  border-color: #e4e7ed !important;
+}
+.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #303133 !important;
+}
+.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: #909399 #eef0f3;
+}
+.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper:hover {
+  scrollbar-width: auto;
+  scrollbar-color: #606266 #e4e7ed;
+}
+
 .high-charge-scan-page .hc-pagination-wrap {
-  margin-top: 0.5vh;
-  min-height: 8vh;
+  margin-top: 12px;
+  padding: 0 4px 8px;
 }
-.high-charge-scan-page .hc-pagination-wrap >>> .pagination-container {
+.high-charge-scan-page .hc-pagination-wrap .pagination-container {
   position: relative !important;
-  height: 100% !important;
   margin: 0 !important;
+  padding: 10px 16px !important;
+}
+
+.high-charge-scan-page .hc-writeoff-done {
+  color: #67c23a;
+  font-weight: 500;
+}
+.high-charge-scan-page .hc-writeoff-pending {
+  color: #f56c6c;
+  font-weight: 500;
+}
+.high-charge-scan-page .hc-table-op-btn {
+  font-size: 14px;
+  padding: 0 6px;
 }
 </style>

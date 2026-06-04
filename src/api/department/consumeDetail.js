@@ -27,6 +27,15 @@ export function listConsumeRanking(query) {
   })
 }
 
+// 科室领用—出退库汇总
+export function listConsumeOutReturnSummary(query) {
+  return request({
+    url: '/department/consumeDetail/outReturnSummary',
+    method: 'get',
+    params: query
+  })
+}
+
 // 导出领用明细
 export function exportConsumeDetail(query) {
   return request({

@@ -4,10 +4,12 @@
       <el-tab-pane label="领用明细表" name="detail"></el-tab-pane>
       <el-tab-pane label="领用汇总表" name="summary"></el-tab-pane>
       <el-tab-pane label="领用排名" name="ranking"></el-tab-pane>
+      <el-tab-pane label="出退库汇总" name="outReturnSummary"></el-tab-pane>
     </el-tabs>
     <ConsumeDetailTable v-if="activeName === 'detail'" />
     <ConsumeSummaryTable v-if="activeName === 'summary'" />
     <ConsumeRankingTable v-if="activeName === 'ranking'" />
+    <ConsumeOutReturnSummaryTable v-if="activeName === 'outReturnSummary'" />
   </div>
 </template>
 
@@ -15,10 +17,11 @@
 import ConsumeDetailTable from "@/views/department/consumeDetail/components/ConsumeDetailTable.vue";
 import ConsumeSummaryTable from "@/views/department/consumeDetail/components/ConsumeSummaryTable.vue";
 import ConsumeRankingTable from "@/views/department/consumeDetail/components/ConsumeRankingTable.vue";
+import ConsumeOutReturnSummaryTable from "@/views/department/consumeDetail/components/ConsumeOutReturnSummaryTable.vue";
 
 export default {
   name: "ConsumeDetail",
-  components: { ConsumeDetailTable, ConsumeSummaryTable, ConsumeRankingTable },
+  components: { ConsumeDetailTable, ConsumeSummaryTable, ConsumeRankingTable, ConsumeOutReturnSummaryTable },
   data() {
     return {
       activeName: "detail"

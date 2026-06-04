@@ -18,6 +18,15 @@ export function listAcceptanceDepotLines(orderId, warehouseId) {
   })
 }
 
+/** 引用验收单确认预览（可带入行 + 缺失院内码） */
+export function previewAcceptanceRef(orderId, warehouseId, excludeShipmentId) {
+  return request({
+    url: '/gz/refDoc/acceptance/' + orderId + '/refPreview',
+    method: 'get',
+    params: { warehouseId, excludeShipmentId }
+  })
+}
+
 /** 已审核备货出库单 */
 export function listAuditedShipment(query) {
   return request({
