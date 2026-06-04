@@ -1,5 +1,18 @@
 /** 采购计划明细：引用申购单、汇总等共用工具 */
 
+export const PLAN_SOURCE_MANUAL = '手工新增'
+export const PLAN_SOURCE_DEPARTMENT = '科室计划'
+
+/** 根据明细关联信息解析计划来源（引用科室申购单 → 科室计划） */
+export function resolvePlanEntrySource(row) {
+  if (!row) return PLAN_SOURCE_MANUAL
+  const hasDepRef = row.applyDepartmentId != null
+    || (row.applyBillNos && String(row.applyBillNos).trim())
+    || (row.depApplyEntryIds && row.depApplyEntryIds.length > 0)
+    || (row.basApplyEntryIds && row.basApplyEntryIds.length > 0)
+  return hasDepRef ? PLAN_SOURCE_DEPARTMENT : PLAN_SOURCE_MANUAL
+}
+
 export function materialArchiveSupplierId(entry) {
   if (!entry) return null
   if (entry.supplierId != null && entry.supplierId !== '') return entry.supplierId
@@ -84,7 +97,7 @@ export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode, op
         model: entry.model || (entry.material && entry.material.model) || '',
         remark: entry.remark || '',
         supplierId: materialArchiveSupplierId(entry),
-        planSource: '引用申购单',
+        planSource: PLAN_SOURCE_DEPARTMENT,
         depApplyEntryIds: entry.id != null ? [entry.id] : [],
         applyBillNos: entry._purchaseBillNo || '',
         applyDepartmentId: entry._departmentId != null ? entry._departmentId : undefined
@@ -117,7 +130,7 @@ export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode, op
         model: entry.model || (entry.material && entry.material.model) || '',
         remark: entry.remark || '',
         supplierId,
-        planSource: '引用申购单',
+        planSource: PLAN_SOURCE_DEPARTMENT,
         applyDepartmentId: isGzHigh && deptId !== '' ? deptId : undefined,
         depApplyEntryIds: [],
         _billNoSet: new Set()
@@ -238,7 +251,7 @@ export function buildLeanPlanEntryPayload(rows) {
         model: row.model || (row.material && row.material.model) || undefined,
         remark: row.remark || undefined,
         applyDepartmentId: row.applyDepartmentId != null ? row.applyDepartmentId : undefined,
-        planSource: row.planSource || undefined,
+        planSource: resolvePlanEntrySource(row),
         applyBillNos: row.applyBillNos || undefined
       }
       if (row.depApplyEntryIds && row.depApplyEntryIds.length) {

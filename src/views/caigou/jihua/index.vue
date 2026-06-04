@@ -74,7 +74,7 @@
             <el-select v-model="queryParams.planSource" placeholder="计划来源"
                        clearable style="width: 150px">
               <el-option label="手工制单" value="手工制单" />
-              <el-option label="引用申购单" value="引用申购单" />
+              <el-option label="科室计划" value="科室计划" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -127,7 +127,6 @@
     <el-table v-loading="loading" :data="warehouseList"
               class="table-compact"
               :row-class-name="warehouseListIndex"
-              show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange" height="calc(100vh - 340px)" stripe border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
@@ -209,14 +208,20 @@
               type="text"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['caigou:jihua:edit']"
-              v-if="scope.row.planStatus != 2"
+              v-if="isPlanEditable(scope.row)"
             >修改</el-button>
+            <el-button
+              size="small"
+              type="text"
+              @click="handleView(scope.row)"
+              v-if="!isPlanEditable(scope.row)"
+            >查看</el-button>
             <el-button
               size="small"
               type="text"
               @click="handleDelete(scope.row)"
               v-hasPermi="['caigou:jihua:remove']"
-              v-if="scope.row.planStatus != 2"
+              v-if="isPlanEditable(scope.row)"
             >删除</el-button>
             <el-button
               size="small"
@@ -304,7 +309,7 @@ import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import { listSupplierAll } from '@/api/foundation/supplier';
 import { assertBillHasMaterialEntries } from '@/utils/billEntryValidate';
-import { concatListInChunks, fetchStockQtyMapBatched, yieldToMain, assignPlanEntryRowUid, buildLeanPlanEntryPayload } from './utils/planEntryUtils';
+import { concatListInChunks, fetchStockQtyMapBatched, yieldToMain, assignPlanEntryRowUid, buildLeanPlanEntryPayload, resolvePlanEntrySource, PLAN_SOURCE_DEPARTMENT } from './utils/planEntryUtils';
 import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
 
 export default {
@@ -515,6 +520,11 @@ export default {
   },
   methods: {
     formatIsGzLabel,
+    /** 仅未提交（0）状态允许修改 */
+    isPlanEditable(row) {
+      const status = row && row.planStatus;
+      return status === '0' || status === 0;
+    },
     /** 按当前计划仓库刷新明细「库存数量」 */
     refreshPlanEntryStockQty(onlyMaterialIds) {
       const warehouseId = this.form.warehouseId;
@@ -683,31 +693,6 @@ export default {
           return;
         }
         sums[index] = '';
-      });
-      return sums;
-    },
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = [];
-      columns.forEach((column, index) => {
-        if (index === 0) {
-          sums[index] = '合计';
-          return;
-        }
-        const values = data.map(item => Number(item[column.property]));
-        if(index === 4){
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] = sums[index].toFixed(2);
-          }
-        }
       });
       return sums;
     },
@@ -1096,12 +1081,10 @@ export default {
       this.currentProgressRow = row;
       this.progressDialogVisible = true;
     },
-    /** 根据明细数据填充计划来源（引用申购单/手工新增），用于展示 */
+    /** 根据明细关联申购单信息填充计划来源（科室计划/手工新增） */
     fillPlanSourceForEntries() {
       (this.stkIoBillEntryList || []).forEach(row => {
-        if (!row.planSource) {
-          row.planSource = (row.applyDepartmentId != null || (row.applyBillNos && String(row.applyBillNos).trim())) ? '引用申购单' : '手工新增';
-        }
+        row.planSource = resolvePlanEntrySource(row);
       });
     },
     /** 查看按钮操作 */
@@ -1131,6 +1114,10 @@ export default {
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
+      if (!this.isPlanEditable(row)) {
+        this.$modal.msgWarning('已提交的计划不允许修改');
+        return;
+      }
       this.reset();
       const id = row.id || this.ids
       getPurchasePlan(id).then(response => {
@@ -1221,6 +1208,10 @@ export default {
     },
     /** 删除按钮操作 */
     async handleDelete(row) {
+      if (row && !this.isPlanEditable(row)) {
+        this.$modal.msgWarning('已提交的计划不允许删除');
+        return;
+      }
       const ids = row.id || this.ids;
       const planLabel = (row && row.planNo) ? row.planNo : ids;
       const idList = Array.isArray(ids)
@@ -1456,7 +1447,7 @@ export default {
       this.referencePurchaseDialogVisible = true;
     },
     async onReferencePurchaseConfirm({ newRows, referenceBillNo, planSource }) {
-      this.form.planSource = planSource || '引用申购单';
+      this.form.planSource = planSource || PLAN_SOURCE_DEPARTMENT;
       this.form.referenceBillNo = referenceBillNo || '';
       try {
         await this.appendPlanEntryRows(newRows || [], { showLoading: true });
@@ -1487,6 +1478,7 @@ export default {
         await this.refreshPlanEntryStockQty(newMaterialIds);
         this.calculateTotalAmount();
         this.syncHeaderSupplierForValidate();
+        this.fillPlanSourceForEntries();
         if (typeof options.afterMerged === 'function') {
           await options.afterMerged(newRows);
         }

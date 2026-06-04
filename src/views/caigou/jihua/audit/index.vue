@@ -415,6 +415,7 @@ import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectUser from '@/components/SelectModel/SelectUser';
+import { resolvePlanEntrySource } from '../utils/planEntryUtils';
 
 export default {
   name: "PurchasePlanAudit",
@@ -704,12 +705,10 @@ export default {
         this.title = "查看计划";
       });
     },
-    /** 根据明细数据填充计划来源，用于展示 */
+    /** 根据明细关联申购单信息填充计划来源（科室计划/手工新增） */
     fillPlanSourceForEntries() {
       (this.stkIoBillEntryList || []).forEach(row => {
-        if (!row.planSource) {
-          row.planSource = (row.applyDepartmentId != null || (row.applyBillNos && String(row.applyBillNos).trim())) ? '引用申购单' : '手工新增';
-        }
+        row.planSource = resolvePlanEntrySource(row);
       });
     },
     /** 查看引用申购单号列表 */

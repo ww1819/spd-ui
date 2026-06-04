@@ -579,7 +579,7 @@ export default {
         }
         const referenceBillNo = formatReferenceBillNo(rows.map((r) => r.purchaseBillNo))
         this.innerVisible = false
-        this.$emit('confirm', { newRows, referenceBillNo, planSource: '引用申购单' })
+        this.$emit('confirm', { newRows, referenceBillNo, planSource: '科室计划' })
       } catch (e) {
         if (e !== 'cancel') {
           this.$modal.msgError((e && e.message) || '获取申购明细失败，请稍后重试')
