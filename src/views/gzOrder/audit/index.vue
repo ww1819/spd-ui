@@ -201,7 +201,7 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :disabled="!action || isAuditedForm || (gzOrderEntryList && gzOrderEntryList.length > 0)" includeWarehouseType="高值"/>
+              <SelectWarehouse v-model="form.warehouseId" :disabled="headerWhDeptLocked" includeWarehouseType="高值"/>
             </el-form-item>
             <el-form-item label="总金额">
               <el-input :value="getTotalAmount()" :disabled="true" style="width: 140px; background-color: #fff;">
@@ -210,7 +210,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="科室" prop="departmentId">
-              <SelectDepartment v-model="form.departmentId" :disabled="!action || isAuditedForm || (gzOrderEntryList && gzOrderEntryList.length > 0)"/>
+              <SelectDepartment v-model="form.departmentId" :disabled="headerWhDeptLocked"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -266,7 +266,7 @@
                 :placeholder="scanInHospitalPlaceholder"
                 clearable
                 style="width: 260px"
-                :disabled="!form.warehouseId || !form.departmentId"
+                :disabled="scanInputDisabled"
                 @keyup.enter.native="handleScanInHospitalCode"
               />
             </el-form-item>
@@ -280,7 +280,7 @@
 
           <div v-show="action">
             <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-plus" size="small" :disabled="isAuditedForm" @click="checkMaterialBtn">添加</el-button>
+              <el-button type="primary" icon="el-icon-plus" size="small" :disabled="isAuditedForm || !canScanOrAdd" @click="checkMaterialBtn">添加</el-button>
             </el-col>
             <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="small" :disabled="isAuditedForm" @click="handleDeleteGzOrderEntry">删除</el-button>
@@ -298,9 +298,14 @@
               <el-button type="primary" icon="el-icon-printer" size="small" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
             </el-col>
             <el-col :span="1.5" v-if="isOutbound">
-              <el-button type="primary" plain icon="el-icon-link" size="small"
-                         v-hasPermi="['gz:refDoc:query']"
-                         @click="openRefAcceptance">引用验收单</el-button>
+              <el-tooltip :content="refAcceptDisabledTip" :disabled="canOpenRefAcceptance" placement="top">
+                <span style="display:inline-block;">
+                  <el-button type="primary" plain icon="el-icon-link" size="small"
+                             v-hasPermi="['gz:refDoc:query']"
+                             :disabled="!canOpenRefAcceptance"
+                             @click="openRefAcceptance">引用验收单</el-button>
+                </span>
+              </el-tooltip>
             </el-col>
           </div>
           <el-col :span="1.5">
@@ -455,18 +460,33 @@
       @selectData="selectData"
     ></SelectMaterialFilter>
 
-    <el-dialog title="引用备货验收单（仅带当前仓库有库存的明细）" :visible.sync="refAcceptOpen" width="800px" append-to-body @close="onRefAcceptDialogClose">
-      <p style="margin:0 0 10px;color:#909399;font-size:13px">请选择已审核的验收单，系统将按当前出库仓库过滤仍有备货库存的条码行并带入明细。</p>
+    <el-dialog title="引用备货验收单" :visible.sync="refAcceptOpen" width="900px" append-to-body @close="onRefAcceptDialogClose">
+      <p style="margin:0 0 8px;color:#909399;font-size:13px">
+        出库仓库：已锁定为表头仓库；<span v-if="form.departmentId">申请科室已锁定为表头科室</span><span v-else>未选科室时不按科室过滤</span>。
+      </p>
+      <el-tabs v-model="refTabStatus" @tab-click="loadRefAcceptList">
+        <el-tab-pane label="未引用" name="0" />
+        <el-tab-pane label="部分引用" name="1" />
+        <el-tab-pane label="已引用" name="2" />
+      </el-tabs>
       <el-table :data="refAcceptList" v-loading="refLoading" highlight-current-row
-                @row-click="row => { refPickOrderId = row.id; refPickOrderNo = row.orderNo }"
+                @current-change="onRefAcceptRowChange"
                 max-height="360" border size="small">
         <el-table-column type="index" width="50" label="#" align="center"/>
         <el-table-column prop="orderNo" label="验收单号" min-width="140" show-overflow-tooltip/>
-        <el-table-column label="仓库" min-width="100" show-overflow-tooltip>
-          <template slot-scope="scope">{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</template>
+        <el-table-column label="申请科室" min-width="120" show-overflow-tooltip>
+          <template slot-scope="scope">{{ (scope.row.applyDepartment && scope.row.applyDepartment.name) || '--' }}</template>
         </el-table-column>
-        <el-table-column label="制单时间" width="110" align="center">
-          <template slot-scope="scope">{{ formatDisplayDateTime(scope.row.orderDate, scope.row.createTime) }}</template>
+        <el-table-column label="可引条码数" width="100" align="center" prop="refAvailableCount"/>
+        <el-table-column label="引用状态" width="90" align="center">
+          <template slot-scope="scope">
+            <span v-if="scope.row.shipmentRefStatus === 2">已引用</span>
+            <span v-else-if="scope.row.shipmentRefStatus === 1">部分引用</span>
+            <span v-else>未引用</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="审核时间" width="110" align="center">
+          <template slot-scope="scope">{{ formatDisplayDateTime(scope.row.auditDate, scope.row.createTime) }}</template>
         </el-table-column>
       </el-table>
       <span slot="footer" class="dialog-footer">
@@ -486,7 +506,7 @@
       <p style="margin:0 0 12px;color:#909399;font-size:13px">引用验收单带出明细前，需要先选择出库科室；取消则不增加明细。</p>
       <el-form label-width="70px" size="small">
         <el-form-item label="科室" required>
-          <SelectDepartment v-model="refPendingDepartmentId" />
+          <SelectDepartment v-model="refPendingDepartmentId" :disabled="refDeptPickLocked" />
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
@@ -541,7 +561,7 @@
 import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, checkInHospitalCode, getDepotByInHospitalCodeForOutbound, listEntryChangeLog } from "@/api/gz/shipment";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listDepotInventory } from "@/api/gz/depotInventory";
-import { listAuditedAcceptance, listAcceptanceDepotLines } from "@/api/gz/refDoc";
+import { listAuditedAcceptance, previewAcceptanceRef } from "@/api/gz/refDoc";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -619,9 +639,12 @@ export default {
       refLoading: false,
       refPickOrderId: null,
       refPickOrderNo: null,
+      refPickOrder: null,
+      refTabStatus: '0',
       /** 引用验收单：表头无科室时先弹窗选科室 */
       refDeptPickOpen: false,
       refPendingDepartmentId: null,
+      refDeptPickLocked: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -671,13 +694,35 @@ export default {
     };
   },
   computed: {
+    refMode() {
+      return !!(this.form && this.form.refAcceptanceId);
+    },
+    headerWhDeptLocked() {
+      return !this.action || this.isAuditedForm || this.refMode
+        || (this.gzOrderEntryList && this.gzOrderEntryList.length > 0);
+    },
+    canOpenRefAcceptance() {
+      return this.isOutbound && this.action && !this.isAuditedForm
+        && this.form && this.form.warehouseId
+        && (!this.gzOrderEntryList || this.gzOrderEntryList.length === 0)
+        && !this.form.refAcceptanceId;
+    },
+    refAcceptDisabledTip() {
+      if (!this.form || !this.form.warehouseId) return '请先选择出库仓库';
+      if (this.form.refAcceptanceId) return '已绑定验收单，不可再次引用';
+      if (this.gzOrderEntryList && this.gzOrderEntryList.length > 0) return '已有明细时不可引用，请删除整单后重试';
+      return '';
+    },
+    canScanOrAdd() {
+      return !this.refMode && this.form && this.form.warehouseId && this.form.departmentId;
+    },
+    scanInputDisabled() {
+      return !this.canScanOrAdd || !this.action || this.isAuditedForm;
+    },
     scanInHospitalPlaceholder() {
-      if (!this.form || !this.form.warehouseId) {
-        return '请先选择仓库';
-      }
-      if (!this.form.departmentId) {
-        return '请先选择科室';
-      }
+      if (this.refMode) return '引用模式下不可扫码';
+      if (!this.form || !this.form.warehouseId) return '请先选择仓库';
+      if (!this.form.departmentId) return '请先选择科室';
       return '扫描院内码后回车';
     },
     isAuditedForm() {
@@ -761,6 +806,7 @@ export default {
         orderDate: form.orderDate || null,
         warehouseId: form.warehouseId || null,
         departmentId: form.departmentId || null,
+        refAcceptanceId: form.refAcceptanceId || null,
         orderStatus: form.orderStatus || null,
         orderType: form.orderType || null,
         remark: form.remark || null,
@@ -777,7 +823,7 @@ export default {
       return str.replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/\u3000/g, ' ');
     },
     handleScanInHospitalCode() {
-      if (!this.isOutbound || !this.action) {
+      if (!this.isOutbound || !this.action || this.refMode) {
         return;
       }
       const wid = this.form.warehouseId;
@@ -957,6 +1003,10 @@ export default {
       });
     },
     checkMaterialBtn() {
+      if (this.refMode) {
+        this.$message.warning('引用模式下不可手工添加明细');
+        return;
+      }
       // 检查是否选择了仓库
       if (!this.form.warehouseId) {
         this.$message.warning('请先选择仓库');
@@ -1062,9 +1112,13 @@ export default {
         remark: null,
         masterBarcode: null,
         secondaryBarcode: null,
-        scanInHospitalCode: null
+        scanInHospitalCode: null,
+        refAcceptanceId: null
       };
       this.gzOrderEntryList = [];
+      this.refPickOrderId = null;
+      this.refPickOrderNo = null;
+      this.refPickOrder = null;
       this.dialogSavedSnapshot = '';
       this.resetForm("form");
     },
@@ -1247,37 +1301,60 @@ export default {
       this.refDeptPickOpen = false;
       this.refPendingDepartmentId = null;
     },
-    openRefAcceptance() {
-      if (!this.form.warehouseId) {
-        this.$message.warning('请先选择出库仓库');
-        return;
+    onRefAcceptRowChange(row) {
+      if (row) {
+        this.refPickOrder = row;
+        this.refPickOrderId = row.id;
+        this.refPickOrderNo = row.orderNo;
       }
-      if (this.gzOrderEntryList && this.gzOrderEntryList.length > 0) {
-        this.$message.warning('已有出库明细时请先清空或保存后再引用');
-        return;
-      }
-      this.refPickOrderId = null;
-      this.refPickOrderNo = null;
-      this.refAcceptOpen = true;
+    },
+    loadRefAcceptList() {
+      if (!this.form.warehouseId) return;
       this.refLoading = true;
-      listAuditedAcceptance({ pageNum: 1, pageSize: 100 }).then(res => {
+      const params = {
+        refWarehouseId: this.form.warehouseId,
+        shipmentRefStatus: parseInt(this.refTabStatus, 10)
+      };
+      if (this.form.departmentId) {
+        params.applyDepartmentId = this.form.departmentId;
+      }
+      listAuditedAcceptance(params).then(res => {
         this.refAcceptList = res.data || res.rows || [];
         this.refLoading = false;
       }).catch(() => { this.refLoading = false; });
     },
+    openRefAcceptance() {
+      if (!this.canOpenRefAcceptance) {
+        this.$message.warning(this.refAcceptDisabledTip || '当前不可引用验收单');
+        return;
+      }
+      this.refPickOrderId = null;
+      this.refPickOrderNo = null;
+      this.refPickOrder = null;
+      this.refTabStatus = '0';
+      this.refAcceptOpen = true;
+      this.loadRefAcceptList();
+    },
     confirmRefAcceptance() {
       if (!this.refPickOrderId) {
-        this.$message.warning('请单击表格选择一条验收单');
+        this.$message.warning('请选择一条验收单');
         return;
       }
-      if (this.isOutbound && !this.form.departmentId) {
-        this.refPendingDepartmentId = null;
-        this.refDeptPickOpen = true;
+      const pick = this.refPickOrder || {};
+      if (this.form.departmentId) {
+        this.applyRefAcceptanceAfterDeptReady();
         return;
       }
-      this.fetchAndApplyRefAcceptanceLines();
+      const ad = pick.applyDepartmentId;
+      if (ad) {
+        this.form.departmentId = ad;
+        this.applyRefAcceptanceAfterDeptReady();
+        return;
+      }
+      this.refPendingDepartmentId = null;
+      this.refDeptPickLocked = false;
+      this.refDeptPickOpen = true;
     },
-    /** 科室弹窗确定：写入表头科室后再拉取引用明细 */
     confirmRefDeptPick() {
       if (this.refPendingDepartmentId === null || this.refPendingDepartmentId === undefined || this.refPendingDepartmentId === '') {
         this.$message.warning('请选择科室');
@@ -1285,27 +1362,37 @@ export default {
       }
       this.form.departmentId = this.refPendingDepartmentId;
       this.refDeptPickOpen = false;
-      this.fetchAndApplyRefAcceptanceLines();
+      this.applyRefAcceptanceAfterDeptReady();
     },
-    /** 按已选验收单拉取备货库存行并写入出库明细（需已选仓库；出库时已选科室） */
-    fetchAndApplyRefAcceptanceLines() {
-      if (!this.refPickOrderId) {
-        this.$message.warning('请单击表格选择一条验收单');
-        return;
-      }
-      if (this.isOutbound && !this.form.departmentId) {
-        this.$message.warning('请先选择科室');
-        return;
-      }
-      listAcceptanceDepotLines(this.refPickOrderId, this.form.warehouseId).then(res => {
-        const rows = res.data || [];
-        if (!rows.length) {
-          this.$message.warning('该验收单在当前仓库无可用备货库存');
+    applyRefAcceptanceAfterDeptReady() {
+      if (!this.refPickOrderId || !this.form.warehouseId) return;
+      const excludeId = this.form.id || undefined;
+      previewAcceptanceRef(this.refPickOrderId, this.form.warehouseId, excludeId).then(res => {
+        const preview = res.data || {};
+        const available = preview.availableLines || [];
+        const missing = preview.missingBarcodes || [];
+        if (!available.length) {
+          const missCodes = (missing || []).map(m => m.inHospitalCode || m.materialName).filter(Boolean).join('、');
+          this.$message.warning(missCodes ? `以下条码在当前仓库无库存或未占用：${missCodes}` : '该验收单在当前仓库无可引用明细');
           return;
         }
-        rows.forEach(r => this.gzOrderEntryList.push(this.mapDepotToOutboundEntry(r)));
-        this.refAcceptOpen = false;
-        this.$message.success('已带入 ' + rows.length + ' 条明细');
+        const applyLines = () => {
+          this.gzOrderEntryList = [];
+          available.forEach(r => this.gzOrderEntryList.push(this.mapDepotToOutboundEntry(r)));
+          this.form.refAcceptanceId = this.refPickOrderId != null ? String(this.refPickOrderId) : null;
+          this.refAcceptOpen = false;
+          this.$message.success('已带入 ' + available.length + ' 条明细');
+        };
+        if (missing.length) {
+          const lines = missing.map(m => `${m.inHospitalCode || ''}${m.materialName ? '（' + m.materialName + '）' : ''}`).join('\n');
+          this.$confirm(
+            `以下 ${missing.length} 个院内码在当前仓库无库存或未占用，不会带入：\n${lines}\n\n是否继续带入其余 ${available.length} 条？`,
+            '部分条码无法带入',
+            { type: 'warning' }
+          ).then(() => applyLines()).catch(() => {});
+        } else {
+          applyLines();
+        }
       });
     },
     mapDepotToOutboundEntry(r) {

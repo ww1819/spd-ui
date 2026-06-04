@@ -2766,6 +2766,52 @@ export async function exportConsumeSummaryStyledXlsx(options) {
   });
 }
 
+/** 科室领用 — 出退库汇总 */
+export async function exportConsumeOutReturnSummaryStyledXlsx(options) {
+  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  const headers = [
+    '序号',
+    '科室',
+    '仓库',
+    '帐类名称',
+    '耗材名称',
+    '规格',
+    '单位',
+    '数量',
+    '采购价',
+    '金额',
+    '财务分类',
+  ];
+  const numericCols = [8, 9, 10];
+  return exportInventoryQueryStyledXlsx({
+    sheetName: '出退库汇总',
+    titleBoldText: '科室出退库汇总表',
+    beginDate,
+    endDate,
+    headers,
+    rows,
+    numericCols1Based: numericCols,
+    sumExtractors: {
+      8: (row) => Number(row.materialQty || 0),
+      10: (row) => Number(row.materialAmt || 0),
+    },
+    buildCells: (row) => [
+      0,
+      row.departmentName || '',
+      row.warehouseName || '',
+      row.accountKindName || '',
+      row.materialName || '',
+      row.materialSpeci || '',
+      row.unitName || '',
+      Number(row.materialQty || 0),
+      row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null,
+      Number(row.materialAmt || 0),
+      row.financeCategoryName || '',
+    ],
+    fileName,
+  });
+}
+
 /** 科室领用 — 领用排名 */
 export async function exportConsumeRankingStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;

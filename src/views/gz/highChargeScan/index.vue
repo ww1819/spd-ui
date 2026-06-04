@@ -2,44 +2,55 @@
   <div class="app-container high-charge-scan-page">
     <div class="hc-filter-panel">
       <el-form :model="detailQuery" inline size="small" class="hc-query-form">
-          <el-form-item label="患者姓名">
-            <el-input v-model="detailQuery.patientName" placeholder="姓名" clearable style="width:140px" @keyup.enter.native="handleDetailQuery" />
-          </el-form-item>
-          <el-form-item :label="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院/门诊号')">
-            <el-input
-              v-model="detailQuery.visitNo"
-              :placeholder="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院号或门诊号')"
-              clearable
-              style="width:160px"
-              @keyup.enter.native="handleDetailQuery"
-            />
-          </el-form-item>
-          <el-form-item label="收费项ID">
-            <el-input v-model="detailQuery.chargeItemId" placeholder="收费项目编码" clearable style="width:160px" @keyup.enter.native="handleDetailQuery" />
-          </el-form-item>
-          <el-form-item label="科室">
-            <el-select v-model="detailQuery.departmentId" placeholder="按权限科室" clearable filterable style="width:200px">
-              <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="核销状态">
-            <el-select v-model="detailQuery.processed" placeholder="全部" clearable style="width:110px">
-              <el-option label="已核销" value="Y" />
-              <el-option label="未核销" value="N" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="高低值类型">
-            <el-select v-model="detailQuery.valueLevel" placeholder="高值+未识别" clearable style="width:120px">
-              <el-option label="高值收费项" value="1" />
-              <el-option label="未识别" value="0" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="计费日期">
-            <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
-            <span style="margin:0 6px">至</span>
-            <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
-          </el-form-item>
-        </el-form>
+        <el-form-item label="类型">
+          <el-radio-group v-model="detailVisitType" @change="handleDetailQuery">
+            <el-radio-button label="ALL">全部</el-radio-button>
+            <el-radio-button label="IN">住院</el-radio-button>
+            <el-radio-button label="OUT">门诊</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="患者姓名">
+          <el-input v-model="detailQuery.patientName" placeholder="姓名" clearable style="width:140px" @keyup.enter.native="handleDetailQuery" />
+        </el-form-item>
+        <el-form-item :label="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院/门诊号')">
+          <el-input
+            v-model="detailQuery.visitNo"
+            :placeholder="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院号或门诊号')"
+            clearable
+            style="width:160px"
+            @keyup.enter.native="handleDetailQuery"
+          />
+        </el-form-item>
+        <el-form-item label="收费项ID">
+          <el-input v-model="detailQuery.chargeItemId" placeholder="收费项目编码" clearable style="width:160px" @keyup.enter.native="handleDetailQuery" />
+        </el-form-item>
+        <el-form-item label="科室">
+          <el-select v-model="detailQuery.departmentId" placeholder="按权限科室" clearable filterable style="width:200px">
+            <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="是否处理">
+          <el-select v-model="detailQuery.processed" placeholder="全部" clearable style="width:110px">
+            <el-option label="已处理" value="Y" />
+            <el-option label="未处理" value="N" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="高低值类型">
+          <el-select v-model="detailQuery.valueLevel" placeholder="默认仅高值" clearable style="width:130px">
+            <el-option label="高值收费项" value="1" />
+            <el-option label="低值收费项" value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="计费日期">
+          <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
+          <span style="margin:0 6px">至</span>
+          <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="el-icon-search" @click="handleDetailQuery">查询</el-button>
+          <el-button icon="el-icon-refresh" @click="resetDetailQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
     </div>
 
     <div class="hc-action-bar">
@@ -221,7 +232,7 @@ export default {
         chargeItemId: undefined,
         departmentId: undefined,
         processed: undefined,
-        valueLevel: undefined,
+        valueLevel: '1',
         beginChargeDate: undefined,
         endChargeDate: undefined
       },
@@ -302,20 +313,12 @@ export default {
     },
     valueLevelText(v) {
       if (v === '1' || v === 1) return '高值'
-      if (v === '2' || v === 2) return '低值'
-      if (v === '0' || v === 0) return '未识别'
-      return v ? String(v) : '未识别'
+      if (v === '2' || v === 2 || v === '0' || v === 0) return '低值'
+      return v ? String(v) : '低值'
     },
-    formatPatientSex(v) {
-      if (v == null || String(v).trim() === '') return '--'
-      const s = String(v).trim()
-      if (s === '1' || s === '男' || s.toUpperCase() === 'M') return '男'
-      if (s === '2' || s === '女' || s.toUpperCase() === 'F') return '女'
-      return s
-    },
-    isUnknownValueLevel(row) {
+    isLowValueLevel(row) {
       const v = row && row.valueLevel
-      return v === '0' || v === 0 || v == null || v === ''
+      return v !== '1' && v !== 1
     },
     canScanHigh(row) {
       if (!row || row.valueLevel !== '1' && row.valueLevel !== 1) {
@@ -324,12 +327,8 @@ export default {
       return row.processStatus !== 'CONSUMED'
     },
     openHighDialog(row) {
-      if (this.isUnknownValueLevel(row)) {
-        this.$modal.msgWarning('收费项目未维护高低值标识，请先在耗材档案维护是否高值后再核销')
-        return
-      }
-      if (row.valueLevel === '2' || row.valueLevel === 2) {
-        this.$modal.msgWarning('该行为低值收费项，请至患者收费查询进行低值核销')
+      if (this.isLowValueLevel(row)) {
+        this.$modal.msgWarning('该行为低值收费项（未维护高低值视同低值），请至患者收费查询进行低值核销')
         return
       }
       if (row.processStatus === 'CONSUMED') {
@@ -435,7 +434,7 @@ export default {
         chargeItemId: undefined,
         departmentId: undefined,
         processed: undefined,
-        valueLevel: undefined,
+        valueLevel: '1',
         beginChargeDate: undefined,
         endChargeDate: undefined
       }

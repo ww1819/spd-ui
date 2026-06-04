@@ -169,7 +169,7 @@
                   </el-col>
                   <el-col :span="6">
                     <el-form-item label="科室" prop="departmentId">
-                      <SelectDepartment v-model="form.departmentId"/>
+                      <SelectDepartment v-model="form.departmentId" :disabled="departmentLocked"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="6" />
@@ -207,7 +207,7 @@
                   <div class="detail-header-row">
                     <span class="detail-header-title">科室批量消耗明细信息</span>
                     <template v-if="action">
-                      <el-button type="primary" icon="el-icon-plus" size="small" @click="nameBtn">添加</el-button>
+                      <el-button type="primary" icon="el-icon-plus" size="small" :disabled="!form.departmentId" @click="nameBtn">添加</el-button>
                       <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteConsumeEntry">删除</el-button>
                       <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
                     </template>
@@ -469,6 +469,16 @@ export default {
     /** 与申领单审核 dApplyAudit 弹窗一致：固定视区高度，表体滚动、合计贴在表底 */
     detailTableHeight() {
       return 'max(300px, calc(100vh - 320px))';
+    },
+    /** 查看/修改已保存单，或新增且已有明细时锁定科室 */
+    departmentLocked() {
+      if (!this.action) {
+        return true;
+      }
+      if (this.form && this.form.id) {
+        return true;
+      }
+      return (this.deptBatchConsumeEntryList || []).length > 0;
     }
   },
   created() {
