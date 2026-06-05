@@ -148,7 +148,7 @@
 
     <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="92%" append-to-body>
       <el-table v-loading="consumeRecordDialog.loading" :data="consumeRecordDialog.rows" border size="small" max-height="420" empty-text="暂无消耗记录">
-        <el-table-column label="计费单号" prop="consumeBillNo" min-width="178" show-overflow-tooltip />
+        <el-table-column label="消耗单号" prop="consumeBillNo" min-width="178" show-overflow-tooltip />
         <el-table-column label="耗材" prop="materialName" min-width="110" show-overflow-tooltip />
         <el-table-column label="数量" prop="entryQty" width="80" align="right" />
         <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="120" show-overflow-tooltip />
@@ -402,7 +402,7 @@ export default {
         lines: this.highLines.map(l => ({ gzDepInventoryId: l.gzDepInventoryId, qty: l.applyQty }))
       }).then(res => {
         const d = res.data || {}
-        this.$modal.msgSuccess(`计费单 ${d.traceNo || d.traceBillId || ''} 已审核；镜像状态 ${d.mirrorProcessStatus || ''}`)
+        this.$modal.msgSuccess(`消耗单 ${d.consumeBillId || ''} 已审核；镜像状态 ${d.mirrorProcessStatus || ''}`)
         this.highDialogVisible = false
         this.handleDetailQuery()
       }).finally(() => { this.highSubmitting = false })

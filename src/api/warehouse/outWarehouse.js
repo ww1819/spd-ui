@@ -1,5 +1,17 @@
 import request from '@/utils/request'
 
+/** 按仓库+耗材批量查询当前库存数量（出库明细「库存数量」列） */
+export function getOutWarehouseMaterialStockQty(warehouseId, materialIds) {
+  return request({
+    url: '/warehouse/outWarehouse/materialStockQty',
+    method: 'get',
+    params: {
+      warehouseId,
+      materialIds: Array.isArray(materialIds) ? materialIds.join(',') : materialIds
+    }
+  })
+}
+
 // 查询出库列表
 export function listOutWarehouse(query) {
   return request({

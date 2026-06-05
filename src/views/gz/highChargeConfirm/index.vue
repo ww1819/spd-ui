@@ -47,37 +47,58 @@
       <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
     </div>
 
-    <el-table
-      ref="table"
-      v-loading="loading"
-      :data="list"
-      height="58vh"
-      border
-      stripe
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column type="selection" width="48" :selectable="rowSelectable" />
-      <el-table-column label="确认状态" width="90">
-        <template slot-scope="scope">
-          <el-tag v-if="scope.row.confirmStatus === 1" type="success" size="mini">已确认</el-tag>
-          <el-tag v-else type="info" size="mini">未确认</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="核销时间" prop="consumeAuditTime" width="160" show-overflow-tooltip />
-      <el-table-column label="科室" prop="departmentName" min-width="100" show-overflow-tooltip />
-      <el-table-column label="患者" prop="patientName" width="90" show-overflow-tooltip />
-      <el-table-column label="号" prop="visitNo" width="110" show-overflow-tooltip />
-      <el-table-column label="收费项" prop="chargeItemId" width="100" show-overflow-tooltip />
-      <el-table-column label="项目名称" prop="itemName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="耗材" prop="materialName" min-width="140" show-overflow-tooltip />
-      <el-table-column label="院内码" prop="inHospitalCode" width="120" show-overflow-tooltip />
-      <el-table-column label="数量" prop="entryQty" width="70" align="right" />
-      <el-table-column label="单价" prop="unitPrice" width="80" align="right" />
-      <el-table-column label="金额" prop="amt" width="90" align="right" />
-      <el-table-column label="供应商" prop="supplierName" min-width="120" show-overflow-tooltip />
-      <el-table-column label="计费单号" prop="consumeBillNo" width="130" show-overflow-tooltip />
-      <el-table-column label="确认批次" prop="confirmNo" width="150" show-overflow-tooltip />
-    </el-table>
+    <div class="hc-detail-box">
+      <el-table
+        ref="table"
+        v-loading="loading"
+        :data="list"
+        height="60vh"
+        border
+        stripe
+        class="hc-detail-table"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="48" align="center" :selectable="rowSelectable" fixed="left" />
+        <el-table-column label="确认状态" width="100" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span :class="confirmStatusClass(scope.row.confirmStatus)">{{ confirmStatusText(scope.row.confirmStatus) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="核销时间" prop="consumeAuditTime" width="160" show-overflow-tooltip />
+        <el-table-column label="科室" prop="departmentName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="患者姓名" prop="patientName" width="100" show-overflow-tooltip />
+        <el-table-column label="住院/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
+        <el-table-column label="收费编码" prop="chargeItemId" width="120" show-overflow-tooltip />
+        <el-table-column label="项目名称" prop="itemName" min-width="160" show-overflow-tooltip />
+        <el-table-column label="项目规格" prop="itemSpec" width="100" show-overflow-tooltip />
+        <el-table-column label="项目型号" prop="itemModel" width="100" show-overflow-tooltip />
+        <el-table-column label="产品名称" prop="materialName" min-width="140" show-overflow-tooltip />
+        <el-table-column label="规格" prop="materialSpeci" width="100" show-overflow-tooltip />
+        <el-table-column label="型号" prop="materialModel" width="100" show-overflow-tooltip />
+        <el-table-column label="院内码" prop="inHospitalCode" width="120" show-overflow-tooltip />
+        <el-table-column label="数量" prop="entryQty" width="90" align="center" />
+        <el-table-column label="单价" prop="unitPrice" width="80" align="right" />
+        <el-table-column label="金额" prop="amt" width="100" align="right" />
+        <el-table-column label="批号" prop="batchNumber" width="110" show-overflow-tooltip />
+        <el-table-column label="生产日期" prop="productionDate" width="110" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateCell(scope.row.productionDate) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="有效期" prop="endTime" width="110" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateCell(scope.row.endTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="生产厂家" prop="factoryName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="注册证号" prop="registerNo" min-width="140" show-overflow-tooltip />
+        <el-table-column label="供应商" prop="supplierName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="消耗单号" prop="consumeBillNo" width="130" show-overflow-tooltip />
+        <el-table-column label="确认批次" prop="confirmNo" width="150" show-overflow-tooltip />
+        <el-table-column label="入库单号" prop="inboundBillNo" width="150" show-overflow-tooltip />
+        <el-table-column label="出库单号" prop="outboundBillNo" width="150" show-overflow-tooltip />
+      </el-table>
+    </div>
 
     <div class="hc-pagination-wrap">
       <pagination

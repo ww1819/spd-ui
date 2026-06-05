@@ -344,13 +344,6 @@
         >
           <el-table-column type="selection" width="60" align="center" fixed="left" />
           <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-          <el-table-column v-if="action" label="操作" width="188" align="center" resizable>
-            <template slot-scope="scope">
-              <el-button type="text" size="small" @click="copyOutEntryRow(scope.$index)">复制</el-button>
-              <el-button type="text" size="small" style="color:#f56c6c" @click="deleteOutEntryRow(scope.$index)">删除</el-button>
-              <el-button type="text" size="small" @click="openPickBatchForRow(scope.$index)">选批次</el-button>
-            </template>
-          </el-table-column>
           <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.code) || '—' }}</span>
@@ -407,13 +400,98 @@
               >{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="70" min-width="56" show-overflow-tooltip resizable/>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.unitPrice" type='number' :disabled="true"
                         @input="priceChange(scope.row)" placeholder="单价" />
             </template>
           </el-table-column>
+          <el-table-column label="数量" prop="qty" width="90" min-width="80" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input clearable v-model="scope.row.qty" placeholder="数量" size="small"
+                        onkeyup="value=value.replace(/\D/g,'')"
+                        onafterpaste="value=value.replace(/\D/g,'')"
+                        @blur="form.result=$event.target.value"
+                        @input="qtyChange(scope.row)"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="库存数量" prop="stockQty" width="88" min-width="72" align="center" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ formatEntryStockQty(scope.row) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
+            </template>
+          </el-table-column>
+          <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable class-name="detail-col-field-input">
+            <template slot-scope="scope">
+              <div class="detail-cell-edit-wrap">
+                <el-input
+                  v-model="scope.row.batchNumber"
+                  :disabled="true"
+                  placeholder="批号"
+                  size="small"
+                  class="detail-field-compact"
+                />
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="生产日期" prop="beginTime" width="180" show-overflow-tooltip resizable class-name="detail-col-field-input">
+            <template slot-scope="scope">
+              <div class="detail-cell-edit-wrap">
+                <el-date-picker
+                  clearable
+                  v-model="scope.row.beginTime"
+                  type="date"
+                  :disabled="true"
+                  value-format="yyyy-MM-dd"
+                  placeholder="请选择生产日期"
+                  size="small"
+                  class="detail-field-compact"
+                />
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="有效期" prop="endTime" width="180" show-overflow-tooltip resizable class-name="detail-col-field-input">
+            <template slot-scope="scope">
+              <div class="detail-cell-edit-wrap">
+                <el-date-picker
+                  clearable
+                  v-model="scope.row.endTime"
+                  type="date"
+                  :disabled="true"
+                  value-format="yyyy-MM-dd"
+                  placeholder="请选择有效期"
+                  size="small"
+                  class="detail-field-compact"
+                />
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="批次号" prop="batchNo" width="180" min-width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span class="batch-no-text" :title="scope.row.batchNo || ''">{{ scope.row.batchNo }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="供应商" align="center" prop="material.supplier.name" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.remark" placeholder="备注" />
+            </template>
+          </el-table-column>
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="已引用" prop="srcRefedQty" width="72" align="center" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.srcRefedQty != null ? scope.row.srcRefedQty : '—' }}</span>
@@ -432,71 +510,16 @@
               <span>{{ scope.row.srcRefableQty != null ? scope.row.srcRefableQty : '—' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.qty" placeholder="数量"
-                        onkeyup="value=value.replace(/\D/g,'')"
-                        onafterpaste="value=value.replace(/\D/g,'')"
-                        @blur="form.result=$event.target.value"
-                        @input="qtyChange(scope.row)"
-              />
-            </template>
-          </el-table-column>
-          <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
-            </template>
-          </el-table-column>
-          <el-table-column label="批次号" prop="batchNo" width="320" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span class="batch-no-text">{{ scope.row.batchNo }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" :disabled="true" placeholder="批号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="生产日期" prop="beginTime" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.beginTime"
-                              type="date"
-                              :disabled="true"
-                              value-format="yyyy-MM-dd"
-                              placeholder="请选择生产日期">
-              </el-date-picker>
-            </template>
-          </el-table-column>
-          <el-table-column label="有效期" prop="endTime" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.endTime"
-                              type="date"
-                              :disabled="true"
-                              value-format="yyyy-MM-dd"
-                              placeholder="请选择有效期">
-              </el-date-picker>
-            </template>
-          </el-table-column>
-          <el-table-column label="供应商" align="center" prop="material.supplier.name" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="备注" />
-            </template>
-          </el-table-column>
-          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="action" label="操作" width="188" align="center" fixed="right" resizable>
+            <template slot-scope="scope">
+              <el-button type="text" size="small" @click="copyOutEntryRow(scope.$index)">复制</el-button>
+              <el-button type="text" size="small" style="color:#f56c6c" @click="deleteOutEntryRow(scope.$index)">删除</el-button>
+              <el-button type="text" size="small" @click="openPickBatchForRow(scope.$index)">选批次</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -651,8 +674,10 @@ import {
   addOutWarehouse,
   updateOutWarehouse,
   listCTKWarehouse,
-  createCkEntriesByRkApply, createCkEntriesByWhApply, createCkEntriesByDepPurchaseApply, listEntryChangeLog
+  createCkEntriesByRkApply, createCkEntriesByWhApply, createCkEntriesByDepPurchaseApply, listEntryChangeLog,
+  getOutWarehouseMaterialStockQty
 } from "@/api/warehouse/outWarehouse";
+import { fetchStockQtyMapBatched } from '@/views/caigou/jihua/utils/planEntryUtils';
 import { getInWarehouse } from "@/api/warehouse/warehouse";
 import { listInventoryMaterialAll } from "@/api/warehouse/inventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -812,6 +837,17 @@ export default {
         this.queryParams.pageNum = 1
         this.getList()
       }
+    },
+    open(val) {
+      if (val) {
+        this.$nextTick(() => this.refreshEntryStockQty())
+      }
+    },
+    'form.warehouseId'(val, oldVal) {
+      if (!this.open || val == null || val === '' || val === oldVal) {
+        return
+      }
+      this.refreshEntryStockQty()
     }
   },
   methods: {
@@ -823,6 +859,40 @@ export default {
       this.queryParams.beginDate = null
       this.queryParams.endDate = null
       this.queryParams.billNo = null
+    },
+    formatEntryStockQty(row) {
+      if (!row || row.stockQty == null || row.stockQty === '') {
+        return '--'
+      }
+      const n = Number(row.stockQty)
+      return Number.isFinite(n) ? n : row.stockQty
+    },
+    /** 按当前出库仓库刷新明细「库存数量」 */
+    refreshEntryStockQty(onlyMaterialIds) {
+      const warehouseId = this.form.warehouseId
+      const list = this.stkIoBillEntryList || []
+      if (!warehouseId || !list.length) {
+        return Promise.resolve()
+      }
+      const materialIds = onlyMaterialIds && onlyMaterialIds.length
+        ? [...new Set(onlyMaterialIds.filter((id) => id != null))]
+        : [...new Set(list.map((e) => e.materialId).filter((id) => id != null))]
+      if (!materialIds.length) {
+        return Promise.resolve()
+      }
+      const idSet = new Set(materialIds.map((id) => String(id)))
+      return fetchStockQtyMapBatched(warehouseId, materialIds, getOutWarehouseMaterialStockQty).then((map) => {
+        list.forEach((entry) => {
+          if (entry.materialId == null || !idSet.has(String(entry.materialId))) {
+            return
+          }
+          const raw = map[String(entry.materialId)] != null
+            ? map[String(entry.materialId)]
+            : map[entry.materialId]
+          const q = raw != null ? Number(raw) : 0
+          this.$set(entry, 'stockQty', Number.isFinite(q) ? q : 0)
+        })
+      }).catch(() => {})
     },
     getStatDate(){
       // 返回前5天 00:00:00
@@ -1039,6 +1109,7 @@ export default {
           this.pendingRkApplyIdForCk = null;
           this.rkOutDeptTempId = null;
           this.rkOutDeptDialogVisible = false;
+          this.$nextTick(() => this.refreshEntryStockQty());
         }
       }).catch(() => {
         this.$message.error('加载入库单生成出库明细失败');
@@ -1137,6 +1208,7 @@ export default {
         this.qtyChange(target)
         this.inventoryPickRowIndex = null
         this.inventoryLockedMaterialId = null
+        this.refreshEntryStockQty([target.materialId])
         return
       }
       const existedBatchNos = new Set(
@@ -1180,6 +1252,7 @@ export default {
           existedBatchNos.add(item.batchNo);
         }
       });
+      this.refreshEntryStockQty();
     },
 
     /** 仓库申请单（科室申领按仓拆分）：带出 wh_warehouse_apply_id、明细 wh_apply_entry_id，保存后写入 wh_wh_apply_ck_entry_ref */
@@ -1201,6 +1274,7 @@ export default {
           this.form.billStatus = '1';
           this.form.billType = '201';
           this.DialogDApplyComponentShow = false;
+          this.$nextTick(() => this.refreshEntryStockQty());
         }
       }).catch(() => {
         this.$message.error("加载仓库申请单生成出库明细失败");
@@ -1225,6 +1299,7 @@ export default {
           this.form.billStatus = '1';
           this.form.billType = '201';
           this.DialogDepPurchaseApplyComponentShow = false;
+          this.$nextTick(() => this.refreshEntryStockQty());
         }
       }).catch(() => {
         this.$message.error("加载科室申购单生成出库明细失败");
@@ -1351,6 +1426,7 @@ export default {
         this.form.billStatus = '1';
         this.form.billType = '201';
         this.title = "查看出库";
+        this.$nextTick(() => this.refreshEntryStockQty());
       });
     },
     /** 新增按钮操作 */
@@ -1380,6 +1456,7 @@ export default {
         this.open = true;
         this.action = true;
         this.title = "修改出库";
+        this.$nextTick(() => this.refreshEntryStockQty());
       });
     },
     /** 提交按钮 */
@@ -1933,13 +2010,14 @@ export default {
   line-height: 28px !important;
 }
 
-/* 明细表 批次号自动换行显示完整 */
+/* 明细表批次号：单行展示，超出省略，悬停 title / 列 tooltip 看全文 */
 .batch-no-text {
-  display: inline-block;
+  display: block;
   width: 100%;
-  white-space: normal;
-  word-break: break-all;
-  line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
 }
 
 .local-modal-content .modal-form-compact .el-form-item {
@@ -2025,6 +2103,31 @@ export default {
   padding-top: 8px !important;
   padding-bottom: 10px !important;
   background-color: #fff !important;
+}
+
+/* 批号 / 生产日期 / 有效期：输入框与日期选择器同一水平线 */
+.local-modal-content .modal-detail-section .el-table .detail-cell-edit-wrap {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 2px 0;
+}
+
+.local-modal-content .modal-detail-section .el-table .detail-field-compact {
+  width: 100% !important;
+}
+
+.local-modal-content .modal-detail-section .el-table .detail-field-compact.el-date-editor.el-input {
+  width: 100% !important;
+}
+
+.local-modal-content .modal-detail-section .el-table ::v-deep .detail-field-compact .el-input__inner {
+  height: 32px;
+  line-height: 32px;
+}
+
+.local-modal-content .modal-detail-section .el-table ::v-deep .detail-field-compact.el-date-editor .el-input__icon {
+  line-height: 32px;
 }
 
 /* 批次号输入框单独放宽，避免被表单统一 140px 限制 */
@@ -2284,6 +2387,11 @@ export default {
 /* 出库申请弹窗明细：名称/规格/型号与到货验收一致（两行截断 + title） */
 .app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td {
   vertical-align: middle;
+}
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-field-input .cell {
+  vertical-align: middle;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 .app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .cell {
   vertical-align: top;
