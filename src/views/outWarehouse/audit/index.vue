@@ -527,7 +527,7 @@
 import { listOutWarehouse, getOutWarehouse,
   delOutWarehouse, updateOutWarehouse,auditOutWarehouse, listEntryChangeLog } from "@/api/warehouse/outWarehouse";
 import { collectCkThScopeErrors } from '@/utils/auditBillScopeValidate';
-import { assertBillEntriesForAudit } from '@/utils/billEntryValidate';
+import { assertBillEntriesForAudit, assertBillMaterialLinesQtyNotZero } from '@/utils/billEntryValidate';
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -1105,6 +1105,9 @@ export default {
     submitForm() {
       this.$refs["form"].validate(async valid => {
         if (!valid) return
+        if (!assertBillMaterialLinesQtyNotZero(this.stkIoBillEntryList, this)) {
+          return
+        }
         for (const [index, entry] of this.stkIoBillEntryList.entries()) {
           const bn = entry && entry.batchNo != null ? String(entry.batchNo).trim() : ''
           if (!bn) {

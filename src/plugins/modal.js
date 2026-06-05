@@ -9,7 +9,15 @@ export default {
   },
   // 错误消息
   msgError(content) {
-    Message.error(content)
+    const text = content != null ? String(content) : ''
+    const long = text.length > 30
+    Message({
+      message: text,
+      type: 'error',
+      customClass: 'spd-msg-error-lg',
+      duration: long ? 8000 : 3000,
+      showClose: false
+    })
   },
   // 成功消息
   msgSuccess(content) {

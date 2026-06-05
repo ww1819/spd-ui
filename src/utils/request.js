@@ -12,6 +12,20 @@ let downloadLoadingInstance;
 // 是否显示重新登录
 export let isRelogin = { show: false };
 
+/** 业务错误提示：较长文案加大字号；自动关闭，不显示关闭按钮 */
+function showErrorMessage(msg, options = {}) {
+  const text = msg != null ? String(msg) : ''
+  const long = text.length > 30
+  Message({
+    message: text,
+    type: 'error',
+    customClass: 'spd-msg-error-lg',
+    duration: long ? 8000 : 3000,
+    showClose: false,
+    ...options
+  })
+}
+
 axios.defaults.headers['Content-Type'] = 'application/json;charset=utf-8'
 // 创建axios实例
 const service = axios.create({
@@ -114,7 +128,7 @@ service.interceptors.response.use(res => {
       // 检查请求配置中是否有hideError标记
       const hideError = res.config?.headers?.hideError || res.config?.hideError;
       if (!hideError) {
-        Message({ message: msg, type: 'error' })
+        showErrorMessage(msg)
       }
       return Promise.reject(new Error(msg))
     } else if (code === 601) {
@@ -136,7 +150,7 @@ service.interceptors.response.use(res => {
           })
           fullMsg = base + '：' + lineMsgs.join('；')
         }
-        Message({ message: fullMsg, type: 'error', duration: 0, showClose: true })
+        showErrorMessage(fullMsg, { duration: 8000, showClose: false })
       }
       return Promise.reject(new Error(res.data.msg || msg))
     } else if (code !== 200) {
@@ -164,7 +178,7 @@ service.interceptors.response.use(res => {
       } else if (message.includes("Request failed with status code")) {
         message = "系统接口" + message.substr(message.length - 3) + "异常";
       }
-      Message({ message: message, type: 'error', duration: 5 * 1000 })
+      showErrorMessage(message)
     }
     return Promise.reject(error)
   }

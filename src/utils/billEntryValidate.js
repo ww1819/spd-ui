@@ -146,3 +146,59 @@ export function assertBillMaterialLinesHavePositiveQty(entryList, vm, docLabel) 
   }
   return true;
 }
+
+/** 中文行号：第一行、第二行…第十行，超出则用第N行 */
+export function formatChineseRowNo(rowNo) {
+  const map = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+  const n = Number(rowNo);
+  if (Number.isFinite(n) && n >= 1 && n <= 10) {
+    return `第${map[n - 1]}行`;
+  }
+  return `第${rowNo}行`;
+}
+
+export function resolveEntryMaterialCode(entry) {
+  if (!entry) return '--';
+  if (entry.material && entry.material.code) return entry.material.code;
+  if (entry.materialCode) return entry.materialCode;
+  return entry.materialId != null && entry.materialId !== '' ? String(entry.materialId) : '--';
+}
+
+export function resolveEntryMaterialName(entry) {
+  if (!entry) return '--';
+  if (entry.material && entry.material.name) return entry.material.name;
+  if (entry.materialName) return entry.materialName;
+  return '--';
+}
+
+/** 数量≤0 时的明细提示文案 */
+export function buildZeroQtyErrorMessage(rowNo, entry) {
+  const rowLabel = formatChineseRowNo(rowNo);
+  const code = resolveEntryMaterialCode(entry);
+  const name = resolveEntryMaterialName(entry);
+  const batchNo = entry && entry.batchNo != null && String(entry.batchNo).trim() !== ''
+    ? String(entry.batchNo).trim()
+    : '--';
+  return `数量不能为0！${rowLabel}产品${code}（${name}）批次为${batchNo}。`;
+}
+
+/**
+ * 已选耗材行数量须大于 0；遇首条无效行即提示并返回 false
+ */
+export function assertBillMaterialLinesQtyNotZero(entryList, vm) {
+  const list = entryList || [];
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (!e || e.materialId == null || e.materialId === '') {
+      continue;
+    }
+    const n = Number(e.qty);
+    if (e.qty == null || e.qty === '' || !Number.isFinite(n) || n <= 0) {
+      if (vm && vm.$modal) {
+        vm.$modal.msgError(buildZeroQtyErrorMessage(i + 1, e));
+      }
+      return false;
+    }
+  }
+  return true;
+}

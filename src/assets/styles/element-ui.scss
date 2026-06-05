@@ -90,3 +90,21 @@
   .el-submenu__icon-arrow {
   display: none;
 }
+
+/* 业务错误提示（库存不足等长文案）：加大字号与内边距 */
+.el-message.spd-msg-error-lg {
+  min-width: 420px;
+  max-width: 720px;
+  padding: 14px 20px 14px 18px;
+  align-items: flex-start;
+}
+
+.el-message.spd-msg-error-lg .el-message__content {
+  font-size: 16px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.el-message.spd-msg-error-lg .el-message__closeBtn {
+  display: none !important;
+}
