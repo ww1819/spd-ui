@@ -142,6 +142,7 @@
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
+      <msun-his-sync-button sync-type="depts" label="HIS科室同步" :refresh="getList" />
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -343,10 +344,11 @@ import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import { listdepart, departTree, getdepart, deldepart, adddepart, updatedepart, updateDepartReferred, validateDepartImportAdd, validateDepartImportUpdate, importDepartAddData, importDepartUpdateData, listDepartmentChangeLog } from "@/api/foundation/depart";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
+import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 
 export default {
   name: "depart",
-  components: { Treeselect },
+  components: { Treeselect, MsunHisSyncButton },
   computed: {
     ...mapGetters(["departImportRequiresHisDeptId"]),
     hisThirdPartyPlaceholder() {

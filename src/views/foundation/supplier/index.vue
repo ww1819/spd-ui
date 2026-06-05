@@ -145,6 +145,7 @@
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
+      <msun-his-sync-button sync-type="suppliers" label="HIS供应商同步" :refresh="getList" />
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -520,9 +521,11 @@ import { mapGetters } from "vuex";
 import { listSupplier, getSupplier, delSupplier, addSupplier, updateSupplier, updateSupplierReferred, validateSupplierImportAdd, validateSupplierImportUpdate, importSupplierAddData, importSupplierUpdateData, listSupplierChangeLog } from "@/api/foundation/supplier";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import {pinyin} from "pinyin-pro";
+import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 
 export default {
   name: "Supplier",
+  components: { MsunHisSyncButton },
   dicts: ['is_use_status'],
   computed: {
     ...mapGetters(["supplierImportRequiresHisId"]),

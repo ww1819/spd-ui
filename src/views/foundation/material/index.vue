@@ -294,6 +294,7 @@
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
+      <msun-his-sync-button sync-type="materials" label="HIS耗材同步" :refresh="getList" />
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </el-row>
 
@@ -1559,11 +1560,12 @@ import { getFinanceCategory } from "@/api/foundation/financeCategory";
 import { pinyin } from 'pinyin-pro'
 import { getToken } from "@/utils/auth";
 import { sanitizeUdiNo } from '@/utils/udi';
+import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 
 export default {
   name: "Material",
   dicts: ['is_use_status', 'is_yes_no','way_status','material_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
-  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords},
+  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords, MsunHisSyncButton},
   computed: {
     ...mapGetters(['customerId']),
     isHsThirdTenant() {

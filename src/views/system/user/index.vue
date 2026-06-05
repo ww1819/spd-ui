@@ -96,6 +96,7 @@
                   <el-button type="primary" icon="el-icon-s-custom" size="small" :disabled="multiple" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']">批量设置工作组</el-button>
                   <el-button type="danger" icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
                   <el-button type="primary" icon="el-icon-refresh" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']">更新简码</el-button>
+                  <msun-his-sync-button sync-type="identities" label="HIS人员同步" :refresh="getList" inline />
 
                   <el-dropdown trigger="click" @command="handleMoreCommand">
                     <el-button size="small">
@@ -572,11 +573,12 @@ import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import MenuAuthDualTree from "@/components/MenuAuthDualTree";
 import { mergeMenuAuthIds, filterMenuIdsByAllowed, toMenuIdNumbers } from "@/utils/menuAuthUtils";
+import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 
 export default {
   name: "User",
   dicts: ['sys_normal_disable', 'sys_user_sex','warehouse_role'],
-  components: { Treeselect, MenuAuthDualTree },
+  components: { Treeselect, MenuAuthDualTree, MsunHisSyncButton },
   computed: {
     /** 列表启停开关：需编辑权限 */
     canChangeUserStatus() {

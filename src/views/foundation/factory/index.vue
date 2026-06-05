@@ -118,6 +118,7 @@
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
+      <msun-his-sync-button sync-type="producers" label="HIS厂家同步" :refresh="getList" />
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -329,9 +330,11 @@ import { mapGetters } from "vuex";
 import { listFactory, listFactoryAll, getFactory, delFactory, addFactory, updateFactory, updateFactoryReferred, validateFactoryImportAdd, validateFactoryImportUpdate, importFactoryAddData, importFactoryUpdateData, listFactoryChangeLog } from "@/api/foundation/factory";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import {pinyin} from "pinyin-pro";
+import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 
 export default {
   name: "Factory",
+  components: { MsunHisSyncButton },
   dicts: ['is_use_status'],
   computed: {
     ...mapGetters(["factoryImportRequiresHisId"]),
