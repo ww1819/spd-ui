@@ -91,6 +91,14 @@
           v-hasPermi="['outWarehouse:refundDepotApply:audit']"
         >审核</el-button>
       </el-col>
+      <el-col :span="1.5" v-if="isZaoqiangTenant">
+        <el-button
+          type="warning"
+          size="medium"
+          :disabled="multiple"
+          @click="handleBatchHisPush"
+        >推送HIS</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -198,6 +206,13 @@
               v-hasPermi="['outWarehouse:refundDepotApply:query']"
             >变更记录</el-button>
             <el-button
+              v-if="isZaoqiangTenant && scope.row.billStatus == 2"
+              size="small"
+              type="text"
+              style="padding: 0 5px; margin: 0; color: #e6a23c;"
+              @click="handleHisPush(scope.row)"
+            >推送HIS</el-button>
+            <el-button
               v-if="isZaoqiangTenant"
               size="small"
               type="text"
@@ -288,6 +303,9 @@
           </el-col>
           <el-col :span="4" v-if="isZaoqiangTenant && form.billStatus == 2">
             <span class="his-bill-status">HIS：{{ msunPushTag(form.hisPushStatus).label }}</span>
+          </el-col>
+          <el-col :span="1.5" v-if="isZaoqiangTenant && form.billStatus == 2 && form.id">
+            <el-button type="warning" size="small" icon="el-icon-upload2" @click="handleHisPush(form)">推送HIS</el-button>
           </el-col>
 
           <div v-show="action">
@@ -402,13 +420,6 @@
           <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
-            </template>
-          </el-table-column>
-          <el-table-column v-if="isZaoqiangTenant && form.billStatus != 2" label="HIS可退" align="center" width="88">
-            <template slot-scope="scope">
-              <span v-if="scope.row._hisReturnableQty != null">{{ scope.row._hisReturnableQty }}</span>
-              <span v-else-if="scope.row._hisReturnableLoading">…</span>
-              <span v-else>—</span>
             </template>
           </el-table-column>
           <el-table-column v-if="isZaoqiangTenant" label="HIS推送" align="center" width="90">
@@ -544,8 +555,8 @@ import refundDepotOrderPrint from "@/views/outWarehouse/refundDepotAudit/refundD
 import { buildRefundDepotPrintRowFromDetail } from '@/views/warehouse/print/refundDepotPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData';
 import refundGoodsOrderPrint from "@/views/inWarehouse/refundGoodsAudit/refundGoodsOrderPrint.vue";
-import { isZaoqiangTenant, msunPushStatusMeta, buildEntryHisQuery } from '@/utils/msunHis'
-import { queryMsunEntryHis } from '@/api/foundation/msunHisBill'
+import { isZaoqiangTenant, msunPushStatusMeta } from '@/utils/msunHis'
+import { pushMsunReturn } from '@/api/foundation/msunHisBill'
 import MsunHisEntryView from '@/components/MsunHisEntryView'
 import MsunHisBillView from '@/components/MsunHisBillView'
 
@@ -687,28 +698,47 @@ export default {
       this.hisBillView.billNo = row.billNo
       this.hisBillView.visible = true
     },
-    loadHisReturnableForEntries(entries, department) {
-      if (!this.isZaoqiangTenant || !entries || !entries.length) return
-      entries.forEach(entry => {
-        const params = buildEntryHisQuery(entry, department)
-        if (!params.drugId && !params.pharmacyStockId) return
-        this.$set(entry, '_hisReturnableLoading', true)
-        queryMsunEntryHis(params).then(res => {
-          const rows = (res.data && res.data.batchStocks) || []
-          let qty = null
-          if (rows.length) {
-            qty = rows.reduce((sum, r) => {
-              const v = r.stock_amount != null ? Number(r.stock_amount) : Number(r.quantity)
-              return sum + (isNaN(v) ? 0 : v)
-            }, 0)
-          }
-          this.$set(entry, '_hisReturnableQty', qty)
-        }).catch(() => {
-          this.$set(entry, '_hisReturnableQty', null)
-        }).finally(() => {
-          this.$set(entry, '_hisReturnableLoading', false)
-        })
-      })
+    handleHisPush(row) {
+      const billId = row && row.id
+      if (!billId) return
+      if (row.billStatus != 2) {
+        this.$modal.msgWarning('未审核退库单不允许推送HIS')
+        return
+      }
+      this.$modal.confirm('确认对该退库单执行 HIS 推送？').then(() => {
+        return pushMsunReturn(billId)
+      }).then(() => {
+        this.$modal.msgSuccess('HIS 推送已提交')
+        if (this.form && this.form.id === billId) {
+          this.handleView(row)
+        }
+        this.getList()
+      }).catch(() => {})
+    },
+    handleBatchHisPush() {
+      if (!this.isZaoqiangTenant) return
+      const selected = this.warehouseList.filter(r => this.ids.includes(r.id))
+      const pushable = selected.filter(r => r.billStatus == 2)
+      if (!pushable.length) {
+        this.$modal.msgWarning('请勾选已审核的退库单')
+        return
+      }
+      this.$modal.confirm('确认对选中的 ' + pushable.length + ' 条退库单执行 HIS 推送？').then(() => {
+        const tasks = pushable.map(r =>
+          pushMsunReturn(r.id).then(() => ({ ok: true, billNo: r.billNo }))
+            .catch(err => ({ ok: false, billNo: r.billNo, msg: (err && err.message) || '失败' }))
+        )
+        return Promise.all(tasks)
+      }).then(results => {
+        const ok = results.filter(r => r.ok).length
+        const fail = results.length - ok
+        if (fail === 0) {
+          this.$modal.msgSuccess('批量 HIS 推送已提交（' + ok + ' 条）')
+        } else {
+          this.$modal.msgWarning('完成：成功 ' + ok + ' 条，失败 ' + fail + ' 条')
+        }
+        this.getList()
+      }).catch(() => {})
     },
     applyBillDetail(data, options = {}) {
       this.form = data
@@ -717,9 +747,6 @@ export default {
       if (options.action != null) this.action = options.action
       if (options.title) this.title = options.title
       if (options.billType) this.form.billType = options.billType
-      if (this.isZaoqiangTenant && String(data.billStatus) !== '2') {
-        this.loadHisReturnableForEntries(this.stkIoBillEntryList, data.department)
-      }
     },
     getSummaries(param) {
       const { columns, data } = param;

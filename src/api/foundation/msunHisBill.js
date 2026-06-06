@@ -8,6 +8,14 @@ export function pushMsunOutbound(billId) {
   })
 }
 
+/** 401 退库单 HIS 手动推送（已审核，推送前查 2.5.43 补全 pharmacyStockId） */
+export function pushMsunReturn(billId) {
+  return request({
+    url: '/foundation/msunHis/bill/push/return/' + billId,
+    method: 'post'
+  })
+}
+
 /** @deprecated 使用 pushMsunOutbound */
 export function repushMsunOutbound(billId) {
   return pushMsunOutbound(billId)
