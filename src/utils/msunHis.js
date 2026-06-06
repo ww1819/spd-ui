@@ -1,5 +1,8 @@
-/** 枣强县中医院租户 */
+/** 枣强县中医院 customerId（与 scminterface hospitalKey 一致） */
 export const ZQ_TCM_TENANT = 'zaoqiang-tcm-001'
+
+/** 已接入众阳 HIS 的 SPD 租户（与 MsunHisTenantRegistry 同步维护） */
+export const MSUN_INTEGRATED_TENANT_IDS = [ZQ_TCM_TENANT]
 
 const PUSH_STATUS_MAP = {
   '0': { label: '未推送', type: 'info' },
@@ -8,8 +11,14 @@ const PUSH_STATUS_MAP = {
   '3': { label: '失败', type: 'danger' }
 }
 
+export function isMsunIntegratedTenant(customerId) {
+  const id = customerId == null ? '' : String(customerId).trim()
+  return MSUN_INTEGRATED_TENANT_IDS.includes(id)
+}
+
+/** @deprecated 使用 isMsunIntegratedTenant */
 export function isZaoqiangTenant(customerId) {
-  return customerId === ZQ_TCM_TENANT
+  return isMsunIntegratedTenant(customerId)
 }
 
 export function msunPushStatusMeta(status) {
