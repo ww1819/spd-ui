@@ -128,6 +128,14 @@
           </span>
         </template>
       </el-table-column>
+      <el-table-column v-if="isZaoqiangTenant" label="HIS推送" align="center" width="100" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.billStatus == 2" :type="msunPushTag(scope.row.hisPushStatus).type" size="mini">
+            {{ msunPushTag(scope.row.hisPushStatus).label }}
+          </el-tag>
+          <span v-else>—</span>
+        </template>
+      </el-table-column>
 
       <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable />
       <el-table-column label="打印状态" align="center" width="100" show-overflow-tooltip resizable>
@@ -189,6 +197,13 @@
               style="padding: 0 5px; margin: 0;"
               v-hasPermi="['outWarehouse:refundDepotApply:query']"
             >变更记录</el-button>
+            <el-button
+              v-if="isZaoqiangTenant"
+              size="small"
+              type="text"
+              style="padding: 0 5px; margin: 0;"
+              @click="openHisBillView(scope.row)"
+            >HIS单据</el-button>
           </span>
         </template>
       </el-table-column>
@@ -267,6 +282,12 @@
         <el-row :gutter="10" class="detail-toolbar-row">
           <el-col :span="1.5">
             <span>退库明细信息</span>
+          </el-col>
+          <el-col :span="1.5" v-if="isZaoqiangTenant && form.id">
+            <el-button type="info" plain size="small" icon="el-icon-document" @click="openHisBillView(form)">HIS单据</el-button>
+          </el-col>
+          <el-col :span="4" v-if="isZaoqiangTenant && form.billStatus == 2">
+            <span class="his-bill-status">HIS：{{ msunPushTag(form.hisPushStatus).label }}</span>
           </el-col>
 
           <div v-show="action">
@@ -383,6 +404,27 @@
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
+          <el-table-column v-if="isZaoqiangTenant && form.billStatus != 2" label="HIS可退" align="center" width="88">
+            <template slot-scope="scope">
+              <span v-if="scope.row._hisReturnableQty != null">{{ scope.row._hisReturnableQty }}</span>
+              <span v-else-if="scope.row._hisReturnableLoading">…</span>
+              <span v-else>—</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="isZaoqiangTenant" label="HIS推送" align="center" width="90">
+            <template slot-scope="scope">
+              <el-tag v-if="form.billStatus == 2" :type="msunPushTag(scope.row.hisPushStatus).type" size="mini">
+                {{ msunPushTag(scope.row.hisPushStatus).label }}
+              </el-tag>
+              <span v-else>—</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="isZaoqiangTenant" label="pharmacyStockId" prop="hisPharmacyStockId" width="130" show-overflow-tooltip />
+          <el-table-column v-if="isZaoqiangTenant" label="HIS明细" align="center" width="88" fixed="right">
+            <template slot-scope="scope">
+              <el-button type="text" size="small" @click="openHisEntryView(scope.row)">查看</el-button>
+            </template>
+          </el-table-column>
         </el-table>
         </div>
         </div>
@@ -391,6 +433,19 @@
         </transition>
       </div>
     </transition>
+
+    <MsunHisEntryView
+      :visible.sync="hisEntryView.visible"
+      :entry="hisEntryView.entry"
+      :department="form.department"
+    />
+    <MsunHisBillView
+      :visible.sync="hisBillView.visible"
+      :bill-id="hisBillView.billId"
+      :bill-type="hisBillView.billType"
+      :bill-no="hisBillView.billNo"
+    />
+
     <el-dialog
       :visible.sync="modalObj.show"
       :width="modalObj.width"
@@ -489,13 +544,19 @@ import refundDepotOrderPrint from "@/views/outWarehouse/refundDepotAudit/refundD
 import { buildRefundDepotPrintRowFromDetail } from '@/views/warehouse/print/refundDepotPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData';
 import refundGoodsOrderPrint from "@/views/inWarehouse/refundGoodsAudit/refundGoodsOrderPrint.vue";
+import { isZaoqiangTenant, msunPushStatusMeta, buildEntryHisQuery } from '@/utils/msunHis'
+import { queryMsunEntryHis } from '@/api/foundation/msunHisBill'
+import MsunHisEntryView from '@/components/MsunHisEntryView'
+import MsunHisBillView from '@/components/MsunHisBillView'
 
 export default {
   name: "OutWarehouseRefundAudit",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {refundGoodsOrderPrint, refundDepotOrderPrint,SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory},
+  components: {refundGoodsOrderPrint, refundDepotOrderPrint,SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory,MsunHisEntryView,MsunHisBillView},
   data() {
     return {
+      hisEntryView: { visible: false, entry: null },
+      hisBillView: { visible: false, billId: null, billType: '401', billNo: null },
       docRefStatusOptions: DOC_REF_STATUS_OPTIONS,
       // 遮罩层
       loading: true,
@@ -589,6 +650,9 @@ export default {
     };
   },
   computed: {
+    isZaoqiangTenant() {
+      return isZaoqiangTenant(this.$store.getters.customerId)
+    },
     showPrintOrientation() {
       const m = this.modalObj
       if (!m || !m.form) return false
@@ -609,6 +673,54 @@ export default {
     this.getList();
   },
   methods: {
+    msunPushTag(status) {
+      return msunPushStatusMeta(status)
+    },
+    openHisEntryView(entry) {
+      this.hisEntryView.entry = entry
+      this.hisEntryView.visible = true
+    },
+    openHisBillView(row) {
+      if (!row || !row.id) return
+      this.hisBillView.billId = row.id
+      this.hisBillView.billType = row.billType || '401'
+      this.hisBillView.billNo = row.billNo
+      this.hisBillView.visible = true
+    },
+    loadHisReturnableForEntries(entries, department) {
+      if (!this.isZaoqiangTenant || !entries || !entries.length) return
+      entries.forEach(entry => {
+        const params = buildEntryHisQuery(entry, department)
+        if (!params.drugId && !params.pharmacyStockId) return
+        this.$set(entry, '_hisReturnableLoading', true)
+        queryMsunEntryHis(params).then(res => {
+          const rows = (res.data && res.data.batchStocks) || []
+          let qty = null
+          if (rows.length) {
+            qty = rows.reduce((sum, r) => {
+              const v = r.stock_amount != null ? Number(r.stock_amount) : Number(r.quantity)
+              return sum + (isNaN(v) ? 0 : v)
+            }, 0)
+          }
+          this.$set(entry, '_hisReturnableQty', qty)
+        }).catch(() => {
+          this.$set(entry, '_hisReturnableQty', null)
+        }).finally(() => {
+          this.$set(entry, '_hisReturnableLoading', false)
+        })
+      })
+    },
+    applyBillDetail(data, options = {}) {
+      this.form = data
+      this.stkIoBillEntryList = data.stkIoBillEntryList || []
+      this.open = true
+      if (options.action != null) this.action = options.action
+      if (options.title) this.title = options.title
+      if (options.billType) this.form.billType = options.billType
+      if (this.isZaoqiangTenant && String(data.billStatus) !== '2') {
+        this.loadHisReturnableForEntries(this.stkIoBillEntryList, data.department)
+      }
+    },
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
@@ -877,13 +989,7 @@ export default {
     handleView(row){
       const id = row.id
       getTkInventory(id).then(response => {
-        this.form = response.data;
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
-        this.open = true;
-        this.action = false;
-        this.form.billStatus = '1';
-        this.form.billType = '401';
-        this.title = "查看退库";
+        this.applyBillDetail(response.data, { action: false, title: '查看退库', billType: '401' })
       });
     },
     /** 审核按钮操作 */
@@ -931,13 +1037,8 @@ export default {
       this.reset();
       const id = row.id || this.ids
       getTkInventory(id).then(response => {
-        this.form = response.data;
-        this.form.billStatus = '1';
-        this.form.billType = '401';
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
-        this.open = true;
-        this.action = true;
-        this.title = "修改退库";
+        const data = { ...response.data, billStatus: '1', billType: '401' }
+        this.applyBillDetail(data, { action: true, title: '修改退库' })
       });
     },
 
@@ -1056,6 +1157,11 @@ export default {
 </script>
 
 <style scoped>
+.his-bill-status {
+  line-height: 32px;
+  font-size: 13px;
+  color: #606266;
+}
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;

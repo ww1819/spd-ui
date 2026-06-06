@@ -207,6 +207,11 @@
                 <el-input v-model="form.remark" placeholder="备注" />
               </el-form-item>
             </el-col>
+            <el-col v-if="isZaoqiangTenant" :span="6">
+              <el-form-item label="HIS药库科室ID" prop="hisId">
+                <el-input v-model="form.hisId" placeholder="众阳 storageDeptId" />
+              </el-form-item>
+            </el-col>
           </el-row>
         </el-form>
         <div class="modal-footer-fixed">
@@ -292,6 +297,11 @@ export default {
       }
     };
   },
+  computed: {
+    isZaoqiangTenant() {
+      return this.$store.getters.customerId === 'zaoqiang-tcm-001'
+    }
+  },
   created() {
     this.getList();
     this.getAllWarehouseList();
@@ -346,6 +356,7 @@ export default {
         warehouseType: '低值',
         settlementType: null,
         remark: null,
+        hisId: null,
       };
       this.resetForm("form");
     },
