@@ -5,7 +5,7 @@
         <span>租户/平台管理员模式选择</span>
       </div>
       <el-alert
-        title="选择“租户管理员”后，将以所选租户 super_01 身份进入；选择“平台管理员”后，将以平台管理员身份操作（不进行租户隔离）。"
+        title="选择“机构管理员”后，将以所选租户 super_01 身份进入；选择“平台管理员”后，将以平台管理员身份操作（不进行租户隔离）。"
         type="info"
         :closable="false"
         show-icon
@@ -15,7 +15,7 @@
       <el-form label-width="120px" size="small">
         <el-form-item label="登录模式">
           <el-radio-group v-model="mode">
-            <el-radio label="tenant">租户管理员（super_01）</el-radio>
+            <el-radio label="tenant">机构管理员（super_01）</el-radio>
             <el-radio label="platform">平台管理员</el-radio>
           </el-radio-group>
         </el-form-item>
