@@ -26,10 +26,15 @@ export function msunPushStatusMeta(status) {
   return PUSH_STATUS_MAP[key] || { label: status || '—', type: 'info' }
 }
 
-/** 是否可补退（201 已审后） */
+/** 是否可手动推送（201 已审后：未推送或推送失败） */
 export function canMsunRepush(status) {
   const s = status == null || status === '' ? '0' : String(status)
   return s === '0' || s === '3'
+}
+
+/** @deprecated 使用 canMsunRepush */
+export function canMsunPush(status) {
+  return canMsunRepush(status)
 }
 
 export function buildEntryHisQuery(entry, department) {

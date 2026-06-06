@@ -91,6 +91,14 @@
           v-hasPermi="['outWarehouse:apply:audit']"
         >审核</el-button>
       </el-col>
+      <el-col :span="1.5" v-if="isZaoqiangTenant">
+        <el-button
+          type="warning"
+          size="medium"
+          :disabled="multiple"
+          @click="handleBatchHisPush"
+        >推送HIS</el-button>
+      </el-col>
       <el-col :span="1.5">
         <el-button
           type="warning"
@@ -209,12 +217,12 @@
               v-hasPermi="['outWarehouse:apply:query']"
             >变更记录</el-button>
             <el-button
-              v-if="isZaoqiangTenant && scope.row.billStatus == 2 && canRepush(scope.row.hisPushStatus)"
+              v-if="isZaoqiangTenant && scope.row.billStatus == 2"
               size="small"
               type="text"
               style="padding: 0 5px; margin: 0; color: #e6a23c;"
-              @click="handleHisRepush(scope.row)"
-            >HIS补退</el-button>
+              @click="handleHisPush(scope.row)"
+            >推送HIS</el-button>
             <el-button
               v-if="isZaoqiangTenant"
               size="small"
@@ -320,8 +328,8 @@
               v-hasPermi="['outWarehouse:audit:export']"
             >导出拣货单</el-button>
           </el-col>
-          <el-col :span="1.5" v-if="isZaoqiangTenant && form.billStatus == 2 && canRepush(form.hisPushStatus)">
-            <el-button type="warning" size="small" icon="el-icon-upload2" @click="handleHisRepush(form)">HIS补退</el-button>
+          <el-col :span="1.5" v-if="isZaoqiangTenant && form.billStatus == 2">
+            <el-button type="warning" size="small" icon="el-icon-upload2" @click="handleHisPush(form)">推送HIS</el-button>
           </el-col>
           <el-col :span="1.5" v-if="isZaoqiangTenant && form.id">
             <el-button type="info" plain size="small" icon="el-icon-document" @click="openHisBillView(form)">HIS单据</el-button>
@@ -598,8 +606,8 @@ import {
   cloneDocRefRowForDuplicate
 } from '@/utils/outWarehouseBillRow'
 import {STOCK_OUT_TEMPLATE} from '@/utils/printData'
-import { isZaoqiangTenant, msunPushStatusMeta, canMsunRepush } from '@/utils/msunHis'
-import { repushMsunOutbound } from '@/api/foundation/msunHisBill'
+import { isZaoqiangTenant, msunPushStatusMeta } from '@/utils/msunHis'
+import { pushMsunOutbound } from '@/api/foundation/msunHisBill'
 import MsunHisEntryView from '@/components/MsunHisEntryView'
 import MsunHisBillView from '@/components/MsunHisBillView'
 
@@ -729,9 +737,6 @@ export default {
     msunPushTag(status) {
       return msunPushStatusMeta(status)
     },
-    canRepush(status) {
-      return canMsunRepush(status)
-    },
     openHisEntryView(entry) {
       this.hisEntryView.entry = entry
       this.hisEntryView.visible = true
@@ -743,15 +748,45 @@ export default {
       this.hisBillView.billNo = row.billNo
       this.hisBillView.visible = true
     },
-    handleHisRepush(row) {
+    handleHisPush(row) {
       const billId = row && row.id
       if (!billId) return
-      this.$modal.confirm('确认对该出库单执行 HIS 补退推送？').then(() => {
-        return repushMsunOutbound(billId)
+      if (row.billStatus != 2) {
+        this.$modal.msgWarning('未审核出库单不允许推送HIS')
+        return
+      }
+      this.$modal.confirm('确认对该出库单执行 HIS 推送？').then(() => {
+        return pushMsunOutbound(billId)
       }).then(() => {
-        this.$modal.msgSuccess('HIS 补退已提交')
+        this.$modal.msgSuccess('HIS 推送已提交')
         if (this.form && this.form.id === billId) {
           this.handleView(row)
+        }
+        this.getList()
+      }).catch(() => {})
+    },
+    /** 批量推送 HIS（仅已审核） */
+    handleBatchHisPush() {
+      if (!this.isZaoqiangTenant) return
+      const selected = this.warehouseList.filter(r => this.ids.includes(r.id))
+      const pushable = selected.filter(r => r.billStatus == 2)
+      if (!pushable.length) {
+        this.$modal.msgWarning('请勾选已审核的出库单')
+        return
+      }
+      this.$modal.confirm('确认对选中的 ' + pushable.length + ' 条出库单执行 HIS 推送？').then(() => {
+        const tasks = pushable.map(r =>
+          pushMsunOutbound(r.id).then(() => ({ ok: true, billNo: r.billNo }))
+            .catch(err => ({ ok: false, billNo: r.billNo, err }))
+        )
+        return Promise.all(tasks)
+      }).then(results => {
+        const failed = (results || []).filter(r => r && !r.ok)
+        if (failed.length) {
+          const nos = failed.map(r => r.billNo).filter(Boolean).join('、')
+          this.$modal.msgWarning('推送完成，' + failed.length + ' 条失败' + (nos ? '：' + nos : ''))
+        } else {
+          this.$modal.msgSuccess('HIS 推送已提交')
         }
         this.getList()
       }).catch(() => {})
@@ -1110,8 +1145,8 @@ export default {
       this.multiple = !selection.length
     },
     /** 仅待审核的单据可勾选，已审核的不可勾选 */
-    selectableAuditRow(row) {
-      return row.billStatus != 2
+    selectableAuditRow() {
+      return true
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -1153,9 +1188,10 @@ export default {
     },
     /** 批量审核按钮操作 */
     handleBatchAudit() {
-      const ids = this.ids;
+      const selected = this.warehouseList.filter(r => this.ids.includes(r.id) && r.billStatus != 2)
+      const ids = selected.map(r => r.id)
       if (!ids || ids.length === 0) {
-        this.$modal.msgWarning("请先选择要审核的数据");
+        this.$modal.msgWarning("请先选择未审核的出库单");
         return;
       }
       const auditBy = this.$store.state.user.userId;
