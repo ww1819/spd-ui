@@ -1214,7 +1214,8 @@ export default {
         this.$modal.msgSuccess("批量审核成功！");
       }).catch(err => {
         if (err && err.message !== 'audit_validate_failed') {
-          this.$modal.msgError('批量审核失败');
+          const msg = (err && err.response && err.response.data && err.response.data.msg) || (err && err.message) || '批量审核失败'
+          this.$modal.msgError(msg)
         }
       });
     },
