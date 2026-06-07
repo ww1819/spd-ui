@@ -277,7 +277,7 @@
             <span>盘点明细信息</span>
           </el-col>
 
-          <div v-show="action">
+          <div v-show="detailEditable">
             <el-col :span="1.5">
               <el-button type="primary" icon="el-icon-minus" size="small" @click="openAddLossEntry">新增盘亏明细</el-button>
             </el-col>
@@ -297,7 +297,7 @@
         </el-row>
 
         <el-table :data="stkIoStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" height="60vh" border show-summary :summary-method="getSummaries">
-          <el-table-column type="selection" width="50" align="center" resizable fixed="left" />
+          <el-table-column v-if="detailEditable" type="selection" width="50" align="center" resizable fixed="left" />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
           <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -331,12 +331,17 @@
           </el-table-column>
           <el-table-column label="盘点数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.stockQty" placeholder="盘点数量"
-                        onkeyup="value=value.replace(/\D/g,'')"
-                        onafterpaste="value=value.replace(/\D/g,'')"
-                        @blur="handleStockQtyBlur(scope.row)"
-                        @input="stockQtyChange(scope.row)"
+              <el-input
+                v-if="detailEditable"
+                clearable
+                v-model="scope.row.stockQty"
+                placeholder="盘点数量"
+                onkeyup="value=value.replace(/\D/g,'')"
+                onafterpaste="value=value.replace(/\D/g,'')"
+                @blur="handleStockQtyBlur(scope.row)"
+                @input="stockQtyChange(scope.row)"
               />
+              <span v-else>{{ scope.row.stockQty || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
@@ -381,7 +386,8 @@
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="批号" />
+              <el-input v-if="detailEditable" v-model="scope.row.batchNumber" label-width="200px" placeholder="批号" />
+              <span v-else>{{ scope.row.batchNumber || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="生产厂家" align="center" width="180" show-overflow-tooltip resizable>
@@ -406,10 +412,11 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="备注" />
+              <el-input v-if="detailEditable" v-model="scope.row.remark" placeholder="备注" />
+              <span v-else>{{ scope.row.remark || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
+          <el-table-column v-if="detailEditable" label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
             <template slot-scope="scope">
               <el-button
                 size="small"
@@ -722,6 +729,13 @@ export default {
     this.getList();
   },
   computed: {
+    stocktakingHeadAudited() {
+      const s = this.form && this.form.stockStatus;
+      return s === 2 || s === '2';
+    },
+    detailEditable() {
+      return this.action && !this.stocktakingHeadAudited;
+    },
     canConfirmProfitImport() {
       const pi = this.profitImport || {};
       if (pi.canImport === false) return false;
@@ -1110,7 +1124,6 @@ export default {
         this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList;
         this.open = true;
         this.action = false;
-        this.form.stockStatus = '1';
         this.form.stockType = '501';
         this.title = "查看盘点";
       });
@@ -1238,20 +1251,32 @@ export default {
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
+      if (row && (row.stockStatus === 2 || row.stockStatus === '2')) {
+        this.$modal.msgWarning('已审核的盘点单不可修改');
+        return;
+      }
       this.reset();
       const id = row.id || this.ids
       getStocktaking(id).then(response => {
-        this.form = response.data;
-        this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList;
+        const data = response.data || {};
+        if (data.stockStatus === 2 || data.stockStatus === '2') {
+          this.$modal.msgWarning('已审核的盘点单不可修改');
+          return;
+        }
+        this.form = data;
+        this.stkIoStocktakingEntryList = data.stkIoStocktakingEntryList;
         this.open = true;
         this.title = "修改盘点";
-        this.form.stockStatus = '1';
         this.form.stockType = '501';
         this.action = true;
       });
     },
     /** 提交按钮 */
     submitForm() {
+      if (this.stocktakingHeadAudited) {
+        this.$modal.msgWarning('已审核的盘点单不可保存');
+        return;
+      }
       this.$refs["form"].validate(valid => {
         if (!valid) return;
         if (this.submitLoading) return;
@@ -1309,6 +1334,10 @@ export default {
     },
     /** 盘点明细删除按钮操作 */
     handleDeleteStkIoStocktakingEntry() {
+      if (!this.detailEditable) {
+        this.$modal.msgWarning('已审核的盘点单不可删除明细');
+        return;
+      }
       if (this.checkedStkIoStocktakingEntry.length == 0) {
         this.$modal.msgError("请先选择要删除的盘点明细数据");
       } else {
@@ -1321,6 +1350,10 @@ export default {
     },
     /** 单行删除明细 */
     handleDeleteDetailRow(row, index) {
+      if (!this.detailEditable) {
+        this.$modal.msgWarning('已审核的盘点单不可删除明细');
+        return;
+      }
       this.stkIoStocktakingEntryList.splice(index, 1);
     },
     /** 盘点初始化 */

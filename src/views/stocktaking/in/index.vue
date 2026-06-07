@@ -216,7 +216,7 @@
           <el-col :span="24">
             <div class="wh-stocktaking-detail-toolbar-inner">
               <span>盘点明细信息</span>
-              <div v-show="action" class="wh-stocktaking-detail-toolbar-actions">
+              <div v-show="detailEditable" class="wh-stocktaking-detail-toolbar-actions">
                 <el-button type="primary" icon="el-icon-minus" size="small" @click="openAddLossEntry">新增盘亏明细</el-button>
                 <el-button type="warning" icon="el-icon-plus" size="small" @click="openAddProfitEntry">新增盘盈明细</el-button>
                 <el-button
@@ -246,7 +246,7 @@
         </el-row>
 
         <el-table :data="filteredWhStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" height="calc(42vh)" border>
-          <el-table-column type="selection" width="50" align="center" resizable />
+          <el-table-column v-if="detailEditable" type="selection" width="50" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
           <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -282,7 +282,7 @@
           <el-table-column label="实盘数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input
-                v-if="action"
+                v-if="detailEditable"
                 v-model="scope.row.stockQty"
                 type="number"
                 :disabled="isEntryStockQtyLocked(scope.row)"
@@ -319,7 +319,7 @@
               />
             </template>
           </el-table-column>
-          <el-table-column v-if="action" label="盘盈复制" width="96" align="center" show-overflow-tooltip resizable>
+          <el-table-column v-if="detailEditable" label="盘盈复制" width="96" align="center" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-button type="text" size="small" @click="copyDetailToProfitDialog(scope.row)">盘盈复制</el-button>
             </template>
@@ -327,7 +327,7 @@
 
           <el-table-column label="单价" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-if="!scope.row.kcNo && action" v-model="scope.row.price" type="number" @input="priceChange(scope.row)" placeholder="单价" />
+              <el-input v-if="!scope.row.kcNo && detailEditable" v-model="scope.row.price" type="number" @input="priceChange(scope.row)" placeholder="单价" />
               <span v-else>{{ scope.row.unitPrice != null ? parseFloat(scope.row.unitPrice).toFixed(2) : (scope.row.price != null ? parseFloat(scope.row.price).toFixed(2) : '--') }}</span>
             </template>
           </el-table-column>
@@ -357,7 +357,7 @@
           <el-table-column label="供应商" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <SelectSupplier
-                v-if="!scope.row.kcNo && action"
+                v-if="!scope.row.kcNo && detailEditable"
                 :value="scope.row.supplierId"
                 finance-pick-mode
                 placeholder="请选择供应商"
@@ -369,37 +369,45 @@
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="批号" />
+              <el-input v-if="detailEditable" v-model="scope.row.batchNumber" label-width="200px" placeholder="批号" />
+              <span v-else>{{ scope.row.batchNumber || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="生产日期" prop="beginTime" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.beginTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              placeholder="请选择出库日期">
-              </el-date-picker>
+              <el-date-picker
+                v-if="detailEditable"
+                clearable
+                v-model="scope.row.beginTime"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="请选择出库日期"
+              />
+              <span v-else>{{ scope.row.beginTime || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="有效期" prop="endTime" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-date-picker clearable
-                              v-model="scope.row.endTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              placeholder="请选择出库日期">
-              </el-date-picker>
+              <el-date-picker
+                v-if="detailEditable"
+                clearable
+                v-model="scope.row.endTime"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="请选择出库日期"
+              />
+              <span v-else>{{ scope.row.endTime || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="备注" />
+              <el-input v-if="detailEditable" v-model="scope.row.remark" placeholder="备注" />
+              <span v-else>{{ scope.row.remark || '--' }}</span>
             </template>
           </el-table-column>
         </el-table>
             </el-form>
-            <div class="modal-footer" v-show="action">
+            <div class="modal-footer" v-show="detailEditable">
               <el-button @click="cancel">取 消</el-button>
               <el-button type="primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
             </div>
@@ -840,6 +848,9 @@ export default {
     stocktakingHeadAudited() {
       const s = this.form && this.form.stockStatus;
       return s === 2 || s === '2';
+    },
+    detailEditable() {
+      return this.action && !this.stocktakingHeadAudited;
     },
     /** 明细表格展示数据（是否已盘筛选）；保存仍用完整 stkIoStocktakingEntryList */
     filteredWhStocktakingEntryList() {
@@ -1764,7 +1775,6 @@ export default {
         this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(response.data.stkIoStocktakingEntryList || []);
         this.open = true;
         this.action = false;
-        this.form.stockStatus = '1';
         this.form.stockType = '501';
         this.title = "查看盘点";
         this.stocktakingAutoSaveEnabled = false;
@@ -1863,14 +1873,22 @@ export default {
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
+      if (row && (row.stockStatus === 2 || row.stockStatus === '2')) {
+        this.$modal.msgWarning('已审核的盘点单不可修改');
+        return;
+      }
       this.reset();
       const id = row.id || this.ids
       getStocktaking(id).then(response => {
-        this.form = response.data;
-        this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(response.data.stkIoStocktakingEntryList || []);
+        const data = response.data || {};
+        if (data.stockStatus === 2 || data.stockStatus === '2') {
+          this.$modal.msgWarning('已审核的盘点单不可修改');
+          return;
+        }
+        this.form = data;
+        this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
         this.open = true;
         this.title = "修改盘点";
-        this.form.stockStatus = '1';
         this.form.stockType = '501';
         this.action = true;
         this.stocktakingAutoSaveEnabled = false;
@@ -1878,6 +1896,10 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
+      if (this.stocktakingHeadAudited) {
+        this.$modal.msgWarning('已审核的盘点单不可保存');
+        return;
+      }
       this.$refs["form"].validate(valid => {
         if (!valid) return;
         if (!this.stkIoStocktakingEntryList || this.stkIoStocktakingEntryList.length === 0) {
@@ -2213,6 +2235,10 @@ export default {
     },
     /** 盘点明细删除按钮操作 */
     handleDeleteStkIoStocktakingEntry() {
+      if (!this.detailEditable) {
+        this.$modal.msgWarning('已审核的盘点单不可删除明细');
+        return;
+      }
       const checked = this.checkedStkIoStocktakingEntry || [];
       if (checked.length === 0) {
         this.$modal.msgError("请先选择要删除的盘点明细数据");
