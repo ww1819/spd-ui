@@ -103,6 +103,19 @@ export const constantRoutes = [
     meta: { title: '高值条码打印' }
   },
   {
+    path: '/foundation/msun-probe',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/foundation/msunProbe/index'),
+        name: 'MsunHisProbe',
+        meta: { title: '众阳HIS接口联调', activeMenu: '/foundation/depart' }
+      }
+    ]
+  },
+  {
     path: '',
     component: Layout,
     redirect: 'index',

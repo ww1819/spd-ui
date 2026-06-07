@@ -1,72 +1,64 @@
 <template>
-  <span v-if="visible && inline" class="msun-his-sync-inline">
-    <el-button
-      type="warning"
-      size="small"
-      icon="el-icon-download"
+  <span v-if="visible">
+    <span v-if="inline" class="msun-his-sync-inline">
+      <el-button type="warning" size="small" icon="el-icon-download" @click="openDialog">{{ label }}</el-button>
+    </span>
+    <el-col v-else :span="span">
+      <el-button type="warning" size="small" icon="el-icon-download" @click="openDialog">{{ label }}</el-button>
+    </el-col>
+    <msun-his-param-dialog
+      :visible.sync="dialogVisible"
+      :title="label"
+      :description="dialogDesc"
+      :fields="dialogFields"
       :loading="loading"
-      @click="handleSync"
-    >{{ label }}</el-button>
+      @confirm="handleConfirm"
+    />
   </span>
-  <el-col v-else-if="visible" :span="span">
-    <el-button
-      type="warning"
-      size="small"
-      icon="el-icon-download"
-      :loading="loading"
-      @click="handleSync"
-    >{{ label }}</el-button>
-  </el-col>
 </template>
 
 <script>
 import { syncMsunHisMaster } from '@/api/foundation/msunHisSync'
-
-/** 枣强县中医院租户 ID */
-const ZQ_TCM_TENANT = 'zaoqiang-tcm-001'
+import { isMsunIntegratedTenant } from '@/utils/msunHis'
+import { MSUN_SYNC_PROBE_FIELDS } from '@/utils/msunHisProbeApi'
+import MsunHisParamDialog from '@/components/MsunHisParamDialog'
 
 export default {
   name: 'MsunHisSyncButton',
+  components: { MsunHisParamDialog },
   props: {
-    syncType: {
-      type: String,
-      required: true
-    },
-    label: {
-      type: String,
-      default: 'HIS数据同步'
-    },
-    span: {
-      type: [Number, String],
-      default: 1.5
-    },
-    inline: {
-      type: Boolean,
-      default: false
-    },
-    refresh: {
-      type: Function,
-      default: null
-    }
+    syncType: { type: String, required: true },
+    label: { type: String, default: 'HIS数据同步' },
+    span: { type: [Number, String], default: 1.5 },
+    inline: { type: Boolean, default: false },
+    refresh: { type: Function, default: null }
   },
   data() {
     return {
-      loading: false
+      loading: false,
+      dialogVisible: false
     }
   },
   computed: {
     visible() {
-      return this.$store.getters.customerId === ZQ_TCM_TENANT
+      return isMsunIntegratedTenant(this.$store.getters.customerId)
+    },
+    dialogFields() {
+      return MSUN_SYNC_PROBE_FIELDS[this.syncType] || []
+    },
+    dialogDesc() {
+      return '可选填写筛选条件（经 SPD 后端调众阳 HIS）；确认后将执行全量同步并更新 SPD 表。'
     }
   },
   methods: {
-    handleSync() {
-      const tip = this.label + '：将从众阳HIS下载并更新到SPD（仅材料数据），是否继续？'
-      this.$modal.confirm(tip).then(() => {
-        this.loading = true
-        return syncMsunHisMaster(this.syncType)
-      }).then(res => {
+    openDialog() {
+      this.dialogVisible = true
+    },
+    handleConfirm(params) {
+      this.loading = true
+      syncMsunHisMaster(this.syncType, params).then(res => {
         this.$modal.msgSuccess((res && res.msg) || '同步完成')
+        this.dialogVisible = false
         if (typeof this.refresh === 'function') {
           this.refresh()
         }
