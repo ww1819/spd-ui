@@ -1,6 +1,15 @@
 /** 枣强县中医院 customerId（与 scminterface hospitalKey 一致） */
 export const ZQ_TCM_TENANT = 'zaoqiang-tcm-001'
 
+/** 衡水市第三人民医院 customerId */
+export const HS_THIRD_TENANT = 'hengsui-third-001'
+
+/** 枣强入库单打印版式（新版） */
+export function isZqInboundPrintTenant(customerId) {
+  const id = customerId == null ? '' : String(customerId).trim()
+  return id === ZQ_TCM_TENANT
+}
+
 /** 已接入众阳 HIS 的 SPD 租户（与 MsunHisTenantRegistry 同步维护） */
 export const MSUN_INTEGRATED_TENANT_IDS = [ZQ_TCM_TENANT]
 
