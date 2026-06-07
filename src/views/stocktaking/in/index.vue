@@ -53,6 +53,16 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="success"
+          plain
+          icon="el-icon-upload2"
+          size="small"
+          @click="openProfitImportDialog"
+          v-hasPermi="['stocktaking:in:add']"
+        >导入盘盈明细</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="warning"
           plain
           icon="el-icon-download"
@@ -277,6 +287,7 @@
                 type="number"
                 :disabled="isEntryStockQtyLocked(scope.row)"
                 @input="stockQtyChangeWh(scope.row)"
+                @blur="handleStockQtyBlur(scope.row)"
                 placeholder="实盘数量"
               />
               <span v-else>{{ formatEntryQtyDisplay(scope.row, 'stockQty') }}</span>
@@ -285,6 +296,16 @@
           <el-table-column v-if="!action" label="当前库存数量" width="120" align="center" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ formatEntryCurrentInventoryQty(scope.row) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="盈亏数量" align="center" width="110" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ getProfitQty(scope.row) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="盈亏标志" align="center" width="90" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ formatProfitLossFlag(scope.row) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="已盘" width="72" align="center" resizable>
@@ -322,7 +343,30 @@
               <el-input v-model="scope.row.batchNo" :disabled="true" label-width="200px" placeholder="批次号" />
             </template>
           </el-table-column>
+          <el-table-column label="第三方库存明细ID" prop="hisId" width="160" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.hisId || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="第三方批次号" prop="thirdPartyBatchNo" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.thirdPartyBatchNo || '--' }}</span>
+            </template>
+          </el-table-column>
 
+          <el-table-column label="供应商" width="180" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <SelectSupplier
+                v-if="!scope.row.kcNo && action"
+                :value="scope.row.supplierId"
+                finance-pick-mode
+                placeholder="请选择供应商"
+                style="width: 100%"
+                @input="(v) => $set(scope.row, 'supplierId', v)"
+              />
+              <span v-else>{{ formatEntrySupplierName(scope.row) }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-model="scope.row.batchNumber" label-width="200px" placeholder="批号" />
@@ -466,18 +510,16 @@
         </el-table-column>
         <el-table-column label="供应商" min-width="220">
           <template slot-scope="scope">
-            <template v-if="profitEntryMaterialMissingSupplier(scope.row)">
-              <SelectSupplier
-                :value="scope.row.supplierId"
-                finance-pick-mode
-                placeholder="请选择供应商"
-                style="width: 100%"
-                @input="(v) => $set(scope.row, 'supplierId', v)"
-              />
-            </template>
-            <span v-else>{{
-              (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--'
-            }}</span>
+            <SelectSupplier
+              :value="scope.row.supplierId"
+              finance-pick-mode
+              placeholder="请选择供应商"
+              style="width: 100%"
+              @input="(v) => $set(scope.row, 'supplierId', v)"
+            />
+            <div v-if="scope.row.material && scope.row.material.supplierId" style="margin-top: 4px; color: #909399; font-size: 12px;">
+              默认：{{ (scope.row.material.supplier && scope.row.material.supplier.name) || ('档案ID ' + scope.row.material.supplierId) }}
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -543,11 +585,136 @@
       </div>
     </el-dialog>
 
+    <el-dialog
+      title="导入盘盈明细"
+      :visible.sync="profitImport.visible"
+      width="1080px"
+      append-to-body
+      :close-on-click-modal="false"
+      @close="resetProfitImportDialog"
+    >
+      <div style="margin-bottom: 10px; color: #606266; line-height: 1.6;">
+        按模板填写 SPD 仓库/产品/供应商 ID 及盘盈数量等信息，系统将按<strong> SPD仓库ID </strong>自动拆分为多张未审核盘点单。
+        <strong>SPD仓库ID、SPD产品档案ID、SPD供应商ID</strong> 均不能为空，且必须在系统中能匹配到对应档案，任一行校验失败则整单导入失败。
+        批号、第三方批次号若以单引号开头，系统会自动去除（避免 Excel 数字格式问题）。
+      </div>
+      <el-form size="small" :inline="true">
+        <el-form-item>
+          <el-upload
+            ref="profitImportUploadRef"
+            :auto-upload="false"
+            :limit="1"
+            :on-change="handleProfitImportFileChange"
+            :on-exceed="handleProfitImportExceed"
+            accept=".xlsx,.xls"
+            drag
+          >
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">将 Excel 拖到此处，或<em>点击上传</em></div>
+          </el-upload>
+        </el-form-item>
+        <el-form-item>
+          <el-link type="primary" :underline="false" @click="downloadProfitImportTemplate">下载模板</el-link>
+        </el-form-item>
+      </el-form>
+      <div v-if="profitImport.warehouseSummary && profitImport.warehouseSummary.length" style="margin-bottom: 10px;">
+        <span style="font-weight: 600;">将生成盘点单：</span>
+        <el-tag
+          v-for="(w, idx) in profitImport.warehouseSummary"
+          :key="w.warehouseId || idx"
+          size="small"
+          style="margin-right: 8px; margin-top: 4px;"
+        >{{ w.warehouseName || w.warehouseId }}（{{ w.rowCount }} 条）</el-tag>
+      </div>
+      <div v-if="profitImport.previewList && profitImport.previewList.length">
+        <div style="margin-bottom: 8px;">
+          预览共 {{ profitImport.previewList.length }} 行，有效 {{ profitImport.validRows }} 行
+        </div>
+        <el-table :data="profitImport.previewList" border size="small" max-height="320" v-loading="profitImport.previewLoading">
+          <el-table-column label="行号" prop="rowIndex" width="60" align="center" />
+          <el-table-column label="仓库" prop="warehouseName" width="100" show-overflow-tooltip />
+          <el-table-column label="耗材编码" prop="materialCode" width="110" show-overflow-tooltip />
+          <el-table-column label="耗材名称" prop="materialName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="供应商" prop="supplierName" width="100" show-overflow-tooltip />
+          <el-table-column label="单价" width="80" align="right">
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.unitPrice }}</template>
+          </el-table-column>
+          <el-table-column label="数量" width="70" align="right">
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.qty }}</template>
+          </el-table-column>
+          <el-table-column label="批号" width="110" show-overflow-tooltip>
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.batchNumber }}</template>
+          </el-table-column>
+          <el-table-column label="第三方批次号" width="140" show-overflow-tooltip>
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.thirdPartyBatchNo }}</template>
+          </el-table-column>
+          <el-table-column label="有效期" width="100">
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.endDateRaw }}</template>
+          </el-table-column>
+          <el-table-column label="第三方库存明细ID" width="140" show-overflow-tooltip>
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.hisId }}</template>
+          </el-table-column>
+          <el-table-column label="校验" width="160" fixed="right">
+            <template slot-scope="scope">
+              <span v-if="scope.row.error" style="color: #f56c6c;">{{ scope.row.error }}</span>
+              <span v-else style="color: #67c23a;">通过</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <div slot="footer">
+        <el-button @click="profitImport.visible = false">取 消</el-button>
+        <el-button
+          type="primary"
+          @click="confirmProfitImport"
+          :loading="profitImport.confirmLoading"
+          :disabled="!canConfirmProfitImport"
+        >确认导入</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog
+      title="审核前确认（明细库存与仓库实物不一致）"
+      :visible.sync="whAuditQtyMismatchVisible"
+      width="980px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <div style="margin-bottom: 8px; color: #e6a23c;">
+        以下明细账面库存与当前仓库库存不一致，请逐条确认盘点数量后再审核。来源于仓库库存的明细仅允许盘亏，盘点数量不得大于当前库存。
+      </div>
+      <el-table :data="qtyMismatchAuditList" border size="small">
+        <el-table-column label="耗材" prop="materialName" min-width="150" />
+        <el-table-column label="批次号" prop="batchNo" min-width="150" />
+        <el-table-column label="明细账面数量" prop="detailQty" width="140" />
+        <el-table-column label="当前仓库库存" prop="currentQty" width="140" />
+        <el-table-column label="盘点数量" min-width="140">
+          <template slot-scope="scope">
+            <el-input
+              v-model="scope.row.adjustedStockQty"
+              type="number"
+              :disabled="scope.row.confirmed"
+              placeholder="盘点数量"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100">
+          <template slot-scope="scope">
+            <el-button type="text" @click="confirmWhAuditMismatchRow(scope.row)">{{ scope.row.confirmed ? '已确定' : '确定' }}</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer">
+        <el-button @click="whAuditQtyMismatchVisible = false">取 消</el-button>
+        <el-button type="primary" @click="confirmWhAuditQtyMismatchAndAudit">确 定</el-button>
+      </div>
+    </el-dialog>
+
   </div>
 </template>
 
 <script>
-import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, patchSaveStocktaking, auditStocktaking, updateStocktakingEntryCounted, appendStocktakingEntries, initWarehouseStocktakingFromInventory } from "@/api/warehouse/stocktaking";
+import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, patchSaveStocktaking, auditStocktaking, checkStocktakingQty, updateStocktakingEntryCounted, appendStocktakingEntries, initWarehouseStocktakingFromInventory, previewWhStocktakingProfitImport, confirmWhStocktakingProfitImport, downloadWhStocktakingProfitImportTemplate } from "@/api/warehouse/stocktaking";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listInventoryPick, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
@@ -602,6 +769,19 @@ export default {
       saveQtyConfirmVisible: false,
       saveQtyConfirmList: [],
       saveQtyConfirmLoading: false,
+      whAuditQtyMismatchVisible: false,
+      qtyMismatchAuditList: [],
+      pendingWhAuditId: null,
+      pendingWhAuditExpectedUpdateTime: null,
+      profitImport: {
+        visible: false,
+        previewLoading: false,
+        confirmLoading: false,
+        previewList: [],
+        warehouseSummary: [],
+        validRows: 0,
+        canImport: false
+      },
       /** 仅「新增盘点」弹窗内自动保存；修改/查看打开后为 false */
       stocktakingAutoSaveEnabled: false,
       entrySaveSnapshots: null,
@@ -680,6 +860,13 @@ export default {
         return list;
       }
       return list.filter((row) => rowCounted(row) === countedFilter);
+    },
+    canConfirmProfitImport() {
+      const pi = this.profitImport || {};
+      if (pi.canImport === false) return false;
+      const list = pi.previewList || [];
+      if (!list.length) return false;
+      return list.every((p) => !p.error);
     }
   },
   methods: {
@@ -778,6 +965,9 @@ export default {
         if (v != null && v !== '') {
           row.unitPrice = v;
           row.price = v;
+        }
+        if (!row.kcNo && (row.supplierId == null || row.supplierId === '') && row.material && row.material.supplierId) {
+          row.supplierId = row.material.supplierId;
         }
         const up = parseFloat(row.unitPrice != null && row.unitPrice !== '' ? row.unitPrice : row.price || 0);
         const sq = parseFloat(row.stockQty || 0);
@@ -899,6 +1089,10 @@ export default {
         amt: amt.toFixed(2),
         batchNo: item.batchNo || '',
         batchNumber: item.batchNumber || item.materialNo || '',
+        hisId: item.hisId != null && item.hisId !== '' ? String(item.hisId).trim() : '',
+        thirdPartyBatchNo: item.thirdPartyBatchNo != null && item.thirdPartyBatchNo !== ''
+          ? String(item.thirdPartyBatchNo).trim()
+          : '',
         beginTime: item.beginTime ? (typeof item.beginTime === 'string' ? item.beginTime : this.parseTime(item.beginTime, '{y}-{m}-{d}')) : '',
         endTime: item.endTime ? (typeof item.endTime === 'string' ? item.endTime : this.parseTime(item.endTime, '{y}-{m}-{d}')) : '',
         remark: '',
@@ -1068,10 +1262,15 @@ export default {
       const spec = m && m.speci != null ? String(m.speci).trim() : "";
       return `${name}||${spec}`;
     },
-    /** 盘盈弹窗：产品档案未维护供应商时需用户在下拉框中选择 */
-    profitEntryMaterialMissingSupplier(row) {
-      const m = row && row.material ? row.material : null;
-      return !(m && m.supplierId != null && m.supplierId !== '');
+    formatEntrySupplierName(row) {
+      if (!row) return '--';
+      if (row.material && row.material.supplier && row.material.supplier.name) {
+        return row.material.supplier.name;
+      }
+      if (row.supplierId != null && row.supplierId !== '') {
+        return '供应商ID ' + row.supplierId;
+      }
+      return '--';
     },
     formatProfitNameSpecStockQty(row) {
       const k = this.getProfitNameSpecKey(row);
@@ -1214,12 +1413,12 @@ export default {
         return;
       }
       const needSup = (this.pendingNewEntries || []).find(
-        (r) => this.profitEntryMaterialMissingSupplier(r) && (r.supplierId == null || r.supplierId === '')
+        (r) => r.supplierId == null || r.supplierId === ''
       );
       if (needSup) {
         const name = needSup.material && needSup.material.name ? needSup.material.name : '';
         this.$modal.msgWarning(
-          name ? `耗材「${name}」产品档案未维护供应商，请先选择供应商。` : '存在产品档案未维护供应商的明细，请先选择供应商。'
+          name ? `耗材「${name}」盘盈明细必须选择供应商。` : '盘盈明细必须选择供应商。'
         );
         return;
       }
@@ -1330,10 +1529,51 @@ export default {
       });
     },
     stockQtyChangeWh(row) {
+      if (!row) return;
       const up = parseFloat(row.unitPrice != null ? row.unitPrice : row.price || 0);
       const sq = parseFloat(row.stockQty || 0);
+      const book = parseFloat(row.qty || 0);
       const a = sq * (Number.isFinite(up) ? up : 0);
       row.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
+      if (Number.isFinite(sq) && Number.isFinite(book)) {
+        const profitQty = sq - book;
+        row.profitQty = profitQty;
+        if (sq > book) row.profitLossFlag = 'PROFIT';
+        else if (sq < book) row.profitLossFlag = 'LOSS';
+        else row.profitLossFlag = 'EQUAL';
+      }
+    },
+    handleStockQtyBlur(row) {
+      if (!row) return;
+      if (this.isEntryStockQtyLocked(row)) return;
+      if (!row.kcNo) return;
+      const stockQty = parseFloat(row.stockQty || 0);
+      const qty = parseFloat(row.qty || 0);
+      if (!Number.isFinite(stockQty) || !Number.isFinite(qty)) return;
+      if (stockQty > qty) {
+        row.stockQty = qty;
+        this.stockQtyChangeWh(row);
+        this.$modal.msgWarning('盘点数量不能大于账面数量。盘盈请点击「新增盘盈明细」。');
+      }
+    },
+    getProfitQty(row) {
+      const stockQty = parseFloat((row && row.stockQty) || 0);
+      const qty = parseFloat((row && row.qty) || 0);
+      const profitQty = stockQty - qty;
+      if (!Number.isFinite(profitQty)) return '--';
+      return profitQty > 0 ? '+' + profitQty.toFixed(2) : profitQty.toFixed(2);
+    },
+    formatProfitLossFlag(row) {
+      const flag = (row && row.profitLossFlag ? String(row.profitLossFlag) : '').toUpperCase();
+      if (flag === 'PROFIT') return '盘盈';
+      if (flag === 'LOSS') return '盘亏';
+      if (flag === 'EQUAL') return '持平';
+      const stockQty = parseFloat((row && row.stockQty) || 0);
+      const qty = parseFloat((row && row.qty) || 0);
+      if (!Number.isFinite(stockQty) || !Number.isFinite(qty)) return '--';
+      if (stockQty > qty) return '盘盈';
+      if (stockQty < qty) return '盘亏';
+      return '持平';
     },
     /** 查询盘点列表 */
     getList() {
@@ -1343,6 +1583,89 @@ export default {
         this.inList = response.rows;
         this.total = response.total;
         this.loading = false;
+      });
+    },
+    openProfitImportDialog() {
+      this.resetProfitImportDialog();
+      this.profitImport.visible = true;
+    },
+    resetProfitImportDialog() {
+      this.profitImport.previewList = [];
+      this.profitImport.warehouseSummary = [];
+      this.profitImport.validRows = 0;
+      this.profitImport.canImport = false;
+      this.profitImport.previewLoading = false;
+      this.profitImport.confirmLoading = false;
+      this.$refs.profitImportUploadRef && this.$refs.profitImportUploadRef.clearFiles();
+    },
+    handleProfitImportExceed() {
+      this.$modal.msgWarning('仅支持单文件上传');
+    },
+    handleProfitImportFileChange(file) {
+      const raw = file && file.raw;
+      if (!raw) return;
+      this.profitImport.previewLoading = true;
+      previewWhStocktakingProfitImport(raw).then((res) => {
+        if (res.code !== 200) {
+          this.$modal.msgError(res.msg || '解析失败');
+          return;
+        }
+        const data = res.data || {};
+        this.profitImport.previewList = data.list || [];
+        this.profitImport.warehouseSummary = data.warehouseSummary || [];
+        this.profitImport.validRows = data.validRows != null ? data.validRows : 0;
+        this.profitImport.canImport = data.canImport === true;
+        if (!this.profitImport.previewList.length) {
+          this.$modal.msgWarning('未解析到有效数据');
+        } else if (!this.profitImport.canImport) {
+          this.$modal.msgError('存在校验未通过的行，请修正 Excel 后重新上传；任一行失败则整单不可导入');
+        } else {
+          this.$modal.msgSuccess('解析成功，请确认后点击「确认导入」');
+        }
+      }).catch(() => {}).finally(() => {
+        this.profitImport.previewLoading = false;
+      });
+    },
+    downloadProfitImportTemplate() {
+      downloadWhStocktakingProfitImportTemplate().then((res) => {
+        const blob = res && res instanceof Blob ? res : (res && res.data);
+        if (!blob || !(blob instanceof Blob)) {
+          this.$modal.msgError('下载模板失败');
+          return;
+        }
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '盘盈明细模板.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }).catch(() => {
+        this.$modal.msgError('下载模板失败');
+      });
+    },
+    confirmProfitImport() {
+      if (!this.canConfirmProfitImport) {
+        this.$modal.msgWarning('存在校验未通过的行，请修正 Excel 后重新上传');
+        return;
+      }
+      const rows = (this.profitImport.previewList || []).map((p) => p.data);
+      if (!rows.length) {
+        this.$modal.msgWarning('没有可导入的数据');
+        return;
+      }
+      this.profitImport.confirmLoading = true;
+      confirmWhStocktakingProfitImport(rows).then((res) => {
+        const data = res.data || {};
+        const bills = data.bills || [];
+        const nos = bills.map((b) => b.stockNo).filter(Boolean).join('、');
+        this.$modal.msgSuccess(
+          res.msg || ('导入成功' + (nos ? '：' + nos : ''))
+        );
+        this.profitImport.visible = false;
+        this.resetProfitImportDialog();
+        this.getList();
+      }).finally(() => {
+        this.profitImport.confirmLoading = false;
       });
     },
     //当天日期
@@ -1457,20 +1780,86 @@ export default {
         if (!assertBillHasActiveEntriesForAudit(res.data.stkIoStocktakingEntryList, this, '仓库盘点')) {
           return;
         }
+        const entries = res.data.stkIoStocktakingEntryList || [];
+        const kcProfitLine = entries.find((e) => {
+          if (!e || e.kcNo == null || e.kcNo === '') return false;
+          const sq = parseFloat(e.stockQty);
+          const bq = parseFloat(e.qty);
+          return Number.isFinite(sq) && Number.isFinite(bq) && sq > bq;
+        });
+        if (kcProfitLine) {
+          const name = (kcProfitLine.material && kcProfitLine.material.name) || kcProfitLine.materialId || '';
+          this.$modal.msgError(
+            `审核失败：耗材[${name}]为仓库原有库存，实盘数量不能大于账面数量。盘盈请使用「新增盘盈明细」。`
+          );
+          return;
+        }
         this.$modal
-          .confirm('确定要审核"' + stockNo + '"的数据项？')
-          .then(() =>
-            auditStocktaking({
-              id,
-              expectedUpdateTime: (row && (row.updateTime || row.createTime)) || undefined
-            })
-          )
-          .then(() => {
+          .confirm('确定要审核"' + stockNo + '"的数据项？审核通过后将直接变更仓库库存，不再生成盈亏单。')
+          .then(() => checkStocktakingQty({ id }))
+          .then((checkRes) => {
+            const rows = (checkRes && checkRes.data) || [];
+            if (!rows.length) {
+              return auditStocktaking({
+                id,
+                expectedUpdateTime: (row && (row.updateTime || row.createTime)) || undefined
+              });
+            }
+            this.pendingWhAuditId = id;
+            this.pendingWhAuditExpectedUpdateTime = row.updateTime || row.createTime;
+            this.qtyMismatchAuditList = rows.map((r) => ({
+              ...r,
+              adjustedStockQty: r.stockQty != null ? r.stockQty : r.currentQty,
+              confirmed: false
+            }));
+            this.whAuditQtyMismatchVisible = true;
+            return null;
+          })
+          .then((result) => {
+            if (!result) return;
             this.getList();
             this.$modal.msgSuccess('审核成功！');
           })
           .catch(() => {});
       }).catch(() => {});
+    },
+    confirmWhAuditMismatchRow(row) {
+      const v = parseFloat(row.adjustedStockQty);
+      if (!Number.isFinite(v) || v < 0) {
+        this.$modal.msgWarning('请输入有效的盘点数量');
+        return;
+      }
+      const cap = parseFloat(row.currentQty);
+      if (Number.isFinite(cap) && v > cap) {
+        row.adjustedStockQty = cap;
+        this.$modal.msgWarning('来源于仓库库存的明细仅允许盘亏，盘点数量已回退为当前库存数量');
+      } else {
+        row.adjustedStockQty = v;
+      }
+      row.confirmed = true;
+    },
+    confirmWhAuditQtyMismatchAndAudit() {
+      const unconfirmed = (this.qtyMismatchAuditList || []).some((r) => !r.confirmed);
+      if (unconfirmed) {
+        this.$modal.msgWarning('请先逐条点击“确定”后再提交');
+        return;
+      }
+      const qtyAdjustList = (this.qtyMismatchAuditList || []).map((r) => ({
+        entryId: r.entryId,
+        stockQty: r.adjustedStockQty
+      }));
+      auditStocktaking({
+        id: this.pendingWhAuditId,
+        qtyAdjustList,
+        expectedUpdateTime: this.pendingWhAuditExpectedUpdateTime
+      }).then(() => {
+        this.whAuditQtyMismatchVisible = false;
+        this.qtyMismatchAuditList = [];
+        this.pendingWhAuditId = null;
+        this.pendingWhAuditExpectedUpdateTime = null;
+        this.getList();
+        this.$modal.msgSuccess('审核成功！');
+      });
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -1493,6 +1882,14 @@ export default {
         if (!valid) return;
         if (!this.stkIoStocktakingEntryList || this.stkIoStocktakingEntryList.length === 0) {
           this.$modal.msgWarning('请至少添加一条盘点明细');
+          return;
+        }
+        const profitNoSup = (this.stkIoStocktakingEntryList || []).find(
+          (r) => r && !r.kcNo && (r.supplierId == null || r.supplierId === '')
+        );
+        if (profitNoSup) {
+          const name = profitNoSup.material && profitNoSup.material.name ? profitNoSup.material.name : '';
+          this.$modal.msgWarning(name ? `盘盈明细「${name}」必须选择供应商` : '盘盈明细必须选择供应商');
           return;
         }
         if (this.submitLoading) return;
@@ -1698,8 +2095,14 @@ export default {
         return;
       }
       this.$set(target, 'qty', live);
+      const sq = parseFloat(target.stockQty);
+      if (Number.isFinite(sq) && sq > live) {
+        this.$set(target, 'stockQty', live);
+        this.$modal.msgWarning('来源于仓库库存的明细仅允许盘亏，盘点数量已回退为当前库存数量');
+      }
       this.stockQtyChangeWh(target);
       this.$set(row, 'detailQty', live);
+      this.$set(row, 'adjustedStockQty', target.stockQty);
       this.$set(row, 'confirmed', true);
     },
     formatWhSaveConfirmProfitQty(row) {

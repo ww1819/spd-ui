@@ -269,7 +269,10 @@
 
           <div v-show="action">
             <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
+              <el-button type="primary" icon="el-icon-minus" size="small" @click="openAddLossEntry">新增盘亏明细</el-button>
+            </el-col>
+            <el-col :span="1.5">
+              <el-button type="warning" icon="el-icon-plus" size="small" @click="openAddProfitEntry">新增盘盈明细</el-button>
             </el-col>
             <el-col :span="1.5">
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoStocktakingEntry">删除</el-button>
@@ -321,7 +324,7 @@
               <el-input clearable v-model="scope.row.stockQty" placeholder="盘点数量"
                         onkeyup="value=value.replace(/\D/g,'')"
                         onafterpaste="value=value.replace(/\D/g,'')"
-                        @blur="form.result=$event.target.value"
+                        @blur="handleStockQtyBlur(scope.row)"
                         @input="stockQtyChange(scope.row)"
               />
             </template>
@@ -354,6 +357,16 @@
           <el-table-column label="批次号" prop="batchNo" width="240" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.batchNo || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="第三方库存明细ID" prop="hisId" width="160" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.hisId || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="第三方批次号" prop="thirdPartyBatchNo" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.thirdPartyBatchNo || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
@@ -414,12 +427,58 @@
 <!--    ></SelectPdInventoryFilter>-->
 
     <SelectInventory
-      v-if="DialogComponentShow"
-      :DialogComponentShow="DialogComponentShow"
-      :warehouseValue="warehouseValue"
-      @closeDialog="closeDialog"
-      @selectData="selectData"
-    ></SelectInventory>
+      v-if="dialogInvShow"
+      :DialogComponentShow="dialogInvShow"
+      :warehouseValue="form.warehouseId"
+      :selected-details="stkIoStocktakingEntryList"
+      :stocktaking-pick-sort-by-material="true"
+      @closeDialog="closeInvDialog"
+      @selectData="selectWhInventoryData"
+    />
+    <SelectDepInventory
+      v-if="dialogDepShow"
+      :DialogComponentShow="dialogDepShow"
+      :department-value="''"
+      :use-material-dict="true"
+      @closeDialog="closeDepDialog"
+      @selectData="selectProfitMaterialData"
+    />
+
+    <el-dialog
+      title="新增盘盈明细信息"
+      :visible.sync="newEntryDialogVisible"
+      width="900px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <el-table :data="pendingNewEntries" border size="small">
+        <el-table-column label="耗材名称" min-width="150">
+          <template slot-scope="scope">{{ scope.row.material && scope.row.material.name ? scope.row.material.name : '--' }}</template>
+        </el-table-column>
+        <el-table-column label="规格" min-width="120">
+          <template slot-scope="scope">{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '--' }}</template>
+        </el-table-column>
+        <el-table-column label="盘点数量" min-width="120">
+          <template slot-scope="scope">
+            <el-input v-model="scope.row.stockQty" type="number" @input="stockQtyChangePending(scope.row)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="批号" min-width="140">
+          <template slot-scope="scope">
+            <el-input v-model="scope.row.batchNumber" placeholder="批号" />
+          </template>
+        </el-table-column>
+        <el-table-column label="有效期" min-width="160">
+          <template slot-scope="scope">
+            <el-date-picker v-model="scope.row.endTime" type="date" value-format="yyyy-MM-dd" placeholder="有效期" />
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer">
+        <el-button @click="cancelPendingNewEntries">取 消</el-button>
+        <el-button type="primary" @click="confirmPendingNewEntries">确 定</el-button>
+      </div>
+    </el-dialog>
 
     <el-dialog
       title="审核前确认（明细库存与仓库实物不一致）"
@@ -470,11 +529,13 @@ import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectPdInventoryFilter from "@/components/SelectModel/SelectPdInventoryFilter";
 import SelectInventory from "@/components/SelectModel/SelectInventory";
+import SelectDepInventory from "@/components/SelectModel/SelectDepInventory";
+import { sortInventoryRowsByNameSpecCodeMaterialId } from "@/utils/stocktakingInventorySort";
 
 export default {
   name: "InStocktaking",
   dicts: ['biz_status','bill_type'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectPdInventoryFilter,SelectInventory},
+  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectPdInventoryFilter,SelectInventory,SelectDepInventory},
   filters: {
     formatCurrency(value) {
       if (!value && value !== 0) return '--';
@@ -485,8 +546,11 @@ export default {
     return {
       // 遮罩层
       loading: true,
-      DialogComponentShow: false,
-      warehouseValue: "",
+      dialogInvShow: false,
+      dialogDepShow: false,
+      newEntryDialogVisible: false,
+      pendingNewEntries: [],
+      stocktakingBatchSeqCounter: 0,
       isShow: true,
       // 选中数组
       ids: [],
@@ -554,51 +618,144 @@ export default {
     /** 查询盘点列表 */
     getList() {
       this.loading = true;
-      this.queryParams.stockType = "502";
+      this.queryParams.stockType = "501";
       listStocktaking(this.queryParams).then(response => {
         this.inList = response.rows;
         this.total = response.total;
         this.loading = false;
       });
     },
-    checkMaterialBtn() {
-      if(!this.form.warehouseId) {
-        this.$message({ message: '请先选择仓库', type: 'warning' })
-        return
+    openAddLossEntry() {
+      if (!this.form.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' });
+        return;
       }
-
-      //打开“弹窗组件”
-      this.DialogComponentShow = true
-      this.warehouseValue = this.form.warehouseId;
+      this.dialogInvShow = true;
     },
-    closeDialog() {
-      //关闭“弹窗组件”
-      this.DialogComponentShow = false
+    openAddProfitEntry() {
+      if (!this.form.warehouseId) {
+        this.$message({ message: '请先选择仓库', type: 'warning' });
+        return;
+      }
+      this.dialogDepShow = true;
     },
-    selectData(val) {
-      //监听“弹窗组件”返回的数据（SelectInventory = 仓库库存，item.id 为 stk_inventory.id）
-      this.selectRow = val;
-      this.selectRow.forEach((item, index) => {
-
-        let obj = {};
-        obj.kcNo = item.id;
-        obj.materialId = item.material && item.material.id ? item.material.id : item.materialId;
-        obj.material = item.material;
-        obj.stockQty = item.qty;
-        obj.qty = item.qty;
-        obj.profitQty = 0;
-        obj.price = item.unitPrice;
-        obj.stockAmount = item.unitPrice;
-        obj.profitAmount = 0;
-        obj.amt = item.amt;
-        obj.batchNo = item.batchNo;
-        obj.batchNumber = item.batchNumber || item.materialNo || '';
-        obj.beginTime = item.beginTime;
-        obj.endTime = item.endTime;
-        obj.remark = item.remark;
-
-        this.stkIoStocktakingEntryList.push(obj);
+    closeInvDialog() {
+      this.dialogInvShow = false;
+    },
+    closeDepDialog() {
+      this.dialogDepShow = false;
+    },
+    nextStocktakingBatchNo() {
+      this.stocktakingBatchSeqCounter += 1;
+      const d = new Date();
+      const p = (n) => (n < 10 ? '0' + n : '' + n);
+      const ts = d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+      return 'PC' + ts + String(this.stocktakingBatchSeqCounter).padStart(4, '0');
+    },
+    mapWhInventoryToStocktakingEntry(item) {
+      const book = item.qty != null && item.qty !== '' ? item.qty : 0;
+      const up = item.unitPrice != null && item.unitPrice !== '' ? item.unitPrice : (item.price != null ? item.price : null);
+      const stockQty = book;
+      const unitPriceNum = parseFloat(up || 0);
+      const amt = (parseFloat(stockQty) || 0) * (Number.isFinite(unitPriceNum) ? unitPriceNum : 0);
+      return {
+        kcNo: item.id,
+        materialId: item.materialId,
+        material: item.material,
+        supplierId: item.supplierId,
+        unitPrice: up,
+        price: up,
+        qty: book,
+        stockQty,
+        profitQty: 0,
+        profitAmount: 0,
+        stockAmount: amt.toFixed(2),
+        amt: amt.toFixed(2),
+        batchNo: item.batchNo || '',
+        batchNumber: item.batchNumber || item.materialNo || '',
+        hisId: item.hisId != null && item.hisId !== '' ? String(item.hisId).trim() : '',
+        thirdPartyBatchNo: item.thirdPartyBatchNo != null && item.thirdPartyBatchNo !== '' ? String(item.thirdPartyBatchNo).trim() : '',
+        beginTime: item.beginTime,
+        endTime: item.endTime,
+        remark: ''
+      };
+    },
+    selectWhInventoryData(val) {
+      const sorted = sortInventoryRowsByNameSpecCodeMaterialId(val || []);
+      const rows = sorted.map((it) => this.mapWhInventoryToStocktakingEntry(it));
+      const exists = new Set(
+        (this.stkIoStocktakingEntryList || [])
+          .map((r) => (r && r.kcNo != null ? String(r.kcNo) : ''))
+          .filter((s) => s)
+      );
+      const toAdd = [];
+      let skip = 0;
+      rows.forEach((r) => {
+        const k = r && r.kcNo != null ? String(r.kcNo) : '';
+        if (!k || exists.has(k)) {
+          skip += 1;
+          return;
+        }
+        exists.add(k);
+        toAdd.push(r);
       });
+      if (toAdd.length) {
+        this.stkIoStocktakingEntryList.push(...toAdd);
+      }
+      if (skip) {
+        this.$modal.msgWarning(`已过滤 ${skip} 条重复或无效的仓库库存明细`);
+      }
+    },
+    selectProfitMaterialData(val) {
+      const rows = (val || []).map((row) => {
+        const mat = row.material || null;
+        const materialPrice = mat && mat.price != null ? mat.price : (mat && mat.salePrice != null ? mat.salePrice : null);
+        return {
+          materialId: row.materialId != null ? row.materialId : (mat && mat.id),
+          material: mat,
+          supplierId: mat && mat.supplierId != null ? mat.supplierId : null,
+          unitPrice: materialPrice,
+          price: materialPrice,
+          qty: 0,
+          stockQty: 1,
+          profitQty: 1,
+          amt: '0.00',
+          batchNo: this.nextStocktakingBatchNo(),
+          batchNumber: '',
+          beginTime: '',
+          endTime: '',
+          remark: ''
+        };
+      });
+      rows.forEach((r) => this.stockQtyChange(r));
+      this.pendingNewEntries = rows;
+      this.newEntryDialogVisible = rows.length > 0;
+    },
+    cancelPendingNewEntries() {
+      this.newEntryDialogVisible = false;
+      this.pendingNewEntries = [];
+    },
+    confirmPendingNewEntries() {
+      const rows = this.pendingNewEntries || [];
+      if (!rows.length) {
+        this.newEntryDialogVisible = false;
+        return;
+      }
+      for (const r of rows) {
+        if (!r.batchNumber || !r.endTime) {
+          this.$modal.msgWarning('盘盈明细须填写批号、有效期');
+          return;
+        }
+        if (!r.stockQty || parseFloat(r.stockQty) <= 0) {
+          this.$modal.msgWarning('盘盈明细盘点数量须大于 0');
+          return;
+        }
+      }
+      this.stkIoStocktakingEntryList.push(...rows);
+      this.cancelPendingNewEntries();
+    },
+    stockQtyChangePending(row) {
+      this.stockQtyChange(row);
     },
     //当天日期
     getBillDate(){
@@ -645,6 +802,22 @@ export default {
       row.profitQty = Number.isFinite(totalProfitQty) ? totalProfitQty.toFixed(2) : '0.00';
       row.profitAmount = (Number.isFinite(totalProfitQty) ? totalProfitQty * pr : 0).toFixed(2);
       row.stockAmount = (Number.isFinite(sq) ? sq * pr : 0).toFixed(2);
+      if (Number.isFinite(sq) && Number.isFinite(bq)) {
+        if (sq > bq) row.profitLossFlag = 'PROFIT';
+        else if (sq < bq) row.profitLossFlag = 'LOSS';
+        else row.profitLossFlag = 'EQUAL';
+      }
+    },
+    handleStockQtyBlur(row) {
+      if (!row || !row.kcNo) return;
+      const stockQty = parseFloat(row.stockQty || 0);
+      const qty = parseFloat(row.qty || 0);
+      if (!Number.isFinite(stockQty) || !Number.isFinite(qty)) return;
+      if (stockQty > qty) {
+        row.stockQty = qty;
+        this.stockQtyChange(row);
+        this.$modal.msgWarning('盘点数量不能大于账面数量。盘盈请点击「新增盘盈明细」。');
+      }
     },
     //数量改变事件
     qtyChange(row){
@@ -723,7 +896,7 @@ export default {
       this.open = true;
       this.title = "添加盘点";
       this.form.stockStatus = '1';
-      this.form.stockType = '502';
+      this.form.stockType = '501';
       // 制单人：与后端一致存用户ID（后端仍会强制覆盖，避免误传昵称）
       this.form.createBy = this.$store.getters.userId != null ? String(this.$store.getters.userId) : '';
       this.form.stockDate = this.getBillDate();
@@ -739,7 +912,7 @@ export default {
         this.open = true;
         this.action = false;
         this.form.stockStatus = '1';
-        this.form.stockType = '502';
+        this.form.stockType = '501';
         this.title = "查看盘点";
       });
 
@@ -874,7 +1047,7 @@ export default {
         this.open = true;
         this.title = "修改盘点";
         this.form.stockStatus = '1';
-        this.form.stockType = '502';
+        this.form.stockType = '501';
         this.action = true;
       });
     },

@@ -98,3 +98,35 @@ export function updateStocktakingEntryCounted(data) {
     data
   })
 }
+
+/** 盘盈明细导入：预览 */
+export function previewWhStocktakingProfitImport(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/stocktaking/in/profit-import/preview',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000
+  })
+}
+
+/** 盘盈明细导入：确认生成盘点单 */
+export function confirmWhStocktakingProfitImport(rows) {
+  return request({
+    url: '/stocktaking/in/profit-import/confirm',
+    method: 'post',
+    data: { rows },
+    timeout: 120000
+  })
+}
+
+/** 下载盘盈明细导入模板 */
+export function downloadWhStocktakingProfitImportTemplate() {
+  return request({
+    url: '/stocktaking/in/profit-import/importTemplate',
+    method: 'post',
+    responseType: 'blob'
+  })
+}
