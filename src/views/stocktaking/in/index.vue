@@ -596,7 +596,7 @@
       <div style="margin-bottom: 10px; color: #606266; line-height: 1.6;">
         按模板填写 SPD 仓库/产品/供应商 ID 及盘盈数量等信息，系统将按<strong> SPD仓库ID </strong>自动拆分为多张未审核盘点单。
         <strong>SPD仓库ID、SPD产品档案ID、SPD供应商ID</strong> 均不能为空，且必须在系统中能匹配到对应档案，任一行校验失败则整单导入失败。
-        批号、第三方批次号若以单引号开头，系统会自动去除（避免 Excel 数字格式问题）。
+        批号、第三方批次号若以单引号开头，系统会自动去除（避免 Excel 数字格式问题）。有效期为空时默认设为 2099-01-01。
       </div>
       <el-form size="small" :inline="true">
         <el-form-item>

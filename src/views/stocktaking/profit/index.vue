@@ -59,6 +59,16 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+          type="success"
+          plain
+          icon="el-icon-upload2"
+          size="medium"
+          @click="openProfitImportDialog"
+          v-hasPermi="['stocktaking:in:add']"
+        >导入盘盈明细</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           type="warning"
           plain
           icon="el-icon-download"
@@ -481,6 +491,94 @@
     </el-dialog>
 
     <el-dialog
+      title="导入盘盈明细"
+      :visible.sync="profitImport.visible"
+      width="1080px"
+      append-to-body
+      :close-on-click-modal="false"
+      @close="resetProfitImportDialog"
+    >
+      <div style="margin-bottom: 10px; color: #606266; line-height: 1.6;">
+        按模板填写 SPD 仓库/产品/供应商 ID 及盘盈数量等信息，系统将按<strong> SPD仓库ID </strong>自动拆分为多张未审核盘点单。
+        <strong>SPD仓库ID、SPD产品档案ID、SPD供应商ID</strong> 均不能为空，且必须在系统中能匹配到对应档案，任一行校验失败则整单导入失败。
+        批号、第三方批次号若以单引号开头，系统会自动去除（避免 Excel 数字格式问题）。有效期为空时默认设为 2099-01-01。
+      </div>
+      <el-form size="small" :inline="true">
+        <el-form-item>
+          <el-upload
+            ref="profitImportUploadRef"
+            :auto-upload="false"
+            :limit="1"
+            :on-change="handleProfitImportFileChange"
+            :on-exceed="handleProfitImportExceed"
+            accept=".xlsx,.xls"
+            drag
+          >
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">将 Excel 拖到此处，或<em>点击上传</em></div>
+          </el-upload>
+        </el-form-item>
+        <el-form-item>
+          <el-link type="primary" :underline="false" @click="downloadProfitImportTemplate">下载模板</el-link>
+        </el-form-item>
+      </el-form>
+      <div v-if="profitImport.warehouseSummary && profitImport.warehouseSummary.length" style="margin-bottom: 10px;">
+        <span style="font-weight: 600;">将生成盘点单：</span>
+        <el-tag
+          v-for="(w, idx) in profitImport.warehouseSummary"
+          :key="w.warehouseId || idx"
+          size="small"
+          style="margin-right: 8px; margin-top: 4px;"
+        >{{ w.warehouseName || w.warehouseId }}（{{ w.rowCount }} 条）</el-tag>
+      </div>
+      <div v-if="profitImport.previewList && profitImport.previewList.length">
+        <div style="margin-bottom: 8px;">
+          预览共 {{ profitImport.previewList.length }} 行，有效 {{ profitImport.validRows }} 行
+        </div>
+        <el-table :data="profitImport.previewList" border size="small" max-height="320" v-loading="profitImport.previewLoading">
+          <el-table-column label="行号" prop="rowIndex" width="60" align="center" />
+          <el-table-column label="仓库" prop="warehouseName" width="100" show-overflow-tooltip />
+          <el-table-column label="耗材编码" prop="materialCode" width="110" show-overflow-tooltip />
+          <el-table-column label="耗材名称" prop="materialName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="供应商" prop="supplierName" width="100" show-overflow-tooltip />
+          <el-table-column label="单价" width="80" align="right">
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.unitPrice }}</template>
+          </el-table-column>
+          <el-table-column label="数量" width="70" align="right">
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.qty }}</template>
+          </el-table-column>
+          <el-table-column label="批号" width="110" show-overflow-tooltip>
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.batchNumber }}</template>
+          </el-table-column>
+          <el-table-column label="第三方批次号" width="140" show-overflow-tooltip>
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.thirdPartyBatchNo }}</template>
+          </el-table-column>
+          <el-table-column label="有效期" width="100">
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.endDateRaw }}</template>
+          </el-table-column>
+          <el-table-column label="第三方库存明细ID" width="140" show-overflow-tooltip>
+            <template slot-scope="scope">{{ scope.row.data && scope.row.data.hisId }}</template>
+          </el-table-column>
+          <el-table-column label="校验" width="160" fixed="right">
+            <template slot-scope="scope">
+              <span v-if="scope.row.error" style="color: #f56c6c;">{{ scope.row.error }}</span>
+              <span v-else style="color: #67c23a;">通过</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <div slot="footer">
+        <el-button @click="profitImport.visible = false">取 消</el-button>
+        <el-button
+          type="primary"
+          @click="confirmProfitImport"
+          :loading="profitImport.confirmLoading"
+          :disabled="!canConfirmProfitImport"
+        >确认导入</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog
       title="审核前确认（明细库存与仓库实物不一致）"
       :visible.sync="whAuditQtyMismatchVisible"
       width="980px"
@@ -520,7 +618,7 @@
 </template>
 
 <script>
-import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, auditStocktaking, checkStocktakingQty } from "@/api/warehouse/stocktaking";
+import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, auditStocktaking, checkStocktakingQty, previewWhStocktakingProfitImport, confirmWhStocktakingProfitImport, downloadWhStocktakingProfitImportTemplate } from "@/api/warehouse/stocktaking";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listPDFilter } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
@@ -579,6 +677,15 @@ export default {
       qtyMismatchAuditList: [],
       pendingWhAuditId: null,
       pendingWhAuditExpectedUpdateTime: null,
+      profitImport: {
+        visible: false,
+        previewLoading: false,
+        confirmLoading: false,
+        previewList: [],
+        warehouseSummary: [],
+        validRows: 0,
+        canImport: false
+      },
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -613,6 +720,15 @@ export default {
   },
   created() {
     this.getList();
+  },
+  computed: {
+    canConfirmProfitImport() {
+      const pi = this.profitImport || {};
+      if (pi.canImport === false) return false;
+      const list = pi.previewList || [];
+      if (!list.length) return false;
+      return list.every((p) => !p.error);
+    }
   },
   methods: {
     /** 查询盘点列表 */
@@ -756,6 +872,89 @@ export default {
     },
     stockQtyChangePending(row) {
       this.stockQtyChange(row);
+    },
+    openProfitImportDialog() {
+      this.resetProfitImportDialog();
+      this.profitImport.visible = true;
+    },
+    resetProfitImportDialog() {
+      this.profitImport.previewList = [];
+      this.profitImport.warehouseSummary = [];
+      this.profitImport.validRows = 0;
+      this.profitImport.canImport = false;
+      this.profitImport.previewLoading = false;
+      this.profitImport.confirmLoading = false;
+      this.$refs.profitImportUploadRef && this.$refs.profitImportUploadRef.clearFiles();
+    },
+    handleProfitImportExceed() {
+      this.$modal.msgWarning('仅支持单文件上传');
+    },
+    handleProfitImportFileChange(file) {
+      const raw = file && file.raw;
+      if (!raw) return;
+      this.profitImport.previewLoading = true;
+      previewWhStocktakingProfitImport(raw).then((res) => {
+        if (res.code !== 200) {
+          this.$modal.msgError(res.msg || '解析失败');
+          return;
+        }
+        const data = res.data || {};
+        this.profitImport.previewList = data.list || [];
+        this.profitImport.warehouseSummary = data.warehouseSummary || [];
+        this.profitImport.validRows = data.validRows != null ? data.validRows : 0;
+        this.profitImport.canImport = data.canImport === true;
+        if (!this.profitImport.previewList.length) {
+          this.$modal.msgWarning('未解析到有效数据');
+        } else if (!this.profitImport.canImport) {
+          this.$modal.msgError('存在校验未通过的行，请修正 Excel 后重新上传；任一行失败则整单不可导入');
+        } else {
+          this.$modal.msgSuccess('解析成功，请确认后点击「确认导入」');
+        }
+      }).catch(() => {}).finally(() => {
+        this.profitImport.previewLoading = false;
+      });
+    },
+    downloadProfitImportTemplate() {
+      downloadWhStocktakingProfitImportTemplate().then((res) => {
+        const blob = res && res instanceof Blob ? res : (res && res.data);
+        if (!blob || !(blob instanceof Blob)) {
+          this.$modal.msgError('下载模板失败');
+          return;
+        }
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '盘盈明细模板.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }).catch(() => {
+        this.$modal.msgError('下载模板失败');
+      });
+    },
+    confirmProfitImport() {
+      if (!this.canConfirmProfitImport) {
+        this.$modal.msgWarning('存在校验未通过的行，请修正 Excel 后重新上传');
+        return;
+      }
+      const rows = (this.profitImport.previewList || []).map((p) => p.data);
+      if (!rows.length) {
+        this.$modal.msgWarning('没有可导入的数据');
+        return;
+      }
+      this.profitImport.confirmLoading = true;
+      confirmWhStocktakingProfitImport(rows).then((res) => {
+        const data = res.data || {};
+        const bills = data.bills || [];
+        const nos = bills.map((b) => b.stockNo).filter(Boolean).join('、');
+        this.$modal.msgSuccess(
+          res.msg || ('导入成功' + (nos ? '：' + nos : ''))
+        );
+        this.profitImport.visible = false;
+        this.resetProfitImportDialog();
+        this.getList();
+      }).finally(() => {
+        this.profitImport.confirmLoading = false;
+      });
     },
     //当天日期
     getBillDate(){
