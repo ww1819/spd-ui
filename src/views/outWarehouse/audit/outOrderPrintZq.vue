@@ -4,14 +4,16 @@
       v-for="(pageRows, pageIndex) in pagedDetailList"
       :key="`print-page-${pageIndex}`"
       class="print-page"
+      :class="{ 'print-page-break': pageIndex < pagedDetailList.length - 1 }"
       :style="printStyle"
     >
       <div class="doc-header">
+        <div class="doc-header-spacer" aria-hidden="true"></div>
         <div class="doc-title">
           <span v-if="hospitalName">{{ hospitalName }}</span>出库单
         </div>
         <div class="page-meta">
-          第{{ pageIndex + 1 }}/共{{ pagedDetailList.length }}页
+          <span class="page-index">第{{ pageIndex + 1 }}/共{{ pagedDetailList.length }}页</span>
         </div>
       </div>
 
@@ -29,7 +31,7 @@
             <span class="info-label info-label--col3">供应商</span>
             <span class="info-value">{{ row.supplierName || '' }}</span>
           </div>
-          <div class="info-cell">
+          <div class="info-cell info-cell--bill-no">
             <span class="info-label info-label--col1">单号</span>
             <span class="info-value">{{ row.billNo || '' }}</span>
           </div>
@@ -408,44 +410,53 @@ export default {
   flex-direction column
   break-inside avoid
   page-break-inside avoid
-  page-break-after always
-
-.print-page:last-child
   page-break-after auto
 
+.print-page.print-page-break
+  page-break-after always
+
 .doc-header
-  position relative
-  margin-bottom 8px
-  min-height 28px
+  display grid
+  grid-template-columns 92px 1fr 92px
+  align-items center
+  column-gap 6px
+  margin-bottom 6px
+
+.doc-header-spacer
+  width 92px
+
+.page-meta
+  justify-self end
+  align-self center
+
+.page-index
+  font-size 12px
+  line-height 1
+  letter-spacing 0.5px
+  color #333
 
 .doc-title
   font-size 20px
   font-weight normal
   text-align center
-  line-height 1.2
+  line-height 1.1
   margin 0
-
-.page-meta
-  position absolute
-  right 0
-  top 0
-  font-size 12px
-  line-height 1.2
-  color #333
 
 .info-block
   margin-bottom 6px
 
 .info-grid
   display grid
-  grid-template-columns 1fr 2fr 1fr
-  column-gap 12px
+  grid-template-columns 1.1fr 1.9fr 1.2fr
+  column-gap 10px
   row-gap 2px
+  overflow visible
 
 .info-cell
   display flex
   align-items center
   min-width 0
+  overflow visible
 
 .info-cell--placeholder
   visibility hidden
@@ -466,6 +477,14 @@ export default {
 
 .info-label--col3
   width 2.5em
+
+.info-cell--bill-no .info-label--col1
+  width 2.5em
+  flex-shrink 0
+
+.info-cell--bill-no .info-value
+  white-space nowrap
+  min-width 0
 
 .info-value
   flex 1 1 auto
@@ -570,15 +589,35 @@ export default {
 
   .print-page
     width 100% !important
-    min-height 140mm !important
+    min-height auto !important
+    height auto !important
     padding-top 4mm !important
-    page-break-after always
+    page-break-after auto !important
 
-  .print-page:last-child
-    page-break-after auto
+  .print-page.print-page-break
+    page-break-after always !important
+
+  .doc-header
+    display grid !important
+    grid-template-columns 92px 1fr 92px !important
+    align-items center !important
+    column-gap 6px !important
+    margin-bottom 6px !important
+
+  .doc-header-spacer
+    width 92px !important
+
+  .page-meta
+    justify-self end !important
+    align-self center !important
 
   .doc-title
+    display block !important
     font-size 18px !important
+    font-weight normal !important
+    line-height 1.7 !important
+    margin 0 !important
+    padding 0 !important
 
   .detail-table
     font-size 11px !important
