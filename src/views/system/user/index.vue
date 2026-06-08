@@ -93,7 +93,7 @@
                 <div class="query-actions-left">
                   <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
                   <el-button type="success" icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
-                  <el-button type="primary" icon="el-icon-s-custom" size="small" :disabled="multiple" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']">批量设置工作组</el-button>
+                  <el-button type="primary" icon="el-icon-s-custom" size="small" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']">批量设置工作组</el-button>
                   <el-button type="danger" icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
                   <el-button type="primary" icon="el-icon-refresh" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']">更新简码</el-button>
                   <msun-his-sync-button sync-type="identities" label="HIS人员同步" :refresh="getList" inline />
@@ -121,8 +121,8 @@
         </el-form>
 
         <div class="table-wrapper">
-          <el-table v-loading="loading" :data="userList" stripe @selection-change="handleSelectionChange" height="66vh" border>
-          <el-table-column type="selection" width="50" align="center" />
+          <el-table ref="userTable" v-loading="loading" :data="userList" :row-key="getUserRowKey" stripe @selection-change="handleSelectionChange" height="66vh" border>
+          <el-table-column type="selection" width="50" align="center" :reserve-selection="true" />
           <el-table-column type="index" label="序号" align="center" width="80" v-if="columns[0].visible" :index="indexMethod" />
           <el-table-column label="用户账户" align="center" key="userName" prop="userName" v-if="columns[1].visible" :show-overflow-tooltip="true" />
           <el-table-column label="用户姓名" align="center" key="nickName" prop="nickName" v-if="columns[2].visible" :show-overflow-tooltip="true" />
@@ -538,7 +538,7 @@
     <!-- 批量设置耗材工作组 -->
     <el-dialog title="批量设置工作组" :visible.sync="batchWorkgroupOpen" width="440px" append-to-body @close="batchPostId = undefined">
       <p style="color:#909399; margin: 0 0 12px; line-height: 1.5;">
-        已选 <b>{{ ids.length }}</b> 人，将统一设置为所选耗材工作组（覆盖每人原有 sys_user_post 关联）。
+        当前查询共 <b>{{ total }}</b> 人；已跨页选中 <b>{{ crossPageSelectedCount }}</b> 人。提交时可选择仅更新选中或更新全部查询结果，将统一设置为所选耗材工作组（覆盖每人原有 sys_user_post 关联）。
       </p>
       <el-form label-width="88px" size="small">
         <el-form-item label="工作组" required>
@@ -554,7 +554,7 @@
       </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="batchWorkgroupOpen = false">取 消</el-button>
-        <el-button type="primary" @click="submitBatchWorkgroup">确 定</el-button>
+        <el-button type="primary" :loading="batchWorkgroupLoading" @click="submitBatchWorkgroup">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -633,14 +633,19 @@ export default {
         }
       ];
       return base;
+    },
+    crossPageSelectedCount() {
+      return Object.keys(this.selectedRowMap || {}).length;
     }
   },
   data() {
     return {
       // 遮罩层
       loading: true,
-      // 选中数组
+      // 选中数组（当前页同步；跨页完整集合见 selectedRowMap）
       ids: [],
+      /** 跨页勾选缓存：key 为 userId */
+      selectedRowMap: {},
       checkAll: false,
       materialCheckAll: false,
       isIndeterminate: true,
@@ -783,7 +788,8 @@ export default {
       /** 仅列无 sys_user_post 的用户 */
       onlyWithoutWorkgroup: false,
       batchWorkgroupOpen: false,
-      batchPostId: undefined
+      batchPostId: undefined,
+      batchWorkgroupLoading: false
     };
   },
   watch: {
@@ -821,48 +827,171 @@ export default {
           break;
       }
     },
-    /** 查询用户列表 */
-    getList() {
-      this.loading = true;
+    buildUserQueryParams(includePagination = true) {
       const q = { ...this.queryParams };
       if (this.onlyWithoutWorkgroup) {
         q.withoutWorkgroup = true;
       }
-      listUser(this.addDateRange(q, this.dateRange)).then(response => {
+      const merged = this.addDateRange(q, this.dateRange);
+      if (!includePagination) {
+        delete merged.pageNum;
+        delete merged.pageSize;
+      }
+      return merged;
+    },
+    /** 查询用户列表 */
+    getList() {
+      this.loading = true;
+      listUser(this.buildUserQueryParams(true)).then(response => {
           this.userList = response.rows;
           this.total = response.total;
           this.loading = false;
+          this.$nextTick(() => this.restorePageSelection());
         }
       );
     },
+    getUserRowKey(row) {
+      return row && row.userId != null ? String(row.userId) : null;
+    },
+    getCrossPageSelectedIds() {
+      return Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key);
+        return Number.isNaN(n) ? key : n;
+      });
+    },
+    restorePageSelection() {
+      const table = this.$refs.userTable;
+      if (!table || !this.userList || this.userList.length === 0) {
+        return;
+      }
+      this.userList.forEach((row) => {
+        const key = this.getUserRowKey(row);
+        if (key && this.selectedRowMap[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
+    clearCrossPageSelection() {
+      this.selectedRowMap = {};
+      this.ids = [];
+      this.single = true;
+      this.multiple = true;
+      const table = this.$refs.userTable;
+      if (table) {
+        table.clearSelection();
+      }
+    },
+    syncSelectionStateFromMap() {
+      const ids = this.getCrossPageSelectedIds();
+      this.ids = ids;
+      this.single = ids.length !== 1;
+      this.multiple = !ids.length;
+    },
     /** 打开批量设置工作组 */
     openBatchWorkgroup() {
-      if (!this.ids || this.ids.length === 0) {
-        this.$modal.msgWarning("请先勾选要设置的用户");
+      if (!this.total || this.total <= 0) {
+        this.$modal.msgWarning("当前查询没有可设置的用户，请先搜索");
         return;
       }
       this.batchPostId = undefined;
       this.batchWorkgroupOpen = true;
     },
-    /** 提交批量设置工作组 */
-    submitBatchWorkgroup() {
-      if (!this.ids || this.ids.length === 0) {
-        this.$modal.msgWarning("请先勾选用户");
+    promptBatchWorkgroupScope() {
+      const selectedCount = this.crossPageSelectedCount || 0;
+      const totalCount = Number(this.total) || 0;
+      if (selectedCount === 0 && totalCount === 0) {
+        this.$modal.msgWarning("当前没有可设置的用户");
+        return Promise.reject("empty");
+      }
+      if (selectedCount > 0 && totalCount > 0) {
+        return this.$msgbox({
+          title: "选择更新范围",
+          message: `当前查询共 ${totalCount} 人；已跨页选中 ${selectedCount} 人。请选择要设置的范围：`,
+          showCancelButton: true,
+          showConfirmButton: true,
+          distinguishCancelAndClose: true,
+          confirmButtonText: `仅更新选中（${selectedCount}人）`,
+          cancelButtonText: `更新查询全部（${totalCount}人）`,
+          type: "warning"
+        })
+          .then(() => "selected")
+          .catch((action) => {
+            if (action === "cancel") {
+              return "all";
+            }
+            return Promise.reject(action);
+          });
+      }
+      if (selectedCount > 0) {
+        return this.$modal
+          .confirm(`确认仅更新选中的 ${selectedCount} 名用户？`)
+          .then(() => "selected");
+      }
+      return this.$modal
+        .confirm(`未勾选用户，确认更新当前查询结果全部 ${totalCount} 人？`)
+        .then(() => "all");
+    },
+    runBatchWorkgroup(scope) {
+      const requestBody = { postId: this.batchPostId };
+      if (scope === "all") {
+        const totalCount = Number(this.total) || 0;
+        if (totalCount > 5000) {
+          return this.$modal
+            .confirm(`当前查询共 ${totalCount} 人，批量设置可能耗时较长，是否继续？`)
+            .then(() => {
+              requestBody.updateAll = true;
+              requestBody.queryCriteria = this.buildUserQueryParams(false);
+              return batchSetUserWorkgroup(requestBody);
+            });
+        }
+        requestBody.updateAll = true;
+        requestBody.queryCriteria = this.buildUserQueryParams(false);
+      } else {
+        const userIds = this.getCrossPageSelectedIds();
+        if (!userIds || userIds.length === 0) {
+          this.$modal.msgWarning("请先勾选要设置的用户");
+          return Promise.reject("no-selection");
+        }
+        requestBody.userIds = userIds;
+      }
+      return batchSetUserWorkgroup(requestBody);
+    },
+    refreshLoginUserIfWorkgroupChanged(scope) {
+      const uid = this.$store.state.user && this.$store.state.user.userId;
+      if (uid == null) {
         return;
       }
+      if (scope === "all") {
+        this.$store.dispatch("GetInfo");
+        return;
+      }
+      const ids = this.getCrossPageSelectedIds();
+      if (ids.map(id => Number(id)).includes(Number(uid))) {
+        this.$store.dispatch("GetInfo");
+      }
+    },
+    /** 提交批量设置工作组 */
+    submitBatchWorkgroup() {
       if (this.batchPostId == null || this.batchPostId === "") {
         this.$modal.msgWarning("请选择工作组");
         return;
       }
-      batchSetUserWorkgroup({ userIds: this.ids, postId: this.batchPostId }).then(() => {
-        this.$modal.msgSuccess("批量设置成功");
-        this.batchWorkgroupOpen = false;
-        this.getList();
-        const uid = this.$store.state.user && this.$store.state.user.userId;
-        if (uid != null && this.ids.map(id => Number(id)).includes(Number(uid))) {
-          this.$store.dispatch("GetInfo");
-        }
-      });
+      this.promptBatchWorkgroupScope()
+        .then((scope) => {
+          this.batchWorkgroupLoading = true;
+          return this.runBatchWorkgroup(scope).then(() => scope);
+        })
+        .then((scope) => {
+          this.$modal.msgSuccess("批量设置成功");
+          this.batchWorkgroupOpen = false;
+          this.clearCrossPageSelection();
+          this.getList();
+          this.refreshLoginUserIfWorkgroupChanged(scope);
+        })
+        .catch(() => {})
+        .finally(() => {
+          this.batchWorkgroupLoading = false;
+        });
     },
     /** 仓库全选 */
     handleCheckAllChange(val) {
@@ -1229,6 +1358,7 @@ export default {
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
+      this.clearCrossPageSelection();
       this.getList();
     },
     /** 重置按钮操作 */
@@ -1245,11 +1375,23 @@ export default {
     indexMethod(index) {
       return (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1;
     },
-    // 多选框选中数据
+    // 多选框选中数据（跨页缓存）
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.userId);
-      this.single = selection.length != 1;
-      this.multiple = !selection.length;
+      const pageKeys = (this.userList || [])
+        .map((row) => this.getUserRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const key = this.getUserRowKey(row);
+        if (key) {
+          this.$set(this.selectedRowMap, key, row);
+        }
+      });
+      this.syncSelectionStateFromMap();
     },
     // 更多操作触发
     handleCommand(command, row) {
