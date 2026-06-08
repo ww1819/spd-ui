@@ -94,6 +94,7 @@
                   <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
                   <el-button type="success" icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
                   <el-button type="primary" icon="el-icon-s-custom" size="small" :disabled="multiple" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']">批量设置工作组</el-button>
+                  <el-button v-if="isTenantSuper" type="warning" icon="el-icon-key" size="small" @click="openBatchPassword">批量修改密码</el-button>
                   <el-button type="danger" icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
                   <el-button type="primary" icon="el-icon-refresh" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']">更新简码</el-button>
                   <msun-his-sync-button sync-type="identities" label="HIS人员同步" :refresh="getList" inline />
@@ -535,6 +536,29 @@
     </span>
     </el-dialog>
 
+    <!-- 批量修改密码 -->
+    <el-dialog title="批量修改密码" :visible.sync="batchPasswordOpen" width="440px" append-to-body @close="resetBatchPasswordForm">
+      <p style="color:#909399; margin: 0 0 12px; line-height: 1.5;">
+        将为本租户下<b>所有普通用户</b>统一设置新密码，<b>不包含</b>平台 admin 账号及机构 super 账号（含 super_01、super 工作组用户）。
+      </p>
+      <el-form ref="batchPasswordForm" :model="batchPasswordForm" :rules="batchPasswordRules" label-width="88px" size="small">
+        <el-form-item label="新密码" prop="password">
+          <el-input
+            v-model="batchPasswordForm.password"
+            type="password"
+            placeholder="请输入新密码"
+            show-password
+            autocomplete="new-password"
+            maxlength="20"
+          />
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="batchPasswordOpen = false">取 消</el-button>
+        <el-button type="primary" @click="submitBatchPassword">确 定</el-button>
+      </span>
+    </el-dialog>
+
     <!-- 批量设置耗材工作组 -->
     <el-dialog title="批量设置工作组" :visible.sync="batchWorkgroupOpen" width="440px" append-to-body @close="batchPostId = undefined">
       <p style="color:#909399; margin: 0 0 12px; line-height: 1.5;">
@@ -561,7 +585,7 @@
 </template>
 
 <script>
-import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser, batchSetUserWorkgroup, updateUserMenus, updateUserDepartments, updateUserWarehouses } from "@/api/system/user";
+import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser, batchSetUserWorkgroup, batchResetUserPassword, updateUserMenus, updateUserDepartments, updateUserWarehouses } from "@/api/system/user";
 import { workgroupTreeSelect } from "@/api/system/workgroup";
 import { listPost } from "@/api/system/post";
 import { getConfigKey, listConfig } from "@/api/system/config";
@@ -580,6 +604,10 @@ export default {
   dicts: ['sys_normal_disable', 'sys_user_sex','warehouse_role'],
   components: { Treeselect, MenuAuthDualTree, MsunHisSyncButton },
   computed: {
+    /** 是否机构管理员（super 账号） */
+    isTenantSuper() {
+      return !!this.$store.state.user.tenantSuper;
+    },
     /** 列表启停开关：需编辑权限 */
     canChangeUserStatus() {
       return checkPermi(['system:user:edit']);
@@ -783,7 +811,17 @@ export default {
       /** 仅列无 sys_user_post 的用户 */
       onlyWithoutWorkgroup: false,
       batchWorkgroupOpen: false,
-      batchPostId: undefined
+      batchPostId: undefined,
+      batchPasswordOpen: false,
+      batchPasswordForm: {
+        password: ""
+      },
+      batchPasswordRules: {
+        password: [
+          { required: true, message: "新密码不能为空", trigger: "blur" },
+          { min: 5, max: 20, message: "密码长度必须介于 5 和 20 之间", trigger: "blur" }
+        ]
+      }
     };
   },
   watch: {
@@ -834,6 +872,33 @@ export default {
           this.loading = false;
         }
       );
+    },
+    /** 打开批量修改密码 */
+    openBatchPassword() {
+      this.resetBatchPasswordForm();
+      this.batchPasswordOpen = true;
+    },
+    resetBatchPasswordForm() {
+      this.batchPasswordForm = { password: "" };
+      if (this.$refs.batchPasswordForm) {
+        this.$refs.batchPasswordForm.resetFields();
+      }
+    },
+    /** 提交批量修改密码 */
+    submitBatchPassword() {
+      this.$refs.batchPasswordForm.validate(valid => {
+        if (!valid) {
+          return;
+        }
+        const password = String(this.batchPasswordForm.password || "").trim();
+        this.$modal.confirm("确认将本租户下所有普通用户密码统一修改为新密码？平台 admin 与机构 super 账号不受影响。").then(() => {
+          return batchResetUserPassword(password);
+        }).then(() => {
+          this.$modal.msgSuccess("批量修改密码成功");
+          this.batchPasswordOpen = false;
+          this.resetBatchPasswordForm();
+        }).catch(() => {});
+      });
     },
     /** 打开批量设置工作组 */
     openBatchWorkgroup() {
