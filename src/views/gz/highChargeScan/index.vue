@@ -10,19 +10,19 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="患者姓名">
-          <el-input v-model="detailQuery.patientName" placeholder="姓名" clearable style="width:140px" @keyup.enter.native="handleDetailQuery" />
+          <el-input v-model="detailQuery.patientName" placeholder="姓名/首字母" clearable style="width:140px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
         <el-form-item :label="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院/门诊号')">
           <el-input
             v-model="detailQuery.visitNo"
-            :placeholder="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院号或门诊号')"
+            :placeholder="detailVisitType === 'IN' ? '住院号模糊' : (detailVisitType === 'OUT' ? '门诊号模糊' : '住院/门诊号模糊')"
             clearable
             style="width:160px"
             @keyup.enter.native="handleDetailQuery"
           />
         </el-form-item>
-        <el-form-item label="收费项ID">
-          <el-input v-model="detailQuery.chargeItemId" placeholder="收费项目编码" clearable style="width:160px" @keyup.enter.native="handleDetailQuery" />
+        <el-form-item label="收费编码">
+          <el-input v-model="detailQuery.chargeItemId" placeholder="编码/项目名称/首字母" clearable style="width:180px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
         <el-form-item label="科室">
           <el-select v-model="detailQuery.departmentId" placeholder="按权限科室" clearable filterable style="width:200px">
@@ -35,31 +35,24 @@
             <el-option label="未处理" value="N" />
           </el-select>
         </el-form-item>
-        <el-form-item label="高低值类型">
-          <el-select v-model="detailQuery.valueLevel" placeholder="默认仅高值" clearable style="width:130px">
-            <el-option label="高值收费项" value="1" />
-            <el-option label="低值收费项" value="2" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="计费日期">
-          <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
-          <span style="margin:0 6px">至</span>
-          <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="el-icon-search" @click="handleDetailQuery">查询</el-button>
-          <el-button icon="el-icon-refresh" @click="resetDetailQuery">重置</el-button>
-        </el-form-item>
+        <div class="hc-query-form-second-row">
+          <el-form-item label="计费日期">
+            <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
+            <span style="margin:0 6px">至</span>
+            <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
+          </el-form-item>
+        </div>
       </el-form>
     </div>
 
     <div class="hc-action-bar">
-      <span class="hc-action-label">类型</span>
-      <el-radio-group v-model="detailVisitType" size="small" @change="handleDetailQuery">
-        <el-radio-button label="ALL">全部</el-radio-button>
-        <el-radio-button label="IN">住院</el-radio-button>
-        <el-radio-button label="OUT">门诊</el-radio-button>
-      </el-radio-group>
+      <el-button
+        type="success"
+        plain
+        size="small"
+        v-hasPermi="['department:patientCharge:fetchInpatient', 'department:patientCharge:fetchOutpatient']"
+        @click="openFetchDialog"
+      >收费记录提取</el-button>
       <el-button type="primary" icon="el-icon-search" size="small" @click="handleDetailQuery">查询</el-button>
       <el-button icon="el-icon-refresh" size="small" @click="resetDetailQuery">重置</el-button>
     </div>
@@ -201,11 +194,48 @@
         <el-button type="primary" :loading="highSubmitting" :disabled="highLines.length === 0" @click="submitHighConsume">保存并审核</el-button>
       </div>
     </el-dialog>
+
+    <el-dialog :title="fetchDialogTitle" :visible.sync="fetchDialogVisible" width="520px" append-to-body @close="resetFetchForm">
+      <el-form :model="fetchForm" label-width="100px" size="small">
+        <el-form-item label="开始时间" required>
+          <el-date-picker
+            v-model="fetchForm.beginDate"
+            type="datetime"
+            value-format="yyyy-MM-dd HH:mm:ss"
+            placeholder="yyyy-MM-dd HH:mm:ss"
+            style="width:100%"
+            default-time="00:00:00"
+          />
+        </el-form-item>
+        <el-form-item label="结束时间" required>
+          <el-date-picker
+            v-model="fetchForm.endDate"
+            type="datetime"
+            value-format="yyyy-MM-dd HH:mm:ss"
+            placeholder="yyyy-MM-dd HH:mm:ss"
+            style="width:100%"
+            default-time="23:59:59"
+          />
+        </el-form-item>
+        <el-form-item label="抓取范围">
+          <el-checkbox v-model="fetchForm.fetchInpatient" :disabled="!canFetchInpatient">住院</el-checkbox>
+          <el-checkbox v-model="fetchForm.fetchOutpatient" :disabled="!canFetchOutpatient" style="margin-left:16px">门诊</el-checkbox>
+        </el-form-item>
+        <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；勾选住院/门诊后确定抓取；多选时先住院后门诊；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="fetchDialogVisible = false">取 消</el-button>
+        <el-button type="primary" :loading="fetchSubmitting" @click="submitFetch">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
+import { parseTime } from '@/utils/ruoyi'
+import { checkPermi } from '@/utils/permission'
 import { listdepartAll } from '@/api/foundation/depart'
+import { fetchInpatientMirror, fetchOutpatientMirror } from '@/api/department/patientCharge'
 import {
   listHighChargeInpatientMirror,
   listHighChargeOutpatientMirror,
@@ -214,6 +244,15 @@ import {
   scanHighChargeBarcode,
   applyHighChargeConsume
 } from '@/api/gz/highChargeScan'
+
+function buildDefaultChargeDateRange() {
+  const today = new Date()
+  const endChargeDate = parseTime(today, '{y}-{m}-{d}')
+  const beginDate = new Date(today)
+  beginDate.setDate(beginDate.getDate() - 5)
+  const beginChargeDate = parseTime(beginDate, '{y}-{m}-{d}')
+  return { beginChargeDate, endChargeDate }
+}
 
 export default {
   name: 'GzHighChargeScan',
@@ -233,8 +272,7 @@ export default {
         departmentId: undefined,
         processed: undefined,
         valueLevel: '1',
-        beginChargeDate: undefined,
-        endChargeDate: undefined
+        ...buildDefaultChargeDateRange()
       },
       highDialogVisible: false,
       highSubmitting: false,
@@ -247,10 +285,27 @@ export default {
         loading: false,
         title: '消耗记录',
         rows: []
+      },
+      fetchDialogVisible: false,
+      fetchSubmitting: false,
+      fetchForm: {
+        beginDate: undefined,
+        endDate: undefined,
+        fetchInpatient: true,
+        fetchOutpatient: true
       }
     }
   },
   computed: {
+    fetchDialogTitle() {
+      return 'HIS收费数据抓取'
+    },
+    canFetchInpatient() {
+      return checkPermi(['department:patientCharge:fetchInpatient'])
+    },
+    canFetchOutpatient() {
+      return checkPermi(['department:patientCharge:fetchOutpatient'])
+    },
     currentVisitKind() {
       if (this.detailVisitType === 'IN') return 'INPATIENT'
       if (this.detailVisitType === 'OUT') return 'OUTPATIENT'
@@ -435,8 +490,7 @@ export default {
         departmentId: undefined,
         processed: undefined,
         valueLevel: '1',
-        beginChargeDate: undefined,
-        endChargeDate: undefined
+        ...buildDefaultChargeDateRange()
       }
       this.loadDetailList()
     },
@@ -470,6 +524,88 @@ export default {
           this.detailTotal = res.total || 0
         }).finally(done)
       }
+    },
+    openFetchDialog() {
+      const day = parseTime(new Date(), '{y}-{m}-{d}')
+      this.fetchForm = {
+        beginDate: `${day} 00:00:00`,
+        endDate: `${day} 23:59:59`,
+        fetchInpatient: true,
+        fetchOutpatient: true
+      }
+      this.fetchDialogVisible = true
+    },
+    resetFetchForm() {
+      this.fetchForm = {
+        beginDate: undefined,
+        endDate: undefined,
+        fetchInpatient: true,
+        fetchOutpatient: true
+      }
+    },
+    formatFetchResult(label, d) {
+      const data = d || {}
+      return `${label} 批次 ${data.fetchBatchId || ''}：新增 ${data.insertedCount || 0}，跳过 ${data.skippedCount || 0}，指纹不一致 ${data.driftCount || 0}`
+    },
+    submitFetch() {
+      if (!this.fetchForm.beginDate || !this.fetchForm.endDate) {
+        this.$modal.msgWarning('请选择起止时间')
+        return
+      }
+      const wantIn = !!this.fetchForm.fetchInpatient
+      const wantOut = !!this.fetchForm.fetchOutpatient
+      if (!wantIn && !wantOut) {
+        this.$modal.msgWarning('请至少勾选住院或门诊其中一项')
+        return
+      }
+      const canIn = this.canFetchInpatient
+      const canOut = this.canFetchOutpatient
+      if (!canIn && !canOut) {
+        this.$modal.msgWarning('无住院/门诊抓取权限')
+        return
+      }
+      if (wantIn && !canIn) {
+        this.$modal.msgWarning('已勾选住院但无住院抓取权限')
+        return
+      }
+      if (wantOut && !canOut) {
+        this.$modal.msgWarning('已勾选门诊但无门诊抓取权限')
+        return
+      }
+      this.fetchSubmitting = true
+      const body = { beginDate: this.fetchForm.beginDate, endDate: this.fetchForm.endDate }
+      const runInpatient = () => {
+        if (!wantIn || !canIn) {
+          return Promise.resolve(null)
+        }
+        return fetchInpatientMirror(body).then(res => res.data)
+      }
+      const runOutpatient = () => {
+        if (!wantOut || !canOut) {
+          return Promise.resolve(null)
+        }
+        return fetchOutpatientMirror(body).then(res => res.data)
+      }
+      runInpatient()
+        .then(inData => runOutpatient().then(outData => ({ inData, outData })))
+        .then(({ inData, outData }) => {
+          const msgs = []
+          if (inData) {
+            msgs.push(this.formatFetchResult('住院', inData))
+          }
+          if (outData) {
+            msgs.push(this.formatFetchResult('门诊', outData))
+          }
+          if (!msgs.length) {
+            this.$modal.msgWarning('未执行任何抓取')
+            return
+          }
+          this.$modal.msgSuccess(msgs.join('；'))
+          this.fetchDialogVisible = false
+          this.handleDetailQuery()
+        })
+        .catch(() => {})
+        .finally(() => { this.fetchSubmitting = false })
     }
   }
 }
@@ -492,6 +628,7 @@ export default {
 }
 
 .high-charge-scan-page .hc-filter-panel,
+.high-charge-scan-page .hc-action-bar,
 .high-charge-scan-page .hc-detail-box {
   background: #fff;
   border: 1px solid #ebeef5;
@@ -509,19 +646,44 @@ export default {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 10px 4px 12px;
+  padding: 10px 12px;
   margin-bottom: 10px;
 }
 
-.high-charge-scan-page .hc-action-label {
-  font-size: 14px;
-  color: #606266;
-  line-height: 32px;
-  margin-right: 4px;
+.high-charge-scan-page .hc-action-bar .el-button {
+  margin: 0;
 }
 
 .high-charge-scan-page .hc-filter-panel .hc-query-form .el-form-item {
   margin-bottom: 8px;
+}
+
+.high-charge-scan-page .hc-query-form-second-row {
+  display: block;
+  width: 100%;
+  clear: both;
+}
+
+.high-charge-scan-page .hc-query-form-second-row .el-form-item {
+  margin-bottom: 0;
+}
+
+/* 筛选区输入框聚焦：提高发光对比度，便于识别当前焦点 */
+.high-charge-scan-page .hc-filter-panel .el-input__inner:focus,
+.high-charge-scan-page .hc-filter-panel .el-textarea__inner:focus {
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.55);
+}
+
+.high-charge-scan-page .hc-filter-panel .el-input.is-focus .el-input__inner {
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.55);
+}
+
+.high-charge-scan-page .hc-filter-panel .el-date-editor.is-active .el-input__inner,
+.high-charge-scan-page .hc-filter-panel .el-select .el-input.is-focus .el-input__inner {
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.55);
 }
 
 .high-charge-scan-page .hc-detail-box {
