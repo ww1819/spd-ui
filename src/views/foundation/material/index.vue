@@ -310,30 +310,30 @@
           <div class="material-cell-top-left" :title="scope.row.code || ''">{{ scope.row.code }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="耗材名称" align="center" prop="name" width="240" key="name" v-if="columns[2].visible" resizable class-name="material-top-cell cell-pad-tight">
+      <el-table-column label="耗材名称" align="center" prop="name" width="240" key="name" v-if="columns[2].visible" resizable class-name="material-name-col cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.name || ''">{{ scope.row.name }}</div>
+          <div class="material-cell-body-left" :title="scope.row.name || ''">{{ scope.row.name }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="规格" align="center" prop="speci" width="200" key="speci" v-if="columns[3].visible" resizable class-name="material-top-cell cell-pad-tight">
+      <el-table-column label="规格" align="center" prop="speci" width="200" key="speci" v-if="columns[3].visible" resizable class-name="material-speci-col cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.speci || ''">{{ scope.row.speci }}</div>
+          <div class="material-cell-body-left" :title="scope.row.speci || ''">{{ scope.row.speci }}</div>
         </template>
       </el-table-column>
+      <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" show-overflow-tooltip resizable class-name="cell-pad-tight"/>
       <el-table-column label="价格" align="center" prop="price" width="130" key="price" v-if="columns[5].visible" resizable class-name="material-price-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.price) || '')">{{ formatPrice4(scope.row.price) }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" show-overflow-tooltip resizable class-name="cell-pad-tight"/>
-      <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="220" key="factory" v-if="columns[7].visible" resizable class-name="material-top-cell">
+      <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="220" key="factory" v-if="columns[7].visible" resizable class-name="material-factory-col material-top-cell">
         <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="(scope.row.fdFactory && scope.row.fdFactory.factoryName) ? scope.row.fdFactory.factoryName : ''">{{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '' }}</div>
+          <div class="material-cell-body-left" :title="(scope.row.fdFactory && scope.row.fdFactory.factoryName) ? scope.row.fdFactory.factoryName : ''">{{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '' }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="240" key="supplier" v-if="columns[8].visible" resizable class-name="material-top-cell">
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="240" key="supplier" v-if="columns[8].visible" resizable class-name="material-supplier-col material-top-cell">
         <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="(scope.row.supplier && scope.row.supplier.name) ? scope.row.supplier.name : ''">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '' }}</div>
+          <div class="material-cell-body-left" :title="(scope.row.supplier && scope.row.supplier.name) ? scope.row.supplier.name : ''">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '' }}</div>
         </template>
       </el-table-column>
       <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" key="warehouseCategory" v-if="columns[9].visible" show-overflow-tooltip resizable/>
@@ -356,9 +356,9 @@
           <div class="material-cell-top-left" :title="scope.row.registerNo || ''">{{ scope.row.registerNo }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="医保编码" align="center" prop="medicalNo" width="190" key="medicalNo" v-if="columns[23].visible" resizable class-name="material-top-cell cell-pad-tight">
+      <el-table-column label="医保编码" align="center" prop="medicalNo" width="190" key="medicalNo" v-if="columns[23].visible" resizable class-name="material-medical-no-col cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.medicalNo || ''">{{ scope.row.medicalNo }}</div>
+          <div class="material-cell-body-left" :title="scope.row.medicalNo || ''">{{ scope.row.medicalNo }}</div>
         </template>
       </el-table-column>
       <el-table-column label="型号" align="center" prop="model" width="200" key="model" v-if="columns[4].visible" resizable class-name="material-top-cell cell-pad-tight">
@@ -429,26 +429,24 @@
         </template>
       </el-table-column>
       <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="140" fixed="right">
         <template slot-scope="scope">
-          <el-button
-            size="small"
-            type="text"
-            @click="handleView(scope.row)"
-            v-hasPermi="['foundation:material:query']"
-          >查看详情</el-button>
-          <el-button
-            size="small"
-            type="text"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['foundation:material:edit']"
-          >修改</el-button>
-          <el-button
-            size="small"
-            type="text"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['foundation:material:remove']"
-          >删除</el-button>
+          <div class="material-row-actions">
+            <el-button
+              size="medium"
+              type="text"
+              class="material-row-action-btn"
+              @click="handleCopy(scope.row)"
+              v-hasPermi="['foundation:material:add']"
+            >复制</el-button>
+            <el-button
+              size="medium"
+              type="text"
+              class="material-row-action-btn"
+              @click="handleView(scope.row)"
+              v-hasPermi="['foundation:material:query']"
+            >查看</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -463,7 +461,7 @@
 
     <!-- 添加或修改耗材产品局部弹窗 -->
     <div v-if="open" class="local-modal-mask">
-      <div class="local-modal-content material-modal-content">
+      <div class="local-modal-content material-modal-content" :class="{ 'material-modal-view': isViewMode }">
         <div class="modal-header">
           <div class="modal-title">{{ title }}</div>
           <el-button size="medium" @click="cancel" class="close-btn">关闭</el-button>
@@ -1924,6 +1922,11 @@ export default {
         this.$nextTick(() => this.restorePageSelection());
       });
     },
+    /** 新增/修改/复制保存后刷新列表并回到第一页 */
+    refreshListAfterMutation() {
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
     getMaterialRowKey(row) {
       return row && row.id != null ? String(row.id) : null;
     },
@@ -2171,7 +2174,7 @@ export default {
         this.showMaterialImportPreviewFromPayload(d2, isUpdate ? "耗材档案更新导入 — 导入结果" : "耗材档案新增导入 — 导入结果");
         this.$alert("<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'>" + res2.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
         this.closeMaterialImport();
-        this.getList();
+        this.refreshListAfterMutation();
       } catch (e) {
         if (e !== "cancel" && e !== "close") {
           /* request 已提示 */
@@ -2376,6 +2379,37 @@ export default {
         this.activeTab = 'form';
       });
     },
+    /** 复制新增：复制基本信息，编码自动生成 */
+    async handleCopy(row) {
+      const id = row && row.id != null ? row.id : (Array.isArray(this.ids) && this.ids.length === 1 ? this.ids[0] : null);
+      if (!id) {
+        this.$modal.msgWarning('请选择要复制的产品');
+        return;
+      }
+      this.reset();
+      try {
+        const response = await getMaterial(id);
+        const copied = this.hydrateMaterialForm(response.data);
+        copied.id = null;
+        copied.code = null;
+        copied.createBy = null;
+        copied.createTime = null;
+        copied.updateBy = null;
+        copied.updateTime = null;
+        copied.statusChangeReason = null;
+        this.form = copied;
+        this.form.code = this.isHsThirdTenant ? '' : await this.generateCode();
+        this.dialogMode = 'add';
+        this.isDisabled = false;
+        this.originalIsUse = null;
+        this.title = '复制新增耗材产品';
+        this.open = true;
+        this.activeTab = 'form';
+      } catch (e) {
+        console.error('复制产品失败:', e);
+        this.$modal.msgError('加载产品信息失败，请稍后重试');
+      }
+    },
     /** 启用/停用开关变更：编辑模式下需填写原因并调用专用接口 */
     onIsUseChange(newVal) {
       if (!this.form.id) return;
@@ -2392,7 +2426,7 @@ export default {
         api(this.form.id, value).then(() => {
           this.$modal.msgSuccess(actionText + '成功');
           this.originalIsUse = this.form.isUse;
-          this.getList();
+          this.refreshListAfterMutation();
         }).catch(() => {
           this.form.isUse = this.originalIsUse;
         });
@@ -2482,7 +2516,7 @@ export default {
                 this.$modal.msgSuccess("修改成功");
                 this.open = false;
                 this.originalIsUse = null;
-                this.getList();
+                this.refreshListAfterMutation();
               });
             } else {
               if (this.isHsThirdTenant) {
@@ -2492,7 +2526,7 @@ export default {
               addMaterial(this.form).then(response => {
                 this.$modal.msgSuccess("新增成功");
                 this.open = false;
-                this.getList();
+                this.refreshListAfterMutation();
               });
             }
           });
@@ -2590,11 +2624,11 @@ export default {
             { label: "耗材编码", prop: "code" },
             { label: "耗材名称", prop: "name" },
             { label: "规格", prop: "speci" },
+            { label: "单位", prop: "fdUnit.unitName" },
             {
               label: "价格",
               valueGetter: (row) => this.formatPrice4(row && row.price),
             },
-            { label: "单位", prop: "fdUnit.unitName" },
             { label: "生产厂家", prop: "fdFactory.factoryName" },
             { label: "供应商", prop: "supplier.name" },
             { label: "库房分类", prop: "fdWarehouseCategory.warehouseCategoryName" },
@@ -2681,7 +2715,7 @@ export default {
         return updateMaterialReferred(this.ids);
       }).then(() => {
         this.$modal.msgSuccess("更新简码成功");
-        this.getList();
+        this.refreshListAfterMutation();
       }).catch(() => {});
     },
     openBatchUpdateDialog() {
@@ -2806,7 +2840,7 @@ export default {
           this.$modal.msgSuccess((res && res.msg) || "批量修改成功");
           this.batchUpdateDialog.visible = false;
           this.clearCrossPageSelection();
-          this.getList();
+          this.refreshListAfterMutation();
         })
         .catch(() => {})
         .finally(() => {
@@ -3076,7 +3110,7 @@ export default {
           if (this.crossPageSelectedCount > 0) {
             this.clearCrossPageSelection();
           }
-          this.getList();
+          this.refreshListAfterMutation();
         })
         .catch(() => {})
         .finally(() => {
@@ -3791,6 +3825,65 @@ export default {
   justify-content: center;
 }
 
+.material-cell-body-left {
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  line-height: 22px;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* 耗材名称、生产厂家、规格、供应商、医保编码：表头居中，明细靠左 */
+.material-page-container .el-table th.material-name-col .cell,
+.material-page-container .el-table th.material-factory-col .cell,
+.material-page-container .el-table th.material-speci-col .cell,
+.material-page-container .el-table th.material-supplier-col .cell,
+.material-page-container .el-table th.material-medical-no-col .cell {
+  text-align: center !important;
+}
+.material-page-container .el-table td.material-name-col .cell,
+.material-page-container .el-table td.material-factory-col .cell,
+.material-page-container .el-table td.material-speci-col .cell,
+.material-page-container .el-table td.material-supplier-col .cell,
+.material-page-container .el-table td.material-medical-no-col .cell {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+.material-page-container .el-table td.material-action-col .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.material-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: 100%;
+}
+
+.material-page-container .material-row-action-btn.el-button--text {
+  padding: 6px 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  min-height: 32px;
+  font-weight: 500;
+}
+
+.material-page-container .material-row-action-btn.el-button--text:hover,
+.material-page-container .material-row-action-btn.el-button--text:focus {
+  color: #409eff;
+}
+
 .material-cell-price-right {
   white-space: nowrap;
   word-break: normal;
@@ -3840,6 +3933,37 @@ export default {
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+
+/* 查看模式：禁用控件仍用白底深字，便于阅读 */
+.material-modal-content.material-modal-view .el-input.is-disabled .el-input__inner,
+.material-modal-content.material-modal-view .el-textarea.is-disabled .el-textarea__inner,
+.material-modal-content.material-modal-view .el-select .el-input.is-disabled .el-input__inner,
+.material-modal-content.material-modal-view .el-date-editor.is-disabled .el-input__inner,
+.material-modal-content.material-modal-view .el-range-editor.is-disabled,
+.material-modal-content.material-modal-view .el-range-editor.is-disabled input {
+  background-color: #fff !important;
+  border-color: #dcdfe6 !important;
+  color: #303133 !important;
+  -webkit-text-fill-color: #303133;
+  cursor: default;
+}
+
+.material-modal-content.material-modal-view .el-input.is-disabled .el-input__inner::placeholder,
+.material-modal-content.material-modal-view .el-textarea.is-disabled .el-textarea__inner::placeholder {
+  color: #c0c4cc !important;
+  -webkit-text-fill-color: #c0c4cc;
+}
+
+.material-modal-content.material-modal-view .el-radio.is-disabled .el-radio__label,
+.material-modal-content.material-modal-view .el-checkbox.is-disabled .el-checkbox__label {
+  color: #303133 !important;
+}
+
+.material-modal-content.material-modal-view .el-radio.is-disabled.is-checked .el-radio__inner,
+.material-modal-content.material-modal-view .el-checkbox.is-disabled.is-checked .el-checkbox__inner {
+  background-color: #409eff !important;
+  border-color: #409eff !important;
 }
 
 .local-modal-content.material-modal-content {
