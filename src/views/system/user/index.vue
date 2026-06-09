@@ -1169,47 +1169,44 @@ export default {
       const userId = row.userId || row;
       const userName = row.userName || (typeof row === 'string' ? row : '');
       this.authTitle = `授权 - ${userName || userId}`;
-      getUser(userId).then(response => {
-        // 载入基础数据
-        this.postOptions = response.posts;
-        this.roleOptions = response.roles;
-        this.userWarehouseOptions = response.warehouses;
-        this.userDepartmentOptions = response.departments;
-        // 载入授权数据
-        const savedMenuIds = response.menuIds || [];
-        console.log('获取到的菜单权限:', savedMenuIds);
-        this.authForm = {
-          userId: response.data.userId,
-          menuIds: savedMenuIds,
-          departmentIds: response.departmentIds || [],
-          warehouseIds: response.warehouseIds || []
-        };
-        this.authExistingMenuIds = toMenuIdNumbers(savedMenuIds);
-        const cid = response.data && response.data.customerId;
-        // 租户用户：树展示本客户已开通菜单；右列预填「已有 + 树接口勾选」并集，避免误以为只需勾新增项
-        if (cid) {
-          return roleMenuTreeselectUser(userId).then(res => {
-            this.menuOptions = this.normalizeAuthMenuTree(res.menus || []);
+      const loading = this.$loading({ lock: true, text: '加载授权数据...', background: 'rgba(0, 0, 0, 0.15)' });
+      Promise.all([getUser(userId), roleMenuTreeselectUser(userId)])
+        .then(([response, menuRes]) => {
+          this.postOptions = response.posts;
+          this.roleOptions = response.roles;
+          this.userWarehouseOptions = response.warehouses;
+          this.userDepartmentOptions = response.departments;
+          const savedMenuIds = response.menuIds || [];
+          this.authForm = {
+            userId: response.data.userId,
+            menuIds: savedMenuIds,
+            departmentIds: response.departmentIds || [],
+            warehouseIds: response.warehouseIds || []
+          };
+          this.authExistingMenuIds = toMenuIdNumbers(savedMenuIds);
+          const cid = response.data && response.data.customerId;
+          if (cid) {
+            this.menuOptions = this.normalizeAuthMenuTree(menuRes.menus || []);
             const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
-            const checked = res.checkedKeys != null ? res.checkedKeys : [];
+            const checked = menuRes.checkedKeys != null ? menuRes.checkedKeys : [];
             const merged = mergeMenuAuthIds(savedMenuIds, checked);
             this.authForm.menuIds = filterMenuIdsByAllowed(merged, allowed);
             this.authExistingMenuIds = filterMenuIdsByAllowed(savedMenuIds, allowed);
-            return res;
-          });
-        }
-        this.menuOptions = [];
-        this.$modal.msgWarning('该用户未绑定租户，无法分配耗材菜单权限');
-        return Promise.resolve();
-      }).then(() => {
-        this.authOpen = true;
-        this.$nextTick(() => {
-          if (this.$refs.menuAuthDualTree) {
-            this.$refs.menuAuthDualTree.resetAutoPreselectState();
+          } else {
+            this.menuOptions = [];
+            this.$modal.msgWarning('该用户未绑定租户，无法分配耗材菜单权限');
           }
-          this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
+          this.authOpen = true;
+          this.$nextTick(() => {
+            if (this.$refs.menuAuthDualTree) {
+              this.$refs.menuAuthDualTree.resetAutoPreselectState();
+            }
+            this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
+          });
+        })
+        .finally(() => {
+          loading.close();
         });
-      });
     },
     applyAuthMenuSelectionFromForm() {
       const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
@@ -1282,19 +1279,15 @@ export default {
       const userId = this.authForm.userId;
       const departmentIds = (this.authForm.departmentIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
       const warehouseIds = (this.authForm.warehouseIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+      const loading = this.$loading({ lock: true, text: '保存授权中...', background: 'rgba(0, 0, 0, 0.15)' });
       Promise.all([
         updateUserMenus(userId, finalMenuIds),
         updateUserDepartments(userId, departmentIds),
         updateUserWarehouses(userId, warehouseIds)
       ]).then(() => {
         this.$modal.msgSuccess("授权成功");
-        return getUser(userId);
-      }).then(response => {
-        const savedMenuIds = response.menuIds || [];
-        const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
-        const filtered = filterMenuIdsByAllowed(savedMenuIds, allowed);
-        this.authForm.menuIds = filtered;
-        this.authExistingMenuIds = filtered.slice();
+        this.authForm.menuIds = finalMenuIds.slice();
+        this.authExistingMenuIds = finalMenuIds.slice();
         this.$nextTick(() => {
           if (this.$refs.menuAuthDualTree) {
             this.$refs.menuAuthDualTree.resetAutoPreselectState();
@@ -1303,6 +1296,8 @@ export default {
         });
       }).catch(error => {
         this.$modal.msgError("授权保存失败：" + (error.msg || error.message || error || '未知错误'));
+      }).finally(() => {
+        loading.close();
       });
     },
     /** 查询部门下拉树结构 */

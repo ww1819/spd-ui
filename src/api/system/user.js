@@ -23,7 +23,8 @@ export function getUser(userId) {
   return request({
     url: '/system/user/' + parseStrEmpty(userId),
     method: 'get',
-    params: { systemType: 'hc' }
+    params: { systemType: 'hc' },
+    timeout: 60000
   })
 }
 
@@ -31,7 +32,8 @@ export function getUser(userId) {
 export function roleMenuTreeselectUser(userId) {
   return request({
     url: '/system/user/roleMenuTreeselect/' + parseStrEmpty(userId),
-    method: 'get'
+    method: 'get',
+    timeout: 60000
   })
 }
 
@@ -175,7 +177,8 @@ export function updateUserMenus(userId, menuIds) {
   return request({
     url: '/system/user/' + parseStrEmpty(userId) + '/menus',
     method: 'put',
-    data: { menuIds: menuIds || [] }
+    data: { menuIds: menuIds || [] },
+    timeout: 60000
   })
 }
 
@@ -184,7 +187,8 @@ export function updateUserDepartments(userId, departmentIds) {
   return request({
     url: '/system/user/' + parseStrEmpty(userId) + '/departments',
     method: 'put',
-    data: { departmentIds: departmentIds || [] }
+    data: { departmentIds: departmentIds || [] },
+    timeout: 60000
   })
 }
 
@@ -193,7 +197,8 @@ export function updateUserWarehouses(userId, warehouseIds) {
   return request({
     url: '/system/user/' + parseStrEmpty(userId) + '/warehouses',
     method: 'put',
-    data: { warehouseIds: warehouseIds || [] }
+    data: { warehouseIds: warehouseIds || [] },
+    timeout: 60000
   })
 }
 
