@@ -14,7 +14,9 @@ const user = {
     tenant: null,
     tenantSyncedAt: 0,
     /** 耗材 sys_user_post 岗位/工作组 ID 列表（与 getInfo 同步，管理员维护后需 GetInfo 刷新） */
-    postIds: []
+    postIds: [],
+    /** 是否机构管理员（super 账号） */
+    tenantSuper: false
   },
 
   mutations: {
@@ -47,6 +49,9 @@ const user = {
     },
     SET_POST_IDS: (state, postIds) => {
       state.postIds = Array.isArray(postIds) ? postIds : []
+    },
+    SET_TENANT_SUPER: (state, tenantSuper) => {
+      state.tenantSuper = !!tenantSuper
     }
   },
 
@@ -102,6 +107,7 @@ const user = {
           }
           commit('SET_TENANT_SYNCED_AT', Date.now())
           commit('SET_POST_IDS', user.postIds != null && Array.isArray(user.postIds) ? user.postIds : [])
+          commit('SET_TENANT_SUPER', res.tenantSuper)
           resolve(res)
         }).catch(error => {
           reject(error)
@@ -119,6 +125,7 @@ const user = {
           commit('SET_TENANT', null)
           commit('SET_TENANT_SYNCED_AT', 0)
           commit('SET_POST_IDS', [])
+          commit('SET_TENANT_SUPER', false)
           removeToken()
           resolve()
         }).catch(error => {

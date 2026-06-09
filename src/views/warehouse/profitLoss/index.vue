@@ -243,8 +243,11 @@ export default {
       }).catch(() => { this.loading = false })
     },
     loadStocktakingOptions() {
-      listStocktaking({ stockStatus: 2, pageNum: 1, pageSize: 500 }).then(response => {
-        this.stocktakingOptions = response.rows || []
+      listStocktaking({ stockStatus: 2, stockType: '501', pageNum: 1, pageSize: 500 }).then(response => {
+        // 仓库盘点单审核直接变更库存（auditAdjustsInventory=1）时不可再生成盈亏单
+        this.stocktakingOptions = (response.rows || []).filter(
+          (s) => s.auditAdjustsInventory !== 1 && s.auditAdjustsInventory !== '1'
+        )
       })
     },
     onStocktakingChange() {

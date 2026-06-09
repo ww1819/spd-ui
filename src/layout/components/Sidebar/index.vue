@@ -9,7 +9,7 @@
                 :collapse="isCollapse"
                 :background-color="settings.sideTheme === 'theme-dark' ? variables.menuBackground : variables.menuLightBackground"
                 :text-color="settings.sideTheme === 'theme-dark' ? variables.menuColor : variables.menuLightColor"
-                :unique-opened="false"
+                :unique-opened="true"
                 :active-text-color="settings.theme"
                 :collapse-transition="false"
                 mode="vertical"
@@ -119,25 +119,11 @@ export default {
                 });
             }
         },
-        // 监听 defaultOpeneds 变化，更新 openedMenus
+        // 路由变化时按当前页重新计算应展开的菜单（不累积历史展开项）
         defaultOpeneds: {
             immediate: true,
             handler(newVal) {
-                // 合并默认展开的菜单和用户手动展开的菜单（去重）
-                // 但排除用户手动收起的菜单
-                const filteredNewVal = newVal.filter(menu => !this.manuallyClosedMenus.includes(menu));
-                // 只添加新的菜单，不删除用户手动收起的菜单
-                const newMenus = filteredNewVal.filter(menu => !this.openedMenus.includes(menu));
-                if (newMenus.length > 0) {
-                    const allOpened = [...new Set([...this.openedMenus, ...newMenus])];
-                    // 只有当 openedMenus 发生变化时才更新，避免覆盖用户的手动操作
-                    if (JSON.stringify(allOpened.sort()) !== JSON.stringify(this.openedMenus.sort())) {
-                        this.$nextTick(() => {
-                            this.openedMenus = allOpened;
-                            this.syncMenuState();
-                        });
-                    }
-                }
+                this.applyOpenedMenus(newVal);
             }
         }
     },
@@ -148,32 +134,67 @@ export default {
         });
     },
     methods: {
-        // 更新展开的菜单列表
-        updateOpenedMenus() {
-            const defaultOpened = this.defaultOpeneds;
-            // 合并默认展开的菜单和用户手动展开的菜单（去重）
-            // 但排除用户手动收起的菜单
-            const filteredDefaultOpened = defaultOpened.filter(menu => !this.manuallyClosedMenus.includes(menu));
-            const allOpened = [...new Set([...this.openedMenus, ...filteredDefaultOpened])];
-            // 只有当 openedMenus 发生变化时才更新，避免覆盖用户的手动操作
-            if (JSON.stringify(allOpened.sort()) !== JSON.stringify(this.openedMenus.sort())) {
-                this.openedMenus = allOpened;
-                // 确保菜单组件同步更新
+        /** 顶级菜单 index 列表（与 SidebarItem 的 resolvePath 规则一致） */
+        getTopLevelMenuIndexes() {
+            return (this.sidebarRouters || [])
+                .filter(route => !route.hidden)
+                .map(route => {
+                    if (isExternal(route.path)) {
+                        return route.path;
+                    }
+                    return route.path.startsWith('/') ? route.path : '/' + route.path;
+                });
+        },
+        isTopLevelMenuIndex(index) {
+            return this.getTopLevelMenuIndexes().includes(index);
+        },
+        isUnderTopLevelMenu(menuPath, topPath) {
+            if (!menuPath || !topPath) {
+                return false;
+            }
+            if (menuPath === topPath) {
+                return true;
+            }
+            return menuPath.startsWith(topPath + '/');
+        },
+        /** 展开另一个顶级菜单时，收起其它顶级菜单 */
+        collapseOtherTopLevelMenus(activeTopIndex) {
+            const topLevels = this.getTopLevelMenuIndexes();
+            this.openedMenus = this.openedMenus.filter(menu => {
+                if (topLevels.includes(menu)) {
+                    return menu === activeTopIndex;
+                }
+                return this.isUnderTopLevelMenu(menu, activeTopIndex);
+            });
+            if (!this.openedMenus.includes(activeTopIndex)) {
+                this.openedMenus.push(activeTopIndex);
+            }
+        },
+        applyOpenedMenus(menus) {
+            const next = (menus || []).filter(menu => !this.manuallyClosedMenus.includes(menu));
+            if (JSON.stringify(next.slice().sort()) !== JSON.stringify(this.openedMenus.slice().sort())) {
+                this.openedMenus = next;
                 this.$nextTick(() => {
                     this.syncMenuState();
                 });
             }
         },
+        // 更新展开的菜单列表
+        updateOpenedMenus() {
+            this.applyOpenedMenus(this.defaultOpeneds);
+        },
         // 菜单展开事件
         handleMenuOpen(index) {
-            if (!this.openedMenus.includes(index)) {
+            if (this.isTopLevelMenuIndex(index)) {
+                this.collapseOtherTopLevelMenus(index);
+            } else if (!this.openedMenus.includes(index)) {
                 this.openedMenus.push(index);
             }
-            // 如果用户手动展开菜单，则从手动收起列表中移除（表示用户想要展开它）
             const closedIndex = this.manuallyClosedMenus.indexOf(index);
             if (closedIndex > -1) {
                 this.manuallyClosedMenus.splice(closedIndex, 1);
             }
+            this.syncMenuState();
         },
         // 菜单收起事件（只有用户手动点击收起时才执行）
         // 允许用户自由收起任何菜单（包括当前激活菜单的父菜单）
@@ -228,20 +249,14 @@ export default {
         },
         // 菜单选择事件（点击菜单项时触发）
         handleMenuSelect(index) {
-            // 确保所有父菜单都展开
+            const menuPath = typeof index === 'string' ? index : (index && index.path) || '';
             this.$nextTick(() => {
-                this.ensureParentMenusOpen(index);
+                this.ensureParentMenusOpen(menuPath);
             });
         },
-        // 确保父菜单展开
+        // 仅展开当前页面所在分支的父级菜单
         ensureParentMenusOpen(menuPath) {
-            const parentMenus = this.findAllParentMenus(menuPath);
-            const allOpened = [...new Set([...this.openedMenus, ...parentMenus])];
-            this.openedMenus = allOpened;
-            // 强制更新菜单组件
-            if (this.$refs.menu) {
-                this.$refs.menu.openedMenus = allOpened;
-            }
+            this.applyOpenedMenus(this.findAllParentMenus(menuPath));
         },
         // 查找所有父菜单路径
         findAllParentMenus(targetPath) {

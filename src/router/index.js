@@ -47,6 +47,11 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/sso-callback',
+    component: () => import('@/views/sso-callback'),
+    hidden: true
+  },
+  {
     path: '/register',
     component: () => import('@/views/register'),
     hidden: true
@@ -96,6 +101,19 @@ export const constantRoutes = [
     component: () => import('@/views/gzOrder/apply/GzBarcodePrintPage'),
     hidden: true,
     meta: { title: '高值条码打印' }
+  },
+  {
+    path: '/foundation/msun-probe',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/foundation/msunProbe/index'),
+        name: 'MsunHisProbe',
+        meta: { title: '众阳HIS接口联调', activeMenu: '/foundation/depart' }
+      }
+    ]
   },
   {
     path: '',

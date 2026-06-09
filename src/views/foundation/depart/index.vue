@@ -142,6 +142,10 @@
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
+      <msun-his-sync-button sync-type="depts" label="HIS科室同步" :refresh="getList" />
+      <el-col v-if="showMsunProbe" :span="1.5">
+        <el-button type="info" plain size="small" icon="el-icon-connection" @click="goMsunProbe">众阳接口联调</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -343,12 +347,17 @@ import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import { listdepart, departTree, getdepart, deldepart, adddepart, updatedepart, updateDepartReferred, validateDepartImportAdd, validateDepartImportUpdate, importDepartAddData, importDepartUpdateData, listDepartmentChangeLog } from "@/api/foundation/depart";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
+import MsunHisSyncButton from '@/components/MsunHisSyncButton';
+import { isMsunIntegratedTenant } from '@/utils/msunHis';
 
 export default {
   name: "depart",
-  components: { Treeselect },
+  components: { Treeselect, MsunHisSyncButton },
   computed: {
     ...mapGetters(["departImportRequiresHisDeptId"]),
+    showMsunProbe() {
+      return isMsunIntegratedTenant(this.$store.getters.customerId);
+    },
     hisThirdPartyPlaceholder() {
       if (this.form && this.form.id) {
         return "仅展示，保存后不可在此修改";
@@ -544,6 +553,9 @@ export default {
         this.queryParams.treeParentId = data.deptId;
       }
       this.handleQuery();
+    },
+    goMsunProbe() {
+      this.$router.push({ path: '/foundation/msun-probe/index' });
     },
     /** 查询科室列表 */
     getList() {

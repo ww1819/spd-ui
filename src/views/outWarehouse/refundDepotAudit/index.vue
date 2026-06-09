@@ -91,6 +91,14 @@
           v-hasPermi="['outWarehouse:refundDepotApply:audit']"
         >审核</el-button>
       </el-col>
+      <el-col :span="1.5" v-if="isZaoqiangTenant">
+        <el-button
+          type="warning"
+          size="medium"
+          :disabled="multiple"
+          @click="handleBatchHisPush"
+        >推送HIS</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -126,6 +134,14 @@
           <span style="white-space: nowrap;">
             <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
           </span>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="isZaoqiangTenant" label="HIS推送" align="center" width="100" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.billStatus == 2" :type="msunPushTag(scope.row.hisPushStatus).type" size="mini">
+            {{ msunPushTag(scope.row.hisPushStatus).label }}
+          </el-tag>
+          <span v-else>—</span>
         </template>
       </el-table-column>
 
@@ -189,6 +205,20 @@
               style="padding: 0 5px; margin: 0;"
               v-hasPermi="['outWarehouse:refundDepotApply:query']"
             >变更记录</el-button>
+            <el-button
+              v-if="isZaoqiangTenant && scope.row.billStatus == 2"
+              size="small"
+              type="text"
+              style="padding: 0 5px; margin: 0; color: #e6a23c;"
+              @click="handleHisPush(scope.row)"
+            >推送HIS</el-button>
+            <el-button
+              v-if="isZaoqiangTenant"
+              size="small"
+              type="text"
+              style="padding: 0 5px; margin: 0;"
+              @click="openHisBillView(scope.row)"
+            >HIS单据</el-button>
           </span>
         </template>
       </el-table-column>
@@ -267,6 +297,15 @@
         <el-row :gutter="10" class="detail-toolbar-row">
           <el-col :span="1.5">
             <span>退库明细信息</span>
+          </el-col>
+          <el-col :span="1.5" v-if="isZaoqiangTenant && form.id">
+            <el-button type="info" plain size="small" icon="el-icon-document" @click="openHisBillView(form)">HIS单据</el-button>
+          </el-col>
+          <el-col :span="4" v-if="isZaoqiangTenant && form.billStatus == 2">
+            <span class="his-bill-status">HIS：{{ msunPushTag(form.hisPushStatus).label }}</span>
+          </el-col>
+          <el-col :span="1.5" v-if="isZaoqiangTenant && form.billStatus == 2 && form.id">
+            <el-button type="warning" size="small" icon="el-icon-upload2" @click="handleHisPush(form)">推送HIS</el-button>
           </el-col>
 
           <div v-show="action">
@@ -383,6 +422,20 @@
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
+          <el-table-column v-if="isZaoqiangTenant" label="HIS推送" align="center" width="90">
+            <template slot-scope="scope">
+              <el-tag v-if="form.billStatus == 2" :type="msunPushTag(scope.row.hisPushStatus).type" size="mini">
+                {{ msunPushTag(scope.row.hisPushStatus).label }}
+              </el-tag>
+              <span v-else>—</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="isZaoqiangTenant" label="pharmacyStockId" prop="hisPharmacyStockId" width="130" show-overflow-tooltip />
+          <el-table-column v-if="isZaoqiangTenant" label="HIS明细" align="center" width="88" fixed="right">
+            <template slot-scope="scope">
+              <el-button type="text" size="small" @click="openHisEntryView(scope.row)">查看</el-button>
+            </template>
+          </el-table-column>
         </el-table>
         </div>
         </div>
@@ -391,6 +444,19 @@
         </transition>
       </div>
     </transition>
+
+    <MsunHisEntryView
+      :visible.sync="hisEntryView.visible"
+      :entry="hisEntryView.entry"
+      :department="form.department"
+    />
+    <MsunHisBillView
+      :visible.sync="hisBillView.visible"
+      :bill-id="hisBillView.billId"
+      :bill-type="hisBillView.billType"
+      :bill-no="hisBillView.billNo"
+    />
+
     <el-dialog
       :visible.sync="modalObj.show"
       :width="modalObj.width"
@@ -489,13 +555,19 @@ import refundDepotOrderPrint from "@/views/outWarehouse/refundDepotAudit/refundD
 import { buildRefundDepotPrintRowFromDetail } from '@/views/warehouse/print/refundDepotPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData';
 import refundGoodsOrderPrint from "@/views/inWarehouse/refundGoodsAudit/refundGoodsOrderPrint.vue";
+import { isZaoqiangTenant, msunPushStatusMeta } from '@/utils/msunHis'
+import { pushMsunReturn } from '@/api/foundation/msunHisBill'
+import MsunHisEntryView from '@/components/MsunHisEntryView'
+import MsunHisBillView from '@/components/MsunHisBillView'
 
 export default {
   name: "OutWarehouseRefundAudit",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {refundGoodsOrderPrint, refundDepotOrderPrint,SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory},
+  components: {refundGoodsOrderPrint, refundDepotOrderPrint,SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory,MsunHisEntryView,MsunHisBillView},
   data() {
     return {
+      hisEntryView: { visible: false, entry: null },
+      hisBillView: { visible: false, billId: null, billType: '401', billNo: null },
       docRefStatusOptions: DOC_REF_STATUS_OPTIONS,
       // 遮罩层
       loading: true,
@@ -589,6 +661,9 @@ export default {
     };
   },
   computed: {
+    isZaoqiangTenant() {
+      return isZaoqiangTenant(this.$store.getters.customerId)
+    },
     showPrintOrientation() {
       const m = this.modalObj
       if (!m || !m.form) return false
@@ -609,6 +684,70 @@ export default {
     this.getList();
   },
   methods: {
+    msunPushTag(status) {
+      return msunPushStatusMeta(status)
+    },
+    openHisEntryView(entry) {
+      this.hisEntryView.entry = entry
+      this.hisEntryView.visible = true
+    },
+    openHisBillView(row) {
+      if (!row || !row.id) return
+      this.hisBillView.billId = row.id
+      this.hisBillView.billType = row.billType || '401'
+      this.hisBillView.billNo = row.billNo
+      this.hisBillView.visible = true
+    },
+    handleHisPush(row) {
+      const billId = row && row.id
+      if (!billId) return
+      if (row.billStatus != 2) {
+        this.$modal.msgWarning('未审核退库单不允许推送HIS')
+        return
+      }
+      this.$modal.confirm('确认对该退库单执行 HIS 推送？').then(() => {
+        return pushMsunReturn(billId)
+      }).then(() => {
+        this.$modal.msgSuccess('HIS 推送已提交')
+        if (this.form && this.form.id === billId) {
+          this.handleView(row)
+        }
+        this.getList()
+      }).catch(() => {})
+    },
+    handleBatchHisPush() {
+      if (!this.isZaoqiangTenant) return
+      const selected = this.warehouseList.filter(r => this.ids.includes(r.id))
+      const pushable = selected.filter(r => r.billStatus == 2)
+      if (!pushable.length) {
+        this.$modal.msgWarning('请勾选已审核的退库单')
+        return
+      }
+      this.$modal.confirm('确认对选中的 ' + pushable.length + ' 条退库单执行 HIS 推送？').then(() => {
+        const tasks = pushable.map(r =>
+          pushMsunReturn(r.id).then(() => ({ ok: true, billNo: r.billNo }))
+            .catch(err => ({ ok: false, billNo: r.billNo, msg: (err && err.message) || '失败' }))
+        )
+        return Promise.all(tasks)
+      }).then(results => {
+        const ok = results.filter(r => r.ok).length
+        const fail = results.length - ok
+        if (fail === 0) {
+          this.$modal.msgSuccess('批量 HIS 推送已提交（' + ok + ' 条）')
+        } else {
+          this.$modal.msgWarning('完成：成功 ' + ok + ' 条，失败 ' + fail + ' 条')
+        }
+        this.getList()
+      }).catch(() => {})
+    },
+    applyBillDetail(data, options = {}) {
+      this.form = data
+      this.stkIoBillEntryList = data.stkIoBillEntryList || []
+      this.open = true
+      if (options.action != null) this.action = options.action
+      if (options.title) this.title = options.title
+      if (options.billType) this.form.billType = options.billType
+    },
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
@@ -877,13 +1016,7 @@ export default {
     handleView(row){
       const id = row.id
       getTkInventory(id).then(response => {
-        this.form = response.data;
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
-        this.open = true;
-        this.action = false;
-        this.form.billStatus = '1';
-        this.form.billType = '401';
-        this.title = "查看退库";
+        this.applyBillDetail(response.data, { action: false, title: '查看退库', billType: '401' })
       });
     },
     /** 审核按钮操作 */
@@ -931,13 +1064,8 @@ export default {
       this.reset();
       const id = row.id || this.ids
       getTkInventory(id).then(response => {
-        this.form = response.data;
-        this.form.billStatus = '1';
-        this.form.billType = '401';
-        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
-        this.open = true;
-        this.action = true;
-        this.title = "修改退库";
+        const data = { ...response.data, billStatus: '1', billType: '401' }
+        this.applyBillDetail(data, { action: true, title: '修改退库' })
       });
     },
 
@@ -1056,6 +1184,11 @@ export default {
 </script>
 
 <style scoped>
+.his-bill-status {
+  line-height: 32px;
+  font-size: 13px;
+  color: #606266;
+}
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;

@@ -79,6 +79,15 @@ export function batchSetUserWorkgroup(data) {
   })
 }
 
+/** 机构管理员批量修改本租户用户密码（排除 admin 与 super 账号） */
+export function batchResetUserPassword(password) {
+  return request({
+    url: '/system/user/batchResetPwd',
+    method: 'post',
+    data: { password }
+  })
+}
+
 // 用户密码重置
 export function resetUserPwd(userId, password) {
   const data = {

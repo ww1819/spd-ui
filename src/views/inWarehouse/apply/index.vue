@@ -789,7 +789,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
 import SelectDingdan from '@/components/SelectModel/SelectDingdan';
 import orderPrint from "@/views/inWarehouse/audit/orderPrint";
-import RMBConverter from "@/utils/tools";
+import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 
@@ -1521,60 +1521,8 @@ export default {
     },
     //组装打印信息
     getInWarehouseDetail(row) {
-      //查询详情
       return getInWarehouse(row.id).then(response => {
-        const details = response.data.stkIoBillEntryList
-        const materiaDetails = response.data.materialList
-        const map = {};
-
-        (materiaDetails || []).forEach(it => {
-          map[it.id] = it
-        })
-
-        let detailList = [], totalAmt = 0, totalQty = 0
-
-        details && details.forEach(item => {
-          totalAmt += item.amt
-          totalQty += item.qty
-
-          const prod = map[item.materialId] || {}
-          const fdFactory = prod.fdFactory != null ? prod.fdFactory : null
-          const fdWarehouseCategory = prod.fdWarehouseCategory != null ? prod.fdWarehouseCategory : null
-          const fdUnit = prod.fdUnit != null ? prod.fdUnit : null
-
-          detailList.push({
-            batchNumber: item.batchNumber,
-            amt: item.amt,
-            qty: item.qty,
-            unitPrice: item.unitPrice,
-            price: item.unitPrice,
-            materialCode: (prod && prod.code) || '',
-            materialName: (prod && prod.name) || '',
-            materialSpeci: (prod && prod.speci) || '',
-            periodDate: (prod && prod.periodDate) || '',
-            factoryName: (fdFactory && fdFactory.factoryName) || '',
-            warehouseCategoryName: (fdWarehouseCategory && fdWarehouseCategory.warehouseCategoryName) || '',
-            unitName: (fdUnit && fdUnit.unitName) || '',
-          })
-
-        })
-
-        let totalAmtConverter = RMBConverter.numberToChinese(totalAmt);
-
-        return {
-          billNo: row.billNo,
-          supplierName: (row.supplier && row.supplier.name) || '',
-          warehouseName: (row.warehouse && row.warehouse.name) || '',
-          billDate: row.billDate,
-          auditDate: row.auditDate,
-          totalAmt: totalAmt,
-          totalQty: totalQty,
-          totalAmtConverter: totalAmtConverter,
-          detailList: detailList,
-          fundSourceAccount: (row.fundSourceAccount != null ? row.fundSourceAccount : '') || '',
-          createBy: (row.createBy != null ? row.createBy : '') || '',
-          inboundOperator: (row.creater && row.creater.nickName) || (row.inboundOperator != null ? row.inboundOperator : row.createBy) || '',
-        }
+        return buildInboundPrintRowFromDetail(row, response.data)
       })
     },
     /** 新增按钮操作 */

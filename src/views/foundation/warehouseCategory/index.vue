@@ -115,6 +115,7 @@
               v-hasPermi="['foundation:warehouseCategory:import']"
             >更新导入</el-button>
           </el-col>
+          <msun-his-sync-button sync-type="categories" label="HIS库房分类同步" :refresh="getList" />
           <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
 
@@ -319,9 +320,11 @@
 import { listWarehouseCategory, getWarehouseCategory, delWarehouseCategory, addWarehouseCategory, updateWarehouseCategory, treeselect, updateWarehouseCategoryReferred, validateWarehouseCategoryImportAdd, validateWarehouseCategoryImportUpdate, importWarehouseCategoryAddData, importWarehouseCategoryUpdateData } from "@/api/foundation/warehouseCategory";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import { mapGetters } from "vuex";
+import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 
 export default {
   name: "WarehouseCategory",
+  components: { MsunHisSyncButton },
   computed: {
     ...mapGetters(['customerId', 'factoryImportRequiresHisId']),
     isDisabled() {
