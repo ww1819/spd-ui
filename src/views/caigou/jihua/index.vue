@@ -272,16 +272,10 @@
       @qty-blur="qtyChange"
       @view-apply-details="handleViewApplyDetails"
       @show-apply-bills="handleShowApplyBillNoList"
-    />
-
-    <SelectMMaterialFilter
-      v-if="DialogComponentShow"
-      :DialogComponentShow="DialogComponentShow"
-      :supplierValue="supplierValue"
-      :warehouseValue="form.warehouseId"
-      :isGzValue="form.isGz"
-      @closeDialog="closeDialog"
-      @selectData="selectData"
+      :material-picker-visible="DialogComponentShow"
+      :material-picker-supplier="supplierValue"
+      @material-picker-close="closeDialog"
+      @material-picker-select="selectData"
     />
 
     <ReferencePurchaseDialog
@@ -323,7 +317,6 @@ export default {
     PlanProgressDialog: () => import('./components/PlanProgressDialog'),
     ApplyBillHeaderDialog: () => import('./components/ApplyBillHeaderDialog'),
     ApplyDetailDialog: () => import('./components/ApplyDetailDialog'),
-    SelectMMaterialFilter: () => import('@/components/SelectModel/SelectMMaterialFilter')
   },
   data() {
     return {
@@ -1020,6 +1013,7 @@ export default {
       this.planDetailSupplierListLoading = false;
       this.planDetailSupplierLoadPromise = null;
       this.planDetailSupplierLoadAttempted = false;
+      this.DialogComponentShow = false;
       this.$nextTick(() => {
         const dlg = this.$refs.planEditDialog;
         const f = dlg && dlg.$refs && dlg.$refs.form;

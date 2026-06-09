@@ -1,11 +1,11 @@
 <template>
-  <div v-show="show" class="local-modal-mask">
-    <div class="local-modal-content">
+  <div v-if="DialogComponentShow" class="local-modal-mask" :class="{ 'local-modal-mask--nested': nested }">
+    <div class="local-modal-content" :class="{ 'local-modal-content--nested': nested }">
       <div class="modal-header">
         <div class="modal-title">添加产品明细</div>
         <el-button type="text" @click="handleClose" class="close-btn" style="font-size:14px;padding:0;color:#909399;">关闭</el-button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" :class="{ 'modal-body--nested': nested }">
         <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
         <el-row :gutter="20">
           <el-col :span="8">
@@ -41,7 +41,8 @@
         <el-button type="primary" size="small" @click="checkMaterialBtn">确 定</el-button>
       </div>
 
-        <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" height="calc(50vh)" border :cell-style="{padding: '8px 4px'}">
+        <div class="material-table-wrap">
+        <el-table ref="singleTable" :data="materialList" @selection-change="handleSelectionChange" :height="tableHeight" border :cell-style="{padding: '8px 4px'}">
           <el-table-column type="selection" width="50" align="center" />
           <el-table-column label="序号" align="center" width="60" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -116,6 +117,7 @@
             </template>
           </el-table-column>
       </el-table>
+        </div>
 
       <div class="pagination-container">
         <pagination
@@ -155,13 +157,22 @@ export default {
     isGzValue: {
       type: [String, Number],
       default: null
+    },
+    /** 嵌套在父级弹窗内展示，不覆盖整页 */
+    nested: {
+      type: Boolean,
+      default: false
+    }
+  },
+  computed: {
+    tableHeight() {
+      return this.nested ? '100%' : 'calc(50vh)';
     }
   },
   data() {
     return {
-      // 遮罩层
-      show: false, //弹窗默认隐藏
-      selectRow: [], //选择的行数据
+      // 选择的行数据
+      selectRow: [],
       isShow: true,//是否显示
       isDisabled: false,//是否禁用
       // 选中数组
@@ -205,14 +216,13 @@ export default {
     };
   },
   mounted() {
-    //显示弹窗
-    this.show = this.DialogComponentShow
     this.queryParams.supplierId = this.supplierValue
-    this.getList();
+    if (this.DialogComponentShow) {
+      this.getList();
+    }
   },
   watch: {
     DialogComponentShow(newVal) {
-      this.show = newVal;
       if (newVal) {
         // 弹窗打开时更新供应商并重新加载数据
         this.queryParams.supplierId = this.supplierValue;
@@ -220,13 +230,13 @@ export default {
       }
     },
     warehouseValue() {
-      if (this.show) {
+      if (this.DialogComponentShow) {
         this.queryParams.pageNum = 1;
         this.getList();
       }
     },
     isGzValue() {
-      if (this.show) {
+      if (this.DialogComponentShow) {
         this.queryParams.pageNum = 1;
         this.getList();
       }
@@ -234,7 +244,7 @@ export default {
     excludeMaterialIds: {
       deep: true,
       handler() {
-        if (this.show) {
+        if (this.DialogComponentShow) {
           this.queryParams.pageNum = 1;
           this.getList();
         }
@@ -342,8 +352,6 @@ export default {
       this.selectRow = val
     },
     handleClose() {
-      //关闭弹窗
-      this.show = false
       this.$emit('closeDialog')
     },
     /** 格式化日期 */
@@ -380,18 +388,16 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 占满整个遮罩层 */
+/* 默认：相对页面主内容区全屏遮罩（勿用 fixed，避免盖住顶栏与侧栏） */
 .local-modal-mask {
-  position: fixed;
+  position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  min-width: 100vw;
-  min-height: 100vh;
-  background: rgba(0,0,0,0.4);
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
   z-index: 3000;
   display: flex;
   align-items: stretch;
@@ -399,14 +405,25 @@ export default {
   overflow: hidden;
 }
 
+/* 嵌套在父级业务弹窗内，仅覆盖父弹窗区域 */
+.local-modal-mask--nested {
+  z-index: 3000;
+  border-radius: 0;
+}
+
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  max-height: 100vh;
+  min-height: 95vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.local-modal-content--nested {
+  min-height: 0;
+  max-height: 100%;
 }
 
 .modal-header {
@@ -441,6 +458,23 @@ export default {
   overflow-y: auto;
   padding: 20px 24px;
   background: #fff;
+}
+
+.modal-body--nested {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.material-table-wrap {
+  flex: 1;
+  min-height: 240px;
+  overflow: hidden;
+}
+
+.modal-body--nested .material-table-wrap {
+  min-height: 0;
 }
 
 /* 分页容器样式 */

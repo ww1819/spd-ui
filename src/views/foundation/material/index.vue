@@ -314,26 +314,6 @@
           <div class="material-cell-top-left" :title="scope.row.name || ''">{{ scope.row.name }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="his收费项目编码" align="center" prop="hisChargeItemId" width="150" key="hisChargeItemId" v-if="columns[26].visible" resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.hisChargeItemId || ''">{{ scope.row.hisChargeItemId }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="收费项目名称" align="center" prop="hisChargeItemName" min-width="160" key="hisChargeItemName" v-if="columns[27].visible" show-overflow-tooltip resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.hisChargeItemName || ''">{{ scope.row.hisChargeItemName || '--' }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="收费项目规格" align="center" prop="hisChargeItemSpeci" width="140" key="hisChargeItemSpeci" v-if="columns[28].visible" show-overflow-tooltip resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.hisChargeItemSpeci || ''">{{ scope.row.hisChargeItemSpeci || '--' }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="收费单价(HIS)" align="center" prop="hisChargeItemPrice" width="120" key="hisChargeItemPrice" v-if="columns[29].visible" resizable class-name="material-price-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.hisChargeItemPrice) || '')">{{ scope.row.hisChargeItemPrice != null && scope.row.hisChargeItemPrice !== '' ? formatPrice4(scope.row.hisChargeItemPrice) : '--' }}</div>
-        </template>
-      </el-table-column>
       <el-table-column label="规格" align="center" prop="speci" width="200" key="speci" v-if="columns[3].visible" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-top-left" :title="scope.row.speci || ''">{{ scope.row.speci }}</div>
@@ -425,6 +405,26 @@
       <el-table-column label="创建日期" align="center" prop="createTime" width="100" key="createTime" v-if="columns[21].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="his收费项目编码" align="center" prop="hisChargeItemId" width="150" key="hisChargeItemId" v-if="columns[26].visible" resizable class-name="material-top-cell cell-pad-tight">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left" :title="scope.row.hisChargeItemId || ''">{{ scope.row.hisChargeItemId }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="收费项目名称" align="center" prop="hisChargeItemName" min-width="160" key="hisChargeItemName" v-if="columns[27].visible" show-overflow-tooltip resizable class-name="material-top-cell cell-pad-tight">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left" :title="scope.row.hisChargeItemName || ''">{{ scope.row.hisChargeItemName || '--' }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="收费项目规格" align="center" prop="hisChargeItemSpeci" width="140" key="hisChargeItemSpeci" v-if="columns[28].visible" show-overflow-tooltip resizable class-name="material-top-cell cell-pad-tight">
+        <template slot-scope="scope">
+          <div class="material-cell-top-left" :title="scope.row.hisChargeItemSpeci || ''">{{ scope.row.hisChargeItemSpeci || '--' }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="收费单价(HIS)" align="center" prop="hisChargeItemPrice" width="120" key="hisChargeItemPrice" v-if="columns[29].visible" resizable class-name="material-price-cell cell-pad-tight">
+        <template slot-scope="scope">
+          <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.hisChargeItemPrice) || '')">{{ scope.row.hisChargeItemPrice != null && scope.row.hisChargeItemPrice !== '' ? formatPrice4(scope.row.hisChargeItemPrice) : '--' }}</div>
         </template>
       </el-table-column>
       <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" show-overflow-tooltip resizable/>
@@ -2587,28 +2587,6 @@ export default {
             { label: "序号", valueGetter: (_, index) => index + 1 },
             { label: "耗材编码", prop: "code" },
             { label: "耗材名称", prop: "name" },
-            { label: "his收费项目编码", prop: "hisChargeItemId" },
-            {
-              label: "收费项目名称",
-              valueGetter: (row) => {
-                const v = row && row.hisChargeItemName;
-                return v != null && String(v).trim() !== "" ? v : "--";
-              },
-            },
-            {
-              label: "收费项目规格",
-              valueGetter: (row) => {
-                const v = row && row.hisChargeItemSpeci;
-                return v != null && String(v).trim() !== "" ? v : "--";
-              },
-            },
-            {
-              label: "收费单价(HIS)",
-              valueGetter: (row) => {
-                const v = row && row.hisChargeItemPrice;
-                return v != null && v !== "" ? this.formatPrice4(v) : "--";
-              },
-            },
             { label: "规格", prop: "speci" },
             {
               label: "价格",
@@ -2658,6 +2636,28 @@ export default {
             {
               label: "创建日期",
               valueGetter: (row) => fmtCreateDate(row && row.createTime),
+            },
+            { label: "his收费项目编码", prop: "hisChargeItemId" },
+            {
+              label: "收费项目名称",
+              valueGetter: (row) => {
+                const v = row && row.hisChargeItemName;
+                return v != null && String(v).trim() !== "" ? v : "--";
+              },
+            },
+            {
+              label: "收费项目规格",
+              valueGetter: (row) => {
+                const v = row && row.hisChargeItemSpeci;
+                return v != null && String(v).trim() !== "" ? v : "--";
+              },
+            },
+            {
+              label: "收费单价(HIS)",
+              valueGetter: (row) => {
+                const v = row && row.hisChargeItemPrice;
+                return v != null && v !== "" ? this.formatPrice4(v) : "--";
+              },
             },
             { label: "最小包装数", prop: "minPackageQty" },
           ],

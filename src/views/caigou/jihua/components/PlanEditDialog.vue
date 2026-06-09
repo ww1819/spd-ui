@@ -1,6 +1,6 @@
 <template>
   <transition name="modal-fade">
-    <div v-if="innerVisible" class="local-modal-mask">
+    <div v-if="innerVisible" class="local-modal-mask plan-edit-modal-root">
       <transition name="modal-zoom">
         <div v-if="innerVisible" class="local-modal-content plan-edit-dialog">
           <div class="modal-header">
@@ -15,21 +15,21 @@
                     <el-input v-model="form.planNo" :disabled="true" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="4">
+                <el-col :span="5">
                   <el-form-item label="仓库" prop="warehouseId">
                     <SelectWarehouse v-model="form.warehouseId" :value2="warehouseLocked" excludeWarehouseType="设备"/>
                   </el-form-item>
                 </el-col>
-                <el-col :span="4">
-                  <el-form-item label="高值/低值" prop="isGz">
-                    <el-select v-model="form.isGz" placeholder="请选择" clearable :disabled="!editable || headerLocked" style="width: 100%;">
+                <el-col :span="3">
+                  <el-form-item label="高值/低值" prop="isGz" class="plan-field-is-gz">
+                    <el-select v-model="form.isGz" placeholder="请选择" clearable :disabled="!editable || headerLocked">
                       <el-option label="高值" value="1" />
                       <el-option label="低值" value="2" />
                     </el-select>
                   </el-form-item>
                 </el-col>
-                <el-col :span="6">
-                  <el-form-item label="制单时间" prop="planDate" class="plan-plan-date-item">
+                <el-col :span="5">
+                  <el-form-item label="制单时间" prop="planDate" class="plan-field-plan-date">
                     <el-input
                       :value="planCreateTimeDisplay"
                       :disabled="true"
@@ -42,8 +42,8 @@
                     <el-input :value="operatorName" :disabled="true" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="6">
-                  <el-form-item label="联系电话" prop="telephone">
+                <el-col :span="3">
+                  <el-form-item label="联系电话" prop="telephone" class="plan-field-phone">
                     <el-input v-model="form.telephone" placeholder="联系电话" />
                   </el-form-item>
                 </el-col>
@@ -122,6 +122,17 @@
           </el-form>
         </div>
       </transition>
+      <SelectMMaterialFilter
+        v-if="materialPickerVisible"
+        nested
+        :DialogComponentShow="materialPickerVisible"
+        :supplierValue="materialPickerSupplier"
+        :warehouseValue="form.warehouseId"
+        :isGzValue="form.isGz"
+        :excludeMaterialIds="materialPickerExcludeIds"
+        @closeDialog="$emit('material-picker-close')"
+        @selectData="$emit('material-picker-select', $event)"
+      />
     </div>
   </transition>
 </template>
@@ -130,10 +141,11 @@
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse'
 import SelectUser from '@/components/SelectModel/SelectUser'
 import PlanEntryTable from './PlanEntryTable'
+import SelectMMaterialFilter from '@/components/SelectModel/SelectMMaterialFilter'
 
 export default {
   name: 'PlanEditDialog',
-  components: { SelectWarehouse, SelectUser, PlanEntryTable },
+  components: { SelectWarehouse, SelectUser, PlanEntryTable, SelectMMaterialFilter },
   props: {
     visible: { type: Boolean, default: false },
     title: { type: String, default: '' },
@@ -151,7 +163,10 @@ export default {
     tableHeight: { type: String, default: 'max(260px, calc(100vh - 368px))' },
     summaryMethod: { type: Function, required: true },
     supplierDisplayFn: { type: Function, default: null },
-    submitLoading: { type: Boolean, default: false }
+    submitLoading: { type: Boolean, default: false },
+    materialPickerVisible: { type: Boolean, default: false },
+    materialPickerSupplier: { type: [String, Number], default: '' },
+    materialPickerExcludeIds: { type: Array, default: () => [] }
   },
   computed: {
     innerVisible: {
@@ -253,6 +268,31 @@ export default {
   line-height: 32px !important;
 }
 
+/* 第一行：高值/低值、制单时间、联系电话收窄 */
+.plan-edit-dialog ::v-deep .plan-field-is-gz .el-form-item__label {
+  width: 82px !important;
+  min-width: 82px;
+  flex: 0 0 82px;
+}
+
+.plan-edit-dialog ::v-deep .plan-field-is-gz .el-form-item__content {
+  max-width: 96px;
+}
+
+.plan-edit-dialog ::v-deep .plan-field-plan-date .el-form-item__content {
+  max-width: 168px;
+}
+
+.plan-edit-dialog ::v-deep .plan-field-phone .el-form-item__label {
+  width: 82px !important;
+  min-width: 82px;
+  flex: 0 0 82px;
+}
+
+.plan-edit-dialog ::v-deep .plan-field-phone .el-form-item__content {
+  max-width: 140px;
+}
+
 .plan-edit-dialog ::v-deep .modal-form-compact .plan-entry-mode-item .el-form-item__label {
   width: 130px !important;
   min-width: 130px;
@@ -262,5 +302,9 @@ export default {
 .plan-edit-dialog ::v-deep .modal-form-compact .plan-entry-mode-item .el-form-item__content {
   margin-left: 0 !important;
   flex: 1 1 auto;
+}
+
+.plan-edit-modal-root {
+  overflow: hidden;
 }
 </style>
