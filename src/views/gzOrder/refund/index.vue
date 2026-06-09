@@ -313,7 +313,7 @@
                   <el-table :data="gzRefundGoodsEntryList" :row-class-name="rowGzRefundGoodsEntryIndex" @selection-change="handleGzRefundGoodsEntrySelectionChange" ref="gzRefundGoodsEntry" border show-summary :summary-method="getSummaries" :height="detailTableHeight">
           <el-table-column type="selection" width="60" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材" prop="materialName" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="产品名称" prop="materialName" min-width="160" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
             </template>
@@ -485,7 +485,7 @@
 import { listGoods, getGoods, delGoods, addGoods, updateGoods, auditGoods } from "@/api/gz/refundStock";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listAuditedShipment, listShipmentLinesForTk } from "@/api/gz/refDoc";
-import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
+import { listGzDepInventoryPick } from "@/api/gzDepartment/gzDepInventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -711,7 +711,7 @@ export default {
       if (!raw) {
         return;
       }
-      listGzDepInventory({
+      listGzDepInventoryPick({
         pageNum: 1,
         pageSize: 20,
         inHospitalCode: raw,
@@ -1132,8 +1132,11 @@ export default {
       return {
         materialId: e.materialId,
         materialName: m.name || e.materialName || '',
-        speci: m.speci || '',
-        model: m.model || '',
+        speci: m.speci || e.speci || '',
+        model: m.model || e.model || '',
+        factoryName: (m.fdFactory && m.fdFactory.factoryName) || e.factoryName || '',
+        supplierName: (m.supplier && m.supplier.name) || e.supplierName || '',
+        udiNo: m.udiNo || e.masterBarcode || e.udiNo || '',
         qty,
         price,
         amt,

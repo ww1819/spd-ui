@@ -9,6 +9,15 @@ export function listGzDepInventory(query) {
   })
 }
 
+/** 弹窗/备货退库等：仅需登录，与 list 同源，避免无 gzDepartment:gzDepInventory:list 时 403 */
+export function listGzDepInventoryPick(query) {
+  return request({
+    url: '/gzDepartment/gzDepInventory/pick/list',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询高值科室库存详细
 export function getGzDepInventory(id) {
   return request({

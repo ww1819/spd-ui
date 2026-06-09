@@ -436,7 +436,7 @@
 <script>
 import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, listEntryChangeLog} from "@/api/gz/order";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
-import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
+import { listGzDepInventoryPick } from "@/api/gzDepartment/gzDepInventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -931,7 +931,7 @@ export default {
         console.log('准备查询院内码 - 科室ID:', this.form.departmentId, '明细数量:', this.gzOrderEntryList.length);
         if (this.form.departmentId && this.gzOrderEntryList.length > 0) {
           // 先查询所有科室库存数据
-          listGzDepInventory({
+          listGzDepInventoryPick({
             departmentId: this.form.departmentId,
             pageNum: 1,
             pageSize: 1000

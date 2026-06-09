@@ -192,7 +192,7 @@ import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import SelectFactory from "@/components/SelectModel/SelectFactory";
 import { listDepotInventory } from "@/api/gz/depotInventory";
-import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
+import { listGzDepInventory, listGzDepInventoryPick } from "@/api/gzDepartment/gzDepInventory";
 import { listInventory } from "@/api/warehouse/inventory";
 import { checkInHospitalCode } from "@/api/gz/order";
 import { listMaterialPost, listMaterialDeptSafe } from "@/api/foundation/material";
@@ -584,8 +584,11 @@ export default {
       // 根据场景决定使用哪个 API：科室库存 -> 高值科室；低值仓库 -> 低值库存；否则 -> 高值备货库存
       let apiCall;
       const params = { ...this.queryParams };
+      if (this.queryParams.materialKeyword) {
+        params.materialName = this.queryParams.materialKeyword;
+      }
       if (this.useDepInventory) {
-        apiCall = listGzDepInventory(params);
+        apiCall = listGzDepInventoryPick(params);
       } else if (this.useStkInventory) {
         apiCall = listInventory(params);
       } else {
@@ -594,6 +597,8 @@ export default {
       apiCall.then(response => {
         // 兼容多种返回格式：直接 rows 或嵌套在 data 中
         let materialList = Array.isArray(response.rows) ? response.rows : (response.data && Array.isArray(response.data.rows) ? response.data.rows : []);
+        const totalVal = response.total != null ? Number(response.total)
+          : (response.data && response.data.total != null ? Number(response.data.total) : materialList.length);
         
         // 仅当父组件明确要求时（定数监测页）才按定数产品过滤；入库等页面不传 filterByFixedNumber，显示全部库存
         if (this.filterByFixedNumber && !this.useDepInventory && this.fixedNumberMaterialIds.length > 0) {
@@ -653,11 +658,14 @@ export default {
         }
         
         this.materialList = materialList.slice();
-        this.total = materialList.length;
+        this.total = totalVal;
         this.loading = false;
         this.$nextTick(() => this.restorePageSelection());
-      }).catch(() => {
+      }).catch((err) => {
         this.loading = false;
+        if (isForbiddenError(err)) {
+          this.$message.warning('暂无权限查询科室库存，请联系管理员开通「高值科室库存查询」权限');
+        }
       });
     },
     /** 搜索按钮操作 */

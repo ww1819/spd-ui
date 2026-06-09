@@ -23,11 +23,38 @@
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="耗材" prop="id" label-width="100px">
-                  <SelectMaterial v-model="queryParams.id" />
+                <el-form-item label="耗材" prop="name" label-width="100px">
+                  <el-input
+                    v-model="queryParams.name"
+                    placeholder="耗材编码、名称或首字母"
+                    clearable
+                    size="small"
+                    @keyup.enter.native="handleQuery"
+                  />
                 </el-form-item>
               </el-col>
-              <el-col :span="12" />
+              <el-col :span="6">
+                <el-form-item label="生产厂家" prop="factoryKeyword" label-width="100px">
+                  <el-input
+                    v-model="queryParams.factoryKeyword"
+                    placeholder="厂家名称或首字母"
+                    clearable
+                    size="small"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="UDI" prop="udiNo" label-width="100px">
+                  <el-input
+                    v-model="queryParams.udiNo"
+                    placeholder="UDI码"
+                    clearable
+                    size="small"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </el-form-item>
+              </el-col>
             </el-row>
             <el-row :gutter="12" class="query-form-row">
               <el-col :span="6">
@@ -72,21 +99,15 @@
             </el-table-column>
             <el-table-column label="耗材编码" align="center" prop="code" width="130" show-overflow-tooltip resizable />
             <el-table-column label="耗材名称" align="center" prop="name" width="140" show-overflow-tooltip resizable />
-            <el-table-column label="高值" align="center" prop="isGz" width="72" show-overflow-tooltip resizable>
-              <template slot-scope="scope">
-                <dict-tag v-if="scope.row.isGz != null && scope.row.isGz !== ''" :options="dict.type.is_yes_no" :value="scope.row.isGz" />
-                <span v-else>--</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="供应商" align="center" prop="supplier.name" width="140" show-overflow-tooltip resizable />
             <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable />
             <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable />
+            <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" show-overflow-tooltip resizable />
             <el-table-column label="价格" align="center" prop="price" width="90" show-overflow-tooltip resizable />
-            <el-table-column label="UDI码" align="center" prop="udiNo" width="150" show-overflow-tooltip resizable />
             <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="140" show-overflow-tooltip resizable />
+            <el-table-column label="供应商" align="center" prop="supplier.name" width="140" show-overflow-tooltip resizable />
             <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable />
             <el-table-column label="财务分类" align="center" prop="fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" show-overflow-tooltip resizable />
+            <el-table-column label="UDI码" align="center" prop="udiNo" width="150" show-overflow-tooltip resizable />
             <el-table-column label="注册证号" align="center" prop="registerNo" width="140" show-overflow-tooltip resizable />
             <el-table-column label="注册证有效期" align="center" prop="periodDate" width="120" show-overflow-tooltip resizable />
             <el-table-column label="包装规格" align="center" prop="packageSpeci" width="100" show-overflow-tooltip resizable />
@@ -94,6 +115,12 @@
             <el-table-column label="储存方式" align="center" prop="isWay" width="100" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <dict-tag v-if="scope.row.isWay" :options="dict.type.way_status" :value="scope.row.isWay" />
+                <span v-else>--</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="高值" align="center" prop="isGz" width="72" show-overflow-tooltip resizable>
+              <template slot-scope="scope">
+                <dict-tag v-if="scope.row.isGz != null && scope.row.isGz !== ''" :options="dict.type.is_yes_no" :value="scope.row.isGz" />
                 <span v-else>--</span>
               </template>
             </el-table-column>
@@ -112,14 +139,13 @@
 </template>
 
 <script>
-import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import { listMaterial, listMaterialDeptSafe } from "@/api/foundation/material";
 import { isForbiddenError } from "@/utils/requestFallback";
 
 export default {
   name: "SelectGZMaterialFilter",
-  components: { SelectMaterial, SelectSupplier },
+  components: { SelectSupplier },
   dicts: ["way_status", "is_yes_no"],
   props: ["DialogComponentShow", "supplierValue", "warehouseValue"],
   data() {
@@ -141,9 +167,10 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        id: null,
         code: undefined,
         name: undefined,
+        factoryKeyword: undefined,
+        udiNo: undefined,
         supplierId: undefined,
         speci: undefined,
         model: undefined,
@@ -271,6 +298,9 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.queryParams.supplierId = this.supplierValue;
+      this.queryParams.name = undefined;
+      this.queryParams.factoryKeyword = undefined;
+      this.queryParams.udiNo = undefined;
       this.queryParams.isGz = "1";
       this.queryParams.isFollow = undefined;
       this.handleQuery();
@@ -390,6 +420,40 @@ export default {
 ::v-deep .material-filter-detail-table .el-table__body-wrapper {
   overflow-x: auto;
   overflow-y: auto;
+}
+
+::v-deep .material-filter-detail-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 3px !important;
+  height: 6px !important;
+  transition: width 0.2s ease, height 0.2s ease;
+}
+
+::v-deep .material-filter-detail-table .el-table__body-wrapper:hover::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+::v-deep .material-filter-detail-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 6px !important;
+  transition: height 0.2s ease;
+}
+
+::v-deep .material-filter-detail-table .el-table__body-wrapper:hover::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+::v-deep .material-filter-detail-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::v-deep .material-filter-detail-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 4px;
+}
+
+::v-deep .material-filter-detail-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #909399;
 }
 
 ::v-deep .material-filter-detail-table th {

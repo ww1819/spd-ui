@@ -312,6 +312,15 @@
                 <div class="detail-toolbar-row detail-toolbar-head">
                   <div class="detail-toolbar-left">
                     <span class="detail-toolbar-title">高值备货明细</span>
+                    <template v-if="action">
+                      <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId || isAudited">添加</el-button>
+                      <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry" :disabled="isAudited">删除</el-button>
+                      <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :disabled="isAudited">保 存</el-button>
+                      <el-button type="primary" size="small" @click="handleAuditOnly" :disabled="isAudited">审 核</el-button>
+                      <el-button type="primary" icon="el-icon-printer" size="small" @click="handlePrintOnly">打 印</el-button>
+                      <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
+                      <el-button size="small" @click="cancel" :disabled="isAudited">取 消</el-button>
+                    </template>
                     <el-button
                       v-if="!action"
                       type="primary"
@@ -320,15 +329,6 @@
                       class="detail-print-barcode-btn"
                       @click="handlePrintBarcodeFromDetail"
                     >打印条码</el-button>
-                  </div>
-                  <div v-if="action" class="detail-toolbar-actions">
-                    <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId || isAudited">添加</el-button>
-                    <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry" :disabled="isAudited">删除</el-button>
-                    <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :disabled="isAudited">保 存</el-button>
-                    <el-button type="primary" size="small" @click="handleAuditOnly" :disabled="isAudited">审 核</el-button>
-                    <el-button type="primary" icon="el-icon-printer" size="small" @click="handlePrintOnly">打 印</el-button>
-                    <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
-                    <el-button size="small" @click="cancel" :disabled="isAudited">取 消</el-button>
                   </div>
                 </div>
                 <div class="table-wrapper">
@@ -2877,7 +2877,7 @@ export default {
 .local-modal-content .modal-detail-section .detail-toolbar-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 8px 12px;
 }
@@ -2899,16 +2899,6 @@ export default {
 
 .local-modal-content .modal-detail-section .detail-print-barcode-btn {
   flex-shrink: 0;
-}
-
-.local-modal-content .modal-detail-section .detail-toolbar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
 }
 
 .local-modal-content .modal-detail-section .table-wrapper {
