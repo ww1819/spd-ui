@@ -25,7 +25,14 @@
           <el-input v-model="detailQuery.chargeItemId" placeholder="编码/项目名称/首字母" clearable style="width:180px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
         <el-form-item label="科室">
-          <el-select v-model="detailQuery.departmentId" placeholder="按权限科室" clearable filterable style="width:200px">
+          <el-select
+            v-model="detailQuery.departmentId"
+            placeholder="科室名称/首字母"
+            clearable
+            filterable
+            :filter-method="filterDeptMethod"
+            style="width:200px"
+          >
             <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
           </el-select>
         </el-form-item>
@@ -234,6 +241,7 @@
 <script>
 import { parseTime } from '@/utils/ruoyi'
 import { checkPermi } from '@/utils/permission'
+import { pinyin } from 'pinyin-pro'
 import { listdepartAll } from '@/api/foundation/depart'
 import { fetchInpatientMirror, fetchOutpatientMirror } from '@/api/department/patientCharge'
 import {
@@ -263,6 +271,7 @@ export default {
       detailList: [],
       detailTotal: 0,
       deptOptions: [],
+      allDeptOptions: [],
       detailQuery: {
         pageNum: 1,
         pageSize: 10,
@@ -346,7 +355,33 @@ export default {
       if (!uid) return
       listdepartAll(uid).then(res => {
         const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
-        this.deptOptions = list.filter(d => d && d.id != null && d.hisId != null && String(d.hisId).trim() !== '')
+        this.allDeptOptions = list.filter(d => d && d.id != null && d.hisId != null && String(d.hisId).trim() !== '')
+        this.deptOptions = this.allDeptOptions
+      })
+    },
+    filterDeptMethod(query) {
+      if (!query) {
+        this.deptOptions = this.allDeptOptions
+        return
+      }
+      const queryUpper = query.toUpperCase()
+      this.deptOptions = this.allDeptOptions.filter(item => {
+        if (!item || !item.name) return false
+        const name = item.name
+        const code = (item.code || '').toUpperCase()
+        const referred = (item.referredName || '').toUpperCase()
+        if (name.includes(query) || name.toUpperCase().includes(queryUpper) || code.includes(queryUpper) || referred.includes(queryUpper)) {
+          return true
+        }
+        if (/^[a-zA-Z]+$/.test(query)) {
+          try {
+            const initials = pinyin(name, { pattern: 'first', toneType: 'none', type: 'array' }).join('').toUpperCase()
+            if (initials.includes(queryUpper)) return true
+          } catch (e) {
+            return false
+          }
+        }
+        return false
       })
     },
     toQueryDayStart(s) {
