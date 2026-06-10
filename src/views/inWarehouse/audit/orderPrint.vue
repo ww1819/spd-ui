@@ -2,7 +2,10 @@
   <component
     :is="printComponent"
     ref="innerPrintRef"
-    v-bind="$attrs"
+    :row="row"
+    :bill-type="billType"
+    :rows-per-page="rowsPerPage"
+    :print-orientation="printOrientation"
     v-on="$listeners"
   />
 </template>
@@ -16,6 +19,12 @@ export default {
   name: 'OrderPrint',
   components: { orderPrintZq, orderPrintHs },
   inheritAttrs: false,
+  props: {
+    row: Object,
+    billType: [String, Number],
+    rowsPerPage: Number,
+    printOrientation: String
+  },
   computed: {
     printComponent() {
       const cid = this.$store.getters.customerId

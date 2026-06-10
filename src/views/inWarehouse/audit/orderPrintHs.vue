@@ -174,7 +174,8 @@ export default {
         if (isNaN(n)) return 0
         return Math.max(0, n)
       }
-      // 鐐归樀鎵撳嵃鏈哄椤堕儴瑁佸垏寰堟晱鎰燂細瀵?marginTop 鍋氫笂闄愪繚鎶わ紝鏃㈤伩鍏嶈鍒囧張閬垮厤鏍囬涓嬬Щ杩囧銆?      const safeTopMm = Math.min(2, clampNonNegativeMm(m.marginTop))
+      // 点阵打印机对顶部裁切很敏感：对 marginTop 做上限保护，既避免裁切又避免标题下移过多
+      const safeTopMm = Math.min(2, clampNonNegativeMm(m.marginTop))
       const margin = `${safeTopMm}mm ${clampNonNegativeMm(m.marginRight)}mm ${clampNonNegativeMm(m.marginBottom)}mm ${clampNonNegativeMm(m.marginLeft)}mm`
       return {
         padding: margin,
@@ -278,7 +279,8 @@ export default {
         const measured = Math.max(0, (td.clientWidth || td.getBoundingClientRect().width || 0) - padL - padR)
         if (measured > 10) return measured
 
-        // 缁勪欢澶勪簬 display:none锛堜緥濡?v-show=false 鐨勭洿鎺ユ墦鍗帮級鏃讹紝clientWidth 鍙兘涓?0锛?        // 鐢ㄧ焊寮犲搴︼紙210mm锛夋寜鍒?colgroup 姣斾緥浼扮畻鍗曞厓鏍煎唴瀹瑰搴︺€?        const pagePx = mmToPx(210) || 794
+        // 组件处于 display:none 时 clientWidth 可能为 0，按 210mm 与列宽比例估算单元格宽度
+        const pagePx = mmToPx(210) || 794
         const tr = td.parentElement
         if (!tr) return Math.max(120, pagePx * 0.2)
 
