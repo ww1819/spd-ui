@@ -18,6 +18,7 @@
         ref="orderPrintRef"
         :row="printRow"
         :bill-type="printRow.billType"
+        :print-kind="routePrintKind"
         print-orientation="portrait"
       />
     </div>
@@ -27,6 +28,7 @@
 <script>
 import { getOrder as getGzInOrder } from '@/api/gz/order'
 import { getOrder as getGzShipmentOrder } from '@/api/gz/shipment'
+import { listUserAll } from '@/api/system/user'
 import GzAcceptanceOrderPrint from '@/views/gzOrder/audit/GzAcceptanceOrderPrint'
 import { buildGzAcceptancePrintRowFromDetail } from '@/views/gzOrder/audit/gzPrintRow'
 
@@ -37,12 +39,16 @@ export default {
     return {
       loading: true,
       loadError: '',
-      printRow: null
+      printRow: null,
+      userOptions: []
     }
   },
   computed: {
     printReady() {
       return !!this.printRow && !this.loading
+    },
+    routePrintKind() {
+      return String(this.$route.query.api || 'order') === 'shipment' ? 'shipment' : 'order'
     }
   },
   mounted() {
@@ -77,15 +83,23 @@ export default {
       this.loadError = ''
       const api = String(this.$route.query.api || 'order')
       const fetchDetail = api === 'shipment' ? getGzShipmentOrder : getGzInOrder
-      fetchDetail(id)
-        .then((res) => {
+      Promise.all([
+        fetchDetail(id),
+        listUserAll().catch(() => [])
+      ])
+        .then(([res, users]) => {
+          this.userOptions = Array.isArray(users) ? users : []
           const data = res && res.data
           if (!data) {
             this.loadError = '未获取到高值验收单数据'
             this.printRow = null
             return
           }
-          this.printRow = buildGzAcceptancePrintRowFromDetail(data, data)
+          this.printRow = buildGzAcceptancePrintRowFromDetail(data, data, this.routePrintKind, this.userOptions, {
+            warehouseName: this.$route.query.warehouseName || '',
+            departmentName: this.$route.query.departmentName || '',
+            supplierName: this.$route.query.supplierName || ''
+          })
         })
         .catch(() => {
           this.loadError = '加载失败，请稍后重试'

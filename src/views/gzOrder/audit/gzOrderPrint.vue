@@ -73,11 +73,18 @@
         <td colspan="4">{{ formatAmount(row.totalAmt) }}</td>
       </tr>
     </table>
-    <div class="foot" style="padding-top: 15px">
-      <div class="content">
-        <div class="col2" style="width:45%">制单人: </div>
-        <div class="col2" style="width:30%">复核人: </div>
-        <div class="col2" style="width:25%">验收人: </div>
+    <div class="sign-block">
+      <div class="sign-item">
+        <span class="sign-label">制单人</span>
+        <span class="sign-value">{{ row.createByName || row.createBy || '' }}</span>
+      </div>
+      <div class="sign-item">
+        <span class="sign-label">验收人</span>
+        <span class="sign-value">{{ row.receiverName || '' }}</span>
+      </div>
+      <div class="sign-item">
+        <span class="sign-label">复核人</span>
+        <span class="sign-value">{{ row.auditorName || '' }}</span>
       </div>
     </div>
   </div>
@@ -297,6 +304,34 @@ export default {
     background-color: #f5f5f5;
   }
 
+  .sign-block {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    column-gap: 12px;
+    margin-top: 15px;
+  }
+
+  .sign-item {
+    display: flex !important;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .sign-label {
+    white-space: nowrap;
+  }
+
+  .sign-label::after {
+    content: '：';
+  }
+
+  .sign-value {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-left: 4px;
+    word-break: break-word;
+  }
+
 }
 
 .gz-order-print
@@ -307,12 +342,28 @@ export default {
     display flex
     flex-wrap wrap
 
-    //.col1
-    //  width 33%
+  .sign-block
+    display grid
+    grid-template-columns 1fr 1fr 1fr
+    column-gap 12px
+    margin-top 15px
 
-  .title
-    font-size 22px
-    text-align center
+  .sign-item
+    display flex
+    align-items center
+    min-width 0
+
+  .sign-label
+    flex 0 0 auto
+    white-space nowrap
+    &::after
+      content '：'
+
+  .sign-value
+    flex 1 1 auto
+    min-width 0
+    margin-left 4px
+    word-break break-word
 
   .common-table
     width: 100% !important
@@ -349,10 +400,4 @@ export default {
       box-sizing: border-box
       white-space: normal
 
-  .content
-    display flex
-    flex-wrap wrap
-
-    //.col2
-    //  width 33%
 </style>

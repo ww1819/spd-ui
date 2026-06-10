@@ -2162,6 +2162,8 @@ export default {
         query: {
           id: String(row.id),
           api: 'order',
+          warehouseName: (row.warehouse && row.warehouse.name) || row.warehouseName || '',
+          supplierName: (row.supplier && row.supplier.name) || row.supplierName || '',
           from: encodeURIComponent(this.$route.fullPath)
         }
       }

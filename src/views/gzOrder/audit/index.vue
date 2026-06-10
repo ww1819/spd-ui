@@ -131,9 +131,9 @@
           <span>{{ (scope.row.totalAmt != null && scope.row.totalAmt !== undefined) ? parseFloat(scope.row.totalAmt).toFixed(2) : formatTotalAmt(scope.row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="orderStatus" show-overflow-tooltip resizable>
+      <el-table-column label="审核人" align="center" prop="auditBy" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
+          <span>{{ getAuditorName(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
@@ -141,7 +141,16 @@
           <span>{{ formatDisplayDateTime(scope.row.auditDate) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作人" align="center" prop="createBy" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" prop="createBy" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ getCreatorName(scope.row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="单据状态" align="center" prop="orderStatus" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
+        </template>
+      </el-table-column>
       <el-table-column label="制单时间" align="center" prop="orderDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ formatDisplayDateTime(scope.row.orderDate, scope.row.createTime) }}</span>
@@ -239,7 +248,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="4">
-            <el-form-item label="操作人" prop="createBy">
+            <el-form-item label="制单人" prop="createBy">
               <el-input v-model="form.createBy" :disabled="true" style="width: 140px" />
             </el-form-item>
           </el-col>
@@ -567,6 +576,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
 import { parseTime } from "@/utils/ruoyi";
+import { listUserAll } from "@/api/system/user";
 import {STOCK_IN_TEMPLATE} from "@/utils/printData";
 import RMBConverter from "@/utils/tools";
 import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
@@ -624,6 +634,7 @@ export default {
       total: 0,
       // 高值入库表格数据
       orderList: [],
+      userOptions: [],
       // 高值退货明细表格数据
       gzOrderEntryList: [],
       // 弹出层标题
@@ -744,6 +755,7 @@ export default {
     // 如果菜单标题包含"出库"，则设置为出库类型（102）
     // 否则为入库类型（101）
     this.setOrderTypeByRoute();
+    this.loadUserOptions();
     this.getList();
   },
   methods: {
@@ -919,6 +931,54 @@ export default {
         return fallback;
       }
       return primary || fallback || '--';
+    },
+    loadUserOptions() {
+      listUserAll().then(response => {
+        this.userOptions = response || [];
+      }).catch(() => {
+        this.userOptions = [];
+      });
+    },
+    resolveSysUserDisplayName(rawKey) {
+      if (rawKey == null || String(rawKey).trim() === '') {
+        return '';
+      }
+      const key = String(rawKey).trim();
+      const list = this.userOptions || [];
+      const isNumericId = /^\d+$/.test(key);
+      let user = null;
+      if (isNumericId) {
+        user = list.find(u => String(u.userId) === key || u.userId == key);
+      }
+      if (!user) {
+        user = list.find(u =>
+          String(u.userName) === key ||
+          (u.nickName != null && String(u.nickName) === key)
+        );
+      }
+      if (user) {
+        return user.nickName || user.userName || key;
+      }
+      return key;
+    },
+    getCreatorName(row) {
+      if (!row) return '';
+      if (row.creater && (row.creater.nickName || row.creater.userName)) {
+        return row.creater.nickName || row.creater.userName;
+      }
+      if (!row.createBy) return '';
+      return this.resolveSysUserDisplayName(row.createBy);
+    },
+    getAuditorName(row) {
+      if (!row || row.orderStatus != 2) {
+        return '';
+      }
+      const auditKey =
+        row.auditBy != null && String(row.auditBy).trim() !== '' ? row.auditBy : row.updateBy;
+      if (!auditKey) {
+        return '';
+      }
+      return this.resolveSysUserDisplayName(auditKey);
     },
     /** 根据路由设置订单类型 */
     setOrderTypeByRoute() {
@@ -1888,6 +1948,8 @@ export default {
         query: {
           id: String(row.id),
           api: 'shipment',
+          warehouseName: (row.warehouse && row.warehouse.name) || row.warehouseName || '',
+          departmentName: (row.department && row.department.name) || row.departmentName || '',
           from: encodeURIComponent(this.$route.fullPath)
         }
       }

@@ -9,7 +9,7 @@
       <div class="doc-header">
         <div class="doc-header-spacer" aria-hidden="true"></div>
         <div class="doc-title">
-          <span v-if="hospitalName">{{ hospitalName }}</span>高值备货验收单
+          <span v-if="hospitalName">{{ hospitalName }}</span>{{ documentTitle }}
         </div>
         <div class="page-meta">
           <span class="page-index">{{ pageIndex + 1 }}/{{ pagedDetailList.length }}</span>
@@ -27,12 +27,12 @@
             <span class="info-value">{{ row.warehouseName || '' }}</span>
           </div>
           <div class="info-cell">
-            <span class="info-label info-label--l3">入库日期</span>
+            <span class="info-label info-label--l3">{{ printKind === 'shipment' ? '出库日期' : '入库日期' }}</span>
             <span class="info-value">{{ formatDate(row.billDate) }}</span>
           </div>
           <div class="info-cell info-cell--span2">
-            <span class="info-label info-label--l1">供货商</span>
-            <span class="info-value">{{ row.supplierName || '' }}</span>
+            <span class="info-label info-label--l1">{{ printKind === 'shipment' ? '科室' : '供货商' }}</span>
+            <span class="info-value">{{ partyDisplayName }}</span>
           </div>
           <div class="info-cell">
             <span class="info-label info-label--l3">资金来源账户</span>
@@ -87,7 +87,7 @@
         <div class="sign-item"><span class="sign-label">保管</span><span class="sign-value sign-value--blank"></span></div>
         <div class="sign-item sign-item--wide">
           <span class="sign-label">入库操作员</span>
-          <span class="sign-value">{{ row.inboundOperator || row.createBy || '' }}</span>
+          <span class="sign-value">{{ inboundOperatorDisplay }}</span>
         </div>
       </div>
     </div>
@@ -105,6 +105,8 @@ export default {
   props: {
     row: { type: Object, required: true },
     billType: [String, Number],
+    /** order=验收单，shipment=出库单 */
+    printKind: { type: String, default: 'order' },
     rowsPerPage: { type: Number, default: 6 },
     printOrientation: { type: String, default: '' }
   },
@@ -123,6 +125,20 @@ export default {
     }
   },
   computed: {
+    documentTitle() {
+      return this.printKind === 'shipment' ? '高值备货出库单' : '高值备货验收单'
+    },
+    partyDisplayName() {
+      if (!this.row) return ''
+      if (this.printKind === 'shipment') {
+        return this.row.departmentName || this.row.supplierName || ''
+      }
+      return this.row.supplierName || ''
+    },
+    inboundOperatorDisplay() {
+      const op = this.row && this.row.inboundOperator
+      return op != null ? String(op) : ''
+    },
     pagedDetailList() {
       const details = (this.row && this.row.detailList) || []
       const n = Number(this.rowsPerPage)
