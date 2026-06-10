@@ -271,7 +271,7 @@ export default {
       const name = normalizeMaterialSearchKeyword(this.queryParams.name);
       const code = normalizeMaterialSearchKeyword(this.queryParams.code);
       const speci = normalizeMaterialSearchKeyword(this.queryParams.speci);
-      const params = {};
+      const params = { onlyEnabled: true };
       if (name) {
         params.name = name;
       } else if (code) {

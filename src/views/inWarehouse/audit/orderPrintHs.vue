@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="order-print receipt-print" ref="receiptOrderPrintRef">
     <div
       v-for="(pageRows, pageIndex) in pagedDetailList"
@@ -194,7 +194,15 @@ export default {
   created() {
     this.loadPrintSetting()
   },
+  mounted() {
+    this.scheduleApplyPrintCellAutoFont()
+  },
   methods: {
+    scheduleApplyPrintCellAutoFont() {
+      this.$nextTick(() => {
+        requestAnimationFrame(() => this.applyPrintCellAutoFont())
+      })
+    },
     mmValue(v) {
       const n = Number(v)
       return isNaN(n) ? 0 : n
@@ -236,18 +244,67 @@ export default {
           if (data.marginLeft != null) this.printSetting.marginLeft = data.marginLeft
           if (data.marginRight != null) this.printSetting.marginRight = data.marginRight
         }
+        this.scheduleApplyPrintCellAutoFont()
       }).catch(() => {})
     },
-    /** 鏄庣粏鏂囨湰鍒楋細鎸夊垪瀹芥祴閲忥紝瓒呰繃涓€琛屽垯閫愭缂╁皬瀛楀彿锛岀洿鑷冲崟琛岄珮搴﹀唴鎴栧埌杈惧瓧鍙蜂笅闄愶紙涓嬮檺浠嶈秴涓€琛屾椂鍏佽澶氳瀹屾暣灞曠ず锛?*/
+    /** 仅消耗品名称列参与自动缩小 */
+    isMaterialNameColumnCell(el) {
+      const td = el && el.closest ? el.closest('td') : null
+      return !!(td && td.cellIndex === 0)
+    },
+    /** 同行各列字号与消耗品名称保持一致 */
+    syncRowFontFromMaterialName(root) {
+      const dataRows = root.querySelectorAll('.detail-table tbody tr:not(.print-total-row)')
+      dataRows.forEach(tr => {
+        const nameEl = tr.children[0] && tr.children[0].querySelector('.cell-text')
+        if (!nameEl) return
+        const cs = window.getComputedStyle(nameEl)
+        const fontSize = nameEl.style.fontSize || cs.fontSize
+        const lineHeight = nameEl.style.lineHeight || cs.lineHeight || '1.35'
+
+        tr.querySelectorAll('td.cell-textual').forEach(td => {
+          if (td.cellIndex === 0) return
+          const el = td.querySelector('.cell-text')
+          if (!el) return
+          el.style.fontSize = fontSize
+          el.style.lineHeight = lineHeight
+        })
+
+        ;[3, 4, 5].forEach(idx => {
+          const td = tr.children[idx]
+          if (!td) return
+          td.style.fontSize = fontSize
+          td.style.lineHeight = lineHeight
+        })
+      })
+    },
+    /** 明细文本列：仅消耗品名称按列宽自动缩小，其余列同步名称字号 */
     applyPrintCellAutoFont() {
       const root = this.$refs.receiptOrderPrintRef || this.$el
       if (!root || typeof document === 'undefined') return
 
       const cells = root.querySelectorAll('td.cell-textual .cell-text')
-      if (!cells || !cells.length) return
 
       const minPx = 10
       const maxSteps = 64
+
+      const dataRows = root.querySelectorAll('.detail-table tbody tr:not(.print-total-row)')
+      dataRows.forEach(tr => {
+        tr.querySelectorAll('td.cell-textual .cell-text').forEach(el => {
+          const td = el.closest('td')
+          if (td && td.cellIndex !== 0) {
+            el.style.fontSize = ''
+            el.style.lineHeight = ''
+          }
+        })
+        ;[3, 4, 5].forEach(idx => {
+          const td = tr.children[idx]
+          if (td) {
+            td.style.fontSize = ''
+            td.style.lineHeight = ''
+          }
+        })
+      })
 
       const removeMirror = (m) => {
         try {
@@ -327,6 +384,7 @@ export default {
 
       cells.forEach((el) => {
         if (!el || el.nodeType !== 1) return
+        if (!this.isMaterialNameColumnCell(el)) return
         const text = (el.textContent || '').trim()
         if (!text) return
 
@@ -353,6 +411,8 @@ export default {
         el.style.fontSize = `${Math.max(minPx, fontPx)}px`
         el.style.lineHeight = '1.35'
       })
+
+      this.syncRowFontFromMaterialName(root)
     },
     start() {
       const doPrint = () => {

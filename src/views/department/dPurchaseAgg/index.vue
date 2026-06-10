@@ -221,7 +221,7 @@
               <div class="form-fields-container">
                 <el-row :gutter="8">
                   <el-col :span="5">
-                    <el-form-item label="汇总申购单号" prop="purchaseBillNo" label-width="84px">
+                    <el-form-item label="单号" prop="purchaseBillNo" label-width="40px">
                       <el-input v-model="form.purchaseBillNo" :disabled="true" placeholder="—" />
                     </el-form-item>
                   </el-col>
@@ -512,9 +512,9 @@ export default {
     };
   },
   computed: {
-    /** 明细表固定高度：表体滚动，合计固定在表格最底部 */
+    /** 明细表固定高度：预留表头/合计/横向滚动条及弹窗头表单工具栏，避免合计被裁切 */
     detailTableHeight() {
-      return 'max(300px, calc(100vh - 320px))';
+      return 'max(260px, calc(100vh - 360px))';
     },
     /** 新增明细后（或弹窗打开中）锁定科室，避免跨科室混入明细 */
     isDeptWhLocked() {
@@ -1179,7 +1179,7 @@ export default {
   overflow-y: hidden;
   display: flex;
   flex-direction: column;
-  padding-bottom: 16px;
+  padding-bottom: 0;
   box-sizing: border-box;
 }
 
@@ -1345,16 +1345,17 @@ export default {
   min-height: 0;
   overflow: auto;
   margin-top: 10px;
-  padding-bottom: 4px;
+  padding-bottom: 0;
 }
 
 .local-modal-content .modal-detail-section .table-wrapper {
   margin-top: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .local-modal-content .modal-detail-section .el-table {
   width: 100%;
+  overflow: visible;
 }
 
 ::v-deep .local-modal-content .el-table th {
@@ -1423,8 +1424,8 @@ export default {
 
 ::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
 ::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
-  padding-top: 8px !important;
-  padding-bottom: 10px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
   background-color: #fff !important;
 }
 
@@ -1473,8 +1474,8 @@ export default {
   transform: scale(0.8);
 }
 
-/* 表格样式优化 */
-.el-table {
+/* 表格样式优化（仅列表主表，弹窗明细表勿 overflow:hidden，否则会裁切合计行） */
+.d-purchase-agg-page > .el-table {
   border-radius: 4px;
   overflow: hidden;
 }
@@ -1707,7 +1708,8 @@ export default {
   overflow: hidden;
 }
 
-/* 弹窗打开时，隐藏底层分页/横向滚动区域，避免半透明遮罩下透出“蓝色条” */
+/* 弹窗打开时，隐藏底层列表横向滚动条/分页，避免遮罩底部透出多余条带 */
+.app-container.d-purchase-agg-page.is-modal-open > .el-table,
 .app-container.d-purchase-agg-page.is-modal-open .pagination-bottom-wrap {
   display: none;
 }

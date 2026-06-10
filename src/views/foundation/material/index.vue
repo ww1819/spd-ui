@@ -429,7 +429,7 @@
         </template>
       </el-table-column>
       <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="140" fixed="right">
+      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="300" fixed="right">
         <template slot-scope="scope">
           <div class="material-row-actions">
             <el-button
@@ -446,6 +446,20 @@
               @click="handleView(scope.row)"
               v-hasPermi="['foundation:material:query']"
             >查看</el-button>
+            <el-button
+              size="medium"
+              type="text"
+              class="material-row-action-btn"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['foundation:material:edit']"
+            >修改</el-button>
+            <el-button
+              size="medium"
+              type="text"
+              class="material-row-action-btn material-row-action-btn--danger"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['foundation:material:remove']"
+            >删除</el-button>
           </div>
         </template>
       </el-table-column>
@@ -3858,30 +3872,40 @@ export default {
 }
 
 .material-page-container .el-table td.material-action-col .cell {
-  padding-left: 6px !important;
-  padding-right: 6px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
 }
 
 .material-row-actions {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: nowrap;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   width: 100%;
 }
 
 .material-page-container .material-row-action-btn.el-button--text {
-  padding: 6px 10px;
+  padding: 6px 12px;
   font-size: 14px;
   line-height: 1.4;
   min-height: 32px;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .material-page-container .material-row-action-btn.el-button--text:hover,
 .material-page-container .material-row-action-btn.el-button--text:focus {
   color: #409eff;
+}
+
+.material-page-container .material-row-action-btn--danger.el-button--text {
+  color: #f56c6c;
+}
+
+.material-page-container .material-row-action-btn--danger.el-button--text:hover,
+.material-page-container .material-row-action-btn--danger.el-button--text:focus {
+  color: #f78989;
 }
 
 .material-cell-price-right {
