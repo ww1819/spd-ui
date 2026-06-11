@@ -116,6 +116,14 @@ export function changeUserStatus(userId, status) {
   })
 }
 
+/** 解除密码错误锁定 */
+export function unlockUser(userName) {
+  return request({
+    url: '/system/user/unlock/' + encodeURIComponent(userName),
+    method: 'put'
+  })
+}
+
 // 查询用户个人信息
 export function getUserProfile() {
   return request({
