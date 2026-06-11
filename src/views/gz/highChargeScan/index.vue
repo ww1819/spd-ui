@@ -394,6 +394,19 @@ export default {
       const t = String(s).trim()
       return t.length > 10 ? t : `${t} 23:59:59`
     },
+    formatPatientSex(v) {
+      if (v == null || String(v).trim() === '') {
+        return '--'
+      }
+      const s = String(v).trim()
+      if (s === '0' || s === '男' || s.toUpperCase() === 'M') {
+        return '男'
+      }
+      if (s === '1' || s === '女' || s.toUpperCase() === 'F') {
+        return '女'
+      }
+      return s
+    },
     /** 列表展示：已核销 / 未核销 */
     writeOffStatusText(v) {
       return v === 'CONSUMED' ? '已核销' : '未核销'
