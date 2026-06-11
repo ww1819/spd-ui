@@ -136,7 +136,7 @@
           <el-row class="query-row-fourth">
             <el-col :span="24">
           <el-form-item prop="isUse" class="query-item-inline">
-            <el-select v-model="queryParams.isUse" placeholder="启用" style="width: 110px" clearable>
+            <el-select v-model="queryParams.isUse" placeholder="全部" style="width: 110px" clearable>
               <el-option
                 v-for="dict in dict.type.is_use_status"
                 :key="dict.value"
@@ -1655,7 +1655,7 @@ export default {
         isFollow: '', // 默认全部
         isProcure: '', // 默认全部
         isBilling: '', // 默认全部
-        isUse: '1', // 默认启用
+        isUse: '', // 默认全部
         udiNo: undefined,
         registerNo: undefined,
         sunshineCode: undefined,
@@ -2109,7 +2109,7 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
-      this.queryParams.isUse = '1'; // 重置为启用
+      this.queryParams.isUse = ''; // 重置为全部
       this.queryParams.isGz = '';
       this.queryParams.isFollow = '';
       this.queryParams.isProcure = '';

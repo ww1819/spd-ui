@@ -47,6 +47,9 @@ export default {
       return MSUN_SYNC_PROBE_FIELDS[this.syncType] || []
     },
     dialogDesc() {
+      if (this.syncType === 'materials') {
+        return '确认后将执行全量耗材同步（不传筛选条件，invalidFlag 不填）并更新 SPD 表。'
+      }
       return '可选填写筛选条件（经 SPD 后端调众阳 HIS）；确认后将执行全量同步并更新 SPD 表。'
     }
   },

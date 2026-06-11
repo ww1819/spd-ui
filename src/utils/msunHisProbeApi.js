@@ -125,7 +125,8 @@ export const MSUN_SYNC_PROBE_FIELDS = {
   suppliers: MSUN_PROBE_API_LIST.find(a => a.key === 'suppliers').fields,
   producers: MSUN_PROBE_API_LIST.find(a => a.key === 'producers').fields,
   categories: MSUN_PROBE_API_LIST.find(a => a.key === 'dictCategory').fields,
-  materials: MSUN_PROBE_API_LIST.find(a => a.key === 'drugDict').fields.filter(f => f.key !== 'startTime' && f.key !== 'endTime')
+  /** 耗材全量同步：不传 drugCode/drugId/drugName/invalidFlag 等筛选 */
+  materials: []
 }
 
 export function getProbeApiByKey(key) {
