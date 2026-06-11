@@ -303,7 +303,7 @@ import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import { listSupplierAll } from '@/api/foundation/supplier';
 import { assertBillHasMaterialEntries } from '@/utils/billEntryValidate';
-import { concatListInChunks, fetchStockQtyMapBatched, yieldToMain, assignPlanEntryRowUid, buildLeanPlanEntryPayload, resolvePlanEntrySource, PLAN_SOURCE_DEPARTMENT } from './utils/planEntryUtils';
+import { concatListInChunks, fetchStockQtyMapBatched, yieldToMain, assignPlanEntryRowUid, buildLeanPlanEntryPayload, resolvePlanEntrySource, resolvePlanEntrySupplierName, PLAN_SOURCE_DEPARTMENT } from './utils/planEntryUtils';
 import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
 
 export default {
@@ -1254,20 +1254,10 @@ export default {
     },
     /** 明细行供应商展示：优先行上名称，再按 supplierId 从全量下拉选项解析 */
     entrySupplierDisplay(row) {
-      if (!row) return '--';
-      if (row.supplierName) return row.supplierName;
-      const rid = row.supplierId != null && row.supplierId !== '' ? Number(row.supplierId) : null;
-      if (rid != null) {
-        const opts = this.planDetailSupplierOptions || [];
-        const hit = opts.find((s) => s != null && Number(s.id) === rid);
-        if (hit && hit.name) return hit.name;
-        if (row.supplier && Number(row.supplier.id) === rid && row.supplier.name) {
-          return row.supplier.name;
-        }
-      }
-      const ms = row.material && row.material.supplier;
-      if (ms && ms.name) return ms.name;
-      return '--';
+      return resolvePlanEntrySupplierName(row, {
+        supplierOptions: this.planDetailSupplierOptions,
+        planSupplier: this.form && this.form.supplier
+      })
     },
     /** 计划明细添加按钮操作 */
     handleAddStkIoBillEntry() {

@@ -327,7 +327,7 @@
           </el-table-column>
           <el-table-column label="供应商" align="center" width="140" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ (scope.row.supplier && scope.row.supplier.name) || scope.row.supplierName || '--' }}</span>
+              <span>{{ entrySupplierDisplay(scope.row) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="申购单号" align="center" width="140" show-overflow-tooltip resizable>
@@ -415,7 +415,7 @@ import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectUser from '@/components/SelectModel/SelectUser';
-import { resolvePlanEntrySource } from '../utils/planEntryUtils';
+import { resolvePlanEntrySource, resolvePlanEntrySupplierName } from '../utils/planEntryUtils';
 
 export default {
   name: "PurchasePlanAudit",
@@ -704,6 +704,12 @@ export default {
         this.action = false;
         this.title = "查看计划";
       });
+    },
+    /** 明细行供应商展示（与采购计划页一致，含产品档案供应商） */
+    entrySupplierDisplay(row) {
+      return resolvePlanEntrySupplierName(row, {
+        planSupplier: this.form && this.form.supplier
+      })
     },
     /** 根据明细关联申购单信息填充计划来源（科室计划/手工新增） */
     fillPlanSourceForEntries() {

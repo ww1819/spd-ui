@@ -13,6 +13,29 @@ export function resolvePlanEntrySource(row) {
   return hasDepRef ? PLAN_SOURCE_DEPARTMENT : PLAN_SOURCE_MANUAL
 }
 
+/** 计划明细行供应商名称：行上名称 → 产品档案供应商 → supplierId 解析 → 计划表头供应商 */
+export function resolvePlanEntrySupplierName(row, options = {}) {
+  if (!row) return '--'
+  if (row.supplierName) return row.supplierName
+  if (row.supplier && row.supplier.name) return row.supplier.name
+  const materialSupplier = row.material && row.material.supplier
+  if (materialSupplier && materialSupplier.name) return materialSupplier.name
+  const supplierId = row.supplierId != null && row.supplierId !== ''
+    ? row.supplierId
+    : (row.material && row.material.supplierId != null && row.material.supplierId !== ''
+      ? row.material.supplierId
+      : (materialSupplier && materialSupplier.id != null ? materialSupplier.id : null))
+  if (supplierId != null && supplierId !== '') {
+    const rid = Number(supplierId)
+    const opts = options.supplierOptions || []
+    const hit = opts.find((s) => s != null && Number(s.id) === rid)
+    if (hit && hit.name) return hit.name
+  }
+  const planSupplier = options.planSupplier
+  if (planSupplier && planSupplier.name) return planSupplier.name
+  return '--'
+}
+
 export function materialArchiveSupplierId(entry) {
   if (!entry) return null
   if (entry.supplierId != null && entry.supplierId !== '') return entry.supplierId
