@@ -176,7 +176,11 @@
               <span>{{ scope.row.processByName || scope.row.processBy || '' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="处理情况" prop="processSituation" min-width="200" show-overflow-tooltip />
+          <el-table-column label="处理情况" prop="processSituation" min-width="200" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ formatProcessSituation(scope.row.processSituation) }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="处理方" prop="processParty" width="100" show-overflow-tooltip />
           <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
           <el-table-column label="本地入库" prop="createTime" width="160" />
@@ -478,6 +482,15 @@ export default {
         REFUNDED: '已退费返还'
       }
       return m[v] || v || ''
+    },
+    formatProcessSituation(text) {
+      if (text == null || text === '') return ''
+      const t = String(text).trim()
+      if (t === '处理成功' || t === '核销成功') return '核销成功'
+      if (t === '高值核销失败' || t === '低值核销失败') {
+        return '核销未完成，请重试或联系信息科'
+      }
+      return t
     },
     processTypeText(v) {
       const m = { LOW_VALUE: '低值耗材', HIGH_VALUE: '高值耗材', REFUND: '计费退费' }

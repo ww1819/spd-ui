@@ -109,7 +109,11 @@
           <span :class="writeOffStatusClass(scope.row.processStatus)">{{ writeOffStatusText(scope.row.processStatus) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="处理情况" prop="processSituation" min-width="160" show-overflow-tooltip />
+      <el-table-column label="处理情况" prop="processSituation" min-width="160" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ formatProcessSituation(scope.row.processSituation) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="类型" prop="valueLevel" width="90" align="center">
         <template slot-scope="scope">
           <span>{{ valueLevelText(scope.row.valueLevel) }}</span>
@@ -407,12 +411,39 @@ export default {
       }
       return s
     },
-    /** 列表展示：已核销 / 未核销 */
+    /** 列表展示：核销状态（用户可读） */
     writeOffStatusText(v) {
-      return v === 'CONSUMED' ? '已核销' : '未核销'
+      if (v === 'CONSUMED') return '已核销'
+      if (v === 'PARTIALLY_CONSUMED') return '部分核销'
+      return '待核销'
     },
     writeOffStatusClass(v) {
-      return v === 'CONSUMED' ? 'hc-writeoff-done' : 'hc-writeoff-pending'
+      if (v === 'CONSUMED') return 'hc-writeoff-done'
+      if (v === 'PARTIALLY_CONSUMED') return 'hc-writeoff-partial'
+      return 'hc-writeoff-pending'
+    },
+    formatProcessSituation(text) {
+      if (text == null || text === '') return ''
+      const t = String(text).trim()
+      if (t === '处理成功' || t === '核销成功') return '核销成功'
+      if (t === '高值核销失败' || t === '低值核销失败') {
+        return '核销未完成，请重试或联系信息科'
+      }
+      return t
+    },
+    formatHighApplySuccessMessage(d) {
+      const data = d || {}
+      const applied = data.appliedQty != null ? Number(data.appliedQty) : null
+      const remaining = data.remainingBillQty != null ? Number(data.remainingBillQty) : null
+      const status = data.mirrorProcessStatus
+      const done = status === 'CONSUMED' || (remaining != null && !isNaN(remaining) && remaining <= 0)
+      if (done) {
+        return '高值核销成功，本条计费已全部完成'
+      }
+      if (status === 'PARTIALLY_CONSUMED' && applied != null && !isNaN(applied) && remaining != null && !isNaN(remaining)) {
+        return `高值核销成功，本次消耗 ${applied}，还剩 ${remaining} 待核销，可继续扫码`
+      }
+      return '高值核销成功'
     },
     valueLevelText(v) {
       if (v === '1' || v === 1) return '高值'
@@ -505,7 +536,7 @@ export default {
         lines: this.highLines.map(l => ({ gzDepInventoryId: l.gzDepInventoryId, qty: l.applyQty }))
       }).then(res => {
         const d = res.data || {}
-        this.$modal.msgSuccess(`消耗单 ${d.consumeBillId || ''} 已审核；镜像状态 ${d.mirrorProcessStatus || ''}`)
+        this.$modal.msgSuccess(this.formatHighApplySuccessMessage(d))
         this.highDialogVisible = false
         this.handleDetailQuery()
       }).finally(() => { this.highSubmitting = false })
@@ -797,6 +828,10 @@ export default {
 
 .high-charge-scan-page .hc-writeoff-done {
   color: #67c23a;
+  font-weight: 500;
+}
+.high-charge-scan-page .hc-writeoff-partial {
+  color: #e6a23c;
   font-weight: 500;
 }
 .high-charge-scan-page .hc-writeoff-pending {
