@@ -513,10 +513,10 @@ export default {
   },
   methods: {
     formatIsGzLabel,
-    /** 仅未提交（0）状态允许修改 */
+    /** 未提交（0）、待审核（1）状态允许修改/删除 */
     isPlanEditable(row) {
       const status = row && row.planStatus;
-      return status === '0' || status === 0;
+      return status === '0' || status === 0 || status === '1' || status === 1;
     },
     /** 按当前计划仓库刷新明细「库存数量」 */
     refreshPlanEntryStockQty(onlyMaterialIds) {

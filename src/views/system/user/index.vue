@@ -146,7 +146,7 @@
               <dict-tag v-else :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
             </template>
           </el-table-column>
-          <el-table-column label="解锁时间" align="center" key="pwdUnlockTime" v-if="columns[8].visible" width="160">
+          <el-table-column label="解锁时间" align="center" key="pwdUnlockTime" v-if="columns[7].visible" width="160">
             <template slot-scope="scope">
               <span v-if="scope.row.pwdLocked" class="pwd-lock-text">
                 {{ scope.row.pwdUnlockTime ? parseTime(scope.row.pwdUnlockTime) : '已锁定' }}
@@ -154,7 +154,7 @@
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" v-if="columns[9].visible" width="160">
+          <el-table-column label="创建时间" align="center" prop="createTime" v-if="columns[8].visible" width="160">
             <template slot-scope="scope">
               <span>{{ parseTime(scope.row.createTime) }}</span>
             </template>
@@ -782,8 +782,8 @@ export default {
         { key: 4, label: `手机号码`, visible: true },
         { key: 5, label: `用户所属科室`, visible: true },
         { key: 6, label: `状态`, visible: true },
-        { key: 8, label: `解锁时间`, visible: true },
-        { key: 9, label: `创建时间`, visible: true }
+        { key: 7, label: `解锁时间`, visible: true },
+        { key: 8, label: `创建时间`, visible: true }
       ],
       // 表单校验
       rules: {
