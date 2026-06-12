@@ -1041,6 +1041,11 @@ export default {
         this.calculateTotalAmount();
       }
     },
+    /** 删除明细行 */
+    handleDeleteDetailRow(index) {
+      this.entryList.splice(index, 1);
+      this.calculateTotalAmount();
+    },
     /** 复选框选中数据 */
     handleDepPurchaseApplyEntrySelectionChange(selection) {
       this.checkedDepPurchaseApplyEntry = selection.map(item => item.index)

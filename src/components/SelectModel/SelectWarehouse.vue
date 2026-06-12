@@ -3,7 +3,10 @@
              filterable
              :filter-method="filterMethod"
              clearable
-             :placeholder="placeholder"
+             :multiple="multiple"
+             :collapse-tags="multiple"
+             :collapse-tags-tooltip="multiple"
+             :placeholder="placeholder || (multiple ? '仓库多选' : '仓库编码/名称/简码搜索')"
              :disabled="value2"
   >
     <el-option
@@ -22,7 +25,10 @@ import { pinyin } from "pinyin-pro";
 
 export default {
   props: {
-    value: {},
+    value: {
+      type: [Number, String, Array],
+      default: null
+    },
     value2: {},
     excludeWarehouseType: {},
     includeWarehouseType: {},
@@ -31,9 +37,13 @@ export default {
       type: Boolean,
       default: false
     },
+    multiple: {
+      type: Boolean,
+      default: false
+    },
     placeholder: {
       type: String,
-      default: '仓库编码/名称/简码搜索'
+      default: ''
     }
   },
   data() {
@@ -48,6 +58,9 @@ export default {
   computed: {
     warehouse: {
       get() {
+        if (this.multiple) {
+          return Array.isArray(this.value) ? this.value : [];
+        }
         // 确保返回的值能在选项列表中找到对应的项
         if (this.value && this.filteredWarehouseOptions.length > 0) {
           // 检查值是否在选项列表中（支持字符串和数字类型匹配）

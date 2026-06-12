@@ -171,9 +171,16 @@
       <el-input
         ref="highScanInput"
         v-model="highScanCode"
-        placeholder="扫描或输入院内码后回车"
+        class="high-scan-input-ime-off"
+        placeholder="扫描或输入院内码（扫码后自动识别）"
+        autocomplete="off"
+        spellcheck="false"
         clearable
-        @keyup.enter.native="doHighScan"
+        @compositionstart="highScanComposing = true"
+        @compositionend="onHighScanCompositionEnd"
+        @input="onHighScanInput"
+        @keydown.native="onHighScanKeydown"
+        @keyup.enter.native="submitHighScanNow"
       />
       <el-table :data="highLines" border size="small" class="mt8 high-consume-dialog-table" empty-text="请先扫码添加行">
         <el-table-column label="院内码" prop="inHospitalCode" min-width="220" align="left" class-name="high-col-code-wrap" />
@@ -246,6 +253,13 @@
 import { parseTime } from '@/utils/ruoyi'
 import { checkPermi } from '@/utils/permission'
 import { pinyin } from 'pinyin-pro'
+import {
+  normalizeBarcodeInput,
+  isImeProcessKey,
+  isScannerEnterKey,
+  isRapidScannerBurst,
+  appendKeyToBarcodeBuffer
+} from '@/utils/barcodeInput'
 import { listdepartAll } from '@/api/foundation/depart'
 import { fetchInpatientMirror, fetchOutpatientMirror } from '@/api/department/patientCharge'
 import {
@@ -291,6 +305,12 @@ export default {
       highSubmitting: false,
       highMirrorRow: null,
       highScanCode: '',
+      highScanComposing: false,
+      highScanBuffer: '',
+      highScanFirstKeyAt: 0,
+      highScanLastKeyAt: 0,
+      highScanAutoTimer: null,
+      highScanSubmitting: false,
       highLines: [],
       highBillRemaining: null,
       consumeRecordDialog: {
@@ -474,7 +494,7 @@ export default {
       }
       this.highMirrorRow = row
       this.highLines = []
-      this.highScanCode = ''
+      this.resetHighScanInputState()
       this.highBillRemaining = null
       this.highDialogVisible = true
       this.$nextTick(() => {
@@ -484,14 +504,113 @@ export default {
       })
     },
     resetHighDialog() {
+      this.clearHighScanAutoTimer()
       this.highMirrorRow = null
       this.highLines = []
-      this.highScanCode = ''
+      this.resetHighScanInputState()
       this.highBillRemaining = null
     },
+    resetHighScanInputState() {
+      this.highScanCode = ''
+      this.highScanComposing = false
+      this.highScanBuffer = ''
+      this.highScanFirstKeyAt = 0
+      this.highScanLastKeyAt = 0
+    },
+    clearHighScanAutoTimer() {
+      if (this.highScanAutoTimer) {
+        clearTimeout(this.highScanAutoTimer)
+        this.highScanAutoTimer = null
+      }
+    },
+    focusHighScanInput() {
+      this.$nextTick(() => {
+        const input = this.$refs.highScanInput
+        if (input && input.focus) {
+          input.focus()
+        }
+      })
+    },
+    scheduleHighScanAutoSubmit(code) {
+      this.clearHighScanAutoTimer()
+      if (!code) {
+        return
+      }
+      if (!isRapidScannerBurst(this.highScanFirstKeyAt, this.highScanLastKeyAt)) {
+        return
+      }
+      this.highScanAutoTimer = setTimeout(() => {
+        this.highScanAutoTimer = null
+        if (normalizeBarcodeInput(this.highScanCode) === code) {
+          this.submitHighScanNow()
+        }
+      }, 80)
+    },
+    submitHighScanNow() {
+      if (this.highScanComposing) {
+        this.$nextTick(() => {
+          setTimeout(() => this.doHighScan(), 30)
+        })
+        return
+      }
+      this.doHighScan()
+    },
+    onHighScanCompositionEnd(e) {
+      this.highScanComposing = false
+      const normalized = normalizeBarcodeInput(e && e.target ? e.target.value : this.highScanCode)
+      if (normalized !== this.highScanCode) {
+        this.highScanCode = normalized
+      }
+      if (normalized) {
+        this.scheduleHighScanAutoSubmit(normalized)
+      }
+    },
+    onHighScanInput(val) {
+      if (this.highScanComposing) {
+        return
+      }
+      const normalized = normalizeBarcodeInput(val)
+      if (normalized !== val) {
+        this.highScanCode = normalized
+      }
+      if (normalized && isRapidScannerBurst(this.highScanFirstKeyAt, this.highScanLastKeyAt)) {
+        this.scheduleHighScanAutoSubmit(normalized)
+      }
+    },
+    onHighScanKeydown(e) {
+      if (isImeProcessKey(e)) {
+        return
+      }
+      const now = Date.now()
+      if (e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (!this.highScanFirstKeyAt || now - this.highScanLastKeyAt > 500) {
+          this.highScanBuffer = ''
+          this.highScanFirstKeyAt = now
+        }
+        this.highScanLastKeyAt = now
+        this.highScanBuffer = appendKeyToBarcodeBuffer(this.highScanBuffer, e)
+        const normalized = normalizeBarcodeInput(this.highScanBuffer)
+        if (normalized) {
+          this.highScanCode = normalized
+          this.scheduleHighScanAutoSubmit(normalized)
+        }
+      }
+      if (isScannerEnterKey(e)) {
+        e.preventDefault()
+        e.stopPropagation()
+        this.clearHighScanAutoTimer()
+        this.submitHighScanNow()
+      }
+    },
     doHighScan() {
-      const code = (this.highScanCode || '').trim()
+      if (this.highScanSubmitting) {
+        return
+      }
+      this.clearHighScanAutoTimer()
+      const code = normalizeBarcodeInput(this.highScanCode)
       if (!code || !this.highMirrorRow) return
+      this.highScanCode = code
+      this.highScanSubmitting = true
       scanHighChargeBarcode({
         visitKind: this.highMirrorRow.visitType || this.currentVisitKind,
         mirrorRowId: this.highMirrorRow.id,
@@ -511,7 +630,10 @@ export default {
           maxApplyQty: d.maxApplyQty,
           applyQty: maxQ > 0 ? maxQ : undefined
         })
-        this.highScanCode = ''
+        this.resetHighScanInputState()
+        this.focusHighScanInput()
+      }).finally(() => {
+        this.highScanSubmitting = false
       })
     },
     removeHighLine(index) {
@@ -691,6 +813,9 @@ export default {
 </script>
 
 <style scoped>
+.high-scan-input-ime-off >>> .el-input__inner {
+  ime-mode: disabled;
+}
 .high-consume-dialog-table >>> td.high-col-code-wrap .cell {
   white-space: normal;
   word-break: break-all;

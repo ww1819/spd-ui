@@ -23,8 +23,8 @@
       <el-form-item label="业务单号" prop="billNo">
         <el-input v-model="queryParams.billNo" placeholder="单号模糊" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
       </el-form-item>
-      <el-form-item label="仓库" prop="warehouseId">
-        <SelectWarehouse v-model="queryParams.warehouseId" :finance-pick-mode="true" clearable style="width: 160px" />
+      <el-form-item label="仓库" prop="warehouseIds">
+        <SelectWarehouse v-model="queryParams.warehouseIds" :finance-pick-mode="true" :multiple="true" clearable style="width: 240px" />
       </el-form-item>
       <el-form-item label="科室" prop="departmentId">
         <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" clearable style="width: 160px" />
@@ -219,7 +219,7 @@ export default {
       queryParams: {
         ...getDefaultFinanceAuditDateRange(),
         billNo: null,
-        warehouseId: null,
+        warehouseIds: [],
         departmentId: null,
         supplerId: null,
         materialIsProcure: null,
@@ -380,6 +380,9 @@ export default {
           p.endDate = `${s} 23:59:59`
         }
       }
+      if (Array.isArray(p.warehouseIds) && p.warehouseIds.length === 0) {
+        p.warehouseIds = null
+      }
       return p
     },
     loadData() {
@@ -412,7 +415,7 @@ export default {
         beginDate: dr.beginDate,
         endDate: dr.endDate,
         billNo: null,
-        warehouseId: null,
+        warehouseIds: [],
         departmentId: null,
         supplerId: null,
         materialIsProcure: null,
