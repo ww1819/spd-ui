@@ -25,7 +25,6 @@
 </template>
 
 <script>
-import path from 'path'
 import { isExternal } from '@/utils/validate'
 import Item from './Item'
 import AppLink from './Link'
@@ -82,6 +81,30 @@ export default {
 
       return false
     },
+    normalizeMenuPath(menuPath) {
+      if (!menuPath || typeof menuPath !== 'string') {
+        return ''
+      }
+      const normalized = menuPath.replace(/\\/g, '/')
+      if (normalized.length > 1 && normalized.endsWith('/')) {
+        return normalized.slice(0, -1)
+      }
+      return normalized
+    },
+    joinMenuPath(basePath, routePath) {
+      const base = this.normalizeMenuPath(basePath)
+      const segment = (routePath == null ? '' : String(routePath)).replace(/\\/g, '/')
+      if (!segment) {
+        return base
+      }
+      if (segment.startsWith('/')) {
+        return this.normalizeMenuPath(segment)
+      }
+      if (!base) {
+        return this.normalizeMenuPath('/' + segment)
+      }
+      return this.normalizeMenuPath(base + '/' + segment)
+    },
     resolvePath(routePath, routeQuery) {
       if (isExternal(routePath)) {
         return routePath
@@ -89,11 +112,12 @@ export default {
       if (isExternal(this.basePath)) {
         return this.basePath
       }
+      const resolvedPath = this.joinMenuPath(this.basePath, routePath)
       if (routeQuery) {
         let query = JSON.parse(routeQuery);
-        return { path: path.resolve(this.basePath, routePath), query: query }
+        return { path: resolvedPath, query: query }
       }
-      return path.resolve(this.basePath, routePath)
+      return resolvedPath
     }
   }
 }

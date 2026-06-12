@@ -129,21 +129,21 @@
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
-      <el-table-column label="单据状态" align="center" prop="billStatus" min-width="110" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
-        </template>
-      </el-table-column>
       <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="单据状态" align="center" prop="billStatus" min-width="110" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
       <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable />
@@ -675,7 +675,8 @@ import {
   updateOutWarehouse,
   listCTKWarehouse,
   createCkEntriesByRkApply, createCkEntriesByWhApply, createCkEntriesByDepPurchaseApply, listEntryChangeLog,
-  getOutWarehouseMaterialStockQty
+  getOutWarehouseMaterialStockQty,
+  recordOutWarehousePrint
 } from "@/api/warehouse/outWarehouse";
 import { fetchStockQtyMapBatched } from '@/views/caigou/jihua/utils/planEntryUtils';
 import { getInWarehouse } from "@/api/warehouse/warehouse";
@@ -826,6 +827,9 @@ export default {
   },
   created() {
     this.applyRouteRefBillQuery()
+    this.getList()
+  },
+  activated() {
     this.getList()
   },
   watch: {
@@ -1581,6 +1585,12 @@ export default {
           this.$modal.msgWarning('缺少单据信息，无法打印')
           return
         }
+        recordOutWarehousePrint(row.id).then(() => {
+          row.printDate = new Date()
+          const nick = this.$store.state.user && this.$store.state.user.nickName
+          const userName = this.$store.state.user && this.$store.state.user.name
+          row.printPerson = nick || userName || row.printPerson
+        }).catch(() => {})
         this.$router.push({
           path: '/print/outbound',
           query: {
@@ -2348,8 +2358,8 @@ export default {
   font-family: 'Roboto', sans-serif !important;
 }
 
-/* 单据状态列表头不换行（选择框+序号+…+操作人 后为第 8 列） */
-.app-container.outWarehouse-apply-page > .el-table thead th:nth-child(8) .cell {
+/* 单据状态列表头不换行（选择框+序号+…+制单日期 后为第 9 列） */
+.app-container.outWarehouse-apply-page > .el-table thead th:nth-child(9) .cell {
   white-space: nowrap !important;
 }
 
