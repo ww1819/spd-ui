@@ -263,6 +263,12 @@ export default {
             const menuPath = this.normalizeMenuPath(
                 typeof index === 'string' ? index : (index && index.path) || ''
             );
+            if (menuPath && menuPath.startsWith('/')) {
+                this.$store.commit('app/SET_SIDEBAR_NAV_TICK', {
+                    path: menuPath,
+                    tick: Date.now()
+                });
+            }
             this.$nextTick(() => {
                 this.keepParentMenusOpen(menuPath, indexPath);
             });

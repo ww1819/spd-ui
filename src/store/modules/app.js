@@ -15,7 +15,9 @@ const state = {
   /** 仓库预警内子 Tab：all | apply | purchase | inventory | nearExpiry */
   warehouseReminderSubTab: 'all',
   /** 科室预警内子 Tab：all | unreceivedConfirm | inventory | expiry */
-  departmentReminderSubTab: 'all'
+  departmentReminderSubTab: 'all',
+  /** 侧栏叶子菜单点击：{ path, tick }，用于同页从侧栏进入时重置弹窗 */
+  sidebarNavTick: null
 }
 
 const mutations = {
@@ -60,6 +62,16 @@ const mutations = {
   SET_DEPARTMENT_REMINDER_SUB_TAB: (state, subTab) => {
     const allowed = ['all', 'unreceivedConfirm', 'inventory', 'expiry']
     state.departmentReminderSubTab = allowed.includes(subTab) ? subTab : 'all'
+  },
+  SET_SIDEBAR_NAV_TICK: (state, payload) => {
+    if (!payload || !payload.path) {
+      state.sidebarNavTick = null
+      return
+    }
+    state.sidebarNavTick = {
+      path: String(payload.path),
+      tick: payload.tick || Date.now()
+    }
   }
 }
 

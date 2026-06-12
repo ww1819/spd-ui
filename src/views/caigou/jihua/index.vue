@@ -200,12 +200,13 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="180" resizable>
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width plan-op-col" fixed="right" width="220" resizable>
         <template slot-scope="scope">
-          <div style="display: flex; align-items: center; justify-content: center; white-space: nowrap; gap: 4px;">
+          <div class="plan-table-actions">
             <el-button
               size="small"
               type="text"
+              class="plan-table-action-btn"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['caigou:jihua:edit']"
               v-if="isPlanEditable(scope.row)"
@@ -213,12 +214,14 @@
             <el-button
               size="small"
               type="text"
+              class="plan-table-action-btn"
               @click="handleView(scope.row)"
               v-if="!isPlanEditable(scope.row)"
             >查看</el-button>
             <el-button
               size="small"
               type="text"
+              class="plan-table-action-btn"
               @click="handleDelete(scope.row)"
               v-hasPermi="['caigou:jihua:remove']"
               v-if="isPlanEditable(scope.row)"
@@ -226,6 +229,7 @@
             <el-button
               size="small"
               type="text"
+              class="plan-table-action-btn"
               @click="handleProgress(scope.row)"
             >进度</el-button>
           </div>
@@ -1849,6 +1853,29 @@ export default {
 
   .el-button--text:hover {
     color: #409EFF;
+  }
+
+  /* 列表操作列：加大点击区域，便于操作 */
+  ::v-deep .plan-table-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 4px 0;
+  }
+
+  ::v-deep .plan-table-actions .plan-table-action-btn.el-button--text {
+    padding: 6px 12px !important;
+    font-size: 14px !important;
+    line-height: 1.4;
+    min-height: 32px;
+    margin: 0 !important;
+  }
+
+  ::v-deep .plan-op-col .cell {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
   }
 
   /* 弹窗内表单紧凑布局 */
