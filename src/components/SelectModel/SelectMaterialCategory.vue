@@ -20,7 +20,7 @@
 </template>
 
 <script>
-import { listMaterialCategory } from "@/api/foundation/materialCategory";
+import { listMaterialCategoryAll } from "@/api/foundation/materialCategory";
 import { pinyin } from "pinyin-pro";
 
 export default {
@@ -66,8 +66,8 @@ export default {
   },
   methods: {
     getList() {
-      listMaterialCategory({ pageNum: 1, pageSize: 1000 }).then(response => {
-        const rows = (response && response.rows) || [];
+      listMaterialCategoryAll().then(response => {
+        const rows = response || [];
         this.allMaterialCategoryOptions = rows;
         this.materialCategoryOptions = rows;
       });

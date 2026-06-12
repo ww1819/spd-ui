@@ -227,7 +227,7 @@
           v-hasPermi="['foundation:material:updateReferred']"
         >更新简码</el-button>
       </el-col>
-      <el-col :span="1.5">
+      <el-col :span="1.5" v-if="!isZqTcmTenant">
         <el-button
           type="primary"
           size="medium"
@@ -269,7 +269,7 @@
           v-hasPermi="['foundation:material:import']"
           >新增导入</el-button>
       </el-col>
-      <el-col :span="1.5">
+      <el-col :span="1.5" v-if="!isZqTcmTenant">
         <el-button
           type="info"
           plain
@@ -475,7 +475,7 @@
 
     <!-- 添加或修改耗材产品局部弹窗 -->
     <div v-if="open" class="local-modal-mask">
-      <div class="local-modal-content material-modal-content" :class="{ 'material-modal-view': isViewMode }">
+      <div class="local-modal-content material-modal-content" :class="{ 'material-modal-view': isViewMode, 'zq-material-limited-modal': zqTcmLimitedEdit }">
         <div class="modal-header">
           <div class="modal-title">{{ title }}</div>
           <el-button size="medium" @click="cancel" class="close-btn">关闭</el-button>
@@ -483,7 +483,15 @@
         <el-tabs v-model="activeTab" @tab-click="onTabClick">
           <!-- 基本信息 -->
           <el-tab-pane label="基本信息" name="form">
-            <el-form ref="form" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode">
+            <el-form ref="form" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode" :class="{ 'zq-material-limited-edit': zqTcmLimitedEdit }">
+              <el-alert
+                v-if="zqTcmLimitedEdit"
+                type="warning"
+                :closable="false"
+                show-icon
+                title="枣强县中医院仅可修改财务分类、生产厂家、供应商与单价，其他字段暂不可变更"
+                class="zq-edit-hint"
+              />
               <!-- 第一行 -->
           <el-row :gutter="20">
                 <el-col :span="4">
@@ -508,12 +516,12 @@
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="供应商：" prop="supplierId">
+                  <el-form-item label="供应商：" prop="supplierId" class="zq-editable-field">
                 <SelectSupplier v-model="form.supplierId" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="生产厂家：" prop="factoryId">
+                  <el-form-item label="生产厂家：" prop="factoryId" class="zq-editable-field">
                     <SelectFactory v-model="form.factoryId"/>
               </el-form-item>
             </el-col>
@@ -537,7 +545,7 @@
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="单价：" prop="price">
+                  <el-form-item label="单价：" prop="price" class="zq-editable-field">
                     <el-input v-model="form.price" placeholder="请输入单价" />
                   </el-form-item>
                 </el-col>
@@ -547,7 +555,7 @@
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="财务分类：" prop="financeCategoryId">
+                  <el-form-item label="财务分类：" prop="financeCategoryId" class="zq-editable-field">
                     <SelectFinanceCategory v-model="form.financeCategoryId"/>
               </el-form-item>
             </el-col>
@@ -1170,7 +1178,7 @@
                 :before-upload="beforeImageUpload"
                 :auto-upload="true"
                 accept="image/*"
-                :disabled="isViewMode"
+                :disabled="isViewMode || zqTcmLimitedEdit"
               >
                 <div v-if="form.imageUrl" class="material-image-preview-large" slot="trigger">
                   <img :src="form.imageUrl" alt="耗材图片" @click.stop="previewImage" />
@@ -1187,8 +1195,10 @@
               </el-upload>
               <div v-if="form.imageUrl && !isViewMode" style="margin-top: 20px;">
                 <el-button type="primary" @click="previewImage">查看图片</el-button>
-                <el-button type="primary" @click="saveImage">保存</el-button>
-                <el-button type="primary" @click="removeImage">删除图片</el-button>
+                <template v-if="!zqTcmLimitedEdit">
+                  <el-button type="primary" @click="saveImage">保存</el-button>
+                  <el-button type="primary" @click="removeImage">删除图片</el-button>
+                </template>
               </div>
               <div v-else-if="form.imageUrl && isViewMode" style="margin-top: 20px;">
                 <el-button type="primary" @click="previewImage">查看图片</el-button>
@@ -1582,6 +1592,13 @@ export default {
     ...mapGetters(['customerId']),
     isHsThirdTenant() {
       return this.customerId === 'hengsui-third-001';
+    },
+    isZqTcmTenant() {
+      return this.customerId === 'zaoqiang-tcm-001';
+    },
+    /** 枣强县中医院：编辑已有档案时仅允许改财务分类、生产厂家、供应商、单价 */
+    zqTcmLimitedEdit() {
+      return this.isZqTcmTenant && this.isEditMode && !!this.form.id;
     },
     isEditMode() {
       return this.dialogMode === 'edit';
@@ -2123,6 +2140,10 @@ export default {
       this.handleQuery();
     },
     handleMaterialImport(mode) {
+      if (this.isZqTcmTenant && mode === 'update') {
+        this.$modal.msgWarning('枣强县中医院暂不支持更新导入，请在产品档案中逐条修改财务分类、生产厂家、供应商与单价');
+        return;
+      }
       this.upload.mode = mode === "update" ? "update" : "add";
       this.upload.title = this.upload.mode === "update" ? "耗材档案更新导入" : "耗材档案新增导入";
       this.upload.pendingFile = null;
@@ -2506,8 +2527,56 @@ export default {
       const html = `<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'><p>请先完善以下信息后再点击“确定”：</p><ul style='padding-left:18px;line-height:1.8;margin:6px 0 0'>${list || '<li>请检查表单必填项</li>'}</ul></div>`;
       this.$alert(html, title, { dangerouslyUseHTMLString: true });
     },
+    /** 枣强受限编辑：仅校验允许修改的字段 */
+    validateZqTcmLimitedFields() {
+      const fields = ['supplierId', 'factoryId', 'financeCategoryId', 'price'];
+      return new Promise(resolve => {
+        let pending = fields.length;
+        let valid = true;
+        fields.forEach(prop => {
+          this.$refs.form.validateField(prop, err => {
+            if (err) valid = false;
+            pending -= 1;
+            if (pending === 0) resolve(valid);
+          });
+        });
+      });
+    },
+    collectZqTcmSaveBlockTips() {
+      const tips = [];
+      const requiredFields = [
+        { key: 'supplierId', label: '供应商' },
+        { key: 'factoryId', label: '生产厂家' },
+        { key: 'financeCategoryId', label: '财务分类' },
+        { key: 'price', label: '单价' }
+      ];
+      requiredFields.forEach(item => {
+        if (this.isBlankValue(this.form[item.key])) {
+          tips.push(`请维护「${item.label}」`);
+        }
+      });
+      if (!this.isBlankValue(this.form.price) && Number.isNaN(Number(this.form.price))) {
+        tips.push('请维护「单价」为有效数字');
+      }
+      return Array.from(new Set(tips));
+    },
     /** 提交按钮 */
     submitForm() {
+      if (this.zqTcmLimitedEdit) {
+        this.validateZqTcmLimitedFields().then(valid => {
+          if (!valid) {
+            this.showSaveBlockedDialog(this.collectZqTcmSaveBlockTips());
+            return;
+          }
+          updateMaterial(this.buildUpdatePayload(this.form)).then(() => {
+            this.$modal.msgSuccess("修改成功");
+            this.open = false;
+            this.originalIsUse = null;
+            this.refreshListAfterMutation();
+          });
+        });
+        return;
+      }
       if (this.form.id != null && this.form.isUse !== this.originalIsUse) {
         const reason = (this.form.statusChangeReason || '').trim();
         if (!reason) {
@@ -2551,6 +2620,15 @@ export default {
     },
     buildUpdatePayload(form) {
       const draft = { ...form };
+      if (this.zqTcmLimitedEdit) {
+        return {
+          id: draft.id,
+          financeCategoryId: draft.financeCategoryId,
+          factoryId: draft.factoryId,
+          supplierId: draft.supplierId,
+          price: draft.price
+        };
+      }
       // 前端“集采”开关与后端字段对齐
       draft.isProcure = this.normalizeSwitchValue(
         draft.isProcure != null ? draft.isProcure : draft.isCentralizedProcurement
@@ -2577,7 +2655,7 @@ export default {
       return payload;
     },
     openZoomEditor(prop, label) {
-      if (!this.isEditMode || !prop) return;
+      if (!this.isEditMode || !prop || this.zqTcmLimitedEdit) return;
       this.zoomEditor.prop = prop;
       this.zoomEditor.label = label || prop;
       this.zoomEditor.value = this.form[prop] || '';
@@ -2733,6 +2811,10 @@ export default {
       }).catch(() => {});
     },
     openBatchUpdateDialog() {
+      if (this.isZqTcmTenant) {
+        this.$modal.msgWarning('枣强县中医院暂仅支持逐条修改产品档案的财务分类、生产厂家、供应商与单价');
+        return;
+      }
       if (!this.total || this.total <= 0) {
         this.$modal.msgWarning("当前查询没有可批量修改的产品档案，请先搜索");
         return;
@@ -3183,6 +3265,26 @@ export default {
 </script>
 
 <style scoped>
+.zq-edit-hint {
+  margin-bottom: 12px;
+}
+.zq-material-limited-edit ::v-deep .el-form-item:not(.zq-editable-field) .el-input,
+.zq-material-limited-edit ::v-deep .el-form-item:not(.zq-editable-field) .el-input__inner,
+.zq-material-limited-edit ::v-deep .el-form-item:not(.zq-editable-field) .el-select,
+.zq-material-limited-edit ::v-deep .el-form-item:not(.zq-editable-field) .el-switch,
+.zq-material-limited-edit ::v-deep .el-form-item:not(.zq-editable-field) .el-radio-group,
+.zq-material-limited-edit ::v-deep .el-form-item:not(.zq-editable-field) .el-checkbox,
+.zq-material-limited-edit ::v-deep .el-form-item:not(.zq-editable-field) .el-textarea {
+  pointer-events: none;
+}
+.zq-material-limited-edit ::v-deep .el-form-item:not(.zq-editable-field) .el-input__inner,
+.zq-material-limited-edit ::v-deep .el-form-item:not(.zq-editable-field) .el-textarea__inner {
+  background-color: #f5f7fa;
+  cursor: not-allowed;
+}
+.zq-material-limited-modal .image-tab-content .material-image-preview-large .image-overlay {
+  pointer-events: none;
+}
 .charge-item-batch-hint {
   line-height: 32px;
   font-size: 13px;
