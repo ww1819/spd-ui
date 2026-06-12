@@ -45,6 +45,16 @@ function resolveInboundOperator(summary, data, userList) {
   return resolveUserDisplayName(s.creater || d.creater, [s.createrName, d.createrName, s.createBy, d.createBy], userList)
 }
 
+function resolveOutboundOperator(summary, data, userList) {
+  const s = summary || {}
+  const d = data || {}
+  return resolveUserDisplayName(
+    s.creater || d.creater,
+    [s.createrName, d.createrName, s.outboundOperator, d.outboundOperator, s.createBy, d.createBy],
+    userList
+  )
+}
+
 function resolveAuditorName(summary, data, userList) {
   const s = summary || {}
   const d = data || {}
@@ -118,7 +128,9 @@ export function buildGzAcceptancePrintRowFromDetail(summaryRow, detailData, prin
     totalAmtConverter: RMBConverter.numberToChinese(totalAmt),
     fundSourceAccount: '',
     createBy,
-    inboundOperator: isShipment ? resolveAuditorName(summary, data, userList) : resolveInboundOperator(summary, data, userList),
+    inboundOperator: resolveInboundOperator(summary, data, userList),
+    outboundOperator: resolveOutboundOperator(summary, data, userList),
+    auditorName: resolveAuditorName(summary, data, userList),
     billType: isShipment ? 102 : 101,
     printKind: isShipment ? 'shipment' : 'order',
     detailList: detailList.map(item => ({
