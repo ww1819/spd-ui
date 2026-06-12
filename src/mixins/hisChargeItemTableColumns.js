@@ -30,31 +30,31 @@ export default {
         {
           key: 'code',
           label: '收费项目编码',
-          width: 120,
+          width: 130,
           text: (row) => (flat ? hisChargeCodeFromRow(row) : hisChargeCodeFromMaterial(row.material)),
         },
         {
           key: 'name',
           label: '收费项目名称',
-          width: 160,
+          width: 150,
           text: (row) => (flat ? hisChargeNameFromRow(row) : hisChargeNameFromMaterial(row.material)),
         },
         {
           key: 'speci',
           label: '收费项目规格',
-          width: 120,
+          width: 130,
           text: (row) => (flat ? hisChargeSpeciFromRow(row) : hisChargeSpeciFromMaterial(row.material)),
         },
         {
           key: 'unit',
           label: '收费项目单位',
-          width: 90,
+          width: 130,
           text: (row) => (flat ? hisChargeUnitFromRow(row) : hisChargeUnitFromMaterial(row.material)),
         },
         {
           key: 'price',
           label: '收费项目单价',
-          width: 110,
+          width: 130,
           text: (row) => {
             const p = flat ? hisChargePriceFromRow(row) : (row.material && row.material.hisChargeItemPrice);
             if (p == null || p === '') {

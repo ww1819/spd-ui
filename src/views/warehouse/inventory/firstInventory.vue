@@ -184,19 +184,6 @@
       </el-table-column>
       <el-table-column key="materialCode" label="耗材编码" align="center" prop="material.code" width="150" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" v-if="columns[1].visible"/>
       <el-table-column key="materialName" label="耗材名称" align="center" prop="material.name" width="160" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" v-if="columns[2].visible"/>
-      <el-table-column
-        v-for="col in hisChargeItemColumnDefs"
-        :key="'his-charge-' + col.key"
-        :label="col.label"
-        :width="col.width"
-        align="center"
-        show-overflow-tooltip
-        resizable
-      >
-        <template slot-scope="scope">
-          <span>{{ col.text(scope.row) }}</span>
-        </template>
-      </el-table-column>
       <el-table-column key="speci" label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" v-if="columns[3].visible">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
@@ -304,6 +291,21 @@
           <span v-else-if="scope.row.auditPerson && scope.row.auditPerson.userName">{{ scope.row.auditPerson.userName }}</span>
           <span v-else-if="scope.row.auditBy">{{ scope.row.auditBy }}</span>
           <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        v-for="col in hisChargeItemColumnDefs"
+        :key="'his-charge-' + col.key"
+        :label="col.label"
+        :min-width="col.width"
+        align="center"
+        show-overflow-tooltip
+        resizable
+        label-class-name="col-header-nowrap"
+        class-name="col-header-nowrap"
+      >
+        <template slot-scope="scope">
+          <span>{{ col.text(scope.row) }}</span>
         </template>
       </el-table-column>
 
@@ -700,6 +702,11 @@ export default {
   white-space: normal;
   word-break: break-all;
   line-height: 18px;
+}
+
+/* 表头单行显示，列宽不足时由 min-width 撑开 */
+.first-inventory-page .el-table th .cell {
+  white-space: nowrap;
 }
 </style>
 

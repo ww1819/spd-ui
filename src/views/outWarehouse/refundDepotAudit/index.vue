@@ -561,7 +561,7 @@ import MsunHisEntryView from '@/components/MsunHisEntryView'
 import MsunHisBillView from '@/components/MsunHisBillView'
 
 export default {
-  name: "OutWarehouseRefundAudit",
+  name: "RefundDepotAudit",
   dicts: ['biz_status','bill_type','way_status'],
   components: {refundGoodsOrderPrint, refundDepotOrderPrint,SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory,MsunHisEntryView,MsunHisBillView},
   data() {
@@ -657,7 +657,8 @@ export default {
         billType: [
           { required: true, message: "退库类型不能为空", trigger: "change" }
         ],
-      }
+      },
+      _lastSidebarNavTick: null
     };
   },
   computed: {
@@ -681,9 +682,52 @@ export default {
     }
   },
   created() {
-    this.getList();
+    this.getList(true);
+  },
+  watch: {
+    '$store.state.app.sidebarNavTick'(nav) {
+      this.handleSidebarNavTick(nav);
+    }
   },
   methods: {
+    normalizeRoutePath(path) {
+      if (!path) {
+        return '';
+      }
+      const normalized = String(path).replace(/\\/g, '/');
+      if (normalized.length > 1 && normalized.endsWith('/')) {
+        return normalized.slice(0, -1);
+      }
+      return normalized;
+    },
+    isCurrentPagePath(navPath) {
+      return this.normalizeRoutePath(navPath) === this.normalizeRoutePath(this.$route.path);
+    },
+    handleSidebarNavTick(nav) {
+      if (!nav || !this.isCurrentPagePath(nav.path)) {
+        return;
+      }
+      if (nav.tick === this._lastSidebarNavTick) {
+        return;
+      }
+      this._lastSidebarNavTick = nav.tick;
+      this.resetPageFromSidebar();
+    },
+    resetPageFromSidebar() {
+      this.DialogComponentShow = false;
+      if (this.modalObj) {
+        this.modalObj.show = false;
+      }
+      this.entryChangeLogDialog.visible = false;
+      this.jsonViewer.visible = false;
+      this.hisEntryView.visible = false;
+      this.hisBillView.visible = false;
+      this.open = false;
+      this.action = true;
+      this.reset();
+      this.queryParams.pageNum = 1;
+      this.getList(true);
+    },
     msunPushTag(status) {
       return msunPushStatusMeta(status)
     },
@@ -804,8 +848,11 @@ export default {
       });
       return sums;
     },
-    /** 查询退库列表 */
-    getList() {
+    /** 查询退库列表；弹窗打开时默认不刷新（顶部标签切回保留当前查看/编辑） */
+    getList(allowWhenDialog) {
+      if (this.open && !allowWhenDialog) {
+        return;
+      }
       this.loading = true;
       const status = this.queryParams.billStatus
       const baseQuery = { ...this.queryParams, billType: "401" }

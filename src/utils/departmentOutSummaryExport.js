@@ -1627,11 +1627,6 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
     '序号',
     '耗材编码',
     '耗材名称',
-    '收费项目编码',
-    '收费项目名称',
-    '收费项目规格',
-    '收费项目单位',
-    '收费项目单价',
     '规格',
     '型号',
     '生产厂家',
@@ -1656,8 +1651,13 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
     '制单人',
     '审核日期',
     '审核人',
+    '收费项目编码',
+    '收费项目名称',
+    '收费项目规格',
+    '收费项目单位',
+    '收费项目单价',
   ];
-  const numericCols = [8, 14, 16, 17];
+  const numericCols = [9, 11, 12, 32];
   return exportInventoryQueryStyledXlsx({
     sheetName: '库存明细查询',
     titleBoldText: '库存明细查询表',
@@ -1667,8 +1667,8 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
     rows,
     numericCols1Based: numericCols,
     sumExtractors: {
-      16: (row) => Number(row.qty || 0),
-      17: (row) => Number(row.amt || 0),
+      11: (row) => Number(row.qty || 0),
+      12: (row) => Number(row.amt || 0),
     },
     buildCells: (row) => {
       const m = row.material || {};
@@ -1681,7 +1681,6 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
         0,
         m.code || '',
         m.name || '',
-        ...hisChargeItemExportCellsFromMaterial(m),
         m.speci || '',
         m.model || '',
         (m.fdFactory && m.fdFactory.factoryName) || '',
@@ -1706,6 +1705,7 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
         inventoryCreaterName(row),
         fmtYmd(row.auditDate || row.warehouseDate),
         inventoryAuditName(row),
+        ...hisChargeItemExportCellsFromMaterial(m),
       ];
     },
     fileName,
