@@ -5,16 +5,14 @@
             <el-menu
                 ref="menu"
                 :default-active="activeMenu"
-                :openeds="openedMenus"
                 :collapse="isCollapse"
                 :background-color="settings.sideTheme === 'theme-dark' ? variables.menuBackground : variables.menuLightBackground"
                 :text-color="settings.sideTheme === 'theme-dark' ? variables.menuColor : variables.menuLightColor"
-                :unique-opened="true"
+                :unique-opened="false"
                 :active-text-color="settings.theme"
                 :collapse-transition="false"
                 mode="vertical"
                 @open="handleMenuOpen"
-                @close="handleMenuClose"
                 @select="handleMenuSelect"
             >
                 <sidebar-item
@@ -30,7 +28,6 @@
 
 <script>
 import { mapGetters, mapState } from "vuex";
-import path from 'path';
 import Logo from "./Logo";
 import SidebarItem from "./SidebarItem";
 import variables from "@/assets/styles/variables.scss";
@@ -38,66 +35,16 @@ import { isExternal } from '@/utils/validate';
 
 export default {
     components: { SidebarItem, Logo },
-    data() {
-        return {
-            openedMenus: [], // 当前展开的菜单列表
-            manuallyClosedMenus: [] // 用户手动收起的菜单列表（用于记录用户意图）
-        };
-    },
     computed: {
         ...mapState(["settings"]),
         ...mapGetters(["sidebarRouters", "sidebar"]),
         activeMenu() {
             const route = this.$route;
             const { meta, path } = route;
-            // if set path, the sidebar will highlight the path you set
             if (meta.activeMenu) {
                 return meta.activeMenu;
             }
             return path;
-        },
-        // 计算默认展开的菜单，递归查找所有包含当前激活菜单的父菜单
-        defaultOpeneds() {
-            const activePath = this.activeMenu;
-            if (!activePath) {
-                return [];
-            }
-            
-            const openedMenus = [];
-            
-            // 递归查找所有包含当前激活路径的父菜单
-            const findAllParentMenus = (routes, targetPath, basePath = '') => {
-                for (const route of routes) {
-                    if (route.hidden) {
-                        continue;
-                    }
-                    
-                    // 构建当前路由的完整路径（与 SidebarItem 中的 resolvePath 逻辑一致）
-                    let currentPath = '';
-                    if (isExternal(route.path)) {
-                        currentPath = route.path;
-                    } else if (isExternal(basePath)) {
-                        currentPath = basePath;
-                    } else if (basePath) {
-                        currentPath = path.resolve(basePath, route.path);
-                    } else {
-                        currentPath = route.path.startsWith('/') ? route.path : '/' + route.path;
-                    }
-                    
-                    // 如果有子菜单
-                    if (route.children && route.children.length > 0) {
-                        // 递归检查子菜单中是否包含目标路径
-                        if (this.hasActiveChild(route.children, targetPath, currentPath)) {
-                            openedMenus.push(currentPath);
-                            // 继续递归查找子菜单中的父菜单
-                            findAllParentMenus(route.children, targetPath, currentPath);
-                        }
-                    }
-                }
-            };
-            
-            findAllParentMenus(this.sidebarRouters, activePath);
-            return openedMenus;
         },
         showLogo() {
             return this.$store.state.settings.sidebarLogo;
@@ -110,232 +57,262 @@ export default {
         }
     },
     watch: {
-        // 监听路由变化，动态更新展开的菜单
-        '$route': {
-            immediate: true,
-            handler() {
-                this.$nextTick(() => {
-                    this.updateOpenedMenus();
-                });
-            }
-        },
-        // 路由变化时按当前页重新计算应展开的菜单（不累积历史展开项）
-        defaultOpeneds: {
-            immediate: true,
-            handler(newVal) {
-                this.applyOpenedMenus(newVal);
-            }
+        activeMenu() {
+            this.$nextTick(() => {
+                this.expandActiveMenuParents();
+            });
         }
     },
     mounted() {
-        // 组件挂载时初始化展开的菜单
         this.$nextTick(() => {
-            this.updateOpenedMenus();
+            this.expandActiveMenuParents();
         });
     },
     methods: {
-        /** 顶级菜单 index 列表（与 SidebarItem 的 resolvePath 规则一致） */
+        normalizeMenuPath(menuPath) {
+            if (!menuPath || typeof menuPath !== 'string') {
+                return '';
+            }
+            const normalized = menuPath.replace(/\\/g, '/');
+            if (normalized.length > 1 && normalized.endsWith('/')) {
+                return normalized.slice(0, -1);
+            }
+            return normalized;
+        },
+        resolveMenuPath(basePath, routePath) {
+            if (isExternal(routePath)) {
+                return routePath;
+            }
+            if (isExternal(basePath)) {
+                return basePath;
+            }
+            const base = this.normalizeMenuPath(basePath);
+            const segment = (routePath == null ? '' : String(routePath)).replace(/\\/g, '/');
+            if (!segment) {
+                return base;
+            }
+            if (segment.startsWith('/')) {
+                return this.normalizeMenuPath(segment);
+            }
+            if (!base) {
+                return this.normalizeMenuPath('/' + segment);
+            }
+            return this.normalizeMenuPath(base + '/' + segment);
+        },
         getTopLevelMenuIndexes() {
             return (this.sidebarRouters || [])
                 .filter(route => !route.hidden)
-                .map(route => {
-                    if (isExternal(route.path)) {
-                        return route.path;
-                    }
-                    return route.path.startsWith('/') ? route.path : '/' + route.path;
-                });
+                .map(route => this.resolveMenuPath('', route.path));
         },
         isTopLevelMenuIndex(index) {
-            return this.getTopLevelMenuIndexes().includes(index);
+            const normalized = this.normalizeMenuPath(index);
+            return this.getTopLevelMenuIndexes().includes(normalized);
         },
         isUnderTopLevelMenu(menuPath, topPath) {
-            if (!menuPath || !topPath) {
+            const normalizedMenuPath = this.normalizeMenuPath(menuPath);
+            const normalizedTopPath = this.normalizeMenuPath(topPath);
+            if (!normalizedMenuPath || !normalizedTopPath) {
                 return false;
             }
-            if (menuPath === topPath) {
+            if (normalizedMenuPath === normalizedTopPath) {
                 return true;
             }
-            return menuPath.startsWith(topPath + '/');
+            return normalizedMenuPath.startsWith(normalizedTopPath + '/');
         },
-        /** 展开另一个顶级菜单时，收起其它顶级菜单 */
-        collapseOtherTopLevelMenus(activeTopIndex) {
-            const topLevels = this.getTopLevelMenuIndexes();
-            this.openedMenus = this.openedMenus.filter(menu => {
-                if (topLevels.includes(menu)) {
-                    return menu === activeTopIndex;
-                }
-                return this.isUnderTopLevelMenu(menu, activeTopIndex);
-            });
-            if (!this.openedMenus.includes(activeTopIndex)) {
-                this.openedMenus.push(activeTopIndex);
+        getSubmenuEntry(menuIndex) {
+            const menu = this.getMenuRef();
+            if (!menu || !menu.submenus) {
+                return null;
             }
+            const normalizedIndex = this.normalizeMenuPath(menuIndex);
+            return menu.submenus[normalizedIndex] || menu.submenus[menuIndex] || null;
         },
-        applyOpenedMenus(menus) {
-            const next = (menus || []).filter(menu => !this.manuallyClosedMenus.includes(menu));
-            if (JSON.stringify(next.slice().sort()) !== JSON.stringify(this.openedMenus.slice().sort())) {
-                this.openedMenus = next;
-                this.$nextTick(() => {
-                    this.syncMenuState();
-                });
+        /** 从 el-menu 已注册的 submenu 获取同级菜单 index，与界面实际 index 保持一致 */
+        getSiblingSubmenuIndexes(menuIndex) {
+            const submenu = this.getSubmenuEntry(menuIndex);
+            if (!submenu || !Array.isArray(submenu.indexPath) || submenu.indexPath.length < 2) {
+                return [];
             }
-        },
-        // 更新展开的菜单列表
-        updateOpenedMenus() {
-            this.applyOpenedMenus(this.defaultOpeneds);
-        },
-        // 菜单展开事件
-        handleMenuOpen(index) {
-            if (this.isTopLevelMenuIndex(index)) {
-                this.collapseOtherTopLevelMenus(index);
-            } else if (!this.openedMenus.includes(index)) {
-                this.openedMenus.push(index);
-            }
-            const closedIndex = this.manuallyClosedMenus.indexOf(index);
-            if (closedIndex > -1) {
-                this.manuallyClosedMenus.splice(closedIndex, 1);
-            }
-            this.syncMenuState();
-        },
-        // 菜单收起事件（只有用户手动点击收起时才执行）
-        // 允许用户自由收起任何菜单（包括当前激活菜单的父菜单）
-        handleMenuClose(index) {
-            const indexPos = this.openedMenus.indexOf(index);
-            if (indexPos > -1) {
-                // 先记录用户手动收起的菜单（如果还没有记录）
-                if (!this.manuallyClosedMenus.includes(index)) {
-                    this.manuallyClosedMenus.push(index);
-                }
-                // 从展开列表中移除
-                this.openedMenus.splice(indexPos, 1);
-                // 立即同步菜单组件状态，确保菜单能够收起
-                this.syncMenuState();
-                // 使用 $nextTick 再次确保状态同步，并防止自动展开
-                this.$nextTick(() => {
-                    // 再次检查并确保菜单已收起
-                    if (this.openedMenus.includes(index)) {
-                        const pos = this.openedMenus.indexOf(index);
-                        if (pos > -1) {
-                            this.openedMenus.splice(pos, 1);
-                        }
+            const depth = submenu.indexPath.length;
+            const parentKey = this.normalizeMenuPath(submenu.indexPath[depth - 2]);
+            const menu = this.getMenuRef();
+            return Object.keys(menu.submenus)
+                .map(key => this.normalizeMenuPath(key))
+                .filter(key => {
+                    const sibling = menu.submenus[key];
+                    if (!sibling || !Array.isArray(sibling.indexPath) || sibling.indexPath.length !== depth) {
+                        return false;
                     }
-                    this.syncMenuState();
+                    return this.normalizeMenuPath(sibling.indexPath[depth - 2]) === parentKey;
                 });
-            }
         },
-        // 同步菜单组件状态
-        syncMenuState() {
-            if (this.$refs.menu) {
-                // 直接设置 openedMenus 属性
-                const currentOpeneds = [...this.openedMenus];
-                this.$refs.menu.openedMenus = currentOpeneds;
-                // 使用 Vue.set 确保响应式更新
-                if (this.$refs.menu.$set) {
-                    this.$refs.menu.$set(this.$refs.menu, 'openedMenus', currentOpeneds);
-                }
-                // 直接操作菜单组件的内部状态，确保菜单能够正确收起
-                if (this.$refs.menu.$children) {
-                    this.$refs.menu.$children.forEach(child => {
-                        if (child.$options.name === 'ElSubmenu' && child.index) {
-                            const shouldBeOpen = currentOpeneds.includes(child.index);
-                            if (child.opened !== shouldBeOpen) {
-                                child.opened = shouldBeOpen;
-                            }
-                        }
-                    });
-                }
-                // 强制更新菜单组件
-                this.$refs.menu.$forceUpdate();
-            }
+        getMenuRef() {
+            return this.$refs.menu;
         },
-        // 菜单选择事件（点击菜单项时触发）
-        handleMenuSelect(index) {
-            const menuPath = typeof index === 'string' ? index : (index && index.path) || '';
-            this.$nextTick(() => {
-                this.ensureParentMenusOpen(menuPath);
+        getOpenedMenus() {
+            const menu = this.getMenuRef();
+            if (!menu || !Array.isArray(menu.openedMenus)) {
+                return [];
+            }
+            return menu.openedMenus.map(item => this.normalizeMenuPath(item));
+        },
+        setOpenedMenus(openedMenus) {
+            const menu = this.getMenuRef();
+            if (!menu) {
+                return;
+            }
+            const prev = this.getOpenedMenus();
+            const next = [...new Set(
+                (openedMenus || []).map(item => this.normalizeMenuPath(item)).filter(Boolean)
+            )];
+            prev.forEach(path => {
+                if (!next.includes(path) && typeof menu.closeMenu === 'function') {
+                    menu.closeMenu(path);
+                }
             });
+            menu.openedMenus = next;
         },
-        // 仅展开当前页面所在分支的父级菜单
-        ensureParentMenusOpen(menuPath) {
-            this.applyOpenedMenus(this.findAllParentMenus(menuPath));
+        getParentIndexesFromIndexPath(indexPath) {
+            if (!Array.isArray(indexPath) || indexPath.length <= 1) {
+                return [];
+            }
+            return indexPath
+                .slice(0, -1)
+                .map(item => this.normalizeMenuPath(item));
         },
-        // 查找所有父菜单路径
-        findAllParentMenus(targetPath) {
+        findParentMenusByRoute(targetPath) {
             const parentMenus = [];
-            const findParents = (routes, targetPath, basePath = '', parents = []) => {
+            const normalizedTarget = this.normalizeMenuPath(targetPath);
+            const walk = (routes, basePath = '') => {
                 for (const route of routes) {
                     if (route.hidden) {
                         continue;
                     }
-                    
-                    let currentPath = '';
-                    if (isExternal(route.path)) {
-                        currentPath = route.path;
-                    } else if (isExternal(basePath)) {
-                        currentPath = basePath;
-                    } else if (basePath) {
-                        currentPath = path.resolve(basePath, route.path);
-                    } else {
-                        currentPath = route.path.startsWith('/') ? route.path : '/' + route.path;
-                    }
-                    
+                    const currentPath = this.resolveMenuPath(basePath, route.path);
                     if (route.children && route.children.length > 0) {
-                        const newParents = [...parents, currentPath];
-                        if (this.hasActiveChild(route.children, targetPath, currentPath)) {
-                            parentMenus.push(...newParents);
-                            findParents(route.children, targetPath, currentPath, newParents);
-                            break;
+                        if (this.hasActiveChild(route.children, normalizedTarget, currentPath)) {
+                            parentMenus.push(currentPath);
+                            walk(route.children, currentPath);
+                            return;
                         }
                     }
                 }
             };
-            findParents(this.sidebarRouters, targetPath);
+            walk(this.sidebarRouters || []);
             return parentMenus;
         },
-        // 检查菜单是否是当前激活菜单的父菜单
-        isParentOfActiveMenu(menuPath, activePath) {
-            if (!activePath || !menuPath) {
-                return false;
-            }
-            // 检查 activePath 是否以 menuPath 开头
-            return activePath.startsWith(menuPath + '/') || activePath === menuPath;
-        },
-        // 递归检查子路由中是否包含目标路径
         hasActiveChild(children, targetPath, basePath) {
-            if (!children || children.length === 0) {
-                return false;
-            }
-            
             for (const child of children) {
                 if (child.hidden) {
                     continue;
                 }
-                
-                // 构建子路由的完整路径（与 SidebarItem 中的 resolvePath 逻辑一致）
-                let childPath = '';
-                if (isExternal(child.path)) {
-                    childPath = child.path;
-                } else if (isExternal(basePath)) {
-                    childPath = basePath;
-                } else if (basePath) {
-                    childPath = path.resolve(basePath, child.path);
-                } else {
-                    childPath = child.path.startsWith('/') ? child.path : '/' + child.path;
-                }
-                
-                // 检查路径是否匹配（精确匹配或前缀匹配）
-                if (targetPath === childPath || targetPath.startsWith(childPath + '/') || childPath === targetPath) {
+                const childPath = this.resolveMenuPath(basePath, child.path);
+                if (
+                    targetPath === childPath ||
+                    targetPath.startsWith(childPath + '/')
+                ) {
                     return true;
                 }
-                
-                // 如果有子菜单，递归检查
-                if (child.children && child.children.length > 0) {
-                    if (this.hasActiveChild(child.children, targetPath, childPath)) {
-                        return true;
-                    }
+                if (child.children && child.children.length > 0 && this.hasActiveChild(child.children, targetPath, childPath)) {
+                    return true;
                 }
             }
-            
             return false;
+        },
+        getParentIndexesForPath(menuPath) {
+            const normalizedPath = this.normalizeMenuPath(menuPath);
+            const menu = this.getMenuRef();
+            const activeItem = menu && menu.items[normalizedPath];
+            if (activeItem && Array.isArray(activeItem.indexPath)) {
+                const parents = this.getParentIndexesFromIndexPath(activeItem.indexPath);
+                if (parents.length > 0) {
+                    return parents;
+                }
+            }
+            return this.findParentMenusByRoute(normalizedPath);
+        },
+        keepParentMenusOpen(menuPath, indexPath) {
+            let parentIndexes = this.getParentIndexesFromIndexPath(indexPath);
+            if (parentIndexes.length === 0) {
+                parentIndexes = this.getParentIndexesForPath(menuPath);
+            }
+            if (parentIndexes.length === 0) {
+                return;
+            }
+            const activeLevel2 = parentIndexes.length > 1
+                ? parentIndexes[parentIndexes.length - 1]
+                : null;
+            const siblingMenus = activeLevel2 ? this.getSiblingSubmenuIndexes(activeLevel2) : [];
+            const next = this.getOpenedMenus().filter(path => {
+                if (activeLevel2 && siblingMenus.includes(path) && path !== activeLevel2) {
+                    return false;
+                }
+                return true;
+            });
+            parentIndexes.forEach(parentPath => {
+                if (!next.includes(parentPath)) {
+                    next.push(parentPath);
+                }
+            });
+            this.setOpenedMenus(next);
+        },
+        expandActiveMenuParents() {
+            this.keepParentMenusOpen(this.activeMenu);
+        },
+        handleMenuSelect(index, indexPath) {
+            const menuPath = this.normalizeMenuPath(
+                typeof index === 'string' ? index : (index && index.path) || ''
+            );
+            if (menuPath && menuPath.startsWith('/')) {
+                this.$store.commit('app/SET_SIDEBAR_NAV_TICK', {
+                    path: menuPath,
+                    tick: Date.now()
+                });
+            }
+            this.$nextTick(() => {
+                this.keepParentMenusOpen(menuPath, indexPath);
+            });
+        },
+        handleMenuOpen(index) {
+            const menuIndex = this.normalizeMenuPath(index);
+            this.$nextTick(() => {
+                const currentOpeneds = this.getOpenedMenus();
+
+                if (this.isTopLevelMenuIndex(menuIndex)) {
+                    const topLevels = this.getTopLevelMenuIndexes();
+                    const next = currentOpeneds.filter(path => {
+                        if (topLevels.includes(path)) {
+                            return path === menuIndex;
+                        }
+                        return this.isUnderTopLevelMenu(path, menuIndex);
+                    });
+                    if (!next.includes(menuIndex)) {
+                        next.push(menuIndex);
+                    }
+                    this.setOpenedMenus(next);
+                    return;
+                }
+
+                const submenu = this.getSubmenuEntry(menuIndex);
+                if (!submenu || !Array.isArray(submenu.indexPath) || submenu.indexPath.length < 2) {
+                    return;
+                }
+                const topPath = this.normalizeMenuPath(submenu.indexPath[0]);
+                const siblingMenus = this.getSiblingSubmenuIndexes(menuIndex);
+                const next = currentOpeneds.filter(path => {
+                    if (siblingMenus.includes(path)) {
+                        return path === menuIndex;
+                    }
+                    return true;
+                });
+                if (!next.includes(menuIndex)) {
+                    next.push(menuIndex);
+                }
+                if (topPath && !next.includes(topPath)) {
+                    next.push(topPath);
+                }
+                this.setOpenedMenus(next);
+            });
         }
     }
 };

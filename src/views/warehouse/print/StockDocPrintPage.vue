@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import { getOutWarehouse } from '@/api/warehouse/outWarehouse'
+import { getOutWarehouse, recordOutWarehousePrint } from '@/api/warehouse/outWarehouse'
 import { getTkInventory } from '@/api/warehouse/tkInventory'
 import { getThInventory } from '@/api/warehouse/thInventory'
 import { getPrintDocRows, updatePrintDocRows } from '@/api/system/printDocRows'
@@ -220,10 +220,18 @@ export default {
     },
     handleBrowserPrint() {
       if (!this.printReady || !this.canPrint) return
-      const ref = this.$refs.orderPrintRef
-      if (ref && typeof ref.start === 'function') {
-        ref.start()
+      const billId = this.$route.query.id
+      const doPrint = () => {
+        const ref = this.$refs.orderPrintRef
+        if (ref && typeof ref.start === 'function') {
+          ref.start()
+        }
       }
+      if (this.docKind === 'OUTBOUND' && billId) {
+        recordOutWarehousePrint(billId).finally(() => doPrint())
+        return
+      }
+      doPrint()
     }
   }
 }

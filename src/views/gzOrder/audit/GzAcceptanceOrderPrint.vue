@@ -86,8 +86,8 @@
         <div class="sign-item"><span class="sign-label">采购</span><span class="sign-value sign-value--blank"></span></div>
         <div class="sign-item"><span class="sign-label">保管</span><span class="sign-value sign-value--blank"></span></div>
         <div class="sign-item sign-item--wide">
-          <span class="sign-label">入库操作员</span>
-          <span class="sign-value">{{ inboundOperatorDisplay }}</span>
+          <span class="sign-label">{{ operatorLabel }}</span>
+          <span class="sign-value">{{ operatorDisplay }}</span>
         </div>
       </div>
     </div>
@@ -135,9 +135,15 @@ export default {
       }
       return this.row.supplierName || ''
     },
-    inboundOperatorDisplay() {
-      const op = this.row && this.row.inboundOperator
-      return op != null ? String(op) : ''
+    operatorLabel() {
+      return this.printKind === 'shipment' ? '出库操作员' : '入库操作员'
+    },
+    operatorDisplay() {
+      if (!this.row) return ''
+      const op = this.printKind === 'shipment'
+        ? (this.row.outboundOperator || this.row.createBy)
+        : (this.row.inboundOperator || this.row.createBy)
+      return op != null && String(op).trim() !== '' ? String(op) : ''
     },
     pagedDetailList() {
       const details = (this.row && this.row.detailList) || []

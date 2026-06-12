@@ -129,21 +129,21 @@
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="制单人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable >
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
-      <el-table-column label="单据状态" align="center" prop="billStatus" min-width="110" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
-        </template>
-      </el-table-column>
       <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="单据状态" align="center" prop="billStatus" min-width="110" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
       <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable />
@@ -675,7 +675,8 @@ import {
   updateOutWarehouse,
   listCTKWarehouse,
   createCkEntriesByRkApply, createCkEntriesByWhApply, createCkEntriesByDepPurchaseApply, listEntryChangeLog,
-  getOutWarehouseMaterialStockQty
+  getOutWarehouseMaterialStockQty,
+  recordOutWarehousePrint
 } from "@/api/warehouse/outWarehouse";
 import { fetchStockQtyMapBatched } from '@/views/caigou/jihua/utils/planEntryUtils';
 import { getInWarehouse } from "@/api/warehouse/warehouse";
@@ -701,7 +702,7 @@ import {
 } from '@/utils/outWarehouseBillRow'
 
 export default {
-  name: "OutWarehouseApply",
+  name: "Apply",
   dicts: ['biz_status','bill_type','way_status'],
   components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectDApply,SelectDepPurchaseApply,SelectRkApply,outOrderPrint},
   data() {
@@ -804,7 +805,8 @@ export default {
         departmentId: [
           { required: true, message: "科室ID不能为空", trigger: "blur" }
         ],
-      }
+      },
+      _lastSidebarNavTick: null
     };
   },
   computed: {
@@ -826,9 +828,12 @@ export default {
   },
   created() {
     this.applyRouteRefBillQuery()
-    this.getList()
+    this.getList(true)
   },
   watch: {
+    '$store.state.app.sidebarNavTick'(nav) {
+      this.handleSidebarNavTick(nav);
+    },
     '$route.query.refBillNo'(val) {
       if (val) {
         this.queryParams.refBillNo = String(val)
@@ -851,6 +856,44 @@ export default {
     }
   },
   methods: {
+    normalizeRoutePath(path) {
+      if (!path) {
+        return '';
+      }
+      const normalized = String(path).replace(/\\/g, '/');
+      if (normalized.length > 1 && normalized.endsWith('/')) {
+        return normalized.slice(0, -1);
+      }
+      return normalized;
+    },
+    isCurrentPagePath(navPath) {
+      return this.normalizeRoutePath(navPath) === this.normalizeRoutePath(this.$route.path);
+    },
+    handleSidebarNavTick(nav) {
+      if (!nav || !this.isCurrentPagePath(nav.path)) {
+        return;
+      }
+      if (nav.tick === this._lastSidebarNavTick) {
+        return;
+      }
+      this._lastSidebarNavTick = nav.tick;
+      this.resetPageFromSidebar();
+    },
+    resetPageFromSidebar() {
+      this.DialogComponentShow = false;
+      this.DialogDApplyComponentShow = false;
+      this.DialogDepPurchaseApplyComponentShow = false;
+      this.DialogRkApplyComponentShow = false;
+      this.rkOutDeptDialogVisible = false;
+      this.modalObj.show = false;
+      this.entryChangeLogDialog.visible = false;
+      this.jsonViewer.visible = false;
+      this.open = false;
+      this.action = true;
+      this.reset();
+      this.queryParams.pageNum = 1;
+      this.getList(true);
+    },
     /** 从路由 query 带入引用申领单号（消息提醒双击跳转等） */
     applyRouteRefBillQuery() {
       const ref = this.$route.query && this.$route.query.refBillNo
@@ -972,8 +1015,11 @@ export default {
       });
       return sums;
     },
-    /** 查询出库列表 */
-    getList() {
+    /** 查询出库列表；弹窗打开时默认不刷新（顶部标签切回保留当前编辑） */
+    getList(allowWhenDialog) {
+      if (this.open && !allowWhenDialog) {
+        return;
+      }
       this.loading = true;
       this.queryParams.billType = "201";
       listOutWarehouse(this.queryParams).then(response => {
@@ -1581,6 +1627,12 @@ export default {
           this.$modal.msgWarning('缺少单据信息，无法打印')
           return
         }
+        recordOutWarehousePrint(row.id).then(() => {
+          row.printDate = new Date()
+          const nick = this.$store.state.user && this.$store.state.user.nickName
+          const userName = this.$store.state.user && this.$store.state.user.name
+          row.printPerson = nick || userName || row.printPerson
+        }).catch(() => {})
         this.$router.push({
           path: '/print/outbound',
           query: {
@@ -2348,8 +2400,8 @@ export default {
   font-family: 'Roboto', sans-serif !important;
 }
 
-/* 单据状态列表头不换行（选择框+序号+…+操作人 后为第 8 列） */
-.app-container.outWarehouse-apply-page > .el-table thead th:nth-child(8) .cell {
+/* 单据状态列表头不换行（选择框+序号+…+制单日期 后为第 9 列） */
+.app-container.outWarehouse-apply-page > .el-table thead th:nth-child(9) .cell {
   white-space: nowrap !important;
 }
 

@@ -29,6 +29,14 @@ export function getOutWarehouse(id) {
   })
 }
 
+// 记录出库单打印
+export function recordOutWarehousePrint(id) {
+  return request({
+    url: '/warehouse/outWarehouse/recordPrint/' + id,
+    method: 'put'
+  })
+}
+
 // 新增出库
 export function addOutWarehouse(data) {
   return request({

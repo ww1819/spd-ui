@@ -607,7 +607,7 @@ import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboun
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
 
 export default {
-  name: "InWarehouseAudit",
+  name: "Audit",
   dicts: ['biz_status','bill_type','way_status'],
   components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMaterialFilter,orderPrint},
   data() {
@@ -700,7 +700,8 @@ export default {
         billType: [
           { required: true, message: "入库类型不能为空", trigger: "change" }
         ],
-      }
+      },
+      _lastSidebarNavTick: null
     };
   },
   computed: {
@@ -744,9 +745,50 @@ export default {
     }
   },
   created() {
-    this.getList();
+    this.getList(true);
+  },
+  watch: {
+    '$store.state.app.sidebarNavTick'(nav) {
+      this.handleSidebarNavTick(nav);
+    }
   },
   methods: {
+    normalizeRoutePath(path) {
+      if (!path) {
+        return '';
+      }
+      const normalized = String(path).replace(/\\/g, '/');
+      if (normalized.length > 1 && normalized.endsWith('/')) {
+        return normalized.slice(0, -1);
+      }
+      return normalized;
+    },
+    isCurrentPagePath(navPath) {
+      return this.normalizeRoutePath(navPath) === this.normalizeRoutePath(this.$route.path);
+    },
+    handleSidebarNavTick(nav) {
+      if (!nav || !this.isCurrentPagePath(nav.path)) {
+        return;
+      }
+      if (nav.tick === this._lastSidebarNavTick) {
+        return;
+      }
+      this._lastSidebarNavTick = nav.tick;
+      this.resetPageFromSidebar();
+    },
+    resetPageFromSidebar() {
+      this.DialogComponentShow = false;
+      if (this.modalObj) {
+        this.modalObj.show = false;
+      }
+      this.entryChangeLogDialog.visible = false;
+      this.jsonViewer.visible = false;
+      this.open = false;
+      this.action = true;
+      this.reset();
+      this.queryParams.pageNum = 1;
+      this.getList(true);
+    },
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
@@ -822,8 +864,11 @@ export default {
       if (va > vb) return 1;
       return 0;
     },
-    /** 查询入库列表 */
-    getList() {
+    /** 查询入库列表；弹窗打开时默认不刷新（顶部标签切回保留当前编辑） */
+    getList(allowWhenDialog) {
+      if (this.open && !allowWhenDialog) {
+        return;
+      }
       this.loading = true;
       this.queryParams.billType = "101";
       // 处理截止日期，确保包含当天的所有数据（23:59:59）
