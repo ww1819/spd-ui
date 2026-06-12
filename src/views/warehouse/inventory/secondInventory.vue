@@ -91,6 +91,13 @@
                 />
               </el-select>
             </el-form-item>
+            <el-form-item class="query-item-inline query-item-zero-stock">
+              <el-button
+                :type="showZeroStock ? 'primary' : 'default'"
+                size="small"
+                @click="toggleShowZeroStock"
+              >零库存</el-button>
+            </el-form-item>
           </el-col>
         </el-row>
       </el-form>
@@ -270,7 +277,9 @@ export default {
       form: {},
       // 表单校验
       rules: {
-      }
+      },
+      /** 是否显示零库存汇总（默认不显示） */
+      showZeroStock: false
     };
   },
   computed: {
@@ -315,10 +324,25 @@ export default {
       })
       cb(results);
     },
-    /** 查询库存明细列表 */
+    buildListQueryParams(extra = {}) {
+      const params = { ...this.queryParams, ...extra };
+      if (this.showZeroStock) {
+        params.onlyZeroQty = true;
+        delete params.excludeZeroQty;
+      } else {
+        params.excludeZeroQty = true;
+        delete params.onlyZeroQty;
+      }
+      return params;
+    },
+    toggleShowZeroStock() {
+      this.showZeroStock = !this.showZeroStock;
+      this.handleQuery();
+    },
+    /** 查询库存汇总列表 */
     getList() {
       this.loading = true;
-      listInventorySummary(this.queryParams).then(response => {
+      listInventorySummary(this.buildListQueryParams()).then(response => {
         this.inventoryList = Array.isArray(response) ? response : (response.rows || []);
         this.total = response.total != null ? response.total : (this.inventoryList || []).length;
         this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0 };
@@ -366,6 +390,7 @@ export default {
       this.queryParams.endDate = null;
       this.queryParams.isBilling = null;
       this.queryParams.materialIsUse = null;
+      this.showZeroStock = false;
       this.handleQuery();
     },
     // 多选框选中数据
@@ -376,7 +401,7 @@ export default {
     },
     /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
     async handleExport() {
-      const requestParams = { ...this.queryParams, pageNum: 1, pageSize: 10000 };
+      const requestParams = this.buildListQueryParams({ pageNum: 1, pageSize: 10000 });
       this.loading = true;
       try {
         const response = await listInventorySummary(requestParams);
@@ -466,6 +491,14 @@ export default {
 
 .query-select-wrapper {
   width: 180px;
+}
+
+.query-item-zero-stock {
+  margin-right: 0;
+  vertical-align: middle;
+}
+.query-item-zero-stock .el-button {
+  min-width: 72px;
 }
 
 .query-row-second {
