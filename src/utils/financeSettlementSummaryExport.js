@@ -184,7 +184,7 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
 
   ws.mergeCells('A1:H1');
   const t1 = ws.getCell(1, 1);
-  t1.value = titleText || '报表2：科室领取器材、药品统计（金额：元）';
+  t1.value = titleText || 'SPD报表2：科室领取器材、药品统计（金额：元）';
   t1.font = FONT_TITLE;
   t1.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
   setCellBorder(t1);

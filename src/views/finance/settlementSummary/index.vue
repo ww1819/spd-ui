@@ -261,13 +261,13 @@ export default {
       }
       if (b && e) {
         if (b.substring(0, 7) === e.substring(0, 7)) {
-          return `报表2：${ymPart(b)}${suffix}`
+          return `SPD报表2：${ymPart(b)}${suffix}`
         }
-        return `报表2：${ymPart(b)}至${ymPart(e)}${suffix}`
+        return `SPD报表2：${ymPart(b)}至${ymPart(e)}${suffix}`
       }
-      if (b) return `报表2：${ymPart(b)}${suffix}`
-      if (e) return `报表2：${ymPart(e)}${suffix}`
-      return `报表2：${suffix}`
+      if (b) return `SPD报表2：${ymPart(b)}${suffix}`
+      if (e) return `SPD报表2：${ymPart(e)}${suffix}`
+      return `SPD报表2：${suffix}`
     },
   },
   created() {
@@ -434,14 +434,14 @@ export default {
         reagentWholesaleTotal: this.bundle.reagentWholesaleTotal,
         unrecognizedSuppliers: this.bundle.unrecognizedSuppliers,
         unrecognizedWholesaleTotal: this.bundle.unrecognizedWholesaleTotal,
-        fileName: `财务结算汇总_表一_${dateOnly(this.queryParams.beginDate) || ''}_${dateOnly(this.queryParams.endDate) || ''}_${Date.now()}.xlsx`,
+        fileName: `(SPD)财务结算汇总_表一_${dateOnly(this.queryParams.beginDate) || ''}_${dateOnly(this.queryParams.endDate) || ''}_${Date.now()}.xlsx`,
       })
     },
     async handleExportTable2() {
       await exportFinanceDeptConsumablePickupXlsx({
         titleText: this.titleTextTable2,
         rows: this.deptPickupRows,
-        fileName: `财务结算汇总_表二_${dateOnly(this.queryParams.beginDate) || ''}_${dateOnly(this.queryParams.endDate) || ''}_${Date.now()}.xlsx`,
+        fileName: `(SPD)财务结算汇总_表二_${dateOnly(this.queryParams.beginDate) || ''}_${dateOnly(this.queryParams.endDate) || ''}_${Date.now()}.xlsx`,
       })
     },
   },

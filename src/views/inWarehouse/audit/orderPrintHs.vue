@@ -247,62 +247,22 @@ export default {
         this.scheduleApplyPrintCellAutoFont()
       }).catch(() => {})
     },
-    /** 仅消耗品名称列参与自动缩小 */
-    isMaterialNameColumnCell(el) {
-      const td = el && el.closest ? el.closest('td') : null
-      return !!(td && td.cellIndex === 0)
-    },
-    /** 同行各列字号与消耗品名称保持一致 */
-    syncRowFontFromMaterialName(root) {
-      const dataRows = root.querySelectorAll('.detail-table tbody tr:not(.print-total-row)')
-      dataRows.forEach(tr => {
-        const nameEl = tr.children[0] && tr.children[0].querySelector('.cell-text')
-        if (!nameEl) return
-        const cs = window.getComputedStyle(nameEl)
-        const fontSize = nameEl.style.fontSize || cs.fontSize
-        const lineHeight = nameEl.style.lineHeight || cs.lineHeight || '1.35'
-
-        tr.querySelectorAll('td.cell-textual').forEach(td => {
-          if (td.cellIndex === 0) return
-          const el = td.querySelector('.cell-text')
-          if (!el) return
-          el.style.fontSize = fontSize
-          el.style.lineHeight = lineHeight
-        })
-
-        ;[3, 4, 5].forEach(idx => {
-          const td = tr.children[idx]
-          if (!td) return
-          td.style.fontSize = fontSize
-          td.style.lineHeight = lineHeight
-        })
-      })
-    },
-    /** 明细文本列：仅消耗品名称按列宽自动缩小，其余列同步名称字号 */
+    /** 明细文本列：超过一行则按列宽自动缩小（与出库单一致，数量/金额列保持表体字号） */
     applyPrintCellAutoFont() {
       const root = this.$refs.receiptOrderPrintRef || this.$el
       if (!root || typeof document === 'undefined') return
 
       const cells = root.querySelectorAll('td.cell-textual .cell-text')
+      if (!cells || !cells.length) return
 
-      const minPx = 10
+      const minPx = 12
       const maxSteps = 64
 
       const dataRows = root.querySelectorAll('.detail-table tbody tr:not(.print-total-row)')
       dataRows.forEach(tr => {
         tr.querySelectorAll('td.cell-textual .cell-text').forEach(el => {
-          const td = el.closest('td')
-          if (td && td.cellIndex !== 0) {
-            el.style.fontSize = ''
-            el.style.lineHeight = ''
-          }
-        })
-        ;[3, 4, 5].forEach(idx => {
-          const td = tr.children[idx]
-          if (td) {
-            td.style.fontSize = ''
-            td.style.lineHeight = ''
-          }
+          el.style.fontSize = ''
+          el.style.lineHeight = ''
         })
       })
 
@@ -384,19 +344,18 @@ export default {
 
       cells.forEach((el) => {
         if (!el || el.nodeType !== 1) return
-        if (!this.isMaterialNameColumnCell(el)) return
         const text = (el.textContent || '').trim()
         if (!text) return
 
-        // 鍏堟仮澶嶄负琛ㄦ牸榛樿瀛楀彿锛屽啀鎸夐渶缂╁皬锛岄伩鍏嶉噸澶嶆墦鍗拌秺缂╄秺灏?        el.style.fontSize = ''
+        el.style.fontSize = ''
         el.style.lineHeight = ''
 
         const cs0 = window.getComputedStyle(el)
-        let fontPx = parseFloat(cs0.fontSize || '12') || 12
+        let fontPx = parseFloat(cs0.fontSize || '14') || 14
 
         let step = 0
         while (step < maxSteps) {
-          const lineHeightPx = Math.max(10, Math.round(fontPx * 1.35))
+          const lineHeightPx = Math.max(12, Math.round(fontPx * 1.35))
           const oneLineMaxH = lineHeightPx + 1
           const h = measureUnclampedHeightPx(el, fontPx)
           if (h <= oneLineMaxH + 0.5 || fontPx <= minPx) {
@@ -411,8 +370,6 @@ export default {
         el.style.fontSize = `${Math.max(minPx, fontPx)}px`
         el.style.lineHeight = '1.35'
       })
-
-      this.syncRowFontFromMaterialName(root)
     },
     start() {
       const doPrint = () => {
@@ -595,13 +552,13 @@ export default {
   text-align left
   vertical-align top
   white-space normal
-  word-break break-word
+  word-break break-all
   overflow visible
 
 .detail-table td.cell-textual .cell-text
   display block
   overflow visible
-  word-break break-word
+  word-break break-all
   white-space normal
   line-height 1.35
 
@@ -747,23 +704,23 @@ export default {
 
   .doc-title
     display block !important
-    /* 鏍囬瀛楀彿鏀跺皬锛岄伩鍏嶅湪鐐归樀绾搁珮搴?琛岄珮浼扮畻涓嬪嚭鐜板崐鎴垨绌虹櫧 */
-    font-size 18px !important
+    font-size 19px !important
     font-weight normal !important
     padding 0 !important
     margin 0 !important
-    line-height 1.7 !important
+    line-height 1.65 !important
     font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
     overflow visible !important
     page-break-inside avoid !important
 
-  /* 涓嬫柟鍖哄煙鍘嬬缉锛屾姷娑堟爣棰樹笅绉诲鑷寸殑鍒嗛〉鍘嬪姏 */
   .info-block
     margin-bottom 3px !important
-    font-size 17px !important
+    font-size 16px !important
+    line-height 1.55 !important
 
   .info-grid
-    font-size 17px !important
+    font-size 16px !important
+    line-height 1.55 !important
 
   /* 淇℃伅鍖猴細鏍囩鍒楀浐瀹氬搴︼紝鍐掑彿绔栫嚎瀵归綈锛堟墦鍗板瓧鍙锋洿澶ф椂鐣ュ姞瀹斤級 */
   .info-label--l1
@@ -794,13 +751,13 @@ export default {
 
   .total-row
     margin-bottom 8px !important
-    font-size 17px !important
+    font-size 14px !important
 
-  /* 绛惧瓧鍖轰笂绉讳竴鐐癸紝閬垮紑閽堝紡鏈哄簳閮ㄤ笉鍙墦鍗板尯鍩?*/
   .sign-block
     margin-top 2px !important
     padding-bottom 3mm !important
     font-size 17px !important
+    line-height 1.55 !important
     display grid !important
     grid-template-columns 1fr 1fr 1fr !important
     column-gap 12px !important
@@ -823,9 +780,23 @@ export default {
     word-wrap break-word
     word-break break-word
     line-height 1.45 !important
+    padding 3px 5px !important
 
   .detail-table th
     font-weight normal !important
+    line-height 1.35 !important
+    white-space nowrap !important
+    padding-top 2px !important
+    padding-bottom 2px !important
+
+  .detail-table tbody td:nth-child(4),
+  .detail-table tbody td:nth-child(5),
+  .detail-table tbody td:nth-child(6)
+    font-size 13px !important
+
+  .detail-table tbody tr.print-total-row td
+    font-size 14px !important
+    line-height 1.45 !important
 
   .detail-table th
     background transparent !important
@@ -848,12 +819,12 @@ export default {
     text-align left !important
     vertical-align top !important
     white-space normal !important
-    word-break break-word !important
+    word-break break-all !important
 
   .detail-table td.cell-textual .cell-text
     display block !important
     overflow visible !important
-    word-break break-word !important
+    word-break break-all !important
     white-space normal !important
     line-height 1.35 !important
 
