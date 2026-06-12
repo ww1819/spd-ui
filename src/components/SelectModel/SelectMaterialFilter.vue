@@ -500,6 +500,7 @@ export default {
               model: row.model,
               price: row.price,
               registerNo: row.registerNo,
+              isBilling: row.isBilling,
               fdUnit: row.unitName != null ? { unitName: row.unitName } : null,
               fdFactory: row.factoryName != null ? { factoryName: row.factoryName } : null,
               fdWarehouseCategory: row.warehouseCategoryName != null ? { warehouseCategoryName: row.warehouseCategoryName } : null,
