@@ -197,6 +197,7 @@
 
 <script>
 import { listTraceabilityEntry } from "@/api/gz/traceability";
+import { exportTraceDetailTable } from "../retrospectExport";
 
 export default {
   name: "UseTraceDetail",
@@ -303,6 +304,19 @@ export default {
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id);
       this.$emit('selection-change', selection);
+    },
+    async exportTable() {
+      this.loading = true;
+      try {
+        const result = await exportTraceDetailTable(this, this.queryParams);
+        this.$modal.msgSuccess(`导出成功，共 ${result.rowCount} 条`);
+      } catch (e) {
+        const msg = (e && e.message) ? e.message : '导出失败，请稍后重试';
+        this.$modal.msgError(msg);
+        throw e;
+      } finally {
+        this.loading = false;
+      }
     },
     syncTableScroll() {
       const headerWrapper = this.$el?.querySelector('.el-table__header-wrapper');

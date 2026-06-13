@@ -43,6 +43,7 @@
 
 <script>
 import { listDepotInventory } from "@/api/gz/depotInventory";
+import { exportTraceSummaryTable } from "../retrospectExport";
 
 export default {
   name: "UseTraceSummaryExecDept",
@@ -89,6 +90,23 @@ export default {
     }
   },
   methods: {
+    async exportTable() {
+      this.loading = true;
+      try {
+        const result = await exportTraceSummaryTable(this, this.queryParams, {
+          reportTitle: '使用追溯汇总表(执行科室)',
+          deptLabel: '执行科室',
+          deptGetter: (row) => (row.execDeptName != null && row.execDeptName !== '' ? row.execDeptName : '--')
+        });
+        this.$modal.msgSuccess(`导出成功，共 ${result.rowCount} 条`);
+      } catch (e) {
+        const msg = (e && e.message) ? e.message : '导出失败，请稍后重试';
+        this.$modal.msgError(msg);
+        throw e;
+      } finally {
+        this.loading = false;
+      }
+    },
     getList() {
       this.loading = true;
       // TODO: 替换为实际的执行科室汇总API

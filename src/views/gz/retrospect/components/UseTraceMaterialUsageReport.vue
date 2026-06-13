@@ -51,6 +51,7 @@
 
 <script>
 import { listMaterialUsageReport } from "@/api/gz/traceability";
+import { exportMaterialUsageReportTable } from "../retrospectExport";
 
 export default {
   name: "UseTraceMaterialUsageReport",
@@ -127,6 +128,22 @@ export default {
         beginDate: this.queryParams.materialDate,
         endDate: this.queryParams.warehouseDate
       };
+    },
+    async exportTable() {
+      this.loading = true;
+      try {
+        const result = await exportMaterialUsageReportTable(this, this.queryParams, {
+          buildApiQuery: () => this.buildApiQuery(),
+          applyRowEditCache: (rows) => this.applyRowEditCache(rows)
+        });
+        this.$modal.msgSuccess(`导出成功，共 ${result.rowCount} 条`);
+      } catch (e) {
+        const msg = (e && e.message) ? e.message : '导出失败，请稍后重试';
+        this.$modal.msgError(msg);
+        throw e;
+      } finally {
+        this.loading = false;
+      }
     },
     getList() {
       this.loading = true;

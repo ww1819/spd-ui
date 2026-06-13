@@ -280,25 +280,21 @@ export default {
       this.single = selection.length !== 1;
       this.multiple = !selection.length;
     },
-    handleExport() {
-      if (this.activeName === 'usageReport') {
-        this.download('gz/traceability/usageReport/export', this.buildUsageReportQuery(), `高值耗材使用情况报表_${new Date().getTime()}.xlsx`);
+    async handleExport() {
+      const refMap = {
+        detail: 'detailTable',
+        execDept: 'execDeptTable',
+        applyDept: 'applyDeptTable',
+        supplier: 'supplierTable',
+        usageReport: 'usageReportTable'
+      };
+      const refName = refMap[this.activeName];
+      const ref = refName && this.$refs[refName];
+      if (!ref || typeof ref.exportTable !== 'function') {
+        this.$modal.msgError('当前页签不支持导出');
         return;
       }
-      this.download('gz/retrospect/export', {
-        ...this.queryParams
-      }, `retrospect_${new Date().getTime()}.xlsx`);
-    },
-    buildUsageReportQuery() {
-      return {
-        materialId: this.queryParams.materialId,
-        materialName: this.queryParams.materialName,
-        supplierId: this.queryParams.supplierId,
-        batchNo: this.queryParams.batchNo,
-        materialNo: this.queryParams.materialNo,
-        beginDate: this.queryParams.materialDate,
-        endDate: this.queryParams.warehouseDate
-      };
+      await ref.exportTable();
     }
   }
 };
