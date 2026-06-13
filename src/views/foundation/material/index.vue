@@ -429,9 +429,19 @@
         </template>
       </el-table-column>
       <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="300" fixed="right">
+      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="360" fixed="right">
         <template slot-scope="scope">
           <div class="material-row-actions">
+            <el-button
+              v-if="isZqTcmTenant"
+              size="medium"
+              type="text"
+              class="material-row-action-btn"
+              :loading="hisSyncLoadingId === scope.row.id"
+              :disabled="hisSyncLoadingId != null && hisSyncLoadingId !== scope.row.id"
+              @click="handleHisSyncMaterial(scope.row)"
+              v-hasPermi="['foundation:material:edit']"
+            >HIS同步</el-button>
             <el-button
               size="medium"
               type="text"
@@ -1583,6 +1593,7 @@ import { pinyin } from 'pinyin-pro'
 import { getToken } from "@/utils/auth";
 import { sanitizeUdiNo } from '@/utils/udi';
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
+import { syncMsunHisMaterialSingle } from '@/api/foundation/msunHisSync';
 
 export default {
   name: "Material",
@@ -1826,6 +1837,8 @@ export default {
         { label: '低值', value: '2' }
       ],
       syncGzToChargeItemLoading: false,
+      /** 枣强 HIS 单条耗材同步中的行 id */
+      hisSyncLoadingId: null,
       chargeItemDialog: {
         visible: false,
         loading: false,
@@ -2385,6 +2398,25 @@ export default {
       // 衡水三院按库房分类生成编码：新增时先等待选择库房分类
       this.form.code = this.isHsThirdTenant ? '' : await this.generateCode();
       this.activeTab = 'form'; // 默认显示表单视图
+    },
+    /** 枣强：单条从众阳 HIS 同步耗材档案 */
+    handleHisSyncMaterial(row) {
+      const id = row && row.id;
+      if (!id) {
+        this.$modal.msgWarning('未选择产品档案');
+        return;
+      }
+      if (!row.hisId) {
+        this.$modal.msgWarning('该产品档案未维护 HIS系统ID，无法同步');
+        return;
+      }
+      this.hisSyncLoadingId = id;
+      syncMsunHisMaterialSingle(id).then(res => {
+        this.$modal.msgSuccess((res && res.msg) || 'HIS同步完成');
+        this.getList();
+      }).catch(() => {}).finally(() => {
+        this.hisSyncLoadingId = null;
+      });
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
