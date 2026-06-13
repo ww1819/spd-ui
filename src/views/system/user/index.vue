@@ -754,7 +754,7 @@ export default {
       authMenuCheckAll: false,
       authMenuIndeterminate: false,
       authExistingMenuIds: [],
-      authMenuParentChildLinked: false,
+      authMenuParentChildLinked: true,
       // 表单参数
       form: {},
       defaultProps: {

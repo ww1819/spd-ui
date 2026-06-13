@@ -47,7 +47,7 @@ export default {
     /** 打开弹窗时已有的菜单 ID（锁定展示，不随本次勾选变化） */
     existingMenuIds: { type: Array, default: () => [] },
     /** 开启后勾选父级自动勾选子孙，勾选子级自动勾选父级；关闭则仅勾选当前节点 */
-    parentChildLinked: { type: Boolean, default: false },
+    parentChildLinked: { type: Boolean, default: true },
     /** 树加载后把「已有权限」同步勾选到「本次选择」，避免误以为只需勾新增项 */
     autoPreselectExisting: { type: Boolean, default: true },
     showHint: { type: Boolean, default: true },

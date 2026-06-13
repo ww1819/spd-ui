@@ -198,7 +198,7 @@ export default {
       periodLogList: [],
       menuOptions: [],
       menuExpand: false,
-      menuParentChildLinked: false,
+      menuParentChildLinked: true,
       menuExistingIds: [],
       menuSelectedIds: [],
       menuForm: { customerId: '', customerName: '' },
