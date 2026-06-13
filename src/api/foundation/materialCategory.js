@@ -9,6 +9,15 @@ export function listMaterialCategory(query) {
   })
 }
 
+// 查询所有耗材分类（下拉等低敏感度场景，仅需登录）
+export function listMaterialCategoryAll(query) {
+  return request({
+    url: '/foundation/materialCategory/listAll',
+    method: 'get',
+    params: query
+  })
+}
+
 // 查询耗材分类维护详细
 export function getMaterialCategory(materialCategoryId) {
   return request({

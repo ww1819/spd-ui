@@ -317,7 +317,7 @@ export default {
       authMenuIndeterminate: false,
       /** 打开授权时已有的菜单 ID（锁定展示） */
       authExistingMenuIds: [],
-      authMenuParentChildLinked: false,
+      authMenuParentChildLinked: true,
       // 菜单选项
       menuOptions: [],
       // 仓库选项

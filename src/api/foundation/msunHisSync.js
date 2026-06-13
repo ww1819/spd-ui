@@ -8,3 +8,11 @@ export function syncMsunHisMaster(syncType, probeParams) {
     data: probeParams || {}
   })
 }
+
+/** 单条耗材档案从众阳 HIS 同步 */
+export function syncMsunHisMaterialSingle(materialId) {
+  return request({
+    url: '/foundation/msunHis/sync/materials/single/' + materialId,
+    method: 'post'
+  })
+}
