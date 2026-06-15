@@ -18,6 +18,14 @@ export function listWarehouseAll(userId) {
   })
 }
 
+/** 结算仓库下拉（不按用户仓库权限过滤，仅 is_settlement_warehouse=1） */
+export function listSettlementWarehousePick() {
+  return request({
+    url: '/foundation/warehouse/settlementPick',
+    method: 'get'
+  })
+}
+
 // 查询仓库详细
 export function getWarehouse(id) {
   return request({
