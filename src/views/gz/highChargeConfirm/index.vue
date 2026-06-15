@@ -64,7 +64,11 @@
             <span :class="confirmStatusClass(scope.row.confirmStatus)">{{ confirmStatusText(scope.row.confirmStatus) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="核销时间" prop="consumeAuditTime" width="160" show-overflow-tooltip />
+        <el-table-column label="核销时间" prop="consumeAuditTime" width="165" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateTimeCell(scope.row.consumeAuditTime) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="科室" prop="departmentName" min-width="120" show-overflow-tooltip />
         <el-table-column label="患者姓名" prop="patientName" width="100" show-overflow-tooltip />
         <el-table-column label="住院/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
@@ -219,6 +223,10 @@ export default {
     formatDateCell(v) {
       if (!v) return '--'
       return this.parseTime(v, '{y}-{m}-{d}')
+    },
+    formatDateTimeCell(v) {
+      if (!v) return '--'
+      return this.parseTime(v, '{y}-{m}-{d} {h}:{i}:{s}')
     },
     loadDeptOptions() {
       const uid = this.$store.getters.userId
