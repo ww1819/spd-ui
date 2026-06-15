@@ -118,7 +118,7 @@
       <p>已选 <strong>{{ selectedRows.length }}</strong> 条明细，合计数量 <strong>{{ selectedTotalQty }}</strong>，合计金额 <strong>{{ selectedTotalAmt }}</strong></p>
       <el-form label-width="100px" size="small">
         <el-form-item label="仓库" required>
-          <el-select v-model="confirmWarehouseId" placeholder="请选择仓库（不含高值仓）" filterable style="width:100%">
+          <el-select v-model="confirmWarehouseId" placeholder="请选择结算仓库" filterable style="width:100%">
             <el-option v-for="w in warehouseOptions" :key="w.id" :label="w.name" :value="w.id" />
           </el-select>
         </el-form-item>
@@ -145,7 +145,7 @@
 
 <script>
 import { listdepartAll } from '@/api/foundation/depart'
-import { listWarehouse } from '@/api/foundation/warehouse'
+import { listSettlementWarehousePick } from '@/api/foundation/warehouse'
 import { listHighChargeConfirm, confirmHighChargeConsume } from '@/api/gz/highChargeConfirm'
 
 function pad2(n) {
@@ -237,8 +237,9 @@ export default {
       })
     },
     loadWarehouseOptions() {
-      listWarehouse({ pageNum: 1, pageSize: 500 }).then(res => {
-        this.warehouseOptions = (res.rows || []).filter(w => w && w.id != null && w.warehouseType !== '高值')
+      listSettlementWarehousePick().then(res => {
+        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
+        this.warehouseOptions = list.filter(w => w && w.id != null)
       })
     },
     toQueryDayStart(s) {
