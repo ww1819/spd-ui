@@ -166,14 +166,6 @@ export default {
         : String(Number(amt).toFixed(2));
     }
   },
-  watch: {
-    queryParams: {
-      handler() {
-        this.getList();
-      },
-      deep: true
-    }
-  },
   created() {
     this.getList();
   },
@@ -200,9 +192,15 @@ export default {
     }
   },
   methods: {
+    buildListQuery() {
+      const params = { ...this.queryParams };
+      const kw = params.materialKeyword != null ? String(params.materialKeyword).trim() : '';
+      params.materialKeyword = kw || null;
+      return params;
+    },
     getList() {
       this.loading = true;
-      listGzDepInventory(this.queryParams).then(response => {
+      listGzDepInventory(this.buildListQuery()).then(response => {
         this.gzDepInventoryList = response.rows;
         this.total = response.total;
         this.loading = false;

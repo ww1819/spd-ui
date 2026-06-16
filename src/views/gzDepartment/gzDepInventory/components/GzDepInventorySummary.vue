@@ -91,14 +91,6 @@ export default {
       return '￥' + totalAmt.toFixed(2);
     }
   },
-  watch: {
-    queryParams: {
-      handler() {
-        this.getList();
-      },
-      deep: true
-    }
-  },
   created() {
     this.getList();
   },
@@ -125,14 +117,18 @@ export default {
     }
   },
   methods: {
+    buildListQuery() {
+      const params = { ...this.queryParams };
+      const kw = params.materialKeyword != null ? String(params.materialKeyword).trim() : '';
+      params.materialKeyword = kw || null;
+      params.pageNum = 1;
+      params.pageSize = 10000;
+      return params;
+    },
     getList() {
       this.loading = true;
       // 先获取所有明细数据，然后在前端进行汇总
-      const params = { ...this.queryParams };
-      params.pageNum = 1;
-      params.pageSize = 10000; // 获取所有数据用于汇总
-      
-      listGzDepInventory(params).then(response => {
+      listGzDepInventory(this.buildListQuery()).then(response => {
         const detailList = response.rows || [];
         // 按耗材、科室进行汇总
         const summaryMap = {};

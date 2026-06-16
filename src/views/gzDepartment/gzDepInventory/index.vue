@@ -10,10 +10,14 @@
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row class="query-row-left">
             <el-col :span="24">
-              <el-form-item prop="materialId" class="query-item-inline">
-                <div class="query-select-wrapper">
-                  <SelectMaterial v-model="queryParams.materialId" />
-                </div>
+              <el-form-item prop="materialKeyword" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.materialKeyword"
+                  placeholder="产品模糊查询（名称/编码/简码）"
+                  clearable
+                  class="query-select-wrapper"
+                  @keyup.enter.native="handleQuery"
+                />
               </el-form-item>
               <el-form-item prop="departmentId" class="query-item-inline">
                 <div class="query-select-wrapper">
@@ -99,6 +103,7 @@
                   v-model="queryParams.showZeroStock"
                   active-text="显示"
                   inactive-text="隐藏"
+                  @change="handleQuery"
                 />
               </el-form-item>
             </el-col>
@@ -148,7 +153,6 @@
 </template>
 
 <script>
-import SelectMaterial from "@/components/SelectModel/SelectMaterialDept";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import RightToolbar from "@/components/RightToolbar";
@@ -164,7 +168,6 @@ import {
 export default {
   name: "GzDepInventory",
   components: {
-    SelectMaterial,
     SelectDepartment,
     SelectSupplier,
     RightToolbar,
@@ -181,7 +184,7 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        materialId: null,
+        materialKeyword: null,
         departmentId: null,
         supplierId: null,
         batchNo: null,
@@ -238,9 +241,15 @@ export default {
       this.single = selection.length !== 1;
       this.multiple = !selection.length;
     },
+    buildListQuery() {
+      const params = { ...this.queryParams };
+      const kw = params.materialKeyword != null ? String(params.materialKeyword).trim() : '';
+      params.materialKeyword = kw || null;
+      return params;
+    },
     async handleExport() {
       const requestParams = {
-        ...this.queryParams,
+        ...this.buildListQuery(),
         pageNum: 1,
         pageSize: 10000,
       };
