@@ -2826,7 +2826,9 @@ export async function exportConsumeRankingStyledXlsx(options) {
     '总数量',
     '总金额',
     '占比',
-    '生产厂家/供应商',
+    '生产厂家',
+    '供应商',
+    '财务分类',
   ];
   const numericCols = [7, 8, 9];
   return exportInventoryQueryStyledXlsx({
@@ -2852,9 +2854,9 @@ export async function exportConsumeRankingStyledXlsx(options) {
       Number(row.totalQty || 0),
       Number(row.totalAmt || 0),
       row.percentage != null && row.percentage !== '' ? `${row.percentage}%` : '',
-      row.factoryName || row.supplierName
-        ? `${row.factoryName || '--'}/${row.supplierName || '--'}`
-        : '',
+      row.factoryName || '',
+      row.supplierName || '',
+      row.financeCategoryName || '',
     ],
     fileName,
   });

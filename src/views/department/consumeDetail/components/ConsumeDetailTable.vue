@@ -81,8 +81,6 @@
       <el-table
         v-loading="loading"
         :data="consumeDetailList"
-        show-summary
-        :summary-method="getTotalSummaries"
         height="60vh"
         border
         stripe
@@ -229,27 +227,6 @@ export default {
     this.getList();
   },
   methods: {
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill("");
-      let totalQty = 0;
-      let totalAmt = 0;
-      for (let i = 0; i < (data || []).length; i++) {
-        const item = data[i] || {};
-        totalQty += Number(item.qty || 0);
-        totalAmt += Number(item.amt || 0);
-      }
-      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-      columns.forEach((column, index) => {
-        if (column.property === "qty") {
-          sums[index] = totalQty.toFixed(2);
-        } else if (column.property === "amt") {
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-        }
-      });
-      sums[0] = "合计";
-      return sums;
-    },
     getList() {
       this.loading = true;
       listConsumeDetail(this.queryParams)
@@ -441,23 +418,10 @@ export default {
 }
 
 .table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 32px;
   overflow-x: auto !important;
   overflow-y: auto !important;
   scrollbar-width: thin;
   scrollbar-color: #a0a0a0 #e8e8e8;
-}
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
-  background: #fff;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
-  background: #fff;
 }
 
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
@@ -495,14 +459,6 @@ export default {
 
 .table-container ::v-deep .el-table thead th.el-table__cell > .cell {
   white-space: nowrap;
-  line-height: 23px;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell > .cell,
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell > .cell {
-  white-space: nowrap;
-  word-break: normal;
-  overflow: visible;
   line-height: 23px;
 }
 </style>

@@ -58,8 +58,6 @@
       <el-table
         v-loading="loading"
         :data="consumeRankingList"
-        show-summary
-        :summary-method="getTotalSummaries"
         height="60vh"
         border
         stripe
@@ -69,7 +67,7 @@
             {{ scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="80" show-overflow-tooltip resizable />
+        <el-table-column label="耗材编码" align="center" prop="materialCode" width="110" min-width="110" show-overflow-tooltip resizable />
         <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable />
         <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="100" show-overflow-tooltip resizable />
         <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="100" show-overflow-tooltip resizable />
@@ -80,7 +78,7 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="总数量" align="center" prop="totalQty" width="80" show-overflow-tooltip resizable />
+        <el-table-column label="总数量" align="center" prop="totalQty" width="100" min-width="100" show-overflow-tooltip resizable />
         <el-table-column label="总金额" align="center" prop="totalAmt" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.totalAmt">{{ scope.row.totalAmt | formatCurrency }}</span>
@@ -93,14 +91,9 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="生产厂家/供应商" align="center" width="200" min-width="200" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span v-if="scope.row.factoryName || scope.row.supplierName">
-              {{ scope.row.factoryName || "--" }}/{{ scope.row.supplierName || "--" }}
-            </span>
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
+        <el-table-column label="生产厂家" align="center" prop="factoryName" width="160" min-width="160" show-overflow-tooltip resizable />
+        <el-table-column label="供应商" align="center" prop="supplierName" width="160" min-width="160" show-overflow-tooltip resizable />
+        <el-table-column label="财务分类" align="center" prop="financeCategoryName" width="120" min-width="120" show-overflow-tooltip resizable />
       </el-table>
     </div>
 
@@ -172,27 +165,6 @@ export default {
     this.getList();
   },
   methods: {
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill("");
-      let totalQty = 0;
-      let totalAmt = 0;
-      for (let i = 0; i < (data || []).length; i++) {
-        const item = data[i] || {};
-        totalQty += Number(item.totalQty || 0);
-        totalAmt += Number(item.totalAmt || 0);
-      }
-      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-      columns.forEach((column, index) => {
-        if (column.property === "totalQty") {
-          sums[index] = totalQty.toFixed(2);
-        } else if (column.property === "totalAmt") {
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-        }
-      });
-      sums[0] = "合计";
-      return sums;
-    },
     getList() {
       this.loading = true;
       listConsumeRanking(this.queryParams)
@@ -378,23 +350,10 @@ export default {
 }
 
 .table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 32px;
   overflow-x: auto !important;
   overflow-y: auto !important;
   scrollbar-width: thin;
   scrollbar-color: #a0a0a0 #e8e8e8;
-}
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
-  background: #fff;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
-  background: #fff;
 }
 
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
@@ -432,14 +391,6 @@ export default {
 
 .table-container ::v-deep .el-table thead th.el-table__cell > .cell {
   white-space: nowrap;
-  line-height: 23px;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell > .cell,
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell > .cell {
-  white-space: nowrap;
-  word-break: normal;
-  overflow: visible;
   line-height: 23px;
 }
 </style>
