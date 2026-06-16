@@ -105,6 +105,11 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库类型" align="center" prop="warehouseType" width="100" show-overflow-tooltip />
+      <el-table-column label="结算仓库" align="center" width="90" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ scope.row.isSettlementWarehouse === 1 ? '是' : '否' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="创建日期" align="center" prop="createTime" width="100" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
@@ -200,6 +205,17 @@
                   <el-option label="出库结算" value="2"></el-option>
                   <el-option label="消耗结算" value="3"></el-option>
                 </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="结算仓库" prop="isSettlementWarehouse">
+                <el-switch
+                  v-model="form.isSettlementWarehouse"
+                  :active-value="1"
+                  :inactive-value="0"
+                  active-text="是"
+                  inactive-text="否"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="6">
@@ -355,6 +371,7 @@ export default {
         warehouseStatus: null,
         warehouseType: '低值',
         settlementType: null,
+        isSettlementWarehouse: 0,
         remark: null,
         hisId: null,
       };
@@ -384,6 +401,7 @@ export default {
       this.isDisabled = false;
       this.form.warehouseStatus = '2';
       this.form.warehouseType = '低值';
+      this.form.isSettlementWarehouse = 0;
       this.title = "添加仓库";
     },
     /** 修改按钮操作 */
