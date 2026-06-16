@@ -63,8 +63,6 @@
       <el-table
         v-loading="loading"
         :data="reportList"
-        show-summary
-        :summary-method="getSummaries"
         height="60vh"
         border
         stripe
@@ -125,7 +123,7 @@
 </template>
 
 <script>
-import { listDingdan } from "@/api/caigou/dingdan";
+import { listDingdan, getDingdan } from "@/api/caigou/dingdan";
 import { exportPurchaseOrderSummaryReportStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
@@ -209,9 +207,52 @@ export default {
       this.loading = true;
       listDingdan(this.buildListParams())
         .then(response => {
-          const summaryList = this.processSummaryData(response.rows || []);
-          this.fullSummaryList = summaryList;
-          this.total = summaryList.length;
+          const orderList = response.rows || [];
+          if (!orderList.length) {
+            this.fullSummaryList = [];
+            this.reportList = [];
+            this.total = 0;
+            this.loading = false;
+            return;
+          }
+          this.fetchOrderDetails(orderList);
+        })
+        .catch(() => {
+          this.fullSummaryList = [];
+          this.reportList = [];
+          this.total = 0;
+          this.loading = false;
+        });
+    },
+    fetchOrderDetails(orderList) {
+      const detailPromises = orderList.map(order => {
+        if (!order.id) {
+          return Promise.resolve({
+            ...order,
+            purchaseOrderEntryList: []
+          });
+        }
+        return getDingdan(order.id)
+          .then(response => {
+            const entryList =
+              response.data?.purchaseOrderEntryList || response.data?.entryList || [];
+            return {
+              ...order,
+              purchaseOrderEntryList: entryList
+            };
+          })
+          .catch(() => ({
+            ...order,
+            purchaseOrderEntryList: []
+          }));
+      });
+
+      Promise.all(detailPromises)
+        .then(ordersWithDetails => {
+          const summaryList = this.processSummaryData(ordersWithDetails);
+          const filteredList = this.filterSummaryData(summaryList);
+          this.fullSummaryList = filteredList;
+          this.total = filteredList.length;
           this.applyPagination();
           this.loading = false;
         })
@@ -222,6 +263,16 @@ export default {
           this.loading = false;
         });
     },
+    filterSummaryData(summaryList) {
+      if (!this.queryParams.materialId) {
+        return summaryList;
+      }
+      const queryMaterialId = String(this.queryParams.materialId);
+      return (summaryList || []).filter(item => {
+        const itemMaterialId = item.materialId != null ? String(item.materialId) : "";
+        return itemMaterialId === queryMaterialId;
+      });
+    },
     processSummaryData(orderList) {
       const summaryMap = new Map();
       if (orderList && orderList.length > 0) {
@@ -229,24 +280,36 @@ export default {
           const entryList = order.purchaseOrderEntryList || order.entryList || [];
           if (entryList && entryList.length > 0) {
             entryList.forEach(entry => {
-              const key = `${entry.materialId || ""}_${order.warehouseId || ""}`;
+              const material = entry.material || {};
+              const materialId = entry.materialId || material.id || "";
+              const supplierId = order.supplierId || "";
+              const key = `${materialId}_${order.warehouseId || ""}_${supplierId}`;
               if (!summaryMap.has(key)) {
                 summaryMap.set(key, {
-                  materialCode: entry.materialCode || (entry.material && entry.material.code) || "",
-                  materialName: entry.materialName || (entry.material && entry.material.name) || "",
-                  materialSpec: entry.materialSpec || (entry.material && entry.material.speci) || "",
+                  materialId,
+                  materialCode: entry.materialCode || material.code || "",
+                  materialName: entry.materialName || material.name || "",
+                  materialSpec: entry.materialSpec || entry.speci || material.speci || "",
                   materialUnit:
-                    entry.materialUnit || (entry.material && entry.material.fdUnit && entry.material.fdUnit.unitName) || "",
-                  supplierName: order.supplierName || (order.supplier && order.supplier.name) || "",
-                  warehouseName: order.warehouseName || (order.warehouse && order.warehouse.name) || "",
+                    entry.materialUnit ||
+                    (material.fdUnit && material.fdUnit.unitName) ||
+                    "",
+                  supplierName:
+                    order.supplierName || (order.supplier && order.supplier.name) || "",
+                  warehouseName:
+                    order.warehouseName || (order.warehouse && order.warehouse.name) || "",
                   unitPrice: entry.unitPrice || 0,
                   totalQty: 0,
                   totalAmt: 0
                 });
               }
               const item = summaryMap.get(key);
-              item.totalQty += Number(entry.orderQty || 0);
-              item.totalAmt += Number(entry.totalAmount || 0);
+              const orderQty = Number(entry.orderQty != null ? entry.orderQty : 0);
+              const totalAmount = Number(
+                entry.totalAmount != null ? entry.totalAmount : orderQty * Number(entry.unitPrice || 0)
+              );
+              item.totalQty += orderQty;
+              item.totalAmt += totalAmount;
             });
           }
         });
@@ -275,27 +338,6 @@ export default {
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
       this.handleQuery();
-    },
-    getSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill("");
-      let totalQty = 0;
-      let totalAmt = 0;
-      for (let i = 0; i < (data || []).length; i++) {
-        const item = data[i] || {};
-        totalQty += Number(item.totalQty || 0);
-        totalAmt += Number(item.totalAmt || 0);
-      }
-      columns.forEach((column, index) => {
-        if (column.property === "totalQty") {
-          sums[index] = totalQty.toFixed(2);
-        } else if (column.property === "totalAmt") {
-          const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-        }
-      });
-      sums[0] = "合计";
-      return sums;
     },
     /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
     async handleExport() {
@@ -437,25 +479,10 @@ export default {
 }
 
 .table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 32px;
   overflow-x: auto !important;
   overflow-y: auto !important;
   scrollbar-width: thin;
   scrollbar-color: #a0a0a0 #e8e8e8;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
-  background: #fff;
-}
-
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
-  background: #fff;
 }
 
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
@@ -482,14 +509,6 @@ export default {
 
 .table-container ::v-deep .el-table thead th.el-table__cell > .cell {
   white-space: nowrap;
-  line-height: 23px;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell > .cell,
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell > .cell {
-  white-space: nowrap;
-  word-break: normal;
-  overflow: visible;
   line-height: 23px;
 }
 </style>

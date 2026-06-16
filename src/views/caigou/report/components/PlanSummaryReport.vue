@@ -135,7 +135,7 @@
 </template>
 
 <script>
-import { listPurchasePlan } from "@/api/caigou/purchasePlan";
+import { listPurchasePlan, getPurchasePlan } from "@/api/caigou/purchasePlan";
 import { exportPurchasePlanSummaryReportStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
@@ -221,9 +221,52 @@ export default {
       this.loading = true;
       listPurchasePlan(this.buildListParams())
         .then(response => {
-          const summaryList = this.processSummaryData(response.rows || []);
-          this.fullSummaryList = summaryList;
-          this.total = summaryList.length;
+          const planList = response.rows || [];
+          if (!planList.length) {
+            this.fullSummaryList = [];
+            this.reportList = [];
+            this.total = 0;
+            this.loading = false;
+            return;
+          }
+          this.fetchPlanDetails(planList);
+        })
+        .catch(() => {
+          this.fullSummaryList = [];
+          this.reportList = [];
+          this.total = 0;
+          this.loading = false;
+        });
+    },
+    fetchPlanDetails(planList) {
+      const detailPromises = planList.map(plan => {
+        if (!plan.id) {
+          return Promise.resolve({
+            ...plan,
+            purchasePlanEntryList: []
+          });
+        }
+        return getPurchasePlan(plan.id)
+          .then(response => {
+            const entryList =
+              response.data?.purchasePlanEntryList || response.data?.entryList || [];
+            return {
+              ...plan,
+              purchasePlanEntryList: entryList
+            };
+          })
+          .catch(() => ({
+            ...plan,
+            purchasePlanEntryList: []
+          }));
+      });
+
+      Promise.all(detailPromises)
+        .then(plansWithDetails => {
+          const summaryList = this.processSummaryData(plansWithDetails);
+          const filteredList = this.filterSummaryData(summaryList);
+          this.fullSummaryList = filteredList;
+          this.total = filteredList.length;
           this.applyPagination();
           this.loading = false;
         })
@@ -234,6 +277,16 @@ export default {
           this.loading = false;
         });
     },
+    filterSummaryData(summaryList) {
+      if (!this.queryParams.materialId) {
+        return summaryList;
+      }
+      const queryMaterialId = String(this.queryParams.materialId);
+      return (summaryList || []).filter(item => {
+        const itemMaterialId = item.materialId != null ? String(item.materialId) : "";
+        return itemMaterialId === queryMaterialId;
+      });
+    },
     processSummaryData(planList) {
       const summaryMap = new Map();
       if (planList && planList.length > 0) {
@@ -241,19 +294,25 @@ export default {
           const entryList = plan.purchasePlanEntryList || plan.entryList || [];
           if (entryList && entryList.length > 0) {
             entryList.forEach(entry => {
-              const key = `${entry.materialId || ""}_${plan.warehouseId || ""}`;
+              const material = entry.material || {};
+              const materialId = entry.materialId || material.id || "";
+              const supplierId = entry.supplierId || plan.supplierId || "";
+              const key = `${materialId}_${plan.warehouseId || ""}_${supplierId}`;
               if (!summaryMap.has(key)) {
                 summaryMap.set(key, {
-                  materialCode: entry.materialCode || (entry.material && entry.material.code) || "",
-                  materialName: entry.materialName || (entry.material && entry.material.name) || "",
-                  materialSpec: entry.speci || entry.materialSpec || (entry.material && entry.material.speci) || "",
+                  materialId,
+                  materialCode: entry.materialCode || material.code || "",
+                  materialName: entry.materialName || material.name || "",
+                  materialSpec: entry.speci || entry.materialSpec || material.speci || "",
                   materialUnit:
                     entry.materialUnit ||
-                    (entry.material && entry.material.fdUnit && entry.material.fdUnit.unitName) ||
+                    (material.fdUnit && material.fdUnit.unitName) ||
                     "",
                   supplierName:
                     entry.supplierName ||
-                    (entry.material && entry.material.supplier && entry.material.supplier.name) ||
+                    (plan.supplier && plan.supplier.name) ||
+                    plan.supplierName ||
+                    (material.supplier && material.supplier.name) ||
                     "",
                   warehouseName: plan.warehouseName || (plan.warehouse && plan.warehouse.name) || "",
                   unitPrice: entry.price || 0,
@@ -262,8 +321,10 @@ export default {
                 });
               }
               const item = summaryMap.get(key);
-              item.totalQty += Number(entry.qty || 0);
-              item.totalAmt += Number(entry.amt || 0);
+              const qty = Number(entry.qty != null ? entry.qty : entry.applyQty || 0);
+              const amt = Number(entry.amt != null ? entry.amt : qty * Number(entry.price || 0));
+              item.totalQty += qty;
+              item.totalAmt += amt;
             });
           }
         });
