@@ -298,40 +298,40 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </el-row>
 
-      <el-table ref="materialTable" v-loading="loading" :data="materialList" :row-key="getMaterialRowKey" :row-class-name="materialIndex" @selection-change="handleSelectionChange" height="60vh" border stripe>
+      <el-table ref="materialTable" v-loading="loading" :data="materialList" :row-key="getMaterialRowKey" :row-class-name="materialIndex" @selection-change="handleSelectionChange" @sort-change="handleSortChange" height="60vh" border stripe>
       <el-table-column type="selection" width="55" align="center" fixed="left" :reserve-selection="true" />
       <el-table-column type="index" label="序号" align="center" width="80" key="index" v-if="columns[0].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="code" width="100" key="code" v-if="columns[1].visible" resizable class-name="material-top-cell cell-pad-tight">
+      <el-table-column label="耗材编码" align="center" prop="code" width="100" key="code" v-if="columns[1].visible" sortable="custom" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-top-left" :title="scope.row.code || ''">{{ scope.row.code }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="耗材名称" align="center" prop="name" width="240" key="name" v-if="columns[2].visible" resizable class-name="material-name-col cell-pad-tight">
+      <el-table-column label="耗材名称" align="center" prop="name" width="240" key="name" v-if="columns[2].visible" sortable="custom" resizable class-name="material-name-col cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-body-left" :title="scope.row.name || ''">{{ scope.row.name }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="规格" align="center" prop="speci" width="200" key="speci" v-if="columns[3].visible" resizable class-name="material-speci-col cell-pad-tight">
+      <el-table-column label="规格" align="center" prop="speci" width="200" key="speci" v-if="columns[3].visible" sortable="custom" resizable class-name="material-speci-col cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-body-left" :title="scope.row.speci || ''">{{ scope.row.speci }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" show-overflow-tooltip resizable class-name="cell-pad-tight"/>
-      <el-table-column label="价格" align="center" prop="price" width="130" key="price" v-if="columns[5].visible" resizable class-name="material-price-cell cell-pad-tight">
+      <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" sortable="custom" show-overflow-tooltip resizable class-name="cell-pad-tight"/>
+      <el-table-column label="价格" align="center" prop="price" width="130" key="price" v-if="columns[5].visible" sortable="custom" resizable class-name="material-price-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.price) || '')">{{ formatPrice4(scope.row.price) }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="220" key="factory" v-if="columns[7].visible" resizable class-name="material-factory-col material-top-cell">
+      <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="220" key="factory" v-if="columns[7].visible" sortable="custom" resizable class-name="material-factory-col material-top-cell">
         <template slot-scope="scope">
           <div class="material-cell-body-left" :title="(scope.row.fdFactory && scope.row.fdFactory.factoryName) ? scope.row.fdFactory.factoryName : ''">{{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '' }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="240" key="supplier" v-if="columns[8].visible" resizable class-name="material-supplier-col material-top-cell">
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="240" key="supplier" v-if="columns[8].visible" sortable="custom" resizable class-name="material-supplier-col material-top-cell">
         <template slot-scope="scope">
           <div class="material-cell-body-left" :title="(scope.row.supplier && scope.row.supplier.name) ? scope.row.supplier.name : ''">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '' }}</div>
         </template>
@@ -1692,6 +1692,8 @@ export default {
         nameSearch: undefined, // 用于名称/编码/首字母综合搜索
         beginDate: undefined,
         endDate: undefined,
+        orderByColumn: 'm.updateTime',
+        isAsc: 'desc',
       },
       // 表单参数
       form: {},
@@ -1956,6 +1958,28 @@ export default {
       return merged;
     },
 
+    /** 表头排序：服务端分页排序 */
+    handleSortChange({ prop, order }) {
+      const columnMap = {
+        code: 'm.code',
+        name: 'm.name',
+        speci: 'm.speci',
+        price: 'm.price',
+        'fdUnit.unitName': 'u.unitName',
+        'fdFactory.factoryName': 'f.factoryName',
+        'supplier.name': 's.name',
+      };
+      if (!order) {
+        this.queryParams.orderByColumn = 'm.updateTime';
+        this.queryParams.isAsc = 'desc';
+      } else {
+        this.queryParams.orderByColumn = columnMap[prop] || prop;
+        this.queryParams.isAsc = order;
+      }
+      this.queryParams.pageNum = 1;
+      this.clearCrossPageSelection();
+      this.getList();
+    },
     /** 查询耗材产品列表 */
     getList() {
       this.loading = true;
@@ -2150,6 +2174,12 @@ export default {
       // 清空派生搜索参数，避免残留影响查询/导出
       this.queryParams.code = undefined;
       this.queryParams.nameSearch = undefined;
+      this.queryParams.orderByColumn = 'm.updateTime';
+      this.queryParams.isAsc = 'desc';
+      const table = this.$refs.materialTable;
+      if (table && typeof table.clearSort === 'function') {
+        table.clearSort();
+      }
       this.handleQuery();
     },
     handleMaterialImport(mode) {
