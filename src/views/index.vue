@@ -1,6 +1,6 @@
 <template>
   <div class="app-container home">
-    <el-row :gutter="24">
+    <el-row :gutter="homeLayoutGap" class="home-dashboard-row">
       <el-col :xs="24" :sm="24" :md="12" :lg="8" >
         <el-card class="update-log" style="height:42vh;">
           <div slot="header" class="clearfix">
@@ -22,46 +22,69 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="24" :md="12" :lg="8">
-        <el-card class="update-log" style="height: 87vh;">
+      <el-col :xs="24" :sm="24" :md="12" :lg="9">
+        <el-card class="update-log home-today-stats-card">
           <div slot="header" class="clearfix">
             <span>今日统计</span>
           </div>
+          <div class="body home-today-stats-body">
+            <el-row class="home-today-stats-row">
+              <el-col :span="8">入库单</el-col>
+              <el-col :span="8">出库单</el-col>
+              <el-col :span="8">退库单</el-col>
+            </el-row>
+            <el-row class="home-today-stats-row tj-number">
+              <el-col :span="8">{{ formatStatQty(todayStats.inCount) }}</el-col>
+              <el-col :span="8">{{ formatStatQty(todayStats.outCount) }}</el-col>
+              <el-col :span="8">{{ formatStatQty(todayStats.returnCount) }}</el-col>
+            </el-row>
+            <el-row class="home-today-stats-row">
+              <el-col :span="8">申领单</el-col>
+              <el-col :span="8">申购单</el-col>
+              <el-col :span="8">库存数量</el-col>
+            </el-row>
+            <el-row class="home-today-stats-row tj-number">
+              <el-col :span="8">{{ formatStatQty(todayStats.applyCount) }}</el-col>
+              <el-col :span="8">{{ formatStatQty(todayStats.purchaseCount) }}</el-col>
+              <el-col :span="8">{{ formatStatQty(todayStats.inventoryQty) }}</el-col>
+            </el-row>
+          </div>
+        </el-card>
+
+        <el-card class="update-log home-proportion-card home-outbound-only-card">
+          <div slot="header" class="clearfix">
+            <span>出库统计占比</span>
+            <span class="home-chart-subtitle">当月财务分类出退库</span>
+          </div>
           <div class="body">
-            <el-row>
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">入库单</el-col>
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">出库单</el-col>
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">退库单</el-col>
-            </el-row>
-            <el-row class="tj-number">
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">{{ formatStatQty(todayStats.inCount) }}</el-col>
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">{{ formatStatQty(todayStats.outCount) }}</el-col>
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">{{ formatStatQty(todayStats.returnCount) }}</el-col>
-            </el-row>
-            <el-row>
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">申领单</el-col>
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">申购单</el-col>
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">库存数量</el-col>
-            </el-row>
-            <el-row class="tj-number">
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">{{ formatStatQty(todayStats.applyCount) }}</el-col>
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">{{ formatStatQty(todayStats.purchaseCount) }}</el-col>
-              <el-col :xs="24" :sm="24" :md="12" :lg="8">{{ formatStatQty(todayStats.inventoryQty) }}</el-col>
-            </el-row>
+            <div v-if="outChartEmptyHint" class="home-chart-empty home-proportion-empty">{{ outChartEmptyHint }}</div>
+            <div v-show="!outChartEmptyHint" ref="outChartRef" class="echart home-proportion-pie"></div>
           </div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="24" :md="12" :lg="8">
-        <el-card class="update-log" style="height: 30vh;">
+      <el-col :xs="24" :sm="24" :md="12" :lg="7" class="home-right-col">
+        <div class="home-right-top-block">
+          <el-card class="update-log home-attachment-card">
+            <div slot="header" class="clearfix">
+              <span>常用附件下载</span>
+              <a class="home-card-more-link">更多>></a>
+            </div>
+          </el-card>
+          <el-card class="update-log home-memo-card">
+            <div slot="header" class="clearfix">
+              <span>备忘录</span>
+              <a class="home-card-more-link">更多>></a>
+            </div>
+          </el-card>
+        </div>
+        <el-card class="update-log home-proportion-card home-inbound-card">
           <div slot="header" class="clearfix">
-            <span>备忘录</span>
-            <a style="margin-left: 80%;font-size: 10px;">更多>></a>
+            <span>入库统计占比</span>
+            <span class="home-chart-subtitle">当月财务分类入退货</span>
           </div>
-        </el-card>
-        <el-card class="update-log" style="height:55vh;margin-top: 2vh;">
-          <div slot="header" class="clearfix">
-            <span>常用附件下载</span>
-            <a style="margin-left: 72%;font-size: 10px;">更多>></a>
+          <div class="body">
+            <div v-if="inChartEmptyHint" class="home-chart-empty home-proportion-empty">{{ inChartEmptyHint }}</div>
+            <div v-show="!inChartEmptyHint" ref="inChartRef" class="echart home-proportion-pie"></div>
           </div>
         </el-card>
       </el-col>
@@ -72,24 +95,22 @@
   a:hover {
     color: blue;
   }
-  .tj-number{
-    font-size: 2rem;
-    color: blue;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
 </style>
 <script>
   import * as echarts from "echarts";
   import {
     fetchHomeWarehousePurchase,
     fetchHomeDepartmentUsage,
-    fetchHomeTodayStats
+    fetchHomeTodayStats,
+    fetchHomeOutboundFinanceCategoryProportion,
+    fetchHomeInboundFinanceCategoryProportion
   } from "@/api/dashboard/home";
 export default {
   name: "Index",
   data() {
     return {
+      /** 与 .home 内边距一致：列间距 = 顶部留白 = 左右卡片间距 */
+      homeLayoutGap: 16,
       // 版本号
       version: "3.8.6",
       CKtitle: [],
@@ -119,7 +140,19 @@ export default {
       /** 仓库采购图无仓库或无系列时的提示 */
       ckChartEmptyHint: "",
       /** 科室使用图加载失败或无数据时的提示 */
-      ksChartEmptyHint: ""
+      ksChartEmptyHint: "",
+      outChartInstance: null,
+      outResizeHandler: null,
+      _outInitRetries: 0,
+      outChartSlices: [],
+      /** 出库占比图无数据或加载失败时的提示 */
+      outChartEmptyHint: "",
+      inChartInstance: null,
+      inResizeHandler: null,
+      _inInitRetries: 0,
+      inChartSlices: [],
+      /** 入库占比图无数据或加载失败时的提示 */
+      inChartEmptyHint: ""
     };
   },mounted() {
     const { day } = this.buildTodayRange();
@@ -138,6 +171,8 @@ export default {
     this.loadWarehousePurchaseChart();
     this.loadDepartmentUsageChart();
     this.loadTodayStats();
+    this.loadOutboundProportionChart();
+    this.loadInboundProportionChart();
   },
   beforeDestroy() {
     if (this.ckResizeHandler) {
@@ -153,6 +188,20 @@ export default {
     if (this.ksChartInstance) {
       this.ksChartInstance.dispose();
       this.ksChartInstance = null;
+    }
+    if (this.outResizeHandler) {
+      window.removeEventListener("resize", this.outResizeHandler);
+    }
+    if (this.outChartInstance) {
+      this.outChartInstance.dispose();
+      this.outChartInstance = null;
+    }
+    if (this.inResizeHandler) {
+      window.removeEventListener("resize", this.inResizeHandler);
+    }
+    if (this.inChartInstance) {
+      this.inChartInstance.dispose();
+      this.inChartInstance = null;
     }
   },
   methods: {
@@ -404,6 +453,161 @@ export default {
       const num = Number(val || 0);
       return Number.isFinite(num) ? num.toLocaleString("zh-CN", { maximumFractionDigits: 2 }) : "0";
     },
+    buildFinancePieSlices(rows, emptyLabel) {
+      const list = (rows || [])
+        .map((item) => {
+          const name = item.financeCategoryName || item.finance_category_name || "未分类";
+          const amt = Math.abs(parseFloat(item.totalAmt || item.total_amt || 0) || 0);
+          return { name, value: amt };
+        })
+        .filter((item) => item.value > 0)
+        .sort((a, b) => b.value - a.value);
+      const topN = 6;
+      const top = list.slice(0, topN);
+      const otherSum = list.slice(topN).reduce((sum, item) => sum + item.value, 0);
+      if (otherSum > 0) {
+        top.push({ name: "其他", value: otherSum });
+      }
+      if (!top.length) {
+        return [{ name: emptyLabel, value: 0 }];
+      }
+      return top;
+    },
+    async loadOutboundProportionChart() {
+      this.outChartEmptyHint = "";
+      try {
+        const res = await fetchHomeOutboundFinanceCategoryProportion();
+        const rows = (res && res.data) || [];
+        this.outChartSlices = this.buildFinancePieSlices(rows, "暂无当月出库");
+        if (this.outChartSlices.length === 1 && this.outChartSlices[0].name === "暂无当月出库") {
+          this.outChartEmptyHint = "暂无当月财务分类出库数据";
+          this.initFinancePieChart("out");
+          return;
+        }
+        this.$nextTick(() => this.initFinancePieChart("out"));
+      } catch (e) {
+        console.error("加载出库统计占比失败", e);
+        this.outChartSlices = [];
+        this.outChartEmptyHint = "加载出库统计占比失败，请刷新页面重试";
+        this.initFinancePieChart("out");
+      }
+    },
+    async loadInboundProportionChart() {
+      this.inChartEmptyHint = "";
+      try {
+        const res = await fetchHomeInboundFinanceCategoryProportion();
+        const rows = (res && res.data) || [];
+        this.inChartSlices = this.buildFinancePieSlices(rows, "暂无当月入库");
+        if (this.inChartSlices.length === 1 && this.inChartSlices[0].name === "暂无当月入库") {
+          this.inChartEmptyHint = "暂无当月财务分类入库数据";
+          this.initFinancePieChart("in");
+          return;
+        }
+        this.$nextTick(() => this.initFinancePieChart("in"));
+      } catch (e) {
+        console.error("加载入库统计占比失败", e);
+        this.inChartSlices = [];
+        this.inChartEmptyHint = "加载入库统计占比失败，请刷新页面重试";
+        this.initFinancePieChart("in");
+      }
+    },
+    initFinancePieChart(kind) {
+      const isOut = kind === "out";
+      const emptyHint = isOut ? this.outChartEmptyHint : this.inChartEmptyHint;
+      const slices = isOut ? this.outChartSlices : this.inChartSlices;
+      const refName = isOut ? "outChartRef" : "inChartRef";
+      const instanceKey = isOut ? "outChartInstance" : "inChartInstance";
+      const resizeKey = isOut ? "outResizeHandler" : "inResizeHandler";
+      const retryKey = isOut ? "_outInitRetries" : "_inInitRetries";
+      const seriesName = isOut ? "出库统计占比" : "入库统计占比";
+
+      if (emptyHint) {
+        if (this[instanceKey]) {
+          this[instanceKey].dispose();
+          this[instanceKey] = null;
+        }
+        this[retryKey] = 0;
+        return;
+      }
+      if (!Array.isArray(slices) || !slices.length) {
+        return;
+      }
+      const el = this.$refs[refName];
+      if (!el || typeof el.getBoundingClientRect !== "function") {
+        if (this[retryKey] < 10) {
+          this[retryKey] += 1;
+          this.$nextTick(() => this.initFinancePieChart(kind));
+        }
+        return;
+      }
+      this[retryKey] = 0;
+      try {
+        const colors = ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"];
+        const seriesData = slices.map((s) => ({
+          name: s.name,
+          value: s.value > 0 ? s.value : 1,
+          realAmt: s.value > 0 ? s.value : 0
+        }));
+        const option = {
+          color: colors,
+          tooltip: {
+            trigger: "item",
+            formatter: (p) => {
+              const d = p.data || {};
+              const amt = d.realAmt != null ? Number(d.realAmt) : Number(p.value);
+              const money = Number.isFinite(amt) ? "¥" + amt.toFixed(2) : "¥0.00";
+              return `${p.name}<br/>金额：${money}（${p.percent}%）`;
+            }
+          },
+          legend: {
+            type: "scroll",
+            orient: "horizontal",
+            bottom: 0,
+            left: "center",
+            data: seriesData.map((d) => d.name),
+            textStyle: { fontSize: 11 }
+          },
+          series: [
+            {
+              name: seriesName,
+              type: "pie",
+              radius: ["32%", "56%"],
+              center: ["50%", "42%"],
+              avoidLabelOverlap: true,
+              label: {
+                fontSize: 10,
+                formatter: "{d}%"
+              },
+              data: seriesData
+            }
+          ]
+        };
+        if (!this[instanceKey]) {
+          this[instanceKey] = echarts.init(el);
+        }
+        this[instanceKey].setOption(option, true);
+        this.$nextTick(() => {
+          if (this[instanceKey]) {
+            this[instanceKey].resize();
+          }
+        });
+        if (!this[resizeKey]) {
+          this[resizeKey] = () => {
+            if (this[instanceKey]) {
+              this[instanceKey].resize();
+            }
+          };
+          window.addEventListener("resize", this[resizeKey]);
+        }
+      } catch (err) {
+        console.error("initFinancePieChart", kind, err);
+        if (isOut) {
+          this.outChartEmptyHint = "出库统计占比图表渲染失败，请刷新页面重试";
+        } else {
+          this.inChartEmptyHint = "入库统计占比图表渲染失败，请刷新页面重试";
+        }
+      }
+    },
     async loadTodayStats() {
       const { day } = this.buildTodayRange();
       try {
@@ -613,9 +817,10 @@ export default {
 
 <style scoped lang="scss">
 .home {
-  /* 首页：顶栏/标签下沿与首卡顶部、侧栏与首卡左侧留白一致（略收紧顶距） */
+  /* 四边留白与 el-row :gutter 相同，列与列之间视觉间距 = 顶部间距 */
   margin-top: 0;
-  padding: 10px 20px 20px 10px;
+  padding: 16px;
+  box-sizing: border-box;
 
   blockquote {
     padding: 10px 20px;
@@ -684,6 +889,110 @@ export default {
     font-size: 13px;
     min-height: 28vh;
     line-height: 1.6;
+  }
+
+  .home-today-stats-card {
+    height: 42vh;
+
+    ::v-deep .el-card__body {
+      height: calc(42vh - 52px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+  }
+
+  .home-today-stats-body {
+    width: 100%;
+    text-align: center;
+  }
+
+  .home-today-stats-row {
+    text-align: center;
+
+    .el-col {
+      text-align: center;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    &.tj-number .el-col {
+      font-size: 1.85rem;
+      color: #0000ff;
+      font-weight: 500;
+      line-height: 1.35;
+      padding-top: 0.45rem;
+      padding-bottom: 0.45rem;
+    }
+  }
+
+  .home-proportion-row {
+    margin-top: 2vh;
+  }
+
+  .home-outbound-only-card {
+    margin-top: 2vh;
+  }
+
+  .home-proportion-card {
+    height: 43vh;
+  }
+
+  .home-proportion-pie {
+    width: 100%;
+    height: 34vh;
+  }
+
+  .home-proportion-empty {
+    min-height: 20vh;
+  }
+
+  .home-right-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 与中间列「今日统计」同高 42vh，备忘录底边与今日统计底边对齐 */
+  .home-right-top-block {
+    height: 42vh;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .home-attachment-card {
+    height: 16vh;
+    flex-shrink: 0;
+  }
+
+  .home-memo-card {
+    margin-top: 2vh;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* 与中间列「出库统计占比」同高、同间距，顶边在同一水平线 */
+  .home-inbound-card {
+    margin-top: 2vh;
+    flex-shrink: 0;
+  }
+
+  .home-card-more-link {
+    float: right;
+    font-size: 10px;
+  }
+
+  .home-chart-subtitle {
+    float: right;
+    font-size: 11px;
+    color: #909399;
+    font-weight: normal;
+    max-width: 55%;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 </style>
