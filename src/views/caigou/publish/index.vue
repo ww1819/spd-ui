@@ -42,31 +42,31 @@
 
       <el-row :gutter="16" class="query-row-second">
         <el-col :span="24">
-          <el-form-item prop="dateType" class="query-item-inline">
-            <el-select v-model="queryParams.dateType" placeholder="时间类型" style="width: 120px">
-              <el-option label="制单时间" value="createTime" />
-              <el-option label="审核时间" value="auditDate" />
-              <el-option label="发布时间" value="pushTime" />
-            </el-select>
-          </el-form-item>
-          <el-form-item style="display: flex; align-items: center;">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
-              clearable
-              style="width: 180px; margin-right: 8px;"
-            />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
+          <el-form-item prop="dateType" class="query-item-inline query-date-range-form-item">
+            <div class="query-date-range-inner">
+              <el-select v-model="queryParams.dateType" placeholder="时间类型" style="width: 120px; margin-right: 8px;">
+                <el-option label="制单时间" value="createTime" />
+                <el-option label="审核时间" value="auditDate" />
+                <el-option label="发布时间" value="pushTime" />
+              </el-select>
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                style="width: 180px;"
+              />
+              <span class="query-date-range-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                style="width: 180px;"
+              />
+            </div>
           </el-form-item>
         </el-col>
       </el-row>
@@ -1324,18 +1324,32 @@ export default {
   width: 150px;
 }
 
-.app-container.caigou-publish-page > .el-form.query-form .query-row-second {
-  position: relative;
+.app-container.caigou-publish-page > .el-form.query-form .query-row-second .el-col {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
-.app-container.caigou-publish-page > .el-form.query-form .query-row-second .el-form-item {
-  white-space: nowrap;
+.app-container.caigou-publish-page > .el-form.query-form .query-row-second .query-date-range-form-item {
+  margin-bottom: 0;
 }
 
-.app-container.caigou-publish-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
+.app-container.caigou-publish-page > .el-form.query-form .query-date-range-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-date-range-inner {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.app-container.caigou-publish-page > .el-form.query-form .query-date-range-sep {
+  margin: 0 8px;
+  flex-shrink: 0;
 }
 
 .app-container.caigou-publish-page > .el-row.button-row-compact {

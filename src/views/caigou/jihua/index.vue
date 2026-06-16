@@ -55,7 +55,7 @@
           <el-form-item prop="planStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.planStatus" placeholder="单据状态"
                        clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.plan_status"
+              <el-option v-for="dict in planStatusFilterOptions"
                          :key="dict.value"
                          :label="dict.label"
                          :value="dict.value"
@@ -484,6 +484,11 @@ export default {
       const hasEntries = (this.stkIoBillEntryList || []).length > 0;
       const hasRef = this.form.referenceBillNo && String(this.form.referenceBillNo).trim();
       return hasEntries || !!hasRef;
+    },
+    /** 采购计划状态筛选项：仅未提交、待审核、已审核 */
+    planStatusFilterOptions() {
+      const allowed = ['0', '1', '2'];
+      return (this.dict.type.plan_status || []).filter((d) => allowed.includes(String(d.value)));
     },
   },
   watch: {

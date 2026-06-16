@@ -49,7 +49,7 @@
           <el-form-item prop="planStatus" class="query-item-status-aligned">
             <el-select v-model="queryParams.planStatus" placeholder="单据状态"
                        clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.plan_status"
+              <el-option v-for="dict in planStatusFilterOptions"
                          :key="dict.value"
                          :label="dict.label"
                          :value="dict.value"
@@ -123,21 +123,19 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="制单人" align="center" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          {{ getCreatorName(scope.row) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="制单时间" align="center" prop="planDate" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.createTime ? parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') : (scope.row.planDate ? parseTime(scope.row.planDate, '{y}-{m}-{d} {h}:{i}:{s}') : '--') }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="单据状态" align="center" prop="planStatus" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.plan_status" :value="scope.row.planStatus"/>
-        </template>
-      </el-table-column>
-
-      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="审核人" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          {{ getAuditorName(scope.row) }}
         </template>
       </el-table-column>
       <el-table-column label="审核意见" align="center" width="200" show-overflow-tooltip resizable>
@@ -148,14 +146,15 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="制单人" align="center" show-overflow-tooltip resizable>
+      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          {{ getCreatorName(scope.row) }}
+          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="制单时间" align="center" prop="planDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核人" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.createTime ? parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') : (scope.row.planDate ? parseTime(scope.row.planDate, '{y}-{m}-{d} {h}:{i}:{s}') : '--') }}</span>
+          {{ getAuditorName(scope.row) }}
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
@@ -539,6 +538,11 @@ export default {
     },
     planEntryModeDisplay() {
       return (this.form.planEntryMode === '2') ? '按申购单明细拆分' : '按产品档案汇总';
+    },
+    /** 采购计划状态筛选项：仅未提交、待审核、已审核 */
+    planStatusFilterOptions() {
+      const allowed = ['0', '1', '2'];
+      return (this.dict.type.plan_status || []).filter((d) => allowed.includes(String(d.value)));
     }
   },
   methods: {
@@ -616,27 +620,22 @@ export default {
       });
     },
     getStatDate(){
-      let myDate = new Date();
-      let month = myDate.getMonth() + 1;
-      month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
-      return statDate;
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      return this.formatQueryDate(d);
     },
     getEndDate(){
-      let myDate = new Date();
-      let month = myDate.getMonth() + 1;
-      month = month < 10 ? "0" + month : month;
-      let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
-      return endDate;
+      return this.formatQueryDate(new Date());
+    },
+    formatQueryDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
     },
     //当天日期
     getBillDate(){
-      let now = new Date();
-      let year = now.getFullYear();
-      let month = now.getMonth() + 1;
-      let day = now.getDate();
-      return year + "-" + month + "-" + day;
+      return this.formatQueryDate(new Date());
     },
     // 取消按钮
     cancel() {
@@ -682,8 +681,8 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      this.queryParams.beginDate = null;
-      this.queryParams.endDate = null;
+      this.queryParams.beginDate = this.getStatDate();
+      this.queryParams.endDate = this.getEndDate();
       this.queryParams.planStatus = '1'; // 重置后保持未提交状态（已提交但未审核）
       this.handleQuery();
     },
