@@ -117,6 +117,17 @@
                   <span>{{ scope.row.pendingOutboundTotal != null ? Number(scope.row.pendingOutboundTotal).toFixed(2) : '—' }}</span>
                 </template>
               </el-table-column>
+              <el-table-column label="领用人" align="center" prop="auditPersonName" min-width="90" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ scope.row.auditPersonName || '—' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="审核日期" align="center" prop="sourceAuditDate" width="110" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span v-if="scope.row.sourceAuditDate">{{ parseTime(scope.row.sourceAuditDate, '{y}-{m}-{d}') }}</span>
+                  <span v-else>—</span>
+                </template>
+              </el-table-column>
               <el-table-column label="作废状态" align="center" min-width="110" show-overflow-tooltip resizable>
                 <template slot-scope="scope">
                   <span>{{ formatVoidStatus(scope.row) }}</span>
@@ -454,7 +465,7 @@ export default {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden;
   padding: 6px 20px 16px;
   background: #fff;
 }
@@ -464,6 +475,7 @@ export default {
   margin-right: -20px;
   width: calc(100% + 40px);
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .material-filter-detail-table {
@@ -474,7 +486,7 @@ export default {
 }
 
 ::v-deep .material-filter-detail-table .el-table__body-wrapper {
-  overflow-x: auto;
+  overflow-x: auto !important;
   overflow-y: auto;
 }
 
