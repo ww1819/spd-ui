@@ -24,6 +24,9 @@
         <el-form-item label="收费编码">
           <el-input v-model="detailQuery.chargeItemId" placeholder="编码/项目名称/首字母" clearable style="width:180px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
+        <el-form-item label="收费明细主键">
+          <el-input v-model="detailQuery.hisChargeId" placeholder="HIS收费明细主键模糊" clearable style="width:180px" @keyup.enter.native="handleDetailQuery" />
+        </el-form-item>
         <el-form-item label="科室">
           <el-select
             v-model="detailQuery.departmentId"
@@ -99,6 +102,11 @@
         </template>
       </el-table-column>
       <el-table-column label="收费编码" prop="chargeItemId" width="120" show-overflow-tooltip />
+      <el-table-column label="收费明细主键" prop="hisChargeId" width="140" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ scope.row.hisChargeId || scope.row.hisInpatientChargeId || scope.row.hisOutpatientChargeId || '' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="项目名称" prop="itemName" min-width="160" show-overflow-tooltip />
       <el-table-column label="规格" prop="specModel" width="100" show-overflow-tooltip />
       <el-table-column label="数量" prop="quantity" width="90" align="center" />
@@ -296,6 +304,7 @@ export default {
         patientName: undefined,
         visitNo: undefined,
         chargeItemId: undefined,
+        hisChargeId: undefined,
         departmentId: undefined,
         processed: undefined,
         valueLevel: '1',
@@ -688,6 +697,7 @@ export default {
         patientName: undefined,
         visitNo: undefined,
         chargeItemId: undefined,
+        hisChargeId: undefined,
         departmentId: undefined,
         processed: undefined,
         valueLevel: '1',
@@ -706,16 +716,28 @@ export default {
       }
       if (this.detailVisitType === 'IN') {
         q.inpatientNo = q.visitNo
+        q.hisInpatientChargeId = q.hisChargeId
         delete q.visitNo
+        delete q.hisChargeId
         listHighChargeInpatientMirror(q).then(res => {
-          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'INPATIENT' }))
+          this.detailList = (res.rows || []).map(r => ({
+            ...r,
+            visitType: 'INPATIENT',
+            hisChargeId: r.hisInpatientChargeId
+          }))
           this.detailTotal = res.total || 0
         }).finally(done)
       } else if (this.detailVisitType === 'OUT') {
         q.outpatientNo = q.visitNo
+        q.hisOutpatientChargeId = q.hisChargeId
         delete q.visitNo
+        delete q.hisChargeId
         listHighChargeOutpatientMirror(q).then(res => {
-          this.detailList = (res.rows || []).map(r => ({ ...r, visitType: 'OUTPATIENT' }))
+          this.detailList = (res.rows || []).map(r => ({
+            ...r,
+            visitType: 'OUTPATIENT',
+            hisChargeId: r.hisOutpatientChargeId
+          }))
           this.detailTotal = res.total || 0
         }).finally(done)
       } else {
