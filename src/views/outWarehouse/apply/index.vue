@@ -284,6 +284,11 @@
               <el-input v-model="form.refBillNo" :disabled="true" placeholder="引用单号" />
             </el-form-item>
           </el-col>
+          <el-col :span="4">
+            <el-form-item label="领用人" prop="recipientName">
+              <el-input v-model="form.recipientName" :disabled="true" placeholder="领用人" />
+            </el-form-item>
+          </el-col>
         </el-row>
         </div>
 
@@ -1319,6 +1324,9 @@ export default {
           this.$set(this.form, 'docRefList', Array.isArray(response.data.docRefList) ? response.data.docRefList : []);
           this.form.billStatus = '1';
           this.form.billType = '201';
+          if (!this.form.recipientName && row.auditPersonName) {
+            this.$set(this.form, 'recipientName', row.auditPersonName);
+          }
           this.DialogDApplyComponentShow = false;
           this.$nextTick(() => this.refreshEntryStockQty());
         }
@@ -1392,6 +1400,7 @@ export default {
         id: null,
         billNo: null,
         refBillNo: null,
+        recipientName: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,
