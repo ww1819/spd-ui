@@ -35,6 +35,26 @@ export function fetchHomeTodayStats(day) {
   })
 }
 
+/** 首页出库统计占比：当月出退库按财务分类汇总金额（仅需登录） */
+export function fetchHomeOutboundFinanceCategoryProportion() {
+  return request({
+    url: '/dashboard/home/outboundFinanceCategoryProportion',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
+
+/** 首页入库统计占比：当月入退货按财务分类汇总金额（仅需登录） */
+export function fetchHomeInboundFinanceCategoryProportion() {
+  return request({
+    url: '/dashboard/home/inboundFinanceCategoryProportion',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
+
 /** 仓库提醒：待审核申领单、待审核申购单单据数（聚合，仅需登录） */
 export function fetchHomeWarehouseReminderCounts() {
   return request({

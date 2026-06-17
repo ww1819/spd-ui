@@ -46,7 +46,7 @@
             <el-form-item label="采购计划状态" prop="planStatus" class="query-item-inline query-item-wide-label">
               <el-select v-model="queryParams.planStatus" placeholder="全部" clearable class="query-select-status">
                 <el-option
-                  v-for="dict in dict.type.plan_status"
+                  v-for="dict in planStatusFilterOptions"
                   :key="dict.value"
                   :label="dict.label"
                   :value="dict.value"
@@ -179,6 +179,10 @@ export default {
       const amt = (this.reportList || []).reduce((s, r) => s + Number(r.totalAmt || 0), 0);
       const fmt = this.$options.filters && this.$options.filters.formatCurrency;
       return fmt ? fmt(amt) : String(Number(amt).toFixed(2));
+    },
+    planStatusFilterOptions() {
+      const allowed = ['0', '1', '2'];
+      return (this.dict.type.plan_status || []).filter((d) => allowed.includes(String(d.value)));
     }
   },
   created() {

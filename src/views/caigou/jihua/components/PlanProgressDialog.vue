@@ -25,10 +25,9 @@
 
 <script>
 const DEFAULT_STEPS = [
-  { title: '创建计划', description: '采购计划已创建，等待提交审核', status: 'wait' },
-  { title: '提交审核', description: '采购计划已提交，等待审核', status: 'wait' },
-  { title: '审核通过', description: '采购计划已审核通过，等待执行', status: 'wait' },
-  { title: '执行完成', description: '采购计划已执行完成', status: 'wait' }
+  { title: '未提交', description: '采购计划已创建，等待提交审核', status: 'wait' },
+  { title: '待审核', description: '采购计划已提交，等待审核', status: 'wait' },
+  { title: '已审核', description: '采购计划已审核通过', status: 'wait' }
 ]
 
 export default {
@@ -50,11 +49,10 @@ export default {
     },
     activeStep() {
       if (!this.row) return 0
-      const status = this.row.planStatus
+      const status = String(this.row.planStatus)
       if (status === '0') return 0
       if (status === '1') return 1
-      if (status === '2') return 2
-      if (status === '3') return 3
+      if (status === '2' || status === '3') return 2
       return 0
     }
   },
@@ -68,19 +66,14 @@ export default {
   methods: {
     applyPlanStatus(planStatus) {
       this.steps = DEFAULT_STEPS.map(s => ({ ...s, status: 'wait' }))
-      if (planStatus === '0') {
-        this.steps[0].status = 'finish'
-      } else if (planStatus === '1') {
+      const status = String(planStatus)
+      if (status === '0') {
+        this.steps[0].status = 'process'
+      } else if (status === '1') {
         this.steps[0].status = 'finish'
         this.steps[1].status = 'process'
-      } else if (planStatus === '2') {
-        this.steps[0].status = 'finish'
-        this.steps[1].status = 'finish'
-        this.steps[2].status = 'process'
-      } else if (planStatus === '3') {
+      } else if (status === '2' || status === '3') {
         this.steps.forEach(step => { step.status = 'finish' })
-      } else if (planStatus === '4') {
-        this.steps.forEach(step => { step.status = 'error' })
       }
     }
   }
