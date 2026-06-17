@@ -151,13 +151,14 @@
               <div class="modal-title">{{ title }}</div>
               <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-row>
+            <el-form ref="form" :model="form" :rules="rules" label-width="80px" size="small" class="stocktaking-modal-form">
+        <div class="form-fields-container stocktaking-modal-head-form">
+        <el-row :gutter="8" class="stocktaking-head-row">
           <el-col :span="4">
-            <el-form-item label="单据状态" prop="stockStatus" label-width="100px">
+            <el-form-item label="单据状态" prop="stockStatus" label-width="88px">
               <el-select v-model="form.stockStatus" placeholder="请选择单据状态"
                          :disabled="true"
-                         clearable style="width: 150px">
+                         clearable style="width: 100%">
                 <el-option v-for="dict in dict.type.biz_status"
                            :key="dict.value"
                            :label="dict.label"
@@ -167,41 +168,37 @@
             </el-form-item>
           </el-col>
           <el-col :span="4">
-            <el-form-item label="供应商" prop="supplerId" label-width="100px">
+            <el-form-item label="供应商" prop="supplerId" label-width="72px">
               <SelectSupplier v-model="form.supplerId" :disabled="true" />
             </el-form-item>
-
           </el-col>
           <el-col :span="4">
-            <el-form-item label="制单日期" prop="stockDate" label-width="100px">
+            <el-form-item label="制单日期" prop="stockDate" label-width="88px">
               <el-date-picker clearable
                               v-model="form.stockDate"
                               type="date"
                               :disabled="true"
                               value-format="yyyy-MM-dd"
-                              style="width: 150px"
+                              style="width: 100%"
                               placeholder="请选择制单日期">
               </el-date-picker>
             </el-form-item>
           </el-col>
           <el-col :span="4">
-            <el-form-item label="仓库" prop="warehouseId" label-width="100px">
+            <el-form-item label="仓库" prop="warehouseId" label-width="72px">
               <SelectWarehouse v-model="form.warehouseId" :disabled="!action || warehouseLockedByAction"/>
             </el-form-item>
-
           </el-col>
-
           <el-col :span="4">
-            <el-form-item label="操作人" prop="createBy" label-width="100px">
+            <el-form-item label="操作人" prop="createBy" label-width="72px">
               <el-input v-model="form.createBy" :disabled="true" />
             </el-form-item>
           </el-col>
-
           <el-col :span="4">
-            <el-form-item label="盘点类型" prop="stockType" label-width="100px">
+            <el-form-item label="盘点类型" prop="stockType" label-width="88px">
               <el-select v-model="form.stockType" placeholder="请选择盘点类型"
                          :disabled="true"
-                         clearable style="width: 150px">
+                         clearable style="width: 100%">
                 <el-option v-for="dict in dict.type.bill_type"
                            :key="dict.value"
                            :label="dict.label"
@@ -211,6 +208,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+        </div>
 
         <el-row :gutter="10" class="mb8 wh-stocktaking-detail-toolbar">
           <el-col :span="24">
@@ -245,7 +243,7 @@
           </el-col>
         </el-row>
 
-        <el-table :data="filteredWhStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" height="calc(42vh)" border>
+        <el-table :data="filteredWhStocktakingEntryList" v-loading="detailLoading" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" height="calc(42vh)" border>
           <el-table-column v-if="detailEditable" type="selection" width="50" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
           <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
@@ -771,6 +769,8 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      /** 盘点弹窗明细加载中 */
+      detailLoading: false,
       //是否显示
       action: true,
       submitLoading: false,
@@ -1717,6 +1717,7 @@ export default {
       this.detailFilterCounted = null;
       this.checkedStkIoStocktakingEntry = [];
       this.stocktakingAutoSaveEnabled = false;
+      this.detailLoading = false;
       this.resetForm("form");
     },
     //数量改变事件
@@ -1744,6 +1745,67 @@ export default {
       this.resetForm("queryForm");
       this.handleQuery();
     },
+    prefillStocktakingFormFromRow(row) {
+      if (!row) return;
+      Object.assign(this.form, {
+        id: row.id,
+        stockNo: row.stockNo,
+        stockDate: row.stockDate,
+        warehouseId: row.warehouseId,
+        departmentId: row.departmentId,
+        stockStatus: row.stockStatus,
+        stockType: row.stockType != null ? row.stockType : "501",
+        supplerId: row.supplerId,
+        createBy: row.createBy,
+        updateTime: row.updateTime,
+        createTime: row.createTime,
+        remark: row.remark,
+        totalAmount: row.totalAmount,
+        profitAmount: row.profitAmount,
+        warehouse: row.warehouse,
+        department: row.department,
+        auditAdjustsInventory: row.auditAdjustsInventory
+      });
+    },
+    loadStocktakingDetail(id, row, options = {}) {
+      const { title, action, onReady } = options;
+      this.reset();
+      this.prefillStocktakingFormFromRow(row);
+      this.title = title;
+      this.action = action;
+      this.open = true;
+      this.detailLoading = true;
+      this.stkIoStocktakingEntryList = [];
+      this.detailFilterCounted = options.detailFilterCounted != null ? options.detailFilterCounted : null;
+      this.checkedStkIoStocktakingEntry = [];
+      this.stocktakingAutoSaveEnabled = false;
+      return getStocktaking(id)
+        .then((response) => {
+          const data = response.data || {};
+          if (action && (data.stockStatus === 2 || data.stockStatus === "2")) {
+            this.$modal.msgWarning("已审核的盘点单不可修改");
+            this.open = false;
+            this.detailLoading = false;
+            return null;
+          }
+          this.form = data;
+          this.form.stockType = "501";
+          const entries = data.stkIoStocktakingEntryList || [];
+          return this.$nextTick().then(() => {
+            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(entries);
+            this.detailLoading = false;
+            if (typeof onReady === "function") {
+              onReady(data);
+            }
+            return data;
+          });
+        })
+        .catch(() => {
+          this.detailLoading = false;
+          this.open = false;
+          this.$modal.msgError("加载盘点单失败");
+        });
+    },
     // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id)
@@ -1765,22 +1827,14 @@ export default {
       this.stocktakingAutoSaveEnabled = true;
     },
     /** 查看按钮操作 */
-    handleView(row){
-
-      const id = row.id
-      getStocktaking(id).then(response => {
-        this.detailFilterCounted = null;
-        this.checkedStkIoStocktakingEntry = [];
-        this.form = response.data;
-        this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(response.data.stkIoStocktakingEntryList || []);
-        this.open = true;
-        this.action = false;
-        this.form.stockType = '501';
-        this.title = "查看盘点";
-        this.stocktakingAutoSaveEnabled = false;
-        this.hydrateWhEntryCurrentInventoryQty();
+    handleView(row) {
+      const id = row.id;
+      this.loadStocktakingDetail(id, row, {
+        title: "查看盘点",
+        action: false,
+        detailFilterCounted: null,
+        onReady: () => this.hydrateWhEntryCurrentInventoryQty()
       });
-
     },
     /** 审核按钮操作 */
     handleAudit(row) {
@@ -1873,26 +1927,12 @@ export default {
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
-      if (row && (row.stockStatus === 2 || row.stockStatus === '2')) {
-        this.$modal.msgWarning('已审核的盘点单不可修改');
+      if (row && (row.stockStatus === 2 || row.stockStatus === "2")) {
+        this.$modal.msgWarning("已审核的盘点单不可修改");
         return;
       }
-      this.reset();
-      const id = row.id || this.ids
-      getStocktaking(id).then(response => {
-        const data = response.data || {};
-        if (data.stockStatus === 2 || data.stockStatus === '2') {
-          this.$modal.msgWarning('已审核的盘点单不可修改');
-          return;
-        }
-        this.form = data;
-        this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
-        this.open = true;
-        this.title = "修改盘点";
-        this.form.stockType = '501';
-        this.action = true;
-        this.stocktakingAutoSaveEnabled = false;
-      });
+      const id = row.id || this.ids;
+      this.loadStocktakingDetail(id, row, { title: "修改盘点", action: true });
     },
     /** 提交按钮 */
     submitForm() {
@@ -2328,7 +2368,37 @@ export default {
 .local-modal-content .el-form {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 10px 16px 8px;
+}
+
+.local-modal-content .form-fields-container.stocktaking-modal-head-form {
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  box-shadow: 0 1px 6px 0 rgba(0, 0, 0, 0.04);
+  margin-bottom: 8px;
+  border: 1px solid #EBEEF5;
+}
+
+.local-modal-content .stocktaking-modal-head-form .stocktaking-head-row {
+  margin-bottom: 0 !important;
+}
+
+.local-modal-content .stocktaking-modal-head-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .stocktaking-modal-head-form .el-form-item__label {
+  line-height: 32px;
+  padding-right: 6px;
+}
+
+.local-modal-content .stocktaking-modal-head-form .el-form-item__content {
+  line-height: 32px;
+}
+
+.local-modal-content .stocktaking-modal-form .wh-stocktaking-detail-toolbar {
+  margin-bottom: 8px !important;
 }
 
 /* 弹窗动画效果 */
