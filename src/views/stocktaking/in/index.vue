@@ -1478,6 +1478,31 @@ export default {
         this.$modal.msgWarning('盘点单已有明细，请先删除后再进行盘点初始化');
         return;
       }
+      try {
+        const res = await listStocktaking({
+          warehouseId: this.form.warehouseId,
+          stockStatus: 1,
+          stockType: '501',
+          pageNum: 1,
+          pageSize: 50
+        });
+        const rows = (res && res.rows) || [];
+        const currentId = this.form && this.form.id != null ? String(this.form.id) : null;
+        const pending = rows.filter((r) => {
+          if (!r) return false;
+          if (currentId && r.id != null && String(r.id) === currentId) return false;
+          const s = r.stockStatus;
+          return s !== 2 && s !== '2';
+        });
+        if (pending.length > 0) {
+          const stockNo = pending[0].stockNo || String(pending[0].id || '');
+          this.$modal.msgWarning(`你有盘点单，单号（${stockNo}）未处理！请先处理。`);
+          return;
+        }
+      } catch (e) {
+        this.$modal.msgError('检查未审核盘点单失败，请稍后重试');
+        return;
+      }
       this.whInventoryInitLoading = true;
       try {
         const payload = {

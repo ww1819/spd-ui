@@ -123,7 +123,7 @@
       </el-table-column>
       <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ (scope.row.creater && scope.row.creater.nickName) || scope.row.createrName || scope.row.createBy || '--' }}</span>
+          <span>{{ (scope.row.creater && scope.row.creater.nickName) || scope.row.createUserNickName || scope.row.createrName || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="盈亏金额" align="center" prop="profitAmount" width="120" show-overflow-tooltip resizable>
@@ -222,34 +222,26 @@
               <div class="modal-title">{{ title }}</div>
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
+            <el-form ref="form" :model="form" :rules="rules" label-width="80px" size="small" class="modal-form-compact stocktaking-modal-head-form">
               <div class="form-fields-container">
                 <el-row :gutter="8">
                   <el-col :span="4">
-                    <el-form-item label="单据状态" prop="stockStatus">
-                      <el-select v-model="form.stockStatus" placeholder="请选择单据状态"
-                                 :disabled="true"
-                                 clearable>
-                        <el-option v-for="dict in dict.type.biz_status"
-                                   :key="dict.value"
-                                   :label="dict.label"
-                                   :value="dict.value"
-                        />
-                      </el-select>
+                    <el-form-item label="单据状态" prop="stockStatus" class="head-label-nowrap">
+                      <el-input :value="stockStatusLabel" :disabled="true" placeholder="单据状态" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="业务单号" prop="stockNo">
+                    <el-form-item label="业务单号" prop="stockNo" class="head-label-nowrap">
                       <el-input v-model="form.stockNo" placeholder="业务单号" :disabled="true" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="仓库" prop="warehouseId">
+                    <el-form-item label="仓库" prop="warehouseId" class="head-label-nowrap">
                       <SelectWarehouse v-model="form.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="制单日期" prop="stockDate">
+                    <el-form-item label="制单日期" prop="stockDate" class="head-label-nowrap">
                       <el-date-picker clearable
                                       v-model="form.stockDate"
                                       type="date"
@@ -262,8 +254,8 @@
                 </el-row>
                 <el-row :gutter="8">
                   <el-col :span="4">
-                    <el-form-item label="操作人" prop="createBy">
-                      <el-input v-model="form.createBy" :disabled="true" />
+                    <el-form-item label="制单人" prop="createBy" class="head-label-nowrap">
+                      <el-input :value="createrDisplayName" :disabled="true" placeholder="制单人" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -295,40 +287,35 @@
         </el-row>
 
         <div class="table-wrapper">
-        <el-table :data="pagedEntryList" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" :height="detailTableHeight" border show-summary :summary-method="getSummaries">
-          <el-table-column v-if="detailEditable" type="selection" width="50" align="center" resizable fixed="left" />
-          <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
+        <el-table class="stocktaking-detail-table" :data="stkIoStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" :height="detailTableHeight" border show-summary :summary-method="getSummaries">
+          <el-table-column v-if="detailEditable" type="selection" width="46" align="center" header-align="center" resizable fixed="left" />
+          <el-table-column label="序号" align="center" header-align="center" prop="index" width="52" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材编码" align="center" header-align="center" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="耗材名称" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="耗材名称" align="center" header-align="center" width="130" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.name) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="规格" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="规格" align="center" header-align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="型号" align="center" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
+          <el-table-column label="单位" align="center" header-align="center" width="56" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="账面数量" align="center" header-align="center" prop="qty" width="88" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.qty || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="盘点数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="盘点数量" align="center" header-align="center" prop="stockQty" width="96" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input
                 v-if="detailEditable"
@@ -343,79 +330,96 @@
               <span v-else>{{ scope.row.stockQty || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="价格" align="center" header-align="center" prop="price" width="80" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.price || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="盈亏数量" prop="profitQty" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="盈亏数量" align="center" header-align="center" prop="profitQty" width="88" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.profitQty || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="金额" align="center" header-align="center" prop="amt" width="88" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.amt || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="盘点金额" prop="stockAmount" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="盘点金额" align="center" header-align="center" prop="stockAmount" width="88" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.stockAmount || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="盈亏金额" prop="profitAmount" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="盈亏金额" align="center" header-align="center" prop="profitAmount" width="88" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.profitAmount || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="批次号" prop="batchNo" width="240" show-overflow-tooltip resizable>
+          <el-table-column label="生产日期" align="center" header-align="center" prop="beginTime" width="96" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.batchNo || '--' }}</span>
+              <span>{{ scope.row.beginTime ? parseTime(scope.row.beginTime, '{y}-{m}-{d}') : '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="第三方库存明细ID" prop="hisId" width="160" show-overflow-tooltip resizable>
+          <el-table-column label="有效期" align="center" header-align="center" prop="endTime" width="96" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.hisId || '--' }}</span>
+              <span>{{ scope.row.endTime ? parseTime(scope.row.endTime, '{y}-{m}-{d}') : '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="第三方批次号" prop="thirdPartyBatchNo" width="140" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.thirdPartyBatchNo || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
+          <el-table-column label="批号" align="center" header-align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-if="detailEditable" v-model="scope.row.batchNumber" label-width="200px" placeholder="批号" />
               <span v-else>{{ scope.row.batchNumber || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="生产厂家" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="生产厂家" align="center" header-align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="供应商" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="供应商" align="center" header-align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="计费" align="center" width="80" show-overflow-tooltip resizable>
+          <el-table-column label="型号" align="center" header-align="center" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>--</span>
+              <span>{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="注册证号" align="center" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="计费" align="center" header-align="center" width="56" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span v-if="scope.row.material && (scope.row.material.isBilling === '1' || scope.row.material.isBilling === 1 || scope.row.material.isBilling === true || scope.row.material.isBilling === 'true')">是</span>
+              <span v-else-if="scope.row.material && (scope.row.material.isBilling === '0' || scope.row.material.isBilling === 0 || scope.row.material.isBilling === '2' || scope.row.material.isBilling === false || scope.row.material.isBilling === 'false')">否</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="注册证号" align="center" header-align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
+          <el-table-column label="批次号" align="center" header-align="center" prop="batchNo" width="160" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.batchNo || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="第三方库存明细ID" align="center" header-align="center" prop="hisId" width="168" label-class-name="col-his-id-header" class-name="col-his-id" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.hisId || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="第三方批次号" align="center" header-align="center" prop="thirdPartyBatchNo" width="110" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.thirdPartyBatchNo || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="备注" align="center" header-align="center" prop="remark" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-if="detailEditable" v-model="scope.row.remark" placeholder="备注" />
               <span v-else>{{ scope.row.remark || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="detailEditable" label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
+          <el-table-column v-if="detailEditable" label="操作" align="center" header-align="center" class-name="small-padding fixed-width" width="72" fixed="right">
             <template slot-scope="scope">
               <el-button
                 size="small"
@@ -428,14 +432,6 @@
           </el-table-column>
         </el-table>
         </div>
-        <pagination
-          class="modal-entry-pagination"
-          :total="stkIoStocktakingEntryList.length"
-          :page.sync="entryPageNum"
-          :limit.sync="entryPageSize"
-          :hide-on-single-page="false"
-          @pagination="handleEntryPagination"
-        />
         </div>
             </el-form>
           </div>
@@ -682,8 +678,6 @@ export default {
       inList: [],
       // 盘点明细表格数据
       stkIoStocktakingEntryList: [],
-      entryPageNum: 1,
-      entryPageSize: 20,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -744,10 +738,26 @@ export default {
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
     },
-    pagedEntryList() {
-      const list = this.stkIoStocktakingEntryList || [];
-      const start = (this.entryPageNum - 1) * this.entryPageSize;
-      return list.slice(start, start + this.entryPageSize);
+    stockStatusLabel() {
+      const status = this.form && this.form.stockStatus;
+      if (status == null || status === '') {
+        return '';
+      }
+      const label = this.selectDictLabel(this.dict.type.biz_status, String(status));
+      return label || '';
+    },
+    createrDisplayName() {
+      const f = this.form || {};
+      if (f.createUserNickName) {
+        return f.createUserNickName;
+      }
+      if (f.creater && f.creater.nickName) {
+        return f.creater.nickName;
+      }
+      if (f.createrName) {
+        return f.createrName;
+      }
+      return this.$store.getters.nickName || this.$store.getters.name || '';
     },
     stocktakingHeadAudited() {
       const s = this.form && this.form.stockStatus;
@@ -764,19 +774,7 @@ export default {
       return list.every((p) => !p.error);
     }
   },
-  watch: {
-    'stkIoStocktakingEntryList.length'(len) {
-      const maxPage = Math.max(1, Math.ceil(len / this.entryPageSize) || 1);
-      if (this.entryPageNum > maxPage) {
-        this.entryPageNum = maxPage;
-      }
-    }
-  },
   methods: {
-    handleEntryPagination({ page, limit }) {
-      if (page != null) this.entryPageNum = page;
-      if (limit != null) this.entryPageSize = limit;
-    },
     /** 查询盘点列表 */
     getList() {
       this.loading = true;
@@ -1036,7 +1034,6 @@ export default {
         remark: null
       };
       this.stkIoStocktakingEntryList = [];
-      this.entryPageNum = 1;
       this.resetForm("form");
     },
     //盘点数量改变：盈亏数量 = 盘点(stockQty) − 账面(qty)；盘点金额 = 盘点×单价；盈亏金额 = 盈亏×单价
@@ -1144,8 +1141,9 @@ export default {
       this.title = "添加盘点";
       this.form.stockStatus = '1';
       this.form.stockType = '501';
-      // 制单人：与后端一致存用户ID（后端仍会强制覆盖，避免误传昵称）
+      // 制单人：后端 create_by 存用户ID，弹窗展示姓名
       this.form.createBy = this.$store.getters.userId != null ? String(this.$store.getters.userId) : '';
+      this.form.createUserNickName = this.$store.getters.nickName || this.$store.getters.name || '';
       this.form.stockDate = this.getBillDate();
       this.action = true;
     },
@@ -1348,8 +1346,7 @@ export default {
     },
     /** 盘点明细序号 */
     rowStkIoStocktakingEntryIndex({ row, rowIndex }) {
-      const base = (this.entryPageNum - 1) * this.entryPageSize;
-      row.index = base + rowIndex + 1;
+      row.index = rowIndex + 1;
     },
     /** 盘点明细添加按钮操作 */
     handleAddStkIoStocktakingEntry() {
@@ -1394,13 +1391,45 @@ export default {
         this.stkIoStocktakingEntryList.splice(idx, 1);
       }
     },
+    /** 盘点初始化前：同仓库是否存在其他未审核盘点单 */
+    async assertNoPendingWhStocktakingForInit() {
+      try {
+        const res = await listStocktaking({
+          warehouseId: this.form.warehouseId,
+          stockStatus: 1,
+          stockType: '501',
+          pageNum: 1,
+          pageSize: 50
+        });
+        const rows = (res && res.rows) || [];
+        const currentId = this.form && this.form.id != null ? String(this.form.id) : null;
+        const pending = rows.filter((r) => {
+          if (!r) return false;
+          if (currentId && r.id != null && String(r.id) === currentId) return false;
+          const s = r.stockStatus;
+          return s !== 2 && s !== '2';
+        });
+        if (pending.length > 0) {
+          const stockNo = pending[0].stockNo || String(pending[0].id || '');
+          this.$modal.msgWarning(`你有盘点单，单号（${stockNo}）未处理！请先处理。`);
+          return true;
+        }
+        return false;
+      } catch (e) {
+        this.$modal.msgError('检查未审核盘点单失败，请稍后重试');
+        return true;
+      }
+    },
     /** 盘点初始化 */
-    handleStocktakingInit() {
+    async handleStocktakingInit() {
       if(!this.form.warehouseId) {
         this.$message({ message: '请先选择仓库', type: 'warning' })
         return
       }
-      
+      if (await this.assertNoPendingWhStocktakingForInit()) {
+        return;
+      }
+
       // 显示确认对话框
       this.$modal.confirm('确定要初始化盘点数据吗？这将加载该仓库的所有库存数据。').then(() => {
         // 显示loading
@@ -1642,11 +1671,6 @@ export default {
   overflow: hidden;
 }
 
-.local-modal-content .modal-detail-section .modal-entry-pagination {
-  flex-shrink: 0;
-  margin-top: -2px;
-}
-
 /* 弹窗内表单紧凑布局 */
 .local-modal-content .modal-form-compact .el-row {
   margin-bottom: 6px;
@@ -1685,6 +1709,84 @@ export default {
 .local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
   height: 28px !important;
   line-height: 28px !important;
+}
+
+.local-modal-content .stocktaking-modal-head-form .head-label-nowrap ::v-deep .el-form-item__label {
+  white-space: nowrap;
+}
+
+/* 盘点弹窗明细表：表头居中加粗、合计加粗、列间距适中（字号与出库/到货验收一致） */
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table th .cell {
+  text-align: center !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table td .cell {
+  font-size: 14px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__footer-wrapper td .cell,
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__fixed-footer-wrapper td .cell {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-align: center;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__fixed-footer-wrapper td {
+  background-color: #fff !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper {
+  padding-bottom: 4px;
+  box-sizing: border-box;
+  scrollbar-width: auto;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 10px !important;
+  height: 12px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper:hover::-webkit-scrollbar {
+  height: 16px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 8px !important;
+  border: 1px solid #e4e7ed !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 8px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-width: 24px !important;
+  min-height: 10px !important;
+  transition: background 0.2s ease, min-height 0.15s ease, border-width 0.15s ease;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #606266 !important;
+  min-height: 14px !important;
+  border-width: 1px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
+  background: #303133 !important;
+  min-height: 16px !important;
 }
 
 /* 弹窗动画效果 */
@@ -1902,8 +2004,57 @@ export default {
   border: 1px solid #e4e7ed !important;
 }
 
-/* 盘点弹窗内明细分页：始终显示，压缩底部留白 */
-.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .pagination-container.modal-entry-pagination {
-  padding: 2px 16px 0 !important;
+/* 盘点弹窗明细表（非 scoped 兜底）：表头居中加粗、合计加粗 */
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table th,
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table thead th {
+  font-weight: 600 !important;
+  background-color: #EBEEF5 !important;
+}
+
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table th .cell,
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table thead th .cell {
+  text-align: center !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table td .cell {
+  font-size: 14px !important;
+}
+
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__footer-wrapper td .cell,
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__fixed-footer-wrapper td .cell {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table th.col-his-id-header .cell {
+  white-space: nowrap !important;
+}
+
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper::-webkit-scrollbar {
+  height: 12px !important;
+}
+
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper:hover::-webkit-scrollbar {
+  height: 16px !important;
+}
+
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 8px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 10px !important;
+  transition: background 0.2s ease, min-height 0.15s ease;
+}
+
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #606266 !important;
+  min-height: 14px !important;
+}
+
+.app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
+  background: #303133 !important;
+  min-height: 16px !important;
 }
 </style>
