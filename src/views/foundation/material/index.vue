@@ -429,12 +429,12 @@
         </template>
       </el-table-column>
       <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="360" fixed="right">
+      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="400" fixed="right">
         <template slot-scope="scope">
           <div class="material-row-actions">
             <el-button
               v-if="isZqTcmTenant"
-              size="medium"
+              size="small"
               type="text"
               class="material-row-action-btn"
               :loading="hisSyncLoadingId === scope.row.id"
@@ -443,28 +443,28 @@
               v-hasPermi="['foundation:material:edit']"
             >HIS同步</el-button>
             <el-button
-              size="medium"
+              size="small"
               type="text"
               class="material-row-action-btn"
               @click="handleCopy(scope.row)"
               v-hasPermi="['foundation:material:add']"
             >复制</el-button>
             <el-button
-              size="medium"
+              size="small"
               type="text"
               class="material-row-action-btn"
               @click="handleView(scope.row)"
               v-hasPermi="['foundation:material:query']"
             >查看</el-button>
             <el-button
-              size="medium"
+              size="small"
               type="text"
               class="material-row-action-btn"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['foundation:material:edit']"
             >修改</el-button>
             <el-button
-              size="medium"
+              size="small"
               type="text"
               class="material-row-action-btn material-row-action-btn--danger"
               @click="handleDelete(scope.row)"
@@ -4035,25 +4035,47 @@ export default {
   justify-content: flex-start !important;
 }
 
-.material-page-container .el-table td.material-action-col .cell {
-  padding-left: 10px !important;
-  padding-right: 10px !important;
+.material-page-container .el-table td.material-action-col .cell,
+.material-page-container .el-table th.material-action-col .cell {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+
+.material-page-container .el-table td.material-action-col {
+  vertical-align: middle !important;
 }
 
 .material-row-actions {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
+  flex-wrap: nowrap;
+  gap: 0 4px;
   width: 100%;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.material-row-actions::-webkit-scrollbar {
+  display: none;
 }
 
 .material-page-container .material-row-action-btn.el-button--text {
-  padding: 6px 12px;
-  font-size: 14px;
-  line-height: 1.4;
-  min-height: 32px;
+  padding: 4px 6px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  min-height: 28px;
+  height: 28px;
   font-weight: 500;
   flex-shrink: 0;
 }
