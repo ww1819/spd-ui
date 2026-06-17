@@ -14,6 +14,20 @@
                 <SelectDepartment v-model="queryParams.departmentId" clearable />
               </div>
             </el-form-item>
+            <el-form-item label="耗材名称" prop="materialNameLike" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialNameLike"
+                placeholder="名称/编码/拼音简码"
+                clearable
+                class="query-input-wide"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item label="财务分类" prop="financeCategoryId" class="query-item-inline">
+              <div class="query-select-wrapper category-select-wrap">
+                <SelectFinanceCategoryLow v-model="queryParams.financeCategoryId" placeholder="编码/名称/简拼" />
+              </div>
+            </el-form-item>
           </el-col>
         </el-row>
 
@@ -125,11 +139,29 @@ import { listConsumeRanking } from "@/api/department/consumeDetail";
 import { exportConsumeRankingStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
+import SelectFinanceCategoryLow from "@/components/SelectModel/SelectFinanceCategoryLow";
 import RightToolbar from "@/components/RightToolbar";
+
+function formatQueryDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getDefaultBeginDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - 5);
+  return formatQueryDate(d);
+}
+
+function getDefaultEndDate() {
+  return formatQueryDate(new Date());
+}
 
 export default {
   name: "ConsumeRankingTable",
-  components: { SelectWarehouse, SelectDepartment, RightToolbar },
+  components: { SelectWarehouse, SelectDepartment, SelectFinanceCategoryLow, RightToolbar },
   data() {
     return {
       loading: true,
@@ -145,8 +177,10 @@ export default {
         pageSize: 10,
         warehouseId: null,
         departmentId: null,
-        beginDate: null,
-        endDate: null
+        materialNameLike: null,
+        financeCategoryId: null,
+        beginDate: getDefaultBeginDate(),
+        endDate: getDefaultEndDate()
       }
     };
   },
@@ -165,9 +199,21 @@ export default {
     this.getList();
   },
   methods: {
+    buildQueryParams(extra = {}) {
+      const params = { ...this.queryParams, ...extra };
+      const kw = params.materialNameLike != null ? String(params.materialNameLike).trim() : "";
+      params.materialNameLike = kw || null;
+      if (params.financeCategoryId != null && params.financeCategoryId !== "") {
+        params.financeCategoryIds = [params.financeCategoryId];
+      } else {
+        params.financeCategoryIds = null;
+      }
+      delete params.financeCategoryId;
+      return params;
+    },
     getList() {
       this.loading = true;
-      listConsumeRanking(this.queryParams)
+      listConsumeRanking(this.buildQueryParams())
         .then(response => {
           this.consumeRankingList = response.rows || [];
           this.total = response.total != null ? response.total : 0;
@@ -189,13 +235,15 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.warehouseId = null;
       this.queryParams.departmentId = null;
-      this.queryParams.beginDate = null;
-      this.queryParams.endDate = null;
+      this.queryParams.materialNameLike = null;
+      this.queryParams.financeCategoryId = null;
+      this.queryParams.beginDate = getDefaultBeginDate();
+      this.queryParams.endDate = getDefaultEndDate();
       this.handleQuery();
     },
     /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
     async handleExport() {
-      const requestParams = { ...this.queryParams, pageNum: 1, pageSize: 10000 };
+      const requestParams = this.buildQueryParams({ pageNum: 1, pageSize: 10000 });
       this.loading = true;
       try {
         const response = await listConsumeRanking(requestParams);
@@ -257,6 +305,14 @@ export default {
 
 .query-select-wrapper {
   width: 180px;
+}
+
+.query-input-wide {
+  width: 200px;
+}
+
+.category-select-wrap {
+  width: 200px;
 }
 
 .query-row-second {
