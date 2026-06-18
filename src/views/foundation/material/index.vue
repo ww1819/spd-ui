@@ -12,6 +12,16 @@
             </div>
           </el-form-item>
 
+          <el-form-item prop="code" class="query-item-inline">
+            <el-input
+              v-model="queryParams.code"
+              placeholder="耗材编码"
+              clearable
+              @keyup.enter.native="handleQuery"
+              style="width: 150px"
+            />
+          </el-form-item>
+
           <el-form-item prop="name" class="query-item-inline">
             <el-input
               v-model="queryParams.name"
@@ -1887,14 +1897,14 @@ export default {
   },
   methods: {
     /**
-     * 将“耗材名称”输入转换为后端筛选参数（不改写输入框本身的值）
-     * - 含中文：按名称 `name` 查，同时带 `nameSearch`（首字母）
-     * - 不含中文：统一按 `code` 查（SQL 已覆盖 code/name/referred_name），兼容下划线/短横线等编码格式
+     * 将「耗材名称」输入转换为后端筛选参数（不改写输入框本身的值）
+     * - 含中文：按名称 name 查，同时带 nameSearch（首字母）
+     * - 不含中文：按 name 查（SQL 已覆盖编码/名称/简称等）；耗材编码请用独立查询框 code
      */
     deriveNameSearchParams(keyword) {
       const nameValue = keyword;
       if (!nameValue || String(nameValue).trim() === '') {
-        return { code: undefined, name: undefined, nameSearch: undefined };
+        return { name: undefined, nameSearch: undefined };
       }
 
       const trimmedValue = String(nameValue).trim();
@@ -1913,8 +1923,7 @@ export default {
       }
 
       return {
-        code: !hasChinese ? trimmedValue : undefined,
-        name: hasChinese ? trimmedValue : undefined,
+        name: trimmedValue,
         nameSearch: pinyinCode || undefined
       };
     },
@@ -1922,16 +1931,15 @@ export default {
     /** 构建列表/导出请求参数（不影响输入框显示） */
     buildMaterialQueryParams(includePagination = true) {
       const base = { ...this.queryParams };
-      const keyword = base.name; // 输入框绑定字段：用户看到的原始输入
+      const keyword = base.name;
       const derived = this.deriveNameSearchParams(keyword);
+      const explicitCode = base.code != null && String(base.code).trim() !== '' ? String(base.code).trim() : undefined;
       const beginDate = base.beginDate && String(base.beginDate).length === 10 ? `${base.beginDate} 00:00:00` : base.beginDate;
       const endDate = base.endDate && String(base.endDate).length === 10 ? `${base.endDate} 23:59:59` : base.endDate;
 
-      // 用派生后的 name/code/nameSearch 覆盖请求参数，避免把输入框值直接当 name 传给后端
-      // 档案列表允许在未选「使用状态」时查到停用记录以便启用；选定 isUse 时仍由后端按 isUse 过滤
       const merged = {
         ...base,
-        code: derived.code,
+        code: explicitCode,
         name: derived.name,
         nameSearch: derived.nameSearch,
         beginDate,
