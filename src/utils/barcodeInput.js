@@ -23,14 +23,29 @@ export function isScannerEnterKey(e) {
 }
 
 /**
- * 是否像扫码枪快速输入（短时间内连续键入，用于扫码后自动提交）。
+ * 是否像扫码枪快速输入（多字符、短间隔连续键入；手输 1～2 个字符不视为扫码）。
+ * @param {number} charCount 本次连击字符数（keydown 缓冲长度）
  */
-export function isRapidScannerBurst(firstKeyAt, lastKeyAt) {
+export function isRapidScannerBurst(firstKeyAt, lastKeyAt, charCount) {
   if (!firstKeyAt || !lastKeyAt) {
     return false
   }
+  const count = charCount != null ? Number(charCount) : 0
+  if (!count || count < 3) {
+    return false
+  }
   const span = lastKeyAt - firstKeyAt
-  return span >= 0 && span <= 500
+  if (span < 0 || span > 500) {
+    return false
+  }
+  if (count === 1) {
+    return false
+  }
+  if (span === 0 && count < 8) {
+    return false
+  }
+  const avgInterval = count > 1 ? span / (count - 1) : span
+  return avgInterval <= 120
 }
 
 /** 从 keydown 事件追加可打印字符（绕过部分 IME 对 v-model 的干扰） */

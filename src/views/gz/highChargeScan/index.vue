@@ -180,7 +180,7 @@
         ref="highScanInput"
         v-model="highScanCode"
         class="high-scan-input-ime-off"
-        placeholder="扫描或输入院内码（扫码后自动识别）"
+        placeholder="扫描院内码（扫码枪自动识别）；手工输入后按回车"
         autocomplete="off"
         spellcheck="false"
         clearable
@@ -188,7 +188,6 @@
         @compositionend="onHighScanCompositionEnd"
         @input="onHighScanInput"
         @keydown.native="onHighScanKeydown"
-        @keyup.enter.native="submitHighScanNow"
       />
       <el-table :data="highLines" border size="small" class="mt8 high-consume-dialog-table" empty-text="请先扫码添加行">
         <el-table-column label="院内码" prop="inHospitalCode" min-width="220" align="left" class-name="high-col-code-wrap" />
@@ -265,8 +264,7 @@ import {
   normalizeBarcodeInput,
   isImeProcessKey,
   isScannerEnterKey,
-  isRapidScannerBurst,
-  appendKeyToBarcodeBuffer
+  isRapidScannerBurst
 } from '@/utils/barcodeInput'
 import { listdepartAll } from '@/api/foundation/depart'
 import { fetchInpatientMirror, fetchOutpatientMirror } from '@/api/department/patientCharge'
@@ -320,6 +318,8 @@ export default {
       highScanLastKeyAt: 0,
       highScanAutoTimer: null,
       highScanSubmitting: false,
+      highScanLastSubmitCode: '',
+      highScanLastSubmitAt: 0,
       highLines: [],
       highBillRemaining: null,
       consumeRecordDialog: {
@@ -525,6 +525,8 @@ export default {
       this.highScanBuffer = ''
       this.highScanFirstKeyAt = 0
       this.highScanLastKeyAt = 0
+      this.highScanLastSubmitCode = ''
+      this.highScanLastSubmitAt = 0
     },
     clearHighScanAutoTimer() {
       if (this.highScanAutoTimer) {
@@ -540,12 +542,13 @@ export default {
         }
       })
     },
-    scheduleHighScanAutoSubmit(code) {
+    scheduleHighScanAutoSubmit(code, charCount) {
       this.clearHighScanAutoTimer()
       if (!code) {
         return
       }
-      if (!isRapidScannerBurst(this.highScanFirstKeyAt, this.highScanLastKeyAt)) {
+      const count = charCount != null ? charCount : (this.highScanBuffer || '').length
+      if (!isRapidScannerBurst(this.highScanFirstKeyAt, this.highScanLastKeyAt, count)) {
         return
       }
       this.highScanAutoTimer = setTimeout(() => {
@@ -570,9 +573,7 @@ export default {
       if (normalized !== this.highScanCode) {
         this.highScanCode = normalized
       }
-      if (normalized) {
-        this.scheduleHighScanAutoSubmit(normalized)
-      }
+      this.syncHighScanBurstTiming(normalized)
     },
     onHighScanInput(val) {
       if (this.highScanComposing) {
@@ -582,27 +583,27 @@ export default {
       if (normalized !== val) {
         this.highScanCode = normalized
       }
-      if (normalized && isRapidScannerBurst(this.highScanFirstKeyAt, this.highScanLastKeyAt)) {
-        this.scheduleHighScanAutoSubmit(normalized)
+      this.syncHighScanBurstTiming(normalized)
+    },
+    /** 仅记录连击时间供扫码枪识别，不修改/清空已输入内容 */
+    syncHighScanBurstTiming(normalized) {
+      const now = Date.now()
+      if (!normalized) {
+        this.highScanFirstKeyAt = 0
+        this.highScanLastKeyAt = 0
+        this.highScanBuffer = ''
+        return
       }
+      if (!this.highScanFirstKeyAt || now - this.highScanLastKeyAt > 500) {
+        this.highScanFirstKeyAt = now
+      }
+      this.highScanLastKeyAt = now
+      this.highScanBuffer = normalized
+      this.scheduleHighScanAutoSubmit(normalized, normalized.length)
     },
     onHighScanKeydown(e) {
       if (isImeProcessKey(e)) {
         return
-      }
-      const now = Date.now()
-      if (e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        if (!this.highScanFirstKeyAt || now - this.highScanLastKeyAt > 500) {
-          this.highScanBuffer = ''
-          this.highScanFirstKeyAt = now
-        }
-        this.highScanLastKeyAt = now
-        this.highScanBuffer = appendKeyToBarcodeBuffer(this.highScanBuffer, e)
-        const normalized = normalizeBarcodeInput(this.highScanBuffer)
-        if (normalized) {
-          this.highScanCode = normalized
-          this.scheduleHighScanAutoSubmit(normalized)
-        }
       }
       if (isScannerEnterKey(e)) {
         e.preventDefault()
@@ -618,6 +619,12 @@ export default {
       this.clearHighScanAutoTimer()
       const code = normalizeBarcodeInput(this.highScanCode)
       if (!code || !this.highMirrorRow) return
+      const now = Date.now()
+      if (this.highScanLastSubmitCode === code && now - this.highScanLastSubmitAt < 300) {
+        return
+      }
+      this.highScanLastSubmitCode = code
+      this.highScanLastSubmitAt = now
       this.highScanCode = code
       this.highScanSubmitting = true
       scanHighChargeBarcode({
