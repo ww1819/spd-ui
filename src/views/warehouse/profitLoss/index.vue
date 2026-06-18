@@ -140,36 +140,34 @@
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <el-row v-if="detailEditable && !form.id" :gutter="8">
-                  <el-col :span="10">
-                    <el-form-item label="已审核盘点单" prop="stocktakingId" class="head-label-nowrap stocktaking-pick-item">
-                      <el-select v-model="form.stocktakingId" placeholder="请选择已审核的盘点单" filterable clearable style="width: 100%" @change="onStocktakingChange">
-                        <el-option v-for="item in stocktakingOptions" :key="item.id" :label="item.stockNo + '（' + (item.warehouse && item.warehouse.name ? item.warehouse.name : '') + '）'" :value="item.id" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4" class="load-draft-btn-col">
-                    <el-button type="primary" size="small" @click="loadDraft" :disabled="!form.stocktakingId" :loading="loadDraftLoading">加载盈亏明细</el-button>
-                  </el-col>
-                </el-row>
               </div>
 
               <div class="modal-detail-section">
-                <el-row :gutter="10" class="detail-toolbar-row">
-                  <el-col :span="1.5">
-                    <span>盈亏明细信息</span>
-                  </el-col>
-                  <div v-show="detailEditable && entryFullList.length">
-                    <el-col :span="1.5">
-                      <el-button type="primary" size="small" @click="submitForm" :loading="submitLoading">保 存</el-button>
-                    </el-col>
+                <div class="detail-toolbar-row">
+                  <span class="detail-toolbar-title">盈亏明细信息</span>
+                  <div class="detail-toolbar-actions">
+                    <el-button
+                      v-if="detailEditable && !form.id"
+                      type="primary"
+                      plain
+                      icon="el-icon-connection"
+                      size="small"
+                      @click="openStocktakingPickDialog"
+                    >引入盘点单</el-button>
+                    <el-button
+                      v-if="detailEditable && entryFullList.length"
+                      type="primary"
+                      size="small"
+                      @click="submitForm"
+                      :loading="submitLoading"
+                    >保 存</el-button>
                   </div>
-                </el-row>
+                </div>
                 <div class="table-wrapper">
                   <el-table
                     ref="profitLossEntryTable"
                     class="profit-loss-detail-table"
-                    :data="entryPageList"
+                    :data="entryFullList"
                     :row-class-name="rowEntryIndex"
                     :height="detailTableHeight"
                     border
@@ -207,20 +205,74 @@
                     </el-table-column>
                   </el-table>
                 </div>
-                <pagination
-                  class="modal-entry-pagination"
-                  :total="entryFullList.length"
-                  :page.sync="entryPageNum"
-                  :limit.sync="entryPageSize"
-                  :hide-on-single-page="false"
-                  @pagination="handleEntryPagination"
-                />
               </div>
             </el-form>
           </div>
         </transition>
       </div>
     </transition>
+
+    <!-- 引入盘点单 -->
+    <el-dialog
+      title="引入盘点单"
+      :visible.sync="stocktakingPickVisible"
+      width="920px"
+      append-to-body
+      :close-on-click-modal="false"
+      @open="handleStocktakingPickDialogOpen"
+    >
+      <el-form :model="stocktakingPickQuery" ref="stocktakingPickForm" size="small" :inline="true" label-width="80px">
+        <el-form-item label="业务单号" prop="stockNo">
+          <el-input v-model="stocktakingPickQuery.stockNo" placeholder="业务单号" clearable style="width: 180px" @keyup.enter.native="searchStocktakingPickList" />
+        </el-form-item>
+        <el-form-item label="仓库" prop="warehouseId">
+          <div class="query-select-wrapper">
+            <SelectWarehouse v-model="stocktakingPickQuery.warehouseId" />
+          </div>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="el-icon-search" size="small" @click="searchStocktakingPickList">搜索</el-button>
+          <el-button icon="el-icon-refresh" size="small" @click="resetStocktakingPickQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+      <el-table
+        v-loading="stocktakingPickLoading"
+        :data="stocktakingPickList"
+        highlight-current-row
+        border
+        stripe
+        height="360px"
+        @current-change="handleStocktakingPickCurrentChange"
+      >
+        <el-table-column label="业务单号" align="center" prop="stockNo" min-width="160" show-overflow-tooltip />
+        <el-table-column label="仓库" align="center" prop="warehouse.name" min-width="120" show-overflow-tooltip />
+        <el-table-column label="制单日期" align="center" prop="stockDate" width="120" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.stockDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="审核日期" align="center" prop="auditDate" width="120" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="盈亏金额" align="center" prop="profitAmount" width="110" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatNum(scope.row.profitAmount) }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <pagination
+        :total="stocktakingPickTotal"
+        :page.sync="stocktakingPickQuery.pageNum"
+        :limit.sync="stocktakingPickQuery.pageSize"
+        @pagination="searchStocktakingPickList"
+      />
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="stocktakingPickVisible = false">取 消</el-button>
+        <el-button type="primary" :disabled="!stocktakingPickSelected" :loading="loadDraftLoading" @click="confirmStocktakingPick">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -255,18 +307,28 @@ export default {
       form: {},
       entryList: [],
       rules: {
-        stocktakingId: [{ required: true, message: '请选择已审核的盘点单', trigger: 'change' }]
+        stocktakingId: [{ required: true, message: '请引入已审核的盘点单', trigger: 'change' }]
       },
-      stocktakingOptions: [],
       loadDraftLoading: false,
       submitLoading: false,
-      entryPageNum: 1,
-      entryPageSize: 10
+      stocktakingPickVisible: false,
+      stocktakingPickLoading: false,
+      stocktakingPickList: [],
+      stocktakingPickTotal: 0,
+      stocktakingPickSelected: null,
+      stocktakingPickQuery: {
+        pageNum: 1,
+        pageSize: 10,
+        stockNo: null,
+        warehouseId: null,
+        stockStatus: 2,
+        stockType: '501'
+      }
     }
   },
   computed: {
     detailTableHeight() {
-      return 'max(260px, calc(100vh - 368px))'
+      return 'max(260px, calc(100vh - 340px))'
     },
     billStatusLabel() {
       const status = this.form && this.form.billStatus
@@ -291,15 +353,10 @@ export default {
         ? this.form.entryList
         : (this.entryList || [])
       return Array.isArray(list) ? list : []
-    },
-    entryPageList() {
-      const start = (this.entryPageNum - 1) * this.entryPageSize
-      return this.entryFullList.slice(start, start + this.entryPageSize)
     }
   },
   created() {
     this.getList()
-    this.loadStocktakingOptions()
   },
   methods: {
     formatNum(val) {
@@ -321,47 +378,71 @@ export default {
         this.loading = false
       }).catch(() => { this.loading = false })
     },
-    loadStocktakingOptions() {
-      listStocktaking({ stockStatus: 2, stockType: '501', pageNum: 1, pageSize: 500 }).then(response => {
-        // 仓库盘点单审核直接变更库存（auditAdjustsInventory=1）时不可再生成盈亏单
-        this.stocktakingOptions = (response.rows || []).filter(
+    loadStocktakingPickList() {
+      this.stocktakingPickLoading = true
+      listStocktaking({ ...this.stocktakingPickQuery }).then(response => {
+        this.stocktakingPickList = (response.rows || []).filter(
           (s) => s.auditAdjustsInventory !== 1 && s.auditAdjustsInventory !== '1'
         )
+        this.stocktakingPickTotal = response.total || 0
+        this.stocktakingPickLoading = false
+      }).catch(() => {
+        this.stocktakingPickLoading = false
       })
     },
-    onStocktakingChange() {
-      this.form.entryList = []
-      this.entryPageNum = 1
-      if (!this.form.stocktakingId) {
-        this.form.stocktakingNo = null
-        this.form.warehouseId = null
-        this.form.warehouse = null
+    openStocktakingPickDialog() {
+      this.stocktakingPickVisible = true
+    },
+    handleStocktakingPickDialogOpen() {
+      this.stocktakingPickSelected = null
+      this.stocktakingPickQuery.pageNum = 1
+      this.searchStocktakingPickList()
+    },
+    searchStocktakingPickList() {
+      this.stocktakingPickQuery.pageNum = this.stocktakingPickQuery.pageNum || 1
+      this.loadStocktakingPickList()
+    },
+    resetStocktakingPickQuery() {
+      this.stocktakingPickQuery.stockNo = null
+      this.stocktakingPickQuery.warehouseId = null
+      this.stocktakingPickQuery.pageNum = 1
+      this.searchStocktakingPickList()
+    },
+    handleStocktakingPickCurrentChange(row) {
+      this.stocktakingPickSelected = row || null
+    },
+    confirmStocktakingPick() {
+      if (!this.stocktakingPickSelected) {
+        this.$message.warning('请选择盘点单')
         return
       }
-      const opt = this.stocktakingOptions.find(s => s.id === this.form.stocktakingId)
-      if (opt) {
-        this.form.stocktakingNo = opt.stockNo
-        this.form.warehouseId = opt.warehouseId
-        this.form.warehouse = opt.warehouse ? { id: opt.warehouse.id, name: opt.warehouse.name, code: opt.warehouse.code } : null
-      }
+      this.form.stocktakingId = this.stocktakingPickSelected.id
+      this.form.stocktakingNo = this.stocktakingPickSelected.stockNo
+      this.form.warehouseId = this.stocktakingPickSelected.warehouseId
+      const wh = this.stocktakingPickSelected.warehouse
+      this.form.warehouse = wh ? { id: wh.id, name: wh.name, code: wh.code } : null
+      this.loadDraft(this.stocktakingPickSelected)
     },
-    loadDraft() {
-      if (!this.form.stocktakingId) {
+    loadDraft(stocktakingRow) {
+      const pick = stocktakingRow || { id: this.form.stocktakingId, warehouse: this.form.warehouse }
+      if (!pick.id) {
         this.$message.warning('请先选择已审核的盘点单')
         return
       }
       this.loadDraftLoading = true
-      apiLoadDraft(this.form.stocktakingId).then(response => {
+      apiLoadDraft(pick.id).then(response => {
         this.form = response.data
         this.form.entryList = response.data.entryList || []
-        this.entryPageNum = 1
-        // 后端草稿可能不包含 warehouse 对象，用已选盘点单的仓库信息补全显示
-        const opt = this.stocktakingOptions.find(s => s.id === this.form.stocktakingId)
-        if (opt && opt.warehouse) {
-          this.form.warehouse = { id: opt.warehouse.id, name: opt.warehouse.name, code: opt.warehouse.code }
+        if (pick.warehouse) {
+          this.form.warehouse = {
+            id: pick.warehouse.id,
+            name: pick.warehouse.name,
+            code: pick.warehouse.code
+          }
         }
         this.loadDraftLoading = false
-        this.$message.success('已加载有盈亏明细')
+        this.stocktakingPickVisible = false
+        this.$message.success('已引入盘点单并加载盈亏明细')
       }).catch(() => { this.loadDraftLoading = false })
     },
     cancel() {
@@ -371,14 +452,11 @@ export default {
     reset() {
       this.form = {}
       this.entryList = []
-      this.entryPageNum = 1
+      this.stocktakingPickSelected = null
       this.resetForm('form')
     },
     rowEntryIndex({ row, rowIndex }) {
-      row.index = (this.entryPageNum - 1) * this.entryPageSize + rowIndex + 1
-    },
-    handleEntryPagination() {
-      // page/limit 由 pagination 组件双向绑定
+      row.index = rowIndex + 1
     },
     getEntrySummaries({ columns }) {
       const list = this.entryFullList
@@ -411,7 +489,6 @@ export default {
       this.title = '新增盈亏单'
       this.dialogReadOnly = false
       this.open = true
-      this.loadStocktakingOptions()
     },
     handleView(row) {
       this.reset()
@@ -419,7 +496,6 @@ export default {
       getProfitLoss(id).then(response => {
         this.form = response.data
         this.entryList = (response.data && response.data.entryList) ? response.data.entryList : []
-        this.entryPageNum = 1
         this.title = '查看盈亏单'
         this.dialogReadOnly = true
         this.open = true
@@ -431,7 +507,6 @@ export default {
       getProfitLoss(id).then(response => {
         this.form = response.data
         this.form.entryList = response.data.entryList || []
-        this.entryPageNum = 1
         this.title = '修改盈亏单'
         this.dialogReadOnly = false
         this.open = true
@@ -441,7 +516,7 @@ export default {
       this.$refs['form'].validate(valid => {
         if (!valid) return
         if (!this.form.entryList || !this.form.entryList.length) {
-          this.$message.warning('请先加载有盈亏明细')
+          this.$message.warning('请先引入盘点单并加载盈亏明细')
           return
         }
         if (this.submitLoading) return
@@ -573,10 +648,26 @@ export default {
   margin-bottom: 0;
 }
 
-.local-modal-content .load-draft-btn-col {
+.local-modal-content .modal-detail-section .detail-toolbar-row {
   display: flex;
   align-items: center;
-  padding-top: 2px;
+  justify-content: space-between;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 12px 0;
+  box-sizing: border-box;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-title {
+  font-weight: 600;
+  color: #303133;
+}
+
+.local-modal-content .modal-detail-section .detail-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .local-modal-content .modal-detail-section {
@@ -591,23 +682,10 @@ export default {
   flex-direction: column;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-row {
-  margin-top: 0;
-  margin-bottom: 0;
-  padding-top: 12px;
-  padding-bottom: 12px;
-  box-sizing: border-box;
-}
-
 .local-modal-content .modal-detail-section .table-wrapper {
   margin-top: 0;
   flex: 0 1 auto;
   overflow: hidden;
-}
-
-.local-modal-content .modal-detail-section .modal-entry-pagination {
-  flex-shrink: 0;
-  margin-top: -2px;
 }
 
 .local-modal-content >>> .modal-form-compact .el-row {
@@ -693,11 +771,6 @@ export default {
   left: -8px;
   right: -8px;
   width: auto;
-}
-
-.app-container.profit-loss-page .local-modal-content .modal-detail-section .pagination-container.modal-entry-pagination {
-  padding: 8px 16px 4px !important;
-  margin-top: 0 !important;
 }
 
 .app-container.profit-loss-page > .el-form.query-form {
