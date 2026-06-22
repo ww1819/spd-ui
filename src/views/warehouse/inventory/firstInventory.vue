@@ -114,6 +114,15 @@
                 <SelectWarehouseCategory v-model="queryParams.warehouseCategoryId" />
               </div>
             </el-form-item>
+            <el-form-item label="财务分类" prop="financeCategoryIds" class="query-item-inline">
+              <div class="query-select-wrapper query-select-finance-cat">
+                <SelectFinanceCategoryLow
+                  v-model="queryParams.financeCategoryIds"
+                  :multiple="true"
+                  placeholder="财务分类多选"
+                />
+              </div>
+            </el-form-item>
             <el-form-item class="query-item-inline query-item-zero-stock">
               <el-button
                 :type="showZeroStock ? 'primary' : 'default'"
@@ -342,6 +351,7 @@ import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
+import SelectFinanceCategoryLow from "@/components/SelectModel/SelectFinanceCategoryLow";
 import RightToolbar from "@/components/RightToolbar";
 import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 import { listWarehouse } from "@/api/foundation/warehouse";
@@ -350,7 +360,7 @@ export default {
   name: "firstInventory",
   dicts: ['is_use_status'],
   mixins: [hisChargeItemTableColumnsMixin],
-  components: {SelectMaterial,SelectWarehouse,SelectSupplier,SelectWarehouseCategory,RightToolbar},
+  components: {SelectMaterial,SelectWarehouse,SelectSupplier,SelectWarehouseCategory,SelectFinanceCategoryLow,RightToolbar},
   data() {
     return {
       // 遮罩层
@@ -393,6 +403,7 @@ export default {
         materialNo: null,
         isBilling: null,
         warehouseCategoryId: null,
+        financeCategoryIds: [],
         materialIsUse: null,
         hisChargeItemId: null
       },
@@ -575,6 +586,9 @@ export default {
         params.excludeZeroQty = true;
         delete params.onlyZeroQty;
       }
+      if (Array.isArray(params.financeCategoryIds) && params.financeCategoryIds.length === 0) {
+        params.financeCategoryIds = null;
+      }
       return params;
     },
     toggleShowZeroStock() {
@@ -635,6 +649,7 @@ export default {
       this.queryParams.materialModel = null;
       this.queryParams.supplierId = null;
       this.queryParams.warehouseCategoryId = null;
+      this.queryParams.financeCategoryIds = [];
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
       this.queryParams.isBilling = null;
@@ -822,6 +837,9 @@ export default {
 }
 .query-select-warehouse-cat {
   width: 160px;
+}
+.query-select-finance-cat {
+  width: 200px;
 }
 
 .query-item-zero-stock {

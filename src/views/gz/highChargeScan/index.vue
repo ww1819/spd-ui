@@ -27,10 +27,10 @@
         <el-form-item label="收费明细主键">
           <el-input v-model="detailQuery.hisChargeId" placeholder="HIS收费明细主键模糊" clearable style="width:180px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
-        <el-form-item label="执行科室">
+        <el-form-item label="科室">
           <el-select
             v-model="detailQuery.departmentId"
-            placeholder="执行科室名称/首字母"
+            placeholder="科室名称/首字母"
             clearable
             filterable
             :filter-method="filterDeptMethod"
@@ -38,9 +38,6 @@
           >
             <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="执行科室名称">
-          <el-input v-model="detailQuery.execDeptName" placeholder="执行科室模糊" clearable style="width:160px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
         <el-form-item label="是否处理">
           <el-select v-model="detailQuery.processed" placeholder="全部" clearable style="width:110px">
@@ -88,18 +85,15 @@
       </el-table-column>
       <template v-if="detailVisitType === 'IN'">
         <el-table-column label="住院号" prop="inpatientNo" width="120" show-overflow-tooltip />
-        <el-table-column label="开单科室" prop="deptName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="科室" prop="deptName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else-if="detailVisitType === 'OUT'">
         <el-table-column label="门诊号" prop="outpatientNo" width="120" show-overflow-tooltip />
-        <el-table-column label="开单科室" prop="clinicName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="就诊" prop="clinicName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else>
         <el-table-column label="住院号/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
-        <el-table-column label="开单科室" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="科室/就诊" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
       </template>
       <el-table-column label="姓名" prop="patientName" width="100" show-overflow-tooltip />
       <el-table-column label="性别" prop="patientSex" width="60" align="center" show-overflow-tooltip>
@@ -310,7 +304,6 @@ export default {
         chargeItemId: undefined,
         hisChargeId: undefined,
         departmentId: undefined,
-        execDeptName: undefined,
         processed: undefined,
         valueLevel: '1',
         ...buildDefaultChargeDateRange()
@@ -713,7 +706,6 @@ export default {
         chargeItemId: undefined,
         hisChargeId: undefined,
         departmentId: undefined,
-        execDeptName: undefined,
         processed: undefined,
         valueLevel: '1',
         ...buildDefaultChargeDateRange()
