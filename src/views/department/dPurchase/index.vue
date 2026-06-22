@@ -109,7 +109,7 @@
       </el-table-column>
       <el-table-column label="制单日期" align="center" prop="purchaseBillDate" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.purchaseBillDate, '{y}-{m}-{d}') }}</span>
+          <span>{{ parseTime(scope.row.purchaseBillDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />

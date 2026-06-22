@@ -73,6 +73,14 @@
         <el-button
           type="primary"
           size="medium"
+          @click="handleBatchAudit"
+          v-hasPermi="['department:dApplyAudit:audit']"
+        >审核</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          size="medium"
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
@@ -382,6 +390,7 @@ export default {
       loading: true,
       // 选中数组
       ids: [],
+      selectedRows: [],
       // 非单个禁用
       single: true,
       // 非多个禁用
@@ -598,6 +607,7 @@ export default {
     // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id)
+      this.selectedRows = selection || []
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
@@ -648,6 +658,46 @@ export default {
       this.rejectDialogRow = row;
       this.rejectDialogReason = '';
       this.rejectDialogVisible = true;
+    },
+    /** 工具栏批量审核：支持选择多条未审核申领单 */
+    handleBatchAudit() {
+      if (!this.selectedRows || this.selectedRows.length === 0) {
+        this.$modal.msgError('请先选择要审核的申领单');
+        return;
+      }
+      const pendingList = this.selectedRows.filter(row => this.canShowAuditReject(row));
+      if (pendingList.length === 0) {
+        this.$modal.msgError('请选择未审核且未驳回的申领单进行审核');
+        return;
+      }
+      const userId = this.$store.state.user.userId;
+      this.$modal.confirm(`确认审核选中的 ${pendingList.length} 条申领单吗？`).then(() => {
+        const validatePromises = pendingList.map(row =>
+          getApplyAudit(row.id).then(resp => {
+            const list = resp.data.basApplyEntryList || [];
+            const billNo = resp.data.applyBillNo || row.id;
+            if (!list.length) {
+              return Promise.reject(new Error(billNo + '：无明细，不允许审核。'));
+            }
+            const invalidQty = list.filter(e => e.materialId && (e.qty == null || e.qty === '' || Number(e.qty) <= 0));
+            if (invalidQty.length > 0) {
+              return Promise.reject(new Error(billNo + '：存在明细数量为空或0，不允许审核。'));
+            }
+            return Promise.resolve();
+          })
+        );
+        Promise.all(validatePromises).then(() => {
+          const requests = pendingList.map(row =>
+            auditApply({ id: String(row.id), auditBy: userId })
+          );
+          return Promise.all(requests);
+        }).then(() => {
+          this.$modal.msgSuccess('审核成功');
+          this.getList();
+        }).catch(err => {
+          this.$modal.msgError(err && err.message ? err.message : '审核失败');
+        });
+      }).catch(() => {});
     },
     /** 审核提交 */
     handleAuditSubmit() {
