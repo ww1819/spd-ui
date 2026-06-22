@@ -51,16 +51,25 @@
               @keyup.enter.native="handleDetailQuery"
             />
           </el-form-item>
-          <el-form-item label="科室">
+          <el-form-item label="执行科室">
             <el-select
               v-model="detailQuery.departmentId"
-              placeholder="按权限科室"
+              placeholder="按权限执行科室"
               clearable
               filterable
               style="width:200px"
             >
               <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
             </el-select>
+          </el-form-item>
+          <el-form-item label="执行科室名称">
+            <el-input
+              v-model="detailQuery.execDeptName"
+              placeholder="执行科室模糊"
+              clearable
+              style="width:160px"
+              @keyup.enter.native="handleDetailQuery"
+            />
           </el-form-item>
           <el-form-item label="是否处理">
             <el-select v-model="detailQuery.processed" placeholder="全部" clearable style="width:110px">
@@ -128,15 +137,18 @@
           </el-table-column>
           <template v-if="detailVisitType === 'IN'">
             <el-table-column label="住院号" prop="inpatientNo" width="120" show-overflow-tooltip />
-            <el-table-column label="科室" prop="deptName" min-width="120" show-overflow-tooltip />
+            <el-table-column label="开单科室" prop="deptName" min-width="120" show-overflow-tooltip />
+            <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
           </template>
           <template v-else-if="detailVisitType === 'OUT'">
             <el-table-column label="门诊号" prop="outpatientNo" width="120" show-overflow-tooltip />
-            <el-table-column label="就诊" prop="clinicName" min-width="120" show-overflow-tooltip />
+            <el-table-column label="开单科室" prop="clinicName" min-width="120" show-overflow-tooltip />
+            <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
           </template>
           <template v-else>
             <el-table-column label="号" prop="visitNo" width="120" show-overflow-tooltip />
-            <el-table-column label="科室/就诊" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
+            <el-table-column label="开单科室" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
+            <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
           </template>
           <el-table-column label="患者" prop="patientName" width="100" show-overflow-tooltip />
           <el-table-column label="收费项ID" prop="chargeItemId" width="120" show-overflow-tooltip />
@@ -391,6 +403,7 @@ export default {
         hisChargeId: undefined,
         chargeIdTf: undefined,
         departmentId: undefined,
+        execDeptName: undefined,
         processed: undefined,
         valueLevel: undefined,
         beginChargeDate: undefined,
@@ -458,7 +471,7 @@ export default {
       listdepartAll(uid).then(res => {
         // /foundation/depart/listAll 返回的是数组本体，这里兼容数组与 {data: []} 两种返回结构
         const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
-        // 仅保留可用于 HIS 科室映射的科室：his_inpatient_charge_mirror.dept_code = fd_department.his_id
+        // 仅保留可用于 HIS 执行科室映射的科室：exec_dept_id = fd_department.his_id
         this.deptOptions = list.filter(d => d && d.id != null && d.hisId != null && String(d.hisId).trim() !== '')
       })
     },
@@ -573,6 +586,7 @@ export default {
         hisChargeId: undefined,
         chargeIdTf: undefined,
         departmentId: undefined,
+        execDeptName: undefined,
         processed: undefined,
         valueLevel: undefined,
         beginChargeDate: undefined,
