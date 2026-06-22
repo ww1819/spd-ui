@@ -106,6 +106,12 @@
                 <SelectFinanceCategoryLow v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类多选" />
               </div>
             </el-form-item>
+            <el-form-item prop="materialIsProcure" class="query-item-inline">
+              <el-select v-model="queryParams.materialIsProcure" placeholder="集采" clearable style="width: 130px">
+                <el-option label="是" value="1" />
+                <el-option label="否" value="2" />
+              </el-select>
+            </el-form-item>
             <el-form-item prop="warehouseCategoryIds" class="query-item-inline">
               <div class="query-select-wrapper category-multi-wrap">
                 <SelectWarehouseCategoryLow v-model="queryParams.warehouseCategoryIds" :multiple="true" placeholder="库房分类多选" />
@@ -252,7 +258,7 @@
           <span>{{ formatBillingYesNo(scope.row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="集采明细" align="center" width="90" show-overflow-tooltip resizable>
+      <el-table-column label="集采" align="center" width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ formatProcureYesNo(scope.row) }}</span>
         </template>
@@ -361,6 +367,7 @@ export default {
         financeCategoryKeyword: null,
         warehouseCategoryKeyword: null,
         isGz: null,
+        materialIsProcure: null,
         financeCategoryIds: [],
         warehouseCategoryIds: [],
         beginDate: this.getStatDate(),
@@ -532,6 +539,7 @@ export default {
       this.queryParams.warehouseCategoryKeyword = null;
       this.queryParams.financeCategoryIds = [];
       this.queryParams.warehouseCategoryIds = [];
+      this.queryParams.materialIsProcure = null;
       this.moreSearchTypes = [];
       this.moreSearchKeywords = {};
       this.handleQuery();

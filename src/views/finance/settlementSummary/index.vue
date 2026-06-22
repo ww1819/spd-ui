@@ -41,6 +41,14 @@
       <el-form-item label="耗材" prop="materialNameLike">
         <el-input v-model="queryParams.materialNameLike" placeholder="名称/编码/简码" clearable style="width: 160px" />
       </el-form-item>
+      <el-form-item label="财务分类" prop="financeCategoryIds">
+        <SelectFinanceCategoryLow
+          v-model="queryParams.financeCategoryIds"
+          :multiple="true"
+          placeholder="财务分类多选"
+          style="width: 200px"
+        />
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
@@ -185,6 +193,7 @@ import { exportFinanceSettlementSummaryXlsx, exportFinanceDeptConsumablePickupXl
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse'
 import SelectDepartment from '@/components/SelectModel/SelectDepartment'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier'
+import SelectFinanceCategoryLow from '@/components/SelectModel/SelectFinanceCategoryLow'
 import RightToolbar from '@/components/RightToolbar'
 
 function pad2(n) {
@@ -211,7 +220,7 @@ function dateOnly(s) {
 
 export default {
   name: 'FinanceSettlementSummary',
-  components: { SelectWarehouse, SelectDepartment, SelectSupplier, RightToolbar },
+  components: { SelectWarehouse, SelectDepartment, SelectSupplier, SelectFinanceCategoryLow, RightToolbar },
   data() {
     return {
       loading: false,
@@ -224,6 +233,7 @@ export default {
         supplerId: null,
         materialIsProcure: null,
         materialNameLike: null,
+        financeCategoryIds: [],
       },
       bundle: {
         materialSuppliers: [],
@@ -383,6 +393,9 @@ export default {
       if (Array.isArray(p.warehouseIds) && p.warehouseIds.length === 0) {
         p.warehouseIds = null
       }
+      if (Array.isArray(p.financeCategoryIds) && p.financeCategoryIds.length === 0) {
+        p.financeCategoryIds = null
+      }
       return p
     },
     loadData() {
@@ -420,6 +433,7 @@ export default {
         supplerId: null,
         materialIsProcure: null,
         materialNameLike: null,
+        financeCategoryIds: [],
       })
       this.$refs.queryForm && this.$refs.queryForm.clearValidate()
       this.handleQuery()
