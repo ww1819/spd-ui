@@ -74,6 +74,15 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
+            <el-form-item label="财务分类" prop="financeCategoryIds" class="query-item-inline">
+              <div class="query-select-wrapper query-select-finance-cat">
+                <SelectFinanceCategoryLow
+                  v-model="queryParams.financeCategoryIds"
+                  :multiple="true"
+                  placeholder="财务分类多选"
+                />
+              </div>
+            </el-form-item>
           </el-col>
         </el-row>
       </el-form>
@@ -105,19 +114,6 @@
         </el-table-column>
         <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="耗材" align="center" prop="material.name" width="160" show-overflow-tooltip resizable />
-        <el-table-column
-          v-for="col in hisChargeItemColumnDefs"
-          :key="'his-charge-' + col.key"
-          :label="col.label"
-          :width="col.width"
-          align="center"
-          show-overflow-tooltip
-          resizable
-        >
-          <template slot-scope="scope">
-            <span>{{ col.text(scope.row) }}</span>
-          </template>
-        </el-table-column>
         <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="规格" align="center" prop="material.speci" width="80" show-overflow-tooltip resizable/>
         <el-table-column label="型号" align="center" prop="material.model" width="80" show-overflow-tooltip resizable/>
@@ -242,6 +238,19 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
+        <el-table-column
+          v-for="col in hisChargeItemColumnDefs"
+          :key="'his-charge-' + col.key"
+          :label="col.label"
+          :width="col.width"
+          align="center"
+          show-overflow-tooltip
+          resizable
+        >
+          <template slot-scope="scope">
+            <span>{{ col.text(scope.row) }}</span>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
 
@@ -272,6 +281,7 @@ import { exportDepInventoryDetailStyledXlsx } from "@/utils/departmentOutSummary
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
+import SelectFinanceCategoryLow from "@/components/SelectModel/SelectFinanceCategoryLow";
 import RightToolbar from "@/components/RightToolbar";
 import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 
@@ -279,7 +289,7 @@ export default {
   name: "InventoryDetail",
   dicts: ['is_use_status'],
   mixins: [hisChargeItemTableColumnsMixin],
-  components: {SelectDepartment,SelectWarehouse,SelectSupplier,RightToolbar},
+  components: {SelectDepartment,SelectWarehouse,SelectSupplier,SelectFinanceCategoryLow,RightToolbar},
   props: {
     /** detail：库存明细；alert：科室库存预警；nearExpiry：近效期（与后端查询参数一致） */
     listVariant: {
@@ -315,7 +325,8 @@ export default {
         materialNo: null,
         materialDate: null,
         warehouseDate: null,
-        receiptConfirmStatus: null
+        receiptConfirmStatus: null,
+        financeCategoryIds: []
       }
     };
   },
@@ -379,6 +390,9 @@ export default {
       } else if (this.listVariant === 'nearExpiry') {
         p.depInventoryNearExpiryDays = 30
       }
+      if (Array.isArray(p.financeCategoryIds) && p.financeCategoryIds.length === 0) {
+        p.financeCategoryIds = null;
+      }
       return p
     },
     getList() {
@@ -402,6 +416,7 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.queryParams.materialIsUse = '';
+      this.queryParams.financeCategoryIds = [];
       this.handleQuery();
     },
     handleSizeChange(val) {
@@ -537,6 +552,10 @@ export default {
 
 .query-input-batch {
   width: 150px;
+}
+
+.query-select-finance-cat {
+  width: 200px;
 }
 
 .form-fields-container {

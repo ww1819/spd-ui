@@ -141,23 +141,7 @@ import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectFinanceCategoryLow from "@/components/SelectModel/SelectFinanceCategoryLow";
 import RightToolbar from "@/components/RightToolbar";
-
-function formatQueryDate(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function getDefaultBeginDate() {
-  const d = new Date();
-  d.setDate(d.getDate() - 5);
-  return formatQueryDate(d);
-}
-
-function getDefaultEndDate() {
-  return formatQueryDate(new Date());
-}
+import { getDefaultBeginDate, getDefaultEndDate } from "../consumeDetailDateDefaults";
 
 export default {
   name: "ConsumeRankingTable",

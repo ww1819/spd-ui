@@ -145,6 +145,7 @@ import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
 import RightToolbar from "@/components/RightToolbar";
+import { getDefaultBeginDate, getDefaultEndDate } from "../consumeDetailDateDefaults";
 
 export default {
   name: "ConsumeSummaryTable",
@@ -165,8 +166,8 @@ export default {
         materialName: null,
         warehouseId: null,
         departmentId: null,
-        beginDate: null,
-        endDate: null
+        beginDate: getDefaultBeginDate(),
+        endDate: getDefaultEndDate()
       }
     };
   },
@@ -210,8 +211,8 @@ export default {
       this.queryParams.materialName = null;
       this.queryParams.warehouseId = null;
       this.queryParams.departmentId = null;
-      this.queryParams.beginDate = null;
-      this.queryParams.endDate = null;
+      this.queryParams.beginDate = getDefaultBeginDate();
+      this.queryParams.endDate = getDefaultEndDate();
       this.handleQuery();
     },
     /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */

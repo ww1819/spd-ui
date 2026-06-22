@@ -159,6 +159,7 @@ import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete"
 import SelectFinanceCategoryLow from "@/components/SelectModel/SelectFinanceCategoryLow";
 import SelectWarehouseCategoryLow from "@/components/SelectModel/SelectWarehouseCategoryLow";
 import RightToolbar from "@/components/RightToolbar";
+import { getDefaultBeginDate, getDefaultEndDate } from "../consumeDetailDateDefaults";
 
 export default {
   name: "ConsumeOutReturnSummaryTable",
@@ -188,8 +189,8 @@ export default {
         materialSpeciLike: null,
         financeCategoryIds: null,
         warehouseCategoryIds: null,
-        beginDate: null,
-        endDate: null
+        beginDate: getDefaultBeginDate(),
+        endDate: getDefaultEndDate()
       }
     };
   },
@@ -257,8 +258,8 @@ export default {
       this.queryParams.materialSpeciLike = null;
       this.queryParams.financeCategoryIds = null;
       this.queryParams.warehouseCategoryIds = null;
-      this.queryParams.beginDate = null;
-      this.queryParams.endDate = null;
+      this.queryParams.beginDate = getDefaultBeginDate();
+      this.queryParams.endDate = getDefaultEndDate();
       this.handleQuery();
     },
     async handleExport() {

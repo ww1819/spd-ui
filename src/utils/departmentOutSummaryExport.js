@@ -1637,7 +1637,7 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
     '库存数量',
     '金额',
     '入库批次号',
-    '耗材批次号',
+    '批号',
     '主条码',
     '辅条码',
     '生产日期',
@@ -2415,11 +2415,6 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '序号',
     '耗材编码',
     '耗材',
-    '收费项目编码',
-    '收费项目名称',
-    '收费项目规格',
-    '收费项目单位',
-    '收费项目单价',
     '科室',
     '规格',
     '型号',
@@ -2446,9 +2441,14 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '出库单号',
     '归属仓库',
     '收货确认状态',
+    '收费项目编码',
+    '收费项目名称',
+    '收费项目规格',
+    '收费项目单位',
+    '收费项目单价',
   ];
-  const qtyCol = 13;
-  const amtCol = includeNearExpiryDays ? 16 : 14;
+  const qtyCol = 9;
+  const amtCol = includeNearExpiryDays ? 11 : 10;
   const numericCols = [8, qtyCol, amtCol];
   return exportInventoryQueryStyledXlsx({
     sheetName: '科室库存明细',
@@ -2473,7 +2473,6 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
         0,
         m.code || '',
         m.name || '',
-        ...hisChargeItemExportCellsFromMaterial(m),
         (row.department && row.department.name) || '',
         m.speci || '',
         m.model || '',
@@ -2505,6 +2504,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
         row.outOrderNo || '',
         (row.warehouse && row.warehouse.name) || '',
         depInventoryReceiptStatus(row.receiptConfirmStatus),
+        ...hisChargeItemExportCellsFromMaterial(m),
       ];
     },
     fileName,

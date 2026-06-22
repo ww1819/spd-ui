@@ -53,7 +53,15 @@
                   />
                 </el-form-item>
               </el-col>
-              <el-col :span="18" />
+              <el-col :span="6">
+                <el-form-item label="财务分类" prop="financeCategoryId" label-width="100px">
+                  <SelectFinanceCategoryLow
+                    v-model="queryParams.financeCategoryId"
+                    placeholder="财务分类"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12" />
             </el-row>
           </el-form>
         </div>
@@ -172,10 +180,11 @@ import { listMaterial } from "@/api/foundation/material";
 import { sortInventoryRowsByNameSpecCodeMaterialId } from "@/utils/stocktakingInventorySort";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
+import SelectFinanceCategoryLow from "@/components/SelectModel/SelectFinanceCategoryLow";
 
 export default {
   name: "SelectDepInventory",
-  components: { SelectMaterial, SelectDepartment },
+  components: { SelectMaterial, SelectDepartment, SelectFinanceCategoryLow },
   dicts: ["way_status"],
   props: {
     DialogComponentShow: {},
@@ -215,7 +224,8 @@ export default {
         warehouseId: null,
         materialId: null,
         materialKeyword: null,
-        batchNo: null
+        batchNo: null,
+        financeCategoryId: null
       },
       form: {},
       selectedRowMap: {}
@@ -313,6 +323,16 @@ export default {
       if (limit != null) this.queryParams.pageSize = limit;
       this.getList();
     },
+    buildInventoryPickParams() {
+      const params = { ...this.queryParams };
+      if (params.financeCategoryId != null && params.financeCategoryId !== "") {
+        params.financeCategoryIds = [params.financeCategoryId];
+      } else {
+        params.financeCategoryIds = null;
+      }
+      delete params.financeCategoryId;
+      return params;
+    },
     getList() {
       this.loading = true;
       if (this.useMaterialDict) {
@@ -344,7 +364,7 @@ export default {
           });
         return;
       }
-      listInventoryPick(this.queryParams)
+      listInventoryPick(this.buildInventoryPickParams())
         .then(response => {
           const rows = response.rows || [];
           if (this.selectedDetails && this.selectedDetails.length) {
@@ -409,6 +429,7 @@ export default {
         this.queryParams.warehouseId = null;
       }
       this.queryParams.batchNo = null;
+      this.queryParams.financeCategoryId = null;
       this.handleQuery();
     },
     handleSelectionChange(val) {

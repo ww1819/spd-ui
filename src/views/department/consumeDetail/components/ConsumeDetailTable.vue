@@ -185,6 +185,7 @@ import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
 import RightToolbar from "@/components/RightToolbar";
+import { getDefaultBeginDate, getDefaultEndDate } from "../consumeDetailDateDefaults";
 
 export default {
   name: "ConsumeDetailTable",
@@ -206,8 +207,8 @@ export default {
         materialName: null,
         warehouseId: null,
         departmentId: null,
-        beginDate: null,
-        endDate: null,
+        beginDate: getDefaultBeginDate(),
+        endDate: getDefaultEndDate(),
         batchNo: null
       }
     };
@@ -252,8 +253,8 @@ export default {
       this.queryParams.materialName = null;
       this.queryParams.warehouseId = null;
       this.queryParams.departmentId = null;
-      this.queryParams.beginDate = null;
-      this.queryParams.endDate = null;
+      this.queryParams.beginDate = getDefaultBeginDate();
+      this.queryParams.endDate = getDefaultEndDate();
       this.queryParams.batchNo = null;
       this.handleQuery();
     },
