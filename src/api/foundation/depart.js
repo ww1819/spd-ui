@@ -34,6 +34,14 @@ export function listdepartAll(userId) {
   })
 }
 
+/** 科室下拉（低敏感度：仅需登录，按用户科室数据范围过滤） */
+export function listDepartOptionselect() {
+  return request({
+    url: '/foundation/depart/optionselect',
+    method: 'get'
+  })
+}
+
 // 查询科室详细
 export function getdepart(id) {
   return request({

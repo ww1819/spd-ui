@@ -2,9 +2,40 @@
   <div class="app-container high-charge-confirm-page">
     <div class="hc-filter-panel">
       <el-form :model="query" inline size="small" class="hc-query-form">
-        <el-form-item label="科室">
-          <el-select v-model="query.departmentId" placeholder="按权限科室" clearable filterable style="width:200px">
+        <el-form-item label="核销科室">
+          <el-select
+            v-model="query.departmentId"
+            placeholder="名称/编码/简拼"
+            clearable
+            filterable
+            :filter-method="filterDeptMethod"
+            style="width:200px"
+          >
             <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="开单科室">
+          <el-select
+            v-model="query.orderingDepartmentId"
+            placeholder="名称/编码/简拼"
+            clearable
+            filterable
+            :filter-method="filterOrderingDeptMethod"
+            style="width:200px"
+          >
+            <el-option v-for="d in orderingDeptOptions" :key="'ord-' + d.id" :label="d.name" :value="d.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="执行科室">
+          <el-select
+            v-model="query.execDepartmentId"
+            placeholder="名称/编码/简拼"
+            clearable
+            filterable
+            :filter-method="filterExecDeptMethod"
+            style="width:200px"
+          >
+            <el-option v-for="d in execDeptOptions" :key="'exec-' + d.id" :label="d.name" :value="d.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="确认状态">
@@ -69,7 +100,9 @@
             <span>{{ formatDateTimeCell(scope.row.consumeAuditTime) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="核销科室" prop="departmentName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="核销科室" prop="departmentName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="开单科室" prop="orderingDeptName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="执行科室" prop="execDeptName" min-width="110" show-overflow-tooltip />
         <el-table-column label="患者姓名" prop="patientName" width="100" show-overflow-tooltip />
         <el-table-column label="住院/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
         <el-table-column label="收费编码" prop="chargeItemId" width="120" show-overflow-tooltip />
@@ -118,8 +151,14 @@
       <p>已选 <strong>{{ selectedRows.length }}</strong> 条明细，合计数量 <strong>{{ selectedTotalQty }}</strong>，合计金额 <strong>{{ selectedTotalAmt }}</strong></p>
       <el-form label-width="100px" size="small">
         <el-form-item label="核销科室" required>
-          <el-select v-model="confirmDepartmentId" placeholder="请选择核销科室" filterable style="width:100%">
-            <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
+          <el-select
+            v-model="confirmDepartmentId"
+            placeholder="名称/编码/简拼"
+            filterable
+            :filter-method="filterConfirmDeptMethod"
+            style="width:100%"
+          >
+            <el-option v-for="d in confirmDeptOptions" :key="d.id" :label="d.name" :value="d.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="仓库" required>
@@ -149,9 +188,10 @@
 </template>
 
 <script>
-import { listdepartAll } from '@/api/foundation/depart'
+import { listDepartOptionselect } from '@/api/foundation/depart'
 import { listSettlementWarehousePick } from '@/api/foundation/warehouse'
 import { listHighChargeConfirm, confirmHighChargeConsume } from '@/api/gz/highChargeConfirm'
+import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
 
 function pad2(n) {
   return n < 10 ? '0' + n : '' + n
@@ -177,12 +217,18 @@ export default {
       list: [],
       total: 0,
       deptOptions: [],
+      allDeptOptions: [],
+      confirmDeptOptions: [],
+      orderingDeptOptions: [],
+      execDeptOptions: [],
       warehouseOptions: [],
       selectedRows: [],
       query: {
         pageNum: 1,
         pageSize: 10,
         departmentId: undefined,
+        orderingDepartmentId: undefined,
+        execDepartmentId: undefined,
         confirmStatus: undefined,
         beginConsumeAuditTime: month.begin,
         endConsumeAuditTime: month.end,
@@ -235,12 +281,29 @@ export default {
       return this.parseTime(v, '{y}-{m}-{d} {h}:{i}:{s}')
     },
     loadDeptOptions() {
-      const uid = this.$store.getters.userId
-      if (!uid) return
-      listdepartAll(uid).then(res => {
-        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
-        this.deptOptions = list.filter(d => d && d.id != null)
+      listDepartOptionselect().then(res => {
+        const list = normalizeDepartPickResponse(res)
+        this.allDeptOptions = list
+        this.deptOptions = list
+        this.confirmDeptOptions = list
+        this.orderingDeptOptions = list
+        this.execDeptOptions = list
       })
+    },
+    filterDeptList(query, targetKey) {
+      this[targetKey] = filterDepartPickList(this.allDeptOptions, query)
+    },
+    filterDeptMethod(query) {
+      this.filterDeptList(query, 'deptOptions')
+    },
+    filterOrderingDeptMethod(query) {
+      this.filterDeptList(query, 'orderingDeptOptions')
+    },
+    filterExecDeptMethod(query) {
+      this.filterDeptList(query, 'execDeptOptions')
+    },
+    filterConfirmDeptMethod(query) {
+      this.filterDeptList(query, 'confirmDeptOptions')
     },
     loadWarehouseOptions() {
       listSettlementWarehousePick().then(res => {
@@ -274,6 +337,8 @@ export default {
         pageNum: 1,
         pageSize: 10,
         departmentId: undefined,
+        orderingDepartmentId: undefined,
+        execDepartmentId: undefined,
         confirmStatus: undefined,
         beginConsumeAuditTime: month.begin,
         endConsumeAuditTime: month.end,
@@ -308,6 +373,7 @@ export default {
       }
       this.confirmDepartmentId = deptIds[0] || this.query.departmentId || undefined
       this.confirmWarehouseId = undefined
+      this.confirmDeptOptions = this.allDeptOptions
       this.loadWarehouseOptions()
       this.confirmDialogVisible = true
     },

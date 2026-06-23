@@ -30,7 +30,7 @@
         <el-form-item label="科室">
           <el-select
             v-model="detailQuery.departmentId"
-            placeholder="科室名称/首字母"
+            placeholder="名称/编码/简拼"
             clearable
             filterable
             :filter-method="filterDeptMethod"
@@ -196,8 +196,9 @@
             <el-form-item label="核销科室" required>
               <el-select
                 v-model="highConsumeForm.consumeDepartmentId"
-                placeholder="请选择核销科室"
+                placeholder="名称/编码/简拼"
                 filterable
+                :filter-method="filterConsumeDeptMethod"
                 style="width:100%"
                 @change="onHighConsumeDepartmentChange"
               >
@@ -310,14 +311,14 @@ import {
   formatHisChargeSlowError
 } from '@/utils/patientChargeFetch'
 import { checkPermi } from '@/utils/permission'
-import { pinyin } from 'pinyin-pro'
+import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
 import {
   normalizeBarcodeInput,
   isImeProcessKey,
   isScannerEnterKey,
   isRapidScannerBurst
 } from '@/utils/barcodeInput'
-import { listdepartAll } from '@/api/foundation/depart'
+import { listDepartOptionselect } from '@/api/foundation/depart'
 import { fetchInpatientMirror, fetchOutpatientMirror } from '@/api/department/patientCharge'
 import {
   listHighChargeInpatientMirror,
@@ -367,6 +368,7 @@ export default {
         consumeDepartmentId: undefined
       },
       consumeDeptOptions: [],
+      allConsumeDeptOptions: [],
       highScanCode: '',
       highScanComposing: false,
       highScanBuffer: '',
@@ -441,12 +443,11 @@ export default {
       return (page - 1) * size + index + 1
     },
     loadDeptOptions() {
-      const uid = this.$store.getters.userId
-      if (!uid) return
-      listdepartAll(uid).then(res => {
-        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
-        this.consumeDeptOptions = list.filter(d => d && d.id != null)
-        this.allDeptOptions = list.filter(d => d && d.id != null && d.hisId != null && String(d.hisId).trim() !== '')
+      listDepartOptionselect().then(res => {
+        const list = normalizeDepartPickResponse(res)
+        this.allConsumeDeptOptions = list
+        this.consumeDeptOptions = list
+        this.allDeptOptions = list.filter(d => d.hisId != null && String(d.hisId).trim() !== '')
         this.deptOptions = this.allDeptOptions
       })
     },
@@ -462,7 +463,7 @@ export default {
     resolveDefaultConsumeDepartmentId(row) {
       if (!row || !row.execDeptId) return undefined
       const his = String(row.execDeptId).trim()
-      const hit = this.consumeDeptOptions.find(d => d.hisId && String(d.hisId).trim() === his)
+      const hit = this.allConsumeDeptOptions.find(d => d.hisId && String(d.hisId).trim() === his)
       return hit ? hit.id : undefined
     },
     onHighConsumeDepartmentChange() {
@@ -473,29 +474,10 @@ export default {
       }
     },
     filterDeptMethod(query) {
-      if (!query) {
-        this.deptOptions = this.allDeptOptions
-        return
-      }
-      const queryUpper = query.toUpperCase()
-      this.deptOptions = this.allDeptOptions.filter(item => {
-        if (!item || !item.name) return false
-        const name = item.name
-        const code = (item.code || '').toUpperCase()
-        const referred = (item.referredName || '').toUpperCase()
-        if (name.includes(query) || name.toUpperCase().includes(queryUpper) || code.includes(queryUpper) || referred.includes(queryUpper)) {
-          return true
-        }
-        if (/^[a-zA-Z]+$/.test(query)) {
-          try {
-            const initials = pinyin(name, { pattern: 'first', toneType: 'none', type: 'array' }).join('').toUpperCase()
-            if (initials.includes(queryUpper)) return true
-          } catch (e) {
-            return false
-          }
-        }
-        return false
-      })
+      this.deptOptions = filterDepartPickList(this.allDeptOptions, query)
+    },
+    filterConsumeDeptMethod(query) {
+      this.consumeDeptOptions = filterDepartPickList(this.allConsumeDeptOptions, query)
     },
     toQueryDayStart(s) {
       if (!s) return undefined
@@ -586,6 +568,7 @@ export default {
       this.resetHighScanInputState()
       this.highBillRemaining = null
       this.highConsumeForm.consumeDepartmentId = this.resolveDefaultConsumeDepartmentId(row)
+      this.consumeDeptOptions = this.allConsumeDeptOptions
       this.highDialogVisible = true
       this.$nextTick(() => {
         if (this.$refs.highScanInput && this.$refs.highScanInput.focus) {
