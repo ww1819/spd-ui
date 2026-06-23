@@ -69,7 +69,7 @@
             <span>{{ formatDateTimeCell(scope.row.consumeAuditTime) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="科室" prop="departmentName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="核销科室" prop="departmentName" min-width="120" show-overflow-tooltip />
         <el-table-column label="患者姓名" prop="patientName" width="100" show-overflow-tooltip />
         <el-table-column label="住院/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
         <el-table-column label="收费编码" prop="chargeItemId" width="120" show-overflow-tooltip />
@@ -117,6 +117,11 @@
     <el-dialog title="消耗确认" :visible.sync="confirmDialogVisible" width="520px" append-to-body @close="resetConfirmDialog">
       <p>已选 <strong>{{ selectedRows.length }}</strong> 条明细，合计数量 <strong>{{ selectedTotalQty }}</strong>，合计金额 <strong>{{ selectedTotalAmt }}</strong></p>
       <el-form label-width="100px" size="small">
+        <el-form-item label="核销科室" required>
+          <el-select v-model="confirmDepartmentId" placeholder="请选择核销科室" filterable style="width:100%">
+            <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="仓库" required>
           <el-select v-model="confirmWarehouseId" placeholder="请选择结算仓库" filterable style="width:100%">
             <el-option v-for="w in warehouseOptions" :key="w.id" :label="w.name" :value="w.id" />
@@ -186,6 +191,7 @@ export default {
         materialName: undefined
       },
       confirmDialogVisible: false,
+      confirmDepartmentId: undefined,
       confirmWarehouseId: undefined,
       confirmSubmitting: false,
       resultDialogVisible: false,
@@ -297,18 +303,24 @@ export default {
       }
       const deptIds = [...new Set(this.selectedRows.map(r => r.departmentId).filter(Boolean))]
       if (deptIds.length > 1) {
-        this.$modal.msgWarning('请选择同一科室的明细进行确认')
+        this.$modal.msgWarning('请选择同一核销科室的明细进行确认')
         return
       }
+      this.confirmDepartmentId = deptIds[0] || this.query.departmentId || undefined
       this.confirmWarehouseId = undefined
       this.loadWarehouseOptions()
       this.confirmDialogVisible = true
     },
     resetConfirmDialog() {
+      this.confirmDepartmentId = undefined
       this.confirmWarehouseId = undefined
       this.confirmSubmitting = false
     },
     submitConfirm() {
+      if (!this.confirmDepartmentId) {
+        this.$modal.msgWarning('请选择核销科室')
+        return
+      }
       if (!this.confirmWarehouseId) {
         this.$modal.msgWarning('请选择仓库')
         return
@@ -316,7 +328,8 @@ export default {
       this.confirmSubmitting = true
       confirmHighChargeConsume({
         linkIds: this.selectedRows.map(r => r.linkId),
-        warehouseId: this.confirmWarehouseId
+        warehouseId: this.confirmWarehouseId,
+        departmentId: this.confirmDepartmentId
       }).then(res => {
         this.result = res.data || { bills: [], confirmNo: '', lineCount: 0 }
         this.confirmDialogVisible = false
