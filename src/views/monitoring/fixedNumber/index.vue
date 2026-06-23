@@ -498,7 +498,7 @@
                           v-model="addQueryParams.materialName"
                           placeholder="名称/编码/简码"
                           clearable
-                          @keyup.enter.native="handleAddQuery"
+                          @keyup.enter.native="handleAddSearch"
                         />
                       </el-form-item>
                     </el-col>
@@ -508,7 +508,7 @@
                           v-model="addQueryParams.speci"
                           placeholder="规格型号"
                           clearable
-                          @keyup.enter.native="handleAddQuery"
+                          @keyup.enter.native="handleAddSearch"
                         />
                       </el-form-item>
                     </el-col>
@@ -560,8 +560,25 @@
                     type="primary"
                     icon="el-icon-search"
                     size="medium"
-                    @click="handleAddQuery"
+                    @click="handleAddSearch"
                   >搜索</el-button>
+                </el-col>
+                <el-col :span="1.5">
+                  <el-button
+                    type="success"
+                    icon="el-icon-check"
+                    size="medium"
+                    :loading="addSelectAllLoading"
+                    @click="handleAddSelectAll"
+                  >全选</el-button>
+                </el-col>
+                <el-col :span="1.5">
+                  <el-button
+                    icon="el-icon-close"
+                    size="medium"
+                    :disabled="addCrossPageSelectedCount === 0"
+                    @click="handleAddClearSelectAll"
+                  >取消全选</el-button>
                 </el-col>
                 <el-col :span="1.5">
                   <el-button
@@ -569,6 +586,9 @@
                     size="medium"
                     @click="resetAddQuery"
                   >重置</el-button>
+                </el-col>
+                <el-col v-if="addCrossPageSelectedCount > 0 || addTotal > 0" :span="8" class="add-selection-hint">
+                  <span>已跨页选中 {{ addCrossPageSelectedCount }} 条 / 共 {{ addTotal }} 条</span>
                 </el-col>
                 <el-col :span="1.5">
                   <el-button
@@ -587,13 +607,15 @@
 
               <!-- 明细表：高度适当降低，避免遮挡底部翻页 -->
               <el-table
+                ref="addMaterialTable"
                 v-loading="addTableLoading"
                 :data="addMaterialList"
+                :row-key="getAddMaterialRowKey"
                 @selection-change="handleAddSelectionChange"
                 height="calc(40vh)"
                 border
               >
-                <el-table-column type="selection" width="55" align="center" />
+                <el-table-column type="selection" width="55" align="center" :reserve-selection="true" />
                 <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     {{ (addQueryParams.pageNum - 1) * addQueryParams.pageSize + scope.$index + 1 }}
@@ -736,8 +758,13 @@ export default {
       addMaterialList: [],
       // 新增弹窗总数
       addTotal: 0,
-      // 新增弹窗选中数据
+      // 新增弹窗选中数据（当前页同步；跨页完整集合见 addSelectedRowMap）
       addSelectedMaterials: [],
+      /** 新增弹窗跨页勾选缓存：key 为 material.id */
+      addSelectedRowMap: {},
+      addSelectAllLoading: false,
+      /** 恢复表格勾选时屏蔽 selection-change，避免冲掉跨页缓存 */
+      addSelectionRestoring: false,
       // 新增弹窗查询参数
       addQueryParams: {
         pageNum: 1,
@@ -800,6 +827,9 @@ export default {
     tableHeight() {
       // 明细表容器高度约为 calc(100vh - 420px)，这里预留更少的空间，让表格整体更高
       return 'calc(100vh - 450px)';
+    },
+    addCrossPageSelectedCount() {
+      return Object.keys(this.addSelectedRowMap || {}).length;
     }
   },
   watch: {
@@ -1319,9 +1349,8 @@ export default {
         this.handleAddQuery();
       });
     },
-    /** 新增弹窗搜索：POST 请求体传参，排除“后端已有 + 前端未保存”的物料ID后分页，避免 400/414 */
-    handleAddQuery() {
-      this.addTableLoading = true;
+    /** 构建新增弹窗选品查询条件 */
+    buildAddPickQuery() {
       const query = {
         materialName: this.addQueryParams.materialName,
         speci: this.addQueryParams.speci,
@@ -1353,18 +1382,130 @@ export default {
       if (excludeIds.length > 0) {
         query.excludeMaterialIds = excludeIds.join(',');
       }
+      return query;
+    },
+    getAddMaterialRowKey(row) {
+      if (!row) return null;
+      const id = row.id != null ? row.id
+        : (row.materialId != null ? row.materialId
+          : (row.material && row.material.id != null ? row.material.id : null));
+      return id != null ? String(id) : null;
+    },
+    restoreAddPageSelection() {
+      const table = this.$refs.addMaterialTable;
+      if (!table || !this.addMaterialList || this.addMaterialList.length === 0) {
+        return;
+      }
+      this.addSelectionRestoring = true;
+      table.clearSelection();
+      this.addMaterialList.forEach(row => {
+        const key = this.getAddMaterialRowKey(row);
+        if (key && this.addSelectedRowMap[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+      this.$nextTick(() => {
+        this.addSelectionRestoring = false;
+      });
+    },
+    clearAddCrossPageSelection() {
+      this.addSelectedRowMap = {};
+      this.addSelectedMaterials = [];
+      this.addSelectionRestoring = true;
+      const table = this.$refs.addMaterialTable;
+      if (table) {
+        table.clearSelection();
+      }
+      this.$nextTick(() => {
+        this.addSelectionRestoring = false;
+      });
+    },
+    syncAddSelectionFromMap() {
+      this.addSelectedMaterials = Object.values(this.addSelectedRowMap || {});
+    },
+    /** 新增弹窗搜索（重置到第一页并清空跨页勾选） */
+    handleAddSearch() {
+      this.addQueryParams.pageNum = 1;
+      this.clearAddCrossPageSelection();
+      this.handleAddQuery();
+    },
+    /** 新增弹窗查询：POST 请求体传参，排除“后端已有 + 前端未保存”的物料ID后分页，避免 400/414 */
+    handleAddQuery() {
+      this.addTableLoading = true;
       const postData = {
         pageNum: this.addQueryParams.pageNum,
         pageSize: this.addQueryParams.pageSize,
-        query: query
+        query: this.buildAddPickQuery()
       };
       listFixedNumberMaterialDetailPick(postData).then(response => {
         this.addMaterialList = (response && response.rows) || [];
         this.addTotal = (response && response.total !== undefined) ? response.total : 0;
         this.addTableLoading = false;
+        this.$nextTick(() => this.restoreAddPageSelection());
       }).catch(() => {
         this.addTableLoading = false;
       });
+    },
+    /** 全选当前查询条件下的全部结果（跨页） */
+    async handleAddSelectAll() {
+      if (this.addSelectAllLoading) {
+        return;
+      }
+      this.addSelectAllLoading = true;
+      try {
+        const query = this.buildAddPickQuery();
+        const countRes = await listFixedNumberMaterialDetailPick({
+          pageNum: 1,
+          pageSize: 1,
+          query
+        });
+        const total = (countRes && countRes.total !== undefined) ? countRes.total : 0;
+        if (!total) {
+          this.$modal.msgWarning('没有可选择的记录');
+          return;
+        }
+        this.clearAddCrossPageSelection();
+        const pageSize = 500;
+        const totalPages = Math.ceil(total / pageSize);
+        let skipped = 0;
+        for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+          const response = await listFixedNumberMaterialDetailPick({
+            pageNum,
+            pageSize,
+            query
+          });
+          const rows = (response && response.rows) || [];
+          rows.forEach(row => {
+            const key = this.getAddMaterialRowKey(row);
+            if (key) {
+              this.$set(this.addSelectedRowMap, key, row);
+            } else {
+              skipped += 1;
+            }
+          });
+        }
+        const selectedCount = Object.keys(this.addSelectedRowMap || {}).length;
+        this.syncAddSelectionFromMap();
+        await this.$nextTick();
+        this.restoreAddPageSelection();
+        if (selectedCount === total) {
+          this.$modal.msgSuccess(`已全选 ${selectedCount} 条`);
+        } else if (selectedCount > 0) {
+          this.$modal.msgWarning(`已选中 ${selectedCount} 条，查询共 ${total} 条${skipped > 0 ? '（部分记录缺少ID未选中）' : ''}`);
+        } else {
+          this.$modal.msgWarning('未能选中任何记录，请重试');
+        }
+      } catch (e) {
+        console.error('定数监测新增全选失败:', e);
+        this.$modal.msgError('全选失败，请重试');
+      } finally {
+        this.addSelectAllLoading = false;
+      }
+    },
+    /** 取消全选 */
+    handleAddClearSelectAll() {
+      this.clearAddCrossPageSelection();
+      this.$modal.msgSuccess('已取消全选');
     },
     /** 重置新增弹窗查询 */
     resetAddQuery() {
@@ -1379,15 +1520,33 @@ export default {
         storeroomIds: []
       };
       this.addMaterialList = [];
-      this.addSelectedMaterials = [];
+      this.clearAddCrossPageSelection();
     },
-    /** 新增弹窗选择变化 */
+    /** 新增弹窗选择变化（跨页缓存） */
     handleAddSelectionChange(selection) {
-      this.addSelectedMaterials = selection;
+      if (this.addSelectionRestoring) {
+        return;
+      }
+      const pageKeys = (this.addMaterialList || [])
+        .map(row => this.getAddMaterialRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach(key => {
+        if (this.addSelectedRowMap[key]) {
+          this.$delete(this.addSelectedRowMap, key);
+        }
+      });
+      (selection || []).forEach(row => {
+        const key = this.getAddMaterialRowKey(row);
+        if (key) {
+          this.$set(this.addSelectedRowMap, key, row);
+        }
+      });
+      this.syncAddSelectionFromMap();
     },
     /** 新增弹窗确定：将勾选的产品档案直接入库/科，调用后端 INSERT，避免前端状态导致数据丢失 */
     handleAddConfirm() {
-      if (this.addSelectedMaterials.length === 0) {
+      const selectedMaterials = Object.values(this.addSelectedRowMap || {});
+      if (selectedMaterials.length === 0) {
         this.$modal.msgWarning("请至少选择一条数据");
         return;
       }
@@ -1406,7 +1565,7 @@ export default {
         return;
       }
 
-      const detailList = this.addSelectedMaterials.map(material => ({
+      const detailList = selectedMaterials.map(material => ({
         materialId: material.materialId != null ? material.materialId : material.id,
         upperLimit: 0,
         lowerLimit: 0,
@@ -1427,7 +1586,7 @@ export default {
       addFixedNumber(saveData).then(() => {
         this.$modal.msgSuccess("已写入当前" + (this.queryParams.fixedNumberType === '2' ? '科室' : '仓库'));
         this.addDialogVisible = false;
-        this.addSelectedMaterials = [];
+        this.clearAddCrossPageSelection();
         this.getList();
         this.loadExistingMaterialIds();
       }).catch(err => {
@@ -2010,6 +2169,14 @@ export default {
 .modal-body .el-pagination {
   margin-top: 16px;
   flex-shrink: 0;
+}
+
+.add-selection-hint {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  color: #409eff;
+  font-size: 13px;
 }
 
 /* 弹窗动画效果 */
