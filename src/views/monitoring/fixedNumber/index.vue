@@ -148,6 +148,16 @@
                       <el-option label="非高值" value="2" />
                     </el-select>
                   </el-form-item>
+                  <el-form-item label="库房分类" prop="storeroomIds" class="query-item-inline">
+                    <div class="query-select-wrapper">
+                      <SelectWarehouseCategory
+                        v-model="queryParams.storeroomIds"
+                        :multiple="true"
+                        placeholder="库房分类"
+                        style="width: 100%"
+                      />
+                    </div>
+                  </el-form-item>
                 </el-col>
               </el-row>
             </el-form>
@@ -530,6 +540,16 @@
                         </el-select>
                       </el-form-item>
                     </el-col>
+                    <el-col :span="6">
+                      <el-form-item label="库房分类" prop="storeroomIds">
+                        <SelectWarehouseCategory
+                          v-model="addQueryParams.storeroomIds"
+                          :multiple="true"
+                          placeholder="库房分类"
+                          style="width: 100%"
+                        />
+                      </el-form-item>
+                    </el-col>
                   </el-row>
                 </el-form>
               </div>
@@ -668,13 +688,15 @@ import { listdepartAll } from "@/api/foundation/depart";
 import { listInventory } from "@/api/warehouse/inventory";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
+import SelectWarehouseCategory from '@/components/SelectModel/SelectWarehouseCategory';
 
 export default {
   name: "FixedNumber",
   dicts: [],
   components: {
     SelectSupplier,
-    SelectWarehouse
+    SelectWarehouse,
+    SelectWarehouseCategory
   },
   data() {
     return {
@@ -724,7 +746,8 @@ export default {
         materialName: null,
         speci: null,
         isProcure: null,
-        isGz: null
+        isGz: null,
+        storeroomIds: []
       },
       // 查询参数
       queryParams: {
@@ -738,6 +761,7 @@ export default {
         departmentId: null,
         isProcure: null,
         isGz: null,
+        storeroomIds: [],
         enableStatus: null,
         fixedNumberType: '1' // 默认为仓库定数监测
       },
@@ -1065,7 +1089,11 @@ export default {
     getList() {
       try {
         this.loading = true;
-        listFixedNumber(this.queryParams).then(response => {
+        const params = { ...this.queryParams };
+        if (Array.isArray(params.storeroomIds) && params.storeroomIds.length === 0) {
+          delete params.storeroomIds;
+        }
+        listFixedNumber(params).then(response => {
           try {
             const rows = (response && response.rows) || [];
             this.fixedNumberList = rows.map((item, index) => {
@@ -1301,6 +1329,9 @@ export default {
         isProcure: this.addQueryParams.isProcure,
         isGz: this.addQueryParams.isGz
       };
+      if (Array.isArray(this.addQueryParams.storeroomIds) && this.addQueryParams.storeroomIds.length > 0) {
+        query.storeroomIds = this.addQueryParams.storeroomIds;
+      }
       if (this.addQueryParams.materialName) {
         query.name = this.addQueryParams.materialName;
       }
@@ -1344,7 +1375,8 @@ export default {
         materialName: null,
         speci: null,
         isProcure: null,
-        isGz: null
+        isGz: null,
+        storeroomIds: []
       };
       this.addMaterialList = [];
       this.addSelectedMaterials = [];
