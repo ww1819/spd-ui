@@ -116,6 +116,14 @@
               v-hasPermi="['department:patientCharge:fetchInpatient', 'department:patientCharge:fetchOutpatient']"
             >HIS收费数据抓取</el-button>
           </el-form-item>
+          <el-form-item>
+            <el-button
+              type="primary"
+              plain
+              @click="openExecDeptBackfillDialog"
+              v-hasPermi="['department:patientCharge:fetchInpatient', 'department:patientCharge:fetchOutpatient']"
+            >补全执行科室</el-button>
+          </el-form-item>
         </el-form>
         </div>
 
@@ -363,6 +371,40 @@
         <el-button type="primary" :loading="fetchSubmitting" @click="submitFetch">确 定</el-button>
       </div>
     </el-dialog>
+
+    <el-dialog title="补全历史执行科室" :visible.sync="execDeptBackfillDialogVisible" width="520px" append-to-body @close="resetExecDeptBackfillForm">
+      <el-form :model="execDeptBackfillForm" label-width="100px" size="small">
+        <el-form-item label="开始时间" required>
+          <el-date-picker
+            v-model="execDeptBackfillForm.beginDate"
+            type="datetime"
+            value-format="yyyy-MM-dd HH:mm:ss"
+            placeholder="yyyy-MM-dd HH:mm:ss"
+            style="width:100%"
+            default-time="00:00:00"
+          />
+        </el-form-item>
+        <el-form-item label="结束时间" required>
+          <el-date-picker
+            v-model="execDeptBackfillForm.endDate"
+            type="datetime"
+            value-format="yyyy-MM-dd HH:mm:ss"
+            placeholder="yyyy-MM-dd HH:mm:ss"
+            style="width:100%"
+            default-time="23:59:59"
+          />
+        </el-form-item>
+        <el-form-item label="补全范围">
+          <el-checkbox v-model="execDeptBackfillForm.fetchInpatient" :disabled="!canFetchInpatient">住院</el-checkbox>
+          <el-checkbox v-model="execDeptBackfillForm.fetchOutpatient" :disabled="!canFetchOutpatient" style="margin-left:16px">门诊</el-checkbox>
+        </el-form-item>
+        <el-alert type="info" :closable="false" show-icon title="按计费时间从 HIS 回写本地镜像缺失的 exec_dept_id / exec_dept_name；仅更新已有收费行，不新增；单次跨度受服务端限制，历史数据请分段执行。" />
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="execDeptBackfillDialogVisible = false">取 消</el-button>
+        <el-button type="primary" :loading="execDeptBackfillSubmitting" @click="submitExecDeptBackfill">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -377,6 +419,8 @@ import {
   listChargeSummary,
   fetchInpatientMirror,
   fetchOutpatientMirror,
+  backfillInpatientExecDept,
+  backfillOutpatientExecDept,
   processMirrorLowValue,
   processMirrorLowValueBatch,
   listMirrorConsumeRecords,
@@ -420,6 +464,14 @@ export default {
       fetchDialogVisible: false,
       fetchSubmitting: false,
       fetchForm: {
+        beginDate: undefined,
+        endDate: undefined,
+        fetchInpatient: true,
+        fetchOutpatient: true
+      },
+      execDeptBackfillDialogVisible: false,
+      execDeptBackfillSubmitting: false,
+      execDeptBackfillForm: {
         beginDate: undefined,
         endDate: undefined,
         fetchInpatient: true,
@@ -685,6 +737,87 @@ export default {
         fetchInpatient: true,
         fetchOutpatient: true
       }
+    },
+    openExecDeptBackfillDialog() {
+      const day = parseTime(new Date(), '{y}-{m}-{d}')
+      this.execDeptBackfillForm = {
+        beginDate: `${day} 00:00:00`,
+        endDate: `${day} 23:59:59`,
+        fetchInpatient: true,
+        fetchOutpatient: true
+      }
+      this.execDeptBackfillDialogVisible = true
+    },
+    resetExecDeptBackfillForm() {
+      this.execDeptBackfillForm = {
+        beginDate: undefined,
+        endDate: undefined,
+        fetchInpatient: true,
+        fetchOutpatient: true
+      }
+    },
+    formatBackfillResult(label, d) {
+      const data = d || {}
+      return `${label} 更新 ${data.updatedCount || 0}，跳过 ${data.skippedCount || 0}，HIS无执行科室 ${data.hisMissingExecCount || 0}，本地无记录 ${data.notFoundCount || 0}，统一表同步 ${data.unifiedSyncedCount || 0}`
+    },
+    submitExecDeptBackfill() {
+      if (!this.execDeptBackfillForm.beginDate || !this.execDeptBackfillForm.endDate) {
+        this.$modal.msgWarning('请选择起止时间')
+        return
+      }
+      const wantIn = !!this.execDeptBackfillForm.fetchInpatient
+      const wantOut = !!this.execDeptBackfillForm.fetchOutpatient
+      if (!wantIn && !wantOut) {
+        this.$modal.msgWarning('请至少勾选住院或门诊其中一项')
+        return
+      }
+      const canIn = this.canFetchInpatient
+      const canOut = this.canFetchOutpatient
+      if (wantIn && !canIn) {
+        this.$modal.msgWarning('已勾选住院但无住院抓取权限')
+        return
+      }
+      if (wantOut && !canOut) {
+        this.$modal.msgWarning('已勾选门诊但无门诊抓取权限')
+        return
+      }
+      this.execDeptBackfillSubmitting = true
+      const body = {
+        beginDate: this.execDeptBackfillForm.beginDate,
+        endDate: this.execDeptBackfillForm.endDate
+      }
+      const runInpatient = () => {
+        if (!wantIn || !canIn) {
+          return Promise.resolve(null)
+        }
+        return backfillInpatientExecDept(body).then(res => res.data)
+      }
+      const runOutpatient = () => {
+        if (!wantOut || !canOut) {
+          return Promise.resolve(null)
+        }
+        return backfillOutpatientExecDept(body).then(res => res.data)
+      }
+      runInpatient()
+        .then(inData => runOutpatient().then(outData => ({ inData, outData })))
+        .then(({ inData, outData }) => {
+          const msgs = []
+          if (inData) {
+            msgs.push(this.formatBackfillResult('住院', inData))
+          }
+          if (outData) {
+            msgs.push(this.formatBackfillResult('门诊', outData))
+          }
+          if (!msgs.length) {
+            this.$modal.msgWarning('未执行任何补全')
+            return
+          }
+          this.$modal.msgSuccess(msgs.join('；'))
+          this.execDeptBackfillDialogVisible = false
+          this.handleDetailQuery()
+        })
+        .catch(() => {})
+        .finally(() => { this.execDeptBackfillSubmitting = false })
     },
     isRefundMirrorRow(row) {
       const tf = row && (row.chargeIdTf || row.hisInpatientChargeIdTf || row.hisOutpatientChargeIdTf)

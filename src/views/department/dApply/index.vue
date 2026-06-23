@@ -214,7 +214,7 @@
 
                 <el-col :span="4">
                   <el-form-item label="科室" prop="departmentId">
-                    <SelectDepartment v-model="form.departmentId"/>
+                    <SelectDepartment v-model="form.departmentId" :disabled="isDeptLocked"/>
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
@@ -894,6 +894,12 @@ export default {
     /** 弹窗明细表固定高度：表体可滚动，合计行始终在表格区域最底部 */
     detailTableHeight() {
       return 'max(300px, calc(100vh - 320px))';
+    },
+    /** 已有明细、修改模式或正在选库存时锁定科室 */
+    isDeptLocked() {
+      return this.DialogComponentShow
+        || (this.basApplyEntryList && this.basApplyEntryList.length > 0)
+        || !!(this.form && this.form.id);
     },
     /** 制单人：已保存单据显示后端姓名；新增显示当前登录用户 */
     creatorDisplayName() {

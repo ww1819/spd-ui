@@ -66,6 +66,25 @@ export function fetchOutpatientMirror(data) {
   })
 }
 
+/** 历史收费镜像补全执行科室（按计费时间区间从 HIS 回写 exec_dept_id/name） */
+export function backfillInpatientExecDept(data) {
+  return request({
+    url: '/his/patientCharge/mirror/backfillExecDept/inpatient',
+    method: 'post',
+    timeout: PATIENT_CHARGE_FETCH_TIMEOUT_MS,
+    data
+  })
+}
+
+export function backfillOutpatientExecDept(data) {
+  return request({
+    url: '/his/patientCharge/mirror/backfillExecDept/outpatient',
+    method: 'post',
+    timeout: PATIENT_CHARGE_FETCH_TIMEOUT_MS,
+    data
+  })
+}
+
 export function listHisFetchBatch(limit) {
   return request({
     url: '/his/patientCharge/fetchBatch/list',
