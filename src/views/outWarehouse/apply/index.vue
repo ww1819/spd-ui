@@ -1204,6 +1204,36 @@ export default {
       //关闭“弹窗组件”
       this.DialogRkApplyComponentShow = false
     },
+    /** 解析库存/明细有效期（endTime 或 endDate） */
+    resolveInventoryExpiryDate(row) {
+      if (!row) return null;
+      return row.endTime || row.endDate || null;
+    },
+    /** 有效期是否早于今天（已过期） */
+    isInventoryExpired(row) {
+      const raw = this.resolveInventoryExpiryDate(row);
+      if (raw == null || raw === '') return false;
+      const end = new Date(raw);
+      if (Number.isNaN(end.getTime())) return false;
+      end.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return end.getTime() < today.getTime();
+    },
+    inventoryExpiredMessage(row) {
+      const m = row && row.material;
+      const name = (m && m.name) || (m && m.code) || '该产品';
+      const raw = this.resolveInventoryExpiryDate(row);
+      const expStr = raw ? this.parseTime(raw, '{y}-{m}-{d}') : '';
+      return expStr
+        ? `${name}有效期为 ${expStr}，已过期，不能再进行出库`
+        : `${name}已过期，不能再进行出库`;
+    },
+    assertInventoryNotExpired(row) {
+      if (!this.isInventoryExpired(row)) return true;
+      this.$modal.msgError(this.inventoryExpiredMessage(row));
+      return false;
+    },
     selectData(val) {
       // 监听“弹窗组件”返回的数据，按批次号去重，避免重复选中
       const rows = Array.isArray(val) ? val : (val ? [val] : []);
@@ -1229,6 +1259,9 @@ export default {
         )
         if (item.batchNo && existedOther.has(String(item.batchNo).trim())) {
           this.$modal.msgError('该批次号已在其它明细行使用，请选择其它批次')
+          return
+        }
+        if (!this.assertInventoryNotExpired(item)) {
           return
         }
         target.materialId = item.materialId
@@ -1270,6 +1303,9 @@ export default {
 
       rows.forEach((item) => {
         if (!item) return;
+        if (!this.assertInventoryNotExpired(item)) {
+          return;
+        }
         if (item.batchNo && existedBatchNos.has(item.batchNo)) {
           return;
         }
@@ -1532,6 +1568,10 @@ export default {
             }
             if (entry.kcNo == null || String(entry.kcNo).trim() === '') {
               this.$modal.msgError(`第${index + 1}行缺少库存行标识，请重新选择批次`)
+              return
+            }
+            if (this.isInventoryExpired(entry)) {
+              this.$modal.msgError(this.inventoryExpiredMessage(entry))
               return
             }
           }
