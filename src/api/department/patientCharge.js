@@ -1,4 +1,11 @@
 import request from '@/utils/request'
+import { PATIENT_CHARGE_SEGMENT_TIMEOUT_MS } from '@/utils/patientChargeFetch'
+
+/** HIS 慢查询：抑制全局「系统接口请求超时」，由业务页展示分段进度与友好提示 */
+const PATIENT_CHARGE_HIS_HEADERS = {
+  repeatSubmit: false,
+  hideError: true
+}
 
 export function listInpatientMirror(query) {
   return request({
@@ -45,14 +52,13 @@ export function listChargeSummary(query) {
   })
 }
 
-/** 住院/门诊计费抓取：按天分段多次查 HIS，整次请求需覆盖多段（默认后端 600s/段 × 最多约 31 段） */
-const PATIENT_CHARGE_FETCH_TIMEOUT_MS = 3600000
-
+/** 住院/门诊计费抓取：前端按间隔天数分段，每段单独请求 */
 export function fetchInpatientMirror(data) {
   return request({
     url: '/his/patientCharge/mirror/fetch/inpatient',
     method: 'post',
-    timeout: PATIENT_CHARGE_FETCH_TIMEOUT_MS,
+    timeout: PATIENT_CHARGE_SEGMENT_TIMEOUT_MS,
+    headers: PATIENT_CHARGE_HIS_HEADERS,
     data
   })
 }
@@ -61,7 +67,8 @@ export function fetchOutpatientMirror(data) {
   return request({
     url: '/his/patientCharge/mirror/fetch/outpatient',
     method: 'post',
-    timeout: PATIENT_CHARGE_FETCH_TIMEOUT_MS,
+    timeout: PATIENT_CHARGE_SEGMENT_TIMEOUT_MS,
+    headers: PATIENT_CHARGE_HIS_HEADERS,
     data
   })
 }
@@ -71,7 +78,8 @@ export function backfillInpatientExecDept(data) {
   return request({
     url: '/his/patientCharge/mirror/backfillExecDept/inpatient',
     method: 'post',
-    timeout: PATIENT_CHARGE_FETCH_TIMEOUT_MS,
+    timeout: PATIENT_CHARGE_SEGMENT_TIMEOUT_MS,
+    headers: PATIENT_CHARGE_HIS_HEADERS,
     data
   })
 }
@@ -80,7 +88,8 @@ export function backfillOutpatientExecDept(data) {
   return request({
     url: '/his/patientCharge/mirror/backfillExecDept/outpatient',
     method: 'post',
-    timeout: PATIENT_CHARGE_FETCH_TIMEOUT_MS,
+    timeout: PATIENT_CHARGE_SEGMENT_TIMEOUT_MS,
+    headers: PATIENT_CHARGE_HIS_HEADERS,
     data
   })
 }
