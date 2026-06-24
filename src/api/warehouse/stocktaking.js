@@ -22,7 +22,8 @@ export function addStocktaking(data) {
   return request({
     url: '/stocktaking/in',
     method: 'post',
-    data: data
+    data: data,
+    timeout: 120000
   })
 }
 
@@ -31,7 +32,8 @@ export function updateStocktaking(data) {
   return request({
     url: '/stocktaking/in',
     method: 'put',
-    data: data
+    data: data,
+    timeout: 120000
   })
 }
 
@@ -40,7 +42,8 @@ export function patchSaveStocktaking(data) {
   return request({
     url: '/stocktaking/in/patch-save',
     method: 'put',
-    data
+    data,
+    timeout: 120000
   })
 }
 
@@ -49,7 +52,8 @@ export function appendStocktakingEntries(billId, body) {
   return request({
     url: '/stocktaking/in/' + billId + '/entries',
     method: 'post',
-    data: body
+    data: body,
+    timeout: 120000
   })
 }
 

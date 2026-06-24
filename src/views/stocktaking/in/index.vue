@@ -493,6 +493,11 @@
             </div>
           </template>
         </el-table-column>
+        <el-table-column label="生产日期" min-width="140">
+          <template slot-scope="scope">
+            <el-date-picker v-model="scope.row.beginTime" type="date" value-format="yyyy-MM-dd" placeholder="可不填" />
+          </template>
+        </el-table-column>
         <el-table-column label="有效期" min-width="240">
           <template slot-scope="scope">
             <div class="profit-expiry-cell">
@@ -507,11 +512,6 @@
               />
               <el-checkbox v-model="scope.row._longTerm" @change="profitLongTermChange(scope.row)">长期</el-checkbox>
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="生产日期" min-width="140">
-          <template slot-scope="scope">
-            <el-date-picker v-model="scope.row.beginTime" type="date" value-format="yyyy-MM-dd" placeholder="可不填" />
           </template>
         </el-table-column>
         <el-table-column label="供应商" min-width="220">
@@ -722,7 +722,7 @@
 <script>
 import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, patchSaveStocktaking, auditStocktaking, checkStocktakingQty, updateStocktakingEntryCounted, appendStocktakingEntries, initWarehouseStocktakingFromInventory, previewWhStocktakingProfitImport, confirmWhStocktakingProfitImport, downloadWhStocktakingProfitImportTemplate } from "@/api/warehouse/stocktaking";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
-import { listInventoryPick, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
+import { listInventoryPick, listInventoryQtyByIds, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
@@ -1344,17 +1344,10 @@ export default {
           this.$set(detailRow, "countedFlag", 0);
         });
     },
-    copyDetailToProfitDialog(detailRow) {
-      if (!this.form.warehouseId) {
-        this.$message({ message: "请先选择仓库", type: "warning" });
-        return;
-      }
-      this.markSourceRowCountedAfterProfitCopy(detailRow);
+    buildProfitEntryFromSourceRow(detailRow, stockQty, options) {
+      options = options || {};
       const mid = detailRow.materialId || (detailRow.material && detailRow.material.id);
-      if (!mid) {
-        this.$modal.msgWarning("当前行缺少耗材信息，无法复制");
-        return;
-      }
+      if (!mid) return null;
       const mat = detailRow.material ? { ...detailRow.material } : { id: mid };
       const materialPrice =
         mat.price != null && mat.price !== ""
@@ -1371,6 +1364,8 @@ export default {
       const batchNumber = detailRow.batchNumber != null ? String(detailRow.batchNumber) : "";
       const endTime = this.formatDateYmdForProfitCopy(detailRow.endTime);
       const beginTime = this.formatDateYmdForProfitCopy(detailRow.beginTime);
+      const sq = parseFloat(stockQty);
+      if (!Number.isFinite(sq) || sq <= 0) return null;
       const entry = {
         materialId: mid,
         material: mat,
@@ -1378,7 +1373,8 @@ export default {
         unitPrice,
         price: unitPrice,
         qty: 0,
-        stockQty: 1,
+        stockQty: sq,
+        kcNo: null,
         amt: "0.00",
         batchNo: this.nextStocktakingBatchNo(),
         batchNumber,
@@ -1387,7 +1383,111 @@ export default {
         remark: "",
         countedFlag: 1
       };
+      if (options.autoSplitFromKcNo != null && options.autoSplitFromKcNo !== "") {
+        entry._autoSplitFromKcNo = options.autoSplitFromKcNo;
+      }
       this.initProfitPendingEntryMeta(entry);
+      const up = parseFloat(entry.unitPrice || 0);
+      const a = sq * (Number.isFinite(up) ? up : 0);
+      entry.amt = Number.isFinite(a) ? a.toFixed(2) : "0.00";
+      return entry;
+    },
+    findAutoSplitProfitRow(kcNo) {
+      if (kcNo == null || kcNo === "") return null;
+      const key = String(kcNo);
+      return (this.stkIoStocktakingEntryList || []).find(
+        (r) => r && !r.kcNo && r._autoSplitFromKcNo != null && String(r._autoSplitFromKcNo) === key
+      );
+    },
+    isWarehouseProfitEntryReadyForList(entry) {
+      if (!entry) return false;
+      const unitPrice = parseFloat(entry.unitPrice);
+      const stockQty = parseFloat(entry.stockQty);
+      if (!entry.batchNumber || !entry.endTime) return false;
+      if (!Number.isFinite(unitPrice) || unitPrice < 0) return false;
+      if (!Number.isFinite(stockQty) || stockQty <= 0) return false;
+      if (entry.supplierId == null || entry.supplierId === "") return false;
+      if (
+        entry.beginTime &&
+        entry.endTime &&
+        new Date(entry.endTime).getTime() < new Date(entry.beginTime).getTime()
+      ) {
+        return false;
+      }
+      return true;
+    },
+    addOrUpdateAutoSplitProfitRow(sourceRow, surplus) {
+      const surplusNum = parseFloat(surplus);
+      if (!Number.isFinite(surplusNum) || surplusNum <= 0) {
+        const linked = this.findAutoSplitProfitRow(sourceRow.kcNo);
+        if (linked) {
+          const idx = this.stkIoStocktakingEntryList.indexOf(linked);
+          if (idx >= 0) this.stkIoStocktakingEntryList.splice(idx, 1);
+        }
+        const pending = (this.pendingNewEntries || []).find(
+          (r) =>
+            r &&
+            r._autoSplitFromKcNo != null &&
+            String(r._autoSplitFromKcNo) === String(sourceRow.kcNo)
+        );
+        if (pending && this.pendingNewEntries) {
+          const pIdx = this.pendingNewEntries.indexOf(pending);
+          if (pIdx >= 0) this.pendingNewEntries.splice(pIdx, 1);
+          if (this.pendingNewEntries.length === 0) {
+            this.newEntryDialogVisible = false;
+          }
+        }
+        return;
+      }
+      const existing = this.findAutoSplitProfitRow(sourceRow.kcNo);
+      if (existing) {
+        existing.stockQty = surplusNum;
+        this.stockQtyChangeWh(existing);
+        return;
+      }
+      const profitEntry = this.buildProfitEntryFromSourceRow(sourceRow, surplusNum, {
+        autoSplitFromKcNo: sourceRow.kcNo
+      });
+      if (!profitEntry) {
+        this.$modal.msgWarning("当前行缺少耗材信息，无法生成盘盈明细");
+        return;
+      }
+      if (this.isWarehouseProfitEntryReadyForList(profitEntry)) {
+        this.stockQtyChangeWh(profitEntry);
+        this.stkIoStocktakingEntryList.push(profitEntry);
+        this.$modal.msgSuccess(`实盘多于账面，已自动拆出盘盈明细 ${surplusNum.toFixed(2)}`);
+        this.attemptAutoSaveAfterStocktakingDetailChange(true);
+        return;
+      }
+      const pending = (this.pendingNewEntries || []).find(
+        (r) =>
+          r &&
+          r._autoSplitFromKcNo != null &&
+          String(r._autoSplitFromKcNo) === String(sourceRow.kcNo)
+      );
+      if (pending) {
+        pending.stockQty = surplusNum;
+        this.stockQtyChangePending(pending);
+      } else {
+        this.pendingNewEntries = [profitEntry];
+        this.newEntryDialogVisible = true;
+        this.$nextTick(() => this.refreshProfitNameSpecStockWh());
+      }
+      this.$modal.msgWarning(
+        `实盘多于账面 ${surplusNum.toFixed(2)}，库存行已按账面持平；请补全盘盈明细的批号、有效期、供应商。`
+      );
+    },
+    copyDetailToProfitDialog(detailRow) {
+      if (!this.form.warehouseId) {
+        this.$message({ message: "请先选择仓库", type: "warning" });
+        return;
+      }
+      this.markSourceRowCountedAfterProfitCopy(detailRow);
+      const entry = this.buildProfitEntryFromSourceRow(detailRow, 1);
+      if (!entry) {
+        this.$modal.msgWarning("当前行缺少耗材信息，无法复制");
+        return;
+      }
       this.stockQtyChangePending(entry);
       if (!Array.isArray(this.pendingNewEntries)) {
         this.pendingNewEntries = [];
@@ -1584,13 +1684,17 @@ export default {
       if (this.isEntryStockQtyLocked(row)) return;
       if (!row.kcNo) return;
       const stockQty = parseFloat(row.stockQty || 0);
-      const qty = parseFloat(row.qty || 0);
-      if (!Number.isFinite(stockQty) || !Number.isFinite(qty)) return;
-      if (stockQty > qty) {
-        row.stockQty = qty;
+      const book = parseFloat(row.qty || 0);
+      if (!Number.isFinite(stockQty) || !Number.isFinite(book)) return;
+      if (stockQty > book) {
+        const surplus = stockQty - book;
+        row.stockQty = book;
         this.stockQtyChangeWh(row);
-        this.$modal.msgWarning('盘点数量不能大于账面数量。盘盈请点击「新增盘盈明细」。');
+        this.markSourceRowCountedAfterProfitCopy(row);
+        this.addOrUpdateAutoSplitProfitRow(row, surplus);
+        return;
       }
+      this.addOrUpdateAutoSplitProfitRow(row, 0);
     },
     getProfitQty(row) {
       const stockQty = parseFloat((row && row.stockQty) || 0);
@@ -1984,31 +2088,24 @@ export default {
       });
     },
     /**
-     * 按仓库分页拉取库存明细，供保存前对账（与初始化同源条件）。
-     * 避免对每条明细并发 listInventoryPick(id, pageSize=1) 导致请求风暴。
+     * 按库存主键批量拉取 qty，供保存前对账（仅查本单明细涉及的行，避免拉全仓库存）。
      */
-    async _fetchAllWhInventoryPickForSaveQtyCheck(warehouseId) {
-      const pageSize = 500;
-      const allRows = [];
-      const fetchNext = async (pageNum) => {
-        const res = await listInventoryPick({
-          warehouseId,
-          pageNum,
-          pageSize
-        });
-        const rows = (res && res.rows) || [];
-        allRows.push(...rows);
-        if (rows.length === 0 || rows.length < pageSize) {
-          return allRows;
+    async _fetchInventoryQtyMapByIds(idNums) {
+      const ids = (idNums || []).filter((id) => Number.isFinite(id));
+      if (!ids.length) return new Map();
+      const res = await listInventoryQtyByIds(ids);
+      const rows = (res && res.data) || [];
+      const map = new Map();
+      (rows || []).forEach((inv) => {
+        if (inv && inv.id != null) {
+          map.set(String(inv.id), inv);
         }
-        return fetchNext(pageNum + 1);
-      };
-      return fetchNext(1);
+      });
+      return map;
     },
     /** 计算保存前需逐条确认的仓库库存差异行（与 openSaveQtyConfirmDialogWarehouse 逻辑一致，不弹窗） */
     async _computeWhSaveQtyConfirmRows() {
       const list = this.stkIoStocktakingEntryList || [];
-      const warehouseId = this.form && this.form.warehouseId;
       const entriesNeedingCheck = [];
       for (let idx = 0; idx < list.length; idx++) {
         const row = list[idx];
@@ -2024,47 +2121,20 @@ export default {
 
       let invById = null;
       try {
-        if (warehouseId != null && warehouseId !== '') {
-          const invRows = await this._fetchAllWhInventoryPickForSaveQtyCheck(warehouseId);
-          invById = new Map();
-          (invRows || []).forEach((inv) => {
-            if (inv && inv.id != null) {
-              invById.set(String(inv.id), inv);
-            }
-          });
+        const idNums = entriesNeedingCheck.map((e) => e.idNum);
+        invById = await this._fetchInventoryQtyMapByIds(idNums);
+        for (const { idNum } of entriesNeedingCheck) {
+          if (!invById.has(String(idNum))) {
+            return { fetchError: true, rows: [] };
+          }
         }
       } catch (e) {
         return { fetchError: true, rows: [] };
       }
 
       const out = [];
-      let fetchError = false;
       for (const { row, idx, idNum } of entriesNeedingCheck) {
-        let inv = null;
-        if (invById) {
-          inv = invById.get(String(idNum));
-          if (!inv) {
-            fetchError = true;
-            break;
-          }
-        } else {
-          try {
-            const res = await listInventoryPick({
-              id: idNum,
-              pageNum: 1,
-              pageSize: 1
-            });
-            const pickRows = (res && res.rows) || [];
-            if (!pickRows.length) {
-              fetchError = true;
-              break;
-            }
-            inv = pickRows[0];
-          } catch (e) {
-            fetchError = true;
-            break;
-          }
-        }
+        const inv = invById.get(String(idNum));
         const live = inv != null && inv.qty != null && inv.qty !== '' ? parseFloat(inv.qty) : NaN;
         const book = row.qty != null && row.qty !== '' ? parseFloat(row.qty) : NaN;
         if (!Number.isFinite(live) || !Number.isFinite(book) || book === live) {
@@ -2081,9 +2151,6 @@ export default {
           adjustedStockQty: row.stockQty != null && row.stockQty !== '' ? row.stockQty : row.qty,
           confirmed: false
         });
-      }
-      if (fetchError) {
-        return { fetchError: true, rows: [] };
       }
       return { fetchError: false, rows: out };
     },
@@ -2222,6 +2289,7 @@ export default {
       delete rest._cbBatchUnknown;
       delete rest._batchLocked;
       delete rest._longTerm;
+      delete rest._autoSplitFromKcNo;
       const up = rest.unitPrice != null && rest.unitPrice !== '' ? rest.unitPrice : rest.price;
       if (up != null && up !== '') {
         rest.unitPrice = up;

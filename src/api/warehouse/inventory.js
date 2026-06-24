@@ -27,6 +27,17 @@ export function listInventoryPick(query) {
   })
 }
 
+/** 盘点保存对账：按库存主键批量返回 qty（避免拉全仓库存） */
+export function listInventoryQtyByIds(ids) {
+  const idStr = Array.isArray(ids) ? ids.filter(Boolean).join(',') : String(ids || '')
+  return request({
+    url: '/warehouse/inventory/pick/qty-by-ids',
+    method: 'get',
+    params: { ids: idStr },
+    timeout: 60000
+  })
+}
+
 /** 科室申领：全院按耗材聚合的可用库存（策略由后端 DepartmentApplyAvailableStockStrategy 决定） */
 export function listDeptApplyAvailableStock(query) {
   return request({

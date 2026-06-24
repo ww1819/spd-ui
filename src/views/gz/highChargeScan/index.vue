@@ -29,8 +29,8 @@
         </el-form-item>
         <el-form-item label="开单科室">
           <el-select
-            v-model="detailQuery.orderingDepartmentId"
-            placeholder="全部开单科室"
+            v-model="detailQuery.departmentId"
+            placeholder="科室名称/首字母"
             clearable
             filterable
             :filter-method="filterOrderingDeptMethod"
@@ -179,11 +179,6 @@
     <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="92%" append-to-body>
       <el-table v-loading="consumeRecordDialog.loading" :data="consumeRecordDialog.rows" border size="small" max-height="420" empty-text="暂无消耗记录">
         <el-table-column label="消耗单号" prop="consumeBillNo" min-width="178" show-overflow-tooltip />
-        <el-table-column label="核销科室" prop="writeOffDeptName" min-width="110" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.writeOffDeptName || '--' }}</span>
-          </template>
-        </el-table-column>
         <el-table-column label="耗材" prop="materialName" min-width="110" show-overflow-tooltip />
         <el-table-column label="数量" prop="entryQty" width="80" align="right" />
         <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="120" show-overflow-tooltip />
@@ -194,39 +189,11 @@
     </el-dialog>
 
     <el-dialog title="高值计费扫码消耗" :visible.sync="highDialogVisible" width="960px" append-to-body @closed="resetHighDialog">
-      <div v-if="highMirrorRow" class="mb8 hc-high-mirror-summary">
-        <span>患者 {{ highMirrorRow.patientName }} · 计费数量 {{ highMirrorRow.quantity }}</span>
-        <span v-if="highBillRemaining != null"> · 当前剩余计费数量 {{ highBillRemaining }}</span>
+      <div v-if="highMirrorRow" class="mb8">
+        <span>患者 {{ highMirrorRow.patientName }} · 计费数量 {{ highMirrorRow.quantity }} · </span>
+        <span v-if="highBillRemaining != null">当前剩余计费数量 {{ highBillRemaining }}</span>
       </div>
-      <el-form v-if="highMirrorRow" :model="highConsumeForm" label-width="88px" size="small" class="hc-high-dept-form mb8">
-        <el-row :gutter="12">
-          <el-col :span="8">
-            <el-form-item label="开单科室">
-              <span class="hc-high-dept-text">{{ mirrorOrderingDeptName(highMirrorRow) }}</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="执行科室">
-              <span class="hc-high-dept-text">{{ mirrorExecDeptName(highMirrorRow) }}</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="核销科室" required>
-              <el-select
-                v-model="highConsumeForm.consumeDepartmentId"
-                placeholder="名称/编码/简拼"
-                filterable
-                :filter-method="filterConsumeDeptMethod"
-                style="width:100%"
-                @change="onHighConsumeDepartmentChange"
-              >
-                <el-option v-for="d in consumeDeptOptions" :key="d.id" :label="d.name" :value="d.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <el-alert type="warning" :closable="false" show-icon class="mb8" title="请扫描所选核销科室的高值院内码；虚拟库存满足才可带出；可多次扫码、修改本次消耗数量后一次保存并审核。" />
+      <el-alert type="warning" :closable="false" show-icon class="mb8" title="请扫描本科室高值院内码；虚拟库存满足才可带出；可多次扫码、修改本次消耗数量后一次保存并审核。" />
       <el-input
         ref="highScanInput"
         v-model="highScanCode"
@@ -297,18 +264,7 @@
           <el-checkbox v-model="fetchForm.fetchInpatient" :disabled="!canFetchInpatient">住院</el-checkbox>
           <el-checkbox v-model="fetchForm.fetchOutpatient" :disabled="!canFetchOutpatient" style="margin-left:16px">门诊</el-checkbox>
         </el-form-item>
-        <el-form-item label="间隔天数">
-          <el-input-number
-            v-model="fetchForm.chunkDays"
-            :min="1"
-            :max="7"
-            :step="1"
-            controls-position="right"
-            style="width: 120px"
-          />
-          <span class="charge-fetch-chunk-tip">跨度较大时按此间隔自动分段抓取（默认5天，最大7天）</span>
-        </el-form-item>
-        <el-alert type="info" :closable="false" show-icon :title="patientChargeHisSlowHint" />
+        <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；勾选住院/门诊后确定抓取；多选时先住院后门诊；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="fetchDialogVisible = false">取 消</el-button>
@@ -320,23 +276,15 @@
 
 <script>
 import { parseTime } from '@/utils/ruoyi'
-import {
-  splitChargeFetchDateRange,
-  normalizeChargeFetchChunkDays,
-  CHARGE_FETCH_DEFAULT_CHUNK_DAYS,
-  PATIENT_CHARGE_HIS_SLOW_HINT,
-  runPatientChargeSegments,
-  formatHisChargeSlowError
-} from '@/utils/patientChargeFetch'
 import { checkPermi } from '@/utils/permission'
-import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
+import { pinyin } from 'pinyin-pro'
 import {
   normalizeBarcodeInput,
   isImeProcessKey,
   isScannerEnterKey,
   isRapidScannerBurst
 } from '@/utils/barcodeInput'
-import { listDepartOptionselect, listDepartTenantOptionselect } from '@/api/foundation/depart'
+import { listdepartAll } from '@/api/foundation/depart'
 import { fetchInpatientMirror, fetchOutpatientMirror } from '@/api/department/patientCharge'
 import {
   listHighChargeInpatientMirror,
@@ -360,7 +308,6 @@ export default {
   name: 'GzHighChargeScan',
   data() {
     return {
-      patientChargeHisSlowHint: PATIENT_CHARGE_HIS_SLOW_HINT,
       detailVisitType: 'ALL',
       detailLoading: false,
       detailList: [],
@@ -386,11 +333,6 @@ export default {
       highDialogVisible: false,
       highSubmitting: false,
       highMirrorRow: null,
-      highConsumeForm: {
-        consumeDepartmentId: undefined
-      },
-      consumeDeptOptions: [],
-      allConsumeDeptOptions: [],
       highScanCode: '',
       highScanComposing: false,
       highScanBuffer: '',
@@ -414,8 +356,7 @@ export default {
         beginDate: undefined,
         endDate: undefined,
         fetchInpatient: true,
-        fetchOutpatient: true,
-        chunkDays: CHARGE_FETCH_DEFAULT_CHUNK_DAYS
+        fetchOutpatient: true
       }
     }
   },
@@ -465,51 +406,38 @@ export default {
       return (page - 1) * size + index + 1
     },
     loadDeptOptions() {
-      listDepartOptionselect().then(res => {
-        const list = normalizeDepartPickResponse(res)
-        const execMapped = list.filter(d => d.hisId != null && String(d.hisId).trim() !== '')
-        this.allExecDeptOptions = execMapped
-        this.execDeptOptions = execMapped
-        this.allConsumeDeptOptions = list
-        this.consumeDeptOptions = list
-      })
-      listDepartTenantOptionselect().then(res => {
-        const list = normalizeDepartPickResponse(res)
-        const orderingMapped = list.filter(d => d.hisId != null && String(d.hisId).trim() !== '')
-        this.allOrderingDeptOptions = orderingMapped
-        this.orderingDeptOptions = orderingMapped
+      const uid = this.$store.getters.userId
+      if (!uid) return
+      listdepartAll(uid).then(res => {
+        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
+        this.allDeptOptions = list.filter(d => d && d.id != null && d.hisId != null && String(d.hisId).trim() !== '')
+        this.deptOptions = this.allDeptOptions
       })
     },
-    mirrorOrderingDeptName(row) {
-      if (!row) return '--'
-      if (row.visitType === 'INPATIENT') return row.deptName || '--'
-      if (row.visitType === 'OUTPATIENT') return row.clinicName || '--'
-      return row.deptDisplayName || row.deptName || row.clinicName || '--'
-    },
-    mirrorExecDeptName(row) {
-      return (row && row.execDeptName) ? row.execDeptName : '--'
-    },
-    resolveDefaultConsumeDepartmentId(row) {
-      if (!row || !row.execDeptId) return undefined
-      const his = String(row.execDeptId).trim()
-      const hit = this.allConsumeDeptOptions.find(d => d.hisId && String(d.hisId).trim() === his)
-      return hit ? hit.id : undefined
-    },
-    onHighConsumeDepartmentChange() {
-      if (this.highLines.length) {
-        this.highLines = []
-        this.highBillRemaining = null
-        this.$modal.msgWarning('已切换核销科室，已清空扫码明细，请重新扫码')
+    filterDeptMethod(query) {
+      if (!query) {
+        this.deptOptions = this.allDeptOptions
+        return
       }
-    },
-    filterExecDeptMethod(query) {
-      this.execDeptOptions = filterDepartPickList(this.allExecDeptOptions, query)
-    },
-    filterOrderingDeptMethod(query) {
-      this.orderingDeptOptions = filterDepartPickList(this.allOrderingDeptOptions, query)
-    },
-    filterConsumeDeptMethod(query) {
-      this.consumeDeptOptions = filterDepartPickList(this.allConsumeDeptOptions, query)
+      const queryUpper = query.toUpperCase()
+      this.deptOptions = this.allDeptOptions.filter(item => {
+        if (!item || !item.name) return false
+        const name = item.name
+        const code = (item.code || '').toUpperCase()
+        const referred = (item.referredName || '').toUpperCase()
+        if (name.includes(query) || name.toUpperCase().includes(queryUpper) || code.includes(queryUpper) || referred.includes(queryUpper)) {
+          return true
+        }
+        if (/^[a-zA-Z]+$/.test(query)) {
+          try {
+            const initials = pinyin(name, { pattern: 'first', toneType: 'none', type: 'array' }).join('').toUpperCase()
+            if (initials.includes(queryUpper)) return true
+          } catch (e) {
+            return false
+          }
+        }
+        return false
+      })
     },
     toQueryDayStart(s) {
       if (!s) return undefined
@@ -599,8 +527,6 @@ export default {
       this.highLines = []
       this.resetHighScanInputState()
       this.highBillRemaining = null
-      this.highConsumeForm.consumeDepartmentId = this.resolveDefaultConsumeDepartmentId(row)
-      this.consumeDeptOptions = this.allConsumeDeptOptions
       this.highDialogVisible = true
       this.$nextTick(() => {
         if (this.$refs.highScanInput && this.$refs.highScanInput.focus) {
@@ -612,7 +538,6 @@ export default {
       this.clearHighScanAutoTimer()
       this.highMirrorRow = null
       this.highLines = []
-      this.highConsumeForm.consumeDepartmentId = undefined
       this.resetHighScanInputState()
       this.highBillRemaining = null
     },
@@ -716,10 +641,6 @@ export default {
       this.clearHighScanAutoTimer()
       const code = normalizeBarcodeInput(this.highScanCode)
       if (!code || !this.highMirrorRow) return
-      if (!this.highConsumeForm.consumeDepartmentId) {
-        this.$modal.msgWarning('请先选择核销科室')
-        return
-      }
       const now = Date.now()
       if (this.highScanLastSubmitCode === code && now - this.highScanLastSubmitAt < 300) {
         return
@@ -731,8 +652,7 @@ export default {
       scanHighChargeBarcode({
         visitKind: this.highMirrorRow.visitType || this.currentVisitKind,
         mirrorRowId: this.highMirrorRow.id,
-        inHospitalCode: code,
-        consumeDepartmentId: this.highConsumeForm.consumeDepartmentId
+        inHospitalCode: code
       }).then(res => {
         const d = res.data || {}
         if (d.billRemainingQty != null) {
@@ -759,10 +679,6 @@ export default {
     },
     submitHighConsume() {
       if (!this.highMirrorRow || this.highLines.length === 0) return
-      if (!this.highConsumeForm.consumeDepartmentId) {
-        this.$modal.msgWarning('请选择核销科室')
-        return
-      }
       for (const ln of this.highLines) {
         if (ln.applyQty == null || Number(ln.applyQty) <= 0) {
           this.$modal.msgWarning('请填写每行本次消耗数量')
@@ -777,7 +693,6 @@ export default {
       applyHighChargeConsume({
         visitKind: this.highMirrorRow.visitType || this.currentVisitKind,
         mirrorRowId: this.highMirrorRow.id,
-        consumeDepartmentId: this.highConsumeForm.consumeDepartmentId,
         lines: this.highLines.map(l => ({ gzDepInventoryId: l.gzDepInventoryId, qty: l.applyQty }))
       }).then(res => {
         const d = res.data || {}
@@ -870,8 +785,7 @@ export default {
         beginDate: `${day} 00:00:00`,
         endDate: `${day} 23:59:59`,
         fetchInpatient: true,
-        fetchOutpatient: true,
-        chunkDays: CHARGE_FETCH_DEFAULT_CHUNK_DAYS
+        fetchOutpatient: true
       }
       this.fetchDialogVisible = true
     },
@@ -880,27 +794,14 @@ export default {
         beginDate: undefined,
         endDate: undefined,
         fetchInpatient: true,
-        fetchOutpatient: true,
-        chunkDays: CHARGE_FETCH_DEFAULT_CHUNK_DAYS
+        fetchOutpatient: true
       }
     },
-    formatFetchResult(label, d, segmentCount) {
+    formatFetchResult(label, d) {
       const data = d || {}
-      const segHint = segmentCount > 1 ? `（共 ${segmentCount} 段）` : ''
-      return `${label}${segHint}：新增 ${data.insertedCount || 0}，跳过 ${data.skippedCount || 0}，指纹不一致 ${data.driftCount || 0}`
+      return `${label} 批次 ${data.fetchBatchId || ''}：新增 ${data.insertedCount || 0}，跳过 ${data.skippedCount || 0}，指纹不一致 ${data.driftCount || 0}`
     },
-    mergeFetchAgg(agg, data) {
-      if (!data) return agg
-      if (!agg) {
-        return { ...data }
-      }
-      return {
-        insertedCount: (agg.insertedCount || 0) + (data.insertedCount || 0),
-        skippedCount: (agg.skippedCount || 0) + (data.skippedCount || 0),
-        driftCount: (agg.driftCount || 0) + (data.driftCount || 0)
-      }
-    },
-    async submitFetch() {
+    submitFetch() {
       if (!this.fetchForm.beginDate || !this.fetchForm.endDate) {
         this.$modal.msgWarning('请选择起止时间')
         return
@@ -925,53 +826,40 @@ export default {
         this.$modal.msgWarning('已勾选门诊但无门诊抓取权限')
         return
       }
-      const chunkDays = normalizeChargeFetchChunkDays(this.fetchForm.chunkDays)
-      const segments = splitChargeFetchDateRange(this.fetchForm.beginDate, this.fetchForm.endDate, chunkDays)
-      if (!segments.length) {
-        this.$modal.msgWarning('起止时间无效')
-        return
-      }
       this.fetchSubmitting = true
-      try {
-        let inAgg = null
-        let outAgg = null
-        await runPatientChargeSegments({
-          segments,
-          getProgressText: (cur, total, seg) =>
-            `正在从 HIS 抓取 第 ${cur}/${total} 段（${seg.beginDate} ~ ${seg.endDate}），响应较慢请耐心等待`,
-          runOneSegment: async (seg) => {
-            const body = { beginDate: seg.beginDate, endDate: seg.endDate, chunkDays }
-            if (wantIn && canIn) {
-              const data = await fetchInpatientMirror(body).then(res => res.data)
-              inAgg = this.mergeFetchAgg(inAgg, data)
-            }
-            if (wantOut && canOut) {
-              const data = await fetchOutpatientMirror(body).then(res => res.data)
-              outAgg = this.mergeFetchAgg(outAgg, data)
-            }
-          }
-        })
-        const msgs = []
-        if (inAgg) {
-          msgs.push(this.formatFetchResult('住院', inAgg, segments.length))
+      const body = { beginDate: this.fetchForm.beginDate, endDate: this.fetchForm.endDate }
+      const runInpatient = () => {
+        if (!wantIn || !canIn) {
+          return Promise.resolve(null)
         }
-        if (outAgg) {
-          msgs.push(this.formatFetchResult('门诊', outAgg, segments.length))
-        }
-        if (!msgs.length) {
-          this.$modal.msgWarning('未执行任何抓取')
-          return
-        }
-        this.$modal.msgSuccess(msgs.join('；'))
-        this.fetchDialogVisible = false
-        this.handleDetailQuery()
-      } catch (e) {
-        this.$modal.msgError(formatHisChargeSlowError(e, {
-          timeoutMsg: `HIS 收费抓取超时（共 ${segments.length} 段）。请缩小时间跨度或减小间隔天数后重试。`
-        }))
-      } finally {
-        this.fetchSubmitting = false
+        return fetchInpatientMirror(body).then(res => res.data)
       }
+      const runOutpatient = () => {
+        if (!wantOut || !canOut) {
+          return Promise.resolve(null)
+        }
+        return fetchOutpatientMirror(body).then(res => res.data)
+      }
+      runInpatient()
+        .then(inData => runOutpatient().then(outData => ({ inData, outData })))
+        .then(({ inData, outData }) => {
+          const msgs = []
+          if (inData) {
+            msgs.push(this.formatFetchResult('住院', inData))
+          }
+          if (outData) {
+            msgs.push(this.formatFetchResult('门诊', outData))
+          }
+          if (!msgs.length) {
+            this.$modal.msgWarning('未执行任何抓取')
+            return
+          }
+          this.$modal.msgSuccess(msgs.join('；'))
+          this.fetchDialogVisible = false
+          this.handleDetailQuery()
+        })
+        .catch(() => {})
+        .finally(() => { this.fetchSubmitting = false })
     }
   }
 }
@@ -1133,21 +1021,5 @@ export default {
 .high-charge-scan-page .hc-table-op-btn {
   font-size: 14px;
   padding: 0 6px;
-}
-
-.charge-fetch-chunk-tip {
-  margin-left: 12px;
-  color: #909399;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.high-charge-scan-page .hc-high-dept-form .el-form-item {
-  margin-bottom: 0;
-}
-
-.high-charge-scan-page .hc-high-dept-text {
-  color: #303133;
-  line-height: 32px;
 }
 </style>

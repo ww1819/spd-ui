@@ -322,7 +322,8 @@ export default {
         stockNo: null,
         warehouseId: null,
         stockStatus: 2,
-        stockType: '501'
+        stockType: '501',
+        forProfitLossPick: 1
       }
     }
   },
@@ -381,9 +382,7 @@ export default {
     loadStocktakingPickList() {
       this.stocktakingPickLoading = true
       listStocktaking({ ...this.stocktakingPickQuery }).then(response => {
-        this.stocktakingPickList = (response.rows || []).filter(
-          (s) => s.auditAdjustsInventory !== 1 && s.auditAdjustsInventory !== '1'
-        )
+        this.stocktakingPickList = response.rows || []
         this.stocktakingPickTotal = response.total || 0
         this.stocktakingPickLoading = false
       }).catch(() => {
