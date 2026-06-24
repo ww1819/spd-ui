@@ -646,7 +646,8 @@
 </template>
 
 <script>
-import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, patchSaveStocktaking, appendStocktakingEntries, auditStocktaking, checkStocktakingQty, previewWhStocktakingProfitImport, confirmWhStocktakingProfitImport, downloadWhStocktakingProfitImportTemplate } from "@/api/warehouse/stocktaking";
+import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, patchSaveStocktaking, appendStocktakingEntries, auditStocktaking, checkStocktakingQty, previewWhStocktakingProfitImport, confirmWhStocktakingProfitImport, downloadWhStocktakingProfitImportTemplate, listWhStocktakingExportRows } from "@/api/warehouse/stocktaking";
+import { exportWhStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listPDFilter } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
@@ -1791,17 +1792,66 @@ export default {
     handleStkIoStocktakingEntrySelectionChange(selection) {
       this.checkedStkIoStocktakingEntry = selection.map(item => item.index)
     },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('stocktaking/in/export', {
-        ...this.queryParams
-      }, `仓库盘点单_${new Date().getTime()}.xlsx`)
+    /** 导出：与出退库明细表同款版式（合并标题、宋体、边框、空行、合计红色） */
+    async handleExport() {
+      const exportQuery = { ...this.queryParams };
+      delete exportQuery.pageNum;
+      delete exportQuery.pageSize;
+      this.loading = true;
+      try {
+        const response = await listWhStocktakingExportRows(exportQuery);
+        const rows = (response && response.data) || [];
+        if (!rows.length) {
+          this.$modal.msgWarning('暂无数据可导出');
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        const whName = rows[0] && rows[0].warehouseName ? rows[0].warehouseName : '';
+        const whSuffix = whName ? `_${whName}` : '';
+        await exportWhStocktakingDetailStyledXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+          warehouseName: whName,
+          fileName: `仓库盘点明细表${whSuffix}_${dateStr}.xlsx`,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$modal.msgError('导出失败，请稍后重试');
+      } finally {
+        this.loading = false;
+      }
     },
-    /** 单行导出按钮操作 */
-    handleExportRow(row) {
-      this.download('stocktaking/in/export', {
-        stockNo: row.stockNo
-      }, `仓库盘点单_${row.stockNo}_${new Date().getTime()}.xlsx`)
+    /** 单行导出（同上版式） */
+    async handleExportRow(row) {
+      this.loading = true;
+      try {
+        const response = await listWhStocktakingExportRows({
+          stockNo: row.stockNo,
+          stockType: this.queryParams.stockType || '501',
+        });
+        const rows = (response && response.data) || [];
+        if (!rows.length) {
+          this.$modal.msgWarning('暂无数据可导出');
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        const whName = (row.warehouse && row.warehouse.name) || (rows[0] && rows[0].warehouseName) || '';
+        await exportWhStocktakingDetailStyledXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+          warehouseName: whName,
+          fileName: `仓库盘点明细表_${whName || row.stockNo}_${dateStr}.xlsx`,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$modal.msgError('导出失败，请稍后重试');
+      } finally {
+        this.loading = false;
+      }
     },
     /** 打印按钮操作 */
     handlePrint(row) {

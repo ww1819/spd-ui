@@ -1812,6 +1812,96 @@ export async function exportDeptStocktakingDetailStyledXlsx(options) {
   });
 }
 
+/** 仓库盘点明细表：版式与出退库明细表一致；仅导出明细列，标题带仓库名 */
+export async function exportWhStocktakingDetailStyledXlsx(options) {
+  const { rows = [], beginDate = '', endDate = '', fileName, warehouseName } = options;
+  const whTitle = pickWhStocktakingTitleWarehouse(rows, warehouseName);
+  const titleBoldText = whTitle ? `仓库盘点明细表（${whTitle}）` : '仓库盘点明细表';
+  const headers = [
+    '序号',
+    '耗材编码',
+    '耗材名称',
+    '规格',
+    '型号',
+    '单位',
+    '单价',
+    '账面数量',
+    '实盘数量',
+    '金额',
+    '盈亏数量',
+    '盈亏金额',
+    '批次号',
+    '批号',
+    '生产日期',
+    '有效期',
+    '生产厂家',
+    '耗材供应商',
+    '注册证号',
+    '第三方库存明细ID',
+    '第三方批次号',
+    '明细备注',
+  ];
+  const numericCols = [7, 8, 9, 10, 11, 12];
+  return exportInventoryQueryStyledXlsx({
+    sheetName: '仓库盘点明细',
+    titleBoldText,
+    beginDate,
+    endDate,
+    headers,
+    rows,
+    numericCols1Based: numericCols,
+    sumExtractors: {
+      8: (row) => Number(row.bookQty || 0),
+      9: (row) => Number(row.stockQty || 0),
+      10: (row) => Number(row.amt || 0),
+      11: (row) => Number(row.profitQty || 0),
+      12: (row) => Number(row.profitAmount || 0),
+    },
+    buildCells: (row) => {
+      const r = row || {};
+      return [
+        0,
+        r.materialCode || '',
+        r.materialName || '',
+        r.materialSpeci || '',
+        r.materialModel || '',
+        r.unitName || '',
+        r.unitPrice != null && r.unitPrice !== '' ? Number(r.unitPrice) : null,
+        Number(r.bookQty || 0),
+        Number(r.stockQty || 0),
+        r.amt != null && r.amt !== '' ? Number(r.amt) : null,
+        Number(r.profitQty || 0),
+        r.profitAmount != null && r.profitAmount !== '' ? Number(r.profitAmount) : null,
+        r.batchNo || '',
+        r.batchNumber || '',
+        fmtYmd(r.beginTime),
+        fmtYmd(r.endTime),
+        r.factoryName || '',
+        r.materialSupplierName || '',
+        r.registerNo || '',
+        r.hisId || '',
+        r.thirdPartyBatchNo || '',
+        r.entryRemark || '',
+      ];
+    },
+    fileName,
+  });
+}
+
+function pickWhStocktakingTitleWarehouse(rows, warehouseName) {
+  if (warehouseName != null && String(warehouseName).trim() !== '') {
+    return String(warehouseName).trim();
+  }
+  const names = [...new Set(
+    (rows || [])
+      .map((r) => r.warehouseName)
+      .filter((n) => n != null && String(n).trim() !== '')
+  )];
+  if (names.length === 1) return names[0];
+  if (names.length > 1) return names.join('、');
+  return '';
+}
+
 /** 库存汇总查询 */
 export async function exportWarehouseInventorySummaryStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
