@@ -27,32 +27,17 @@
         <el-form-item label="收费明细主键">
           <el-input v-model="detailQuery.hisChargeId" placeholder="HIS收费明细主键模糊" clearable style="width:180px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
-        <el-form-item label="开单科室">
-          <el-select
-            v-model="detailQuery.orderingDepartmentId"
-            placeholder="名称/编码/简拼"
-            clearable
-            filterable
-            :filter-method="filterOrderingDeptMethod"
-            style="width:200px"
-          >
-            <el-option v-for="d in orderingDeptOptions" :key="'ord-' + d.id" :label="d.name" :value="d.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="执行科室">
+        <el-form-item label="科室">
           <el-select
             v-model="detailQuery.departmentId"
-            placeholder="名称/编码/简拼"
+            placeholder="科室名称/首字母"
             clearable
             filterable
-            :filter-method="filterExecDeptMethod"
+            :filter-method="filterDeptMethod"
             style="width:200px"
           >
-            <el-option v-for="d in execDeptOptions" :key="'exec-' + d.id" :label="d.name" :value="d.id" />
+            <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="执行科室名称">
-          <el-input v-model="detailQuery.execDeptName" placeholder="执行科室模糊" clearable style="width:160px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
         <div class="hc-query-form-second-row">
           <el-form-item label="计费日期">
@@ -100,18 +85,15 @@
       </el-table-column>
       <template v-if="detailVisitType === 'IN'">
         <el-table-column label="住院号" prop="inpatientNo" width="120" show-overflow-tooltip />
-        <el-table-column label="开单科室" prop="deptName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="科室" prop="deptName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else-if="detailVisitType === 'OUT'">
         <el-table-column label="门诊号" prop="outpatientNo" width="120" show-overflow-tooltip />
-        <el-table-column label="开单科室" prop="clinicName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="就诊" prop="clinicName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else>
         <el-table-column label="住院号/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
-        <el-table-column label="开单科室" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="科室/就诊" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
       </template>
       <el-table-column label="姓名" prop="patientName" width="100" show-overflow-tooltip />
       <el-table-column label="性别" prop="patientSex" width="60" align="center" show-overflow-tooltip>
@@ -190,38 +172,10 @@
 
     <el-dialog title="高值计费扫码消耗" :visible.sync="highDialogVisible" width="960px" append-to-body @closed="resetHighDialog">
       <div v-if="highMirrorRow" class="mb8">
-        <span>患者 {{ highMirrorRow.patientName }} · 计费数量 {{ highMirrorRow.quantity }}</span>
-        <span v-if="highBillRemaining != null"> · 当前剩余计费数量 {{ highBillRemaining }}</span>
+        <span>患者 {{ highMirrorRow.patientName }} · 计费数量 {{ highMirrorRow.quantity }} · </span>
+        <span v-if="highBillRemaining != null">当前剩余计费数量 {{ highBillRemaining }}</span>
       </div>
-      <el-form v-if="highMirrorRow" :model="highConsumeForm" label-width="88px" size="small" class="hc-high-dept-form mb8">
-        <el-row :gutter="12">
-          <el-col :span="8">
-            <el-form-item label="开单科室">
-              <span class="hc-high-dept-text">{{ mirrorOrderingDeptName(highMirrorRow) }}</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="执行科室">
-              <span class="hc-high-dept-text">{{ mirrorExecDeptName(highMirrorRow) }}</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="核销科室" required>
-              <el-select
-                v-model="highConsumeForm.consumeDepartmentId"
-                placeholder="名称/编码/简拼"
-                filterable
-                :filter-method="filterConsumeDeptMethod"
-                style="width:100%"
-                @change="onHighConsumeDepartmentChange"
-              >
-                <el-option v-for="d in consumeDeptOptions" :key="d.id" :label="d.name" :value="d.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <el-alert type="warning" :closable="false" show-icon class="mb8" title="请扫描所选核销科室的高值院内码；虚拟库存满足才可带出；可多次扫码、修改本次消耗数量后一次保存并审核。" />
+      <el-alert type="warning" :closable="false" show-icon class="mb8" title="请扫描本科室高值院内码；虚拟库存满足才可带出；可多次扫码、修改本次消耗数量后一次保存并审核。" />
       <el-input
         ref="highScanInput"
         v-model="highScanCode"
@@ -230,7 +184,6 @@
         autocomplete="off"
         spellcheck="false"
         clearable
-        :disabled="!highConsumeForm.consumeDepartmentId"
         @compositionstart="highScanComposing = true"
         @compositionend="onHighScanCompositionEnd"
         @input="onHighScanInput"
@@ -306,14 +259,14 @@
 <script>
 import { parseTime } from '@/utils/ruoyi'
 import { checkPermi } from '@/utils/permission'
-import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
+import { pinyin } from 'pinyin-pro'
 import {
   normalizeBarcodeInput,
   isImeProcessKey,
   isScannerEnterKey,
   isRapidScannerBurst
 } from '@/utils/barcodeInput'
-import { listDepartTenantOptionselect, listDepartOptionselect } from '@/api/foundation/depart'
+import { listdepartAll } from '@/api/foundation/depart'
 import { fetchInpatientMirror, fetchOutpatientMirror } from '@/api/department/patientCharge'
 import {
   listHighChargeInpatientMirror,
@@ -341,10 +294,8 @@ export default {
       detailLoading: false,
       detailList: [],
       detailTotal: 0,
-      execDeptOptions: [],
-      allExecDeptOptions: [],
-      orderingDeptOptions: [],
-      allOrderingDeptOptions: [],
+      deptOptions: [],
+      allDeptOptions: [],
       detailQuery: {
         pageNum: 1,
         pageSize: 10,
@@ -352,9 +303,7 @@ export default {
         visitNo: undefined,
         chargeItemId: undefined,
         hisChargeId: undefined,
-        orderingDepartmentId: undefined,
         departmentId: undefined,
-        execDeptName: undefined,
         processed: undefined,
         valueLevel: '1',
         ...buildDefaultChargeDateRange()
@@ -362,11 +311,6 @@ export default {
       highDialogVisible: false,
       highSubmitting: false,
       highMirrorRow: null,
-      highConsumeForm: {
-        consumeDepartmentId: undefined
-      },
-      consumeDeptOptions: [],
-      allConsumeDeptOptions: [],
       highScanCode: '',
       highScanComposing: false,
       highScanBuffer: '',
@@ -440,52 +384,38 @@ export default {
       return (page - 1) * size + index + 1
     },
     loadDeptOptions() {
-      listDepartTenantOptionselect().then(res => {
-        const list = normalizeDepartPickResponse(res).filter(d => d.hisId != null && String(d.hisId).trim() !== '')
-        this.allExecDeptOptions = list
-        this.execDeptOptions = list
-        this.allOrderingDeptOptions = list
-        this.orderingDeptOptions = list
-      })
-      listDepartOptionselect().then(res => {
-        const list = normalizeDepartPickResponse(res)
-        this.allConsumeDeptOptions = list
-        this.consumeDeptOptions = list
+      const uid = this.$store.getters.userId
+      if (!uid) return
+      listdepartAll(uid).then(res => {
+        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
+        this.allDeptOptions = list.filter(d => d && d.id != null && d.hisId != null && String(d.hisId).trim() !== '')
+        this.deptOptions = this.allDeptOptions
       })
     },
-    mirrorOrderingDeptName(row) {
-      if (!row) return '--'
-      if (row.visitType === 'INPATIENT') return row.deptName || '--'
-      if (row.visitType === 'OUTPATIENT') return row.clinicName || '--'
-      return row.deptDisplayName || row.deptName || row.clinicName || '--'
-    },
-    mirrorExecDeptName(row) {
-      return (row && row.execDeptName) ? row.execDeptName : '--'
-    },
-    resolveDefaultConsumeDepartmentId(row) {
-      if (!row || !row.execDeptId) return undefined
-      const his = String(row.execDeptId).trim()
-      const hit = this.allConsumeDeptOptions.find(d => d.hisId && String(d.hisId).trim() === his)
-      return hit ? hit.id : undefined
-    },
-    onHighConsumeDepartmentChange() {
-      if (this.highLines.length) {
-        this.highLines = []
-        this.highBillRemaining = null
-        this.$modal.msgWarning('已切换核销科室，已清空扫码明细，请重新扫码')
+    filterDeptMethod(query) {
+      if (!query) {
+        this.deptOptions = this.allDeptOptions
+        return
       }
-      if (this.highConsumeForm.consumeDepartmentId) {
-        this.focusHighScanInput()
-      }
-    },
-    filterConsumeDeptMethod(query) {
-      this.consumeDeptOptions = filterDepartPickList(this.allConsumeDeptOptions, query)
-    },
-    filterExecDeptMethod(query) {
-      this.execDeptOptions = filterDepartPickList(this.allExecDeptOptions, query)
-    },
-    filterOrderingDeptMethod(query) {
-      this.orderingDeptOptions = filterDepartPickList(this.allOrderingDeptOptions, query)
+      const queryUpper = query.toUpperCase()
+      this.deptOptions = this.allDeptOptions.filter(item => {
+        if (!item || !item.name) return false
+        const name = item.name
+        const code = (item.code || '').toUpperCase()
+        const referred = (item.referredName || '').toUpperCase()
+        if (name.includes(query) || name.toUpperCase().includes(queryUpper) || code.includes(queryUpper) || referred.includes(queryUpper)) {
+          return true
+        }
+        if (/^[a-zA-Z]+$/.test(query)) {
+          try {
+            const initials = pinyin(name, { pattern: 'first', toneType: 'none', type: 'array' }).join('').toUpperCase()
+            if (initials.includes(queryUpper)) return true
+          } catch (e) {
+            return false
+          }
+        }
+        return false
+      })
     },
     toQueryDayStart(s) {
       if (!s) return undefined
@@ -575,11 +505,9 @@ export default {
       this.highLines = []
       this.resetHighScanInputState()
       this.highBillRemaining = null
-      this.highConsumeForm.consumeDepartmentId = this.resolveDefaultConsumeDepartmentId(row)
-      this.consumeDeptOptions = this.allConsumeDeptOptions
       this.highDialogVisible = true
       this.$nextTick(() => {
-        if (this.highConsumeForm.consumeDepartmentId && this.$refs.highScanInput && this.$refs.highScanInput.focus) {
+        if (this.$refs.highScanInput && this.$refs.highScanInput.focus) {
           this.$refs.highScanInput.focus()
         }
       })
@@ -588,7 +516,6 @@ export default {
       this.clearHighScanAutoTimer()
       this.highMirrorRow = null
       this.highLines = []
-      this.highConsumeForm.consumeDepartmentId = undefined
       this.resetHighScanInputState()
       this.highBillRemaining = null
     },
@@ -689,10 +616,6 @@ export default {
       if (this.highScanSubmitting) {
         return
       }
-      if (!this.highConsumeForm.consumeDepartmentId) {
-        this.$modal.msgWarning('请先选择核销科室')
-        return
-      }
       this.clearHighScanAutoTimer()
       const code = normalizeBarcodeInput(this.highScanCode)
       if (!code || !this.highMirrorRow) return
@@ -707,8 +630,7 @@ export default {
       scanHighChargeBarcode({
         visitKind: this.highMirrorRow.visitType || this.currentVisitKind,
         mirrorRowId: this.highMirrorRow.id,
-        inHospitalCode: code,
-        consumeDepartmentId: this.highConsumeForm.consumeDepartmentId
+        inHospitalCode: code
       }).then(res => {
         const d = res.data || {}
         if (d.billRemainingQty != null) {
@@ -735,10 +657,6 @@ export default {
     },
     submitHighConsume() {
       if (!this.highMirrorRow || this.highLines.length === 0) return
-      if (!this.highConsumeForm.consumeDepartmentId) {
-        this.$modal.msgWarning('请先选择核销科室')
-        return
-      }
       for (const ln of this.highLines) {
         if (ln.applyQty == null || Number(ln.applyQty) <= 0) {
           this.$modal.msgWarning('请填写每行本次消耗数量')
@@ -753,7 +671,6 @@ export default {
       applyHighChargeConsume({
         visitKind: this.highMirrorRow.visitType || this.currentVisitKind,
         mirrorRowId: this.highMirrorRow.id,
-        consumeDepartmentId: this.highConsumeForm.consumeDepartmentId,
         lines: this.highLines.map(l => ({ gzDepInventoryId: l.gzDepInventoryId, qty: l.applyQty }))
       }).then(res => {
         const d = res.data || {}
@@ -788,9 +705,7 @@ export default {
         visitNo: undefined,
         chargeItemId: undefined,
         hisChargeId: undefined,
-        orderingDepartmentId: undefined,
         departmentId: undefined,
-        execDeptName: undefined,
         processed: undefined,
         valueLevel: '1',
         ...buildDefaultChargeDateRange()
@@ -1082,12 +997,5 @@ export default {
 .high-charge-scan-page .hc-table-op-btn {
   font-size: 14px;
   padding: 0 6px;
-}
-.high-charge-scan-page .hc-high-dept-form .el-form-item {
-  margin-bottom: 8px;
-}
-.high-charge-scan-page .hc-high-dept-text {
-  color: #606266;
-  line-height: 32px;
 }
 </style>
