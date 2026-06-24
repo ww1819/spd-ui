@@ -148,6 +148,7 @@
       <el-table-column label="操作" align="center" width="180" fixed="right">
         <template slot-scope="scope">
           <el-button
+            v-if="canScanHigh(scope.row)"
             type="text"
             size="small"
             class="hc-table-op-btn"
@@ -191,7 +192,8 @@
     <el-dialog title="高值计费扫码消耗" :visible.sync="highDialogVisible" width="960px" append-to-body @closed="resetHighDialog">
       <div v-if="highMirrorRow" class="mb8">
         <span>患者 {{ highMirrorRow.patientName }} · 计费数量 {{ highMirrorRow.quantity }}</span>
-        <span v-if="highBillRemaining != null"> · 当前剩余计费数量 {{ highBillRemaining }}</span>
+        <span v-if="highBillRemaining != null"> · 待核销数量 {{ highBillRemaining }}</span>
+        <span v-else> · 待核销数量 {{ highMirrorRow.quantity }}</span>
       </div>
       <el-form v-if="highMirrorRow" :model="highConsumeForm" label-width="88px" size="small" class="hc-high-dept-form mb8">
         <el-row :gutter="12">
@@ -221,7 +223,7 @@
           </el-col>
         </el-row>
       </el-form>
-      <el-alert type="warning" :closable="false" show-icon class="mb8" title="请扫描所选核销科室的高值院内码；虚拟库存满足才可带出；可多次扫码、修改本次消耗数量后一次保存并审核。" />
+      <el-alert type="warning" :closable="false" show-icon class="mb8" title="须一次性核销全部待核销数量（可扫多条院内码，保存时合计须与待核销数量一致）；不支持部分核销；退费返还后可再次核销。" />
       <el-input
         ref="highScanInput"
         v-model="highScanCode"
@@ -241,18 +243,9 @@
         <el-table-column label="耗材" prop="materialName" min-width="120" show-overflow-tooltip />
         <el-table-column label="批次号" prop="batchNo" min-width="200" align="left" class-name="high-col-code-wrap" />
         <el-table-column label="虚拟库存" prop="gzAvailableQty" width="90" align="right" />
-        <el-table-column label="本次消耗" width="130" align="center">
+        <el-table-column label="本次消耗" width="100" align="right">
           <template slot-scope="scope">
-            <el-input-number
-              v-model="scope.row.applyQty"
-              :min="0.000001"
-              :max="Number(scope.row.maxApplyQty)"
-              :precision="6"
-              :step="1"
-              size="mini"
-              controls-position="right"
-              style="width:120px"
-            />
+            <span>{{ scope.row.applyQty }}</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="80" align="center">
@@ -513,7 +506,8 @@ export default {
     /** 列表展示：核销状态（用户可读） */
     writeOffStatusText(v) {
       if (v === 'CONSUMED') return '已核销'
-      if (v === 'PARTIALLY_CONSUMED') return '部分核销'
+      if (v === 'PARTIALLY_CONSUMED') return '部分核销(历史)'
+      if (v === 'REFUNDED') return '已退费'
       return '待核销'
     },
     writeOffStatusClass(v) {
@@ -530,19 +524,8 @@ export default {
       }
       return t
     },
-    formatHighApplySuccessMessage(d) {
-      const data = d || {}
-      const applied = data.appliedQty != null ? Number(data.appliedQty) : null
-      const remaining = data.remainingBillQty != null ? Number(data.remainingBillQty) : null
-      const status = data.mirrorProcessStatus
-      const done = status === 'CONSUMED' || (remaining != null && !isNaN(remaining) && remaining <= 0)
-      if (done) {
-        return '高值核销成功，本条计费已全部完成'
-      }
-      if (status === 'PARTIALLY_CONSUMED' && applied != null && !isNaN(applied) && remaining != null && !isNaN(remaining)) {
-        return `高值核销成功，本次消耗 ${applied}，还剩 ${remaining} 待核销，可继续扫码`
-      }
-      return '高值核销成功'
+    formatHighApplySuccessMessage() {
+      return '高值核销成功，本条计费已全部完成'
     },
     valueLevelText(v) {
       if (v === '1' || v === 1) return '高值'
@@ -554,10 +537,13 @@ export default {
       return v !== '1' && v !== 1
     },
     canScanHigh(row) {
-      if (!row || row.valueLevel !== '1' && row.valueLevel !== 1) {
+      if (!row || (row.valueLevel !== '1' && row.valueLevel !== 1)) {
         return false
       }
-      return row.processStatus !== 'CONSUMED'
+      if (row.processStatus === 'REFUNDED' || row.processStatus === 'PARTIALLY_CONSUMED') {
+        return false
+      }
+      return row.processStatus === 'PENDING_CONSUME'
     },
     openHighDialog(row) {
       if (this.isLowValueLevel(row)) {
@@ -565,7 +551,15 @@ export default {
         return
       }
       if (row.processStatus === 'CONSUMED') {
-        this.$modal.msgWarning('该行已核销')
+        this.$modal.msgWarning('该行已核销，如需再次核销请先冲销')
+        return
+      }
+      if (row.processStatus === 'REFUNDED') {
+        this.$modal.msgWarning('该行是退费记录，不可高值核销')
+        return
+      }
+      if (row.processStatus === 'PARTIALLY_CONSUMED') {
+        this.$modal.msgWarning('该行存在历史部分核销数据，请联系管理员处理')
         return
       }
       if (row.valueLevel !== '1' && row.valueLevel !== 1) {
@@ -739,15 +733,26 @@ export default {
         this.$modal.msgWarning('请先选择核销科室')
         return
       }
+      const target = this.highBillRemaining != null ? Number(this.highBillRemaining) : null
+      if (target == null || isNaN(target) || target <= 0) {
+        this.$modal.msgWarning('请先扫码以获取待核销数量')
+        return
+      }
+      let sum = 0
       for (const ln of this.highLines) {
         if (ln.applyQty == null || Number(ln.applyQty) <= 0) {
-          this.$modal.msgWarning('请填写每行本次消耗数量')
+          this.$modal.msgWarning('扫码明细数量无效，请重新扫码')
           return
         }
         if (Number(ln.applyQty) > Number(ln.maxApplyQty)) {
-          this.$modal.msgWarning('本次消耗不能超过「最大可消耗」')
+          this.$modal.msgWarning('本次消耗不能超过该行最大可消耗')
           return
         }
+        sum += Number(ln.applyQty)
+      }
+      if (Math.abs(sum - target) > 1e-6) {
+        this.$modal.msgWarning(`本次消耗合计 ${sum} 须与待核销数量 ${target} 一致，请继续扫码补齐或删除多余明细`)
+        return
       }
       this.highSubmitting = true
       applyHighChargeConsume({
@@ -757,7 +762,7 @@ export default {
         lines: this.highLines.map(l => ({ gzDepInventoryId: l.gzDepInventoryId, qty: l.applyQty }))
       }).then(res => {
         const d = res.data || {}
-        this.$modal.msgSuccess(this.formatHighApplySuccessMessage(d))
+        this.$modal.msgSuccess(this.formatHighApplySuccessMessage())
         this.highDialogVisible = false
         this.handleDetailQuery()
       }).finally(() => { this.highSubmitting = false })

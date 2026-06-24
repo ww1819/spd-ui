@@ -192,7 +192,7 @@
 </template>
 
 <script>
-import { listDepartTenantOptionselect } from '@/api/foundation/depart'
+import { listDepartTenantOptionselect, listDepartOptionselect } from '@/api/foundation/depart'
 import { listSettlementWarehousePick } from '@/api/foundation/warehouse'
 import { listHighChargeConfirm, confirmHighChargeConsume } from '@/api/gz/highChargeConfirm'
 import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
@@ -212,6 +212,9 @@ function defaultMonthRange() {
   return { begin: formatDate(start), end: formatDate(end) }
 }
 
+const MSG_NO_WRITE_OFF_DEPT_PERM =
+  '没有核销科室权限，不允许确认。如需确认请添加核销科室权限之后再做确认操作'
+
 export default {
   name: 'HighChargeConfirm',
   data() {
@@ -222,6 +225,7 @@ export default {
       total: 0,
       deptOptions: [],
       allDeptOptions: [],
+      permDeptOptions: [],
       confirmDeptOptions: [],
       orderingDeptOptions: [],
       execDeptOptions: [],
@@ -290,10 +294,27 @@ export default {
         const list = normalizeDepartPickResponse(res)
         this.allDeptOptions = list
         this.deptOptions = list
-        this.confirmDeptOptions = list
         this.orderingDeptOptions = list
         this.execDeptOptions = list
       })
+      listDepartOptionselect().then(res => {
+        const list = normalizeDepartPickResponse(res)
+        this.permDeptOptions = list
+        this.confirmDeptOptions = list
+      })
+    },
+    hasWriteOffDeptPermission(deptId) {
+      if (deptId == null || deptId === '') return false
+      const id = Number(deptId)
+      if (isNaN(id)) return false
+      return this.permDeptOptions.some(d => d && Number(d.id) === id)
+    },
+    assertWriteOffDeptPermission(deptId) {
+      if (!this.hasWriteOffDeptPermission(deptId)) {
+        this.$modal.msgWarning(MSG_NO_WRITE_OFF_DEPT_PERM)
+        return false
+      }
+      return true
     },
     filterDeptList(query, targetKey) {
       this[targetKey] = filterDepartPickList(this.allDeptOptions, query)
@@ -308,7 +329,7 @@ export default {
       this.filterDeptList(query, 'execDeptOptions')
     },
     filterConfirmDeptMethod(query) {
-      this.filterDeptList(query, 'confirmDeptOptions')
+      this.confirmDeptOptions = filterDepartPickList(this.permDeptOptions, query)
     },
     loadWarehouseOptions() {
       listSettlementWarehousePick().then(res => {
@@ -378,8 +399,10 @@ export default {
         return
       }
       this.confirmDepartmentId = deptIds[0] || this.query.departmentId || undefined
+      if (!this.assertWriteOffDeptPermission(this.confirmDepartmentId)) {
+        return
+      }
       this.confirmWarehouseId = undefined
-      this.confirmDeptOptions = this.allDeptOptions
       this.loadWarehouseOptions()
       this.confirmDialogVisible = true
     },
@@ -395,6 +418,9 @@ export default {
       }
       if (!this.confirmWarehouseId) {
         this.$modal.msgWarning('请选择仓库')
+        return
+      }
+      if (!this.assertWriteOffDeptPermission(this.confirmDepartmentId)) {
         return
       }
       this.confirmSubmitting = true
