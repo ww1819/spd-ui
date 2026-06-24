@@ -39,17 +39,17 @@
             <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="是否处理">
-          <el-select v-model="detailQuery.processed" placeholder="全部" clearable style="width:110px">
-            <el-option label="已处理" value="Y" />
-            <el-option label="未处理" value="N" />
-          </el-select>
-        </el-form-item>
         <div class="hc-query-form-second-row">
           <el-form-item label="计费日期">
             <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
             <span style="margin:0 6px">至</span>
             <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
+          </el-form-item>
+          <el-form-item label="是否处理">
+            <el-select v-model="detailQuery.processed" placeholder="全部" clearable style="width:110px">
+              <el-option label="已处理" value="Y" />
+              <el-option label="未处理" value="N" />
+            </el-select>
           </el-form-item>
         </div>
       </el-form>
