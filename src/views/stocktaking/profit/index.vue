@@ -144,7 +144,7 @@
 
       <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ (scope.row.auditPerson && scope.row.auditPerson.nickName) || scope.row.auditPersonName || '--' }}</span>
+          <span>{{ (scope.row.auditPerson && scope.row.auditPerson.nickName) || scope.row.auditUserNickName || scope.row.auditPersonName || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
@@ -180,6 +180,8 @@
               @click="handleDelete(scope.row)"
               v-hasPermi="['stocktaking:in:remove']"
               v-if="scope.row.stockStatus != 2"
+              :loading="rowActionLoadingId === scope.row.id"
+              :disabled="rowActionLoadingId != null && rowActionLoadingId !== scope.row.id"
               style="padding: 0 5px; margin: 0;"
             >删除</el-button>
             <el-button
@@ -189,6 +191,8 @@
               @click="handleUpdate(scope.row)"
               v-hasPermi="['stocktaking:in:edit']"
               v-if="scope.row.stockStatus != 2"
+              :loading="rowActionLoadingId === scope.row.id"
+              :disabled="rowActionLoadingId != null && rowActionLoadingId !== scope.row.id"
               style="padding: 0 5px; margin: 0;"
             >修改</el-button>
             <el-button
@@ -287,7 +291,7 @@
         </el-row>
 
         <div class="table-wrapper">
-        <el-table class="stocktaking-detail-table" :data="stkIoStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" :height="detailTableHeight" border show-summary :summary-method="getSummaries">
+        <el-table class="stocktaking-detail-table" :data="stkIoStocktakingEntryList" v-loading="detailLoading" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" :height="detailTableHeight" border show-summary :summary-method="getSummaries">
           <el-table-column v-if="detailEditable" type="selection" width="46" align="center" header-align="center" resizable fixed="left" />
           <el-table-column label="序号" align="center" header-align="center" prop="index" width="52" show-overflow-tooltip resizable/>
           <el-table-column label="耗材编码" align="center" header-align="center" width="100" show-overflow-tooltip resizable>
@@ -469,7 +473,7 @@
     <el-dialog
       title="新增盘盈明细信息"
       :visible.sync="newEntryDialogVisible"
-      width="900px"
+      width="1000px"
       append-to-body
       :close-on-click-modal="false"
     >
@@ -488,6 +492,18 @@
         <el-table-column label="批号" min-width="140">
           <template slot-scope="scope">
             <el-input v-model="scope.row.batchNumber" placeholder="批号" />
+          </template>
+        </el-table-column>
+        <el-table-column label="生产日期" min-width="160">
+          <template slot-scope="scope">
+            <el-date-picker
+              v-model="scope.row.beginTime"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="生产日期"
+              clearable
+              style="width: 100%"
+            />
           </template>
         </el-table-column>
         <el-table-column label="有效期" min-width="160">
@@ -630,7 +646,7 @@
 </template>
 
 <script>
-import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, auditStocktaking, checkStocktakingQty, previewWhStocktakingProfitImport, confirmWhStocktakingProfitImport, downloadWhStocktakingProfitImportTemplate } from "@/api/warehouse/stocktaking";
+import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, patchSaveStocktaking, appendStocktakingEntries, auditStocktaking, checkStocktakingQty, previewWhStocktakingProfitImport, confirmWhStocktakingProfitImport, downloadWhStocktakingProfitImportTemplate } from "@/api/warehouse/stocktaking";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listPDFilter } from "@/api/warehouse/inventory";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
@@ -656,6 +672,9 @@ export default {
     return {
       // 遮罩层
       loading: true,
+      detailLoading: false,
+      rowActionLoadingId: null,
+      entrySaveSnapshots: {},
       dialogInvShow: false,
       dialogDepShow: false,
       newEntryDialogVisible: false,
@@ -910,7 +929,19 @@ export default {
           this.$modal.msgWarning('盘盈明细盘点数量须大于 0');
           return;
         }
+        if (r.beginTime && r.endTime && new Date(r.endTime).getTime() < new Date(r.beginTime).getTime()) {
+          this.$modal.msgWarning('有效期不能早于生产日期');
+          return;
+        }
       }
+      rows.forEach((r) => {
+        r.kcNo = null;
+        r.qty = 0;
+        r.countedFlag = 1;
+        if (r.unitPrice != null && r.unitPrice !== '') {
+          r.price = r.unitPrice;
+        }
+      });
       this.stkIoStocktakingEntryList.push(...rows);
       this.cancelPendingNewEntries();
     },
@@ -1011,6 +1042,7 @@ export default {
     // 取消按钮
     cancel() {
       this.open = false;
+      this.detailLoading = false;
       this.reset();
     },
     // 表单重置
@@ -1034,7 +1066,245 @@ export default {
         remark: null
       };
       this.stkIoStocktakingEntryList = [];
-      this.resetForm("form");
+      this.entrySaveSnapshots = {};
+      if (this.$refs.form) {
+        this.resetForm("form");
+      }
+    },
+    prefillStocktakingFormFromRow(row) {
+      if (!row) return;
+      Object.assign(this.form, {
+        id: row.id,
+        stockNo: row.stockNo,
+        stockDate: row.stockDate,
+        warehouseId: row.warehouseId,
+        departmentId: row.departmentId,
+        stockStatus: row.stockStatus,
+        stockType: row.stockType != null ? row.stockType : "501",
+        supplerId: row.supplerId,
+        createBy: row.createBy,
+        createUserNickName: row.createUserNickName,
+        createrName: row.createrName,
+        creater: row.creater,
+        updateTime: row.updateTime,
+        createTime: row.createTime,
+        remark: row.remark,
+        totalAmount: row.totalAmount,
+        profitAmount: row.profitAmount,
+        warehouse: row.warehouse,
+        department: row.department,
+        auditAdjustsInventory: row.auditAdjustsInventory
+      });
+    },
+    loadStocktakingDetail(id, row, options = {}) {
+      const { title, action, onReady } = options;
+      this.reset();
+      this.prefillStocktakingFormFromRow(row);
+      this.title = title;
+      this.action = action;
+      this.open = true;
+      this.detailLoading = true;
+      this.stkIoStocktakingEntryList = [];
+      this.checkedStkIoStocktakingEntry = [];
+      this.rowActionLoadingId = id;
+      return getStocktaking(id)
+        .then((response) => {
+          const data = response.data || {};
+          if (action && (data.stockStatus === 2 || data.stockStatus === "2")) {
+            this.$modal.msgWarning("已审核的盘点单不可修改");
+            this.open = false;
+            this.detailLoading = false;
+            return null;
+          }
+          this.form = data;
+          this.form.stockType = "501";
+          const entries = data.stkIoStocktakingEntryList || [];
+          return this.$nextTick().then(() => {
+            this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(entries);
+            this.detailLoading = false;
+            if (typeof onReady === "function") {
+              onReady(data);
+            }
+            return data;
+          });
+        })
+        .catch(() => {
+          this.detailLoading = false;
+          this.open = false;
+          this.$modal.msgError("加载盘点单失败");
+        })
+        .finally(() => {
+          this.rowActionLoadingId = null;
+        });
+    },
+    normalizeLoadedEntries(list) {
+      (list || []).forEach((row) => {
+        if (!row) return;
+        if (row.stockQty == null || row.stockQty === '') {
+          row.stockQty = row.qty != null && row.qty !== '' ? row.qty : 0;
+        }
+        this.stockQtyChange(row);
+      });
+      this.refreshEntrySaveSnapshots(list);
+      return list || [];
+    },
+    patchQtyNum(v) {
+      if (v == null || v === '') return null;
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : null;
+    },
+    snapshotEntryForSave(row) {
+      if (!row) return null;
+      return {
+        stockQty: this.patchQtyNum(row.stockQty),
+        qty: this.patchQtyNum(row.qty),
+        batchNumber: row.batchNumber != null ? String(row.batchNumber) : '',
+        remark: row.remark != null ? String(row.remark) : ''
+      };
+    },
+    refreshEntrySaveSnapshots(list) {
+      const m = {};
+      (list || []).forEach((row) => {
+        if (row && row.id != null && row.id !== '') {
+          m[String(row.id)] = this.snapshotEntryForSave(row);
+        }
+      });
+      this.entrySaveSnapshots = m;
+    },
+    collectEntryQtyPatches(list) {
+      const snap = this.entrySaveSnapshots || {};
+      const patches = [];
+      (list || []).forEach((row) => {
+        if (!row || row.id == null || row.id === '') return;
+        const key = String(row.id);
+        const old = snap[key];
+        const cur = this.snapshotEntryForSave(row);
+        if (!old || !cur) return;
+        const stockChanged = cur.stockQty !== old.stockQty;
+        const qtyChanged = cur.qty !== old.qty;
+        const batchChanged = cur.batchNumber !== old.batchNumber;
+        const remarkChanged = cur.remark !== old.remark;
+        if (!stockChanged && !qtyChanged && !batchChanged && !remarkChanged) return;
+        const p = { id: row.id };
+        if (stockChanged) p.stockQty = cur.stockQty;
+        if (qtyChanged) p.bookQty = cur.qty;
+        if (batchChanged) p.batchNumber = cur.batchNumber;
+        if (remarkChanged) p.remark = cur.remark;
+        patches.push(p);
+      });
+      return patches;
+    },
+    whStocktakingClientVersionTime() {
+      return this.form.updateTime || this.form.createTime;
+    },
+    buildPatchSavePayload() {
+      return {
+        id: this.form.id,
+        stockDate: this.form.stockDate,
+        remark: this.form.remark,
+        expectedUpdateTime: this.whStocktakingClientVersionTime(),
+        entryPatches: this.collectEntryQtyPatches(this.stkIoStocktakingEntryList)
+      };
+    },
+    serializeStocktakingEntryForSave(row) {
+      const rest = { ...row };
+      delete rest.material;
+      delete rest.warehouse;
+      delete rest.index;
+      const up = rest.unitPrice != null && rest.unitPrice !== '' ? rest.unitPrice : rest.price;
+      if (up != null && up !== '') {
+        rest.unitPrice = up;
+        rest.price = up;
+      }
+      return rest;
+    },
+    hasDeletedStocktakingEntries() {
+      const snap = this.entrySaveSnapshots || {};
+      const currentIds = new Set(
+        (this.stkIoStocktakingEntryList || [])
+          .filter((r) => r && r.id != null && r.id !== '')
+          .map((r) => String(r.id))
+      );
+      return Object.keys(snap).some((k) => !currentIds.has(k));
+    },
+    collectNewStocktakingEntries() {
+      return (this.stkIoStocktakingEntryList || []).filter(
+        (r) => r && (r.id == null || r.id === '')
+      );
+    },
+    doFullUpdateStocktaking() {
+      this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) =>
+        this.serializeStocktakingEntryForSave(row)
+      );
+      return updateStocktaking(this.form).then((response) => {
+        const data = response.data || response;
+        if (data && data.stkIoStocktakingEntryList) {
+          this.form = data;
+          this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
+        }
+        return data;
+      });
+    },
+    async doSubmitStocktakingForm() {
+      if (this.submitLoading) return;
+      this.submitLoading = true;
+      try {
+        const isUpdate = this.form.id != null;
+        let data;
+        if (isUpdate) {
+          if (this.hasDeletedStocktakingEntries()) {
+            data = await this.doFullUpdateStocktaking();
+          } else {
+            const newEntries = this.collectNewStocktakingEntries().map((row) =>
+              this.serializeStocktakingEntryForSave(row)
+            );
+            let appendData = null;
+            if (newEntries.length) {
+              const appendRes = await appendStocktakingEntries(this.form.id, {
+                entries: newEntries,
+                expectedUpdateTime: this.whStocktakingClientVersionTime()
+              });
+              appendData = (appendRes && appendRes.data) || null;
+              if (appendData) {
+                this.form = { ...this.form, ...appendData };
+                this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(
+                  appendData.stkIoStocktakingEntryList || []
+                );
+              }
+            }
+            const patches = this.collectEntryQtyPatches(this.stkIoStocktakingEntryList);
+            if (patches.length) {
+              const patchRes = await patchSaveStocktaking(this.buildPatchSavePayload());
+              data = (patchRes && patchRes.data) || patchRes;
+            } else {
+              data = appendData || this.form;
+            }
+            if (data && data.stkIoStocktakingEntryList) {
+              this.form = { ...this.form, ...data };
+              this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(
+                data.stkIoStocktakingEntryList || []
+              );
+            }
+          }
+        } else {
+          this.form.stkIoStocktakingEntryList = (this.stkIoStocktakingEntryList || []).map((row) =>
+            this.serializeStocktakingEntryForSave(row)
+          );
+          const addRes = await addStocktaking(this.form);
+          data = (addRes && addRes.data) || addRes;
+          if (data) {
+            this.form.id = data.id;
+            if (data.stockNo != null) this.form.stockNo = data.stockNo;
+            if (data.stkIoStocktakingEntryList) {
+              this.stkIoStocktakingEntryList = this.normalizeLoadedEntries(data.stkIoStocktakingEntryList || []);
+            }
+          }
+        }
+        this.$modal.msgSuccess(isUpdate ? '保存成功' : '新增成功');
+        this.getList();
+      } finally {
+        this.submitLoading = false;
+      }
     },
     //盘点数量改变：盈亏数量 = 盘点(stockQty) − 账面(qty)；盘点金额 = 盘点×单价；盈亏金额 = 盈亏×单价
     stockQtyChange(row){
@@ -1148,18 +1418,9 @@ export default {
       this.action = true;
     },
     /** 查看按钮操作 */
-    handleView(row){
-
-      const id = row.id
-      getStocktaking(id).then(response => {
-        this.form = response.data;
-        this.stkIoStocktakingEntryList = response.data.stkIoStocktakingEntryList;
-        this.open = true;
-        this.action = false;
-        this.form.stockType = '501';
-        this.title = "查看盘点";
-      });
-
+    handleView(row) {
+      const id = row.id;
+      this.loadStocktakingDetail(id, row, { title: "查看盘点", action: false });
     },
     /** 审核按钮操作 */
     handleAudit(row) {
@@ -1287,21 +1548,8 @@ export default {
         this.$modal.msgWarning('已审核的盘点单不可修改');
         return;
       }
-      this.reset();
-      const id = row.id || this.ids
-      getStocktaking(id).then(response => {
-        const data = response.data || {};
-        if (data.stockStatus === 2 || data.stockStatus === '2') {
-          this.$modal.msgWarning('已审核的盘点单不可修改');
-          return;
-        }
-        this.form = data;
-        this.stkIoStocktakingEntryList = data.stkIoStocktakingEntryList;
-        this.open = true;
-        this.title = "修改盘点";
-        this.form.stockType = '501';
-        this.action = true;
-      });
+      const id = row.id || this.ids;
+      this.loadStocktakingDetail(id, row, { title: '修改盘点', action: true });
     },
     /** 提交按钮 */
     submitForm() {
@@ -1311,34 +1559,41 @@ export default {
       }
       this.$refs["form"].validate(valid => {
         if (!valid) return;
+        if (!this.stkIoStocktakingEntryList || this.stkIoStocktakingEntryList.length === 0) {
+          this.$modal.msgWarning('请至少添加一条盘点明细');
+          return;
+        }
         if (this.submitLoading) return;
-        this.form.stkIoStocktakingEntryList = this.stkIoStocktakingEntryList;
-        this.submitLoading = true;
-        const isUpdate = this.form.id != null;
-        const request = isUpdate ? updateStocktaking(this.form) : addStocktaking(this.form);
-        request.then(response => {
-          const data = response.data || response;
-          if (!isUpdate && data) {
-            this.form.id = data.id;
-            if (data.stockNo != null) this.form.stockNo = data.stockNo;
-          }
-          this.$modal.msgSuccess(isUpdate ? "修改成功" : "新增成功");
-          this.open = false;
-          this.getList();
-        }).finally(() => {
-          this.submitLoading = false;
-        });
+        this.doSubmitStocktakingForm();
       });
     },
     /** 删除按钮操作 */
     handleDelete(row) {
       const ids = row.id || this.ids;
-      this.$modal.confirm('是否确认删除盘点编号为"' + ids + '"的数据项？').then(function() {
-        return delStocktaking(ids);
-      }).then(() => {
-        this.getList();
-        this.$modal.msgSuccess("删除成功");
-      }).catch(() => {});
+      const rowId = row && row.id;
+      this.$modal.confirm('是否确认删除盘点编号为"' + ids + '"的数据项？')
+        .then(() => {
+          this.rowActionLoadingId = rowId || ids;
+          return delStocktaking(ids);
+        })
+        .then(() => {
+          if (rowId) {
+            const prevLen = (this.inList || []).length;
+            this.inList = (this.inList || []).filter((r) => r.id !== rowId);
+            if (this.inList.length < prevLen) {
+              this.total = Math.max(0, (this.total || 0) - 1);
+            } else {
+              this.getList();
+            }
+          } else {
+            this.getList();
+          }
+          this.$modal.msgSuccess("删除成功");
+        })
+        .catch(() => {})
+        .finally(() => {
+          this.rowActionLoadingId = null;
+        });
     },
     /** 盘点列表序号 */
     inListIndex({ row, rowIndex }) {
@@ -1669,6 +1924,11 @@ export default {
   margin-top: 0;
   flex: 0 1 auto;
   overflow: hidden;
+}
+
+.local-modal-content .modal-detail-section .modal-entry-pagination {
+  flex-shrink: 0;
+  margin-top: 4px;
 }
 
 /* 弹窗内表单紧凑布局 */
