@@ -42,6 +42,14 @@ export function listDepartOptionselect() {
   })
 }
 
+/** 租户全部科室下拉（不按用户权限过滤；开单科室筛选） */
+export function listDepartTenantOptionselect() {
+  return request({
+    url: '/foundation/depart/tenantOptionselect',
+    method: 'get'
+  })
+}
+
 // 查询科室详细
 export function getdepart(id) {
   return request({
