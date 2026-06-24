@@ -59,6 +59,9 @@
             <span style="margin:0 6px">至</span>
             <el-date-picker v-model="query.endConsumeAuditTime" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
           </el-form-item>
+          <el-form-item label="费用明细主键">
+            <el-input v-model="query.hisChargeId" placeholder="HIS费用明细主键模糊" clearable style="width:180px" @keyup.enter.native="handleQuery" />
+          </el-form-item>
         </div>
       </el-form>
     </div>
@@ -103,6 +106,7 @@
         <el-table-column label="核销科室" prop="departmentName" min-width="110" show-overflow-tooltip />
         <el-table-column label="开单科室" prop="orderingDeptName" min-width="110" show-overflow-tooltip />
         <el-table-column label="执行科室" prop="execDeptName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="费用明细主键" prop="hisChargeId" width="180" show-overflow-tooltip />
         <el-table-column label="患者姓名" prop="patientName" width="100" show-overflow-tooltip />
         <el-table-column label="住院/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
         <el-table-column label="收费编码" prop="chargeItemId" width="120" show-overflow-tooltip />
@@ -234,6 +238,7 @@ export default {
         endConsumeAuditTime: month.end,
         patientName: undefined,
         visitNo: undefined,
+        hisChargeId: undefined,
         materialName: undefined
       },
       confirmDialogVisible: false,
@@ -344,6 +349,7 @@ export default {
         endConsumeAuditTime: month.end,
         patientName: undefined,
         visitNo: undefined,
+        hisChargeId: undefined,
         materialName: undefined
       }
       this.loadList()
