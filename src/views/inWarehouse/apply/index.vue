@@ -383,6 +383,15 @@
             <el-col :span="1.5">
               <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
             </el-col>
+            <el-col v-if="isZqTenant" :span="1.5">
+              <el-button
+                type="primary"
+                size="small"
+                :disabled="!form.id || String(form.billStatus) === '2'"
+                @click="handleModalAudit"
+                v-hasPermi="['inWarehouse:apply:audit']"
+              >审核</el-button>
+            </el-col>
           </div>
 
         </el-row>
@@ -778,7 +787,7 @@
 </template>
 
 <script>
-import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse, createRkEntriesByDingdan, queryZsDelivery, createRkEntriesByDeliveryNo, listEntryChangeLog } from "@/api/warehouse/warehouse";
+import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse, auditWarehouse, createRkEntriesByDingdan, queryZsDelivery, createRkEntriesByDeliveryNo, listEntryChangeLog } from "@/api/warehouse/warehouse";
 import { getMaterialByMainBarcode, jxTm } from "@/api/foundation/material";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
@@ -792,6 +801,8 @@ import orderPrint from "@/views/inWarehouse/audit/orderPrint";
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
+import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate'
+import { ZQ_TCM_TENANT } from '@/utils/msunHis'
 
 export default {
   name: "Apply",
@@ -914,9 +925,9 @@ export default {
     };
   },
   computed: {
-    /** 明细表高度：为弹窗标题、主表表单、工具栏与合计行预留空间，避免底部被父级 overflow 裁切 */
+    /** 明细表高度：为弹窗标题、三行主表表单、工具栏与合计行预留空间 */
     detailTableHeight() {
-      return 'max(260px, calc(100vh - 368px))';
+      return 'max(240px, calc(100vh - 420px))';
     },
     /** 已有入库明细时不允许引用配送单，避免表头与行数据错乱 */
     deliveryRefBlocked() {
@@ -934,12 +945,27 @@ export default {
         return this.form.supplier.name;
       }
       return '';
+    },
+    /** 枣强县中医院：到货验收弹窗内可直接审核（其他租户仍走入库审核菜单） */
+    isZqTenant() {
+      const cid = this.$store.getters.customerId;
+      return cid != null && String(cid).trim() === ZQ_TCM_TENANT;
     }
   },
   created() {
     this.getList(true);
   },
   watch: {
+    open(val) {
+      if (val) {
+        this.$nextTick(() => {
+          const t = this.$refs.stkIoBillEntry;
+          if (t && typeof t.doLayout === 'function') {
+            t.doLayout();
+          }
+        });
+      }
+    },
     '$store.state.app.sidebarNavTick'(nav) {
       this.handleSidebarNavTick(nav);
     }
@@ -1664,6 +1690,42 @@ export default {
         }
       });
     },
+    /** 枣强：弹窗内审核当前入库单（逻辑与入库审核页 handleAudit 一致） */
+    handleModalAudit() {
+      const id = this.form.id;
+      if (!id) {
+        this.$modal.msgWarning('请先保存后再审核');
+        return;
+      }
+      if (String(this.form.billStatus) === '2') {
+        this.$modal.msgWarning('该单据已审核，不能再次审核');
+        return;
+      }
+      const auditBy = this.$store.state.user.userId;
+      getInWarehouse(id).then(res => {
+        if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
+          return;
+        }
+        const billNo = res.data.billNo || id;
+        this.$modal.confirm('确定要审核"' + billNo + '"的数据项？').then(() => {
+          return auditWarehouse({ id: id, auditBy: auditBy });
+        }).then(() => {
+          this.$modal.msgSuccess('审核入库成功！');
+          this.getList();
+          return getInWarehouse(id);
+        }).then(response => {
+          this.form = response.data;
+          this.form.billStatus = '2';
+          this.form.billType = '101';
+          const entries = response.data.stkIoBillEntryList || [];
+          entries.forEach(r => this.initRowLongTermFlag(r));
+          this.stkIoBillEntryList = entries;
+          this.action = false;
+          this.title = '查看入库';
+          this.$nextTick(() => this.refreshDetailSummary());
+        }).catch(() => {});
+      }).catch(() => {});
+    },
     /** 删除按钮操作 */
     handleDelete(row) {
       const ids = row.id || this.ids;
@@ -2208,6 +2270,12 @@ export default {
 
 .local-modal-content .modal-detail-section .table-wrapper {
   margin-top: 0;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* 明细表可编辑列：与「数量」列同尺度（约 118px，small） */
@@ -2362,11 +2430,11 @@ export default {
   font-size: 13px;
 }
 
-/* 弹窗内表格：高度仅由 el-table 的 :height 控制 */
+/* 弹窗内表格：高度由 el-table :height 控制；外层不滚动，表体在表内滚动，合计行贴在表底 */
 .local-modal-content .table-wrapper {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   margin-top: 10px;
   padding-bottom: 4px;
 }
@@ -2406,8 +2474,10 @@ export default {
 
 /* 表体横向滚动条与合计行错开，避免视觉上压在合计数字区域 */
 ::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
-  padding-bottom: 6px;
+  padding-bottom: 4px;
   box-sizing: border-box;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
 }
 
 /* 合计行：主表区 + 左侧固定列底部同步，避免被滚动条或固定层盖住 */
@@ -2845,6 +2915,27 @@ export default {
 .app-container > .el-table .el-table__body-wrapper {
   scroll-behavior: smooth !important;
   -webkit-overflow-scrolling: touch !important;
+}
+
+/*
+ * Element UI 2.x：show-summary 无数据时表尾被 v-show 隐藏，滚动条易与合计行错位。
+ * 强制显示表尾，横向滚动条固定在表体与合计之间。
+ */
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper,
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table .el-table__fixed .el-table__fixed-footer-wrapper,
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper {
+  position: relative;
+  z-index: 30 !important;
+}
+
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-footer-wrapper {
+  z-index: 31 !important;
 }
 
 .json-viewer-pre {

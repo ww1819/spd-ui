@@ -707,7 +707,7 @@ export default {
   computed: {
     /** 与到货验收「添加入库」弹窗明细表高度一致 */
     detailTableHeight() {
-      return 'max(260px, calc(100vh - 368px))';
+      return 'max(240px, calc(100vh - 400px))';
     },
     showPrintOrientation() {
       const m = this.modalObj
@@ -748,6 +748,16 @@ export default {
     this.getList(true);
   },
   watch: {
+    open(val) {
+      if (val) {
+        this.$nextTick(() => {
+          const t = this.$refs.stkIoBillEntry;
+          if (t && typeof t.doLayout === 'function') {
+            t.doLayout();
+          }
+        });
+      }
+    },
     '$store.state.app.sidebarNavTick'(nav) {
       this.handleSidebarNavTick(nav);
     }
@@ -1572,6 +1582,12 @@ export default {
 
 .local-modal-content .modal-detail-section .table-wrapper {
   margin-top: 0;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* 弹窗内表单紧凑布局 */
@@ -1658,11 +1674,11 @@ export default {
   font-size: 13px;
 }
 
-/* 弹窗内表格：高度由 el-table :height 控制（与到货验收一致） */
+/* 弹窗内表格：高度由 el-table :height 控制；外层不滚动，表体在表内滚动，合计行贴在表底 */
 .local-modal-content .table-wrapper {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   margin-top: 10px;
   padding-bottom: 4px;
 }
@@ -1701,8 +1717,10 @@ export default {
 }
 
 ::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
-  padding-bottom: 6px;
+  padding-bottom: 4px;
   box-sizing: border-box;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
 }
 
 ::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
@@ -1881,6 +1899,27 @@ export default {
 }
 .out-warehouse-print-dialog .print-orientation-label {
   color: #606266;
+}
+
+/*
+ * Element UI 2.x：show-summary 无数据时表尾被 v-show 隐藏，滚动条易与合计行错位。
+ * 强制显示表尾，横向滚动条固定在表体与合计之间。
+ */
+.app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper,
+.app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .el-table .el-table__fixed .el-table__fixed-footer-wrapper,
+.app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper {
+  position: relative;
+  z-index: 30 !important;
+}
+
+.app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-footer-wrapper {
+  z-index: 31 !important;
 }
 
 .json-viewer-pre {
