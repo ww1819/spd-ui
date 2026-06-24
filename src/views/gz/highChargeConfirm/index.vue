@@ -192,7 +192,7 @@
 </template>
 
 <script>
-import { listDepartOptionselect } from '@/api/foundation/depart'
+import { listDepartTenantOptionselect } from '@/api/foundation/depart'
 import { listSettlementWarehousePick } from '@/api/foundation/warehouse'
 import { listHighChargeConfirm, confirmHighChargeConsume } from '@/api/gz/highChargeConfirm'
 import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
@@ -286,7 +286,7 @@ export default {
       return this.parseTime(v, '{y}-{m}-{d} {h}:{i}:{s}')
     },
     loadDeptOptions() {
-      listDepartOptionselect().then(res => {
+      listDepartTenantOptionselect().then(res => {
         const list = normalizeDepartPickResponse(res)
         this.allDeptOptions = list
         this.deptOptions = list

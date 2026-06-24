@@ -29,8 +29,8 @@
         </el-form-item>
         <el-form-item label="开单科室">
           <el-select
-            v-model="detailQuery.departmentId"
-            placeholder="科室名称/首字母"
+            v-model="detailQuery.orderingDepartmentId"
+            placeholder="名称/编码/简拼"
             clearable
             filterable
             :filter-method="filterOrderingDeptMethod"
@@ -42,7 +42,7 @@
         <el-form-item label="执行科室">
           <el-select
             v-model="detailQuery.departmentId"
-            placeholder="按权限执行科室"
+            placeholder="名称/编码/简拼"
             clearable
             filterable
             :filter-method="filterExecDeptMethod"
@@ -190,10 +190,38 @@
 
     <el-dialog title="高值计费扫码消耗" :visible.sync="highDialogVisible" width="960px" append-to-body @closed="resetHighDialog">
       <div v-if="highMirrorRow" class="mb8">
-        <span>患者 {{ highMirrorRow.patientName }} · 计费数量 {{ highMirrorRow.quantity }} · </span>
-        <span v-if="highBillRemaining != null">当前剩余计费数量 {{ highBillRemaining }}</span>
+        <span>患者 {{ highMirrorRow.patientName }} · 计费数量 {{ highMirrorRow.quantity }}</span>
+        <span v-if="highBillRemaining != null"> · 当前剩余计费数量 {{ highBillRemaining }}</span>
       </div>
-      <el-alert type="warning" :closable="false" show-icon class="mb8" title="请扫描本科室高值院内码；虚拟库存满足才可带出；可多次扫码、修改本次消耗数量后一次保存并审核。" />
+      <el-form v-if="highMirrorRow" :model="highConsumeForm" label-width="88px" size="small" class="hc-high-dept-form mb8">
+        <el-row :gutter="12">
+          <el-col :span="8">
+            <el-form-item label="开单科室">
+              <span class="hc-high-dept-text">{{ mirrorOrderingDeptName(highMirrorRow) }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="执行科室">
+              <span class="hc-high-dept-text">{{ mirrorExecDeptName(highMirrorRow) }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="核销科室" required>
+              <el-select
+                v-model="highConsumeForm.consumeDepartmentId"
+                placeholder="名称/编码/简拼"
+                filterable
+                :filter-method="filterConsumeDeptMethod"
+                style="width:100%"
+                @change="onHighConsumeDepartmentChange"
+              >
+                <el-option v-for="d in consumeDeptOptions" :key="d.id" :label="d.name" :value="d.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <el-alert type="warning" :closable="false" show-icon class="mb8" title="请扫描所选核销科室的高值院内码；虚拟库存满足才可带出；可多次扫码、修改本次消耗数量后一次保存并审核。" />
       <el-input
         ref="highScanInput"
         v-model="highScanCode"
@@ -202,6 +230,7 @@
         autocomplete="off"
         spellcheck="false"
         clearable
+        :disabled="!highConsumeForm.consumeDepartmentId"
         @compositionstart="highScanComposing = true"
         @compositionend="onHighScanCompositionEnd"
         @input="onHighScanInput"
@@ -277,14 +306,14 @@
 <script>
 import { parseTime } from '@/utils/ruoyi'
 import { checkPermi } from '@/utils/permission'
-import { pinyin } from 'pinyin-pro'
+import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
 import {
   normalizeBarcodeInput,
   isImeProcessKey,
   isScannerEnterKey,
   isRapidScannerBurst
 } from '@/utils/barcodeInput'
-import { listdepartAll } from '@/api/foundation/depart'
+import { listDepartTenantOptionselect, listDepartOptionselect } from '@/api/foundation/depart'
 import { fetchInpatientMirror, fetchOutpatientMirror } from '@/api/department/patientCharge'
 import {
   listHighChargeInpatientMirror,
@@ -333,6 +362,11 @@ export default {
       highDialogVisible: false,
       highSubmitting: false,
       highMirrorRow: null,
+      highConsumeForm: {
+        consumeDepartmentId: undefined
+      },
+      consumeDeptOptions: [],
+      allConsumeDeptOptions: [],
       highScanCode: '',
       highScanComposing: false,
       highScanBuffer: '',
@@ -406,38 +440,52 @@ export default {
       return (page - 1) * size + index + 1
     },
     loadDeptOptions() {
-      const uid = this.$store.getters.userId
-      if (!uid) return
-      listdepartAll(uid).then(res => {
-        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
-        this.allDeptOptions = list.filter(d => d && d.id != null && d.hisId != null && String(d.hisId).trim() !== '')
-        this.deptOptions = this.allDeptOptions
+      listDepartTenantOptionselect().then(res => {
+        const list = normalizeDepartPickResponse(res).filter(d => d.hisId != null && String(d.hisId).trim() !== '')
+        this.allExecDeptOptions = list
+        this.execDeptOptions = list
+        this.allOrderingDeptOptions = list
+        this.orderingDeptOptions = list
+      })
+      listDepartOptionselect().then(res => {
+        const list = normalizeDepartPickResponse(res)
+        this.allConsumeDeptOptions = list
+        this.consumeDeptOptions = list
       })
     },
-    filterDeptMethod(query) {
-      if (!query) {
-        this.deptOptions = this.allDeptOptions
-        return
+    mirrorOrderingDeptName(row) {
+      if (!row) return '--'
+      if (row.visitType === 'INPATIENT') return row.deptName || '--'
+      if (row.visitType === 'OUTPATIENT') return row.clinicName || '--'
+      return row.deptDisplayName || row.deptName || row.clinicName || '--'
+    },
+    mirrorExecDeptName(row) {
+      return (row && row.execDeptName) ? row.execDeptName : '--'
+    },
+    resolveDefaultConsumeDepartmentId(row) {
+      if (!row || !row.execDeptId) return undefined
+      const his = String(row.execDeptId).trim()
+      const hit = this.allConsumeDeptOptions.find(d => d.hisId && String(d.hisId).trim() === his)
+      return hit ? hit.id : undefined
+    },
+    onHighConsumeDepartmentChange() {
+      if (this.highLines.length) {
+        this.highLines = []
+        this.highBillRemaining = null
+        this.$modal.msgWarning('已切换核销科室，已清空扫码明细，请重新扫码')
       }
-      const queryUpper = query.toUpperCase()
-      this.deptOptions = this.allDeptOptions.filter(item => {
-        if (!item || !item.name) return false
-        const name = item.name
-        const code = (item.code || '').toUpperCase()
-        const referred = (item.referredName || '').toUpperCase()
-        if (name.includes(query) || name.toUpperCase().includes(queryUpper) || code.includes(queryUpper) || referred.includes(queryUpper)) {
-          return true
-        }
-        if (/^[a-zA-Z]+$/.test(query)) {
-          try {
-            const initials = pinyin(name, { pattern: 'first', toneType: 'none', type: 'array' }).join('').toUpperCase()
-            if (initials.includes(queryUpper)) return true
-          } catch (e) {
-            return false
-          }
-        }
-        return false
-      })
+      if (this.highConsumeForm.consumeDepartmentId) {
+        this.focusHighScanInput()
+      }
+    },
+    filterConsumeDeptMethod(query) {
+      this.consumeDeptOptions = filterDepartPickList(this.allConsumeDeptOptions, query)
+    },
+    filterExecDeptMethod(query) {
+      this.execDeptOptions = filterDepartPickList(this.allExecDeptOptions, query)
+    },
+    filterOrderingDeptMethod(query) {
+      this.orderingDeptOptions = filterDepartPickList(this.allOrderingDeptOptions, query)
     },
     toQueryDayStart(s) {
       if (!s) return undefined
@@ -527,9 +575,11 @@ export default {
       this.highLines = []
       this.resetHighScanInputState()
       this.highBillRemaining = null
+      this.highConsumeForm.consumeDepartmentId = this.resolveDefaultConsumeDepartmentId(row)
+      this.consumeDeptOptions = this.allConsumeDeptOptions
       this.highDialogVisible = true
       this.$nextTick(() => {
-        if (this.$refs.highScanInput && this.$refs.highScanInput.focus) {
+        if (this.highConsumeForm.consumeDepartmentId && this.$refs.highScanInput && this.$refs.highScanInput.focus) {
           this.$refs.highScanInput.focus()
         }
       })
@@ -538,6 +588,7 @@ export default {
       this.clearHighScanAutoTimer()
       this.highMirrorRow = null
       this.highLines = []
+      this.highConsumeForm.consumeDepartmentId = undefined
       this.resetHighScanInputState()
       this.highBillRemaining = null
     },
@@ -638,6 +689,10 @@ export default {
       if (this.highScanSubmitting) {
         return
       }
+      if (!this.highConsumeForm.consumeDepartmentId) {
+        this.$modal.msgWarning('请先选择核销科室')
+        return
+      }
       this.clearHighScanAutoTimer()
       const code = normalizeBarcodeInput(this.highScanCode)
       if (!code || !this.highMirrorRow) return
@@ -652,7 +707,8 @@ export default {
       scanHighChargeBarcode({
         visitKind: this.highMirrorRow.visitType || this.currentVisitKind,
         mirrorRowId: this.highMirrorRow.id,
-        inHospitalCode: code
+        inHospitalCode: code,
+        consumeDepartmentId: this.highConsumeForm.consumeDepartmentId
       }).then(res => {
         const d = res.data || {}
         if (d.billRemainingQty != null) {
@@ -679,6 +735,10 @@ export default {
     },
     submitHighConsume() {
       if (!this.highMirrorRow || this.highLines.length === 0) return
+      if (!this.highConsumeForm.consumeDepartmentId) {
+        this.$modal.msgWarning('请先选择核销科室')
+        return
+      }
       for (const ln of this.highLines) {
         if (ln.applyQty == null || Number(ln.applyQty) <= 0) {
           this.$modal.msgWarning('请填写每行本次消耗数量')
@@ -693,6 +753,7 @@ export default {
       applyHighChargeConsume({
         visitKind: this.highMirrorRow.visitType || this.currentVisitKind,
         mirrorRowId: this.highMirrorRow.id,
+        consumeDepartmentId: this.highConsumeForm.consumeDepartmentId,
         lines: this.highLines.map(l => ({ gzDepInventoryId: l.gzDepInventoryId, qty: l.applyQty }))
       }).then(res => {
         const d = res.data || {}
@@ -1021,5 +1082,12 @@ export default {
 .high-charge-scan-page .hc-table-op-btn {
   font-size: 14px;
   padding: 0 6px;
+}
+.high-charge-scan-page .hc-high-dept-form .el-form-item {
+  margin-bottom: 8px;
+}
+.high-charge-scan-page .hc-high-dept-text {
+  color: #606266;
+  line-height: 32px;
 }
 </style>
