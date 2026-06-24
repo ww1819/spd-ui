@@ -27,17 +27,32 @@
         <el-form-item label="收费明细主键">
           <el-input v-model="detailQuery.hisChargeId" placeholder="HIS收费明细主键模糊" clearable style="width:180px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
-        <el-form-item label="科室">
+        <el-form-item label="开单科室">
           <el-select
-            v-model="detailQuery.departmentId"
-            placeholder="名称/编码/简拼"
+            v-model="detailQuery.orderingDepartmentId"
+            placeholder="全部开单科室"
             clearable
             filterable
-            :filter-method="filterDeptMethod"
+            :filter-method="filterOrderingDeptMethod"
             style="width:200px"
           >
-            <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
+            <el-option v-for="d in orderingDeptOptions" :key="'ord-' + d.id" :label="d.name" :value="d.id" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="执行科室">
+          <el-select
+            v-model="detailQuery.departmentId"
+            placeholder="按权限执行科室"
+            clearable
+            filterable
+            :filter-method="filterExecDeptMethod"
+            style="width:200px"
+          >
+            <el-option v-for="d in execDeptOptions" :key="'exec-' + d.id" :label="d.name" :value="d.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="执行科室名称">
+          <el-input v-model="detailQuery.execDeptName" placeholder="执行科室模糊" clearable style="width:160px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
         <div class="hc-query-form-second-row">
           <el-form-item label="计费日期">
@@ -85,15 +100,18 @@
       </el-table-column>
       <template v-if="detailVisitType === 'IN'">
         <el-table-column label="住院号" prop="inpatientNo" width="120" show-overflow-tooltip />
-        <el-table-column label="科室" prop="deptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="开单科室" prop="deptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else-if="detailVisitType === 'OUT'">
         <el-table-column label="门诊号" prop="outpatientNo" width="120" show-overflow-tooltip />
-        <el-table-column label="就诊" prop="clinicName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="开单科室" prop="clinicName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else>
         <el-table-column label="住院号/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
-        <el-table-column label="科室/就诊" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="开单科室" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
       </template>
       <el-table-column label="姓名" prop="patientName" width="100" show-overflow-tooltip />
       <el-table-column label="性别" prop="patientSex" width="60" align="center" show-overflow-tooltip>
@@ -318,7 +336,7 @@ import {
   isScannerEnterKey,
   isRapidScannerBurst
 } from '@/utils/barcodeInput'
-import { listDepartOptionselect } from '@/api/foundation/depart'
+import { listDepartOptionselect, listDepartTenantOptionselect } from '@/api/foundation/depart'
 import { fetchInpatientMirror, fetchOutpatientMirror } from '@/api/department/patientCharge'
 import {
   listHighChargeInpatientMirror,
@@ -347,8 +365,10 @@ export default {
       detailLoading: false,
       detailList: [],
       detailTotal: 0,
-      deptOptions: [],
-      allDeptOptions: [],
+      execDeptOptions: [],
+      allExecDeptOptions: [],
+      orderingDeptOptions: [],
+      allOrderingDeptOptions: [],
       detailQuery: {
         pageNum: 1,
         pageSize: 10,
@@ -356,7 +376,9 @@ export default {
         visitNo: undefined,
         chargeItemId: undefined,
         hisChargeId: undefined,
+        orderingDepartmentId: undefined,
         departmentId: undefined,
+        execDeptName: undefined,
         processed: undefined,
         valueLevel: '1',
         ...buildDefaultChargeDateRange()
@@ -445,10 +467,17 @@ export default {
     loadDeptOptions() {
       listDepartOptionselect().then(res => {
         const list = normalizeDepartPickResponse(res)
+        const execMapped = list.filter(d => d.hisId != null && String(d.hisId).trim() !== '')
+        this.allExecDeptOptions = execMapped
+        this.execDeptOptions = execMapped
         this.allConsumeDeptOptions = list
         this.consumeDeptOptions = list
-        this.allDeptOptions = list.filter(d => d.hisId != null && String(d.hisId).trim() !== '')
-        this.deptOptions = this.allDeptOptions
+      })
+      listDepartTenantOptionselect().then(res => {
+        const list = normalizeDepartPickResponse(res)
+        const orderingMapped = list.filter(d => d.hisId != null && String(d.hisId).trim() !== '')
+        this.allOrderingDeptOptions = orderingMapped
+        this.orderingDeptOptions = orderingMapped
       })
     },
     mirrorOrderingDeptName(row) {
@@ -473,8 +502,11 @@ export default {
         this.$modal.msgWarning('已切换核销科室，已清空扫码明细，请重新扫码')
       }
     },
-    filterDeptMethod(query) {
-      this.deptOptions = filterDepartPickList(this.allDeptOptions, query)
+    filterExecDeptMethod(query) {
+      this.execDeptOptions = filterDepartPickList(this.allExecDeptOptions, query)
+    },
+    filterOrderingDeptMethod(query) {
+      this.orderingDeptOptions = filterDepartPickList(this.allOrderingDeptOptions, query)
     },
     filterConsumeDeptMethod(query) {
       this.consumeDeptOptions = filterDepartPickList(this.allConsumeDeptOptions, query)
@@ -780,7 +812,9 @@ export default {
         visitNo: undefined,
         chargeItemId: undefined,
         hisChargeId: undefined,
+        orderingDepartmentId: undefined,
         departmentId: undefined,
+        execDeptName: undefined,
         processed: undefined,
         valueLevel: '1',
         ...buildDefaultChargeDateRange()
