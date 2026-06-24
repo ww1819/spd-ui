@@ -154,16 +154,8 @@
     <el-dialog title="消耗确认" :visible.sync="confirmDialogVisible" width="520px" append-to-body @close="resetConfirmDialog">
       <p>已选 <strong>{{ selectedRows.length }}</strong> 条明细，合计数量 <strong>{{ selectedTotalQty }}</strong>，合计金额 <strong>{{ selectedTotalAmt }}</strong></p>
       <el-form label-width="100px" size="small">
-        <el-form-item label="核销科室" required>
-          <el-select
-            v-model="confirmDepartmentId"
-            placeholder="名称/编码/简拼"
-            filterable
-            :filter-method="filterConfirmDeptMethod"
-            style="width:100%"
-          >
-            <el-option v-for="d in confirmDeptOptions" :key="d.id" :label="d.name" :value="d.id" />
-          </el-select>
+        <el-form-item label="核销科室">
+          <span class="hc-confirm-dept-text">{{ confirmDepartmentName || '--' }}</span>
         </el-form-item>
         <el-form-item label="仓库" required>
           <el-select v-model="confirmWarehouseId" placeholder="请选择结算仓库" filterable style="width:100%">
@@ -226,7 +218,6 @@ export default {
       deptOptions: [],
       allDeptOptions: [],
       permDeptOptions: [],
-      confirmDeptOptions: [],
       orderingDeptOptions: [],
       execDeptOptions: [],
       warehouseOptions: [],
@@ -247,6 +238,7 @@ export default {
       },
       confirmDialogVisible: false,
       confirmDepartmentId: undefined,
+      confirmDepartmentName: '',
       confirmWarehouseId: undefined,
       confirmSubmitting: false,
       resultDialogVisible: false,
@@ -298,10 +290,15 @@ export default {
         this.execDeptOptions = list
       })
       listDepartOptionselect().then(res => {
-        const list = normalizeDepartPickResponse(res)
-        this.permDeptOptions = list
-        this.confirmDeptOptions = list
+        this.permDeptOptions = normalizeDepartPickResponse(res)
       })
+    },
+    resolveDeptDisplayName(deptId) {
+      if (deptId == null || deptId === '') return ''
+      const id = Number(deptId)
+      const hit = this.allDeptOptions.find(d => d && Number(d.id) === id)
+        || this.permDeptOptions.find(d => d && Number(d.id) === id)
+      return hit && hit.name ? hit.name : ''
     },
     hasWriteOffDeptPermission(deptId) {
       if (deptId == null || deptId === '') return false
@@ -327,9 +324,6 @@ export default {
     },
     filterExecDeptMethod(query) {
       this.filterDeptList(query, 'execDeptOptions')
-    },
-    filterConfirmDeptMethod(query) {
-      this.confirmDeptOptions = filterDepartPickList(this.permDeptOptions, query)
     },
     loadWarehouseOptions() {
       listSettlementWarehousePick().then(res => {
@@ -398,7 +392,15 @@ export default {
         this.$modal.msgWarning('请选择同一核销科室的明细进行确认')
         return
       }
-      this.confirmDepartmentId = deptIds[0] || this.query.departmentId || undefined
+      this.confirmDepartmentId = deptIds[0]
+      if (!this.confirmDepartmentId) {
+        this.$modal.msgWarning('所选明细缺少核销科室，无法确认')
+        return
+      }
+      const sample = this.selectedRows.find(r => r.departmentId === this.confirmDepartmentId)
+      this.confirmDepartmentName = (sample && sample.departmentName)
+        || this.resolveDeptDisplayName(this.confirmDepartmentId)
+        || String(this.confirmDepartmentId)
       if (!this.assertWriteOffDeptPermission(this.confirmDepartmentId)) {
         return
       }
@@ -408,12 +410,13 @@ export default {
     },
     resetConfirmDialog() {
       this.confirmDepartmentId = undefined
+      this.confirmDepartmentName = ''
       this.confirmWarehouseId = undefined
       this.confirmSubmitting = false
     },
     submitConfirm() {
       if (!this.confirmDepartmentId) {
-        this.$modal.msgWarning('请选择核销科室')
+        this.$modal.msgWarning('所选明细缺少核销科室，无法确认')
         return
       }
       if (!this.confirmWarehouseId) {
@@ -561,5 +564,10 @@ export default {
   font-size: 13px;
   color: #606266;
   line-height: 32px;
+}
+.high-charge-confirm-page .hc-confirm-dept-text {
+  line-height: 32px;
+  color: #303133;
+  font-weight: 500;
 }
 </style>
