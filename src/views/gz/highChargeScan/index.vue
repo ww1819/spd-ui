@@ -27,32 +27,17 @@
         <el-form-item label="收费明细主键">
           <el-input v-model="detailQuery.hisChargeId" placeholder="HIS收费明细主键模糊" clearable style="width:180px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
-        <el-form-item label="开单科室">
-          <el-select
-            v-model="detailQuery.orderingDepartmentId"
-            placeholder="名称/编码/简拼"
-            clearable
-            filterable
-            :filter-method="filterOrderingDeptMethod"
-            style="width:200px"
-          >
-            <el-option v-for="d in orderingDeptOptions" :key="'ord-' + d.id" :label="d.name" :value="d.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="执行科室">
+        <el-form-item label="科室">
           <el-select
             v-model="detailQuery.departmentId"
-            placeholder="名称/编码/简拼"
+            placeholder="科室名称/首字母"
             clearable
             filterable
-            :filter-method="filterExecDeptMethod"
+            :filter-method="filterDeptMethod"
             style="width:200px"
           >
-            <el-option v-for="d in execDeptOptions" :key="'exec-' + d.id" :label="d.name" :value="d.id" />
+            <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="执行科室名称">
-          <el-input v-model="detailQuery.execDeptName" placeholder="执行科室模糊" clearable style="width:160px" @keyup.enter.native="handleDetailQuery" />
         </el-form-item>
         <div class="hc-query-form-second-row">
           <el-form-item label="计费日期">
@@ -100,18 +85,15 @@
       </el-table-column>
       <template v-if="detailVisitType === 'IN'">
         <el-table-column label="住院号" prop="inpatientNo" width="120" show-overflow-tooltip />
-        <el-table-column label="开单科室" prop="deptName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="科室" prop="deptName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else-if="detailVisitType === 'OUT'">
         <el-table-column label="门诊号" prop="outpatientNo" width="120" show-overflow-tooltip />
-        <el-table-column label="开单科室" prop="clinicName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="就诊" prop="clinicName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else>
         <el-table-column label="住院号/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
-        <el-table-column label="开单科室" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="科室/就诊" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
       </template>
       <el-table-column label="姓名" prop="patientName" width="100" show-overflow-tooltip />
       <el-table-column label="性别" prop="patientSex" width="60" align="center" show-overflow-tooltip>
@@ -223,7 +205,7 @@
           </el-col>
         </el-row>
       </el-form>
-      <el-alert type="warning" :closable="false" show-icon class="mb8" title="须一次性核销全部待核销数量（可扫多条院内码，保存时合计须与待核销数量一致）；不支持部分核销；退费返还后可再次核销。" />
+      <el-alert type="warning" :closable="false" show-icon class="mb8" title="须一次性核销全部待核销数量（可扫多条院内码，保存时合计须与待核销数量一致）；不支持部分核销；冲销后可再次核销。" />
       <el-input
         ref="highScanInput"
         v-model="highScanCode"
@@ -299,7 +281,6 @@
 <script>
 import { parseTime } from '@/utils/ruoyi'
 import { checkPermi } from '@/utils/permission'
-import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
 import {
   normalizeBarcodeInput,
   isImeProcessKey,
@@ -307,6 +288,7 @@ import {
   isRapidScannerBurst
 } from '@/utils/barcodeInput'
 import { listDepartTenantOptionselect, listDepartOptionselect } from '@/api/foundation/depart'
+import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
 import { fetchInpatientMirror, fetchOutpatientMirror } from '@/api/department/patientCharge'
 import {
   listHighChargeInpatientMirror,
@@ -334,10 +316,8 @@ export default {
       detailLoading: false,
       detailList: [],
       detailTotal: 0,
-      execDeptOptions: [],
-      allExecDeptOptions: [],
-      orderingDeptOptions: [],
-      allOrderingDeptOptions: [],
+      deptOptions: [],
+      allDeptOptions: [],
       detailQuery: {
         pageNum: 1,
         pageSize: 10,
@@ -345,9 +325,7 @@ export default {
         visitNo: undefined,
         chargeItemId: undefined,
         hisChargeId: undefined,
-        orderingDepartmentId: undefined,
         departmentId: undefined,
-        execDeptName: undefined,
         processed: undefined,
         valueLevel: '1',
         ...buildDefaultChargeDateRange()
@@ -355,11 +333,6 @@ export default {
       highDialogVisible: false,
       highSubmitting: false,
       highMirrorRow: null,
-      highConsumeForm: {
-        consumeDepartmentId: undefined
-      },
-      consumeDeptOptions: [],
-      allConsumeDeptOptions: [],
       highScanCode: '',
       highScanComposing: false,
       highScanBuffer: '',
@@ -371,6 +344,11 @@ export default {
       highScanLastSubmitAt: 0,
       highLines: [],
       highBillRemaining: null,
+      highConsumeForm: {
+        consumeDepartmentId: undefined
+      },
+      allConsumeDeptOptions: [],
+      consumeDeptOptions: [],
       consumeRecordDialog: {
         visible: false,
         loading: false,
@@ -435,16 +413,17 @@ export default {
     loadDeptOptions() {
       listDepartTenantOptionselect().then(res => {
         const list = normalizeDepartPickResponse(res).filter(d => d.hisId != null && String(d.hisId).trim() !== '')
-        this.allExecDeptOptions = list
-        this.execDeptOptions = list
-        this.allOrderingDeptOptions = list
-        this.orderingDeptOptions = list
+        this.allDeptOptions = list
+        this.deptOptions = list
       })
       listDepartOptionselect().then(res => {
         const list = normalizeDepartPickResponse(res)
         this.allConsumeDeptOptions = list
         this.consumeDeptOptions = list
       })
+    },
+    filterDeptMethod(query) {
+      this.deptOptions = filterDepartPickList(this.allDeptOptions, query)
     },
     mirrorOrderingDeptName(row) {
       if (!row) return '--'
@@ -473,12 +452,6 @@ export default {
     },
     filterConsumeDeptMethod(query) {
       this.consumeDeptOptions = filterDepartPickList(this.allConsumeDeptOptions, query)
-    },
-    filterExecDeptMethod(query) {
-      this.execDeptOptions = filterDepartPickList(this.allExecDeptOptions, query)
-    },
-    filterOrderingDeptMethod(query) {
-      this.orderingDeptOptions = filterDepartPickList(this.allOrderingDeptOptions, query)
     },
     toQueryDayStart(s) {
       if (!s) return undefined
@@ -760,8 +733,7 @@ export default {
         mirrorRowId: this.highMirrorRow.id,
         consumeDepartmentId: this.highConsumeForm.consumeDepartmentId,
         lines: this.highLines.map(l => ({ gzDepInventoryId: l.gzDepInventoryId, qty: l.applyQty }))
-      }).then(res => {
-        const d = res.data || {}
+      }).then(() => {
         this.$modal.msgSuccess(this.formatHighApplySuccessMessage())
         this.highDialogVisible = false
         this.handleDetailQuery()
@@ -793,9 +765,7 @@ export default {
         visitNo: undefined,
         chargeItemId: undefined,
         hisChargeId: undefined,
-        orderingDepartmentId: undefined,
         departmentId: undefined,
-        execDeptName: undefined,
         processed: undefined,
         valueLevel: '1',
         ...buildDefaultChargeDateRange()
@@ -1088,11 +1058,8 @@ export default {
   font-size: 14px;
   padding: 0 6px;
 }
-.high-charge-scan-page .hc-high-dept-form .el-form-item {
-  margin-bottom: 8px;
-}
 .high-charge-scan-page .hc-high-dept-text {
-  color: #606266;
   line-height: 32px;
+  color: #606266;
 }
 </style>

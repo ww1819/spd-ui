@@ -336,6 +336,15 @@
             <el-col :span="1.5">
               <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
             </el-col>
+            <el-col v-if="isZqTenant" :span="1.5">
+              <el-button
+                type="primary"
+                size="small"
+                :disabled="!form.id || String(form.billStatus) === '2'"
+                @click="handleModalAudit"
+                v-hasPermi="['outWarehouse:apply:audit']"
+              >审核</el-button>
+            </el-col>
           </div>
 
         </el-row>
@@ -678,6 +687,7 @@ import {
   delOutWarehouse,
   addOutWarehouse,
   updateOutWarehouse,
+  auditOutWarehouse,
   listCTKWarehouse,
   createCkEntriesByRkApply, createCkEntriesByWhApply, createCkEntriesByDepPurchaseApply, listEntryChangeLog,
   getOutWarehouseMaterialStockQty,
@@ -698,9 +708,10 @@ import SelectRkApply from "@/components/SelectModel/SelectRkApply";
 import outOrderPrint from "@/views/outWarehouse/audit/outOrderPrint";
 import { buildOutboundPrintRowFromDetail } from '@/views/warehouse/print/outboundPrintRow'
 import {STOCK_OUT_TEMPLATE} from '@/utils/printData'
-import { assertBillHasEntries, assertBillMaterialLinesQtyNotZero } from '@/utils/billEntryValidate'
+import { assertBillHasEntries, assertBillMaterialLinesQtyNotZero, assertBillEntriesForAudit } from '@/utils/billEntryValidate'
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import { collectCkThScopeErrors } from '@/utils/auditBillScopeValidate'
+import { ZQ_TCM_TENANT } from '@/utils/msunHis'
 import {
   cloneStkOutEntryForDuplicate,
   cloneDocRefRowForDuplicate
@@ -829,6 +840,11 @@ export default {
     /** 与到货验收「添加入库」弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
+    },
+    /** 枣强县中医院：出库申请弹窗内可直接审核（其他租户仍走出库审核菜单） */
+    isZqTenant() {
+      const cid = this.$store.getters.customerId;
+      return cid != null && String(cid).trim() === ZQ_TCM_TENANT;
     }
   },
   created() {
@@ -1657,6 +1673,48 @@ export default {
           }
         }
       });
+    },
+    /** 枣强：弹窗内审核当前出库单（逻辑与出库审核页 handleAudit 一致） */
+    async handleModalAudit() {
+      const id = this.form.id;
+      if (!id) {
+        this.$modal.msgWarning('请先保存后再审核');
+        return;
+      }
+      if (String(this.form.billStatus) === '2') {
+        this.$modal.msgWarning('该单据已审核，不能再次审核');
+        return;
+      }
+      const auditBy = this.$store.state.user.userId;
+      try {
+        const res = await getOutWarehouse(id);
+        const data = res.data;
+        const docLabel = data.billType == 301 ? '退货单' : '出库单';
+        if (!assertBillEntriesForAudit(data.stkIoBillEntryList, this, docLabel)) {
+          return;
+        }
+        const errs = await collectCkThScopeErrors(data, data.stkIoBillEntryList, data.billType);
+        if (errs.length) {
+          this.$modal.msgError(errs.join('；'));
+          return;
+        }
+        const billNo = data.billNo || id;
+        await this.$modal.confirm('确定要审核"' + billNo + '"的数据项？');
+        await auditOutWarehouse({ id: id, auditBy: auditBy });
+        this.$modal.msgSuccess('审核出库成功！');
+        this.getList();
+        const response = await getOutWarehouse(id);
+        this.form = response.data;
+        this.$set(this.form, 'docRefList', Array.isArray(response.data.docRefList) ? response.data.docRefList : []);
+        this.form.billStatus = '2';
+        this.form.billType = '201';
+        this.stkIoBillEntryList = response.data.stkIoBillEntryList;
+        this.action = false;
+        this.title = '查看出库';
+        this.$nextTick(() => this.refreshEntryStockQty());
+      } catch (e) {
+        // 用户取消确认或请求失败
+      }
     },
     /** 删除按钮操作 */
     handleDelete(row) {
