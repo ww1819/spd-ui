@@ -994,7 +994,9 @@ export default {
 }
 
 .high-charge-scan-page .hc-query-form-second-row {
-  display: block;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   width: 100%;
   clear: both;
 }
