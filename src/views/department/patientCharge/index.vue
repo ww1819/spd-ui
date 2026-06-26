@@ -894,13 +894,15 @@ export default {
       return tf != null && String(tf).trim() !== ''
     },
     canWriteOffLow(row) {
-      if (!row || !this.isLowValueLevel(row)) {
+      if (!row) {
         return false
       }
+      // 已低值核销的计费行：以 processType 为准，不受耗材档案后续高低值变更影响
       if (row.processStatus === 'CONSUMED' && row.processType === 'LOW_VALUE') {
         return true
       }
-      if (row.processStatus === 'REFUNDED') {
+      // 退费返还行仍按收费项目高低值判断（低值退费才走本冲销）
+      if (row.processStatus === 'REFUNDED' && this.isLowValueLevel(row)) {
         return true
       }
       return false
