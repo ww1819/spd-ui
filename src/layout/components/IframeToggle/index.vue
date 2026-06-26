@@ -6,6 +6,7 @@
       :iframeId="'iframe' + index"
       v-show="$route.path === item.path"
       :src="item.meta.link"
+      :title="item.title || (item.meta && item.meta.title) || ''"
     ></inner-link>
   </transition-group>
 </template>
