@@ -475,6 +475,7 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMaterialForPurchase from '@/components/SelectModel/SelectMaterialForPurchase';
 import { runConfiguredTableExport } from '@/utils/tableExportRunner'
 import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
+import { buildDefaultDateRange } from '@/utils/defaultDateRange';
 
 export default {
   name: "dPurchase",
@@ -518,8 +519,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         purchaseBillNo: null,
-        beginDate: null,
-        endDate: null,
+        ...buildDefaultDateRange(),
         warehouseId: null,
         isGz: null,
         departmentId: null,
@@ -719,6 +719,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      Object.assign(this.queryParams, buildDefaultDateRange());
       this.handleQuery();
     },
     // 多选框选中数据

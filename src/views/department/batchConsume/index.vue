@@ -394,6 +394,7 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
 import MainTable from './components/MainTable.vue';
+import { buildDefaultDateRange } from '@/utils/defaultDateRange';
 
 export default {
   name: "BatchConsume",
@@ -447,8 +448,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         consumeBillNo: null,
-        beginDate: null,
-        endDate: null,
+        ...buildDefaultDateRange(),
         departmentId: null,
         userId: null,
         consumeBillStatus: null,
@@ -697,6 +697,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      Object.assign(this.queryParams, buildDefaultDateRange());
       this.handleQuery();
     },
     // 多选框选中数据

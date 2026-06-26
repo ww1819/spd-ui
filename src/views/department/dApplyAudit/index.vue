@@ -379,6 +379,7 @@ import { listApplyAudit, getApplyAudit, auditApply, rejectApply } from "@/api/de
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
+import { buildDefaultDateRange } from '@/utils/defaultDateRange';
 
 export default {
   name: "dApplyAudit",
@@ -424,8 +425,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         applyBillNo: null,
-        beginDate: null,
-        endDate: null,
+        ...buildDefaultDateRange(),
         warehouseId: null,
         departmentId: null,
         userId: null,
@@ -602,6 +602,7 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.applyBillStatus = null; // 重置后显示全部状态
       this.queryParams.billType = 1; // 重置后仍只查询申领单类型
+      Object.assign(this.queryParams, buildDefaultDateRange());
       this.handleQuery();
     },
     // 多选框选中数据

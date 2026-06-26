@@ -347,6 +347,7 @@
 import { listDepartmentTransfer, getDepartmentTransfer, delDepartmentTransfer, addDepartmentTransfer, updateDepartmentTransfer } from "@/api/department/departmentTransfer";
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
+import { buildDefaultDateRange } from '@/utils/defaultDateRange';
 
 export default {
   name: "departmentTransfer",
@@ -390,8 +391,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         transferBillNo: null,
-        beginDate: null,
-        endDate: null,
+        ...buildDefaultDateRange(),
         outDepartmentId: null,
         inDepartmentId: null,
         userId: null,
@@ -591,6 +591,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      Object.assign(this.queryParams, buildDefaultDateRange());
       this.handleQuery();
     },
     // 多选框选中数据

@@ -745,6 +745,16 @@ import SelectSupplier from '@/components/SelectModel/SelectSupplierDept';
 import SelectDepartmentApplyAvailableStock from '@/components/SelectModel/SelectDepartmentApplyAvailableStock';
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 import { assertMinPackageQtyOnSave } from '@/utils/minPackageQty';
+import { parseTime } from '@/utils/ruoyi';
+
+function buildDefaultDateRange() {
+  const today = new Date();
+  const endDate = parseTime(today, '{y}-{m}-{d}');
+  const begin = new Date(today);
+  begin.setDate(begin.getDate() - 5);
+  const beginDate = parseTime(begin, '{y}-{m}-{d}');
+  return { beginDate, endDate };
+}
 
 export default {
   name: "dApply",
@@ -835,8 +845,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         applyBillNo: null,
-        beginDate: null,
-        endDate: null,
+        ...buildDefaultDateRange(),
         departmentId: null,
         userId: null,
         applyBillStatus: null,
@@ -1660,6 +1669,7 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.queryParams.billType = 1; // 重置后仍只查询申领单类型
+      Object.assign(this.queryParams, buildDefaultDateRange());
       this.handleQuery();
     },
     // 多选框选中数据

@@ -77,13 +77,6 @@
               <el-option label="未处理" value="N" />
             </el-select>
           </el-form-item>
-          <el-form-item label="高低值类型">
-            <el-select v-model="detailQuery.valueLevel" placeholder="全部" clearable style="width:120px">
-              <el-option label="高值收费项" value="1" />
-              <el-option label="低值收费项" value="2" />
-              <el-option label="未识别" value="0" />
-            </el-select>
-          </el-form-item>
           <el-form-item label="计费日期">
             <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
             <span style="margin:0 6px">至</span>
@@ -462,6 +455,15 @@ import {
   writeOffMirrorLowValue
 } from '@/api/department/patientCharge'
 
+function buildDefaultChargeDateRange() {
+  const today = new Date()
+  const endChargeDate = parseTime(today, '{y}-{m}-{d}')
+  const beginDate = new Date(today)
+  beginDate.setDate(beginDate.getDate() - 5)
+  const beginChargeDate = parseTime(beginDate, '{y}-{m}-{d}')
+  return { beginChargeDate, endChargeDate }
+}
+
 export default {
   name: 'PatientChargeHis',
   data() {
@@ -485,9 +487,7 @@ export default {
         departmentId: undefined,
         execDeptName: undefined,
         processed: undefined,
-        valueLevel: undefined,
-        beginChargeDate: undefined,
-        endChargeDate: undefined,
+        ...buildDefaultChargeDateRange(),
         beginProcessTime: undefined,
         endProcessTime: undefined
       },
@@ -678,9 +678,7 @@ export default {
         departmentId: undefined,
         execDeptName: undefined,
         processed: undefined,
-        valueLevel: undefined,
-        beginChargeDate: undefined,
-        endChargeDate: undefined,
+        ...buildDefaultChargeDateRange(),
         beginProcessTime: undefined,
         endProcessTime: undefined
       }

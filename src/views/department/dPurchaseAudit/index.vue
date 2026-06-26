@@ -405,6 +405,7 @@ import { assertBillEntriesReadyForAudit } from '@/utils/billEntryValidate';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
+import { buildDefaultDateRange } from '@/utils/defaultDateRange';
 
 export default {
   name: "dPurchaseAudit",
@@ -437,8 +438,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         purchaseBillNo: null,
-        beginDate: null,
-        endDate: null,
+        ...buildDefaultDateRange(),
         warehouseId: null,
         departmentId: null,
         userId: null,
@@ -530,6 +530,7 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.queryParams.purchaseBillStatus = null; // 重置后显示全部状态
+      Object.assign(this.queryParams, buildDefaultDateRange());
       this.handleQuery();
     },
     // 多选框选中数据

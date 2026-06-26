@@ -302,6 +302,15 @@ import {
   applyHighChargeConsume
 } from '@/api/gz/highChargeScan'
 
+function buildDefaultChargeDateRange() {
+  const today = new Date()
+  const endChargeDate = parseTime(today, '{y}-{m}-{d}')
+  const beginDate = new Date(today)
+  beginDate.setDate(beginDate.getDate() - 5)
+  const beginChargeDate = parseTime(beginDate, '{y}-{m}-{d}')
+  return { beginChargeDate, endChargeDate }
+}
+
 export default {
   name: 'GzHighChargeScan',
   data() {
@@ -321,8 +330,7 @@ export default {
         hisChargeId: undefined,
         departmentId: undefined,
         processed: undefined,
-        beginChargeDate: undefined,
-        endChargeDate: undefined
+        ...buildDefaultChargeDateRange()
       },
       highDialogVisible: false,
       highSubmitting: false,
@@ -761,8 +769,7 @@ export default {
         hisChargeId: undefined,
         departmentId: undefined,
         processed: undefined,
-        beginChargeDate: undefined,
-        endChargeDate: undefined
+        ...buildDefaultChargeDateRange()
       }
       this.loadDetailList()
     },
