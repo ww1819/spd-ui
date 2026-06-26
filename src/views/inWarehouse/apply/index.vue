@@ -801,7 +801,10 @@ import orderPrint from "@/views/inWarehouse/audit/orderPrint";
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
-import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate'
+import {
+  assertBillHasActiveEntriesForAudit,
+  assertInboundBillEntriesHaveBatchAndExpiry
+} from '@/utils/billEntryValidate'
 import { ZQ_TCM_TENANT } from '@/utils/msunHis'
 
 export default {
@@ -1648,6 +1651,10 @@ export default {
             return;
           }
 
+          if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '保存')) {
+            return;
+          }
+
           if (!this.form.createBy && this.$store.state.user && this.$store.state.user.userId) {
             this.form.createBy = this.$store.state.user.userId;
           }
@@ -1701,9 +1708,15 @@ export default {
         this.$modal.msgWarning('该单据已审核，不能再次审核');
         return;
       }
+      if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '审核')) {
+        return;
+      }
       const auditBy = this.$store.state.user.userId;
       getInWarehouse(id).then(res => {
         if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
+          return;
+        }
+        if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核')) {
           return;
         }
         const billNo = res.data.billNo || id;

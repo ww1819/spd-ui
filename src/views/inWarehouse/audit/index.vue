@@ -601,7 +601,11 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMaterialFilter from "@/components/SelectModel/SelectMaterialFilter";
-import { assertBillHasEntries, assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
+import {
+  assertBillHasEntries,
+  assertBillHasActiveEntriesForAudit,
+  assertInboundBillEntriesHaveBatchAndExpiry
+} from '@/utils/billEntryValidate';
 import orderPrint from "@/views/inWarehouse/audit/orderPrint";
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
@@ -1109,6 +1113,9 @@ export default {
         if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
           return;
         }
+        if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核')) {
+          return;
+        }
         this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
           return auditWarehouse({ id: id, auditBy: auditBy });
         }).then(() => {
@@ -1132,6 +1139,9 @@ export default {
         const validatePromises = ids.map(id =>
           getInWarehouse(id).then(res => {
             if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
+              return Promise.reject(new Error('audit_entry_validate_failed'));
+            }
+            if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核')) {
               return Promise.reject(new Error('audit_entry_validate_failed'));
             }
           })
@@ -1167,6 +1177,9 @@ export default {
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (!assertBillHasEntries(this.stkIoBillEntryList, this, '请至少添加一条入库明细')) {
+            return;
+          }
+          if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '保存')) {
             return;
           }
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;

@@ -185,6 +185,39 @@ export function buildZeroQtyErrorMessage(rowNo, entry) {
 /**
  * 已选耗材行数量须大于 0；遇首条无效行即提示并返回 false
  */
+function isBlankText(val) {
+  return val == null || String(val).trim() === '';
+}
+
+/**
+ * 低值入库明细：批号、有效期均不能为空（空白字符串视为空）
+ * @param {Array} entryList 明细列表
+ * @param {Vue} vm 组件实例
+ * @param {string} [actionLabel] 操作名，如「保存」「审核」
+ */
+export function assertInboundBillEntriesHaveBatchAndExpiry(entryList, vm, actionLabel) {
+  const action = actionLabel || '保存';
+  const list = entryList || [];
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (!e || !isEntryNotDeleted(e)) {
+      continue;
+    }
+    if (e.materialId == null || e.materialId === '') {
+      continue;
+    }
+    const name = resolveEntryMaterialName(e);
+    const lineLabel = name !== '--' ? name : formatChineseRowNo(i + 1);
+    if (isBlankText(e.batchNumber) || isBlankText(e.endTime)) {
+      if (vm && vm.$modal) {
+        vm.$modal.msgError(`明细【${lineLabel}】批号或有效期为空，请维护批号和效期后再${action}`);
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
 export function assertBillMaterialLinesQtyNotZero(entryList, vm) {
   const list = entryList || [];
   for (let i = 0; i < list.length; i++) {
