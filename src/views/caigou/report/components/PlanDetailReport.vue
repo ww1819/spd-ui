@@ -13,20 +13,38 @@
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
+            <el-form-item label="仓库" prop="warehouseIds" class="query-item-inline">
+              <div class="query-select-wrapper query-select-wrapper--warehouse">
+                <SelectWarehouse v-model="queryParams.warehouseIds" :multiple="true" />
+              </div>
+            </el-form-item>
             <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
               <div class="query-select-wrapper">
-                <SelectSupplier v-model="queryParams.supplierId" />
+                <SelectSupplier
+                  v-model="queryParams.supplierId"
+                  :keyword.sync="queryParams.supplierKeyword"
+                  allow-keyword-blur
+                  placeholder="编码/名称/首拼"
+                />
               </div>
             </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId" />
-              </div>
+            <el-form-item label="耗材" prop="materialKeyword" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialKeyword"
+                placeholder="编码/名称/首拼"
+                clearable
+                class="query-input-text"
+                @keyup.enter.native="handleQuery"
+              />
             </el-form-item>
-            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectMaterial v-model="queryParams.materialId" />
-              </div>
+            <el-form-item label="规格" prop="materialSpecKeyword" class="query-item-inline">
+              <el-input
+                v-model="queryParams.materialSpecKeyword"
+                placeholder="规格模糊检索"
+                clearable
+                class="query-input-text"
+                @keyup.enter.native="handleQuery"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -159,15 +177,19 @@
 <script>
 import { listPurchasePlan, getPurchasePlan } from "@/api/caigou/purchasePlan";
 import { exportPurchasePlanDetailReportStyledXlsx } from "@/utils/departmentOutSummaryExport";
+import {
+  getMaterialPinyinInitials,
+  matchMaterialKeyword,
+  normalizeMaterialSearchKeyword
+} from "@/utils/materialSearch";
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
-import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import RightToolbar from "@/components/RightToolbar";
 
 export default {
   name: "PlanDetailReport",
   dicts: ["biz_status", "plan_status"],
-  components: { SelectSupplier, SelectMaterial, SelectWarehouse, RightToolbar },
+  components: { SelectSupplier, SelectWarehouse, RightToolbar },
   data() {
     return {
       loading: true,
@@ -180,8 +202,10 @@ export default {
         pageSize: 10,
         planNo: null,
         supplierId: null,
-        warehouseId: null,
-        materialId: null,
+        supplierKeyword: null,
+        warehouseIds: [],
+        materialKeyword: null,
+        materialSpecKeyword: null,
         planStatus: null,
         beginDate: null,
         endDate: null
@@ -215,19 +239,65 @@ export default {
   },
   methods: {
     buildPlanListParams() {
+      const {
+        materialKeyword,
+        materialSpecKeyword,
+        supplierKeyword,
+        warehouseIds,
+        pageNum,
+        pageSize,
+        ...rest
+      } = this.queryParams;
       const params = {
-        ...this.queryParams,
+        ...rest,
         beginDate: this.queryParams.beginDate,
         endDate: this.queryParams.endDate,
         pageNum: 1,
         pageSize: 10000
       };
+      if (supplierKeyword && !params.supplierId) {
+        delete params.supplierId;
+      }
       Object.keys(params).forEach(key => {
         if (params[key] === null || params[key] === undefined || params[key] === "") {
           delete params[key];
         }
       });
       return params;
+    },
+    matchSupplierKeyword(item, rawKeyword) {
+      const kw = normalizeMaterialSearchKeyword(rawKeyword);
+      if (!kw) {
+        return true;
+      }
+      const k = kw.toLowerCase();
+      const kUpper = kw.toUpperCase();
+      const fields = [item.supplierName, item.supplierCode];
+      for (let i = 0; i < fields.length; i += 1) {
+        const v = fields[i];
+        if (v != null && String(v).trim() !== "") {
+          const s = String(v);
+          if (s.toLowerCase().includes(k) || s.toUpperCase().includes(kUpper)) {
+            return true;
+          }
+        }
+      }
+      if (/^[a-zA-Z]+$/.test(kw) && item.supplierName) {
+        const initials = getMaterialPinyinInitials(item.supplierName);
+        if (initials.includes(kUpper)) {
+          return true;
+        }
+      }
+      return false;
+    },
+    matchSpecKeyword(item, rawKeyword) {
+      const kw = normalizeMaterialSearchKeyword(rawKeyword);
+      if (!kw) {
+        return true;
+      }
+      const spec = item.materialSpec || "";
+      const k = kw.toLowerCase();
+      return String(spec).toLowerCase().includes(k);
     },
     getList() {
       this.loading = true;
@@ -292,12 +362,34 @@ export default {
     },
     filterDetailData(detailList) {
       let filtered = detailList;
-      if (this.queryParams.materialId) {
-        filtered = filtered.filter(item => {
-          const itemMaterialId = item.materialId || "";
-          const queryMaterialId = String(this.queryParams.materialId);
-          return itemMaterialId === queryMaterialId || String(itemMaterialId) === queryMaterialId;
-        });
+      const warehouseIds = this.queryParams.warehouseIds;
+      if (Array.isArray(warehouseIds) && warehouseIds.length > 0) {
+        const idSet = new Set(warehouseIds.map(id => String(id)));
+        filtered = filtered.filter(item => item.warehouseId && idSet.has(String(item.warehouseId)));
+      }
+      if (this.queryParams.supplierId) {
+        const sid = String(this.queryParams.supplierId);
+        filtered = filtered.filter(item => item.supplierId && String(item.supplierId) === sid);
+      } else if (this.queryParams.supplierKeyword) {
+        const kw = this.queryParams.supplierKeyword;
+        filtered = filtered.filter(item => this.matchSupplierKeyword(item, kw));
+      }
+      if (this.queryParams.materialKeyword) {
+        const kw = this.queryParams.materialKeyword;
+        filtered = filtered.filter(item =>
+          matchMaterialKeyword(
+            {
+              code: item.materialCode,
+              name: item.materialName,
+              referredName: item.materialReferredName
+            },
+            kw
+          )
+        );
+      }
+      if (this.queryParams.materialSpecKeyword) {
+        const kw = this.queryParams.materialSpecKeyword;
+        filtered = filtered.filter(item => this.matchSpecKeyword(item, kw));
       }
       return filtered;
     },
@@ -319,9 +411,13 @@ export default {
                 materialId,
                 materialCode,
                 materialName,
+                materialReferredName: material.referredName || entry.referredName || "",
                 materialSpec,
                 materialUnit,
+                supplierId: entry.supplierId || (material.supplier && material.supplier.id) || "",
+                supplierCode: entry.supplierCode || (material.supplier && material.supplier.code) || "",
                 supplierName: entry.supplierName || (material.supplier && material.supplier.name) || "",
+                warehouseId: plan.warehouseId || (plan.warehouse && plan.warehouse.id) || "",
                 warehouseName: plan.warehouseName || (plan.warehouse && plan.warehouse.name) || "",
                 qty: entry.qty || 0,
                 price: entry.price || 0,
@@ -372,6 +468,8 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.supplierKeyword = null;
+      this.queryParams.warehouseIds = [];
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
       this.handleQuery();
@@ -458,6 +556,10 @@ export default {
 
 .query-select-wrapper {
   width: 180px;
+}
+
+.query-select-wrapper--warehouse {
+  width: 220px;
 }
 
 .query-input-text {
