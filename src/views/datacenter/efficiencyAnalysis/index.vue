@@ -656,21 +656,38 @@ export default {
           formatter: '{b}: {d}%'
         },
         legend: {
-          orient: 'vertical',
-          right: 8,
-          top: 'center',
-          itemWidth: 12,
-          itemHeight: 12,
-          textStyle: { fontSize: 12, color: '#606266' }
+          show: false
         },
         series: [
           {
             type: 'pie',
-            radius: ['42%', '68%'],
-            center: ['38%', '50%'],
+            radius: ['32%', '52%'],
+            center: ['50%', '54%'],
             avoidLabelOverlap: true,
-            label: { show: false },
-            labelLine: { show: false },
+            minShowLabelAngle: 5,
+            label: {
+              show: true,
+              position: 'outside',
+              formatter: '{b}: {d}%',
+              fontSize: 11,
+              color: '#606266',
+              lineHeight: 16,
+              overflow: 'none',
+              width: 120
+            },
+            labelLine: {
+              show: true,
+              length: 12,
+              length2: 10,
+              smooth: true,
+              lineStyle: { color: '#909399' }
+            },
+            emphasis: {
+              label: {
+                show: true,
+                fontWeight: 'bold'
+              }
+            },
             data
           }
         ]
@@ -985,6 +1002,7 @@ export default {
   display: flex;
   gap: 12px;
   align-items: stretch;
+  overflow: visible;
 }
 
 .dept-cost-table {
@@ -1152,11 +1170,13 @@ export default {
 }
 
 .category-chart-panel {
-  flex: 0 0 320px;
+  flex: 0 0 460px;
+  min-width: 460px;
   border: 1px solid #e8ecf2;
   border-radius: 4px;
   background: #fafbfc;
-  padding: 12px 8px 8px;
+  padding: 12px 10px 8px;
+  overflow: visible;
 }
 
 .category-chart-title {
@@ -1169,7 +1189,8 @@ export default {
 
 .category-pie {
   width: 100%;
-  height: 260px;
+  height: 300px;
+  overflow: visible;
 }
 
 .category-table-panel {
@@ -1277,6 +1298,7 @@ export default {
   .category-chart-panel {
     flex: none;
     width: 100%;
+    min-width: 0;
   }
 
   .category-trend-body {
