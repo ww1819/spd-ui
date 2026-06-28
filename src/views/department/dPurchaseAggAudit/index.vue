@@ -416,6 +416,7 @@
 import { listPurchaseAggAudit, getPurchaseAggAudit, auditPurchaseAgg, rejectPurchaseAgg } from "@/api/department/purchaseAggAudit";
 import { assertBillEntriesReadyForAudit } from '@/utils/billEntryValidate';
 import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
+import { buildDefaultDateRange } from '@/utils/defaultDateRange';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 
@@ -450,8 +451,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         purchaseBillNo: null,
-        beginDate: null,
-        endDate: null,
+        ...buildDefaultDateRange(),
         warehouseId: null,
         departmentId: null,
         userId: null,
@@ -543,6 +543,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      Object.assign(this.queryParams, buildDefaultDateRange());
       this.queryParams.purchaseBillStatus = null; // 重置后显示全部状态
       this.handleQuery();
     },
