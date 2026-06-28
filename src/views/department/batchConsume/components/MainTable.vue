@@ -35,13 +35,21 @@
         <span v-else>--</span>
       </template>
     </el-table-column>
-    <el-table-column label="制单人" align="center" prop="createrName" width="100" show-overflow-tooltip resizable />
+    <el-table-column label="制单人" align="center" width="100" show-overflow-tooltip resizable>
+      <template slot-scope="scope">
+        <span>{{ formatPersonName(scope.row, 'creater') }}</span>
+      </template>
+    </el-table-column>
     <el-table-column label="单据状态" align="center" prop="consumeBillStatus" width="100" show-overflow-tooltip resizable>
       <template slot-scope="scope">
         <dict-tag :options="dict.type.biz_status" :value="scope.row.consumeBillStatus"/>
       </template>
     </el-table-column>
-    <el-table-column label="审核人" align="center" prop="auditPersonName" width="100" show-overflow-tooltip resizable />
+    <el-table-column label="审核人" align="center" width="100" show-overflow-tooltip resizable>
+      <template slot-scope="scope">
+        <span>{{ formatPersonName(scope.row, 'audit') }}</span>
+      </template>
+    </el-table-column>
     <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
       <template slot-scope="scope">
         <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
@@ -118,6 +126,20 @@ export default {
     }
   },
   methods: {
+    formatPersonName(row, type) {
+      if (!row) {
+        return '--'
+      }
+      if (type === 'creater') {
+        const name = row.createrName
+          || (row.creater && (row.creater.nickName || row.creater.userName))
+          || (row.user && (row.user.nickName || row.user.userName))
+        return name || '--'
+      }
+      const name = row.auditPersonName
+        || (row.auditPerson && (row.auditPerson.nickName || row.auditPerson.userName))
+      return name || '--'
+    },
     isRowReverseable(row) {
       return typeof this.canRowReverse === 'function' && this.canRowReverse(row);
     },

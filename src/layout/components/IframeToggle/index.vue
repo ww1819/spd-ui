@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <transition-group name="fade-transform" mode="out-in">
     <inner-link
       v-for="(item, index) in iframeViews"

@@ -210,6 +210,31 @@
           </div>
         </div>
       </div>
+
+      <!-- 十八类重点耗材 -->
+      <div class="key-material-section">
+        <div class="kpi-section-title">十八类重点耗材</div>
+        <div class="key-material-table">
+          <div class="key-material-row key-material-row--head">
+            <div v-for="col in keyMaterialColumns" :key="col.key" class="key-material-cell">
+              {{ col.label }}
+            </div>
+          </div>
+          <div
+            v-for="(row, index) in keyMaterialRows"
+            :key="row.key"
+            :class="['key-material-row key-material-row--body', index % 2 === 0 ? 'key-material-row--alt' : 'key-material-row--plain']"
+          >
+            <div class="key-material-cell key-material-cell--label">{{ row.categoryName }}</div>
+            <div class="key-material-cell key-material-cell--money">¥{{ formatMoney(row.amount) }}</div>
+            <div class="key-material-cell">{{ row.yoyRate }}</div>
+            <div class="key-material-cell">
+              <span :class="deptChangeClass(row.yoyChange)">{{ row.yoyChange }}</span>
+            </div>
+            <div class="key-material-cell key-material-cell--remark">{{ row.remark }}</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -345,6 +370,162 @@ const SPD_EFFICIENCY_ROWS = [
     afterValue: '0.008',
     improvementRate: '33.33%',
     effectDesc: '报废损耗降低33.3%，年减少损失超10万元'
+  }
+]
+
+const KEY_MATERIAL_COLUMNS = [
+  { key: 'categoryName', label: '十八类重点耗材' },
+  { key: 'amount', label: '年度重点耗材消耗总金额' },
+  { key: 'yoyRate', label: '年度重点耗材同比(%)' },
+  { key: 'yoyChange', label: '同比增减' },
+  { key: 'remark', label: '备注' }
+]
+
+/** 十八类重点耗材（静态展示，后续对接接口） */
+const KEY_MATERIAL_ROWS = [
+  {
+    key: 'bone-fix',
+    categoryName: '单/多部件金属骨固定器械及附件',
+    amount: 280000,
+    yoyRate: '8.50%',
+    yoyChange: '-8.50%',
+    remark: '钛合金 / 不锈钢接骨板、锁定螺钉、髓内钉、骨科固定配件等'
+  },
+  {
+    key: 'guidewire',
+    categoryName: '导丝',
+    amount: 320000,
+    yoyRate: '108.50%',
+    yoyChange: '-108.50%',
+    remark: '冠脉导丝、外周血管导丝、肾动脉导丝、介入软硬导丝等'
+  },
+  {
+    key: 'ear-implant',
+    categoryName: '耳内假体',
+    amount: 220000,
+    yoyRate: '208.50%',
+    yoyChange: '-208.50%',
+    remark: '镫骨假体、鼓室成形假体、中耳通风管、人工听骨等'
+  },
+  {
+    key: 'maxillofacial',
+    categoryName: '颌面部髁复及修复重建材料及制品',
+    amount: 150000,
+    yoyRate: '308.50%',
+    yoyChange: '-308.50%',
+    remark: '颌面硅橡胶唇复体、树脂修复假体、颌面植入修复材料'
+  },
+  {
+    key: 'spine',
+    categoryName: '脊柱椎体间固定/置换系统',
+    amount: 120000,
+    yoyRate: '408.50%',
+    yoyChange: '-408.50%',
+    remark: '颈椎/胸腰椎钉棒系统、椎间融合器、人工椎间盘、脊柱前路固定板'
+  },
+  {
+    key: 'hemostatic',
+    categoryName: '可吸收外科止血材料',
+    amount: 180000,
+    yoyRate: '508.50%',
+    yoyChange: '-508.50%',
+    remark: '胶原蛋白海绵、可吸收止血微球、壳聚糖止血敷料等植入类止血耗材'
+  },
+  {
+    key: 'hip',
+    categoryName: '髋关节假体',
+    amount: 350000,
+    yoyRate: '608.50%',
+    yoyChange: '-608.50%',
+    remark: '全髋 / 半髋人工关节、股骨柄、髋臼杯、陶瓷内衬、髋关节配套配件'
+  },
+  {
+    key: 'skull',
+    categoryName: '颅骨矫形器械',
+    amount: 80000,
+    yoyRate: '708.50%',
+    yoyChange: '-708.50%',
+    remark: '颅骨钛网、颅骨固定螺钉、颅颌面整形修复植入物'
+  },
+  {
+    key: 'bur',
+    categoryName: '刨骨器',
+    amount: 50000,
+    yoyRate: '808.50%',
+    yoyChange: '-808.50%',
+    remark: '骨科关节镜刨削刀头、动力刨削系统、磨骨钻头等一次性刨削耗材'
+  },
+  {
+    key: 'balloon',
+    categoryName: '球囊扩张导管',
+    amount: 30000,
+    yoyRate: '908.50%',
+    yoyChange: '-908.50%',
+    remark: '冠脉球囊、外周血管球囊、肺动脉 / 肾动脉扩张球囊、PTCA 导管'
+  },
+  {
+    key: 'bracket',
+    categoryName: '托槽',
+    amount: 30000,
+    yoyRate: '1008.50%',
+    yoyChange: '-1008.50%',
+    remark: '口腔正畸金属托槽、陶瓷托槽、自锁托槽及正畸配套附件'
+  },
+  {
+    key: 'stapler',
+    categoryName: '吻合器(带钉)',
+    amount: 30000,
+    yoyRate: '1108.50%',
+    yoyChange: '-1108.50%',
+    remark: '消化道吻合器、血管吻合器、皮肤闭合吻合钉、腔镜切割吻合器'
+  },
+  {
+    key: 'stent',
+    categoryName: '血管支架',
+    amount: 30000,
+    yoyRate: '1208.50%',
+    yoyChange: '-1208.50%',
+    remark: '冠脉药物支架、裸支架、外周血管支架、颅内支架、颈动脉支架、覆膜支架'
+  },
+  {
+    key: 'penile',
+    categoryName: '阴茎假体',
+    amount: 30000,
+    yoyRate: '1308.50%',
+    yoyChange: '-1308.50%',
+    remark: '男性勃起功能障碍植入式人工假体、支撑假体套件'
+  },
+  {
+    key: 'neurostim',
+    categoryName: '植入式神经刺激器',
+    amount: 30000,
+    yoyRate: '1408.50%',
+    yoyChange: '-1408.50%',
+    remark: '脑深部电刺激、脊髓刺激器、迷走神经刺激植入系统及电极'
+  },
+  {
+    key: 'icd',
+    categoryName: '植入式心律转复除颤器(ICD)',
+    amount: 30000,
+    yoyRate: '1508.50%',
+    yoyChange: '-1508.50%',
+    remark: '心脏除颤器、三腔起搏器、植入式心电监测起搏电极套件'
+  },
+  {
+    key: 'infusion',
+    categoryName: '植入式药物输注设备',
+    amount: 30000,
+    yoyRate: '1608.50%',
+    yoyChange: '-1608.50%',
+    remark: '植入式镇痛泵、化疗药物缓释输注植入装置、皮下给药储药系统'
+  },
+  {
+    key: 'vertebroplasty',
+    categoryName: '椎体成形导引系统',
+    amount: 30000,
+    yoyRate: '1708.50%',
+    yoyChange: '-1708.50%',
+    remark: 'PVP/PKP 椎体成形穿刺针、扩张球囊、骨水泥输送套件、导向器械'
   }
 ]
 
@@ -495,6 +676,8 @@ export default {
       deptCostRows: DEPT_COST_ROWS,
       spdEfficiencyColumns: SPD_EFFICIENCY_COLUMNS,
       spdEfficiencyRows: SPD_EFFICIENCY_ROWS,
+      keyMaterialColumns: KEY_MATERIAL_COLUMNS,
+      keyMaterialRows: KEY_MATERIAL_ROWS,
       categoryRows: CATEGORY_ROWS,
       queryParams: {
         year: defaultYear()
@@ -859,7 +1042,8 @@ export default {
 .kpi-section,
 .category-section,
 .dept-cost-section,
-.spd-efficiency-section {
+.spd-efficiency-section,
+.key-material-section {
   background: #fff;
   border: 1px solid #e4e7ed;
   border-radius: 4px;
@@ -1167,6 +1351,75 @@ export default {
   color: #606266;
   font-size: 12px;
   text-align: left;
+}
+
+.key-material-table {
+  width: 100%;
+  border: 1px solid #e8ecf2;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.key-material-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1.25fr 1.1fr 0.95fr 2.4fr;
+  align-items: center;
+}
+
+.key-material-row--head {
+  background: #5b9bd5;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.key-material-row--body {
+  font-size: 13px;
+  color: #303133;
+  min-height: 44px;
+  border-top: 1px solid #ebeef5;
+}
+
+.key-material-row--alt {
+  background: #f0f5fa;
+}
+
+.key-material-row--plain {
+  background: #fff;
+}
+
+.key-material-cell {
+  padding: 10px 12px;
+  text-align: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.25);
+  line-height: 1.4;
+}
+
+.key-material-row--body .key-material-cell {
+  border-right: 1px solid #ebeef5;
+}
+
+.key-material-row .key-material-cell:last-child {
+  border-right: none;
+}
+
+.key-material-cell--label {
+  text-align: left;
+  font-weight: 600;
+  color: #303133;
+}
+
+.key-material-cell--money {
+  font-variant-numeric: tabular-nums;
+  color: #303133;
+}
+
+.key-material-cell--remark {
+  color: #606266;
+  font-size: 12px;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.5;
 }
 
 .category-chart-panel {

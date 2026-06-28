@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="inner-link-page">
     <data-center-top-decoration v-if="displayTopDecoration" />
     <div
