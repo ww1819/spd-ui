@@ -308,7 +308,7 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </el-row>
 
-      <el-table ref="materialTable" v-loading="loading" :data="materialList" :row-key="getMaterialRowKey" :row-class-name="materialIndex" @selection-change="handleSelectionChange" @sort-change="handleSortChange" height="60vh" border stripe>
+      <el-table ref="materialTable" class="material-main-table" v-loading="loading" :data="materialList" :row-key="getMaterialRowKey" :row-class-name="materialIndex" @selection-change="handleSelectionChange" @sort-change="handleSortChange" height="60vh" border stripe>
       <el-table-column type="selection" width="55" align="center" fixed="left" :reserve-selection="true" />
       <el-table-column type="index" label="序号" align="center" width="80" key="index" v-if="columns[0].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -4609,13 +4609,49 @@ export default {
   background-color: #EBEEF5 !important;
 }
 
-/* 表格标题行字体加粗加大 - 仅针对当前页面 */
-.material-page-container .el-table th {
+/* 列表主表表头：蓝色背景（仅耗材产品维护主明细表，弹窗/导入等其它表格不受影响） */
+.material-page-container .material-main-table th {
+  background-color: #5B9BD5 !important;
+  color: #fff !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  border-right-color: rgba(255, 255, 255, 0.28) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+.material-page-container .material-main-table th:first-child {
+  border-left-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+.material-page-container .material-main-table th .cell {
+  color: #fff !important;
   font-size: 15px !important;
   font-weight: 600 !important;
 }
 
-.material-page-container .el-table th .cell {
+.material-page-container .material-main-table .sort-caret.ascending {
+  border-bottom-color: rgba(255, 255, 255, 0.55);
+}
+
+.material-page-container .material-main-table .sort-caret.descending {
+  border-top-color: rgba(255, 255, 255, 0.55);
+}
+
+.material-page-container .material-main-table .ascending .sort-caret.ascending {
+  border-bottom-color: #fff;
+}
+
+.material-page-container .material-main-table .descending .sort-caret.descending {
+  border-top-color: #fff;
+}
+
+/* 其它表格表头保持原样式 */
+.material-page-container .el-table:not(.material-main-table) th {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.material-page-container .el-table:not(.material-main-table) th .cell {
   font-size: 15px !important;
   font-weight: 600 !important;
 }
