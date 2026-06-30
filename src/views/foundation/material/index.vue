@@ -205,7 +205,7 @@
     </el-form>
       </div>
     </div>
-    <el-row :gutter="10" class="mb8" style="padding-top: 0px; margin-top: -8px">
+    <el-row :gutter="10" class="mb8 material-toolbar-row" style="padding-top: 0px; margin-top: -8px">
       <el-col :span="1.5">
         <el-button
           type="primary" size="medium"
@@ -215,7 +215,8 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary" size="medium"
+          type="text" size="medium"
+          class="material-toolbar-btn material-toolbar-btn--muted"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:material:edit']"
@@ -224,14 +225,15 @@
       <el-col :span="1.5">
         <el-button
           type="primary" size="medium"
-          :disabled="single"
-          @click="handleDelete"
+          :disabled="multiple"
+          @click="handleDelete()"
           v-hasPermi="['foundation:material:remove']"
-        >删除</el-button>
+        >批量删除</el-button>
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary" size="medium"
+          type="text" size="medium"
+          class="material-toolbar-btn material-toolbar-btn--muted"
           :disabled="multiple"
           @click="handleUpdateReferred"
           v-hasPermi="['foundation:material:updateReferred']"
@@ -247,8 +249,9 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary"
+          type="text"
           size="medium"
+          class="material-toolbar-btn material-toolbar-btn--muted"
           :loading="syncGzToChargeItemLoading"
           @click="handleSyncGzToChargeItem"
           v-hasPermi="['foundation:material:edit','foundation:chargeItem:edit']"
@@ -256,7 +259,9 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary" size="medium"
+          type="primary"
+          plain
+          size="medium"
           @click="handleExport"
           v-hasPermi="['foundation:material:export']"
         >导出</el-button>
@@ -271,7 +276,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="info"
+          type="primary"
           plain
           icon="el-icon-upload2"
           size="medium"
@@ -281,7 +286,7 @@
       </el-col>
       <el-col :span="1.5" v-if="!isZqTcmTenant">
         <el-button
-          type="info"
+          type="primary"
           plain
           icon="el-icon-upload2"
           size="medium"
@@ -291,7 +296,9 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="primary" size="medium"
+          type="primary"
+          plain
+          size="medium"
           :disabled="!queryParams.supplierId"
           @click="handlePushArchive"
           v-hasPermi="['foundation:material:push']"
@@ -469,7 +476,7 @@
             <el-button
               size="small"
               type="text"
-              class="material-row-action-btn"
+              class="material-row-action-btn material-row-action-btn--muted"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['foundation:material:edit']"
             >修改</el-button>
@@ -496,14 +503,26 @@
     <!-- 添加或修改耗材产品局部弹窗 -->
     <div v-if="open" class="local-modal-mask">
       <div class="local-modal-content material-modal-content" :class="{ 'material-modal-view': isViewMode, 'zq-material-limited-modal': zqTcmLimitedEdit }">
-        <div class="modal-header">
-          <div class="modal-title">{{ title }}</div>
-          <el-button size="medium" @click="cancel" class="close-btn">关闭</el-button>
+        <div class="modal-header material-modal-header">
+          <div class="modal-title">{{ isViewMode ? '耗材档案详情' : title }}</div>
+          <div class="material-modal-header-actions">
+            <template v-if="!isViewMode">
+              <el-button type="primary" size="medium" class="material-modal-header-btn" @click="submitForm">确 定</el-button>
+              <el-button size="medium" class="material-modal-header-btn material-modal-header-btn--secondary" @click="cancel">取 消</el-button>
+            </template>
+            <el-button type="danger" size="medium" class="material-modal-close-btn" @click="cancel">关闭</el-button>
           </div>
-        <el-tabs v-model="activeTab" @tab-click="onTabClick">
-          <!-- 基本信息 -->
-          <el-tab-pane label="基本信息" name="form">
-            <el-form ref="form" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode" :class="{ 'zq-material-limited-edit': zqTcmLimitedEdit }">
+        </div>
+        <el-tabs v-model="activeTab" class="material-detail-tabs" @tab-click="onTabClick">
+          <!-- 基础信息 -->
+          <el-tab-pane name="form">
+            <span slot="label">
+              <el-tooltip content="耗材基础档案、资质、收费配置" placement="top" :open-delay="300">
+                <span class="material-tab-label">基础信息</span>
+              </el-tooltip>
+            </span>
+            <div class="material-tab-pane-body">
+            <el-form ref="form" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode" :class="{ 'zq-material-limited-edit': zqTcmLimitedEdit, 'material-form-grid': true }">
               <el-alert
                 v-if="zqTcmLimitedEdit"
                 type="warning"
@@ -512,7 +531,12 @@
                 title="枣强县中医院仅可修改财务分类、生产厂家、供应商与单价，其他字段暂不可变更"
                 class="zq-edit-hint"
               />
-              <!-- 第一行 -->
+              <div class="material-detail-card">
+                <div class="material-detail-card__header">
+                  <i class="el-icon-document" />
+                  <span>基础档案</span>
+                </div>
+                <div class="material-detail-card__body material-six-col-grid">
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="耗材编码：" prop="code">
@@ -584,15 +608,15 @@
                     <SelectMaterialCategory v-model="form.materialCategoryId"/>
                   </el-form-item>
                 </el-col>
+          </el-row>
+
+              <!-- 第三行 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="产地：" prop="producer">
                     <el-input v-model="form.producer" placeholder="产地" />
               </el-form-item>
             </el-col>
-          </el-row>
-
-              <!-- 第三行 -->
-          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="通用名称：" prop="useName">
                     <el-input v-model="form.useName" placeholder="通用名称" />
@@ -631,15 +655,15 @@
                     </el-select>
               </el-form-item>
             </el-col>
+          </el-row>
+
+              <!-- 第四行 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="货位：" prop="locationId">
                     <SelectLocation v-model="form.locationId" />
               </el-form-item>
             </el-col>
-          </el-row>
-
-              <!-- 第四行 -->
-          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="医保编码：" prop="medicalNo">
                 <el-input v-model="form.medicalNo" @focus="openZoomEditor('medicalNo', '医保编码')" placeholder="医保编码" />
@@ -670,15 +694,15 @@
                     <el-input v-model="form.successfulType" placeholder="招标类别" />
               </el-form-item>
             </el-col>
+          </el-row>
+
+              <!-- 第五行 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="入选原因：" prop="selectionReason">
                     <el-input v-model="form.selectionReason" type="textarea" :rows="2" placeholder="入选原因" />
                   </el-form-item>
                 </el-col>
-          </el-row>
-
-              <!-- 第五行 -->
-          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="包装规格：" prop="packageSpeci">
                     <el-input v-model="form.packageSpeci" placeholder="包装规格" />
@@ -725,15 +749,15 @@
                     <el-input v-model="form.function" placeholder="功能" />
                   </el-form-item>
                 </el-col>
-          </el-row>
-
-              <!-- 第六行 -->
-          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="UDI码：" prop="udiNo">
                 <el-input v-model="form.udiNo" placeholder="UDI码" @blur="onFormUdiNoBlur" />
               </el-form-item>
             </el-col>
+          </el-row>
+
+              <!-- 第六行 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="阳光平台编码：" prop="sunshineCode">
                 <el-input v-model="form.sunshineCode" placeholder="阳光平台编码" />
@@ -813,7 +837,16 @@
                 </el-col>
           </el-row>
 
-              <!-- 第八行 - 开关控件容器 -->
+                </div>
+              </div>
+
+              <!-- 业务开关 -->
+              <div class="material-detail-card">
+                <div class="material-detail-card__header">
+                  <i class="el-icon-setting" />
+                  <span>业务开关</span>
+                </div>
+                <div class="material-detail-card__body">
           <el-row :gutter="20">
             <el-col :span="24">
               <div class="switch-container switch-container--square">
@@ -928,27 +961,30 @@
               </div>
             </el-col>
           </el-row>
+                </div>
+              </div>
 
               <!-- 收费项目（HIS 镜像对照，只读；维护页修改档案时一并提交 hisId/hisChargeItemId 避免被清空） -->
           <el-row v-if="form.id" :gutter="20">
             <el-col :span="24">
-              <div class="his-compare-container">
-                <div class="his-compare-header">
+              <div class="material-detail-card his-compare-container">
+                <div class="material-detail-card__header his-compare-header">
+                  <i class="el-icon-money" />
                   <span class="his-compare-title">收费项目信息（HIS）</span>
                 </div>
-                <div class="his-compare-content">
+                <div class="his-compare-content material-six-col-grid">
                   <el-row :gutter="20">
-                    <el-col :span="5">
+                    <el-col :span="4">
                       <el-form-item label="收费项ID：">
                         <el-input :value="form.hisChargeItemId || '--'" disabled />
                       </el-form-item>
                     </el-col>
-                    <el-col :span="7">
+                    <el-col :span="4">
                       <el-form-item label="收费名称：">
                         <el-input :value="form.hisChargeItemName || '--'" disabled />
                       </el-form-item>
                     </el-col>
-                    <el-col :span="5">
+                    <el-col :span="4">
                       <el-form-item label="收费规格：">
                         <el-input :value="form.hisChargeItemSpeci || '--'" disabled />
                       </el-form-item>
@@ -967,8 +1003,9 @@
               <!-- 第九行 - HIS对照框 -->
           <el-row :gutter="20">
             <el-col :span="24">
-              <div v-if="!isEditMode" class="his-compare-container">
-                <div class="his-compare-header">
+              <div v-if="!isEditMode" class="material-detail-card his-compare-container">
+                <div class="material-detail-card__header his-compare-header">
+                  <i class="el-icon-connection" />
                   <span class="his-compare-title">HIS对照</span>
                 </div>
                 <div class="his-compare-content">
@@ -1009,11 +1046,12 @@
               <!-- 第十行 - 阳光平台信息框 -->
           <el-row :gutter="20">
             <el-col :span="24">
-              <div class="sunshine-platform-container">
-                <div class="sunshine-platform-header">
+              <div class="material-detail-card sunshine-platform-container">
+                <div class="material-detail-card__header sunshine-platform-header">
+                  <i class="el-icon-sunny" />
                   <span class="sunshine-platform-title">阳光平台信息</span>
                 </div>
-                <div class="sunshine-platform-content">
+                <div class="sunshine-platform-content material-six-col-grid">
           <el-row :gutter="20">
                 <el-col :span="4">
                       <el-form-item label="平台id：" prop="sunshinePlatformId">
@@ -1132,8 +1170,9 @@
               <!-- 第十一行 - HRP对照框 -->
           <el-row :gutter="20">
             <el-col :span="24">
-              <div class="hrp-compare-container">
-                <div class="hrp-compare-header">
+              <div class="material-detail-card hrp-compare-container">
+                <div class="material-detail-card__header hrp-compare-header">
+                  <i class="el-icon-link" />
                   <span class="hrp-compare-title">HRP对照</span>
                 </div>
                 <div class="hrp-compare-content">
@@ -1183,11 +1222,23 @@
           <el-row :gutter="20">
           </el-row>
           </el-form>
+            </div>
           </el-tab-pane>
 
           <!-- 产品图片 -->
-          <el-tab-pane label="产品图片" name="image">
-            <div class="image-tab-content" style="text-align: center; padding: 40px 20px;">
+          <el-tab-pane name="image">
+            <span slot="label">
+              <el-tooltip content="耗材外包装、注册证附件图片" placement="top" :open-delay="300">
+                <span class="material-tab-label">产品图片</span>
+              </el-tooltip>
+            </span>
+            <div class="material-tab-pane-body">
+            <div class="material-detail-card">
+              <div class="material-detail-card__header">
+                <i class="el-icon-picture-outline" />
+                <span>产品图片</span>
+              </div>
+              <div class="material-detail-card__body image-tab-content" style="text-align: center; padding: 40px 20px;">
             <div class="material-image-container" style="display: inline-block;">
               <el-upload
                 ref="imageUpload"
@@ -1224,12 +1275,25 @@
                 <el-button type="primary" @click="previewImage">查看图片</el-button>
               </div>
             </div>
-          </div>
+              </div>
+            </div>
+            </div>
           </el-tab-pane>
 
           <!-- 启用停用记录（查看详情时显示） -->
-          <el-tab-pane v-if="form.id && isViewMode" label="启用停用记录" name="statusLog">
-            <div class="log-tab-content">
+          <el-tab-pane v-if="form.id && isViewMode" name="statusLog">
+            <span slot="label">
+              <el-tooltip content="耗材启用 / 停用操作流水日志" placement="top" :open-delay="300">
+                <span class="material-tab-label">启用停用记录</span>
+              </el-tooltip>
+            </span>
+            <div class="material-tab-pane-body">
+            <div class="material-detail-card">
+              <div class="material-detail-card__header">
+                <i class="el-icon-time" />
+                <span>启用停用记录</span>
+              </div>
+              <div class="material-detail-card__body log-tab-content">
               <el-table :data="statusLogList" border size="small" max-height="360">
                 <el-table-column label="操作类型" width="90" align="center">
                   <template slot-scope="scope">
@@ -1244,10 +1308,23 @@
               </el-table>
               <div v-if="statusLogList.length === 0" class="empty-log-tip">暂无启用停用记录</div>
             </div>
+            </div>
+            </div>
           </el-tab-pane>
           <!-- 变更记录（查看详情时显示，左侧时间轴 + 右侧变更记录表） -->
-          <el-tab-pane v-if="form.id && isViewMode" label="变更记录" name="changeLog">
-            <div class="log-tab-content change-log-with-timeline">
+          <el-tab-pane v-if="form.id && isViewMode" name="changeLog">
+            <span slot="label">
+              <el-tooltip content="耗材全量修改变更记录" placement="top" :open-delay="300">
+                <span class="material-tab-label">变更记录</span>
+              </el-tooltip>
+            </span>
+            <div class="material-tab-pane-body">
+            <div class="material-detail-card">
+              <div class="material-detail-card__header">
+                <i class="el-icon-edit-outline" />
+                <span>变更记录</span>
+              </div>
+              <div class="material-detail-card__body log-tab-content change-log-with-timeline">
               <el-row :gutter="16">
                 <el-col :span="10">
                   <div class="timeline-panel">
@@ -1284,19 +1361,28 @@
                 </el-col>
               </el-row>
             </div>
+            </div>
+            </div>
           </el-tab-pane>
-          <el-tab-pane v-if="form.id && isViewMode" label="入库记录" name="inboundRecords">
+          <el-tab-pane v-if="form.id && isViewMode" name="inboundRecords">
+            <span slot="label">
+              <el-tooltip content="该耗材全部到货入库单据" placement="top" :open-delay="300">
+                <span class="material-tab-label">入库记录</span>
+              </el-tooltip>
+            </span>
+            <div class="material-tab-pane-body">
+            <div class="material-detail-card">
+              <div class="material-detail-card__header">
+                <i class="el-icon-box" />
+                <span>入库记录</span>
+              </div>
+              <div class="material-detail-card__body">
             <MaterialInboundRecords ref="inboundRecordsRef" :material-id="form.id" />
+              </div>
+            </div>
+            </div>
           </el-tab-pane>
         </el-tabs>
-
-        <div class="dialog-footer" style="text-align:center;margin-top:16px;" v-if="!isViewMode">
-          <el-button type="primary" size="medium" @click="submitForm">确 定</el-button>
-          <el-button size="medium" @click="cancel">取 消</el-button>
-        </div>
-        <div class="dialog-footer" style="text-align:center;margin-top:16px;" v-else>
-          <el-button size="medium" @click="cancel">关 闭</el-button>
-        </div>
       </div>
     </div>
 
@@ -2480,8 +2566,61 @@ export default {
         this.form = this.hydrateMaterialForm(response.data);
         this.originalIsUse = this.form.isUse;
         this.open = true;
-        this.title = "查看详情";
+        this.title = "耗材档案详情";
         this.activeTab = 'form';
+      });
+    },
+    copyTextToClipboard(text, emptyLabel) {
+      const value = text != null ? String(text).trim() : '';
+      if (!value) {
+        this.$modal.msgWarning(`${emptyLabel}为空，无法复制`);
+        return;
+      }
+      const done = () => this.$modal.msgSuccess('复制成功');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(done).catch(() => this.fallbackCopyText(value, done));
+        return;
+      }
+      this.fallbackCopyText(value, done);
+    },
+    fallbackCopyText(text, onSuccess) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        if (typeof onSuccess === 'function') onSuccess();
+      } catch (e) {
+        this.$modal.msgError('复制失败');
+      }
+      document.body.removeChild(ta);
+    },
+    copyMaterialCode() {
+      this.copyTextToClipboard(this.form && this.form.code, '耗材编码');
+    },
+    copyUdiCode() {
+      this.copyTextToClipboard(this.form && this.form.udiNo, 'UDI码');
+    },
+    exportMaterialArchive() {
+      if (!this.form || !this.form.code) {
+        this.$modal.msgWarning('暂无可导出的档案');
+        return;
+      }
+      const backup = {
+        code: this.queryParams.code,
+        name: this.queryParams.name,
+        pageNum: this.queryParams.pageNum
+      };
+      this.queryParams.code = this.form.code;
+      this.queryParams.name = undefined;
+      this.queryParams.pageNum = 1;
+      Promise.resolve(this.handleExport()).finally(() => {
+        this.queryParams.code = backup.code;
+        this.queryParams.name = backup.name;
+        this.queryParams.pageNum = backup.pageNum;
       });
     },
     /** 复制新增：复制基本信息，编码自动生成 */
@@ -3395,6 +3534,197 @@ export default {
   min-height: calc(100vh - 80px) !important;
   max-height: calc(100vh - 80px) !important;
   max-width: calc(100vw - 180px) !important;
+  background: #F5F7FA;
+  padding: 0;
+}
+
+.local-modal-content.material-modal-content > .material-detail-tabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.local-modal-content.material-modal-content > .material-detail-tabs > .el-tabs__header {
+  flex-shrink: 0;
+  margin: 0;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  padding: 0 20px;
+  border-bottom: 1px solid #E5E6EB;
+}
+
+.local-modal-content.material-modal-content > .material-detail-tabs > .el-tabs__content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  background: #F5F7FA;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.local-modal-content.material-modal-content > .material-detail-tabs > .el-tabs__content::-webkit-scrollbar {
+  display: none;
+}
+
+.material-tab-pane-body {
+  padding: 8px 20px 16px;
+}
+
+.material-tab-pane-body > .material-detail-card:first-child,
+.material-tab-pane-body > .el-form > .material-detail-card:first-child,
+.material-tab-pane-body > .el-form > .el-alert + .material-detail-card {
+  margin-top: 0;
+}
+
+.material-detail-tabs .el-tabs__nav-wrap::after {
+  display: none;
+}
+
+.material-detail-tabs .el-tabs__active-bar {
+  display: none;
+}
+
+.material-detail-tabs .el-tabs__item {
+  height: 44px;
+  line-height: 44px;
+  padding: 0 20px;
+  color: #909399;
+  background: #fff;
+  border-bottom: 2px solid transparent;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.material-detail-tabs .el-tabs__item:hover {
+  color: #606266;
+  background: #F5F7FA;
+}
+
+.material-detail-tabs .el-tabs__item.is-active {
+  color: #409EFF;
+  background: #E8F3FF;
+  border-bottom-color: #409EFF;
+}
+
+.material-tab-label {
+  display: inline-block;
+}
+
+.material-detail-card {
+  background: #fff;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  border: 1px solid #E5E6EB;
+  overflow: hidden;
+}
+
+.material-detail-card:last-child {
+  margin-bottom: 0;
+}
+
+.material-detail-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #E8F3FF;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  border-bottom: 1px solid #E5E6EB;
+}
+
+.material-detail-card__header i {
+  color: #409EFF;
+  font-size: 16px;
+}
+
+.material-detail-card__body {
+  padding: 16px;
+}
+
+.material-form-grid .el-row .el-col-4,
+.material-form-grid .el-row .el-col-5,
+.material-form-grid .el-row .el-col-7 {
+  width: 50%;
+  flex: 0 0 50%;
+  max-width: 50%;
+}
+
+.material-six-col-grid {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.material-six-col-grid .el-row {
+  flex-wrap: nowrap !important;
+}
+
+.material-form-grid .material-six-col-grid .el-row .el-col-4 {
+  width: 16.66666667%;
+  flex: 0 0 16.66666667%;
+  max-width: 16.66666667%;
+}
+
+.material-six-col-grid .el-form-item__label {
+  padding-right: 4px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.material-six-col-grid .el-form-item {
+  margin-bottom: 12px;
+}
+
+.material-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid #E5E6EB;
+  border-radius: 6px 6px 0 0;
+}
+
+.material-modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.material-modal-header-btn {
+  border-radius: 6px;
+  min-width: 72px;
+}
+
+.material-modal-header-btn--secondary {
+  color: #606266;
+  background: #fff;
+  border: 1px solid #DCDFE6;
+}
+
+.material-modal-header-btn--secondary:hover,
+.material-modal-header-btn--secondary:focus {
+  color: #409EFF;
+  border-color: #c6e2ff;
+  background: #ecf5ff;
+}
+
+.material-modal-close-btn {
+  border-radius: 6px;
+  min-width: 64px;
+}
+
+.material-modal-close-btn:hover,
+.material-modal-close-btn:focus {
+  opacity: 0.9;
 }
 
 .local-modal-content.material-modal-content > .el-tabs {
@@ -3418,18 +3748,17 @@ export default {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: 16px;
-  /* 隐藏滚动条但保持滚动功能 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 和 Edge */
+  padding-top: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .local-modal-content.material-modal-content > .el-tabs > .el-tabs__content::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
 .local-modal-content.material-modal-content > .el-tabs > .el-tabs__content .el-form {
-  padding-top: 8px;
+  padding-top: 0;
 }
 
 .modal-header {
@@ -3437,8 +3766,8 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
+  border-bottom: 1px solid #E5E6EB;
+  background: #fff;
   flex-shrink: 0;
   min-height: 48px;
   margin: -24px -24px 16px -24px;
@@ -3447,6 +3776,11 @@ export default {
   z-index: 1;
   width: calc(100% + 48px);
   box-sizing: border-box;
+}
+
+.material-modal-content .modal-header {
+  margin: 0;
+  width: 100%;
 }
 
 .modal-title {
@@ -4077,6 +4411,25 @@ export default {
   display: none;
 }
 
+.material-page-container .material-toolbar-btn.el-button--text {
+  padding: 10px 15px;
+  font-weight: 500;
+}
+
+.material-page-container .material-toolbar-btn--muted.el-button--text {
+  color: #909399;
+}
+
+.material-page-container .material-toolbar-btn--muted.el-button--text:hover,
+.material-page-container .material-toolbar-btn--muted.el-button--text:focus {
+  color: #606266;
+}
+
+.material-page-container .material-toolbar-btn--muted.el-button--text.is-disabled,
+.material-page-container .material-toolbar-btn--muted.el-button--text.is-disabled:hover {
+  color: #c0c4cc;
+}
+
 .material-page-container .material-row-action-btn.el-button--text {
   padding: 4px 6px;
   margin: 0;
@@ -4091,6 +4444,15 @@ export default {
 .material-page-container .material-row-action-btn.el-button--text:hover,
 .material-page-container .material-row-action-btn.el-button--text:focus {
   color: #409eff;
+}
+
+.material-page-container .material-row-action-btn--muted.el-button--text {
+  color: #909399;
+}
+
+.material-page-container .material-row-action-btn--muted.el-button--text:hover,
+.material-page-container .material-row-action-btn--muted.el-button--text:focus {
+  color: #606266;
 }
 
 .material-page-container .material-row-action-btn--danger.el-button--text {
@@ -4225,7 +4587,7 @@ export default {
 }
 
 .local-modal-content.material-modal-content > .el-tabs > .el-tabs__content .el-form {
-  padding-top: 8px;
+  padding-top: 0;
 }
 
 /* 开关控件容器样式 */
@@ -4301,7 +4663,7 @@ export default {
 .switch-status-reason-row {
   width: 100%;
   margin-top: 8px;
-  padding-top: 8px;
+  padding-top: 0;
   border-top: 1px dashed #ebeef5;
 }
 
@@ -4310,7 +4672,38 @@ export default {
   margin-bottom: 0;
 }
 
-/* HIS对照框样式 */
+/* HIS/HRP/阳光平台卡片：与详情卡片规范统一 */
+.material-modal-content .his-compare-container,
+.material-modal-content .hrp-compare-container,
+.material-modal-content .sunshine-platform-container {
+  background: #fff;
+  border: none;
+  margin-top: 0;
+}
+
+.material-modal-content .his-compare-header,
+.material-modal-content .hrp-compare-header,
+.material-modal-content .sunshine-platform-header {
+  padding: 10px 16px;
+  background: #E8F3FF;
+  border-bottom: 1px solid #E5E6EB;
+}
+
+.his-compare-content,
+.hrp-compare-content,
+.sunshine-platform-content {
+  padding: 16px;
+}
+
+.his-compare-title,
+.hrp-compare-title,
+.sunshine-platform-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+/* 兼容旧选择器（非弹窗场景） */
 .his-compare-container {
   background: #fafafa;
   border-radius: 4px;
