@@ -51,6 +51,15 @@
               <el-option label="未处理" value="N" />
             </el-select>
           </el-form-item>
+          <el-form-item label="项目名称">
+            <el-input
+              v-model="detailQuery.itemName"
+              placeholder="项目名称模糊"
+              clearable
+              style="width:180px"
+              @keyup.enter.native="handleDetailQuery"
+            />
+          </el-form-item>
         </div>
       </el-form>
     </div>
@@ -329,6 +338,7 @@ export default {
         chargeItemId: undefined,
         hisChargeId: undefined,
         departmentId: undefined,
+        itemName: undefined,
         processed: undefined,
         ...buildDefaultChargeDateRange()
       },
@@ -768,6 +778,7 @@ export default {
         chargeItemId: undefined,
         hisChargeId: undefined,
         departmentId: undefined,
+        itemName: undefined,
         processed: undefined,
         ...buildDefaultChargeDateRange()
       }

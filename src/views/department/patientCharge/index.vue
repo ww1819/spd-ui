@@ -51,16 +51,14 @@
               @keyup.enter.native="handleDetailQuery"
             />
           </el-form-item>
-          <el-form-item label="执行科室">
-            <el-select
-              v-model="detailQuery.departmentId"
-              placeholder="按权限执行科室"
+          <el-form-item label="项目名称">
+            <el-input
+              v-model="detailQuery.itemName"
+              placeholder="项目名称模糊"
               clearable
-              filterable
-              style="width:200px"
-            >
-              <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
-            </el-select>
+              style="width:180px"
+              @keyup.enter.native="handleDetailQuery"
+            />
           </el-form-item>
           <el-form-item label="执行科室名称">
             <el-input
@@ -439,7 +437,6 @@ import {
   runPatientChargeSegments,
   formatHisChargeSlowError
 } from '@/utils/patientChargeFetch'
-import { listdepartAll } from '@/api/foundation/depart'
 import {
   listInpatientMirror,
   listOutpatientMirror,
@@ -475,7 +472,6 @@ export default {
       detailList: [],
       detailTotal: 0,
       detailSelection: [],
-      deptOptions: [],
       detailQuery: {
         pageNum: 1,
         pageSize: 10,
@@ -484,7 +480,7 @@ export default {
         chargeItemId: undefined,
         hisChargeId: undefined,
         chargeIdTf: undefined,
-        departmentId: undefined,
+        itemName: undefined,
         execDeptName: undefined,
         processed: undefined,
         ...buildDefaultChargeDateRange(),
@@ -540,7 +536,6 @@ export default {
     }
   },
   created() {
-    this.loadDeptOptions()
     this.loadDetailList()
   },
   mounted() {
@@ -552,18 +547,6 @@ export default {
       if (table && table.doLayout) {
         table.doLayout()
       }
-    },
-    loadDeptOptions() {
-      const uid = this.$store.getters.userId
-      if (!uid) {
-        return
-      }
-      listdepartAll(uid).then(res => {
-        // /foundation/depart/listAll 返回的是数组本体，这里兼容数组与 {data: []} 两种返回结构
-        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
-        // 仅保留可用于 HIS 执行科室映射的科室：exec_dept_id = fd_department.his_id
-        this.deptOptions = list.filter(d => d && d.id != null && d.hisId != null && String(d.hisId).trim() !== '')
-      })
     },
     toQueryDayStart(s) {
       if (!s) return undefined
@@ -675,7 +658,7 @@ export default {
         chargeItemId: undefined,
         hisChargeId: undefined,
         chargeIdTf: undefined,
-        departmentId: undefined,
+        itemName: undefined,
         execDeptName: undefined,
         processed: undefined,
         ...buildDefaultChargeDateRange(),
