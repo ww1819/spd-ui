@@ -17,6 +17,14 @@ export function getTkInventory(id) {
   })
 }
 
+// 记录退库单打印
+export function recordTkInventoryPrint(id) {
+  return request({
+    url: '/warehouse/tkInventory/recordPrint/' + id,
+    method: 'put'
+  })
+}
+
 // 新增退库
 export function addTkInventory(data) {
   return request({

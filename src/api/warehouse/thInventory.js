@@ -17,6 +17,14 @@ export function getThInventory(id) {
   })
 }
 
+// 记录退货单打印
+export function recordThInventoryPrint(id) {
+  return request({
+    url: '/warehouse/thInventory/recordPrint/' + id,
+    method: 'put'
+  })
+}
+
 // 新增退货
 export function addThInventory(data) {
   return request({

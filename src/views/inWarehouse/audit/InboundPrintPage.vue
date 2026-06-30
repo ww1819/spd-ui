@@ -38,7 +38,7 @@
 </template>
 
 <script>
-import { getInWarehouse } from '@/api/warehouse/warehouse'
+import { getInWarehouse, recordInWarehousePrint } from '@/api/warehouse/warehouse'
 import { getPrintDocRows, updatePrintDocRows } from '@/api/system/printDocRows'
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import orderPrint from '@/views/inWarehouse/audit/orderPrint'
@@ -159,10 +159,18 @@ export default {
     },
     handleBrowserPrint() {
       if (!this.printReady || !this.canPrint) return
-      const ref = this.$refs.orderPrintRef
-      if (ref && typeof ref.start === 'function') {
-        ref.start()
+      const billId = this.$route.query.id
+      const doPrint = () => {
+        const ref = this.$refs.orderPrintRef
+        if (ref && typeof ref.start === 'function') {
+          ref.start()
+        }
       }
+      if (billId) {
+        recordInWarehousePrint(billId).finally(() => doPrint())
+        return
+      }
+      doPrint()
     }
   }
 }

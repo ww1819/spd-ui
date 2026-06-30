@@ -37,8 +37,8 @@
 
 <script>
 import { getOutWarehouse, recordOutWarehousePrint } from '@/api/warehouse/outWarehouse'
-import { getTkInventory } from '@/api/warehouse/tkInventory'
-import { getThInventory } from '@/api/warehouse/thInventory'
+import { getTkInventory, recordTkInventoryPrint } from '@/api/warehouse/tkInventory'
+import { getThInventory, recordThInventoryPrint } from '@/api/warehouse/thInventory'
 import { getPrintDocRows, updatePrintDocRows } from '@/api/system/printDocRows'
 import { buildOutboundPrintRowFromDetail } from '@/views/warehouse/print/outboundPrintRow'
 import { buildRefundDepotPrintRowFromDetail } from '@/views/warehouse/print/refundDepotPrintRow'
@@ -75,6 +75,12 @@ const ROUTE_META = {
     paperType: 'third-split',
     printOrientation: 'portrait'
   }
+}
+
+const RECORD_PRINT_FN = {
+  OUTBOUND: recordOutWarehousePrint,
+  REFUND_DEPOT: recordTkInventoryPrint,
+  REFUND_GOODS: recordThInventoryPrint
 }
 
 export default {
@@ -227,9 +233,12 @@ export default {
           ref.start()
         }
       }
-      if (this.docKind === 'OUTBOUND' && billId) {
-        recordOutWarehousePrint(billId).finally(() => doPrint())
-        return
+      if (billId) {
+        const recordPrint = RECORD_PRINT_FN[this.docKind]
+        if (recordPrint) {
+          recordPrint(billId).finally(() => doPrint())
+          return
+        }
       }
       doPrint()
     }
