@@ -1,6 +1,6 @@
 <template>
   <div class="table-container">
-    <el-table ref="table" v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" border height="60vh">
+    <el-table ref="table" v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" border height="54vh">
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <!-- 1. 序号 -->
       <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
@@ -8,7 +8,13 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <!-- 2. 单号 -->
+      <!-- 2. 单据类型 -->
+      <el-table-column label="单据类型" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.billTypeName || '--' }}</span>
+        </template>
+      </el-table-column>
+      <!-- 3. 单号 -->
       <el-table-column label="单号" align="center" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.orderNo || '--' }}</span>
@@ -29,9 +35,7 @@
       <!-- 5. 院内码 -->
       <el-table-column label="院内码" align="center" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.inHospitalCode && String(scope.row.inHospitalCode).trim() !== '' && scope.row.inHospitalCode !== scope.row.qty">{{ String(scope.row.inHospitalCode) }}</span>
-          <span v-else-if="scope.row.inHospitalCode && scope.row.inHospitalCode === scope.row.qty">--</span>
-          <span v-else>--</span>
+          <span>{{ scope.row.inHospitalCode || '--' }}</span>
         </template>
       </el-table-column>
       <!-- 6. 耗材编码 -->
@@ -194,7 +198,8 @@
 </template>
 
 <script>
-import { listOrder, getOrder } from "@/api/gz/order";
+import { listOrder, getOrder, listOrderInhospitalcode } from "@/api/gz/order";
+import { listGoods as listRefundGoods, getGoods as getRefundGoods } from "@/api/gz/goods";
 import { listDepotInventory } from "@/api/gz/depotInventory";
 
 export default {
@@ -298,229 +303,140 @@ export default {
     },
     getList() {
       this.loading = true;
-      const params = {
-        ...this.queryParams,
-        orderType: 101 // 入库类型
-      };
-      
-      // 参照库存查询页面，使用 Promise 链式调用
-      listOrder(params).then(response => {
-        // 获取订单列表后，为每个订单获取明细数据
-        const detailList = [];
-        if (!response || !response.rows || response.rows.length === 0) {
+      const codeKeyword = this.queryParams.inHospitalCode != null ? String(this.queryParams.inHospitalCode).trim().toLowerCase() : '';
+      const acceptanceParams = this.buildAcceptanceParams();
+      const refundGoodsParams = this.buildRefundGoodsParams();
+
+      Promise.all([
+        acceptanceParams
+          ? listOrder(acceptanceParams).catch(() => ({ rows: [], total: 0 }))
+          : Promise.resolve({ rows: [], total: 0 }),
+        refundGoodsParams
+          ? listRefundGoods(refundGoodsParams).then(response => {
+              const rows = (response && response.rows) || [];
+              return {
+                rows: rows.filter(row => row.goodsNo && row.goodsNo.startsWith('GZTH-')),
+                total: response.total
+              };
+            }).catch(() => ({ rows: [], total: 0 }))
+          : Promise.resolve({ rows: [], total: 0 })
+      ]).then(([acceptanceRes, refundGoodsRes]) => {
+        const acceptanceHeaders = (acceptanceRes && acceptanceRes.rows) || [];
+        const refundGoodsHeaders = (refundGoodsRes && refundGoodsRes.rows) || [];
+        if (acceptanceHeaders.length === 0 && refundGoodsHeaders.length === 0) {
           this.tableList = [];
           this.total = 0;
           this.loading = false;
-          // 数据清空后，重新同步滚动
-          this.$nextTick(() => {
-            this.syncTableScroll();
-          });
           return;
         }
-        
-        // 限制并发数量，避免过多请求导致超时
-        const batchSize = 10; // 每批处理10个订单，提高效率
-        const batches = [];
-        for (let i = 0; i < response.rows.length; i += batchSize) {
-          batches.push(response.rows.slice(i, i + batchSize));
+
+        const batchSize = 10;
+        const acceptanceBatches = [];
+        for (let i = 0; i < acceptanceHeaders.length; i += batchSize) {
+          acceptanceBatches.push(acceptanceHeaders.slice(i, i + batchSize));
         }
-        
-        // 使用 Promise.all 处理所有批次
-        const batchPromises = batches.map(batch => {
-          const orderDetailPromises = batch.map(order => 
-            getOrder(order.id, 101).then(detailResponse => ({
-              order: order,
-              detail: detailResponse.data
-            })).catch(() => ({
-              order: order,
-              detail: null
-            }))
-          );
-          return Promise.all(orderDetailPromises);
-        });
-        
-        // 等待所有批次完成
-        Promise.all(batchPromises).then(allOrderDetails => {
-          // 收集所有需要查询院内码的订单信息
-          const warehouseIds = new Set();
-          
-          allOrderDetails.forEach(orderDetails => {
-            orderDetails.forEach(({ order, detail }) => {
-              if (detail && detail.warehouseId) {
-                warehouseIds.add(detail.warehouseId);
+
+        const acceptanceDetailPromise = acceptanceBatches.length === 0 ? Promise.resolve([]) :
+          Promise.all(acceptanceBatches.map(batch =>
+            Promise.all(batch.map(order =>
+              getOrder(order.id)
+                .then(detailRes => ({ order, detail: detailRes.data }))
+                .catch(() => ({ order, detail: null }))
+            ))
+          )).then(allBatches => {
+            const orderDetails = allBatches.flat();
+            return Promise.all(orderDetails.map(({ order, detail }) => {
+              if (!detail) {
+                return Promise.resolve({ order, detail: null, codeList: [] });
               }
-            });
+              return listOrderInhospitalcode(order.id)
+                .then(codeRes => ({
+                  order,
+                  detail,
+                  codeList: (codeRes && codeRes.data) || []
+                }))
+                .catch(() => ({ order, detail, codeList: [] }));
+            }));
           });
-          
-          // 如果有需要查询的库存信息，批量查询院内码
-          const inventoryQueryPromises = warehouseIds.size > 0 ? Array.from(warehouseIds).map(warehouseId => 
-            listDepotInventory({
-              warehouseId: warehouseId,
-              pageNum: 1,
-              pageSize: 10000
-            }).then(response => ({
-              warehouseId: warehouseId,
-              inventoryList: response.rows || []
-            })).catch(() => ({
-              warehouseId: warehouseId,
-              inventoryList: []
-            }))
-          ) : [Promise.resolve({ warehouseId: null, inventoryList: [] })];
-          
-          // 等待所有库存查询完成
-          return Promise.all(inventoryQueryPromises).then(inventoryResults => {
-            // 构建库存映射：warehouseId_materialId_batchNo -> inHospitalCode
-            const inventoryMap = {};
-            inventoryResults.forEach(({ warehouseId, inventoryList }) => {
-              if (warehouseId && inventoryList) {
-                inventoryList.forEach(inv => {
-                  if (inv.materialId && inv.batchNo && inv.inHospitalCode) {
-                    const key = `${warehouseId}_${inv.materialId}_${inv.batchNo}`;
-                    if (!inventoryMap[key]) {
-                      inventoryMap[key] = [];
-                    }
-                    inventoryMap[key].push(String(inv.inHospitalCode));
-                  }
-                });
+
+        const refundDetailPromise = this.fetchDetailsInBatch(
+          refundGoodsHeaders.map(header => ({ header })),
+          item => getRefundGoods(item.header.id).then(res => res.data)
+        );
+
+        return Promise.all([acceptanceDetailPromise, refundDetailPromise]).then(([enrichedOrders, refundDetails]) => {
+          const orderInventoryPromise = enrichedOrders.length === 0 ? Promise.resolve([]) :
+            Promise.all(enrichedOrders.map(({ order, detail }) => {
+              if (!detail) {
+                return Promise.resolve({ orderId: order.id, list: [] });
               }
-            });
-            
-            // 扁平化所有批次的结果
-            allOrderDetails.forEach(orderDetails => {
-              orderDetails.forEach(({ order, detail }) => {
-                if (detail && detail.gzOrderEntryList && detail.gzOrderEntryList.length > 0) {
-                  detail.gzOrderEntryList.forEach(entry => {
-                    // 从 materialList 中查找对应的 material
-                    const material = detail.materialList && detail.materialList.find(m => m && m.id === entry.materialId) || null;
-                    
-                    // 从库存中查找院内码
-                    const warehouseId = detail.warehouseId || order.warehouseId;
-                    let inHospitalCode = '';
-                    if (warehouseId && entry.materialId && entry.batchNo) {
-                      const key = `${warehouseId}_${entry.materialId}_${entry.batchNo}`;
-                      if (inventoryMap[key] && inventoryMap[key].length > 0) {
-                        // 取第一个院内码
-                        inHospitalCode = String(inventoryMap[key][0]);
-                      }
-                    }
-                    // 如果库存中没有，尝试从entry中获取（可能来自数据库）
-                    if (!inHospitalCode && entry.inHospitalCode) {
-                      inHospitalCode = String(entry.inHospitalCode);
-                    }
-                    
-                    // 确保物料相关字段正确获取
-                    const materialCode = material && material.code ? String(material.code) : '';
-                    const materialUdiNo = material && material.udiNo ? String(material.udiNo) : (entry.udiNo ? String(entry.udiNo) : '');
-                    const materialName = entry.materialName || (material && material.name) || '';
-                    const factoryName = entry.factoryName || (material && material.fdFactory && material.fdFactory.factoryName) || '';
-                    
-                    // 调试：检查数据映射
-                    if (detailList.length < 3) {
-                      console.log('数据映射调试:', {
-                        entry: entry,
-                        material: material,
-                        materialCode: materialCode,
-                        materialUdiNo: materialUdiNo,
-                        inHospitalCode: inHospitalCode,
-                        qty: entry.qty,
-                        unitInfo: {
-                          materialFdUnit: material && material.fdUnit,
-                          materialUnitName: material && material.unitName,
-                          materialUnit: material && material.unit,
-                          entryUnitName: entry.unitName,
-                          entryUnit: entry.unit
-                        }
-                      });
-                    }
-                    
-                    // 构建完整的数据对象，确保字段名与表格列一一对应
-                    const rowData = {
-                      // 明细基础字段 - 确保字段名正确，与表格列一一对应
-                      id: entry.id || null,
-                      parenId: entry.parenId || null,
-                      materialId: entry.materialId || null,
-                      price: entry.price || null,
-                      qty: entry.qty || null,  // 数量列 - 确保是 qty
-                      amt: entry.amt || null,  // 金额列
-                      batchNo: entry.batchNo || null,
-                      batchNumber: entry.batchNumber || null,
-                      beginTime: entry.beginTime || null,  // 生产日期列
-                      endTime: entry.endTime || null,  // 有效期列
-                      remark: entry.remark || detail.remark || '',
-                      // 订单级别字段 - 优先使用 detail 中的数据
-                      orderNo: detail.orderNo || order.orderNo || '',
-                      orderStatus: detail.orderStatus !== undefined && detail.orderStatus !== null ? detail.orderStatus : (order.orderStatus !== undefined ? order.orderStatus : null),
-                      auditDate: detail.auditDate || order.auditDate || null,
-                      createBy: detail.createBy || order.createBy || '',
-                      updateBy: detail.updateBy || order.updateBy || null,  // 审核人
-                      orderDate: detail.orderDate || order.orderDate || null,  // 入库日期列
-                      warehouse: detail.warehouse || order.warehouse || null,
-                      supplier: detail.supplier || order.supplier || null,
-                      order: order || null,  // 保存完整的 order 对象以便访问审核人
-                      // 物料相关字段 - 确保正确映射，避免字段错位
-                      material: material || null,
-                      materialName: materialName,
-                      factoryName: factoryName,
-                      // 耗材编码列 - 使用 material.code
-                      materialCode: materialCode,
-                      // 规格、型号、单位
-                      specification: (material && material.speci) || entry.specification || null,
-                      model: (material && material.model) || entry.model || null,
-                      unitName: (material && material.fdUnit && material.fdUnit.unitName) || (material && material.unitName) || (material && material.unit && (material.unit.unitName || material.unit.name)) || entry.unitName || entry.unit || null,
-                      // UDI码列 - 使用 material.udiNo 或 entry.udiNo
-                      udiNo: materialUdiNo,
-                      // 院内码列 - 从库存查询或entry中获取，确保是字符串，不是 qty
-                      inHospitalCode: inHospitalCode
-                    };
-                    
-                    detailList.push(rowData);
-                  });
-                } else {
-                  // 如果没有明细，至少显示订单基本信息
-                  detailList.push({
-                    orderNo: order.orderNo,
-                    orderStatus: order.orderStatus,
-                    auditDate: order.auditDate,
-                    createBy: order.createBy,
-                    orderDate: order.orderDate,
-                    remark: order.remark,
-                    warehouse: order.warehouse,
-                    supplier: order.supplier,
-                    material: null,
-                    materialName: '',
-                    price: null,
-                    qty: null,
-                    amt: null,
-                    inHospitalCode: null,
-                    beginTime: null,
-                    endTime: null
-                  });
+              return listDepotInventory({
+                orderId: order.id,
+                includeZeroQty: true,
+                pageNum: 1,
+                pageSize: 10000
+              })
+                .then(res => ({ orderId: order.id, list: (res && res.rows) || [] }))
+                .catch(() => ({ orderId: order.id, list: [] }));
+            }));
+
+          return orderInventoryPromise.then(orderInventoryResults => {
+            const inventoryByOrderEntryId = {};
+            const inventoryByMaterialBatch = {};
+            orderInventoryResults.forEach(({ list }) => {
+              if (!list) {
+                return;
+              }
+              list.forEach(inv => {
+                const hospitalCode = inv && inv.inHospitalCode ? String(inv.inHospitalCode).trim() : '';
+                if (!hospitalCode) {
+                  return;
+                }
+                if (inv.orderEntryId != null) {
+                  const entryKey = String(inv.orderEntryId);
+                  if (!inventoryByOrderEntryId[entryKey]) {
+                    inventoryByOrderEntryId[entryKey] = [];
+                  }
+                  inventoryByOrderEntryId[entryKey].push(hospitalCode);
+                }
+                if (inv.materialId && inv.batchNo) {
+                  const batchKey = `${inv.materialId}_${inv.batchNo}`;
+                  if (!inventoryByMaterialBatch[batchKey]) {
+                    inventoryByMaterialBatch[batchKey] = [];
+                  }
+                  inventoryByMaterialBatch[batchKey].push(hospitalCode);
                 }
               });
             });
-            
+
+            const detailList = [];
+            enrichedOrders.forEach(({ order, detail, codeList }) => {
+              this.appendAcceptanceRows(
+                detailList,
+                order,
+                detail,
+                codeList,
+                inventoryByOrderEntryId,
+                inventoryByMaterialBatch,
+                codeKeyword
+              );
+            });
+            refundDetails.forEach(({ item, detail }) => {
+              if (detail) {
+                this.appendRefundGoodsRows(detailList, item.header, detail, codeKeyword);
+              }
+            });
+
             this.tableList = detailList;
             this.total = detailList.length;
             this.loading = false;
-            // 数据加载完成后，重新同步滚动以确保列对齐
             this.$nextTick(() => {
               this.syncTableScroll();
-              // 强制表格重新布局
               if (this.$refs.table) {
                 this.$refs.table.doLayout();
               }
             });
-          }).catch(error => {
-            this.$message.error('获取库存信息失败: ' + (error.message || '未知错误'));
-            this.tableList = [];
-            this.total = 0;
-            this.loading = false;
           });
-        }).catch(error => {
-          this.$message.error('获取订单明细失败: ' + (error.message || '未知错误'));
-          this.tableList = [];
-          this.total = 0;
-          this.loading = false;
         });
       }).catch(error => {
         this.$message.error('获取数据失败: ' + (error.message || '未知错误'));
@@ -528,6 +444,331 @@ export default {
         this.total = 0;
         this.loading = false;
       });
+    },
+    buildAcceptanceParams() {
+      const filter = this.resolveOrderNoFilter();
+      if (!filter.fetchAcceptance) {
+        return null;
+      }
+      const params = {
+        pageNum: this.queryParams.pageNum,
+        pageSize: this.queryParams.pageSize,
+        warehouseId: this.queryParams.warehouseId,
+        departmentId: this.queryParams.departmentId,
+        orderStatus: this.queryParams.orderStatus,
+        orderType: 101,
+        timeField: 'auditDate'
+      };
+      if (filter.raw) {
+        params.orderNo = filter.raw;
+        params.pageNum = 1;
+        params.pageSize = 100;
+      } else {
+        params.beginDate = this.queryParams.beginDate;
+        params.endDate = this.queryParams.endDate;
+      }
+      if (this.queryParams.supplierId) {
+        params.supplerId = this.queryParams.supplierId;
+      }
+      return this.normalizeQueryDateTime(params);
+    },
+    buildRefundGoodsParams() {
+      const filter = this.resolveOrderNoFilter();
+      if (!filter.fetchRefundGoods) {
+        return null;
+      }
+      const params = {
+        pageNum: this.queryParams.pageNum,
+        pageSize: this.queryParams.pageSize,
+        warehouseId: this.queryParams.warehouseId,
+        departmentId: this.queryParams.departmentId,
+        goodsStatus: this.queryParams.orderStatus,
+        timeField: 'auditDate'
+      };
+      if (filter.raw) {
+        params.goodsNo = filter.raw.startsWith('GZTH-') ? filter.raw : `GZTH-${filter.raw}`;
+        params.pageNum = 1;
+        params.pageSize = 100;
+      } else {
+        params.beginDate = this.queryParams.beginDate;
+        params.endDate = this.queryParams.endDate;
+        params.goodsNo = 'GZTH-';
+      }
+      if (this.queryParams.supplierId) {
+        params.supplerId = this.queryParams.supplierId;
+      }
+      return this.normalizeQueryDateTime(params);
+    },
+    resolveOrderNoFilter() {
+      const raw = this.queryParams.orderNo != null ? String(this.queryParams.orderNo).trim() : '';
+      const upper = raw.toUpperCase();
+      return {
+        raw,
+        fetchAcceptance: !raw || upper.startsWith('GZRK') || (!upper.startsWith('GZTH') && !upper.startsWith('GZTK') && !upper.startsWith('GZCK')),
+        fetchRefundGoods: !raw || upper.startsWith('GZTH')
+      };
+    },
+    normalizeDateTimeValue(value, isEnd) {
+      if (!value) {
+        return value;
+      }
+      if (typeof value !== 'string') {
+        return value;
+      }
+      const trimVal = value.trim();
+      if (!trimVal) {
+        return trimVal;
+      }
+      if (trimVal.length === 10 && trimVal.indexOf(' ') === -1) {
+        return `${trimVal} ${isEnd ? '23:59:59' : '00:00:00'}`;
+      }
+      return trimVal;
+    },
+    normalizeQueryDateTime(query) {
+      const params = { ...query };
+      params.timeField = params.timeField || 'auditDate';
+      if (params.beginDate != null && params.beginDate !== '') {
+        params.beginDate = this.normalizeDateTimeValue(params.beginDate, false);
+      } else {
+        delete params.beginDate;
+      }
+      if (params.endDate != null && params.endDate !== '') {
+        params.endDate = this.normalizeDateTimeValue(params.endDate, true);
+      } else {
+        delete params.endDate;
+      }
+      return params;
+    },
+    fetchDetailsInBatch(items, fetchDetail, batchSize = 10) {
+      if (!items || items.length === 0) {
+        return Promise.resolve([]);
+      }
+      const batches = [];
+      for (let i = 0; i < items.length; i += batchSize) {
+        batches.push(items.slice(i, i + batchSize));
+      }
+      return Promise.all(batches.map(batch =>
+        Promise.all(batch.map(item =>
+          fetchDetail(item)
+            .then(detail => ({ item, detail }))
+            .catch(() => ({ item, detail: null }))
+        ))
+      )).then(allBatches => allBatches.flat());
+    },
+    appendAcceptanceRows(detailList, order, detail, codeList, inventoryByOrderEntryId, inventoryByMaterialBatch, codeKeyword) {
+      if (!detail || !detail.gzOrderEntryList || detail.gzOrderEntryList.length === 0) {
+        return;
+      }
+      const materialList = detail.materialList || [];
+      const codeItemsByDetailId = {};
+      const codeItemsByMaterialBatch = {};
+
+      codeList.forEach(codeRow => {
+        const hospitalCode = this.extractInHospitalCode(codeRow);
+        if (!hospitalCode) {
+          return;
+        }
+        const item = { hospitalCode, codeRow };
+        if (codeRow.detailId != null) {
+          const detailKey = String(codeRow.detailId);
+          if (!codeItemsByDetailId[detailKey]) {
+            codeItemsByDetailId[detailKey] = [];
+          }
+          codeItemsByDetailId[detailKey].push(item);
+        }
+        const materialId = codeRow.materialId || codeRow.material_id;
+        const batchNo = codeRow.batchNo || codeRow.batch_no || codeRow.batchNumber || codeRow.batch_number;
+        if (materialId && batchNo) {
+          const batchKey = `${materialId}_${batchNo}`;
+          if (!codeItemsByMaterialBatch[batchKey]) {
+            codeItemsByMaterialBatch[batchKey] = [];
+          }
+          if (!codeItemsByMaterialBatch[batchKey].some(x => x.hospitalCode === hospitalCode)) {
+            codeItemsByMaterialBatch[batchKey].push(item);
+          }
+        }
+      });
+
+      const collectCodesForEntry = (entry) => {
+        const seen = new Set();
+        const items = [];
+        const pushItem = (item) => {
+          if (!item || !item.hospitalCode || seen.has(item.hospitalCode)) {
+            return;
+          }
+          seen.add(item.hospitalCode);
+          items.push(item);
+        };
+        if (entry.id != null) {
+          const detailKey = String(entry.id);
+          (codeItemsByDetailId[detailKey] || []).forEach(pushItem);
+          if (items.length === 0) {
+            (inventoryByOrderEntryId[detailKey] || []).forEach(code =>
+              pushItem({ hospitalCode: code, codeRow: null })
+            );
+          }
+        }
+        if (items.length === 0 && entry.materialId && entry.batchNo) {
+          const batchKey = `${entry.materialId}_${entry.batchNo}`;
+          (codeItemsByMaterialBatch[batchKey] || []).forEach(pushItem);
+          if (items.length === 0) {
+            (inventoryByMaterialBatch[batchKey] || []).forEach(code =>
+              pushItem({ hospitalCode: code, codeRow: null })
+            );
+          }
+        }
+        return items;
+      };
+
+      detail.gzOrderEntryList.forEach(entry => {
+        if (this.queryParams.materialId && entry.materialId !== this.queryParams.materialId) {
+          return;
+        }
+        const material = materialList.find(m => m && m.id === entry.materialId) || null;
+        const codeItems = collectCodesForEntry(entry);
+
+        if (codeItems.length > 0) {
+          codeItems.forEach(({ hospitalCode, codeRow }) => {
+            const code = hospitalCode.toLowerCase();
+            if (codeKeyword && !code.includes(codeKeyword)) {
+              return;
+            }
+            detailList.push(this.buildRowData(order, detail, entry, material, hospitalCode, 'acceptance', {
+              perCode: true,
+              codeRow
+            }));
+          });
+          return;
+        }
+
+        let inHospitalCode = entry.inHospitalCode ? String(entry.inHospitalCode).trim() : '';
+        const code = inHospitalCode ? inHospitalCode.toLowerCase() : '';
+        if (codeKeyword && !code.includes(codeKeyword)) {
+          return;
+        }
+        detailList.push(this.buildRowData(order, detail, entry, material, inHospitalCode, 'acceptance'));
+      });
+    },
+    appendRefundGoodsRows(detailList, header, detail, codeKeyword) {
+      const entries = (detail && detail.gzRefundGoodsEntryList) || [];
+      const materialList = (detail && detail.materialList) || [];
+      entries.forEach(entry => {
+        if (!entry || entry.delFlag === 1) {
+          return;
+        }
+        if (this.queryParams.materialId && entry.materialId !== this.queryParams.materialId) {
+          return;
+        }
+        const material = materialList.find(m => m && m.id === entry.materialId) || null;
+        const inHospitalCode = entry.inHospitalCode ? String(entry.inHospitalCode).trim() : '';
+        const code = inHospitalCode ? inHospitalCode.toLowerCase() : '';
+        if (codeKeyword && !code.includes(codeKeyword)) {
+          return;
+        }
+        detailList.push(this.buildRefundGoodsRow(header, detail, entry, material));
+      });
+    },
+    extractInHospitalCode(codeRow) {
+      if (!codeRow) {
+        return '';
+      }
+      const raw = codeRow.inHospitalCode || codeRow.in_hospital_code;
+      return raw ? String(raw).trim() : '';
+    },
+    buildRowData(order, detail, entry, material, inHospitalCode, billKind, options = {}) {
+      const perCode = options.perCode === true;
+      const codeRow = options.codeRow || null;
+      const materialCode = (material && material.code) || '';
+      const materialUdiNo = (material && material.udiNo) || (codeRow && codeRow.masterBarcode) || (entry && entry.masterBarcode) || (entry && entry.udiNo) || '';
+      const materialName = (codeRow && codeRow.materialName) || (entry && entry.materialName) || (material && material.name) || '';
+      const factoryName = (codeRow && codeRow.factoryName) || (entry && entry.factoryName) || (material && material.fdFactory && material.fdFactory.factoryName) || '';
+      const price = codeRow && codeRow.price != null ? codeRow.price : (entry && entry.price);
+      const qty = perCode ? 1 : (entry && entry.qty);
+      const amt = perCode && price != null
+        ? Number(price)
+        : (entry && entry.amt != null ? entry.amt : (qty != null && price != null ? Number(qty) * Number(price) : null));
+
+      return {
+        id: (entry && entry.id) || (codeRow && codeRow.id) || null,
+        billKind: billKind || 'acceptance',
+        billTypeName: '备货验收',
+        parenId: entry && entry.parenId || null,
+        materialId: entry && entry.materialId || null,
+        price,
+        qty,
+        amt,
+        batchNo: (codeRow && codeRow.batchNo) || (entry && entry.batchNo) || null,
+        batchNumber: (codeRow && codeRow.batchNumber) || (entry && entry.batchNumber) || null,
+        beginTime: entry && entry.beginTime || null,
+        endTime: (codeRow && codeRow.endDate) || (entry && entry.endTime) || null,
+        remark: (entry && entry.remark) || detail.remark || '',
+        orderNo: detail.orderNo || order.orderNo || '',
+        orderStatus: detail.orderStatus != null ? detail.orderStatus : order.orderStatus,
+        auditDate: detail.auditDate || order.auditDate || null,
+        createBy: detail.createBy || order.createBy || '',
+        updateBy: detail.updateBy || order.updateBy || null,
+        orderDate: detail.orderDate || order.orderDate || null,
+        warehouse: detail.warehouse || order.warehouse || null,
+        supplier: detail.supplier || order.supplier || null,
+        order,
+        material,
+        materialName,
+        factoryName,
+        materialCode,
+        specification: (material && material.speci) || (codeRow && codeRow.materialSpeci) || (entry && entry.specification) || null,
+        model: (material && material.model) || (codeRow && codeRow.materialModel) || (entry && entry.model) || null,
+        unitName: (codeRow && codeRow.materialUnitName)
+          || (material && material.fdUnit && material.fdUnit.unitName)
+          || (material && material.unitName)
+          || (material && material.unit && (typeof material.unit === 'string' ? material.unit : (material.unit.unitName || material.unit.name)))
+          || (entry && entry.unitName)
+          || (entry && entry.unit)
+          || null,
+        udiNo: materialUdiNo,
+        inHospitalCode: inHospitalCode || ''
+      };
+    },
+    buildRefundGoodsRow(header, detail, entry, material) {
+      const inHospitalCode = entry.inHospitalCode ? String(entry.inHospitalCode).trim() : '';
+      const materialCode = (material && material.code) || '';
+      const qty = entry && entry.qty;
+      const price = entry && entry.price;
+      const amt = entry && entry.amt != null ? entry.amt : (qty != null && price != null ? Number(qty) * Number(price) : null);
+
+      return {
+        id: entry && entry.id || null,
+        billKind: 'refundGoods',
+        billTypeName: '备货退货',
+        materialId: entry && entry.materialId || null,
+        price,
+        qty,
+        amt,
+        batchNo: entry && entry.batchNo || null,
+        batchNumber: entry && entry.batchNumber || null,
+        beginTime: entry && entry.beginTime || null,
+        endTime: entry && entry.endTime || null,
+        remark: (entry && entry.remark) || (detail && detail.remark) || '',
+        orderNo: (detail && detail.goodsNo) || (header && header.goodsNo) || '',
+        orderStatus: detail && detail.goodsStatus != null ? detail.goodsStatus : header && header.goodsStatus,
+        auditDate: (detail && detail.auditDate) || (header && header.auditDate) || null,
+        createBy: (detail && detail.createBy) || (header && header.createBy) || '',
+        updateBy: (detail && detail.auditBy) || (header && header.auditBy) || null,
+        orderDate: (detail && detail.goodsDate) || (header && header.goodsDate) || null,
+        warehouse: (detail && detail.warehouse) || (header && header.warehouse) || null,
+        department: (detail && detail.department) || (header && header.department) || null,
+        supplier: (detail && detail.supplier) || (header && header.supplier) || null,
+        material,
+        materialName: (entry && entry.materialName) || (material && material.name) || '',
+        factoryName: (entry && entry.factoryName) || (material && material.fdFactory && material.fdFactory.factoryName) || '',
+        materialCode,
+        specification: (entry && entry.speci) || (material && material.speci) || null,
+        model: (entry && entry.model) || (material && material.model) || null,
+        unitName: (material && material.fdUnit && material.fdUnit.unitName)
+          || (material && material.unitName)
+          || null,
+        udiNo: (entry && entry.udiNo) || (material && material.udiNo) || (entry && entry.masterBarcode) || '',
+        inHospitalCode
+      };
     },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id);

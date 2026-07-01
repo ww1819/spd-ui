@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container d-purchase-agg-audit-page" :class="{ 'is-modal-open': open }">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 

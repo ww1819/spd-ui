@@ -102,6 +102,7 @@
         height="60vh"
         border
         size="small"
+        @sort-change="handleSortChange"
       >
         <el-table-column type="index" label="序号" width="70" align="center" fixed="left">
           <template slot-scope="scope">
@@ -111,38 +112,47 @@
         <el-table-column
           label="耗材名称"
           prop="materialName"
-          min-width="160"
+          width="185"
+          min-width="170"
           align="center"
           show-overflow-tooltip
           resizable
+          sortable="custom"
+          :sort-orders="['ascending', 'descending']"
         />
-        <el-table-column label="规格" prop="specification" width="120" align="center" show-overflow-tooltip resizable />
-        <el-table-column label="型号" prop="model" width="120" align="center" show-overflow-tooltip resizable />
-        <el-table-column label="单位" prop="unitName" width="80" align="center" show-overflow-tooltip resizable />
-        <el-table-column label="单价" width="110" align="center" resizable>
+        <el-table-column label="规格" prop="specification" width="110" min-width="100" align="center" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="型号" prop="model" width="100" min-width="90" align="center" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="单位" prop="unitName" width="100" min-width="90" align="center" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="单价" prop="unitPrice" width="130" min-width="120" align="center" resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">{{ formatAmount(scope.row.unitPrice) }}</template>
         </el-table-column>
-        <el-table-column label="数量" width="100" align="center" resizable>
+        <el-table-column label="数量" prop="quantity" width="110" min-width="100" align="center" resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">{{ formatQty(scope.row.quantity) }}</template>
         </el-table-column>
-        <el-table-column label="金额" width="120" align="center" resizable>
+        <el-table-column label="金额" prop="amount" width="130" min-width="120" align="center" resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">{{ formatAmount(scope.row.amount) }}</template>
         </el-table-column>
         <el-table-column
           label="生产厂家"
           prop="factoryName"
-          min-width="140"
+          width="180"
+          min-width="160"
           align="center"
           show-overflow-tooltip
           resizable
+          sortable="custom"
+          :sort-orders="['ascending', 'descending']"
         />
         <el-table-column
           label="供应商"
           prop="supplierName"
-          min-width="140"
+          width="200"
+          min-width="180"
           align="center"
           show-overflow-tooltip
           resizable
+          sortable="custom"
+          :sort-orders="['ascending', 'descending']"
         />
         <el-table-column label="占比" width="100" align="center" resizable>
           <template slot-scope="scope">{{ formatPercent(scope.row.ratioPercent) }}</template>
@@ -207,10 +217,36 @@ export default {
         materialName: null,
         isGz: null,
         isBilling: null
-      }
+      },
+      sortProp: null,
+      sortOrder: null,
+      numericSortProps: ['unitPrice', 'quantity', 'amount']
     };
   },
   computed: {
+    sortedAllRows() {
+      const list = [...(this.allRows || [])];
+      if (!this.sortProp || !this.sortOrder) {
+        return list;
+      }
+      const prop = this.sortProp;
+      const asc = this.sortOrder === 'ascending';
+      const isNumeric = this.numericSortProps.includes(prop);
+      list.sort((a, b) => {
+        let va = a[prop];
+        let vb = b[prop];
+        if (isNumeric) {
+          va = this.toNum(va);
+          vb = this.toNum(vb);
+          return asc ? va - vb : vb - va;
+        }
+        va = va != null ? String(va) : '';
+        vb = vb != null ? String(vb) : '';
+        const cmp = va.localeCompare(vb, 'zh-CN');
+        return asc ? cmp : -cmp;
+      });
+      return list;
+    },
     totalAmtFormatted() {
       const amt = this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
       return this.$options.filters && this.$options.filters.formatCurrency
@@ -321,7 +357,13 @@ export default {
     applyPagination() {
       const { pageNum, pageSize } = this.searchParams;
       const start = (pageNum - 1) * pageSize;
-      this.tableList = this.allRows.slice(start, start + pageSize);
+      this.tableList = this.sortedAllRows.slice(start, start + pageSize);
+    },
+    handleSortChange({ prop, order }) {
+      this.sortProp = order ? prop : null;
+      this.sortOrder = order || null;
+      this.searchParams.pageNum = 1;
+      this.applyPagination();
     },
     async loadReport() {
       this.loading = true;

@@ -126,21 +126,22 @@
       <el-table v-loading="loading" :data="pagedList"
               height="60vh"
               border
-              stripe>
+              stripe
+              @sort-change="handleSortChange">
       <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" min-width="120" class-name="col-material-code" show-overflow-tooltip resizable v-if="columns[0].visible"/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable v-if="columns[1].visible"/>
-      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable v-if="columns[2].visible"/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable v-if="columns[3].visible"/>
-      <el-table-column label="型号" align="center" prop="materialModel" width="120" show-overflow-tooltip resizable v-if="columns[4].visible"/>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="120" show-overflow-tooltip resizable v-if="columns[5].visible"/>
-      <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable v-if="columns[6].visible"/>
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" class-name="col-material-code" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" v-if="columns[0].visible"/>
+      <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" v-if="columns[1].visible"/>
+      <el-table-column label="仓库" align="center" prop="warehouseName" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" v-if="columns[2].visible"/>
+      <el-table-column label="供应商" align="center" prop="supplierName" width="200" min-width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" v-if="columns[3].visible"/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" v-if="columns[4].visible"/>
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="110" min-width="100" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" v-if="columns[5].visible"/>
+      <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" v-if="columns[6].visible"/>
       <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable v-if="columns[7].visible"/>
-      <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable v-if="columns[8].visible">
+      <el-table-column label="单价" align="center" prop="unitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" v-if="columns[8].visible">
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== ''">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
@@ -295,14 +296,40 @@ export default {
         { key: 13, label: `库房分类`, visible: true },
         { key: 14, label: `财务分类`, visible: true },
         { key: 15, label: `储存方式`, visible: true }
-      ]
+      ],
+      sortProp: null,
+      sortOrder: null,
+      numericSortProps: ['unitPrice']
     };
   },
   computed: {
+    sortedWarehouseList() {
+      const list = [...(this.warehouseList || [])];
+      if (!this.sortProp || !this.sortOrder) {
+        return list;
+      }
+      const prop = this.sortProp;
+      const asc = this.sortOrder === 'ascending';
+      const isNumeric = this.numericSortProps.includes(prop);
+      list.sort((a, b) => {
+        let va = a[prop];
+        let vb = b[prop];
+        if (isNumeric) {
+          va = Number(va) || 0;
+          vb = Number(vb) || 0;
+          return asc ? va - vb : vb - va;
+        }
+        va = va != null ? String(va) : '';
+        vb = vb != null ? String(vb) : '';
+        const cmp = va.localeCompare(vb, 'zh-CN');
+        return asc ? cmp : -cmp;
+      });
+      return list;
+    },
     pagedList() {
       const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize;
       const end = start + this.queryParams.pageSize;
-      return (this.warehouseList || []).slice(start, end);
+      return this.sortedWarehouseList.slice(start, end);
     },
     pageTotalQty() {
       return (this.pagedList || []).reduce((s, r) => s + Number(r.materialQty || 0), 0);
@@ -354,6 +381,11 @@ export default {
     },
     handleCurrentChange(val) {
       this.queryParams.pageNum = val;
+    },
+    handleSortChange({ prop, order }) {
+      this.sortProp = order ? prop : null;
+      this.sortOrder = order || null;
+      this.queryParams.pageNum = 1;
     },
     getStatDate(){
       // 与明细表保持一致：当前日期往前推5天

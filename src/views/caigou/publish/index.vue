@@ -121,6 +121,7 @@
               class="table-compact"
               show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
+              @sort-change="handleSortChange"
               :height="mainListTableHeight"
               stripe border>
       <el-table-column type="selection" width="55" align="center" />
@@ -129,31 +130,31 @@
           <span>{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="订单单号" align="center" prop="orderNo" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="订单单号" align="center" prop="orderNo" width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.orderNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="200" min-width="180" class-name="publish-col-supplier" resizable>
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="220" min-width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
         <template slot-scope="scope">
-          <span class="publish-cell-wrap">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '--' }}</span>
+          <span class="publish-cell-ellipsis">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="供应商编码" align="center" width="100" min-width="90" show-overflow-tooltip resizable>
+      <el-table-column label="供应商编码" align="center" prop="supplier.code" width="120" min-width="100" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
         <template slot-scope="scope">
-          <span>{{ formatSpdSupplierCode(scope.row) }}</span>
+          <span class="publish-cell-ellipsis">{{ formatSpdSupplierCode(scope.row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="对照平台编码" align="center" width="165" min-width="150" class-name="publish-col-platform-code" resizable>
+      <el-table-column label="对照平台编码" align="center" width="165" min-width="150" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span class="publish-cell-wrap publish-cell-code">{{ formatBindScmSupplierCode(scope.row) }}</span>
+          <span class="publish-cell-ellipsis">{{ formatBindScmSupplierCode(scope.row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="发布平台编码" align="center" width="165" min-width="150" class-name="publish-col-platform-code" resizable>
+      <el-table-column label="发布平台编码" align="center" width="165" min-width="150" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span class="publish-cell-wrap publish-cell-code">{{ formatOrderScmSupplierCode(scope.row) }}</span>
+          <span class="publish-cell-ellipsis">{{ formatOrderScmSupplierCode(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="订单时间" align="center" prop="orderDate" width="180" show-overflow-tooltip resizable>
@@ -626,6 +627,8 @@ export default {
         orderType: "1", // 采购订单类型
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
+        orderByColumn: 'po.create_time',
+        isAsc: 'desc',
       },
       // 表单参数
       form: {},
@@ -840,6 +843,23 @@ export default {
       this.purchaseOrderEntryList = [];
       this.resetForm("form");
     },
+    /** 表头排序 */
+    handleSortChange({ prop, order }) {
+      const columnMap = {
+        orderNo: 'po.order_no',
+        'supplier.name': 's.name',
+        'supplier.code': 's.code'
+      };
+      if (!order) {
+        this.queryParams.orderByColumn = 'po.create_time';
+        this.queryParams.isAsc = 'desc';
+      } else {
+        this.queryParams.orderByColumn = columnMap[prop] || prop;
+        this.queryParams.isAsc = order;
+      }
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
@@ -851,6 +871,8 @@ export default {
       this.queryParams.dateType = 'createTime';
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
+      this.queryParams.orderByColumn = 'po.create_time';
+      this.queryParams.isAsc = 'desc';
       this.handleQuery();
     },
     // 多选框选中数据
@@ -1365,13 +1387,21 @@ export default {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
+.app-container.caigou-publish-page > .el-table.table-compact thead tr {
+  height: 50px !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact th.el-table__cell {
+  height: 50px !important;
+}
+
 .app-container.caigou-publish-page > .el-table.table-compact th {
   background-color: #EBEEF5 !important;
   color: #606266;
   font-weight: 600 !important;
   font-size: 15px !important;
   font-family: 'Roboto', sans-serif !important;
-  height: 50px;
+  height: 50px !important;
   padding: 8px 0;
   border-bottom: 1px solid #EBEEF5;
 }
@@ -1380,46 +1410,88 @@ export default {
   font-weight: 600 !important;
   font-size: 15px !important;
   font-family: 'Roboto', sans-serif !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 23px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact th .caret-wrapper {
+  position: relative !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+  height: 26px !important;
+  width: 24px !important;
+  margin-left: 4px !important;
+  cursor: pointer !important;
+  vertical-align: middle !important;
+  overflow: visible !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact th .sort-caret {
+  position: absolute !important;
+  left: 7px !important;
+  width: 0 !important;
+  height: 0 !important;
+  border-style: solid !important;
+  border-left-width: 5px !important;
+  border-right-width: 5px !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact th .sort-caret.ascending {
+  top: 3px !important;
+  border-top-width: 0 !important;
+  border-bottom-width: 5px !important;
+  border-bottom-color: #C0C4CC !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact th .sort-caret.descending {
+  bottom: 3px !important;
+  border-bottom-width: 0 !important;
+  border-top-width: 5px !important;
+  border-top-color: #C0C4CC !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact th.ascending .sort-caret.ascending {
+  border-bottom-color: #409EFF !important;
+}
+
+.app-container.caigou-publish-page > .el-table.table-compact th.descending .sort-caret.descending {
+  border-top-color: #409EFF !important;
 }
 
 .app-container.caigou-publish-page > .el-table.table-compact td {
   padding: 6px 0;
   color: #606266;
+  font-size: 14px;
   border-bottom: 1px solid #EBEEF5;
 }
 
-/* 供应商名称换行；平台编码完整显示：固定单元格可视高度，不撑高表格行 */
-.app-container.caigou-publish-page > .el-table.table-compact td.publish-col-supplier .cell,
-.app-container.caigou-publish-page > .el-table.table-compact td.publish-col-platform-code .cell {
-  height: 44px !important;
-  max-height: 44px !important;
-  padding: 4px 8px !important;
-  line-height: 18px !important;
-  white-space: normal !important;
-  overflow: hidden !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-sizing: border-box !important;
+.app-container.caigou-publish-page > .el-table.table-compact td .cell {
+  font-size: 14px;
+  line-height: 23px;
 }
 
-.app-container.caigou-publish-page .publish-cell-wrap {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+.app-container.caigou-publish-page > .el-table.table-compact td .el-button--text {
+  font-size: 14px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.app-container.caigou-publish-page .publish-cell-ellipsis {
+  display: inline-block;
+  max-width: 100%;
   overflow: hidden;
-  word-break: break-all;
-  word-wrap: break-word;
-  text-align: center;
-  width: 100%;
-  max-height: 36px;
-  line-height: 18px;
-}
-
-.app-container.caigou-publish-page .publish-cell-code {
-  font-size: 12px;
-  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  font-size: 14px;
+  line-height: 23px;
 }
 
 .app-container.caigou-publish-page > .el-table.table-compact tr:hover > td {

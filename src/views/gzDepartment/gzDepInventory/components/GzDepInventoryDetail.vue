@@ -196,6 +196,8 @@ export default {
       const params = { ...this.queryParams };
       const kw = params.materialKeyword != null ? String(params.materialKeyword).trim() : '';
       params.materialKeyword = kw || null;
+      const code = params.inHospitalCode != null ? String(params.inHospitalCode).trim() : '';
+      params.inHospitalCode = code || null;
       return params;
     },
     getList() {

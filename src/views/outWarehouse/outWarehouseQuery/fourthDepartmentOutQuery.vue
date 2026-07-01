@@ -75,13 +75,13 @@
     </el-row>
 
     <div class="table-container">
-      <el-table v-loading="loading" :data="pagedList" show-summary :summary-method="getTotalSummaries" height="60vh" border stripe>
+      <el-table v-loading="loading" :data="pagedList" show-summary :summary-method="getTotalSummaries" height="60vh" border stripe @sort-change="handleSortChange">
         <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column label="科室" align="center" prop="departmentName" min-width="220" show-overflow-tooltip resizable>
+        <el-table-column label="科室" align="center" prop="departmentName" width="200" min-width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
             <span>{{ scope.row.departmentName || (scope.row.department && scope.row.department.name) || '未维护科室' }}</span>
           </template>
@@ -91,7 +91,8 @@
           label="高值耗材"
           prop="catAmt_0"
           align="center"
-          min-width="130"
+          width="120"
+          min-width="110"
           show-overflow-tooltip
           resizable
         >
@@ -103,7 +104,8 @@
           label="低值耗材"
           prop="catAmt_1"
           align="center"
-          min-width="130"
+          width="120"
+          min-width="110"
           show-overflow-tooltip
           resizable
         >
@@ -111,8 +113,8 @@
             <span>{{ formatCategoryCell(scope.row, 1) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="净出库数量" align="center" prop="netQty" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="净出库金额" align="center" prop="netAmt" width="140" show-overflow-tooltip resizable>
+        <el-table-column label="净出库数量" align="center" prop="netQty" width="155" min-width="145" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']"/>
+        <el-table-column label="净出库金额" align="center" prop="netAmt" width="165" min-width="155" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
             <span>{{ formatNetCurrency(scope.row.netAmt) }}</span>
           </template>
@@ -180,13 +182,48 @@ export default {
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
+      sortProp: null,
+      sortOrder: null,
+      numericSortProps: ['catAmt_0', 'catAmt_1', 'netQty', 'netAmt']
     };
   },
   computed: {
+    sortedDepartmentAggList() {
+      const list = [...(this.departmentAggList || [])];
+      if (!this.sortProp || !this.sortOrder) {
+        return list;
+      }
+      const prop = this.sortProp;
+      const asc = this.sortOrder === 'ascending';
+      if (prop === 'departmentName') {
+        list.sort((a, b) => {
+          const va = (a.departmentName || (a.department && a.department.name) || '').toString();
+          const vb = (b.departmentName || (b.department && b.department.name) || '').toString();
+          const cmp = va.localeCompare(vb, 'zh-CN');
+          return asc ? cmp : -cmp;
+        });
+        return list;
+      }
+      const isNumeric = this.numericSortProps.includes(prop);
+      list.sort((a, b) => {
+        let va = a[prop];
+        let vb = b[prop];
+        if (isNumeric) {
+          va = Number(va) || 0;
+          vb = Number(vb) || 0;
+          return asc ? va - vb : vb - va;
+        }
+        va = va != null ? String(va) : '';
+        vb = vb != null ? String(vb) : '';
+        const cmp = va.localeCompare(vb, 'zh-CN');
+        return asc ? cmp : -cmp;
+      });
+      return list;
+    },
     pagedList() {
       const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize;
       const end = start + this.queryParams.pageSize;
-      return (this.departmentAggList || []).slice(start, end);
+      return this.sortedDepartmentAggList.slice(start, end);
     },
     /** 全量净出库数量 */
     totalNetQty() {
@@ -207,6 +244,11 @@ export default {
     },
   },
   methods: {
+    handleSortChange({ prop, order }) {
+      this.sortProp = order ? prop : null;
+      this.sortOrder = order || null;
+      this.queryParams.pageNum = 1;
+    },
     /** 汇总行金额展示（分类净额，可为负；0 显示 0.00 而非全局 formatCurrency 的「-」） */
     formatCategoryCell(row, catIdx) {
       const v = row && row[`catAmt_${catIdx}`] != null ? Number(row[`catAmt_${catIdx}`]) : 0;
@@ -583,6 +625,11 @@ export default {
   bottom: 12px;
   z-index: 4;
   background: #fff;
+}
+
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell {
+  white-space: nowrap;
+  line-height: 23px;
 }
 
 /* 合计行数量/金额等单元格不要自动换行，避免合计撑高 */

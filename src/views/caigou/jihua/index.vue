@@ -127,7 +127,9 @@
     <el-table v-loading="loading" :data="warehouseList"
               class="table-compact"
               :row-class-name="warehouseListIndex"
-              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" stripe border>
+              @selection-change="handleSelectionChange"
+              @sort-change="handleSortChange"
+              height="calc(100vh - 340px)" stripe border>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="计划单号" align="center" prop="planNo" width="180" show-overflow-tooltip resizable>
@@ -137,13 +139,13 @@
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="180" show-overflow-tooltip resizable />
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="高值/低值" align="center" width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ formatIsGzLabel(scope.row.isGz) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="center" prop="totalAmount" width="180" show-overflow-tooltip resizable >
+      <el-table-column label="金额" align="center" prop="totalAmount" width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
@@ -155,12 +157,12 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="制单人" align="center" show-overflow-tooltip resizable>
+      <el-table-column label="制单人" align="center" prop="createByName" width="130" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" class-name="plan-creator-col" label-class-name="plan-creator-col">
         <template slot-scope="scope">
           {{ getCreatorName(scope.row) }}
         </template>
       </el-table-column>
-      <el-table-column label="制单时间" align="center" prop="planDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单时间" align="center" prop="createTime" width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
         <template slot-scope="scope">
           <span>{{ scope.row.createTime ? parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') : (scope.row.planDate ? parseTime(scope.row.planDate, '{y}-{m}-{d} {h}:{i}:{s}') : '--') }}</span>
         </template>
@@ -395,6 +397,8 @@ export default {
         planSource: null,
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
+        orderByColumn: 'pp.plan_date',
+        isAsc: 'desc',
       },
       // 表单参数
       form: {},
@@ -1062,6 +1066,24 @@ export default {
       // 重新计算总金额
       this.calculateTotalAmount();
     },
+    /** 表头排序 */
+    handleSortChange({ prop, order }) {
+      const columnMap = {
+        'warehouse.name': 'w.name',
+        totalAmount: 'pp.total_amount',
+        createByName: 'create_by_name',
+        createTime: 'pp.create_time'
+      };
+      if (!order) {
+        this.queryParams.orderByColumn = 'pp.plan_date';
+        this.queryParams.isAsc = 'desc';
+      } else {
+        this.queryParams.orderByColumn = columnMap[prop] || prop;
+        this.queryParams.isAsc = order;
+      }
+      this.queryParams.pageNum = 1;
+      this.getList(true);
+    },
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
@@ -1072,6 +1094,8 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
+      this.queryParams.orderByColumn = 'pp.plan_date';
+      this.queryParams.isAsc = 'desc';
       this.handleQuery();
     },
     // 多选框选中数据
@@ -2575,14 +2599,22 @@ export default {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
+.app-container.caigou-jihua-page > .el-table.table-compact thead tr {
+  height: 50px !important;
+}
+
+.app-container.caigou-jihua-page > .el-table.table-compact th.el-table__cell {
+  height: 50px !important;
+}
+
 .app-container.caigou-jihua-page > .el-table.table-compact th {
   background-color: #EBEEF5 !important;
   color: #606266;
   font-weight: 600 !important;
   font-size: 15px !important;
   font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
+  height: 50px !important;
+  padding: 8px 0 !important;
   border-bottom: 1px solid #EBEEF5;
 }
 
@@ -2590,6 +2622,63 @@ export default {
   font-weight: 600 !important;
   font-size: 15px !important;
   font-family: 'Roboto', sans-serif !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 23px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.app-container.caigou-jihua-page > .el-table.table-compact th .caret-wrapper {
+  position: relative !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+  height: 26px !important;
+  width: 24px !important;
+  margin-left: 4px !important;
+  cursor: pointer !important;
+  vertical-align: middle !important;
+  overflow: visible !important;
+}
+
+.app-container.caigou-jihua-page > .el-table.table-compact th .sort-caret {
+  position: absolute !important;
+  left: 7px !important;
+  width: 0 !important;
+  height: 0 !important;
+  border-style: solid !important;
+  border-left-width: 5px !important;
+  border-right-width: 5px !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+}
+
+.app-container.caigou-jihua-page > .el-table.table-compact th .sort-caret.ascending {
+  top: 3px !important;
+  border-top-width: 0 !important;
+  border-bottom-width: 5px !important;
+  border-bottom-color: #C0C4CC !important;
+}
+
+.app-container.caigou-jihua-page > .el-table.table-compact th .sort-caret.descending {
+  bottom: 3px !important;
+  border-bottom-width: 0 !important;
+  border-top-width: 5px !important;
+  border-top-color: #C0C4CC !important;
+}
+
+.app-container.caigou-jihua-page > .el-table.table-compact th.ascending .sort-caret.ascending {
+  border-bottom-color: #409EFF !important;
+}
+
+.app-container.caigou-jihua-page > .el-table.table-compact th.descending .sort-caret.descending {
+  border-top-color: #409EFF !important;
+}
+
+.app-container.caigou-jihua-page > .el-table.table-compact td.plan-creator-col .cell {
+  white-space: nowrap !important;
 }
 
 .app-container.caigou-jihua-page > .el-table.table-compact td {

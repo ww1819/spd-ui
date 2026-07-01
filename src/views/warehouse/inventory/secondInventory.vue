@@ -139,32 +139,19 @@
           <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="100" min-width="100" show-overflow-tooltip resizable/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" min-width="120" show-overflow-tooltip resizable/>
-      <el-table-column
-        v-for="col in hisChargeItemColumnDefs"
-        :key="'his-charge-' + col.key"
-        :label="col.label"
-        :width="col.width"
-        align="center"
-        show-overflow-tooltip
-        resizable
-      >
-        <template slot-scope="scope">
-          <span>{{ col.text(scope.row) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="90" show-overflow-tooltip resizable/>
-      <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable/>
-      <el-table-column label="单位" align="center" prop="unitName" width="80" min-width="70" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="100" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
+      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName"/>
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci"/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel"/>
+      <el-table-column label="单位" align="center" prop="unitName" width="80" min-width="70" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName"/>
       <el-table-column label="单价" align="center" prop="unitPrice" width="120" min-width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" align="center" prop="materialQty" width="80" min-width="70" show-overflow-tooltip resizable/>
-      <el-table-column label="金额" align="center" prop="materialAmt" width="120" min-width="90" show-overflow-tooltip resizable>
+      <el-table-column label="数量" align="center" prop="materialQty" width="80" min-width="70" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialQty"/>
+      <el-table-column label="金额" align="center" prop="materialAmt" width="120" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialAmt">
         <template slot-scope="scope">
           <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
           <span v-else>--</span>
@@ -196,6 +183,19 @@
       <el-table-column label="仓库" align="center" prop="warehouseName" width="120" min-width="90" show-overflow-tooltip resizable/>
       <el-table-column label="厂家" align="center" prop="factoryName" width="120" min-width="90" show-overflow-tooltip resizable/>
       <el-table-column label="供应商" align="center" prop="supplierName" width="160" min-width="100" show-overflow-tooltip resizable/>
+      <el-table-column
+        v-for="col in hisChargeItemColumnDefs"
+        :key="'his-charge-' + col.key"
+        :label="col.label"
+        :width="col.width"
+        align="center"
+        show-overflow-tooltip
+        resizable
+      >
+        <template slot-scope="scope">
+          <span>{{ col.text(scope.row) }}</span>
+        </template>
+      </el-table-column>
 
     </el-table>
     </div>
@@ -311,6 +311,28 @@ export default {
         : '';
       return v || '--';
     },
+    /** 表头排序：字符串列 */
+    sortByStr(a, b, getVal) {
+      const va = (getVal(a) || '').toString().trim();
+      const vb = (getVal(b) || '').toString().trim();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    /** 表头排序：数值列 */
+    sortByNum(a, b, prop) {
+      const va = Number(a[prop]);
+      const vb = Number(b[prop]);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return 1;
+      if (isNaN(vb)) return -1;
+      return va - vb;
+    },
+    sortByMaterialCode(a, b) { return this.sortByStr(a, b, r => r.materialCode || ''); },
+    sortByMaterialName(a, b) { return this.sortByStr(a, b, r => r.materialName || ''); },
+    sortBySpeci(a, b) { return this.sortByStr(a, b, r => r.materialSpeci || ''); },
+    sortByModel(a, b) { return this.sortByStr(a, b, r => r.materialModel || ''); },
+    sortByUnitName(a, b) { return this.sortByStr(a, b, r => r.unitName || ''); },
+    sortByMaterialQty(a, b) { return this.sortByNum(a, b, 'materialQty'); },
+    sortByMaterialAmt(a, b) { return this.sortByNum(a, b, 'materialAmt'); },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
       if(res.length>0) {

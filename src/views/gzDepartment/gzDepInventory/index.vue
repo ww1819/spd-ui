@@ -47,10 +47,10 @@
                   @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
-              <el-form-item label="主条码" prop="masterBarcode" class="query-item-inline">
+              <el-form-item label="院内码" prop="inHospitalCode" class="query-item-inline">
                 <el-input
-                  v-model="queryParams.masterBarcode"
-                  placeholder="主条码"
+                  v-model="queryParams.inHospitalCode"
+                  placeholder="院内码"
                   clearable
                   style="width: 180px"
                   @keyup.enter.native="handleQuery"
@@ -188,7 +188,7 @@ export default {
         departmentId: null,
         supplierId: null,
         batchNo: null,
-        masterBarcode: null,
+        inHospitalCode: null,
         secondaryBarcode: null,
         materialNo: null,
         materialDate: null,
@@ -245,6 +245,8 @@ export default {
       const params = { ...this.queryParams };
       const kw = params.materialKeyword != null ? String(params.materialKeyword).trim() : '';
       params.materialKeyword = kw || null;
+      const code = params.inHospitalCode != null ? String(params.inHospitalCode).trim() : '';
+      params.inHospitalCode = code || null;
       return params;
     },
     async handleExport() {

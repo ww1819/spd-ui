@@ -81,19 +81,19 @@
             {{ scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="110" min-width="110" show-overflow-tooltip resizable />
-        <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable />
-        <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="100" show-overflow-tooltip resizable />
-        <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="100" show-overflow-tooltip resizable />
-        <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="100" show-overflow-tooltip resizable />
-        <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" />
+        <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" />
+        <el-table-column label="规格" align="center" prop="materialSpeci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" />
+        <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel" />
+        <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName" />
+        <el-table-column label="单价" align="center" prop="unitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice">
           <template slot-scope="scope">
             <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="总数量" align="center" prop="totalQty" width="100" min-width="100" show-overflow-tooltip resizable />
-        <el-table-column label="总金额" align="center" prop="totalAmt" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="总数量" align="center" prop="totalQty" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByTotalQty" />
+        <el-table-column label="总金额" align="center" prop="totalAmt" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByTotalAmt">
           <template slot-scope="scope">
             <span v-if="scope.row.totalAmt">{{ scope.row.totalAmt | formatCurrency }}</span>
             <span v-else>--</span>
@@ -195,6 +195,27 @@ export default {
       delete params.financeCategoryId;
       return params;
     },
+    sortByStr(a, b, getVal) {
+      const va = (getVal(a) || '').toString().trim();
+      const vb = (getVal(b) || '').toString().trim();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByNum(a, b, prop) {
+      const va = Number(a[prop]);
+      const vb = Number(b[prop]);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return 1;
+      if (isNaN(vb)) return -1;
+      return va - vb;
+    },
+    sortByMaterialCode(a, b) { return this.sortByStr(a, b, r => r.materialCode || ''); },
+    sortByMaterialName(a, b) { return this.sortByStr(a, b, r => r.materialName || ''); },
+    sortBySpeci(a, b) { return this.sortByStr(a, b, r => r.materialSpeci || ''); },
+    sortByModel(a, b) { return this.sortByStr(a, b, r => r.materialModel || ''); },
+    sortByUnitName(a, b) { return this.sortByStr(a, b, r => r.unitName || ''); },
+    sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
+    sortByTotalQty(a, b) { return this.sortByNum(a, b, 'totalQty'); },
+    sortByTotalAmt(a, b) { return this.sortByNum(a, b, 'totalAmt'); },
     getList() {
       this.loading = true;
       listConsumeRanking(this.buildQueryParams())

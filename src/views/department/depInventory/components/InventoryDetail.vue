@@ -112,13 +112,13 @@
             {{ scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="耗材" align="center" prop="material.name" width="160" show-overflow-tooltip resizable />
-        <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="规格" align="center" prop="material.speci" width="80" show-overflow-tooltip resizable/>
-        <el-table-column label="型号" align="center" prop="material.model" width="80" show-overflow-tooltip resizable/>
-        <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
-        <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="耗材编码" align="center" prop="material.code" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
+        <el-table-column label="耗材" align="center" prop="material.name" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" />
+        <el-table-column label="科室" align="center" prop="department.name" width="160" min-width="140" show-overflow-tooltip resizable sortable :sort-method="sortByDepartment"/>
+        <el-table-column label="规格" align="center" prop="material.speci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci"/>
+        <el-table-column label="型号" align="center" prop="material.model" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel"/>
+        <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnit"/>
+        <el-table-column label="单价" align="center" prop="unitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice">
           <template slot-scope="scope">
             <span
               v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== ''"
@@ -133,7 +133,7 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable/>
+        <el-table-column label="数量" align="center" prop="qty" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByQty"/>
         <el-table-column
           v-if="listVariant === 'nearExpiry'"
           label="近效期天数"
@@ -155,7 +155,7 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="生产批号" align="center" prop="batchNumber" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByBatchNumber"/>
         <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="生产日期" align="center" prop="beginDate" width="180" show-overflow-tooltip resizable>
           <template slot-scope="scope">
@@ -395,6 +395,30 @@ export default {
       }
       return p
     },
+    sortByStr(a, b, getVal) {
+      const va = (getVal(a) || '').toString().trim();
+      const vb = (getVal(b) || '').toString().trim();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByNum(a, b, prop) {
+      const va = Number(a[prop]);
+      const vb = Number(b[prop]);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return 1;
+      if (isNaN(vb)) return -1;
+      return va - vb;
+    },
+    sortByMaterialCode(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.code) || ''); },
+    sortByMaterialName(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.name) || ''); },
+    sortByDepartment(a, b) { return this.sortByStr(a, b, r => (r.department && r.department.name) || ''); },
+    sortBySpeci(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.speci) || ''); },
+    sortByModel(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.model) || ''); },
+    sortByUnit(a, b) {
+      return this.sortByStr(a, b, r => (r.material && r.material.fdUnit && r.material.fdUnit.unitName) || '');
+    },
+    sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
+    sortByQty(a, b) { return this.sortByNum(a, b, 'qty'); },
+    sortByBatchNumber(a, b) { return this.sortByStr(a, b, r => r.batchNumber || ''); },
     getList() {
       this.loading = true;
       listInventory(this.buildListQuery()).then(response => {

@@ -89,13 +89,13 @@
     </el-row>
 
     <div class="table-container">
-      <el-table v-loading="loading" :data="pagedList" show-summary :summary-method="getTotalSummaries" height="60vh" border stripe>
+      <el-table v-loading="loading" :data="pagedList" show-summary :summary-method="getTotalSummaries" height="60vh" border stripe @sort-change="handleSortChange">
         <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column label="供应商" align="center" prop="supplierName" min-width="220" show-overflow-tooltip resizable>
+        <el-table-column label="供应商" align="center" prop="supplierName" width="240" min-width="200" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
             <span>{{ scope.row.supplierName || (scope.row.supplier && scope.row.supplier.name) || '未维护供应商' }}</span>
           </template>
@@ -184,13 +184,48 @@ export default {
         beginDate: this.getStatDate(),
         endDate: this.getEndDate(),
       },
+      sortProp: null,
+      sortOrder: null,
+      numericSortProps: ['outQty', 'outAmt', 'retQty', 'retAmt', 'netQty', 'netAmt']
     };
   },
   computed: {
+    sortedSupplierAggList() {
+      const list = [...(this.supplierAggList || [])];
+      if (!this.sortProp || !this.sortOrder) {
+        return list;
+      }
+      const prop = this.sortProp;
+      const asc = this.sortOrder === 'ascending';
+      if (prop === 'supplierName') {
+        list.sort((a, b) => {
+          const va = (a.supplierName || (a.supplier && a.supplier.name) || '').toString();
+          const vb = (b.supplierName || (b.supplier && b.supplier.name) || '').toString();
+          const cmp = va.localeCompare(vb, 'zh-CN');
+          return asc ? cmp : -cmp;
+        });
+        return list;
+      }
+      const isNumeric = this.numericSortProps.includes(prop);
+      list.sort((a, b) => {
+        let va = a[prop];
+        let vb = b[prop];
+        if (isNumeric) {
+          va = Number(va) || 0;
+          vb = Number(vb) || 0;
+          return asc ? va - vb : vb - va;
+        }
+        va = va != null ? String(va) : '';
+        vb = vb != null ? String(vb) : '';
+        const cmp = va.localeCompare(vb, 'zh-CN');
+        return asc ? cmp : -cmp;
+      });
+      return list;
+    },
     pagedList() {
       const start = (this.queryParams.pageNum - 1) * this.queryParams.pageSize;
       const end = start + this.queryParams.pageSize;
-      return (this.supplierAggList || []).slice(start, end);
+      return this.sortedSupplierAggList.slice(start, end);
     },
     /** 全量净出库数量 */
     totalNetQty() {
@@ -216,6 +251,11 @@ export default {
     },
   },
   methods: {
+    handleSortChange({ prop, order }) {
+      this.sortProp = order ? prop : null;
+      this.sortOrder = order || null;
+      this.queryParams.pageNum = 1;
+    },
     getTotalSummaries(param) {
       const { columns, data } = param;
       const sums = Array(columns.length).fill('');

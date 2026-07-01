@@ -103,19 +103,19 @@
             <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable />
-        <el-table-column label="规格" align="center" prop="specification" width="80" show-overflow-tooltip resizable/>
-        <el-table-column label="型号" align="center" prop="model" width="80" show-overflow-tooltip resizable/>
-        <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
+        <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" />
+        <el-table-column label="规格" align="center" prop="specification" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci"/>
+        <el-table-column label="型号" align="center" prop="model" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel"/>
+        <el-table-column label="科室" align="center" prop="departmentName" width="160" min-width="140" show-overflow-tooltip resizable sortable :sort-method="sortByDepartment"/>
         <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="单价" align="center" prop="unitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice">
           <template slot-scope="scope">
             <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="数量" align="center" prop="qty" width="80" show-overflow-tooltip resizable>
+        <el-table-column label="数量" align="center" prop="qty" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByQty">
           <template slot-scope="scope">
             <span :style="{ color: Number(scope.row.billType) === 101 ? '#67C23A' : '#F56C6C' }">
               {{ Number(scope.row.billType) === 101 ? '+' : '-' }}{{ scope.row.qty }}
@@ -128,7 +128,7 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="批次号" align="center" prop="batchNo" width="150" show-overflow-tooltip resizable/>
+        <el-table-column label="批次号" align="center" prop="batchNo" width="150" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByBatchNo"/>
         <el-table-column label="操作人" align="center" prop="createBy" width="100" show-overflow-tooltip resizable />
         <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip resizable />
       </el-table>
@@ -270,6 +270,27 @@ export default {
     this.getList();
   },
   methods: {
+    sortByStr(a, b, getVal) {
+      const va = (getVal(a) || '').toString().trim();
+      const vb = (getVal(b) || '').toString().trim();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByNum(a, b, prop) {
+      const va = Number(a[prop]);
+      const vb = Number(b[prop]);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return 1;
+      if (isNaN(vb)) return -1;
+      return va - vb;
+    },
+    sortByMaterialCode(a, b) { return this.sortByStr(a, b, r => r.materialCode || ''); },
+    sortByMaterialName(a, b) { return this.sortByStr(a, b, r => r.materialName || ''); },
+    sortBySpeci(a, b) { return this.sortByStr(a, b, r => r.specification || ''); },
+    sortByModel(a, b) { return this.sortByStr(a, b, r => r.model || ''); },
+    sortByDepartment(a, b) { return this.sortByStr(a, b, r => r.departmentName || ''); },
+    sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
+    sortByQty(a, b) { return this.sortByNum(a, b, 'qty'); },
+    sortByBatchNo(a, b) { return this.sortByStr(a, b, r => r.batchNo || ''); },
     getList() {
       this.loading = true;
       listDepartmentInOutDetail(this.queryParams).then(response => {

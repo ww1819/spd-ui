@@ -175,18 +175,18 @@
           <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="100" show-overflow-tooltip resizable/>
-      <el-table-column label="型号" align="center" prop="materialModel" width="100" show-overflow-tooltip resizable/>
-      <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="数量" align="center" prop="materialQty" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
+      <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName"/>
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci"/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel"/>
+      <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName"/>
+      <el-table-column label="数量" align="center" prop="materialQty" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialQty">
         <template slot-scope="scope">
           <span v-if="scope.row.materialQty !== null && scope.row.materialQty !== undefined">{{ formatQty(scope.row.materialQty) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="单价" align="center" prop="unitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice">
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined">{{ formatAmount(scope.row.unitPrice) }}</span>
           <span v-else>--</span>
@@ -209,8 +209,8 @@
           <span>{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="生产厂家" align="center" prop="factoryName" width="140" show-overflow-tooltip resizable/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable>
+      <el-table-column label="生产厂家" align="center" prop="factoryName" width="180" min-width="160" show-overflow-tooltip resizable sortable :sort-method="sortByFactory"/>
+      <el-table-column label="供应商" align="center" prop="supplierName" width="200" min-width="180" show-overflow-tooltip resizable sortable :sort-method="sortBySupplier">
         <template slot-scope="scope">
           <span>{{ scope.row.supplierName || (scope.row.supplier && scope.row.supplier.name) || '--' }}</span>
         </template>
@@ -434,6 +434,30 @@ export default {
       if (v === '1' || v === 1) return '是';
       if (v === '2' || v === 2) return '否';
       return '--';
+    },
+    sortByStr(a, b, getVal) {
+      const va = (getVal(a) || '').toString().trim();
+      const vb = (getVal(b) || '').toString().trim();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByNum(a, b, prop) {
+      const va = Number(a[prop]);
+      const vb = Number(b[prop]);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return 1;
+      if (isNaN(vb)) return -1;
+      return va - vb;
+    },
+    sortByMaterialCode(a, b) { return this.sortByStr(a, b, r => r.materialCode || ''); },
+    sortByMaterialName(a, b) { return this.sortByStr(a, b, r => r.materialName || ''); },
+    sortBySpeci(a, b) { return this.sortByStr(a, b, r => r.materialSpeci || ''); },
+    sortByModel(a, b) { return this.sortByStr(a, b, r => r.materialModel || ''); },
+    sortByUnitName(a, b) { return this.sortByStr(a, b, r => r.unitName || ''); },
+    sortByMaterialQty(a, b) { return this.sortByNum(a, b, 'materialQty'); },
+    sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
+    sortByFactory(a, b) { return this.sortByStr(a, b, r => r.factoryName || ''); },
+    sortBySupplier(a, b) {
+      return this.sortByStr(a, b, r => r.supplierName || (r.supplier && r.supplier.name) || '');
     },
     /** 查询出/退货列表 */
     getList() {

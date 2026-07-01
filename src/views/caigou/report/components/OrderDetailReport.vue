@@ -85,33 +85,35 @@
         height="60vh"
         border
         stripe
+        class="table-compact"
+        @sort-change="handleSortChange"
       >
         <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             {{ scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column label="订单单号" align="center" prop="orderNo" width="180" show-overflow-tooltip resizable />
-        <el-table-column label="计划单号" align="center" prop="planNo" width="180" show-overflow-tooltip resizable />
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable />
-        <el-table-column label="规格" align="center" prop="materialSpec" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="单位" align="center" prop="materialUnit" width="80" show-overflow-tooltip resizable />
-        <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable />
-        <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="数量" align="center" prop="orderQty" width="100" show-overflow-tooltip resizable>
+        <el-table-column label="订单单号" align="center" prop="orderNo" width="200" min-width="180" show-overflow-tooltip resizable />
+        <el-table-column label="计划单号" align="center" prop="planNo" width="200" min-width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="规格" align="center" prop="materialSpec" width="110" min-width="100" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="单位" align="center" prop="materialUnit" width="100" min-width="90" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="供应商" align="center" prop="supplierName" width="200" min-width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="仓库" align="center" prop="warehouseName" width="130" show-overflow-tooltip resizable />
+        <el-table-column label="数量" align="center" prop="orderQty" width="110" min-width="100" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
             <span v-if="scope.row.orderQty">{{ scope.row.orderQty }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="单价" align="center" prop="unitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
             <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="金额" align="center" prop="totalAmount" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
             <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency }}</span>
             <span v-else>--</span>
@@ -183,7 +185,10 @@ export default {
         orderStatus: null,
         beginDate: null,
         endDate: null
-      }
+      },
+      sortProp: null,
+      sortOrder: null,
+      numericSortProps: ["orderQty", "unitPrice", "totalAmount"]
     };
   },
   computed: {
@@ -221,11 +226,40 @@ export default {
       });
       return params;
     },
+    getSortedList(source) {
+      const list = [...(source || [])];
+      if (!this.sortProp || !this.sortOrder) {
+        return list;
+      }
+      const prop = this.sortProp;
+      const asc = this.sortOrder === "ascending";
+      const isNumeric = this.numericSortProps.includes(prop);
+      list.sort((a, b) => {
+        let va = a[prop];
+        let vb = b[prop];
+        if (isNumeric) {
+          va = Number(va) || 0;
+          vb = Number(vb) || 0;
+          return asc ? va - vb : vb - va;
+        }
+        va = va != null ? String(va) : "";
+        vb = vb != null ? String(vb) : "";
+        const cmp = va.localeCompare(vb, "zh-CN");
+        return asc ? cmp : -cmp;
+      });
+      return list;
+    },
     applyPagination() {
       const { pageNum, pageSize } = this.queryParams;
       const start = (pageNum - 1) * pageSize;
       const end = start + pageSize;
-      this.reportList = this.allDetailList.slice(start, end);
+      this.reportList = this.getSortedList(this.allDetailList).slice(start, end);
+    },
+    handleSortChange({ prop, order }) {
+      this.sortProp = order ? prop : null;
+      this.sortOrder = order || null;
+      this.queryParams.pageNum = 1;
+      this.applyPagination();
     },
     handleSizeChange(val) {
       this.queryParams.pageSize = val;
@@ -558,6 +592,52 @@ export default {
 .table-container ::v-deep .el-table thead th.el-table__cell > .cell {
   white-space: nowrap;
   line-height: 23px;
+}
+
+.table-container ::v-deep .el-table.table-compact th .caret-wrapper {
+  position: relative !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+  height: 26px !important;
+  width: 24px !important;
+  margin-left: 4px !important;
+  cursor: pointer !important;
+  vertical-align: middle !important;
+  overflow: visible !important;
+}
+
+.table-container ::v-deep .el-table.table-compact th .sort-caret {
+  position: absolute !important;
+  left: 7px !important;
+  width: 0 !important;
+  height: 0 !important;
+  border-style: solid !important;
+  border-left-width: 5px !important;
+  border-right-width: 5px !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+}
+
+.table-container ::v-deep .el-table.table-compact th .sort-caret.ascending {
+  top: 3px !important;
+  border-top-width: 0 !important;
+  border-bottom-width: 5px !important;
+  border-bottom-color: #C0C4CC !important;
+}
+
+.table-container ::v-deep .el-table.table-compact th .sort-caret.descending {
+  bottom: 3px !important;
+  border-bottom-width: 0 !important;
+  border-top-width: 5px !important;
+  border-top-color: #C0C4CC !important;
+}
+
+.table-container ::v-deep .el-table.table-compact th.ascending .sort-caret.ascending {
+  border-bottom-color: #409EFF !important;
+}
+
+.table-container ::v-deep .el-table.table-compact th.descending .sort-caret.descending {
+  border-top-color: #409EFF !important;
 }
 </style>
 

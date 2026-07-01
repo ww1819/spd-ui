@@ -154,22 +154,22 @@
           <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable v-if="columns[0].visible"/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable v-if="columns[1].visible"/>
-      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable v-if="columns[2].visible"/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160" show-overflow-tooltip resizable v-if="columns[3].visible"/>
-      <el-table-column label="业务单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable v-if="columns[4].visible" />
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" v-if="columns[0].visible"/>
+      <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" v-if="columns[1].visible"/>
+      <el-table-column label="仓库" align="center" prop="warehouseName" width="130" min-width="110" show-overflow-tooltip resizable sortable :sort-method="sortByWarehouse" v-if="columns[2].visible"/>
+      <el-table-column label="供应商" align="center" prop="supplierName" width="200" min-width="180" show-overflow-tooltip resizable sortable :sort-method="sortBySupplier" v-if="columns[3].visible"/>
+      <el-table-column label="业务单号" align="center" prop="billNo" width="200" min-width="180" show-overflow-tooltip resizable sortable :sort-method="sortByBillNo" v-if="columns[4].visible" />
       <el-table-column label="业务日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable v-if="columns[5].visible">
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column label="型号" align="center" prop="materialModel" width="80" show-overflow-tooltip resizable v-if="columns[6].visible"/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel" v-if="columns[6].visible"/>
 
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="80" show-overflow-tooltip resizable v-if="columns[7].visible"/>
-      <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable v-if="columns[8].visible"/>
-      <el-table-column label="价格" align="center" prop="unitPrice" width="120" class-name="col-in-sum-price" show-overflow-tooltip resizable v-if="columns[10].visible">
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" v-if="columns[7].visible"/>
+      <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName" v-if="columns[8].visible"/>
+      <el-table-column label="价格" align="center" prop="unitPrice" width="130" min-width="120" class-name="col-in-sum-price" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice" v-if="columns[10].visible">
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
@@ -406,6 +406,28 @@ export default {
         this.loading = false;
       });
     },
+    sortByStr(a, b, getVal) {
+      const va = (getVal(a) || '').toString().trim();
+      const vb = (getVal(b) || '').toString().trim();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByNum(a, b, prop) {
+      const va = Number(a[prop]);
+      const vb = Number(b[prop]);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return 1;
+      if (isNaN(vb)) return -1;
+      return va - vb;
+    },
+    sortByMaterialCode(a, b) { return this.sortByStr(a, b, r => r.materialCode || ''); },
+    sortByMaterialName(a, b) { return this.sortByStr(a, b, r => r.materialName || ''); },
+    sortByWarehouse(a, b) { return this.sortByStr(a, b, r => r.warehouseName || ''); },
+    sortBySupplier(a, b) { return this.sortByStr(a, b, r => r.supplierName || ''); },
+    sortByBillNo(a, b) { return this.sortByStr(a, b, r => r.billNo || ''); },
+    sortBySpeci(a, b) { return this.sortByStr(a, b, r => r.materialSpeci || ''); },
+    sortByModel(a, b) { return this.sortByStr(a, b, r => r.materialModel || ''); },
+    sortByUnitName(a, b) { return this.sortByStr(a, b, r => r.unitName || ''); },
+    sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
     getStatDate(){
       // 当前日期往前推5天
       let myDate = new Date();

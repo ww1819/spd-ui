@@ -1,6 +1,6 @@
 <template>
   <div class="table-container">
-    <el-table ref="table" v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" border height="60vh">
+    <el-table ref="table" v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" border height="54vh">
       <el-table-column type="selection" width="55" align="center" fixed="left" />
       <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
         <template slot-scope="scope">

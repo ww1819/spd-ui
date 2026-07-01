@@ -437,8 +437,8 @@
             label="名称"
             align="left"
             header-align="center"
-            width="240"
-            min-width="180"
+            width="180"
+            min-width="140"
             :show-overflow-tooltip="false"
             class-name="detail-col-text-wrap"
             resizable
@@ -455,8 +455,8 @@
             label="规格"
             align="left"
             header-align="center"
-            width="200"
-            min-width="150"
+            width="130"
+            min-width="110"
             :show-overflow-tooltip="false"
             class-name="detail-col-text-wrap"
             resizable
@@ -469,40 +469,12 @@
               >{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column
-            label="型号"
-            align="left"
-            header-align="center"
-            width="200"
-            min-width="150"
-            :show-overflow-tooltip="false"
-            class-name="detail-col-text-wrap"
-            resizable
-            sortable
-          >
-            <template slot-scope="scope">
-              <span
-                class="detail-text-cell-2line"
-                :title="(scope.row.material && scope.row.material.model) || '--'"
-              >{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
-            </template>
-          </el-table-column>
           <el-table-column label="单位" align="center" width="80" min-width="80" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="已引用" align="center" prop="srcRefedQty" width="88" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.srcRefedQty != null ? scope.row.srcRefedQty : '—' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="可引用" align="center" prop="srcRefableQty" width="88" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.srcRefableQty != null ? scope.row.srcRefableQty : '—' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="数量" align="center" prop="qty" width="140" show-overflow-tooltip resizable sortable>
+          <el-table-column label="数量" align="center" prop="qty" width="100" min-width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <!--              <el-input v-model="scope.row.qty" type='number' :min="1"-->
               <!--                        @input="qtyChange(scope.row)"-->
@@ -522,7 +494,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="价格" align="center" prop="unitPrice" width="140" show-overflow-tooltip resizable sortable>
+          <el-table-column label="价格" align="center" prop="unitPrice" width="100" min-width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
                 <el-input v-model="scope.row.unitPrice"
@@ -536,7 +508,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="金额" align="center" prop="amt" width="140" show-overflow-tooltip resizable sortable>
+          <el-table-column label="金额" align="center" prop="amt" width="100" min-width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
                 <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" size="small" style="width: 100%"/>
@@ -547,8 +519,8 @@
             label="批号"
             align="center"
             prop="batchNumber"
-            width="220"
-            min-width="200"
+            width="140"
+            min-width="120"
             :show-overflow-tooltip="false"
             class-name="detail-col-batch"
             resizable
@@ -559,7 +531,7 @@
                 <el-input
                   v-model="scope.row.batchNumber"
                   type="textarea"
-                  :autosize="{ minRows: 1, maxRows: 8 }"
+                  :autosize="{ minRows: 1, maxRows: 2 }"
                   placeholder="批号"
                   size="small"
                   class="detail-batch-textarea"
@@ -572,8 +544,8 @@
             label="有效期"
             align="center"
             prop="endTime"
-            width="240"
-            min-width="220"
+            width="190"
+            min-width="170"
             :show-overflow-tooltip="false"
             class-name="detail-col-date"
             resizable
@@ -602,7 +574,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="生产日期" align="center" prop="beginTime" width="140" show-overflow-tooltip resizable sortable>
+          <el-table-column label="生产日期" align="center" prop="beginTime" width="120" min-width="110" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
                 <el-date-picker
@@ -619,11 +591,39 @@
             </template>
           </el-table-column>
           <el-table-column
+            label="型号"
+            align="left"
+            header-align="center"
+            width="120"
+            min-width="100"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-text-wrap"
+            resizable
+            sortable
+          >
+            <template slot-scope="scope">
+              <span
+                class="detail-text-cell-2line"
+                :title="(scope.row.material && scope.row.material.model) || '--'"
+              >{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="已引用" align="center" prop="srcRefedQty" width="72" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.srcRefedQty != null ? scope.row.srcRefedQty : '—' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="可引用" align="center" prop="srcRefableQty" width="72" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ scope.row.srcRefableQty != null ? scope.row.srcRefableQty : '—' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
             label="批次号"
             align="center"
             prop="batchNo"
-            width="300"
-            min-width="260"
+            width="200"
+            min-width="160"
             :show-overflow-tooltip="false"
             class-name="detail-col-batch-no"
             resizable
@@ -640,8 +640,8 @@
             label="生产厂家"
             align="left"
             header-align="center"
-            width="260"
-            min-width="200"
+            width="180"
+            min-width="150"
             :show-overflow-tooltip="false"
             class-name="detail-col-text-wrap"
             resizable
@@ -2291,60 +2291,91 @@ export default {
   box-sizing: border-box;
 }
 
-/* 明细表可编辑列：与「数量」列同尺度（约 118px，small） */
+/* 明细表可编辑列：与「数量」列同尺度（约 98px，small） */
 .local-modal-content .modal-detail-section .el-table .detail-input-compact {
-  width: 118px !important;
-  max-width: 118px;
+  width: 98px !important;
+  max-width: 98px;
 }
 .local-modal-content .modal-detail-section .el-table .detail-input-compact.el-date-editor.el-input {
-  width: 118px !important;
+  width: 98px !important;
+}
+
+/* 明细表紧凑行高：单元格与输入框 */
+.local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+.local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 1.35;
+}
+.local-modal-content .modal-detail-section .el-table ::v-deep thead th.el-table__cell {
+  padding: 6px 0 !important;
+}
+.local-modal-content .modal-detail-section .el-table ::v-deep .el-input--small .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 0 6px !important;
+  font-size: 13px !important;
+}
+.local-modal-content .modal-detail-section .el-table ::v-deep .el-date-editor--date.el-input--small {
+  height: 28px !important;
+}
+.local-modal-content .modal-detail-section .el-table ::v-deep .el-date-editor--date .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
 }
 
 /* 批号 / 有效期等可编辑列外层容器 */
 .local-modal-content .modal-detail-section .el-table .detail-cell-edit-wrap {
   text-align: left;
-  padding: 2px 0;
+  padding: 0;
 }
 /* 批号：textarea 自适应高度，长批号自动换行查看 */
 .local-modal-content .modal-detail-section .el-table .detail-batch-wrap {
   width: 100%;
 }
 .local-modal-content .modal-detail-section .el-table ::v-deep .detail-batch-textarea .el-textarea__inner {
-  min-height: 28px !important;
-  padding: 4px 8px;
-  line-height: 1.5;
+  min-height: 26px !important;
+  padding: 2px 6px;
+  line-height: 1.35;
   word-break: break-all;
   white-space: pre-wrap;
   resize: vertical;
 }
-/* 有效期：日期选择器与「长期」勾选项同行排布，必要时换行 */
+/* 有效期：日期选择器与「长期」勾选项同行紧凑排布 */
 .local-modal-content .modal-detail-section .el-table .detail-expiry-wrap {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 .local-modal-content .modal-detail-section .el-table .detail-expiry-wrap .detail-date-expiry {
-  flex: 1 1 150px;
-  min-width: 150px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .local-modal-content .modal-detail-section .el-table .detail-long-term-check {
   flex: 0 0 auto;
   margin-left: 0;
+  margin-right: 0;
 }
-/* 有效期：加宽，避免日历/清空图标压住日期文字 */
+.local-modal-content .modal-detail-section .el-table .detail-long-term-check ::v-deep .el-checkbox__label {
+  padding-left: 4px;
+  font-size: 12px;
+}
+/* 有效期：避免日历/清空图标压住日期文字 */
 .local-modal-content .modal-detail-section .el-table .detail-date-expiry {
   width: 100% !important;
   max-width: none !important;
-  min-width: 150px !important;
+  min-width: 0 !important;
 }
 .local-modal-content .modal-detail-section .el-table .detail-date-expiry.el-date-editor.el-input {
   width: 100% !important;
-  min-width: 150px !important;
+  min-width: 0 !important;
 }
 .local-modal-content .modal-detail-section .el-table ::v-deep .detail-date-expiry .el-input__inner {
-  padding-left: 10px !important;
-  padding-right: 34px !important;
+  padding-left: 8px !important;
+  padding-right: 28px !important;
 }
 
 /* 弹窗内表单紧凑布局 */
@@ -2456,32 +2487,32 @@ export default {
   width: 100%;
 }
 
-/* 明细框表头样式：字体加粗、背景加深 */
-::v-deep .local-modal-content .el-table th {
-  font-size: 15px !important;
+/* 明细框表头样式：字体加粗、背景加深（仅明细区） */
+::v-deep .local-modal-content .modal-detail-section .el-table th {
+  font-size: 14px !important;
   font-weight: 600 !important;
   background-color: #EBEEF5 !important;
 }
 
-::v-deep .local-modal-content .el-table th .cell {
-  font-size: 15px !important;
+::v-deep .local-modal-content .modal-detail-section .el-table th .cell {
+  font-size: 14px !important;
   font-weight: 600 !important;
 }
 
-::v-deep .local-modal-content .el-table thead th {
+::v-deep .local-modal-content .modal-detail-section .el-table thead th {
   background-color: #EBEEF5 !important;
-  font-size: 15px !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
 }
 
-::v-deep .local-modal-content .el-table thead th .cell {
-  font-size: 15px !important;
+::v-deep .local-modal-content .modal-detail-section .el-table thead th .cell {
+  font-size: 14px !important;
   font-weight: 600 !important;
 }
 
-::v-deep .local-modal-content .el-table th.is-leaf {
+::v-deep .local-modal-content .modal-detail-section .el-table th.is-leaf {
   background-color: #EBEEF5 !important;
-  font-size: 15px !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
 }
 
@@ -2509,8 +2540,8 @@ export default {
 }
 ::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
 ::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
-  padding-top: 8px !important;
-  padding-bottom: 10px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
   background-color: #fff !important;
 }
 
@@ -2730,8 +2761,8 @@ export default {
   white-space: normal;
   word-break: break-word;
   vertical-align: middle;
-  padding-top: 8px;
-  padding-bottom: 8px;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 /* 添加入库弹窗：批号列允许 textarea 自适应高度并自动换行 */
@@ -2739,15 +2770,15 @@ export default {
   white-space: normal;
   word-break: break-all;
   vertical-align: middle;
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-batch .el-textarea__inner {
-  min-height: 28px;
-  line-height: 1.5;
+  min-height: 26px;
+  line-height: 1.35;
   word-break: break-all;
   white-space: pre-wrap;
-  padding: 4px 8px;
+  padding: 2px 6px;
   resize: vertical;
 }
 
@@ -2756,19 +2787,22 @@ export default {
   white-space: normal;
   word-break: break-all;
   vertical-align: middle;
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-batch-no .detail-batch-no-cell {
   display: block;
   width: 100%;
-  line-height: 1.45;
+  line-height: 1.35;
   word-break: break-all;
   white-space: pre-wrap;
   text-align: center;
 }
 
-/* 名称、规格、型号、生产厂家：左上对齐，最多两行；行高随内容在 1～2 行间变化；列可拖拽加宽 */
+/* 名称、规格、型号、生产厂家：左上对齐，最多两行；列可拖拽加宽 */
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td {
   vertical-align: middle;
 }
@@ -2777,7 +2811,7 @@ export default {
   text-align: left;
   white-space: normal;
   word-break: break-word;
-  padding: 8px 10px 8px 12px;
+  padding: 4px 6px;
 }
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .detail-text-cell-2line {
   display: -webkit-box;
@@ -2785,8 +2819,16 @@ export default {
   -webkit-line-clamp: 2;
   overflow: hidden;
   word-break: break-word;
-  line-height: 1.45;
-  max-height: calc(1.45em * 2 + 2px);
+  line-height: 1.35;
+  max-height: calc(1.35em * 2 + 2px);
+}
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table thead th.el-table__cell {
+  padding: 6px 0 !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
 }
 
 /* 本页主容器左右仅留 8px，使搜索框/按钮/表格整体更宽（非scoped确保生效） */
@@ -2825,32 +2867,32 @@ export default {
   margin-top: 0;
 }
 
-/* 明细框表头样式：使用非scoped样式确保生效 */
-.local-modal-content .el-table th {
-  font-size: 15px !important;
+/* 明细框表头样式：使用非scoped样式确保生效（仅入库明细区） */
+.local-modal-content .modal-detail-section .el-table th {
+  font-size: 14px !important;
   font-weight: 600 !important;
   background-color: #EBEEF5 !important;
 }
 
-.local-modal-content .el-table th .cell {
-  font-size: 15px !important;
+.local-modal-content .modal-detail-section .el-table th .cell {
+  font-size: 14px !important;
   font-weight: 600 !important;
 }
 
-.local-modal-content .el-table thead th {
+.local-modal-content .modal-detail-section .el-table thead th {
   background-color: #EBEEF5 !important;
-  font-size: 15px !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
 }
 
-.local-modal-content .el-table thead th .cell {
-  font-size: 15px !important;
+.local-modal-content .modal-detail-section .el-table thead th .cell {
+  font-size: 14px !important;
   font-weight: 600 !important;
 }
 
-.local-modal-content .el-table th.is-leaf {
+.local-modal-content .modal-detail-section .el-table th.is-leaf {
   background-color: #EBEEF5 !important;
-  font-size: 15px !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
 }
 

@@ -93,19 +93,19 @@
         <el-table-column label="出库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable />
         <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable />
         <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="150" show-overflow-tooltip resizable />
-        <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable />
-        <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="100" show-overflow-tooltip resizable />
-        <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="100" show-overflow-tooltip resizable />
-        <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="100" show-overflow-tooltip resizable />
-        <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" />
+        <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" />
+        <el-table-column label="规格" align="center" prop="materialSpeci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" />
+        <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel" />
+        <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName" />
+        <el-table-column label="数量" align="center" prop="qty" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByQty" />
+        <el-table-column label="单价" align="center" prop="unitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice">
           <template slot-scope="scope">
             <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="金额" align="center" prop="amt" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByAmt">
           <template slot-scope="scope">
             <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency }}</span>
             <span v-else>--</span>
@@ -228,6 +228,27 @@ export default {
     this.getList();
   },
   methods: {
+    sortByStr(a, b, getVal) {
+      const va = (getVal(a) || '').toString().trim();
+      const vb = (getVal(b) || '').toString().trim();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByNum(a, b, prop) {
+      const va = Number(a[prop]);
+      const vb = Number(b[prop]);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return 1;
+      if (isNaN(vb)) return -1;
+      return va - vb;
+    },
+    sortByMaterialCode(a, b) { return this.sortByStr(a, b, r => r.materialCode || ''); },
+    sortByMaterialName(a, b) { return this.sortByStr(a, b, r => r.materialName || ''); },
+    sortBySpeci(a, b) { return this.sortByStr(a, b, r => r.materialSpeci || ''); },
+    sortByModel(a, b) { return this.sortByStr(a, b, r => r.materialModel || ''); },
+    sortByUnitName(a, b) { return this.sortByStr(a, b, r => r.unitName || ''); },
+    sortByQty(a, b) { return this.sortByNum(a, b, 'qty'); },
+    sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
+    sortByAmt(a, b) { return this.sortByNum(a, b, 'amt'); },
     getList() {
       this.loading = true;
       listConsumeDetail(this.queryParams)

@@ -121,6 +121,8 @@ export default {
       const params = { ...this.queryParams };
       const kw = params.materialKeyword != null ? String(params.materialKeyword).trim() : '';
       params.materialKeyword = kw || null;
+      const code = params.inHospitalCode != null ? String(params.inHospitalCode).trim() : '';
+      params.inHospitalCode = code || null;
       params.pageNum = 1;
       params.pageSize = 10000;
       return params;

@@ -13,7 +13,7 @@
             <el-col :span="24">
               <el-form-item prop="warehouseId" class="query-item-inline">
                 <div class="query-select-wrapper">
-                  <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值" />
+                  <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值" placeholder="仓库" />
                 </div>
               </el-form-item>
               <el-form-item prop="supplierId" class="query-item-inline">
@@ -26,6 +26,15 @@
                   <SelectMaterial v-model="queryParams.materialId" />
                 </div>
               </el-form-item>
+              <el-form-item prop="inHospitalCode" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.inHospitalCode"
+                  placeholder="院内码"
+                  clearable
+                  style="width: 180px"
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="16" class="query-row-second">
@@ -33,7 +42,7 @@
               <el-form-item prop="orderNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.orderNo"
-                  :placeholder="activeName === 'outbound' ? '出库单号' : '单号'"
+                  :placeholder="activeName === 'outbound' ? '出库/退库单号' : '单号'"
                   clearable
                   style="width: 180px"
                   @keyup.enter.native="handleQuery"
@@ -41,7 +50,7 @@
               </el-form-item>
               <el-form-item prop="departmentId" class="query-item-inline">
                 <div class="query-select-wrapper">
-                  <SelectDepartment v-model="queryParams.departmentId" />
+                  <SelectDepartment v-model="queryParams.departmentId" fieldPlaceholder="科室" />
                 </div>
               </el-form-item>
               <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
@@ -132,6 +141,17 @@ import RightToolbar from "@/components/RightToolbar";
 import InboundRefundTable from "./components/InboundRefundTable.vue";
 import OutboundRefundTable from "./components/OutboundRefundTable.vue";
 import FollowTable from "./components/FollowTable.vue";
+import { parseTime } from "@/utils/ruoyi";
+
+function createDefaultBeginDate() {
+  const date = new Date();
+  date.setDate(date.getDate() - 5);
+  return parseTime(date, '{y}-{m}-{d}');
+}
+
+function createDefaultEndDate() {
+  return parseTime(new Date(), '{y}-{m}-{d}');
+}
 
 export default {
   name: "StockQuery",
@@ -157,15 +177,19 @@ export default {
         pageNum: 1,
         pageSize: 10,
         materialId: null,
+        inHospitalCode: null,
         warehouseId: null,
         supplierId: null,
         departmentId: null,
         orderNo: null,
         orderStatus: null,
-        beginDate: null,
-        endDate: null
+        beginDate: createDefaultBeginDate(),
+        endDate: createDefaultEndDate()
       }
     };
+  },
+  created() {
+    this.initDefaultDateRange();
   },
   activated() {
     document.body.classList.add('inventory-query-fixed');
@@ -180,19 +204,23 @@ export default {
     document.body.classList.remove('inventory-query-fixed');
   },
   methods: {
+    initDefaultDateRange() {
+      this.queryParams.beginDate = createDefaultBeginDate();
+      this.queryParams.endDate = createDefaultEndDate();
+    },
     handleQuery() {
       this.queryParams.pageNum = 1;
     },
     resetQuery() {
       this.resetForm("queryForm");
       this.queryParams.materialId = null;
+      this.queryParams.inHospitalCode = null;
       this.queryParams.warehouseId = null;
       this.queryParams.supplierId = null;
       this.queryParams.departmentId = null;
       this.queryParams.orderNo = null;
       this.queryParams.orderStatus = null;
-      this.queryParams.beginDate = null;
-      this.queryParams.endDate = null;
+      this.initDefaultDateRange();
       this.queryParams.pageNum = 1;
       this.handleQuery();
     },
