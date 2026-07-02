@@ -313,3 +313,118 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
     fileName || `财务结算汇总_表二_${Date.now()}.xlsx`
   );
 }
+
+/**
+ * 财务结算汇总表三：科室月消耗（计费/不计费耗材金额）
+ * @param {Object} options
+ * @param {string} options.titleText 表头标题全文
+ * @param {{ departmentName: string, billingConsumablesAmt?: number, nonBillingConsumablesAmt?: number }[]} options.rows
+ * @param {string} options.fileName
+ */
+export async function exportFinanceDeptMonthlyConsumptionXlsx(options) {
+  const { titleText = '', rows = [], fileName } = options;
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('科室月消耗表三', {
+    views: [{ showGridLines: false }],
+  });
+
+  ws.mergeCells('A1:D1');
+  const t1 = ws.getCell(1, 1);
+  t1.value = titleText || '科室月消耗表三';
+  t1.font = FONT_TITLE;
+  t1.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  setCellBorder(t1);
+  ws.getRow(1).height = 28;
+
+  const headers = ['科室', '计费耗材（金额）', '不计费耗材（金额）', '合计'];
+  headers.forEach((text, c) => {
+    const cell = ws.getCell(2, c + 1);
+    cell.value = text;
+    cell.font = { ...FONT_BODY, bold: true };
+    cell.alignment = { vertical: 'middle', horizontal: c === 0 ? 'center' : 'center', wrapText: true };
+    setCellBorder(cell);
+  });
+
+  let sumBilling = 0;
+  let sumNonBilling = 0;
+  let sumTotal = 0;
+  let r = 3;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const billing = row.billingConsumablesAmt != null ? Number(row.billingConsumablesAmt) : 0;
+    const nonBilling = row.nonBillingConsumablesAmt != null ? Number(row.nonBillingConsumablesAmt) : 0;
+    const total = billing + nonBilling;
+    sumBilling += billing;
+    sumNonBilling += nonBilling;
+    sumTotal += total;
+
+    const cells = [
+      { c: 1, v: row.departmentName || '', align: 'left' },
+      { c: 2, v: billing, num: true },
+      { c: 3, v: nonBilling, num: true },
+      { c: 4, v: total, num: true },
+    ];
+    cells.forEach(({ c, v, num, align }) => {
+      const cell = ws.getCell(r, c);
+      cell.value = v;
+      cell.font = FONT_BODY;
+      cell.alignment = { vertical: 'middle', horizontal: num ? 'right' : align || 'left' };
+      if (num) cell.numFmt = '#,##0.00';
+      setCellBorder(cell);
+    });
+    ws.getRow(r).height = 18;
+    r++;
+  }
+
+  if (rows.length === 0) {
+    ws.mergeCells(`A${r}:D${r}`);
+    const emptyCell = ws.getCell(r, 1);
+    emptyCell.value = '当前条件下暂无统计数据（已审核科室出退库按计费/不计费汇总）';
+    emptyCell.font = FONT_BODY;
+    emptyCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    setCellBorder(emptyCell);
+    r++;
+  } else {
+    const tot = ws.getCell(r, 1);
+    tot.value = '合计';
+    tot.font = { ...FONT_BODY, bold: true };
+    tot.alignment = { vertical: 'middle', horizontal: 'center' };
+    setCellBorder(tot);
+    ;[
+      [2, sumBilling],
+      [3, sumNonBilling],
+      [4, sumTotal],
+    ].forEach(([c, v]) => {
+      const cell = ws.getCell(r, c);
+      cell.value = v;
+      cell.font = { ...FONT_BODY, bold: true };
+      cell.alignment = { vertical: 'middle', horizontal: 'right' };
+      cell.numFmt = '#,##0.00';
+      setCellBorder(cell);
+    });
+    ws.getRow(r).height = 18;
+    r++;
+  }
+
+  ws.mergeCells(`A${r}:D${r}`);
+  const foot = ws.getCell(r, 1);
+  foot.value = '药械科制表员：             ；审核员：';
+  foot.font = FONT_BODY;
+  foot.alignment = { vertical: 'middle', horizontal: 'left' };
+  setCellBorder(foot);
+  ws.getRow(r).height = 22;
+
+  ws.columns = [
+    { width: 18 },
+    { width: 18 },
+    { width: 20 },
+    { width: 14 },
+  ];
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    fileName || `财务结算汇总_表三_${Date.now()}.xlsx`
+  );
+}

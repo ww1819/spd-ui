@@ -260,7 +260,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :value2="stkIoBillEntryList.length > 0" :excludeWarehouseType="['高值', '设备']"/>
+              <SelectWarehouse ref="formWarehouseSelect" v-model="form.warehouseId" :value2="stkIoBillEntryList.length > 0" :excludeWarehouseType="['高值', '设备']" blockDisabledForInbound/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -811,6 +811,7 @@ import {
 } from '@/utils/billEntryValidate'
 import { ZQ_TCM_TENANT } from '@/utils/msunHis'
 import { normalizeCompactDateInput, readDatePickerInputValue, isValidYmd } from '@/utils/compactDateInput'
+import { assertWarehouseInboundEnabled } from '@/utils/warehouseInboundGuard'
 
 export default {
   name: "Apply",
@@ -851,12 +852,16 @@ export default {
       single: true,
       pickerBeginTimeOptions: {
         disabledDate(time) {
-          return time.getTime() > Date.now();
+          const today = new Date();
+          today.setHours(23, 59, 59, 999);
+          return time.getTime() > today.getTime();
         },
       },
       pickerEndTimeOptions: {
         disabledDate(time) {
-          return time.getTime() < Date.now();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return time.getTime() < today.getTime();
         },
       },
       // 非多个禁用
@@ -1330,23 +1335,23 @@ export default {
       if (!row || !field) return row ? row[field] : '';
       const s = String(rawValue == null ? '' : rawValue).trim();
       if (!s) {
-        row[field] = '';
+        this.$set(row, field, '');
         return '';
       }
       const normalized = normalizeCompactDateInput(s);
       if (normalized && isValidYmd(normalized)) {
         if (normalized !== row[field]) {
-          row[field] = normalized;
+          this.$set(row, field, normalized);
         }
         return normalized;
       }
       const digitsOnly = s.replace(/\D/g, '');
       if (/^\d{8}$/.test(digitsOnly)) {
-        row[field] = '';
+        this.$set(row, field, '');
         return '';
       }
       if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s) || /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(s)) {
-        row[field] = '';
+        this.$set(row, field, '');
         return '';
       }
       return row[field];
@@ -1354,18 +1359,51 @@ export default {
     onDetailDateBlur(row, field, e) {
       if (!row || (row._longTerm && field === 'endTime')) return;
       const raw = readDatePickerInputValue(e, row[field]);
-      this.applyDetailDateField(row, field, raw);
+      const trimmed = String(raw == null ? '' : raw).trim();
+      // 日历点选后 blur 时 DOM 可能尚未写入，勿用空值覆盖 v-model 已选日期
+      if (!trimmed) {
+        const current = normalizeCompactDateInput(row[field]);
+        if (current && isValidYmd(current)) {
+          return;
+        }
+        this.$set(row, field, '');
+        if (field === 'endTime') {
+          this.onEndTimeManualChange(row);
+        }
+        return;
+      }
+      this.applyDetailDateField(row, field, trimmed);
       if (field === 'endTime') {
         this.onEndTimeManualChange(row);
       }
     },
     onDetailEndTimeChange(row, value) {
       if (!row || row._longTerm) return;
+      if (value == null || value === '') {
+        this.$set(row, 'endTime', '');
+        this.onEndTimeManualChange(row);
+        return;
+      }
+      const normalized = normalizeCompactDateInput(value);
+      if (normalized && isValidYmd(normalized)) {
+        this.$set(row, 'endTime', normalized);
+        this.onEndTimeManualChange(row);
+        return;
+      }
       this.applyDetailDateField(row, 'endTime', value);
       this.onEndTimeManualChange(row);
     },
     onDetailBeginTimeChange(row, value) {
       if (!row) return;
+      if (value == null || value === '') {
+        this.$set(row, 'beginTime', '');
+        return;
+      }
+      const normalized = normalizeCompactDateInput(value);
+      if (normalized && isValidYmd(normalized)) {
+        this.$set(row, 'beginTime', normalized);
+        return;
+      }
       this.applyDetailDateField(row, 'beginTime', value);
     },
     /** 切换「长期」勾选：勾选→写入 2099-01-01；取消且当前是 2099-01-01→清空 */
@@ -1682,7 +1720,13 @@ export default {
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
-        if (valid) {
+        if (!valid) {
+          return;
+        }
+        this.doSubmitForm();
+      });
+    },
+    doSubmitForm() {
           // 检查明细列表是否为空
           if (!this.stkIoBillEntryList || this.stkIoBillEntryList.length === 0) {
             this.$modal.msgError("请添加明细！");
@@ -1707,6 +1751,7 @@ export default {
             return;
           }
 
+          const submitAfterWarehouseCheck = () => {
           if (!this.form.createBy && this.$store.state.user && this.$store.state.user.userId) {
             this.form.createBy = this.$store.state.user.userId;
           }
@@ -1746,8 +1791,13 @@ export default {
               // this.open = false;
             });
           }
-        }
-      });
+          };
+
+          assertWarehouseInboundEnabled(this.form.warehouseId, this).then((ok) => {
+            if (ok) {
+              submitAfterWarehouseCheck();
+            }
+          });
     },
     /** 枣强：弹窗内审核当前入库单（逻辑与入库审核页 handleAudit 一致） */
     handleModalAudit() {

@@ -461,7 +461,7 @@
         </template>
       </el-table-column>
       <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="260">
+      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="260" fixed="right">
         <template slot-scope="scope">
           <div class="material-row-actions">
             <el-button

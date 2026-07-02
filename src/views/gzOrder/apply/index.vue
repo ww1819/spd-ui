@@ -224,7 +224,7 @@
                   </el-col>
                   <el-col :span="4">
                     <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" :value2="gzOrderEntryList.length > 0" :disabled="warehouseAutoFilled" includeWarehouseType="高值"/>
+                      <SelectWarehouse ref="formWarehouseSelect" v-model="form.warehouseId" :value2="gzOrderEntryList.length > 0" :disabled="warehouseAutoFilled" includeWarehouseType="高值" blockDisabledForInbound disabledWarehouseMessage="该仓库已经停用，不能进行备货入库"/>
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -785,6 +785,8 @@ import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFil
 import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
 import { GZ_BARCODE_SESSION_KEY } from '@/views/gzOrder/apply/GzBarcodePrintPage'
 import { assertBillHasEntries } from '@/utils/billEntryValidate'
+import { assertWarehouseStockInboundEnabled } from '@/utils/warehouseInboundGuard'
+import { checkWarehouseInboundEnabled } from '@/api/foundation/warehouse'
 import RMBConverter from "@/utils/tools";
 import { parseTime } from "@/utils/ruoyi";
 import { normalizeUdiScanInput, parseGs1UdiScan, buildUdiQueryVariants } from '@/utils/udi';
@@ -1650,10 +1652,16 @@ export default {
     /** 处理仓库选择 */
     handleWarehouseSelect(warehouseId) {
       if (warehouseId && this.pendingMaterialData) {
-        this.form.warehouseId = warehouseId;
-        this.warehouseAutoFilled = true;
-        this.addMaterialToEntryList(this.pendingMaterialData.rows, this.pendingMaterialData.parsedUDI);
-        this.pendingMaterialData = null;
+        checkWarehouseInboundEnabled(warehouseId).then(() => {
+          this.form.warehouseId = warehouseId;
+          this.warehouseAutoFilled = true;
+          this.addMaterialToEntryList(this.pendingMaterialData.rows, this.pendingMaterialData.parsedUDI);
+          this.pendingMaterialData = null;
+          this.warehouseSelectDialogVisible = false;
+        }).catch((err) => {
+          this.$modal.msgWarning((err && err.message) || '该仓库已经停用，不能进行备货入库');
+        });
+        return;
       }
       this.warehouseSelectDialogVisible = false;
     },
@@ -2532,6 +2540,15 @@ export default {
         this.$modal.msgWarning("请选择供应商");
         return;
       }
+
+      assertWarehouseStockInboundEnabled(this.form.warehouseId, this).then((ok) => {
+        if (!ok) {
+          return;
+        }
+        this.continueSubmitForm();
+      });
+    },
+    continueSubmitForm() {
       
       // 检查所有明细项的供应商是否一致
       if (this.gzOrderEntryList && this.gzOrderEntryList.length > 0) {

@@ -34,6 +34,14 @@ export function getWarehouse(id) {
   })
 }
 
+/** 校验仓库是否允许入库（仅需登录，到货验收/备货验收用） */
+export function checkWarehouseInboundEnabled(id) {
+  return request({
+    url: '/foundation/warehouse/checkInboundEnabled/' + parseStrEmpty(id),
+    method: 'get'
+  })
+}
+
 // 新增仓库
 export function addWarehouse(data) {
   return request({

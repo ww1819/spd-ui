@@ -19,9 +19,10 @@
 </template>
 
 <script>
-import { listWarehouseAll } from "@/api/foundation/warehouse";
+import { listWarehouseAll, checkWarehouseInboundEnabled } from "@/api/foundation/warehouse";
 import { fetchFinancePickWarehouses } from "@/api/finance/settlementSummary";
 import { pinyin } from "pinyin-pro";
+import { isWarehouseDisabled, findWarehouseById } from "@/utils/warehouseStatus";
 
 export default {
   props: {
@@ -44,6 +45,15 @@ export default {
     placeholder: {
       type: String,
       default: ''
+    },
+    /** 入库场景：选中已停用仓库时拦截并提示 */
+    blockDisabledForInbound: {
+      type: Boolean,
+      default: false
+    },
+    disabledWarehouseMessage: {
+      type: String,
+      default: '该仓库已经停用，不能在进行入库'
     }
   },
   data() {
@@ -53,6 +63,7 @@ export default {
       allWarehouseOptions: [],
       // 表单参数
       form: {},
+      lastValidWarehouse: null,
     }
   },
   computed: {
@@ -74,7 +85,21 @@ export default {
         return this.value;
       },
       set(v) {
-        this.$emit('input', v);
+        if (!this.blockDisabledForInbound || v == null || v === '' || this.multiple) {
+          this.lastValidWarehouse = v;
+          this.$emit('input', v);
+          return;
+        }
+        this.verifyInboundWarehouse(v, this.disabledWarehouseMessage).then((ok) => {
+          if (ok) {
+            this.lastValidWarehouse = v;
+            this.$emit('input', v);
+          } else {
+            this.$nextTick(() => {
+              this.$emit('input', this.lastValidWarehouse);
+            });
+          }
+        });
       }
     },
     // 过滤后的仓库选项
@@ -105,16 +130,106 @@ export default {
     }
   },
   created() {
+    this.lastValidWarehouse = this.multiple
+      ? (Array.isArray(this.value) ? this.value : [])
+      : this.value;
     this.getList();
   },
+  watch: {
+    value(val) {
+      if (this.blockDisabledForInbound && val != null && val !== '' && !this.multiple) {
+        if (isWarehouseDisabled(findWarehouseById(this.allWarehouseOptions, val)) === true) {
+          this.$modal.msgWarning(this.disabledWarehouseMessage);
+          this.$nextTick(() => {
+            this.$emit('input', this.lastValidWarehouse);
+          });
+          return;
+        }
+        this.verifyInboundWarehouse(val, this.disabledWarehouseMessage, false).then((ok) => {
+          if (ok) {
+            this.lastValidWarehouse = val;
+          } else {
+            this.$nextTick(() => {
+              this.$emit('input', this.lastValidWarehouse);
+            });
+          }
+        });
+      } else if (!this.multiple) {
+        this.lastValidWarehouse = val;
+      }
+    },
+    allWarehouseOptions() {
+      if (this.blockDisabledForInbound && this.value != null && this.value !== '' && !this.multiple) {
+        if (isWarehouseDisabled(findWarehouseById(this.allWarehouseOptions, this.value)) === true) {
+          this.$modal.msgWarning(this.disabledWarehouseMessage);
+          this.$nextTick(() => {
+            this.$emit('input', this.lastValidWarehouse);
+          });
+          return;
+        }
+        this.verifyInboundWarehouse(this.value, this.disabledWarehouseMessage, false).then((ok) => {
+          if (ok) {
+            this.lastValidWarehouse = this.value;
+          } else {
+            this.$nextTick(() => {
+              this.$emit('input', this.lastValidWarehouse);
+            });
+          }
+        });
+      }
+    }
+  },
   methods: {
+    findWarehouseById(warehouseId) {
+      return findWarehouseById(this.allWarehouseOptions, warehouseId);
+    },
+    verifyInboundWarehouse(warehouseId, message, showMessage = true) {
+      const warnMessage = message || this.disabledWarehouseMessage;
+      const local = this.findWarehouseById(warehouseId);
+      if (isWarehouseDisabled(local) === true) {
+        if (showMessage) {
+          this.$modal.msgWarning(warnMessage);
+        }
+        return Promise.resolve(false);
+      }
+      return checkWarehouseInboundEnabled(warehouseId)
+        .then(() => true)
+        .catch((err) => {
+          if (showMessage) {
+            this.$modal.msgWarning((err && err.message) || warnMessage);
+          }
+          return false;
+        });
+    },
+    validateInboundSelection(message) {
+      if (!this.blockDisabledForInbound || this.multiple) {
+        return Promise.resolve(true);
+      }
+      const warehouseId = this.value;
+      if (warehouseId == null || warehouseId === '') {
+        return Promise.resolve(true);
+      }
+      return this.verifyInboundWarehouse(warehouseId, message || this.disabledWarehouseMessage);
+    },
+    normalizeWarehouseOptions(rows) {
+      return (rows || []).map((item) => {
+        const status = item.warehouseStatus != null ? item.warehouseStatus : item.warehouse_status;
+        if (status == null || status === '') {
+          return item;
+        }
+        return {
+          ...item,
+          warehouseStatus: String(status).trim()
+        };
+      });
+    },
     /** 查询仓库列表 */
     getList() {
       if (this.financePickMode) {
         fetchFinancePickWarehouses()
           .then(res => {
             const rows = res && res.data != null ? res.data : res;
-            this.allWarehouseOptions = Array.isArray(rows) ? rows : [];
+            this.allWarehouseOptions = this.normalizeWarehouseOptions(Array.isArray(rows) ? rows : []);
             this.warehouseOptions = this.allWarehouseOptions;
           })
           .catch(() => {
@@ -125,7 +240,8 @@ export default {
       }
       const userId = this.$store.state.user.userId;
       listWarehouseAll(userId).then(response => {
-        this.allWarehouseOptions = response || [];
+        const rows = Array.isArray(response) ? response : (response && response.data) || [];
+        this.allWarehouseOptions = this.normalizeWarehouseOptions(rows);
         this.warehouseOptions = this.allWarehouseOptions;
       });
     },

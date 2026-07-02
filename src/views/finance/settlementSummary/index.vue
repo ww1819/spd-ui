@@ -183,13 +183,58 @@
           </p>
         </div>
       </el-tab-pane>
+      <el-tab-pane label="表三" name="table3">
+        <div class="sheet-pane">
+          <el-row :gutter="10" class="mb8">
+            <el-col :span="1.5">
+              <el-button
+                type="warning"
+                icon="el-icon-download"
+                size="small"
+                @click="handleExportTable3"
+                v-hasPermi="['finance:settlementSummary:export']"
+              >导出</el-button>
+            </el-col>
+          </el-row>
+          <div class="summary-title">{{ titleTextTable3 }}</div>
+          <el-table
+            v-loading="loading"
+            :data="deptMonthlyRows"
+            border
+            size="small"
+            show-summary
+            :summary-method="table3SummaryMethod"
+            class="table-block table-block-medium"
+          >
+            <el-table-column prop="departmentName" label="科室" align="left" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="billingConsumablesAmt" label="计费耗材（金额）" align="right" min-width="140">
+              <template slot-scope="scope">
+                {{ formatAmt(scope.row.billingConsumablesAmt) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="nonBillingConsumablesAmt" label="不计费耗材（金额）" align="right" min-width="160">
+              <template slot-scope="scope">
+                {{ formatAmt(scope.row.nonBillingConsumablesAmt) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="totalAmt" label="合计" align="right" width="120">
+              <template slot-scope="scope">
+                {{ formatAmt(rowTotalAmt(scope.row)) }}
+              </template>
+            </el-table-column>
+          </el-table>
+          <p class="hint-text">
+            表三统计口径：与表一、表二相同的筛选及科室数据权限；已审核科室出退库（出库 201 为正、退库 401 为负）；按科室汇总，计费耗材（产品档案 is_billing=1）、不计费耗材（is_billing 非 1 或未维护）；合计 = 计费 + 不计费。
+          </p>
+        </div>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script>
 import { getSettlementSummaryData } from '@/api/finance/settlementSummary'
-import { exportFinanceSettlementSummaryXlsx, exportFinanceDeptConsumablePickupXlsx } from '@/utils/financeSettlementSummaryExport'
+import { exportFinanceSettlementSummaryXlsx, exportFinanceDeptConsumablePickupXlsx, exportFinanceDeptMonthlyConsumptionXlsx } from '@/utils/financeSettlementSummaryExport'
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse'
 import SelectDepartment from '@/components/SelectModel/SelectDepartment'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier'
@@ -243,10 +288,12 @@ export default {
         unrecognizedSuppliers: [],
         unrecognizedWholesaleTotal: 0,
         deptConsumablePickupRows: [],
+        deptMonthlyConsumptionRows: [],
       },
       tableRows: [],
       deptPickupRows: [],
-      /** 表一 / 表二 sheet 切换 */
+      deptMonthlyRows: [],
+      /** 表一 / 表二 / 表三 sheet 切换 */
       activeSheet: 'table1',
     }
   },
@@ -278,6 +325,32 @@ export default {
       if (b) return `SPD报表2：${ymPart(b)}${suffix}`
       if (e) return `SPD报表2：${ymPart(e)}${suffix}`
       return `SPD报表2：${suffix}`
+    },
+    titleTextTable3() {
+      const b = dateOnly(this.queryParams.beginDate)
+      const e = dateOnly(this.queryParams.endDate)
+      const monthCn = (d) => {
+        if (!d || d.length < 7) return ''
+        const m = parseInt(d.split('-')[1], 10)
+        const names = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+        return names[m - 1] || `${m}月`
+      }
+      const ymPart = (d) => {
+        if (!d || d.length < 7) return ''
+        const parts = d.split('-')
+        const y = parts[0]
+        const m = parseInt(parts[1], 10)
+        return `${y}年${m}月`
+      }
+      if (b && e) {
+        if (b.substring(0, 7) === e.substring(0, 7)) {
+          return `科室月消耗表三（${monthCn(b)}）`
+        }
+        return `科室月消耗表三（${ymPart(b)}至${ymPart(e)}）`
+      }
+      if (b) return `科室月消耗表三（${monthCn(b)}）`
+      if (e) return `科室月消耗表三（${monthCn(e)}）`
+      return '科室月消耗表三'
     },
   },
   created() {
@@ -322,6 +395,14 @@ export default {
       pushSection('试剂', data.reagentSuppliers, data.reagentWholesaleTotal)
       pushSection('未识别分类', data.unrecognizedSuppliers, data.unrecognizedWholesaleTotal)
       return rows
+    },
+    rowTotalAmt(row) {
+      if (!row) return 0
+      return (Number(row.billingConsumablesAmt) || 0) + (Number(row.nonBillingConsumablesAmt) || 0)
+    },
+    buildDeptMonthlyRows(list) {
+      if (!list || !list.length) return []
+      return list.map((r) => ({ ...r }))
     },
     buildDeptPickupRows(list) {
       if (!list || !list.length) return []
@@ -381,6 +462,34 @@ export default {
       })
       return sums
     },
+    table3SummaryMethod({ columns, data }) {
+      const sums = []
+      let billing = 0
+      let nonBilling = 0
+      let total = 0
+      data.forEach((row) => {
+        billing += Number(row.billingConsumablesAmt) || 0
+        nonBilling += Number(row.nonBillingConsumablesAmt) || 0
+        total += this.rowTotalAmt(row)
+      })
+      columns.forEach((col, index) => {
+        if (index === 0) {
+          sums[index] = '合计'
+          return
+        }
+        const prop = col.property
+        if (prop === 'billingConsumablesAmt') {
+          sums[index] = this.formatAmt(billing)
+        } else if (prop === 'nonBillingConsumablesAmt') {
+          sums[index] = this.formatAmt(nonBilling)
+        } else if (prop === 'totalAmt') {
+          sums[index] = this.formatAmt(total)
+        } else {
+          sums[index] = ''
+        }
+      })
+      return sums
+    },
     /** 请求参数：截止日期带上当天 23:59:59，与后端 audit_date 时分对齐 */
     buildApiQueryParams() {
       const p = { ...this.queryParams }
@@ -411,9 +520,11 @@ export default {
             unrecognizedSuppliers: data.unrecognizedSuppliers || [],
             unrecognizedWholesaleTotal: data.unrecognizedWholesaleTotal,
             deptConsumablePickupRows: data.deptConsumablePickupRows || [],
+            deptMonthlyConsumptionRows: data.deptMonthlyConsumptionRows || [],
           }
           this.tableRows = this.buildTableRows(this.bundle)
           this.deptPickupRows = this.buildDeptPickupRows(this.bundle.deptConsumablePickupRows)
+          this.deptMonthlyRows = this.buildDeptMonthlyRows(this.bundle.deptMonthlyConsumptionRows)
         })
         .finally(() => {
           this.loading = false
@@ -458,6 +569,13 @@ export default {
         fileName: `(SPD)财务结算汇总_表二_${dateOnly(this.queryParams.beginDate) || ''}_${dateOnly(this.queryParams.endDate) || ''}_${Date.now()}.xlsx`,
       })
     },
+    async handleExportTable3() {
+      await exportFinanceDeptMonthlyConsumptionXlsx({
+        titleText: this.titleTextTable3,
+        rows: this.deptMonthlyRows,
+        fileName: `(SPD)财务结算汇总_表三_${dateOnly(this.queryParams.beginDate) || ''}_${dateOnly(this.queryParams.endDate) || ''}_${Date.now()}.xlsx`,
+      })
+    },
   },
 }
 </script>
@@ -493,6 +611,9 @@ export default {
 }
 .table-block-wide {
   max-width: 1400px;
+}
+.table-block-medium {
+  max-width: 900px;
 }
 </style>
 
