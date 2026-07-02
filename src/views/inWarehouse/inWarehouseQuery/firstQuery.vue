@@ -209,11 +209,14 @@
           <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
         </template>
       </el-table-column>
-      <el-table-column label="计费" align="center" prop="material.isBilling" width="80" show-overflow-tooltip resizable v-if="columns[22].visible">
+      <el-table-column label="计费" align="center" header-align="center" width="80" class-name="col-yn-center" resizable v-if="columns[22].visible">
         <template slot-scope="scope">
-          <span v-if="scope.row.material && (scope.row.material.isBilling === '1' || scope.row.material.isBilling === 1)">是</span>
-          <span v-else-if="scope.row.material && (scope.row.material.isBilling === '0' || scope.row.material.isBilling === 0 || scope.row.material.isBilling === '2')">否</span>
-          <span v-else>--</span>
+          <span v-if="formatBillingYesNo(scope.row) === '--'">--</span>
+          <span
+            v-else
+            class="material-yn-btn"
+            :class="isBillingYes(scope.row) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ formatBillingYesNo(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="180" show-overflow-tooltip resizable v-if="columns[23].visible">
@@ -428,6 +431,16 @@ export default {
     sortByModel(a, b) { return this.sortByStr(a, b, r => r.materialModel || ''); },
     sortByUnitName(a, b) { return this.sortByStr(a, b, r => r.unitName || ''); },
     sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
+    formatBillingYesNo(row) {
+      const v = row && row.material ? row.material.isBilling : null;
+      if (v === '1' || v === 1) return '是';
+      if (v === '0' || v === 0 || v === '2' || v === 2) return '否';
+      return '--';
+    },
+    isBillingYes(row) {
+      const v = row && row.material ? row.material.isBilling : null;
+      return v === '1' || v === 1;
+    },
     getStatDate(){
       // 当前日期往前推5天
       let myDate = new Date();
@@ -953,5 +966,31 @@ export default {
   display: block;
   width: 100%;
   text-align: center;
+}
+
+/* 计费列：是/否按钮式展示（与耗材档案启用列一致） */
+.table-container ::v-deep .el-table th.col-yn-center .cell,
+.table-container ::v-deep .el-table td.col-yn-center .cell {
+  text-align: center !important;
+  justify-content: center;
+}
+.material-yn-btn {
+  display: inline-block;
+  min-width: 36px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  color: #fff;
+  cursor: default;
+  user-select: none;
+  box-sizing: border-box;
+}
+.material-yn-btn--yes {
+  background-color: #409eff;
+}
+.material-yn-btn--no {
+  background-color: #909399;
 }
 </style>
