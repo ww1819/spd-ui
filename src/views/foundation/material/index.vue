@@ -401,7 +401,7 @@
       </el-table-column>
       <el-table-column label="储存方式" align="center" prop="isWay" width="100" key="storageMethod" v-if="columns[10].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.way_status" :value="scope.row.isWay"/>
+          <span>{{ formatStorageWay(scope.row.isWay) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="货位" align="center" prop="fdLocation.locationName" width="120" key="location" v-if="columns[11].visible" show-overflow-tooltip resizable>
@@ -647,17 +647,32 @@
                     <el-input v-model="form.registerNo" @dblclick.native="openZoomEditor('registerNo', '注册证号')" placeholder="注册证号" />
               </el-form-item>
             </el-col>
-                <el-col :span="4">
+                <el-col :span="8">
                   <el-form-item label="注册证有效期：" prop="periodDate">
-                <el-date-picker clearable
-                                v-model="form.periodDate"
-                                type="date"
-                                value-format="yyyy-MM-dd"
-                                    style="width:100%"
-                                placeholder="请选择注册证有效期">
-                </el-date-picker>
-              </el-form-item>
-            </el-col>
+                    <div class="period-date-longterm-wrap">
+                      <el-date-picker
+                        clearable
+                        v-model="form.periodDate"
+                        type="date"
+                        value-format="yyyy-MM-dd"
+                        class="period-date-picker"
+                        placeholder="请选择注册证有效期"
+                        :disabled="periodDateLongTerm"
+                        @change="onPeriodDatePickerChange"
+                      />
+                      <el-button
+                        size="mini"
+                        class="period-longterm-btn"
+                        :type="periodDateLongTerm ? 'primary' : 'default'"
+                        @click="togglePeriodDateLongTerm"
+                      >长期</el-button>
+                    </div>
+                  </el-form-item>
+                </el-col>
+          </el-row>
+
+              <!-- 第四行 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="注册证级别：">
                     <el-select v-model="form.registerLevel" placeholder="请选择注册证级别" style="width: 100%">
@@ -670,10 +685,6 @@
                     </el-select>
               </el-form-item>
             </el-col>
-          </el-row>
-
-              <!-- 第四行 -->
-          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="货位：" prop="locationId">
                     <SelectLocation v-model="form.locationId" />
@@ -699,6 +710,10 @@
                     <el-input v-model="form.successfulPrice" placeholder="中标价格" />
               </el-form-item>
             </el-col>
+          </el-row>
+
+              <!-- 第五行 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="中标号：" prop="successfulNo">
                     <el-input v-model="form.successfulNo" placeholder="中标号" />
@@ -709,15 +724,15 @@
                     <el-input v-model="form.successfulType" placeholder="招标类别" />
               </el-form-item>
             </el-col>
-          </el-row>
-
-              <!-- 第五行 -->
-          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="入选原因：" prop="selectionReason">
                     <el-input v-model="form.selectionReason" type="textarea" :rows="2" placeholder="入选原因" />
                   </el-form-item>
                 </el-col>
+          </el-row>
+
+              <!-- 第六行 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="包装规格：" prop="packageSpeci">
                     <el-input v-model="form.packageSpeci" placeholder="包装规格" />
@@ -734,16 +749,9 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="储存方式：" prop="isWay">
-                    <el-select v-model="form.isWay" placeholder="请选择储存方式" style="width: 100%">
-                  <el-option
-                        v-for="dict in dict.type.way_status"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  ></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
+                    <el-input v-model="form.isWay" placeholder="储存方式" clearable />
+                  </el-form-item>
+                </el-col>
                 <el-col :span="4">
                   <el-form-item label="品牌：" prop="brand">
                     <el-input v-model="form.brand" placeholder="品牌" />
@@ -771,7 +779,7 @@
             </el-col>
           </el-row>
 
-              <!-- 第六行 -->
+              <!-- 第七行 -->
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="阳光平台编码：" prop="sunshineCode">
@@ -1989,6 +1997,8 @@ export default {
         label: '',
         value: ''
       },
+      /** 注册证有效期「长期」：点亮后固定为 2099-12-12 */
+      periodDateLongTerm: false,
       // 当前激活的标签页：'form' 表单视图，'image' 图片视图
       activeTab: 'form'
     };
@@ -2213,6 +2223,7 @@ export default {
     reset() {
       this.form = this.createDefaultForm();
       this.originalIsUse = null;
+      this.periodDateLongTerm = false;
       this.statusLogList = [];
       this.changeLogList = [];
       this.timelineList = [];
@@ -2225,6 +2236,27 @@ export default {
     /** 耗材档案是否/启用类字段为「是」（值为 1） */
     isMaterialYesValue(val) {
       return val === '1' || val === 1;
+    },
+    formatStorageWay(val) {
+      if (val == null || val === '') return '--';
+      const dict = (this.dict && this.dict.type && this.dict.type.way_status) || [];
+      const hit = dict.find(d => String(d.value) === String(val));
+      return hit ? hit.label : val;
+    },
+    syncPeriodDateLongTermFromForm() {
+      this.periodDateLongTerm = this.form.periodDate === '2099-12-12';
+    },
+    togglePeriodDateLongTerm() {
+      if (this.isViewMode) return;
+      this.periodDateLongTerm = !this.periodDateLongTerm;
+      if (this.periodDateLongTerm) {
+        this.form.periodDate = '2099-12-12';
+      } else if (this.form.periodDate === '2099-12-12') {
+        this.form.periodDate = null;
+      }
+    },
+    onPeriodDatePickerChange(val) {
+      this.periodDateLongTerm = val === '2099-12-12';
     },
     hydrateMaterialForm(row) {
       const merged = { ...this.createDefaultForm(), ...(row || {}) };
@@ -2569,6 +2601,7 @@ export default {
       const id = row.id || this.ids
       getMaterial(id).then(response => {
         this.form = this.hydrateMaterialForm(response.data);
+        this.syncPeriodDateLongTermFromForm();
         this.originalIsUse = this.form.isUse;
         this.open = true;
         this.isDisabled = true;
@@ -2583,6 +2616,7 @@ export default {
       const id = row.id || this.ids;
       getMaterial(id).then(response => {
         this.form = this.hydrateMaterialForm(response.data);
+        this.syncPeriodDateLongTermFromForm();
         this.originalIsUse = this.form.isUse;
         this.open = true;
         this.title = "耗材档案详情";
@@ -2661,6 +2695,7 @@ export default {
         copied.updateTime = null;
         copied.statusChangeReason = null;
         this.form = copied;
+        this.syncPeriodDateLongTermFromForm();
         this.form.code = this.isHsThirdTenant ? '' : await this.generateCode();
         this.dialogMode = 'add';
         this.isDisabled = false;
@@ -4342,6 +4377,27 @@ export default {
 
 .material-modal-content ::v-deep .switch-container--square .switch-row-single .switch-label {
   min-width: unset;
+}
+
+.period-date-longterm-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.period-date-longterm-wrap .period-date-picker {
+  flex: 1 1 auto;
+  min-width: 132px;
+}
+
+.period-date-longterm-wrap .period-date-picker.el-date-editor {
+  width: auto !important;
+  min-width: 132px;
+}
+
+.period-date-longterm-wrap .period-longterm-btn {
+  flex-shrink: 0;
 }
 </style>
 
