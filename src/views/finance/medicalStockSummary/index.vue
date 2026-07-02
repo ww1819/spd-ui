@@ -19,8 +19,8 @@
           style="width: 190px"
         />
       </el-form-item>
-      <el-form-item label="仓库">
-        <SelectWarehouse v-model="queryParams.warehouseId" :finance-pick-mode="true" clearable style="width: 180px" />
+      <el-form-item label="仓库" prop="warehouseIds">
+        <SelectWarehouse v-model="queryParams.warehouseIds" :finance-pick-mode="true" :multiple="true" clearable style="width: 240px" />
       </el-form-item>
       <el-form-item label="供应商">
         <SelectSupplier v-model="queryParams.supplerId" :finance-pick-mode="true" clearable style="width: 180px" />
@@ -139,7 +139,7 @@ export default {
       activeTab: 'inbound',
       queryParams: {
         ...monthRange(),
-        warehouseId: null,
+        warehouseIds: [],
         supplerId: null,
         departmentId: null,
       },
@@ -177,13 +177,17 @@ export default {
       return n.toFixed(2)
     },
     buildBaseParams() {
-      return {
+      const p = {
         beginDate: this.queryParams.beginDate,
         endDate: this.queryParams.endDate,
-        warehouseId: this.queryParams.warehouseId,
+        warehouseIds: this.queryParams.warehouseIds,
         supplerId: this.queryParams.supplerId,
         departmentId: this.queryParams.departmentId,
       }
+      if (Array.isArray(p.warehouseIds) && p.warehouseIds.length === 0) {
+        p.warehouseIds = null
+      }
+      return p
     },
     loadCurrentTab() {
       if (this.activeTab === 'inbound') {
@@ -243,7 +247,7 @@ export default {
     resetQuery() {
       Object.assign(this.queryParams, {
         ...monthRange(),
-        warehouseId: null,
+        warehouseIds: [],
         supplerId: null,
         departmentId: null,
       })
