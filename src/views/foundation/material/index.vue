@@ -647,7 +647,7 @@
                     <el-input v-model="form.registerNo" @dblclick.native="openZoomEditor('registerNo', '注册证号')" placeholder="注册证号" />
               </el-form-item>
             </el-col>
-                <el-col :span="8">
+                <el-col :span="4" class="period-date-col">
                   <el-form-item label="注册证有效期：" prop="periodDate">
                     <div class="period-date-longterm-wrap">
                       <el-date-picker
@@ -4379,25 +4379,30 @@ export default {
   min-width: unset;
 }
 
+.period-date-col {
+  overflow: visible;
+}
+
+.period-date-col ::v-deep .el-form-item__content {
+  overflow: visible;
+}
+
 .period-date-longterm-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  position: relative;
   width: 100%;
 }
 
-.period-date-longterm-wrap .period-date-picker {
-  flex: 1 1 auto;
-  min-width: 132px;
-}
-
 .period-date-longterm-wrap .period-date-picker.el-date-editor {
-  width: auto !important;
-  min-width: 132px;
+  width: 100% !important;
 }
 
 .period-date-longterm-wrap .period-longterm-btn {
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
   flex-shrink: 0;
+  z-index: 1;
 }
 </style>
 
