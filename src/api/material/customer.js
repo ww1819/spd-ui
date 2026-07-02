@@ -9,6 +9,31 @@ export function listHcCustomers(query) {
   })
 }
 
+/** 租户类型枚举（新增客户时选择） */
+export function getTenantEnumList() {
+  return request({
+    url: '/material/system/customer/tenantEnumList',
+    method: 'get'
+  })
+}
+
+/** 新增客户 */
+export function addCustomer(data) {
+  return request({
+    url: '/material/system/customer',
+    method: 'post',
+    data: data
+  })
+}
+
+/** 删除客户 */
+export function delCustomer(customerId) {
+  return request({
+    url: '/material/system/customer/' + customerId,
+    method: 'delete'
+  })
+}
+
 /** 耗材侧客户详情（含 hcStatus、hcPlannedDisableTime） */
 export function getHcCustomer(customerId) {
   return request({
@@ -17,7 +42,7 @@ export function getHcCustomer(customerId) {
   })
 }
 
-/** 耗材侧客户更新（客户名称、备注、耗材状态、耗材/设备系统计划停用时间） */
+/** 耗材侧客户更新（客户名称、备注、耗材状态、耗材系统计划停用时间） */
 export function updateHcCustomer(data) {
   return request({
     url: '/material/system/customer',
@@ -77,14 +102,6 @@ export function saveHcCustomerMenus(customerId, menuIds) {
   })
 }
 
-/** 设备功能重置（将默认对客户开放的权限开放给客户、super 组、super_01） */
-export function resetEquipmentFunctions(customerId) {
-  return request({
-    url: '/material/system/customer/resetEquipment/' + customerId,
-    method: 'put'
-  })
-}
-
 /** 耗材功能重置（耗材客户菜单、super 岗位、super_01 权限重置为系统设置下非平台管理功能） */
 export function resetMaterialFunctions(customerId) {
   return request({
@@ -108,14 +125,5 @@ export function purgeConsumablesData(customerId) {
     url: '/material/system/customer/' + customerId + '/purgeConsumablesData',
     method: 'post',
     data: { confirm: 'PURGE_HC' }
-  })
-}
-
-/** 按租户物理删除设备侧数据（body.confirm 须为 PURGE_EQ，走 equipment Controller） */
-export function purgeEquipmentData(customerId) {
-  return request({
-    url: '/equipment/system/customer/' + customerId + '/purgeEquipmentData',
-    method: 'post',
-    data: { confirm: 'PURGE_EQ' }
   })
 }
