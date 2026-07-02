@@ -29,6 +29,7 @@
                          style="width: 180px">
                 <el-option label="未审核" :value="1" />
                 <el-option label="已审核" :value="2" />
+                <el-option label="已驳回" :value="3" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -246,6 +247,11 @@
                         clearable
                         placeholder="驳回原因（驳回时必填）"
                       />
+                    </el-form-item>
+                  </el-col>
+                  <el-col v-else-if="form.rejectReason" :span="4">
+                    <el-form-item label="驳回原因" prop="rejectReason" class="form-item-reject-reason">
+                      <el-input v-model="form.rejectReason" :disabled="true" />
                     </el-form-item>
                   </el-col>
                 </el-row>

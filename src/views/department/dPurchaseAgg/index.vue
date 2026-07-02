@@ -157,6 +157,11 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="驳回原因" align="center" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatRejectReason(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right">
         <template slot-scope="scope">
@@ -549,6 +554,17 @@ export default {
     isRejectedPurchase(row) {
       const s = row && row.purchaseBillStatus;
       return s === 3 || s === '3';
+    },
+    formatRejectReason(row) {
+      if (!row) return '--';
+      const parts = [];
+      if (row.rejectReason && String(row.rejectReason).trim()) {
+        parts.push(String(row.rejectReason).trim());
+      }
+      if (row.splitPlanRejectReason && String(row.splitPlanRejectReason).trim()) {
+        parts.push(String(row.splitPlanRejectReason).trim());
+      }
+      return parts.length ? parts.join('；') : '--';
     },
     /** 已审核或已驳回：仅查看，不可改 */
     isViewOnlyPurchase(row) {

@@ -162,7 +162,7 @@
       </el-table-column>
       <el-table-column label="驳回原因" align="center" prop="rejectReason" width="150" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.rejectReason || '--' }}</span>
+          <span>{{ formatRejectReason(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
@@ -481,6 +481,17 @@ export default {
   },
   methods: {
     formatIsGzLabel,
+    formatRejectReason(row) {
+      if (!row) return '--';
+      const parts = [];
+      if (row.rejectReason && String(row.rejectReason).trim()) {
+        parts.push(String(row.rejectReason).trim());
+      }
+      if (row.splitPlanRejectReason && String(row.splitPlanRejectReason).trim()) {
+        parts.push(String(row.splitPlanRejectReason).trim());
+      }
+      return parts.length ? parts.join('；') : '--';
+    },
     /** 消息提醒双击等：路由带入申购单号 */
     applyRoutePurchaseBillQuery() {
       const ref = this.$route.query && this.$route.query.purchaseBillNo
