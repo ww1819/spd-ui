@@ -218,6 +218,61 @@ export function assertInboundBillEntriesHaveBatchAndExpiry(entryList, vm, action
   return true;
 }
 
+function parseYmdDateOnly(str) {
+  if (str == null || String(str).trim() === '') {
+    return null;
+  }
+  const s = String(str).trim().slice(0, 10);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) {
+    return null;
+  }
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  if (!Number.isFinite(y) || mo < 1 || mo > 12 || d < 1 || d > 31) {
+    return null;
+  }
+  return new Date(y, mo - 1, d);
+}
+
+function todayLocalDateOnly() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+/**
+ * 低值入库明细：有效期不能小于当前日期；生产日期不能大于当前日期
+ */
+export function assertInboundBillEntryDatesValid(entryList, vm) {
+  const list = entryList || [];
+  const today = todayLocalDateOnly();
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (!e || !isEntryNotDeleted(e)) {
+      continue;
+    }
+    if (e.materialId == null || e.materialId === '') {
+      continue;
+    }
+    const endDate = parseYmdDateOnly(e.endTime);
+    if (endDate && endDate.getTime() < today.getTime()) {
+      if (vm && vm.$modal) {
+        vm.$modal.msgError('有效期不能小于当前日期');
+      }
+      return false;
+    }
+    const beginDate = parseYmdDateOnly(e.beginTime);
+    if (beginDate && beginDate.getTime() > today.getTime()) {
+      if (vm && vm.$modal) {
+        vm.$modal.msgError('生产日期不能大于当前日期！');
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
 export function assertBillMaterialLinesQtyNotZero(entryList, vm) {
   const list = entryList || [];
   for (let i = 0; i < list.length; i++) {

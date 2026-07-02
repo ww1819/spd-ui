@@ -146,7 +146,7 @@
           <el-row class="query-row-fourth">
             <el-col :span="24">
           <el-form-item prop="isUse" class="query-item-inline">
-            <el-select v-model="queryParams.isUse" placeholder="全部" style="width: 110px" clearable>
+            <el-select v-model="queryParams.isUse" placeholder="启用" style="width: 110px" clearable>
               <el-option
                 v-for="dict in dict.type.is_use_status"
                 :key="dict.value"
@@ -322,6 +322,22 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
+      <el-table-column label="启用" align="center" prop="isUse" width="72" key="isUse" v-if="columns[12].visible" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span
+            class="material-yn-btn"
+            :class="isMaterialYesValue(scope.row.isUse) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ isMaterialYesValue(scope.row.isUse) ? '是' : '否' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="计费" align="center" prop="isBilling" width="72" key="isBilling" v-if="columns[19].visible" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span
+            class="material-yn-btn"
+            :class="isMaterialYesValue(scope.row.isBilling) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ isMaterialYesValue(scope.row.isBilling) ? '是' : '否' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="耗材编码" align="center" prop="code" width="100" key="code" v-if="columns[1].visible" sortable="custom" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-top-left" :title="scope.row.code || ''">{{ scope.row.code }}</div>
@@ -394,29 +410,28 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="启用" align="center" prop="isUse" width="100" key="isUse" v-if="columns[12].visible" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.isUse === '1' || scope.row.isUse === 1 ? '是' : '否' }}</span>
-        </template>
-      </el-table-column>
       <el-table-column label="高值" align="center" prop="isGz" width="80" key="isGz" v-if="columns[13].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.is_yes_no" :value="scope.row.isGz"/>
+          <span
+            class="material-yn-btn"
+            :class="isMaterialYesValue(scope.row.isGz) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ isMaterialYesValue(scope.row.isGz) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="跟台" align="center" prop="isFollow" width="80" key="isFollow" v-if="columns[14].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.is_yes_no" :value="scope.row.isFollow"/>
+          <span
+            class="material-yn-btn"
+            :class="isMaterialYesValue(scope.row.isFollow) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ isMaterialYesValue(scope.row.isFollow) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="集采" align="center" prop="isProcure" width="80" key="isProcure" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.is_yes_no" :value="scope.row.isProcure"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="计费" align="center" prop="isBilling" width="80" key="isBilling" v-if="columns[19].visible" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.isBilling === '1' || scope.row.isBilling === 1 ? '是' : '否' }}</span>
+          <span
+            class="material-yn-btn"
+            :class="isMaterialYesValue(scope.row.isProcure) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ isMaterialYesValue(scope.row.isProcure) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="品牌" align="center" prop="brand" width="120" key="brand" v-if="columns[22].visible" show-overflow-tooltip resizable/>
@@ -446,7 +461,7 @@
         </template>
       </el-table-column>
       <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="400" fixed="right">
+      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="260">
         <template slot-scope="scope">
           <div class="material-row-actions">
             <el-button
@@ -1779,7 +1794,7 @@ export default {
         isFollow: '', // 默认全部
         isProcure: '', // 默认全部
         isBilling: '', // 默认全部
-        isUse: '', // 默认全部
+        isUse: '1', // 默认启用
         udiNo: undefined,
         registerNo: undefined,
         sunshineCode: undefined,
@@ -2207,6 +2222,10 @@ export default {
       if (val === null || val === undefined || val === '') return defaultVal;
       return String(val);
     },
+    /** 耗材档案是否/启用类字段为「是」（值为 1） */
+    isMaterialYesValue(val) {
+      return val === '1' || val === 1;
+    },
     hydrateMaterialForm(row) {
       const merged = { ...this.createDefaultForm(), ...(row || {}) };
       merged.isUse = this.normalizeSwitchValue(merged.isUse);
@@ -2257,7 +2276,7 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
-      this.queryParams.isUse = ''; // 重置为全部
+      this.queryParams.isUse = '1'; // 重置为启用
       this.queryParams.isGz = '';
       this.queryParams.isFollow = '';
       this.queryParams.isProcure = '';
@@ -4379,12 +4398,12 @@ export default {
 
 .material-page-container .el-table td.material-action-col .cell,
 .material-page-container .el-table th.material-action-col .cell {
-  padding-left: 8px !important;
-  padding-right: 8px !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  min-height: 40px;
+  min-height: 36px;
   box-sizing: border-box;
 }
 
@@ -4397,7 +4416,7 @@ export default {
   align-items: center;
   justify-content: center;
   flex-wrap: nowrap;
-  gap: 0 4px;
+  gap: 0 2px;
   width: 100%;
   max-width: 100%;
   white-space: nowrap;
@@ -4431,12 +4450,12 @@ export default {
 }
 
 .material-page-container .material-row-action-btn.el-button--text {
-  padding: 4px 6px;
+  padding: 2px 3px;
   margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  min-height: 28px;
-  height: 28px;
+  font-size: 12px;
+  line-height: 18px;
+  min-height: 24px;
+  height: 24px;
   font-weight: 500;
   flex-shrink: 0;
 }
@@ -5002,6 +5021,10 @@ export default {
   background-color: #EBEEF5 !important;
 }
 
+.material-page-container .material-main-table .el-table__body-wrapper {
+  overflow-x: auto !important;
+}
+
 /* 列表主表表头：蓝色背景（仅耗材产品维护主明细表，弹窗/导入等其它表格不受影响） */
 .material-page-container .material-main-table th {
   background-color: #5B9BD5 !important;
@@ -5083,5 +5106,26 @@ export default {
 .timeline-item-meta { font-size: 12px; color: #909399; margin-bottom: 2px; }
 .timeline-item-desc { font-size: 12px; color: #606266; line-height: 1.4; word-break: break-all; }
 .el-timeline { padding-left: 8px; }
+
+/* 列表「启用」列：是/否按钮式展示 */
+.material-yn-btn {
+  display: inline-block;
+  min-width: 36px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  color: #fff;
+  cursor: default;
+  user-select: none;
+  box-sizing: border-box;
+}
+.material-yn-btn--yes {
+  background-color: #409eff;
+}
+.material-yn-btn--no {
+  background-color: #909399;
+}
 </style>
 

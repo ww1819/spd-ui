@@ -564,7 +564,8 @@
                   :disabled="!!scope.row._longTerm"
                   class="detail-date-expiry"
                   style="width: 100%"
-                  @change="onEndTimeManualChange(scope.row)"
+                  @blur="onDetailDateBlur(scope.row, 'endTime', $event)"
+                  @change="onDetailEndTimeChange(scope.row, $event)"
                 />
                 <el-checkbox
                   v-model="scope.row._longTerm"
@@ -586,6 +587,8 @@
                   placeholder="生产日期"
                   size="small"
                   class="detail-input-compact"
+                  @blur="onDetailDateBlur(scope.row, 'beginTime', $event)"
+                  @change="onDetailBeginTimeChange(scope.row, $event)"
                 />
               </div>
             </template>
@@ -803,9 +806,11 @@ import {STOCK_IN_TEMPLATE} from '@/utils/printData'
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import {
   assertBillHasActiveEntriesForAudit,
-  assertInboundBillEntriesHaveBatchAndExpiry
+  assertInboundBillEntriesHaveBatchAndExpiry,
+  assertInboundBillEntryDatesValid
 } from '@/utils/billEntryValidate'
 import { ZQ_TCM_TENANT } from '@/utils/msunHis'
+import { normalizeCompactDateInput, readDatePickerInputValue, isValidYmd } from '@/utils/compactDateInput'
 
 export default {
   name: "Apply",
@@ -1320,6 +1325,49 @@ export default {
       const et = row.endTime != null ? String(row.endTime).trim() : "";
       this.$set(row, "_longTerm", et.startsWith("2099-01-01"));
     },
+    /** 明细日期：支持 20260216 等紧凑输入自动识别为 yyyy-MM-dd */
+    applyDetailDateField(row, field, rawValue) {
+      if (!row || !field) return row ? row[field] : '';
+      const s = String(rawValue == null ? '' : rawValue).trim();
+      if (!s) {
+        row[field] = '';
+        return '';
+      }
+      const normalized = normalizeCompactDateInput(s);
+      if (normalized && isValidYmd(normalized)) {
+        if (normalized !== row[field]) {
+          row[field] = normalized;
+        }
+        return normalized;
+      }
+      const digitsOnly = s.replace(/\D/g, '');
+      if (/^\d{8}$/.test(digitsOnly)) {
+        row[field] = '';
+        return '';
+      }
+      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s) || /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(s)) {
+        row[field] = '';
+        return '';
+      }
+      return row[field];
+    },
+    onDetailDateBlur(row, field, e) {
+      if (!row || (row._longTerm && field === 'endTime')) return;
+      const raw = readDatePickerInputValue(e, row[field]);
+      this.applyDetailDateField(row, field, raw);
+      if (field === 'endTime') {
+        this.onEndTimeManualChange(row);
+      }
+    },
+    onDetailEndTimeChange(row, value) {
+      if (!row || row._longTerm) return;
+      this.applyDetailDateField(row, 'endTime', value);
+      this.onEndTimeManualChange(row);
+    },
+    onDetailBeginTimeChange(row, value) {
+      if (!row) return;
+      this.applyDetailDateField(row, 'beginTime', value);
+    },
     /** 切换「长期」勾选：勾选→写入 2099-01-01；取消且当前是 2099-01-01→清空 */
     onLongTermChange(row) {
       if (!row) return;
@@ -1655,6 +1703,10 @@ export default {
             return;
           }
 
+          if (!assertInboundBillEntryDatesValid(this.stkIoBillEntryList, this)) {
+            return;
+          }
+
           if (!this.form.createBy && this.$store.state.user && this.$store.state.user.userId) {
             this.form.createBy = this.$store.state.user.userId;
           }
@@ -1711,12 +1763,18 @@ export default {
       if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '审核')) {
         return;
       }
+      if (!assertInboundBillEntryDatesValid(this.stkIoBillEntryList, this)) {
+        return;
+      }
       const auditBy = this.$store.state.user.userId;
       getInWarehouse(id).then(res => {
         if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
           return;
         }
         if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核')) {
+          return;
+        }
+        if (!assertInboundBillEntryDatesValid(res.data.stkIoBillEntryList, this)) {
           return;
         }
         const billNo = res.data.billNo || id;
