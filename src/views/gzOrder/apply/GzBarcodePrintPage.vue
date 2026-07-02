@@ -160,6 +160,11 @@ export default {
   .gz-barcode-print-body {
     padding: 0;
     overflow: visible;
+    background: #fff;
+  }
+  @page {
+    size: 60mm 40mm;
+    margin: 0;
   }
 }
 </style>

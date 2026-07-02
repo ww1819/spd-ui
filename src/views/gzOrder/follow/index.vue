@@ -1024,9 +1024,10 @@ export default {
           printContent += '.info-table col.col-lab{width:14%;}';
           printContent += '.info-table col.col-val-wide{width:38%;}';
           printContent += '.info-table col.col-val{width:34%;}';
-          printContent += '.info-table tr.row-two-pair .value-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0;}';
+          printContent += '.info-table tr.row-two-pair:not(.row-wrap) .value-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0;}';
+          printContent += '.info-table tr.row-two-pair.row-wrap .value-cell{white-space:normal;overflow:visible;word-break:break-all;overflow-wrap:anywhere;line-height:1.22;max-width:0;}';
           printContent += '.info-table tr:not(.row-two-pair) .label-cell{width:34%;padding-right:2.45mm;}';
-          printContent += '.info-table tr:not(.row-two-pair) .value-cell{width:66%;padding-left:2.2mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;word-break:normal;overflow-wrap:normal;}';
+          printContent += '.info-table tr:not(.row-two-pair) .value-cell{width:66%;padding-left:2.2mm;white-space:normal;overflow:visible;word-break:break-all;overflow-wrap:anywhere;}';
           printContent += '.info-table td{border:none;padding:0.68mm 0.55mm;font-size:10px;line-height:1.42;vertical-align:top;overflow:visible;}';
           printContent += '.info-table tr.row-two-pair td:nth-child(1){padding-left:0.25mm;}';
           printContent += '.info-table tr.row-two-pair:first-child td:nth-child(2){padding-right:2.45mm;}';
@@ -1064,7 +1065,7 @@ export default {
             printContent += '<div class="main-info">';
             printContent += '<table class="info-table"><colgroup><col class="col-lab" /><col class="col-val-wide" /><col class="col-lab" /><col class="col-val" /></colgroup>';
             const materialName = item.materialName || material.name || '';
-            printContent += '<tr class="row-two-pair"><td class="label-cell">品名</td><td class="value-cell">' + materialName + '</td><td class="label-cell">规格</td><td class="value-cell">' + (material.speci || '') + '</td></tr>';
+            printContent += '<tr class="row-two-pair row-wrap"><td class="label-cell">品名</td><td class="value-cell">' + materialName + '</td><td class="label-cell">规格</td><td class="value-cell">' + (material.speci || '') + '</td></tr>';
             printContent += '<tr class="row-two-pair"><td class="label-cell">批号</td><td class="value-cell">' + (item.batchNumber || '') + '</td><td class="label-cell">单价</td><td class="value-cell">' + (item.price ? parseFloat(item.price).toFixed(2) : '') + '</td></tr>';
             printContent += '<tr><td class="label-cell">有效期</td><td class="value-cell" colspan="3">' + (item.endTime || '') + '</td></tr>';
             const factoryName = (material.fdFactory && material.fdFactory.factoryName) ? material.fdFactory.factoryName : '';

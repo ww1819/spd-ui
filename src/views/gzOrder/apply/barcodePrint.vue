@@ -21,7 +21,7 @@
                 <col class="col-lab" />
                 <col class="col-val" />
               </colgroup>
-              <tr class="row-two-pair">
+              <tr class="row-two-pair row-wrap">
                 <td class="label-cell">品&#12288;名：</td>
                 <td class="value-cell">{{ barcode.materialName }}</td>
                 <td class="label-cell">规&#12288;格：</td>
@@ -162,7 +162,11 @@ export default {
 
         const doPrint = () => {
           setTimeout(() => {
-            this.$print(root, {}, "60mm 40mm");
+            if (this.embedPreview) {
+              window.print();
+              return;
+            }
+            this.$print(root, { waitForAssets: true, beforePrintDelay: 320 }, "60mm 40mm");
           }, 100);
         };
 
@@ -172,7 +176,11 @@ export default {
         }
 
         if (totalImages === 0) {
-          this.$print(root, {}, "60mm 40mm");
+          if (this.embedPreview) {
+            window.print();
+          } else {
+            this.$print(root, { waitForAssets: true, beforePrintDelay: 320 }, "60mm 40mm");
+          }
           return;
         }
 
@@ -227,9 +235,10 @@ export default {
   }
 
   .barcode-page {
-    width: 60mm;
-    height: 40mm;
-    max-height: 40mm;
+    width: 60mm !important;
+    height: 40mm !important;
+    min-height: 40mm !important;
+    max-height: 40mm !important;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -245,9 +254,9 @@ export default {
   }
 
   .container {
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
     border: none;
     display: flex;
     flex-direction: column;
@@ -329,10 +338,19 @@ export default {
     width: 35%;
   }
 
-  .info-table tr.row-two-pair .value-cell {
+  .info-table tr.row-two-pair:not(.row-wrap) .value-cell {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 0;
+  }
+
+  .info-table tr.row-two-pair.row-wrap .value-cell {
+    white-space: normal;
+    overflow: visible;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    line-height: 1.22;
     max-width: 0;
   }
 
@@ -344,11 +362,10 @@ export default {
   .info-table tr:not(.row-two-pair) .value-cell {
     width: 66%;
     padding-left: 0.1mm;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    word-break: normal;
-    overflow-wrap: normal;
+    white-space: normal;
+    overflow: visible;
+    word-break: break-all;
+    overflow-wrap: anywhere;
   }
 
   .info-table td {
@@ -603,10 +620,19 @@ export default {
   width: 35%;
 }
 
-.info-table tr.row-two-pair .value-cell {
+.info-table tr.row-two-pair:not(.row-wrap) .value-cell {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 0;
+}
+
+.info-table tr.row-two-pair.row-wrap .value-cell {
+  white-space: normal;
+  overflow: visible;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  line-height: 1.22;
   max-width: 0;
 }
 
@@ -618,11 +644,10 @@ export default {
 .info-table tr:not(.row-two-pair) .value-cell {
   width: 66%;
   padding-left: 0.1mm;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-break: normal;
-  overflow-wrap: normal;
+  white-space: normal;
+  overflow: visible;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .info-table td {
@@ -803,7 +828,32 @@ export default {
 }
 
 @media print {
+  @page {
+    size: 60mm 40mm;
+    margin: 0;
+  }
+
   .no-print {
+    display: none !important;
+  }
+
+  .barcode-print-container {
+    width: 100% !important;
+    background: #fff !important;
+  }
+
+  .barcode-page {
+    width: 60mm !important;
+    height: 40mm !important;
+    min-height: 40mm !important;
+    max-height: 40mm !important;
+  }
+
+  .container {
+    height: 100% !important;
+  }
+
+  .screen-scan-panel {
     display: none !important;
   }
 }
