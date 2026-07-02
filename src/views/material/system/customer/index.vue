@@ -46,24 +46,19 @@
       <el-table-column label="耗材系统计划停用时间" align="center" width="190">
         <template slot-scope="scope">{{ scope.row.hcPlannedDisableTime ? parseTime(scope.row.hcPlannedDisableTime, '{y}-{m}-{d} {h}:{i}') : '-' }}</template>
       </el-table-column>
-      <el-table-column label="设备系统计划停用时间" align="center" width="190">
-        <template slot-scope="scope">{{ scope.row.plannedDisableTime ? parseTime(scope.row.plannedDisableTime, '{y}-{m}-{d} {h}:{i}') : '-' }}</template>
-      </el-table-column>
       <el-table-column label="创建时间" align="center" width="160">
         <template slot-scope="scope">{{ parseTime(scope.row.createTime) }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="620" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="520" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['hc:system:customer:query']">修改</el-button>
           <el-button size="mini" type="text" icon="el-icon-video-pause" @click="handleChangeStatus(scope.row, '1')" v-hasPermi="['hc:system:customer:query']" v-if="(scope.row.hcStatus || '0') === '0'">停用</el-button>
           <el-button size="mini" type="text" icon="el-icon-video-play" @click="handleChangeStatus(scope.row, '0')" v-hasPermi="['hc:system:customer:query']" v-if="(scope.row.hcStatus || '0') === '1'">启用</el-button>
           <el-button size="mini" type="text" icon="el-icon-s-operation" @click="handleAssignMenu(scope.row)" v-hasPermi="['hc:system:customer:query']">耗材客户权限</el-button>
-          <el-button size="mini" type="text" icon="el-icon-refresh-left" @click="handleResetEquipment(scope.row)" v-hasPermi="['hc:system:customerMenuManage:edit']">设备功能重置</el-button>
           <el-button size="mini" type="text" icon="el-icon-refresh-right" @click="handleResetMaterial(scope.row)" v-hasPermi="['hc:system:customerMenuManage:edit']">耗材功能重置</el-button>
           <el-button size="mini" type="text" icon="el-icon-document" @click="handleStatusLog(scope.row)" v-hasPermi="['hc:system:customer:query']">启停用记录</el-button>
           <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)" v-hasPermi="['hc:system:customer:list']">删除</el-button>
           <el-button size="mini" type="text" class="text-danger" icon="el-icon-remove-outline" @click="handlePurgeHc(scope.row)" v-hasPermi="['hc:system:customer:purgeHc']">清理耗材数据</el-button>
-          <el-button size="mini" type="text" class="text-danger" icon="el-icon-delete" @click="handlePurgeEq(scope.row)" v-hasPermi="['sb:system:customer:purgeEq']">清理设备数据</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -81,9 +76,6 @@
         <el-form-item label="客户编码" prop="customerCode"><el-input v-model="form.customerCode" placeholder="请输入" maxlength="64" show-word-limit :disabled="!!selectedTenantEnum" /></el-form-item>
         <el-form-item label="耗材系统计划停用时间" prop="hcPlannedDisableTime">
           <el-date-picker v-model="form.hcPlannedDisableTime" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="到达后租户无法使用耗材系统（可选）" style="width: 100%" :picker-options="pickerOptions" />
-        </el-form-item>
-        <el-form-item label="设备系统计划停用时间" prop="plannedDisableTime">
-          <el-date-picker v-model="form.plannedDisableTime" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="到达后租户无法使用设备系统（可选）" style="width: 100%" :picker-options="pickerOptions" />
         </el-form-item>
         <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" placeholder="请输入备注" /></el-form-item>
       </el-form>
@@ -166,8 +158,7 @@
 </template>
 
 <script>
-import { addCustomer, delCustomer, getTenantEnumList } from '@/api/system/customer'
-import { listHcCustomers, getHcCustomer, updateHcCustomer, changeHcStatus, getCustomerStatusLogs, getCustomerPeriodLogs, treeselectHcMenu, getHcCustomerMenuIds, saveHcCustomerMenus, resetEquipmentFunctions, resetMaterialFunctions, initFullDatabase, purgeConsumablesData, purgeEquipmentData } from '@/api/material/customer'
+import { addCustomer, delCustomer, getTenantEnumList, listHcCustomers, getHcCustomer, updateHcCustomer, changeHcStatus, getCustomerStatusLogs, getCustomerPeriodLogs, treeselectHcMenu, getHcCustomerMenuIds, saveHcCustomerMenus, resetMaterialFunctions, initFullDatabase, purgeConsumablesData } from '@/api/material/customer'
 import { toMenuIdNumbers } from '@/utils/menuAuthUtils'
 import MenuAuthDualTree from '@/components/MenuAuthDualTree'
 
@@ -235,7 +226,7 @@ export default {
       }).catch(() => { this.loading = false })
     },
     cancel() { this.open = false; this.resetForm('form'); this.form = {} },
-    reset() { this.form = { customerId: undefined, customerName: undefined, customerCode: undefined, tenantKey: undefined, status: '0', hcStatus: '0', hcPlannedDisableTime: undefined, plannedDisableTime: undefined, remark: undefined }; this.resetForm('form') },
+    reset() { this.form = { customerId: undefined, customerName: undefined, customerCode: undefined, tenantKey: undefined, status: '0', hcStatus: '0', hcPlannedDisableTime: undefined, remark: undefined }; this.resetForm('form') },
     onTenantKeyChange(val) { const item = this.tenantEnumList.find(t => t.name === val); if (item) this.form.customerCode = item.customerCode },
     handleAdd() { this.reset(); this.open = true; this.title = '新增客户' },
     handleUpdate(row) {
@@ -247,7 +238,7 @@ export default {
       this.$refs.form.validate(valid => {
         if (!valid) return
         if (this.form.customerId) {
-          updateHcCustomer({ customerId: this.form.customerId, customerName: this.form.customerName, remark: this.form.remark, hcStatus: this.form.hcStatus, hcPlannedDisableTime: this.form.hcPlannedDisableTime, plannedDisableTime: this.form.plannedDisableTime }).then(() => { this.$modal.msgSuccess('修改成功'); this.open = false; this.getList() })
+          updateHcCustomer({ customerId: this.form.customerId, customerName: this.form.customerName, remark: this.form.remark, hcStatus: this.form.hcStatus, hcPlannedDisableTime: this.form.hcPlannedDisableTime }).then(() => { this.$modal.msgSuccess('修改成功'); this.open = false; this.getList() })
         } else {
           addCustomer(this.form).then(() => { this.$modal.msgSuccess('新增成功'); this.open = false; this.getList() })
         }
@@ -328,10 +319,6 @@ export default {
       getCustomerStatusLogs(row.customerId).then(res => { this.statusLogList = res.data || [] })
       getCustomerPeriodLogs(row.customerId).then(res => { this.periodLogList = res.data || [] })
     },
-    handleResetEquipment(row) {
-      const name = row.customerName || row.customerId
-      this.$modal.confirm('是否确认将客户“' + name + '”的设备功能重置？将把默认对客户开放的权限开放给客户、super 组及 super_01；若 super 组或 super_01 不存在则会创建。').then(() => resetEquipmentFunctions(row.customerId)).then(() => { this.$modal.msgSuccess('设备功能重置成功'); this.getList() }).catch(() => {})
-    },
     handleResetMaterial(row) {
       const name = row.customerName || row.customerId
       this.$modal.confirm('是否确认将客户“' + name + '”的耗材功能重置？将重置耗材客户菜单权限、super 岗位及 super_01 的菜单权限为系统设置下非平台管理功能；若 super 岗位或 super_01 不存在则会创建。').then(() => resetMaterialFunctions(row.customerId)).then(() => { this.$modal.msgSuccess('耗材功能重置成功'); this.getList() }).catch(() => {})
@@ -354,13 +341,6 @@ export default {
     handlePurgeHc(row) {
       const name = row.customerName || row.customerId
       this.$modal.confirm('确认物理删除租户「' + name + '」下全部耗材业务数据（含该租户用户，不删除客户主档）？此操作不可恢复。').then(() => purgeConsumablesData(row.customerId)).then(res => {
-        this.$modal.msgSuccess((res && res.msg) || '清理完成')
-        this.getList()
-      }).catch(() => {})
-    },
-    handlePurgeEq(row) {
-      const name = row.customerName || row.customerId
-      this.$modal.confirm('确认物理删除租户「' + name + '」下全部设备业务数据（不删除客户主档）？不可恢复。').then(() => purgeEquipmentData(row.customerId)).then(res => {
         this.$modal.msgSuccess((res && res.msg) || '清理完成')
         this.getList()
       }).catch(() => {})
