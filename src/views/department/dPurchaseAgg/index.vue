@@ -389,7 +389,7 @@
                 </el-table-column>
                 <el-table-column label="品牌" align="center" prop="brand" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.brand }}</span>
+                    <span>{{ scope.row.brand || (scope.row.material && scope.row.material.brand) || '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="供应商" align="center" prop="supplierName" width="150" show-overflow-tooltip resizable>
