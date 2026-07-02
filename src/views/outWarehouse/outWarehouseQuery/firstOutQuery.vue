@@ -65,7 +65,7 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
+            <el-form-item label="日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -116,6 +116,13 @@
               <div class="query-select-wrapper category-multi-wrap">
                 <SelectWarehouseCategoryLow v-model="queryParams.warehouseCategoryIds" :multiple="true" placeholder="库房分类多选" />
               </div>
+            </el-form-item>
+            <el-form-item prop="isBilling" class="query-item-inline">
+              <el-select v-model="queryParams.isBilling" placeholder="计费"
+                         clearable style="width: 110px">
+                <el-option label="是" value="1" />
+                <el-option label="否" value="0" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -253,14 +260,24 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="计费" align="center" width="80" show-overflow-tooltip resizable>
+      <el-table-column label="计费" align="center" header-align="center" width="80" class-name="col-yn-center" resizable>
         <template slot-scope="scope">
-          <span>{{ formatBillingYesNo(scope.row) }}</span>
+          <span v-if="formatBillingYesNo(scope.row) === '--'">--</span>
+          <span
+            v-else
+            class="material-yn-btn"
+            :class="isBillingYes(scope.row) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ formatBillingYesNo(scope.row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="集采" align="center" width="90" show-overflow-tooltip resizable>
+      <el-table-column label="集采" align="center" header-align="center" width="90" class-name="col-yn-center" resizable>
         <template slot-scope="scope">
-          <span>{{ formatProcureYesNo(scope.row) }}</span>
+          <span v-if="formatProcureYesNo(scope.row) === '--'">--</span>
+          <span
+            v-else
+            class="material-yn-btn"
+            :class="isProcureYes(scope.row) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ formatProcureYesNo(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" width="180" show-overflow-tooltip resizable>
@@ -367,6 +384,7 @@ export default {
         financeCategoryKeyword: null,
         warehouseCategoryKeyword: null,
         isGz: null,
+        isBilling: null,
         materialIsProcure: null,
         financeCategoryIds: [],
         warehouseCategoryIds: [],
@@ -429,11 +447,19 @@ export default {
       if (v === '0' || v === 0 || v === '2' || v === 2) return '否';
       return '--';
     },
+    isBillingYes(row) {
+      const v = row && row.material ? row.material.isBilling : null;
+      return v === '1' || v === 1;
+    },
     formatProcureYesNo(row) {
       const v = row && row.material ? row.material.isProcure : null;
       if (v === '1' || v === 1) return '是';
       if (v === '2' || v === 2) return '否';
       return '--';
+    },
+    isProcureYes(row) {
+      const v = row && row.material ? row.material.isProcure : null;
+      return v === '1' || v === 1;
     },
     sortByStr(a, b, getVal) {
       const va = (getVal(a) || '').toString().trim();
@@ -564,6 +590,7 @@ export default {
       this.queryParams.financeCategoryIds = [];
       this.queryParams.warehouseCategoryIds = [];
       this.queryParams.materialIsProcure = null;
+      this.queryParams.isBilling = null;
       this.moreSearchTypes = [];
       this.moreSearchKeywords = {};
       this.handleQuery();
@@ -940,7 +967,7 @@ export default {
 
 .query-item-date-range .query-date-start,
 .query-item-date-range .query-date-end {
-  width: 150px;
+  width: 138px;
 }
 
 .query-item-date-range .query-date-start {
@@ -1108,6 +1135,13 @@ export default {
   width: 100%;
   text-align: center;
 }
+
+/* 计费、集采列：是/否标签居中 */
+.table-container ::v-deep .el-table th.col-yn-center .cell,
+.table-container ::v-deep .el-table td.col-yn-center .cell {
+  text-align: center !important;
+  justify-content: center;
+}
 </style>
 
 <style>
@@ -1143,6 +1177,27 @@ export default {
 }
 .first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
   padding: 2px 0 !important;
+}
+
+/* 列表「计费」「集采」列：是/否按钮式展示（与耗材档案一致） */
+.material-yn-btn {
+  display: inline-block;
+  min-width: 36px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  color: #fff;
+  cursor: default;
+  user-select: none;
+  box-sizing: border-box;
+}
+.material-yn-btn--yes {
+  background-color: #409eff;
+}
+.material-yn-btn--no {
+  background-color: #909399;
 }
 </style>
 
