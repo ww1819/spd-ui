@@ -671,7 +671,7 @@ export default {
         bankAccount: null,
         companyReferred: null,
         supplierRange: null,
-        supplierStatus: null,
+        supplierStatus: '1',
         supplierType: null,
         supplierTypeList: [],
         hisId: null,
@@ -736,7 +736,7 @@ export default {
       this.open = true;
       this.isDisabled = false;
       this.title = "添加供应商";
-      this.form.supplierStatus = '2';
+      this.form.supplierStatus = '1';
     },
     /** 修改按钮操作 */
     handleUpdate(row) {

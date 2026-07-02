@@ -566,7 +566,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="耗材名称：" prop="name">
-                <el-input v-model="form.name" @focus="openZoomEditor('name', '耗材名称')" @input="nameChange" placeholder="耗材名称" />
+                <el-input v-model="form.name" @dblclick.native="openZoomEditor('name', '耗材名称')" @input="nameChange" placeholder="耗材名称" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -576,17 +576,17 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="供应商：" prop="supplierId" class="zq-editable-field">
-                <SelectSupplier v-model="form.supplierId" />
+                <SelectSupplier v-model="form.supplierId" :onlyEnabled="true" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="生产厂家：" prop="factoryId" class="zq-editable-field">
-                    <SelectFactory v-model="form.factoryId"/>
+                    <SelectFactory v-model="form.factoryId" :onlyEnabled="true"/>
               </el-form-item>
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="规格：" prop="speci">
-                    <el-input v-model="form.speci" @focus="openZoomEditor('speci', '规格')" placeholder="规格" />
+                    <el-input v-model="form.speci" @dblclick.native="openZoomEditor('speci', '规格')" placeholder="规格" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -595,7 +595,7 @@
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="型号：" prop="model">
-                    <el-input v-model="form.model" @focus="openZoomEditor('model', '型号')" placeholder="型号" />
+                    <el-input v-model="form.model" @dblclick.native="openZoomEditor('model', '型号')" placeholder="型号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -644,7 +644,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="注册证号：" prop="registerNo">
-                    <el-input v-model="form.registerNo" @focus="openZoomEditor('registerNo', '注册证号')" placeholder="注册证号" />
+                    <el-input v-model="form.registerNo" @dblclick.native="openZoomEditor('registerNo', '注册证号')" placeholder="注册证号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -681,7 +681,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="医保编码：" prop="medicalNo">
-                <el-input v-model="form.medicalNo" @focus="openZoomEditor('medicalNo', '医保编码')" placeholder="医保编码" />
+                <el-input v-model="form.medicalNo" @dblclick.native="openZoomEditor('medicalNo', '医保编码')" placeholder="医保编码" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -847,7 +847,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="备注：" prop="countryName">
-                <el-input v-model="form.countryName" @focus="openZoomEditor('countryName', '备注')" placeholder="备注" />
+                <el-input v-model="form.countryName" @dblclick.native="openZoomEditor('countryName', '备注')" placeholder="备注" />
                   </el-form-item>
                 </el-col>
           </el-row>

@@ -255,7 +255,7 @@
                 disabled
                 class="header-field-textarea"
               />
-              <SelectSupplier v-else v-model="form.supplerId" class="header-field-select-wide"/>
+              <SelectSupplier v-else v-model="form.supplerId" :onlyEnabled="true" class="header-field-select-wide"/>
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -706,6 +706,7 @@
       :warehouseValue="form.warehouseId"
       :useStkInventory="true"
       :useFixedNumberMaterialArchive="true"
+      :hideStockDetailColumns="true"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>

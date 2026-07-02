@@ -111,6 +111,11 @@ export default {
     allowKeywordBlur: {
       type: Boolean,
       default: false
+    },
+    /** 为 true 时仅展示启用供应商（入库、耗材字典等选供应商场景） */
+    onlyEnabled: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -179,6 +184,24 @@ export default {
     }
   },
   methods: {
+    isSupplierEnabled(item) {
+      if (!item) return false;
+      const status = item.supplierStatus;
+      if (status == null || status === '') return true;
+      return String(status) === '1';
+    },
+    filterEnabledSuppliers(list) {
+      const rows = Array.isArray(list) ? list : [];
+      if (!this.onlyEnabled) return rows;
+      return rows.filter(item => this.isSupplierEnabled(item));
+    },
+    listQueryParams(extra) {
+      const params = { ...(extra || {}) };
+      if (this.onlyEnabled) {
+        params.onlyEnabled = true;
+      }
+      return params;
+    },
     syncDisplayFromSelectedId(id) {
       if (id == null || id === '') {
         return;
@@ -312,8 +335,11 @@ export default {
       if (this.financePickMode) {
         return;
       }
-      getCachedListSupplierAll().then((all) => {
-        this.allSuppliers = all || [];
+      const loader = this.onlyEnabled
+        ? () => listSupplierAll(this.listQueryParams())
+        : getCachedListSupplierAll;
+      loader().then((all) => {
+        this.allSuppliers = this.filterEnabledSuppliers(all || []);
       }).catch(() => {
         this.allSuppliers = [];
       });
@@ -324,20 +350,21 @@ export default {
       }
       listSupplier({
         pageNum: 1,
-        pageSize: 20
+        pageSize: 20,
+        ...this.listQueryParams()
       }).then(response => {
-        this.supplierOptions = response.rows || [];
+        this.supplierOptions = this.filterEnabledSuppliers(response.rows || []);
       }).catch((err) => {
         if (isForbiddenError(err)) {
           this.fallbackToListAll = true;
         }
         if (this.allSuppliers.length > 0) {
-          this.supplierOptions = this.allSuppliers.slice(0, 20);
+          this.supplierOptions = this.filterEnabledSuppliers(this.allSuppliers).slice(0, 20);
           return;
         }
         getCachedListSupplierAll().then((allResponse) => {
           this.allSuppliers = allResponse || [];
-          this.supplierOptions = this.allSuppliers.slice(0, 20);
+          this.supplierOptions = this.filterEnabledSuppliers(this.allSuppliers).slice(0, 20);
         }).catch(() => {
           this.supplierOptions = [];
         });
@@ -346,7 +373,7 @@ export default {
     getList() {
       this.loading = true;
       getCachedListSupplierAll().then((response) => {
-        this.supplierOptions = response || [];
+        this.supplierOptions = this.filterEnabledSuppliers(response || []);
         this.loading = false;
       }).catch(() => {
         this.loading = false;
@@ -358,7 +385,7 @@ export default {
       }
       if (!query || query.trim() === '') {
         if (this.financePickMode) {
-          this.supplierOptions = (this.allSuppliers || []).slice(0, 20);
+          this.supplierOptions = this.filterEnabledSuppliers(this.allSuppliers || []).slice(0, 20);
           this.loading = false;
           return;
         }
@@ -406,7 +433,8 @@ export default {
       listSupplier({
         name: query,
         pageNum: 1,
-        pageSize: 100
+        pageSize: 100,
+        ...this.listQueryParams()
       }).then(response => {
         let results = response.rows || [];
         if (results.length === 0 || this.isPinyin(query)) {
@@ -464,9 +492,9 @@ export default {
         return false;
       });
       if (typeof cb === 'function') {
-        cb(filtered);
+        cb(this.filterEnabledSuppliers(filtered));
       } else {
-        this.supplierOptions = filtered;
+        this.supplierOptions = this.filterEnabledSuppliers(filtered);
       }
       this.loading = false;
     },

@@ -560,6 +560,7 @@
       :useStkInventory="true"
       :useFixedNumberMaterialArchive="true"
       :excludeMaterialIds="inWarehouseExcludeMaterialIds"
+      :hideStockDetailColumns="true"
       @closeDialog="closeDialog"
       @selectData="selectData"
     ></SelectMaterialFilter>

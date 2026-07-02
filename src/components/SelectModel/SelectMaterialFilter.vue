@@ -81,7 +81,7 @@
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="数量" align="center" prop="qty" width="100" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns" label="数量" align="center" prop="qty" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.qty || '--' }}</span>
             </template>
@@ -92,7 +92,7 @@
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns" label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
               <span v-else>--</span>
@@ -103,29 +103,29 @@
               <span>{{ (scope.row.material && (scope.row.material.isBilling === '1' || scope.row.material.isBilling === 1)) ? '是' : '否' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="院内码" align="center" prop="inHospitalCode" width="200" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns" label="院内码" align="center" prop="inHospitalCode" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.inHospitalCode || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="生产日期" align="center" prop="materialDate" width="120" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns" label="生产日期" align="center" prop="materialDate" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.materialDate">{{ formatDate(scope.row.materialDate) }}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" align="center" prop="endTime" width="120" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns" label="有效期" align="center" prop="endTime" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.endTime">{{ formatDate(scope.row.endTime) }}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="批号" align="center" prop="materialNo" width="150" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns" label="批号" align="center" prop="materialNo" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.materialNo || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="批次号" align="center" prop="batchNo" width="150" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns" label="批次号" align="center" prop="batchNo" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.batchNo || '--' }}</span>
             </template>
@@ -145,7 +145,12 @@
               <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="供应商" align="center" width="150" show-overflow-tooltip resizable>
+          <el-table-column label="包装规格" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="!hideStockDetailColumns" label="供应商" align="center" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
             </template>
@@ -229,6 +234,11 @@ export default {
     excludeMaterialIds: {
       type: Array,
       default: () => []
+    },
+    /** 到货验收等选产品档案场景：隐藏数量/金额/院内码/生产日期/有效期/批号/批次号/供应商 */
+    hideStockDetailColumns: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -500,6 +510,7 @@ export default {
               model: row.model,
               price: row.price,
               registerNo: row.registerNo,
+              packageSpeci: row.packageSpeci,
               isBilling: row.isBilling,
               fdUnit: row.unitName != null ? { unitName: row.unitName } : null,
               fdFactory: row.factoryName != null ? { factoryName: row.factoryName } : null,

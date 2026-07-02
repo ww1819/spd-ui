@@ -473,7 +473,7 @@ export default {
         updateBy: null,
         updateTime: null,
         factoryReferredCode: null,
-        factoryStatus: null,
+        factoryStatus: '1',
         hisId: null,
         remark: null,
       };
@@ -511,7 +511,7 @@ export default {
       this.open = true;
       this.isDisabled = false;
       this.title = "添加厂家维护";
-      this.form.factoryStatus = '2';
+      this.form.factoryStatus = '1';
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
