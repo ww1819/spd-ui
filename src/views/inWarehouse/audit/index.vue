@@ -392,6 +392,24 @@
               >{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
             </template>
           </el-table-column>
+          <el-table-column
+            label="生产厂家"
+            align="left"
+            header-align="center"
+            width="260"
+            min-width="200"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-text-wrap"
+            resizable
+          >
+            <template slot-scope="scope">
+              <span
+                class="detail-text-cell-2line"
+                :title="(scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--'"
+              >{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="已引用" align="center" prop="srcRefedQty" width="80" show-overflow-tooltip resizable>
             <template slot-scope="scope">
@@ -474,24 +492,6 @@
               >{{ scope.row.batchNo || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column
-            label="生产厂家"
-            align="left"
-            header-align="center"
-            width="260"
-            min-width="200"
-            :show-overflow-tooltip="false"
-            class-name="detail-col-text-wrap"
-            resizable
-          >
-            <template slot-scope="scope">
-              <span
-                class="detail-text-cell-2line"
-                :title="(scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--'"
-              >{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>

@@ -611,6 +611,29 @@
               >{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
             </template>
           </el-table-column>
+          <el-table-column
+            label="生产厂家"
+            align="left"
+            header-align="center"
+            width="180"
+            min-width="150"
+            :show-overflow-tooltip="false"
+            class-name="detail-col-text-wrap"
+            resizable
+            sortable
+          >
+            <template slot-scope="scope">
+              <span
+                class="detail-text-cell-2line"
+                :title="(scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--'"
+              >{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="包装规格" align="center" width="180" show-overflow-tooltip resizable sortable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="已引用" align="center" prop="srcRefedQty" width="72" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.srcRefedQty != null ? scope.row.srcRefedQty : '—' }}</span>
@@ -637,29 +660,6 @@
                 class="detail-batch-no-cell"
                 :title="scope.row.batchNo || ''"
               >{{ scope.row.batchNo || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            label="生产厂家"
-            align="left"
-            header-align="center"
-            width="180"
-            min-width="150"
-            :show-overflow-tooltip="false"
-            class-name="detail-col-text-wrap"
-            resizable
-            sortable
-          >
-            <template slot-scope="scope">
-              <span
-                class="detail-text-cell-2line"
-                :title="(scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--'"
-              >{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="包装规格" align="center" width="180" show-overflow-tooltip resizable sortable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="注册证号" align="center" width="180" show-overflow-tooltip resizable sortable>

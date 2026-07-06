@@ -37,7 +37,7 @@ module.exports = {
     proxy: {
       // detail: https://cli.vuejs.org/config/#devserver-proxy
       [process.env.VUE_APP_BASE_API]: {
-        target: `http://localhost:8080`,
+        target: `http://localhost:8095`,
         changeOrigin: true,
         ws: true, // 启用websocket
         secure: false, // 如果是https接口，需要配置这个参数
