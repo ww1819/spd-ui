@@ -95,8 +95,6 @@
       <el-table
         v-loading="loading"
         :data="tableData"
-        show-summary
-        :summary-method="getTotalSummaries"
         height="60vh"
         border
         stripe
@@ -161,6 +159,12 @@ import SelectMaterial from "@/components/SelectModel/SelectMaterialDept";
 import request from "@/utils/request";
 import RightToolbar from "@/components/RightToolbar";
 import { exportDepartmentConsumptionDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
+import { buildDefaultDateRange } from "@/utils/defaultDateRange";
+
+function createDefaultDateRange() {
+  const { beginDate, endDate } = buildDefaultDateRange(5);
+  return [beginDate, endDate];
+}
 
 export default {
   name: "DetailReport",
@@ -187,7 +191,7 @@ export default {
         model: "",
         hisChargeCode: "",
         patientId: "",
-        dateRange: null
+        dateRange: createDefaultDateRange()
       }
     };
   },
@@ -260,29 +264,8 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
-      this.searchForm.dateRange = null;
+      this.searchForm.dateRange = createDefaultDateRange();
       this.handleQuery();
-    },
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = Array(columns.length).fill("");
-      let totalQty = 0;
-      let totalAmt = 0;
-      for (let i = 0; i < (data || []).length; i++) {
-        const item = data[i] || {};
-        totalQty += Number(item.quantity || 0);
-        totalAmt += Number(item.amount || 0);
-      }
-      const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-      columns.forEach((column, index) => {
-        if (column.property === "quantity") {
-          sums[index] = totalQty.toFixed(2);
-        } else if (column.property === "amount") {
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
-        }
-      });
-      sums[0] = "合计";
-      return sums;
     },
     handleSizeChange(val) {
       this.queryParams.pageSize = val;
@@ -446,23 +429,10 @@ export default {
 }
 
 .table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 32px;
   overflow-x: auto !important;
   overflow-y: auto !important;
   scrollbar-width: thin;
   scrollbar-color: #a0a0a0 #e8e8e8;
-}
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
-  background: #fff;
-}
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
-  background: #fff;
 }
 
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
@@ -503,13 +473,6 @@ export default {
   line-height: 23px;
 }
 
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell > .cell,
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell > .cell {
-  white-space: nowrap;
-  word-break: normal;
-  overflow: visible;
-  line-height: 23px;
-}
 </style>
 
 <style>
