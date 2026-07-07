@@ -6,8 +6,8 @@
           {{ scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材编码" align="center" prop="materialCode" width="140" show-overflow-tooltip resizable sortable :sort-method="sortSummaryMaterialCode"/>
+      <el-table-column label="耗材名称" align="center" prop="materialName" width="180" show-overflow-tooltip resizable sortable :sort-method="sortSummaryMaterialName"/>
       <el-table-column
         v-for="col in hisChargeItemColumnDefs"
         :key="'his-charge-' + col.key"
@@ -21,16 +21,17 @@
           <span>{{ col.text(scope.row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="规格" align="center" prop="materialSpeci" width="130" show-overflow-tooltip resizable sortable :sort-method="sortSummarySpeci"/>
+      <el-table-column label="型号" align="center" prop="materialModel" width="130" show-overflow-tooltip resizable sortable :sort-method="sortSummaryModel"/>
+      <el-table-column label="单位" align="center" prop="unitName" width="100" show-overflow-tooltip resizable sortable :sort-method="sortSummaryUnitName"/>
+      <el-table-column label="单价" align="center" prop="unitPrice" width="130" show-overflow-tooltip resizable sortable :sort-method="sortSummaryUnitPrice">
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" align="center" prop="totalQty" width="80" show-overflow-tooltip resizable/>
-      <el-table-column label="金额" align="center" prop="totalAmt" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="数量" align="center" prop="totalQty" width="100" show-overflow-tooltip resizable sortable :sort-method="sortSummaryTotalQty"/>
+      <el-table-column label="金额" align="center" prop="totalAmt" width="130" show-overflow-tooltip resizable sortable :sort-method="sortSummaryTotalAmt">
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmt">{{ scope.row.totalAmt | formatCurrency}}</span>
           <span v-else>--</span>
@@ -60,10 +61,11 @@
 <script>
 import { listDepotInventory } from "@/api/gz/depotInventory";
 import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
+import depotInventorySortMixin from "../depotInventorySortMixin";
 
 export default {
   name: "DepotInventorySummary",
-  mixins: [hisChargeItemTableColumnsMixin],
+  mixins: [hisChargeItemTableColumnsMixin, depotInventorySortMixin],
   props: {
     queryParams: {
       type: Object,
@@ -73,6 +75,13 @@ export default {
   data() {
     return {
       hisChargeFlatRow: true,
+      hisChargeColumnLabelOverrides: {
+        code: '收费编码',
+        name: '收费名称',
+        speci: '收费规格',
+        unit: '收费单位',
+        price: '收费单价',
+      },
       loading: true,
       summaryList: [],
       total: 0
@@ -106,14 +115,17 @@ export default {
     this.getList();
   },
   methods: {
+    buildListParams() {
+      const params = { ...this.queryParams };
+      const kw = params.materialKeyword != null ? String(params.materialKeyword).trim() : '';
+      params.materialKeyword = kw || null;
+      params.pageNum = 1;
+      params.pageSize = 10000;
+      return params;
+    },
     getList() {
       this.loading = true;
-      // 先获取所有明细数据，然后在前端进行汇总
-      const params = { ...this.queryParams };
-      params.pageNum = 1;
-      params.pageSize = 10000; // 获取所有数据用于汇总
-      
-      listDepotInventory(params).then(response => {
+      listDepotInventory(this.buildListParams()).then(response => {
         const detailList = response.rows || [];
         // 按耗材、仓库、供应商进行汇总
         const summaryMap = {};
@@ -124,6 +136,7 @@ export default {
           const materialName = material.name || '';
           const materialCode = material.code || material.id || '';
           const materialSpeci = material.speci || '';
+          const materialModel = material.model || '';
           const warehouseName = (item.warehouse && item.warehouse.name) || '';
           const supplierName = (item.supplier && item.supplier.name) || '';
           const factoryName = (material.fdFactory && material.fdFactory.factoryName) || '';
@@ -137,6 +150,7 @@ export default {
               materialCode: materialCode,
               materialName: materialName,
               materialSpeci: materialSpeci,
+              materialModel: materialModel,
               unitName: unitName,
               unitPrice: item.unitPrice || 0,
               totalQty: 0,

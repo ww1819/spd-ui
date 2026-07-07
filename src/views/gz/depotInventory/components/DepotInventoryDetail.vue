@@ -9,51 +9,38 @@
         </template>
       </el-table-column>
       <!-- 2. 耗材编码 -->
-      <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="耗材编码" align="center" prop="material.code" width="140" show-overflow-tooltip resizable sortable :sort-method="sortDepotMaterialCode"/>
       <!-- 3. 耗材名称 -->
-      <el-table-column label="耗材名称" align="center" prop="material.name" width="160" show-overflow-tooltip resizable/>
-      <el-table-column
-        v-for="col in hisChargeItemColumnDefs"
-        :key="'his-charge-' + col.key"
-        :label="col.label"
-        :width="col.width"
-        align="center"
-        show-overflow-tooltip
-        resizable
-      >
-        <template slot-scope="scope">
-          <span>{{ col.text(scope.row) }}</span>
-        </template>
-      </el-table-column>
+      <el-table-column label="耗材名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable sortable :sort-method="sortDepotMaterialName"/>
       <!-- 4. 规格 -->
-      <el-table-column label="规格" align="center" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="规格" align="center" width="130" show-overflow-tooltip resizable sortable :sort-method="sortDepotSpeci">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.specification || '--' }}</span>
         </template>
       </el-table-column>
       <!-- 5. 型号 -->
-      <el-table-column label="型号" align="center" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="型号" align="center" width="130" show-overflow-tooltip resizable sortable :sort-method="sortDepotModel">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
         </template>
       </el-table-column>
       <!-- 6. 单位 -->
-      <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
+      <el-table-column label="单位" align="center" width="100" show-overflow-tooltip resizable sortable :sort-method="sortDepotUnitName">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
         </template>
       </el-table-column>
       <!-- 7. 库存数量 -->
-      <el-table-column label="库存数量" align="center" prop="qty" width="100" show-overflow-tooltip resizable/>
+      <el-table-column label="库存数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable sortable :sort-method="sortDepotQty"/>
       <!-- 8. 单价 -->
-      <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="单价" align="center" prop="unitPrice" width="130" show-overflow-tooltip resizable sortable :sort-method="sortDepotUnitPrice">
         <template slot-scope="scope">
           <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
       <!-- 9. 金额 -->
-      <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="金额" align="center" prop="amt" width="130" show-overflow-tooltip resizable sortable :sort-method="sortDepotAmt">
         <template slot-scope="scope">
           <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
           <span v-else>--</span>
@@ -118,6 +105,19 @@
       </el-table-column>
       <!-- 23. 入库单号 -->
       <el-table-column label="入库单号" align="center" prop="orderNo" width="180" show-overflow-tooltip resizable/>
+      <el-table-column
+        v-for="col in hisChargeItemColumnDefs"
+        :key="'his-charge-' + col.key"
+        :label="col.label"
+        :width="col.width"
+        align="center"
+        show-overflow-tooltip
+        resizable
+      >
+        <template slot-scope="scope">
+          <span>{{ col.text(scope.row) }}</span>
+        </template>
+      </el-table-column>
       <!-- 24. 制单人 -->
       <el-table-column label="制单人" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -153,12 +153,6 @@
           <span>{{ (scope.row.order && scope.row.order.remark) || '--' }}</span>
         </template>
       </el-table-column>
-      <!-- 操作列 - 固定在右侧 -->
-      <el-table-column label="操作" align="center" width="100" fixed="right">
-        <template slot-scope="scope">
-          <el-button size="mini" type="text" @click="handleView(scope.row)">查看</el-button>
-        </template>
-      </el-table-column>
     </el-table>
 
     <div class="pagination-wrapper">
@@ -179,10 +173,11 @@
 <script>
 import { listDepotInventory } from "@/api/gz/depotInventory";
 import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
+import depotInventorySortMixin from "../depotInventorySortMixin";
 
 export default {
   name: "DepotInventoryDetail",
-  mixins: [hisChargeItemTableColumnsMixin],
+  mixins: [hisChargeItemTableColumnsMixin, depotInventorySortMixin],
   props: {
     queryParams: {
       type: Object,
@@ -191,6 +186,13 @@ export default {
   },
   data() {
     return {
+      hisChargeColumnLabelOverrides: {
+        code: '收费编码',
+        name: '收费名称',
+        speci: '收费规格',
+        unit: '收费单位',
+        price: '收费单价',
+      },
       loading: true,
       depotInventoryList: [],
       total: 0,
@@ -242,9 +244,15 @@ export default {
     }
   },
   methods: {
+    buildListParams() {
+      const params = { ...this.queryParams };
+      const kw = params.materialKeyword != null ? String(params.materialKeyword).trim() : '';
+      params.materialKeyword = kw || null;
+      return params;
+    },
     getList() {
       this.loading = true;
-      listDepotInventory(this.queryParams).then(response => {
+      listDepotInventory(this.buildListParams()).then(response => {
         this.depotInventoryList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -261,10 +269,6 @@ export default {
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id);
       this.$emit('selection-change', selection);
-    },
-    handleView(row) {
-      // 查看操作，可以触发事件传递给父组件
-      this.$emit('view', row);
     },
     syncTableScroll() {
       const headerWrapper = this.$el?.querySelector('.el-table__header-wrapper');

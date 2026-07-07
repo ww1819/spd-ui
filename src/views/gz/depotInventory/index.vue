@@ -12,7 +12,7 @@
             <el-col :span="24">
               <el-form-item prop="warehouseId" class="query-item-inline">
                 <div class="query-select-wrapper">
-                  <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值" />
+                  <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值" placeholder="仓库" />
                 </div>
               </el-form-item>
               <el-form-item prop="supplierId" class="query-item-inline">
@@ -23,7 +23,7 @@
               <el-form-item prop="orderNo" class="query-item-inline">
                 <el-input
                   v-model="queryParams.orderNo"
-                  placeholder="入库单号"
+                  placeholder="单号"
                   clearable
                   style="width: 180px"
                   @keyup.enter.native="handleQuery"
@@ -32,22 +32,22 @@
               <el-form-item prop="hisChargeItemId" class="query-item-inline">
                 <el-input
                   v-model="queryParams.hisChargeItemId"
-                  placeholder="收费项目ID"
+                  placeholder="收费编码"
                   clearable
                   style="width: 160px"
                   @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
-              <el-form-item prop="materialId" class="query-item-inline">
-                <div class="query-select-wrapper query-input-material-name">
-                  <MaterialAutocomplete v-model="queryParams.materialName" />
-                </div>
+              <el-form-item prop="materialKeyword" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.materialKeyword"
+                  placeholder="名称"
+                  clearable
+                  style="width: 180px"
+                  @keyup.enter.native="handleQuery"
+                />
               </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="16" class="query-row-second">
-            <el-col :span="24" class="query-row-second-inner">
-              <el-form-item label="院内码" prop="inHospitalCode" class="query-item-inline">
+              <el-form-item prop="inHospitalCode" class="query-item-inline">
                 <el-input
                   v-model="queryParams.inHospitalCode"
                   placeholder="院内码"
@@ -56,7 +56,11 @@
                   @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
-              <el-form-item label="入库日期" class="query-item-inline query-item-date-range">
+            </el-col>
+          </el-row>
+          <el-row :gutter="16" class="query-row-second">
+            <el-col :span="24" class="query-row-second-inner">
+              <el-form-item label="日期" class="query-item-inline query-item-date-range">
                 <el-date-picker
                   v-model="queryParams.beginDate"
                   type="date"
@@ -74,6 +78,13 @@
                   clearable
                   class="query-date-end"
                 />
+              </el-form-item>
+              <el-form-item class="query-item-inline query-item-zero-stock">
+                <el-button
+                  :type="showZeroStock ? 'primary' : 'default'"
+                  size="small"
+                  @click="toggleShowZeroStock"
+                >零库存</el-button>
               </el-form-item>
             </el-col>
           </el-row>
@@ -123,7 +134,6 @@
 
 <script>
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
-import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
 import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
 import RightToolbar from "@/components/RightToolbar";
 import DepotInventoryDetail from "./components/DepotInventoryDetail.vue";
@@ -139,7 +149,6 @@ export default {
   name: "DepotInventory",
   components: {
     SelectWarehouse,
-    MaterialAutocomplete,
     SelectSupplier,
     RightToolbar,
     DepotInventoryDetail,
@@ -152,21 +161,27 @@ export default {
       single: true,
       multiple: true,
       showSearch: true,
+      /** 是否显示零库存明细（默认不显示） */
+      showZeroStock: false,
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         materialId: null,
         warehouseId: null,
         warehouseName: null,
-        materialName: null,
+        materialKeyword: null,
         supplierId: null,
         orderNo: null,
         inHospitalCode: null,
         beginDate: null,
         endDate: null,
-        hisChargeItemId: null
+        hisChargeItemId: null,
+        includeZeroQty: null
       }
     };
+  },
+  created() {
+    this.initDefaultDateRange();
   },
   activated() {
     document.body.classList.add('inventory-query-fixed');
@@ -181,19 +196,38 @@ export default {
     document.body.classList.remove('inventory-query-fixed');
   },
   methods: {
+    formatQueryDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    },
+    initDefaultDateRange() {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(start.getDate() - 5);
+      this.queryParams.beginDate = this.formatQueryDate(start);
+      this.queryParams.endDate = this.formatQueryDate(end);
+    },
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.refreshActiveTable();
     },
     resetQuery() {
       this.resetForm("queryForm");
+      this.showZeroStock = false;
       this.queryParams.warehouseName = null;
-      this.queryParams.materialName = null;
+      this.queryParams.materialKeyword = null;
       this.queryParams.orderNo = null;
       this.queryParams.inHospitalCode = null;
-      this.queryParams.beginDate = null;
-      this.queryParams.endDate = null;
+      this.queryParams.includeZeroQty = null;
+      this.initDefaultDateRange();
       this.queryParams.pageNum = 1;
+      this.handleQuery();
+    },
+    toggleShowZeroStock() {
+      this.showZeroStock = !this.showZeroStock;
+      this.queryParams.includeZeroQty = this.showZeroStock ? true : null;
       this.handleQuery();
     },
     handleTabClick(tab) {

@@ -21,39 +21,42 @@ export default {
     return {
       /** 汇总行 true：字段在 row 上；明细行 false：在 row.material 上 */
       hisChargeFlatRow: false,
+      /** 可选：覆盖收费列表头，如 { code: '收费编码', name: '收费名称' } */
+      hisChargeColumnLabelOverrides: {},
     };
   },
   computed: {
     hisChargeItemColumnDefs() {
       const flat = this.hisChargeFlatRow === true;
+      const labelOf = (key, defaultLabel) => this.hisChargeColumnLabelOverrides[key] || defaultLabel;
       return [
         {
           key: 'code',
-          label: '收费项目编码',
+          label: labelOf('code', '收费项目编码'),
           width: 130,
           text: (row) => (flat ? hisChargeCodeFromRow(row) : hisChargeCodeFromMaterial(row.material)),
         },
         {
           key: 'name',
-          label: '收费项目名称',
+          label: labelOf('name', '收费项目名称'),
           width: 150,
           text: (row) => (flat ? hisChargeNameFromRow(row) : hisChargeNameFromMaterial(row.material)),
         },
         {
           key: 'speci',
-          label: '收费项目规格',
+          label: labelOf('speci', '收费项目规格'),
           width: 130,
           text: (row) => (flat ? hisChargeSpeciFromRow(row) : hisChargeSpeciFromMaterial(row.material)),
         },
         {
           key: 'unit',
-          label: '收费项目单位',
+          label: labelOf('unit', '收费项目单位'),
           width: 130,
           text: (row) => (flat ? hisChargeUnitFromRow(row) : hisChargeUnitFromMaterial(row.material)),
         },
         {
           key: 'price',
-          label: '收费项目单价',
+          label: labelOf('price', '收费项目单价'),
           width: 130,
           text: (row) => {
             const p = flat ? hisChargePriceFromRow(row) : (row.material && row.material.hisChargeItemPrice);
