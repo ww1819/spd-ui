@@ -77,6 +77,33 @@ export function listTraceabilityEntry(query) {
   })
 }
 
+// 使用追溯汇总表（执行科室）
+export function listTraceSummaryExecDept(query) {
+  return request({
+    url: '/gz/traceability/summary/execDept/list',
+    method: 'get',
+    params: query
+  })
+}
+
+// 使用追溯汇总表（开单科室）
+export function listTraceSummaryApplyDept(query) {
+  return request({
+    url: '/gz/traceability/summary/applyDept/list',
+    method: 'get',
+    params: query
+  })
+}
+
+// 使用追溯汇总表（供应商）
+export function listTraceSummarySupplier(query) {
+  return request({
+    url: '/gz/traceability/summary/supplier/list',
+    method: 'get',
+    params: query
+  })
+}
+
 // 高值耗材使用情况报表
 export function listMaterialUsageReport(query) {
   return request({

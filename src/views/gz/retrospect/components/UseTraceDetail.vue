@@ -7,7 +7,7 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="耗材编码" align="center" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialCode">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
         </template>
@@ -17,54 +17,44 @@
           <span>{{ scope.row.inHospitalCode || scope.row.masterBarcode || scope.row.mainBarcode || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材名称" align="center" width="160" show-overflow-tooltip resizable>
+      <el-table-column label="耗材名称" align="center" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialName">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.name) || scope.row.materialName || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="规格" align="center" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="规格" align="center" width="130" min-width="110" show-overflow-tooltip resizable sortable :sort-method="sortTraceSpeci">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.specification || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="型号" align="center" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="型号" align="center" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortTraceModel">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="单位" align="center" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="单位" align="center" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortTraceUnitName">
         <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
+          <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || scope.row.unit || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="数量" align="center" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="数量" align="center" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortTraceQuantity">
         <template slot-scope="scope">
           <span v-if="scope.row.quantity !== null && scope.row.quantity !== undefined">{{ scope.row.quantity }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单价" align="center" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="单价" align="center" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortTraceChargePrice">
         <template slot-scope="scope">
           <span v-if="scope.row.chargePrice">{{ scope.row.chargePrice | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="金额" align="center" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortTraceAmount">
         <template slot-scope="scope">
           <span v-if="scope.row.quantity !== null && scope.row.quantity !== undefined && scope.row.chargePrice !== null && scope.row.chargePrice !== undefined">
             {{ (parseFloat(scope.row.quantity) * parseFloat(scope.row.chargePrice)).toFixed(2) }}
           </span>
           <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="仓库来源" align="center" width="160" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.warehouseName || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="批次字典" align="center" width="220" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.batchSource || '--' }} / {{ scope.row.originBusinessType || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="生产日期" align="center" width="120" show-overflow-tooltip resizable>
@@ -90,16 +80,55 @@
           <span>{{ scope.row.batchNo || '--' }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="开单科室" align="center" width="140" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.applyDeptName || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="执行科室" align="center" width="140" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.execDeptName || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="核销科室" align="center" width="140" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.writeOffDeptName || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.registerNo) || scope.row.registerNo || '--' }}</span>
+          <span>{{ (scope.row.material && scope.row.material.registerNo) || scope.row.certificateNo || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="注册证有效期" align="center" prop="material.periodDate" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.material && scope.row.material.periodDate">{{ parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') }}</span>
-          <span v-else-if="scope.row.periodDate">{{ parseTime(scope.row.periodDate, '{y}-{m}-{d}') }}</span>
+          <span v-else-if="scope.row.expiryDate">{{ parseTime(scope.row.expiryDate, '{y}-{m}-{d}') }}</span>
           <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="计费" align="center" width="80" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span
+            class="material-yn-btn"
+            :class="isMaterialYesValue(scope.row.material && scope.row.material.isBilling) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ isMaterialYesValue(scope.row.material && scope.row.material.isBilling) ? '是' : '否' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="集采" align="center" width="80" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span
+            class="material-yn-btn"
+            :class="isMaterialYesValue(scope.row.material && scope.row.material.isProcure) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ isMaterialYesValue(scope.row.material && scope.row.material.isProcure) ? '是' : '否' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="重点耗材" align="center" width="90" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span
+            class="material-yn-btn"
+            :class="isMaterialYesValue(scope.row.material && scope.row.material.isMonitor) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ isMaterialYesValue(scope.row.material && scope.row.material.isMonitor) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="单据状态" align="center" width="100" show-overflow-tooltip resizable>
@@ -114,8 +143,44 @@
           <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.manufacturer || scope.row.factoryName || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable/>
-      <el-table-column label="收费编码" align="center" prop="chargeCode" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="供应商" align="center" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.supplierDisplayName || scope.row.supplier || (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="收费编码" align="center" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.chargeCode || (scope.row.material && (scope.row.material.hisChargeItemCode || scope.row.material.hisChargeItemId)) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="收费名称" align="center" width="180" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.material && scope.row.material.hisChargeItemName) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="收费规格" align="center" width="140" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.material && scope.row.material.hisChargeItemSpeci) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="收费单价" align="center" width="120" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.material && scope.row.material.hisChargeItemPrice != null && scope.row.material.hisChargeItemPrice !== ''">
+            {{ scope.row.material.hisChargeItemPrice | formatCurrency }}
+          </span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="就诊类型" align="center" width="100" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ formatVisitKind(scope.row.visitKind) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="病人住院号/门诊号" align="center" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.hospitalNumber || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="病人姓名" align="center" prop="patientName" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.patientName || '--' }}</span>
@@ -123,7 +188,7 @@
       </el-table-column>
       <el-table-column label="病人性别" align="center" prop="patientSex" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.patientSex || '--' }}</span>
+          <span>{{ formatPatientSex(scope.row.patientSex) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="手术医生" align="center" prop="chiefSurgeon" width="160" show-overflow-tooltip resizable>
@@ -163,6 +228,11 @@
           <span>{{ scope.row.scanUser || '--' }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="阳光平台编码" align="center" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ (scope.row.material && scope.row.material.sunshineCode) || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="医保编码" align="center" prop="material.medicalNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.medicalNo) || scope.row.medicalNo || '--' }}</span>
@@ -176,6 +246,16 @@
       <el-table-column label="库房分类" align="center" prop="warehouseCategory" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="仓库来源" align="center" width="160" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.warehouseName || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="批次字典" align="center" width="220" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.batchSource || '--' }} / {{ scope.row.originBusinessType || '--' }}</span>
         </template>
       </el-table-column>
     </el-table>
@@ -198,9 +278,11 @@
 <script>
 import { listTraceabilityEntry } from "@/api/gz/traceability";
 import { exportTraceDetailTable } from "../retrospectExport";
+import retrospectSortMixin from "../retrospectSortMixin";
 
 export default {
   name: "UseTraceDetail",
+  mixins: [retrospectSortMixin],
   props: {
     queryParams: {
       type: Object,
@@ -260,26 +342,72 @@ export default {
     }
   },
   methods: {
+    formatPatientSex(val) {
+      if (val === null || val === undefined || val === '') return '--';
+      const s = String(val).trim();
+      if (s === '0' || s === '男' || s.toLowerCase() === 'm' || s.toLowerCase() === 'male') return '男';
+      if (s === '1' || s === '女' || s.toLowerCase() === 'f' || s.toLowerCase() === 'female') return '女';
+      return s;
+    },
+    formatMaterialYesNo(val) {
+      if (val === null || val === undefined || val === '') return '--';
+      const s = String(val).trim();
+      if (s === '1' || s === 'true' || s === '是') return '是';
+      if (s === '0' || s === '2' || s === 'false' || s === '否') return '否';
+      return s;
+    },
+    isMaterialYesValue(val) {
+      if (val === null || val === undefined || val === '') return false;
+      const s = String(val).trim();
+      return s === '1' || s === 'true' || s === '是';
+    },
+    formatVisitKind(val) {
+      if (val === null || val === undefined || val === '') return '--';
+      const s = String(val).trim().toUpperCase();
+      if (s === 'INPATIENT' || val === '住院') return '住院';
+      if (s === 'OUTPATIENT' || val === '门诊') return '门诊';
+      return val;
+    },
+    buildEntryQuery() {
+      const trimLeading = (val) => {
+        if (val === null || val === undefined || val === '') return null;
+        const s = String(val).replace(/^\s+/, '');
+        return s === '' ? null : s;
+      };
+      const p = this.queryParams;
+      const q = {
+        pageNum: p.pageNum || 1,
+        pageSize: p.pageSize || 10,
+        orderStatus: p.orderStatus != null ? p.orderStatus : 2,
+        inHospitalCode: trimLeading(p.inHospitalCode),
+        materialKeyword: trimLeading(p.materialKeyword),
+        materialSpeci: trimLeading(p.materialSpeci),
+        factoryId: p.factoryId || null,
+        warehouseId: p.warehouseId || null,
+        materialNo: trimLeading(p.materialNo),
+        chargeCodeKeyword: trimLeading(p.chargeCodeKeyword),
+        hospitalNumber: trimLeading(p.hospitalNumber),
+        patientName: trimLeading(p.patientName),
+        udiKeyword: trimLeading(p.udiKeyword),
+        sunshineCodeKeyword: trimLeading(p.sunshineCodeKeyword),
+        medicalNoKeyword: trimLeading(p.medicalNoKeyword),
+        isBilling: p.isBilling || null,
+        isProcure: p.isProcure || null,
+        isMonitor: p.isMonitor || null,
+        supplierId: p.supplierId || null,
+        supplierKeyword: (!p.supplierId && p.supplierKeyword) ? trimLeading(p.supplierKeyword) : null
+      };
+      if (p.startDate) {
+        q.startDate = p.startDate;
+      }
+      if (p.endDate) {
+        q.endDate = p.endDate;
+      }
+      return q;
+    },
     getList() {
       this.loading = true;
-      // 创建查询参数对象
-      var queryParams = {};
-      // 设置分页参数
-      queryParams.pageNum = this.queryParams.pageNum || 1;
-      queryParams.pageSize = this.queryParams.pageSize || 10;
-      // 设置查询条件
-      queryParams.traceNo = this.queryParams.traceNo || null;
-      queryParams.orderStatus = this.queryParams.orderStatus || 2;
-      // 批次/批号：用于按 batch_no / batch_number（系统追溯批次 vs 生产批号）过滤
-      queryParams.batchNo = this.queryParams.batchNo || null;
-      queryParams.materialNo = this.queryParams.materialNo || null;
-      if (this.queryParams.startDate) {
-        queryParams.startDate = this.queryParams.startDate;
-      }
-      if (this.queryParams.endDate) {
-        queryParams.endDate = this.queryParams.endDate;
-      }
-      listTraceabilityEntry(queryParams).then(response => {
+      listTraceabilityEntry(this.buildEntryQuery()).then(response => {
         if (response.code === 200) {
           this.traceList = response.rows || [];
           this.total = response.total || 0;
@@ -369,6 +497,30 @@ export default {
 ::v-deep .el-table__header-wrapper {
   overflow-x: hidden !important;
   overflow-y: hidden !important;
+}
+::v-deep .el-table th .cell {
+  white-space: nowrap;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.material-yn-btn {
+  display: inline-block;
+  min-width: 36px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  color: #fff;
+  cursor: default;
+  user-select: none;
+  box-sizing: border-box;
+}
+.material-yn-btn--yes {
+  background-color: #409EFF;
+}
+.material-yn-btn--no {
+  background-color: #909399;
 }
 </style>
 

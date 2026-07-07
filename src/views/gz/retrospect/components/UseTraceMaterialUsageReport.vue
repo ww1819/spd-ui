@@ -7,12 +7,12 @@
         </template>
       </el-table-column>
       <el-table-column label="科室" align="center" prop="departmentName" width="140" show-overflow-tooltip resizable />
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="180" show-overflow-tooltip resizable />
-      <el-table-column label="规格" align="center" prop="specification" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable />
-      <el-table-column label="消耗数量" align="center" prop="consumeQty" width="110" show-overflow-tooltip resizable />
-      <el-table-column label="剩余数量" align="center" prop="remainQty" width="110" show-overflow-tooltip resizable />
+      <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortUsageMaterialName" />
+      <el-table-column label="规格" align="center" prop="specification" width="130" min-width="110" show-overflow-tooltip resizable sortable :sort-method="sortUsageSpeci" />
+      <el-table-column label="型号" align="center" prop="model" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortUsageModel" />
+      <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortUsageUnitName" />
+      <el-table-column label="消耗数量" align="center" prop="consumeQty" width="120" min-width="110" show-overflow-tooltip resizable sortable :sort-method="sortUsageConsumeQty" />
+      <el-table-column label="剩余数量" align="center" prop="remainQty" width="120" min-width="110" show-overflow-tooltip resizable sortable :sort-method="sortUsageRemainQty" />
       <el-table-column label="预计下个月需求" align="center" width="140" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-input
@@ -52,9 +52,11 @@
 <script>
 import { listMaterialUsageReport } from "@/api/gz/traceability";
 import { exportMaterialUsageReportTable } from "../retrospectExport";
+import retrospectSortMixin from "../retrospectSortMixin";
 
 export default {
   name: "UseTraceMaterialUsageReport",
+  mixins: [retrospectSortMixin],
   props: {
     queryParams: {
       type: Object,
@@ -170,5 +172,10 @@ export default {
 ::v-deep .el-table__header-wrapper {
   overflow-x: hidden !important;
   overflow-y: hidden !important;
+}
+::v-deep .el-table th .cell {
+  white-space: nowrap;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 </style>
