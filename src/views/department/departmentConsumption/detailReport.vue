@@ -2,17 +2,39 @@
   <div class="app-container first-inventory-page">
     <div class="form-fields-container">
       <el-form :model="searchForm" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-        <el-row class="query-row-left">
-          <el-col :span="24">
+        <el-row class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-form-item label="科室" prop="departmentId" class="query-item-inline">
               <div class="query-select-wrapper">
-                <SelectDepartment v-model="searchForm.departmentId" />
+                <SelectDepartment v-model="searchForm.departmentId" field-placeholder="科室" />
               </div>
             </el-form-item>
-            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectMaterial v-model="searchForm.materialId" />
-              </div>
+            <el-form-item label="单号" prop="consumeBillNo" class="query-item-inline">
+              <el-input
+                v-model="searchForm.consumeBillNo"
+                placeholder="单号"
+                clearable
+                class="query-input-text query-input-text--short"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item label="HIS收费编码" prop="hisChargeCode" class="query-item-inline query-item-wide-label">
+              <el-input
+                v-model="searchForm.hisChargeCode"
+                placeholder="HIS收费编码"
+                clearable
+                class="query-input-text query-input-text--short"
+                @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item label="住院/门诊号" prop="patientId" class="query-item-inline query-item-wide-label">
+              <el-input
+                v-model="searchForm.patientId"
+                placeholder="住院/门诊号"
+                clearable
+                class="query-input-text query-input-text--short"
+                @keyup.enter.native="handleQuery"
+              />
             </el-form-item>
             <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
               <el-input
@@ -28,7 +50,7 @@
                 v-model="searchForm.specification"
                 placeholder="规格"
                 clearable
-                class="query-input-text"
+                class="query-input-text query-input-text--short"
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
@@ -37,42 +59,31 @@
                 v-model="searchForm.model"
                 placeholder="型号"
                 clearable
-                class="query-input-text"
+                class="query-input-text query-input-text--short"
                 @keyup.enter.native="handleQuery"
               />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
-            <el-form-item label="HIS收费编码" prop="hisChargeCode" class="query-item-inline query-item-wide-label">
-              <el-input
-                v-model="searchForm.hisChargeCode"
-                placeholder="HIS收费编码"
-                clearable
-                class="query-input-text"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="住院/门诊号" prop="patientId" class="query-item-inline query-item-wide-label">
-              <el-input
-                v-model="searchForm.patientId"
-                placeholder="患者住院号/门诊号"
-                clearable
-                class="query-input-text"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="消耗日期" prop="dateRange" class="query-item-inline query-item-wide-label query-item-daterange">
+        <el-row :gutter="16" class="query-row-date">
+          <el-col :span="24">
+            <el-form-item label="消耗日期" class="query-item-inline query-item-daterange-row">
               <el-date-picker
-                v-model="searchForm.dateRange"
-                type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
+                v-model="searchForm.beginDate"
+                type="date"
                 value-format="yyyy-MM-dd"
+                placeholder="开始日期"
                 clearable
-                class="query-daterange-picker"
+                class="query-date-single"
+              />
+              <span class="query-date-separator">至</span>
+              <el-date-picker
+                v-model="searchForm.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="结束日期"
+                clearable
+                class="query-date-single"
               />
             </el-form-item>
           </el-col>
@@ -98,6 +109,7 @@
         height="60vh"
         border
         stripe
+        @sort-change="handleSortChange"
       >
         <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
           <template slot-scope="scope">
@@ -106,17 +118,19 @@
         </el-table-column>
         <el-table-column label="单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable />
         <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="名称" align="center" prop="materialName" width="150" show-overflow-tooltip resizable />
-        <el-table-column label="规格" align="center" prop="specification" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable>
+        <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="规格" align="center" prop="specification" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="型号" align="center" prop="model" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="单价" align="center" prop="unitPrice" width="120" min-width="110" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
             <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== ''">{{ scope.row.unitPrice | formatCurrency }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="数量" align="center" prop="quantity" width="100" show-overflow-tooltip resizable />
-        <el-table-column label="金额" align="center" prop="amount" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="数量" align="center" prop="quantity" width="110" min-width="100" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="金额" align="center" prop="amount" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
             <span v-if="scope.row.amount">{{ scope.row.amount | formatCurrency }}</span>
             <span v-else>--</span>
@@ -126,7 +140,16 @@
         <el-table-column label="财务分类" align="center" prop="financialCategory" width="120" show-overflow-tooltip resizable />
         <el-table-column label="注册证号" align="center" prop="registrationNumber" width="180" show-overflow-tooltip resizable />
         <el-table-column label="医保编码" align="center" prop="medicalInsuranceCode" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="HIS收费项目编码" align="center" prop="hisChargeItemCode" width="150" show-overflow-tooltip resizable />
+        <el-table-column label="收费编码" align="center" prop="hisChargeItemCode" width="130" min-width="120" show-overflow-tooltip resizable />
+        <el-table-column label="收费名称" align="center" prop="hisChargeItemName" width="150" min-width="130" show-overflow-tooltip resizable />
+        <el-table-column label="收费规格" align="center" prop="hisChargeItemSpeci" width="130" min-width="110" show-overflow-tooltip resizable />
+        <el-table-column label="收费单位" align="center" prop="hisChargeItemUnit" width="100" min-width="90" show-overflow-tooltip resizable />
+        <el-table-column label="收费价格" align="center" prop="hisChargeItemPrice" width="120" min-width="110" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.hisChargeItemPrice != null && scope.row.hisChargeItemPrice !== ''">{{ scope.row.hisChargeItemPrice | formatCurrency }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
 
@@ -155,20 +178,19 @@
 
 <script>
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
-import SelectMaterial from "@/components/SelectModel/SelectMaterialDept";
 import request from "@/utils/request";
 import RightToolbar from "@/components/RightToolbar";
 import { exportDepartmentConsumptionDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { buildDefaultDateRange } from "@/utils/defaultDateRange";
 
-function createDefaultDateRange() {
+function createDefaultDates() {
   const { beginDate, endDate } = buildDefaultDateRange(5);
-  return [beginDate, endDate];
+  return { beginDate, endDate };
 }
 
 export default {
   name: "DetailReport",
-  components: { SelectMaterial, SelectDepartment, RightToolbar },
+  components: { SelectDepartment, RightToolbar },
   data() {
     return {
       loading: true,
@@ -181,17 +203,19 @@ export default {
       },
       queryParams: {
         pageNum: 1,
-        pageSize: 10
+        pageSize: 10,
+        sortField: null,
+        sortOrder: null
       },
       searchForm: {
         departmentId: null,
-        materialId: null,
+        consumeBillNo: "",
         materialName: "",
         specification: "",
         model: "",
         hisChargeCode: "",
         patientId: "",
-        dateRange: createDefaultDateRange()
+        ...createDefaultDates()
       }
     };
   },
@@ -213,19 +237,19 @@ export default {
     buildRequestParams() {
       const params = {
         departmentId: this.searchForm.departmentId,
-        materialId: this.searchForm.materialId,
+        consumeBillNo: this.searchForm.consumeBillNo,
         materialName: this.searchForm.materialName,
         specification: this.searchForm.specification,
         model: this.searchForm.model,
         hisChargeCode: this.searchForm.hisChargeCode,
         patientId: this.searchForm.patientId,
+        beginDate: this.searchForm.beginDate,
+        endDate: this.searchForm.endDate,
         pageNum: this.queryParams.pageNum,
-        pageSize: this.queryParams.pageSize
+        pageSize: this.queryParams.pageSize,
+        sortField: this.queryParams.sortField,
+        sortOrder: this.queryParams.sortOrder
       };
-      if (this.searchForm.dateRange && this.searchForm.dateRange.length === 2) {
-        params.beginDate = this.searchForm.dateRange[0];
-        params.endDate = this.searchForm.dateRange[1];
-      }
       return params;
     },
     getList() {
@@ -264,8 +288,17 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
-      this.searchForm.dateRange = createDefaultDateRange();
+      Object.assign(this.searchForm, createDefaultDates());
+      this.searchForm.consumeBillNo = "";
+      this.queryParams.sortField = null;
+      this.queryParams.sortOrder = null;
       this.handleQuery();
+    },
+    handleSortChange({ prop, order }) {
+      this.queryParams.sortField = order ? prop : null;
+      this.queryParams.sortOrder = order === "descending" ? "desc" : order === "ascending" ? "asc" : null;
+      this.queryParams.pageNum = 1;
+      this.getList();
     },
     handleSizeChange(val) {
       this.queryParams.pageSize = val;
@@ -292,9 +325,8 @@ export default {
           this.$message && this.$message.warning("暂无数据可导出");
           return;
         }
-        const dr = this.searchForm.dateRange;
-        const beginDate = dr && dr.length === 2 ? dr[0] : "";
-        const endDate = dr && dr.length === 2 ? dr[1] : beginDate;
+        const beginDate = this.searchForm.beginDate || "";
+        const endDate = this.searchForm.endDate || beginDate;
         const now = new Date();
         const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
         await exportDepartmentConsumptionDetailStyledXlsx({
@@ -319,22 +351,48 @@ export default {
   margin-top: -10px;
 }
 
-.query-row-left {
+.query-row-first {
   margin-bottom: 2px;
+}
+
+.query-row-first-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  gap: 2px;
+  padding-bottom: 2px;
+}
+
+.query-row-first-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 6px;
+  white-space: nowrap;
+}
+
+.query-row-first-inner .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 .query-item-inline {
   display: inline-block;
-  margin-right: 16px;
+  margin-right: 8px;
   margin-bottom: 2px;
 }
 
 .query-item-inline .el-form-item__label {
-  width: 80px !important;
+  width: 72px !important;
+  padding-right: 6px !important;
 }
 
 .query-item-wide-label .el-form-item__label {
-  width: 108px !important;
+  width: 96px !important;
+  padding-right: 6px !important;
 }
 
 .query-item-inline .el-form-item {
@@ -342,15 +400,39 @@ export default {
 }
 
 .query-select-wrapper {
-  width: 180px;
+  width: 132px;
 }
 
 .query-input-text {
-  width: 180px;
+  width: 128px;
+}
+
+.query-input-text--short {
+  width: 112px;
 }
 
 .query-daterange-picker {
   width: 240px;
+}
+
+.query-row-date {
+  margin-bottom: 2px;
+}
+
+.query-item-daterange-row .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.query-date-single {
+  width: 148px;
+}
+
+.query-date-separator {
+  margin: 0 6px;
+  color: #606266;
+  white-space: nowrap;
 }
 
 .query-row-second {
@@ -471,6 +553,10 @@ export default {
 .table-container ::v-deep .el-table thead th.el-table__cell > .cell {
   white-space: nowrap;
   line-height: 23px;
+}
+
+.table-container ::v-deep .el-table .caret-wrapper {
+  margin-left: 2px;
 }
 
 </style>
