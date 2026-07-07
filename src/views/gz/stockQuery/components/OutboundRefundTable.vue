@@ -165,8 +165,7 @@
 </template>
 
 <script>
-import { listOrder as listShipment, getOrder as getShipment } from "@/api/gz/shipment";
-import { listGoods as listRefundStock, getGoods as getRefundStock } from "@/api/gz/refundStock";
+import { listStockOutboundRefundEntries, traceDepotInventory } from '@/api/gz/stockQuery';
 
 export default {
   name: "OutboundRefundTable",
@@ -215,26 +214,6 @@ export default {
     }
   },
   methods: {
-    buildListParams(extra = {}) {
-      const params = {
-        pageNum: this.queryParams.pageNum,
-        pageSize: this.queryParams.pageSize,
-        warehouseId: this.queryParams.warehouseId,
-        departmentId: this.queryParams.departmentId,
-        orderStatus: this.queryParams.orderStatus,
-        beginDate: this.queryParams.beginDate,
-        endDate: this.queryParams.endDate,
-        ...extra
-      };
-      const orderNo = this.queryParams.orderNo != null ? String(this.queryParams.orderNo).trim() : '';
-      if (orderNo) {
-        params.orderNo = orderNo;
-      }
-      if (this.queryParams.supplierId) {
-        params.supplerId = this.queryParams.supplierId;
-      }
-      return params;
-    },
     normalizeDateTimeValue(value, isEnd) {
       if (!value) {
         return value;
@@ -251,261 +230,87 @@ export default {
       }
       return trimVal;
     },
-    normalizeQueryDateTime(query) {
-      const params = { ...query };
-      params.timeField = params.timeField || 'createTime';
-      params.beginDate = this.normalizeDateTimeValue(params.beginDate, false);
-      params.endDate = this.normalizeDateTimeValue(params.endDate, true);
-      return params;
-    },
-    resolveOrderNoFilter() {
-      const orderNo = this.queryParams.orderNo != null ? String(this.queryParams.orderNo).trim().toUpperCase() : '';
-      return {
-        raw: this.queryParams.orderNo != null ? String(this.queryParams.orderNo).trim() : '',
-        fetchShipment: !orderNo || orderNo.startsWith('GZCK'),
-        fetchRefundStock: !orderNo || orderNo.startsWith('GZTK')
-      };
-    },
-    buildShipmentParams() {
-      const filter = this.resolveOrderNoFilter();
-      if (!filter.fetchShipment) {
-        return null;
-      }
-      return this.buildListParams();
-    },
-    buildRefundStockParams() {
-      const filter = this.resolveOrderNoFilter();
-      if (!filter.fetchRefundStock) {
-        return null;
-      }
-      const params = this.normalizeQueryDateTime({
+    buildListParams() {
+      const params = {
         pageNum: this.queryParams.pageNum,
         pageSize: this.queryParams.pageSize,
         warehouseId: this.queryParams.warehouseId,
         departmentId: this.queryParams.departmentId,
-        goodsStatus: this.queryParams.orderStatus,
-        beginDate: this.queryParams.beginDate,
-        endDate: this.queryParams.endDate
-      });
-      if (filter.raw) {
-        params.goodsNo = filter.raw.startsWith('GZTK-') ? filter.raw : `GZTK-${filter.raw}`;
-      } else {
-        params.goodsNo = 'GZTK-';
+        materialId: this.queryParams.materialId,
+        orderStatus: this.queryParams.orderStatus,
+        timeField: 'createTime',
+        beginDate: this.normalizeDateTimeValue(this.queryParams.beginDate, false),
+        endDate: this.normalizeDateTimeValue(this.queryParams.endDate, true),
+      };
+      const orderNo = this.queryParams.orderNo != null ? String(this.queryParams.orderNo).trim() : '';
+      if (orderNo) {
+        params.orderNo = orderNo;
+      }
+      const inHospitalCode = this.queryParams.inHospitalCode != null ? String(this.queryParams.inHospitalCode).trim() : '';
+      if (inHospitalCode) {
+        params.inHospitalCode = inHospitalCode;
+      }
+      if (this.queryParams.supplierId) {
+        params.supplierId = this.queryParams.supplierId;
       }
       return params;
     },
-    resolveCreateBy(detail, header) {
-      if (detail && detail.creater) {
-        return detail.creater.nickName || detail.creater.userName || detail.createBy || '';
-      }
-      return (detail && detail.createBy) || (header && header.createBy) || '';
-    },
-    resolveUpdateBy(detail, header) {
-      if (detail && detail.auditor) {
-        return detail.auditor.nickName || detail.auditor.userName || detail.updateBy || '';
-      }
-      return (detail && detail.updateBy) || (header && header.updateBy) || '';
-    },
-    extractEntryInHospitalCode(entry) {
-      if (!entry) {
-        return '';
-      }
-      const raw = entry.inHospitalCode || entry.in_hospital_code || entry.masterBarcode;
-      return raw ? String(raw).trim() : '';
-    },
-    buildDetailRow(header, detail, entry, material, billKind) {
-      const inHospitalCode = this.extractEntryInHospitalCode(entry);
-      const materialCode = (material && material.code) || '';
-      const materialUdiNo = (entry && entry.udiNo) || (material && material.udiNo) || (entry && entry.masterBarcode) || '';
-      const qty = entry && entry.qty;
-      const price = entry && entry.price;
-      const amt = entry && entry.amt != null ? entry.amt : (qty != null && price != null ? Number(qty) * Number(price) : null);
-      const billTypeName = billKind === 'shipment' ? '备货出库' : '备货退库';
-      let orderNo = '';
-      let orderStatus = null;
-      let orderDate = null;
-      if (billKind === 'shipment') {
-        orderNo = ((detail && (detail.shipmentNo || detail.orderNo)) || (header && (header.shipmentNo || header.orderNo)) || '');
-        orderStatus = detail && detail.shipmentStatus != null ? detail.shipmentStatus : header && header.shipmentStatus;
-        orderDate = (detail && (detail.shipmentDate || detail.orderDate)) || (header && (header.shipmentDate || header.orderDate));
-      } else {
-        orderNo = ((detail && detail.goodsNo) || (header && header.goodsNo) || '');
-        orderStatus = detail && detail.goodsStatus != null ? detail.goodsStatus : header && header.goodsStatus;
-        orderDate = (detail && detail.goodsDate) || (header && header.goodsDate);
-      }
-
+    mapEntryRow(row) {
       return {
-        id: entry && entry.id || null,
-        billKind,
-        billTypeName,
-        materialId: entry && entry.materialId || null,
-        price,
-        qty,
-        amt,
-        batchNo: entry && entry.batchNo || null,
-        batchNumber: entry && entry.batchNumber || null,
-        beginTime: entry && entry.beginTime || null,
-        endTime: entry && entry.endTime || null,
-        remark: (entry && entry.remark) || (detail && detail.remark) || '',
-        orderNo,
-        orderStatus,
-        auditDate: (detail && detail.auditDate) || (header && header.auditDate) || null,
-        createBy: this.resolveCreateBy(detail, header),
-        updateBy: (detail && detail.auditBy) || this.resolveUpdateBy(detail, header),
-        orderDate,
-        warehouse: (detail && detail.warehouse) || (header && header.warehouse) || null,
-        department: (detail && detail.department) || (header && header.department) || null,
-        supplier: (detail && detail.supplier) || (header && header.supplier) || null,
-        header,
-        material,
-        materialName: (entry && entry.materialName) || (material && material.name) || '',
-        factoryName: (entry && entry.factoryName) || (material && material.fdFactory && material.fdFactory.factoryName) || '',
-        materialCode,
-        specification: (entry && entry.speci) || (material && material.speci) || null,
-        model: (entry && entry.model) || (material && material.model) || null,
-        unitName: (material && material.fdUnit && material.fdUnit.unitName)
-          || (material && material.unitName)
-          || null,
-        udiNo: materialUdiNo,
-        inHospitalCode
+        ...row,
+        id: row.entryId,
+        material: {
+          code: row.materialCode,
+          name: row.materialName,
+          speci: row.materialSpeci,
+          model: row.materialModel,
+          registerNo: row.registerNo,
+          periodDate: row.periodDate,
+          udiNo: row.udiNo,
+          fdFactory: row.factoryName ? { factoryName: row.factoryName } : null,
+          fdUnit: row.unitName ? { unitName: row.unitName } : null,
+        },
+        warehouse: row.warehouseName ? { name: row.warehouseName } : null,
+        department: row.departmentName ? { name: row.departmentName } : null,
       };
     },
-    matchSupplierFilter(row) {
-      if (!this.queryParams.supplierId) {
-        return true;
+    showTraceHintIfNeeded(inHospitalCode) {
+      const code = inHospitalCode != null ? String(inHospitalCode).trim() : '';
+      if (!code || this.tableList.length > 0) {
+        return Promise.resolve();
       }
-      const supplierId = this.queryParams.supplierId;
-      if (row.supplier && row.supplier.id === supplierId) {
-        return true;
-      }
-      if (row.material && row.material.supplierId === supplierId) {
-        return true;
-      }
-      if (row.header && row.header.supplerId === supplierId) {
-        return true;
-      }
-      return false;
-    },
-    appendShipmentRows(detailList, header, detail) {
-      const entries = (detail && detail.gzShipmentEntryList) || [];
-      const materialList = (detail && detail.materialList) || [];
-      entries.forEach(entry => {
-        if (!entry || entry.delFlag === 1) {
+      return traceDepotInventory(code).then(res => {
+        const traces = (res && res.data) || [];
+        if (!traces.length) {
           return;
         }
-        if (this.queryParams.materialId && entry.materialId !== this.queryParams.materialId) {
-          return;
-        }
-        const material = materialList.find(m => m && m.id === entry.materialId) || null;
-        const row = this.buildDetailRow(header, detail, entry, material, 'shipment');
-        const codeKeyword = this.queryParams.inHospitalCode != null ? String(this.queryParams.inHospitalCode).trim().toLowerCase() : '';
-        const code = row.inHospitalCode ? row.inHospitalCode.toLowerCase() : '';
-        if (codeKeyword && !code.includes(codeKeyword)) {
-          return;
-        }
-        if (!this.matchSupplierFilter(row)) {
-          return;
-        }
-        detailList.push(row);
-      });
-    },
-    appendRefundStockRows(detailList, header, detail) {
-      const entries = (detail && detail.gzRefundGoodsEntryList) || [];
-      const materialList = (detail && detail.materialList) || [];
-      entries.forEach(entry => {
-        if (!entry || entry.delFlag === 1) {
-          return;
-        }
-        if (this.queryParams.materialId && entry.materialId !== this.queryParams.materialId) {
-          return;
-        }
-        const material = materialList.find(m => m && m.id === entry.materialId) || null;
-        const row = this.buildDetailRow(header, detail, entry, material, 'refundStock');
-        const codeKeyword = this.queryParams.inHospitalCode != null ? String(this.queryParams.inHospitalCode).trim().toLowerCase() : '';
-        const code = row.inHospitalCode ? row.inHospitalCode.toLowerCase() : '';
-        if (codeKeyword && !code.includes(codeKeyword)) {
-          return;
-        }
-        if (!this.matchSupplierFilter(row)) {
-          return;
-        }
-        detailList.push(row);
-      });
-    },
-    fetchDetailsInBatch(items, fetchDetail, batchSize = 10) {
-      const batches = [];
-      for (let i = 0; i < items.length; i += batchSize) {
-        batches.push(items.slice(i, i + batchSize));
-      }
-      return Promise.all(batches.map(batch =>
-        Promise.all(batch.map(item =>
-          fetchDetail(item)
-            .then(detail => ({ item, detail }))
-            .catch(() => ({ item, detail: null }))
-        ))
-      )).then(allBatches => allBatches.flat());
+        const lines = traces.map(t => {
+          const time = t.flowTime ? String(t.flowTime).replace('T', ' ').substring(0, 19) : '';
+          const status = t.remark ? `（${t.remark}）` : '';
+          return `${time} ${t.traceKind || ''} ${t.billNo || ''} ${t.originBusinessType || ''} 数量:${t.qty != null ? t.qty : ''}${status}`;
+        }).join('\n');
+        this.$notify({
+          title: '该院内码库存变动追溯',
+          message: `出/退库表未匹配到明细，但系统存在以下记录：\n${lines}`,
+          type: 'warning',
+          duration: 12000,
+        });
+      }).catch(() => {});
     },
     getList() {
       this.loading = true;
-      const shipmentParams = this.buildShipmentParams();
-      const refundStockParams = this.buildRefundStockParams();
-
-      Promise.all([
-        shipmentParams
-          ? listShipment(shipmentParams).catch(() => ({ rows: [], total: 0 }))
-          : Promise.resolve({ rows: [], total: 0 }),
-        refundStockParams
-          ? listRefundStock(refundStockParams).then(response => {
-              const rows = (response && response.rows) || [];
-              return {
-                rows: rows.filter(row => row.goodsNo && row.goodsNo.startsWith('GZTK-')),
-                total: response.total
-              };
-            }).catch(() => ({ rows: [], total: 0 }))
-          : Promise.resolve({ rows: [], total: 0 })
-      ]).then(([shipmentRes, refundStockRes]) => {
-        const shipmentHeaders = (shipmentRes && shipmentRes.rows) || [];
-        const refundStockHeaders = (refundStockRes && refundStockRes.rows) || [];
-        if (shipmentHeaders.length === 0 && refundStockHeaders.length === 0) {
-          this.tableList = [];
-          this.total = 0;
-          this.loading = false;
-          return;
-        }
-
-        const shipmentItems = shipmentHeaders.map(header => ({ kind: 'shipment', header }));
-        const refundStockItems = refundStockHeaders.map(header => ({ kind: 'refundStock', header }));
-
-        return Promise.all([
-          this.fetchDetailsInBatch(
-            shipmentItems,
-            item => getShipment(item.header.id).then(res => res.data)
-          ),
-          this.fetchDetailsInBatch(
-            refundStockItems,
-            item => getRefundStock(item.header.id).then(res => res.data)
-          )
-        ]).then(([shipmentDetails, refundStockDetails]) => {
-          const detailList = [];
-          shipmentDetails.forEach(({ item, detail }) => {
-            if (detail) {
-              this.appendShipmentRows(detailList, item.header, detail);
-            }
-          });
-          refundStockDetails.forEach(({ item, detail }) => {
-            if (detail) {
-              this.appendRefundStockRows(detailList, item.header, detail);
-            }
-          });
-          this.tableList = detailList;
-          this.total = detailList.length;
-          this.loading = false;
-          this.$nextTick(() => {
-            this.syncTableScroll();
-            if (this.$refs.table) {
-              this.$refs.table.doLayout();
-            }
-          });
+      const params = this.buildListParams();
+      listStockOutboundRefundEntries(params).then(response => {
+        this.tableList = (response.rows || []).map(row => this.mapEntryRow(row));
+        this.total = response.total || 0;
+        this.loading = false;
+        return this.showTraceHintIfNeeded(params.inHospitalCode);
+      }).then(() => {
+        this.$nextTick(() => {
+          this.syncTableScroll();
+          if (this.$refs.table) {
+            this.$refs.table.doLayout();
+          }
         });
       }).catch(error => {
         this.$message.error('获取出库明细失败: ' + (error.message || '未知错误'));

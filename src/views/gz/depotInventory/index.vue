@@ -144,6 +144,7 @@ import {
   exportGzDepotInventoryDetailStyledXlsx,
   exportGzDepotInventorySummaryStyledXlsx,
 } from "@/utils/departmentOutSummaryExport";
+import { buildDepotInventoryQueryParams } from "./depotInventoryQuery";
 
 export default {
   name: "DepotInventory",
@@ -251,11 +252,10 @@ export default {
       this.multiple = !selection.length;
     },
     async handleExport() {
-      const requestParams = {
-        ...this.queryParams,
+      const requestParams = buildDepotInventoryQueryParams(this.queryParams, {
         pageNum: 1,
         pageSize: 10000,
-      };
+      });
       const loading = this.$loading({ lock: true, text: '正在导出...', spinner: 'el-icon-loading' });
       try {
         const response = await listDepotInventory(requestParams);

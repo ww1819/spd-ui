@@ -62,6 +62,7 @@
 import { listDepotInventory } from "@/api/gz/depotInventory";
 import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 import depotInventorySortMixin from "../depotInventorySortMixin";
+import { buildDepotInventoryQueryParams } from "../depotInventoryQuery";
 
 export default {
   name: "DepotInventorySummary",
@@ -116,12 +117,10 @@ export default {
   },
   methods: {
     buildListParams() {
-      const params = { ...this.queryParams };
-      const kw = params.materialKeyword != null ? String(params.materialKeyword).trim() : '';
-      params.materialKeyword = kw || null;
-      params.pageNum = 1;
-      params.pageSize = 10000;
-      return params;
+      return buildDepotInventoryQueryParams(this.queryParams, {
+        pageNum: 1,
+        pageSize: 10000,
+      });
     },
     getList() {
       this.loading = true;
