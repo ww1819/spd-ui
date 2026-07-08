@@ -2284,6 +2284,33 @@ export default {
         };
       });
     },
+    /** 按单据明细行解析院内码，避免同批号+物料跨单混用 */
+    resolveInHospitalCodesForEntry(entry, qty, orderCodeRows, inventoryList, orderData) {
+      const entryId = entry && entry.id != null ? String(entry.id) : '';
+      const limit = qty > 0 ? qty : 0;
+      const fromCodeRows = (orderCodeRows || [])
+        .filter(row => row && row.inHospitalCode && entryId && String(row.detailId) === entryId)
+        .map(row => String(row.inHospitalCode).trim())
+        .filter(Boolean);
+      if (fromCodeRows.length > 0) {
+        return fromCodeRows.slice(0, limit);
+      }
+
+      const batchNo = entry.batchNo || entry.batchNumber;
+      const materialId = entry.materialId;
+      const fromInventory = (inventoryList || [])
+        .filter(inv => {
+          if (!inv || !inv.inHospitalCode) return false;
+          if (entryId && inv.orderEntryId != null && String(inv.orderEntryId) === entryId) return true;
+          const sameOrder = (orderData && orderData.id != null && inv.orderId != null && String(inv.orderId) === String(orderData.id))
+            || (orderData && orderData.orderNo && inv.orderNo && String(inv.orderNo) === String(orderData.orderNo));
+          if (!sameOrder) return false;
+          return inv.materialId === materialId && (inv.batchNo || inv.batchNumber) === batchNo;
+        })
+        .map(inv => String(inv.inHospitalCode).trim())
+        .filter(Boolean);
+      return fromInventory.slice(0, limit);
+    },
     /** 打印条码按钮操作（不依赖备货库存数量：含 qty=0 的库存行 + 审核生成的院内码明细表兜底） */
     handlePrintBarcode(row) {
       const id = row.id;
@@ -2320,29 +2347,17 @@ export default {
         const batchNos = entryList.map(item => item.batchNo || item.batchNumber).filter(bn => bn);
         const materialIds = entryList.map(item => item.materialId).filter(mid => mid);
         
-        // 先尝试使用订单号过滤查询
         const queryParams = {
           warehouseId: warehouseId,
-          orderNo: orderData.orderNo, // 添加订单号过滤
-          includeZeroQty: true, // 库存为 0 仍可补打条码
+          orderId: id,
+          orderNo: orderData.orderNo,
+          includeZeroQty: true,
           pageNum: 1,
           pageSize: 10000
         };
 
         const loadInventory = () =>
-          listDepotInventory(queryParams).then(invResponse => {
-            let inventoryList = invResponse.rows || [];
-            if (inventoryList.length === 0 && batchNos.length > 0) {
-              console.log('使用订单号过滤未找到库存，尝试不使用订单号过滤查询');
-              return listDepotInventory({
-                warehouseId: warehouseId,
-                includeZeroQty: true,
-                pageNum: 1,
-                pageSize: 10000
-              }).then(secondResponse => secondResponse.rows || []);
-            }
-            return inventoryList;
-          });
+          listDepotInventory(queryParams).then(invResponse => invResponse.rows || []);
 
         const loadOrderCodeRows = () =>
           listOrderInhospitalcode(id).then(codeRes => {
@@ -2351,28 +2366,10 @@ export default {
           });
 
         return Promise.all([loadInventory(), loadOrderCodeRows()]).then(([inventoryList, orderCodeRows]) => {
-          const appendCode = (map, batchNo, materialId, code) => {
-            if (!batchNo || !materialId || !code) return;
-            const key = `${batchNo}_${materialId}`;
-            if (!map[key]) map[key] = [];
-            map[key].push(code);
-          };
-
           console.log('查询到的库存记录数:', inventoryList.length);
+          console.log('订单院内码明细数:', (orderCodeRows || []).length);
           console.log('订单明细中的批次号列表:', batchNos);
           console.log('订单明细中的物料ID列表:', materialIds);
-          
-          // 构建批次号和物料ID组合键到院内码列表的映射
-          // 同时支持 batchNo 和 batchNumber 字段
-          const keyToInHospitalCodes = {};
-          inventoryList.forEach(inv => {
-            if (inv.inHospitalCode && inv.materialId) {
-              appendCode(keyToInHospitalCodes, inv.batchNo || inv.batchNumber, inv.materialId, inv.inHospitalCode);
-            }
-          });
-          (orderCodeRows || []).forEach(row => {
-            appendCode(keyToInHospitalCodes, row.batchNo || row.batchNumber, row.materialId, row.inHospitalCode);
-          });
 
           const allBarcodesToPrint = [];
           entryList.forEach((item) => {
@@ -2391,9 +2388,7 @@ export default {
               return;
             }
 
-            const key = `${batchNo}_${materialId}`;
-            const inHospitalCodes = keyToInHospitalCodes[key] || [];
-            const codesToPrint = inHospitalCodes.slice(0, qty);
+            const codesToPrint = this.resolveInHospitalCodesForEntry(item, qty, orderCodeRows, inventoryList, orderData);
 
             if (codesToPrint.length === 0) {
               this.$modal.msgWarning(`批次号 ${batchNo} 没有找到院内码，无法打印条码`);

@@ -8,13 +8,7 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <!-- 2. 单据类型 -->
-      <el-table-column label="单据类型" align="center" width="100" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.billTypeName || '--' }}</span>
-        </template>
-      </el-table-column>
-      <!-- 3. 单号 -->
+      <!-- 单号 -->
       <el-table-column label="单号" align="center" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.orderNo || '--' }}</span>
@@ -115,13 +109,13 @@
       <!-- 16. 批号 -->
       <el-table-column label="批号" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.batchNo || '--' }}</span>
+          <span>{{ scope.row.batchNumber || '--' }}</span>
         </template>
       </el-table-column>
       <!-- 17. 批次 -->
       <el-table-column label="批次" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ scope.row.batchNumber || '--' }}</span>
+          <span>{{ scope.row.batchNo || '--' }}</span>
         </template>
       </el-table-column>
       <!-- 18. 生产厂家 -->
@@ -183,6 +177,12 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <!-- 单据类型（固定右侧） -->
+      <el-table-column label="单据类型" align="center" width="100" show-overflow-tooltip resizable fixed="right">
+        <template slot-scope="scope">
+          <span>{{ scope.row.billTypeName || '--' }}</span>
+        </template>
+      </el-table-column>
     </el-table>
 
     <div class="pagination-wrapper">
@@ -191,7 +191,7 @@
         :total="total"
         :page.sync="queryParams.pageNum"
         :limit.sync="queryParams.pageSize"
-        @pagination="getList"
+        @pagination="applyDetailPagination"
       />
     </div>
   </div>
@@ -201,6 +201,7 @@
 import { listOrder, getOrder, listOrderInhospitalcode } from "@/api/gz/order";
 import { listGoods as listRefundGoods, getGoods as getRefundGoods } from "@/api/gz/goods";
 import { listDepotInventory } from "@/api/gz/depotInventory";
+import { matchMaterialKeyword } from "@/utils/materialSearch";
 
 export default {
   name: "InboundRefundTable",
@@ -216,13 +217,27 @@ export default {
       loading: true,
       tableList: [],
       total: 0,
-      ids: []
+      ids: [],
+      /** 展开后的全量明细（按条码行），用于前端分页切片 */
+      allDetailRows: [],
+      cachedDetailRows: []
     };
   },
   watch: {
-    // 监听查询参数变化，参照库存查询页面的简洁方式
+    'queryParams.materialKeyword'() {
+      if (this.cachedDetailRows.length > 0) {
+        this.applyClientFilters();
+      }
+    },
     queryParams: {
-      handler() {
+      handler(newVal, oldVal) {
+        if (oldVal && newVal.materialKeyword !== oldVal.materialKeyword && this.isMaterialKeywordOnlyChange(newVal, oldVal)) {
+          return;
+        }
+        if (oldVal && newVal.pageNum !== oldVal.pageNum && this.isPaginationOnlyChange(newVal, oldVal)) {
+          this.applyDetailPagination();
+          return;
+        }
         this.getList();
       },
       deep: true,
@@ -324,6 +339,7 @@ export default {
         const acceptanceHeaders = (acceptanceRes && acceptanceRes.rows) || [];
         const refundGoodsHeaders = (refundGoodsRes && refundGoodsRes.rows) || [];
         if (acceptanceHeaders.length === 0 && refundGoodsHeaders.length === 0) {
+          this.allDetailRows = [];
           this.tableList = [];
           this.total = 0;
           this.loading = false;
@@ -427,8 +443,8 @@ export default {
               }
             });
 
-            this.tableList = detailList;
-            this.total = detailList.length;
+            this.cachedDetailRows = detailList.slice();
+            this.applyClientFilters();
             this.loading = false;
             this.$nextTick(() => {
               this.syncTableScroll();
@@ -440,10 +456,73 @@ export default {
         });
       }).catch(error => {
         this.$message.error('获取数据失败: ' + (error.message || '未知错误'));
+        this.allDetailRows = [];
         this.tableList = [];
         this.total = 0;
         this.loading = false;
       });
+    },
+    applyClientFilters() {
+      let rows = this.cachedDetailRows || [];
+      rows = rows.filter(row => this.matchesDetailMaterialKeyword(row));
+      this.allDetailRows = rows;
+      if (Number(this.queryParams.pageNum) !== 1) {
+        this.queryParams.pageNum = 1;
+      }
+      this.applyDetailPagination();
+    },
+    isMaterialKeywordOnlyChange(newVal, oldVal) {
+      if (!oldVal || !newVal) {
+        return false;
+      }
+      return newVal.pageNum === oldVal.pageNum
+        && newVal.pageSize === oldVal.pageSize
+        && newVal.warehouseId === oldVal.warehouseId
+        && newVal.supplierId === oldVal.supplierId
+        && newVal.departmentId === oldVal.departmentId
+        && newVal.inHospitalCode === oldVal.inHospitalCode
+        && newVal.orderNo === oldVal.orderNo
+        && newVal.orderStatus === oldVal.orderStatus
+        && newVal.beginDate === oldVal.beginDate
+        && newVal.endDate === oldVal.endDate;
+    },
+    isPaginationOnlyChange(newVal, oldVal) {
+      if (!oldVal || !newVal) {
+        return false;
+      }
+      return newVal.pageSize === oldVal.pageSize
+        && newVal.materialKeyword === oldVal.materialKeyword
+        && newVal.warehouseId === oldVal.warehouseId
+        && newVal.supplierId === oldVal.supplierId
+        && newVal.departmentId === oldVal.departmentId
+        && newVal.inHospitalCode === oldVal.inHospitalCode
+        && newVal.orderNo === oldVal.orderNo
+        && newVal.orderStatus === oldVal.orderStatus
+        && newVal.beginDate === oldVal.beginDate
+        && newVal.endDate === oldVal.endDate;
+    },
+    applyDetailPagination() {
+      const pageNum = Number(this.queryParams.pageNum) || 1;
+      const pageSize = Number(this.queryParams.pageSize) || 10;
+      const allRows = this.allDetailRows || [];
+      this.total = allRows.length;
+      const start = (pageNum - 1) * pageSize;
+      this.tableList = allRows.slice(start, start + pageSize);
+    },
+    matchesDetailMaterialKeyword(row) {
+      const kw = this.queryParams.materialKeyword;
+      if (kw == null || String(kw).trim() === '') {
+        return true;
+      }
+      return matchMaterialKeyword({
+        name: row.materialName || (row.material && row.material.name) || '',
+        code: row.materialCode || (row.material && row.material.code) || '',
+        speci: row.specification || (row.material && row.material.speci) || '',
+        model: row.model || (row.material && row.material.model) || '',
+        brand: row.material && row.material.brand,
+        referredName: row.material && row.material.referredName,
+        referred_name: row.material && row.material.referred_name
+      }, kw);
     },
     buildAcceptanceParams() {
       const filter = this.resolveOrderNoFilter();
@@ -451,8 +530,8 @@ export default {
         return null;
       }
       const params = {
-        pageNum: this.queryParams.pageNum,
-        pageSize: this.queryParams.pageSize,
+        pageNum: 1,
+        pageSize: 500,
         warehouseId: this.queryParams.warehouseId,
         departmentId: this.queryParams.departmentId,
         orderStatus: this.queryParams.orderStatus,
@@ -461,7 +540,6 @@ export default {
       };
       if (filter.raw) {
         params.orderNo = filter.raw;
-        params.pageNum = 1;
         params.pageSize = 100;
       } else {
         params.beginDate = this.queryParams.beginDate;
@@ -478,8 +556,8 @@ export default {
         return null;
       }
       const params = {
-        pageNum: this.queryParams.pageNum,
-        pageSize: this.queryParams.pageSize,
+        pageNum: 1,
+        pageSize: 500,
         warehouseId: this.queryParams.warehouseId,
         departmentId: this.queryParams.departmentId,
         goodsStatus: this.queryParams.orderStatus,
@@ -487,7 +565,6 @@ export default {
       };
       if (filter.raw) {
         params.goodsNo = filter.raw.startsWith('GZTH-') ? filter.raw : `GZTH-${filter.raw}`;
-        params.pageNum = 1;
         params.pageSize = 100;
       } else {
         params.beginDate = this.queryParams.beginDate;
@@ -621,9 +698,6 @@ export default {
       };
 
       detail.gzOrderEntryList.forEach(entry => {
-        if (this.queryParams.materialId && entry.materialId !== this.queryParams.materialId) {
-          return;
-        }
         const material = materialList.find(m => m && m.id === entry.materialId) || null;
         const codeItems = collectCodesForEntry(entry);
 
@@ -654,9 +728,6 @@ export default {
       const materialList = (detail && detail.materialList) || [];
       entries.forEach(entry => {
         if (!entry || entry.delFlag === 1) {
-          return;
-        }
-        if (this.queryParams.materialId && entry.materialId !== this.queryParams.materialId) {
           return;
         }
         const material = materialList.find(m => m && m.id === entry.materialId) || null;

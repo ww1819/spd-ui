@@ -3,9 +3,9 @@
     v-model="material"
     popper-class="select-dropdown--multiline"
     filterable
-    remote
-    :remote-method="remoteMethod"
+    :filter-method="filterMaterialOption"
     clearable
+    reserve-keyword
     :placeholder="placeholder"
     :disabled="value2"
     :loading="loading"
@@ -14,10 +14,10 @@
     <el-option
       v-for="item in materialOptions"
       :key="item.id"
-      :label="item.name"
+      :label="formatMaterialOptionLabel(item)"
       :value="item.id"
     >
-      <span class="select-option-label-wrap">{{ item.name }}</span>
+      <span class="select-option-label-wrap">{{ formatMaterialOptionLabel(item) }}</span>
     </el-option>
   </el-select>
 </template>
@@ -32,7 +32,7 @@ export default {
     value2: {},
     placeholder: {
       type: String,
-      default: "请选择耗材",
+      default: "名称/编码/拼音首字母",
     },
   },
   data() {
@@ -40,7 +40,6 @@ export default {
       materialOptions: [],
       allMaterials: [],
       loading: false,
-      searchTimer: null,
     };
   },
   computed: {
@@ -61,19 +60,25 @@ export default {
   created() {
     this.loadAllMaterials();
   },
-  beforeDestroy() {
-    if (this.searchTimer) {
-      clearTimeout(this.searchTimer);
-    }
-  },
   methods: {
+    formatMaterialOptionLabel(item) {
+      if (!item) {
+        return "";
+      }
+      const code = item.code ? String(item.code).trim() : "";
+      const name = item.name ? String(item.name).trim() : "";
+      if (code && name) {
+        return `[${code}] ${name}`;
+      }
+      return name || code;
+    },
     loadAllMaterials() {
       this.loading = true;
       listMaterialDeptSafe()
         .then((response) => {
           const all = response || [];
           this.allMaterials = all;
-          this.materialOptions = all.slice(0, 50);
+          this.materialOptions = all.slice(0, 100);
           this.ensureSelectedOption();
         })
         .catch(() => {
@@ -93,23 +98,15 @@ export default {
         this.materialOptions = [hit, ...this.materialOptions];
       }
     },
-    remoteMethod(query) {
-      if (this.searchTimer) {
-        clearTimeout(this.searchTimer);
-      }
-      if (!query || query.trim() === "") {
-        this.materialOptions = this.allMaterials.slice(0, 50);
-        this.loading = false;
+    filterMaterialOption(query) {
+      const q = normalizeMaterialSearchKeyword(query);
+      if (!q) {
+        this.materialOptions = (this.allMaterials || []).slice(0, 100);
         return;
       }
-      this.loading = true;
-      const q = normalizeMaterialSearchKeyword(query);
-      this.searchTimer = setTimeout(() => {
-        this.materialOptions = (this.allMaterials || [])
-          .filter((item) => matchMaterialKeyword(item, q))
-          .slice(0, 100);
-        this.loading = false;
-      }, 200);
+      this.materialOptions = (this.allMaterials || [])
+        .filter((item) => matchMaterialKeyword(item, q))
+        .slice(0, 100);
     },
   },
 };

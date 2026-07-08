@@ -30,6 +30,18 @@ export function getMaterialPinyinInitials(str) {
   }
 }
 
+function extractAlphaUpper(str) {
+  return String(str || '').replace(/[^a-zA-Z]/g, '').toUpperCase();
+}
+
+function fieldContainsKeyword(value, k, kUpper) {
+  if (value == null || String(value).trim() === '') {
+    return false;
+  }
+  const s = String(value);
+  return s.toLowerCase().includes(k) || s.toUpperCase().includes(kUpper);
+}
+
 /**
  * 判断产品档案行是否匹配关键词（名称/编码/简码/规格/型号/品牌/通用名 + 拼音首字母）。
  */
@@ -56,24 +68,38 @@ export function matchMaterialKeyword(item, rawKeyword) {
   ];
   for (let i = 0; i < fields.length; i += 1) {
     const v = fields[i];
-    if (v != null && String(v).trim() !== '') {
-      const s = String(v);
-      if (s.toLowerCase().includes(k) || s.toUpperCase().includes(kUpper)) {
+    if (fieldContainsKeyword(v, k, kUpper)) {
+      return true;
+    }
+  }
+  if (/^[a-zA-Z]+$/.test(kw)) {
+    const codeAlpha = extractAlphaUpper(item.code);
+    if (codeAlpha && codeAlpha.includes(kUpper)) {
+      return true;
+    }
+    const referred = item.referredName || item.referred_name;
+    if (referred) {
+      const refUpper = String(referred).toUpperCase();
+      if (refUpper.includes(kUpper)) {
+        return true;
+      }
+      const refInitials = getMaterialPinyinInitials(referred);
+      if (refInitials.includes(kUpper)) {
         return true;
       }
     }
-  }
-  const nameForPy = item.name || item.code || item.referredName || item.referred_name || '';
-  if (/^[a-zA-Z]+$/.test(kw) && nameForPy) {
-    const initials = getMaterialPinyinInitials(nameForPy);
-    if (initials.includes(kUpper)) {
-      return true;
-    }
-    const allInitials = getMaterialPinyinInitials(
-      [item.name, item.code, item.referredName, item.referred_name, item.speci].filter(Boolean).join('')
-    );
-    if (allInitials.includes(kUpper)) {
-      return true;
+    const nameForPy = item.name || item.code || item.referredName || item.referred_name || '';
+    if (nameForPy) {
+      const initials = getMaterialPinyinInitials(nameForPy);
+      if (initials.includes(kUpper)) {
+        return true;
+      }
+      const allInitials = getMaterialPinyinInitials(
+        [item.name, item.code, item.referredName, item.referred_name, item.speci].filter(Boolean).join('')
+      );
+      if (allInitials.includes(kUpper)) {
+        return true;
+      }
     }
   }
   return false;

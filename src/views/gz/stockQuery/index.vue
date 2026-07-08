@@ -21,10 +21,14 @@
                   <SelectSupplier v-model="queryParams.supplierId" />
                 </div>
               </el-form-item>
-              <el-form-item prop="materialId" class="query-item-inline">
-                <div class="query-select-wrapper">
-                  <SelectMaterial v-model="queryParams.materialId" />
-                </div>
+              <el-form-item prop="materialKeyword" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.materialKeyword"
+                  placeholder="耗材编码/名称/规格/首字母"
+                  clearable
+                  style="width: 220px"
+                  @keyup.enter.native="handleQuery"
+                />
               </el-form-item>
               <el-form-item prop="inHospitalCode" class="query-item-inline">
                 <el-input
@@ -135,7 +139,6 @@
 <script>
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectSupplier from "@/components/SelectModel/SelectSupplierDept";
-import SelectMaterial from "@/components/SelectModel/SelectMaterialDept";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import RightToolbar from "@/components/RightToolbar";
 import InboundRefundTable from "./components/InboundRefundTable.vue";
@@ -159,7 +162,6 @@ export default {
   components: {
     SelectWarehouse,
     SelectSupplier,
-    SelectMaterial,
     SelectDepartment,
     RightToolbar,
     InboundRefundTable,
@@ -176,7 +178,7 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        materialId: null,
+        materialKeyword: null,
         inHospitalCode: null,
         warehouseId: null,
         supplierId: null,
@@ -213,7 +215,7 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
-      this.queryParams.materialId = null;
+      this.queryParams.materialKeyword = null;
       this.queryParams.inHospitalCode = null;
       this.queryParams.warehouseId = null;
       this.queryParams.supplierId = null;
