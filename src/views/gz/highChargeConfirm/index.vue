@@ -9,7 +9,7 @@
             clearable
             filterable
             :filter-method="filterDeptMethod"
-            style="width:200px"
+            style="width:148px"
           >
             <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
           </el-select>
@@ -21,7 +21,7 @@
             clearable
             filterable
             :filter-method="filterOrderingDeptMethod"
-            style="width:200px"
+            style="width:148px"
           >
             <el-option v-for="d in orderingDeptOptions" :key="'ord-' + d.id" :label="d.name" :value="d.id" />
           </el-select>
@@ -33,15 +33,9 @@
             clearable
             filterable
             :filter-method="filterExecDeptMethod"
-            style="width:200px"
+            style="width:148px"
           >
             <el-option v-for="d in execDeptOptions" :key="'exec-' + d.id" :label="d.name" :value="d.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="确认状态">
-          <el-select v-model="query.confirmStatus" placeholder="全部" clearable style="width:110px">
-            <el-option label="未确认" value="0" />
-            <el-option label="已确认" value="1" />
           </el-select>
         </el-form-item>
         <el-form-item label="患者姓名">
@@ -58,6 +52,12 @@
             <el-date-picker v-model="query.beginConsumeAuditTime" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
             <span style="margin:0 6px">至</span>
             <el-date-picker v-model="query.endConsumeAuditTime" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
+          </el-form-item>
+          <el-form-item label="确认状态">
+            <el-select v-model="query.confirmStatus" placeholder="全部" clearable style="width:110px">
+              <el-option label="未确认" value="0" />
+              <el-option label="已确认" value="1" />
+            </el-select>
           </el-form-item>
           <el-form-item label="费用明细主键">
             <el-input v-model="query.hisChargeId" placeholder="HIS费用明细主键模糊" clearable style="width:180px" @keyup.enter.native="handleQuery" />
@@ -106,7 +106,6 @@
         <el-table-column label="核销科室" prop="departmentName" min-width="110" show-overflow-tooltip />
         <el-table-column label="开单科室" prop="orderingDeptName" min-width="110" show-overflow-tooltip />
         <el-table-column label="执行科室" prop="execDeptName" min-width="110" show-overflow-tooltip />
-        <el-table-column label="费用明细主键" prop="hisChargeId" width="180" show-overflow-tooltip />
         <el-table-column label="患者姓名" prop="patientName" width="100" show-overflow-tooltip />
         <el-table-column label="住院/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
         <el-table-column label="收费编码" prop="chargeItemId" width="120" show-overflow-tooltip />
@@ -138,6 +137,7 @@
         <el-table-column label="确认批次" prop="confirmNo" width="150" show-overflow-tooltip />
         <el-table-column label="入库单号" prop="inboundBillNo" width="150" show-overflow-tooltip />
         <el-table-column label="出库单号" prop="outboundBillNo" width="150" show-overflow-tooltip />
+        <el-table-column label="费用明细主键" prop="hisChargeId" width="180" show-overflow-tooltip />
       </el-table>
     </div>
 

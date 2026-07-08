@@ -174,8 +174,43 @@
     <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="92%" append-to-body>
       <el-table v-loading="consumeRecordDialog.loading" :data="consumeRecordDialog.rows" border size="small" max-height="420" empty-text="暂无消耗记录">
         <el-table-column label="消耗单号" prop="consumeBillNo" min-width="178" show-overflow-tooltip />
-        <el-table-column label="耗材" prop="materialName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="耗材名称" prop="materialName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="规格" prop="materialSpeci" min-width="90" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.materialSpeci || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="型号" prop="materialModel" min-width="90" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.materialModel || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单位" prop="unit" width="64" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.unit || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单价" prop="unitPrice" width="88" align="right" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatMoney(scope.row.unitPrice) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="数量" prop="entryQty" width="80" align="right" />
+        <el-table-column label="生产日期" prop="beginTime" width="108" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateOnly(scope.row.beginTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="有效期" prop="endTime" width="108" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateOnly(scope.row.endTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="批号" prop="batchNumber" min-width="120" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.batchNumber || '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="120" show-overflow-tooltip />
       </el-table>
       <div slot="footer" class="dialog-footer">
@@ -411,6 +446,16 @@ export default {
     this.$nextTick(() => this.layoutDetailTable())
   },
   methods: {
+    formatDateOnly(v) {
+      if (!v) return '--'
+      return parseTime(v, '{y}-{m}-{d}')
+    },
+    formatMoney(v) {
+      if (v == null || v === '') return '--'
+      const n = Number(v)
+      if (isNaN(n)) return String(v)
+      return n.toFixed(2)
+    },
     layoutDetailTable() {
       const table = this.$refs.detailTable
       if (table && table.doLayout) {

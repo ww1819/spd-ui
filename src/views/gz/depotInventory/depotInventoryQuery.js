@@ -12,5 +12,8 @@ export function buildDepotInventoryQueryParams(queryParams, extra = {}) {
     params.beginDate = null;
     params.endDate = null;
   }
+  if (inHospitalCode) {
+    params.includeZeroQty = true;
+  }
   return params;
 }
