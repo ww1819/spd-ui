@@ -91,9 +91,10 @@
         stripe
         class="hc-detail-table"
         @selection-change="handleSelectionChange"
+        @sort-change="handleSortChange"
       >
         <el-table-column type="selection" width="48" align="center" :selectable="rowSelectable" fixed="left" />
-        <el-table-column label="确认状态" width="100" align="center" show-overflow-tooltip>
+        <el-table-column label="确认状态" prop="confirmStatus" width="112" align="center" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
             <span :class="confirmStatusClass(scope.row.confirmStatus)">{{ confirmStatusText(scope.row.confirmStatus) }}</span>
           </template>
@@ -106,20 +107,20 @@
         <el-table-column label="核销科室" prop="departmentName" min-width="110" show-overflow-tooltip />
         <el-table-column label="开单科室" prop="orderingDeptName" min-width="110" show-overflow-tooltip />
         <el-table-column label="执行科室" prop="execDeptName" min-width="110" show-overflow-tooltip />
-        <el-table-column label="患者姓名" prop="patientName" width="100" show-overflow-tooltip />
-        <el-table-column label="住院/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
-        <el-table-column label="收费编码" prop="chargeItemId" width="120" show-overflow-tooltip />
-        <el-table-column label="项目名称" prop="itemName" min-width="160" show-overflow-tooltip />
-        <el-table-column label="项目规格" prop="itemSpec" width="100" show-overflow-tooltip />
+        <el-table-column label="患者姓名" prop="patientName" width="110" min-width="100" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="住院/门诊号" prop="visitNo" width="145" min-width="130" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="收费编码" prop="chargeItemId" width="130" min-width="120" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="项目名称" prop="itemName" min-width="180" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="项目规格" prop="itemSpec" width="120" min-width="110" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="项目型号" prop="itemModel" width="100" show-overflow-tooltip />
-        <el-table-column label="产品名称" prop="materialName" min-width="140" show-overflow-tooltip />
-        <el-table-column label="规格" prop="materialSpeci" width="100" show-overflow-tooltip />
+        <el-table-column label="产品名称" prop="materialName" min-width="160" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="规格" prop="materialSpeci" width="120" min-width="110" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="型号" prop="materialModel" width="100" show-overflow-tooltip />
-        <el-table-column label="院内码" prop="inHospitalCode" width="120" show-overflow-tooltip />
+        <el-table-column label="院内码" prop="inHospitalCode" width="145" min-width="130" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="数量" prop="entryQty" width="90" align="center" />
-        <el-table-column label="单价" prop="unitPrice" width="80" align="right" />
-        <el-table-column label="金额" prop="amt" width="100" align="right" />
-        <el-table-column label="批号" prop="batchNumber" width="110" show-overflow-tooltip />
+        <el-table-column label="单价" prop="unitPrice" width="95" min-width="88" align="right" sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="金额" prop="amt" width="110" min-width="100" align="right" sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="批号" prop="batchNumber" width="130" min-width="120" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="生产日期" prop="productionDate" width="110" align="center" show-overflow-tooltip>
           <template slot-scope="scope">
             <span>{{ formatDateCell(scope.row.productionDate) }}</span>
@@ -234,7 +235,9 @@ export default {
         patientName: undefined,
         visitNo: undefined,
         hisChargeId: undefined,
-        materialName: undefined
+        materialName: undefined,
+        sortField: undefined,
+        sortOrder: undefined
       },
       confirmDialogVisible: false,
       confirmDepartmentId: undefined,
@@ -351,6 +354,12 @@ export default {
       this.query.pageNum = 1
       this.loadList()
     },
+    handleSortChange({ prop, order }) {
+      this.query.sortField = order ? prop : undefined
+      this.query.sortOrder = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : undefined
+      this.query.pageNum = 1
+      this.loadList()
+    },
     resetQuery() {
       const month = defaultMonthRange()
       this.query = {
@@ -365,7 +374,9 @@ export default {
         patientName: undefined,
         visitNo: undefined,
         hisChargeId: undefined,
-        materialName: undefined
+        materialName: undefined,
+        sortField: undefined,
+        sortOrder: undefined
       }
       this.loadList()
     },

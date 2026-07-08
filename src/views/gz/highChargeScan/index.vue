@@ -3,7 +3,7 @@
     <div class="hc-filter-panel">
       <el-form :model="detailQuery" inline size="small" class="hc-query-form">
         <el-form-item label="类型">
-          <el-radio-group v-model="detailVisitType" @change="handleDetailQuery">
+          <el-radio-group v-model="detailVisitType" @change="onDetailVisitTypeChange">
             <el-radio-button label="ALL">全部</el-radio-button>
             <el-radio-button label="IN">住院</el-radio-button>
             <el-radio-button label="OUT">门诊</el-radio-button>
@@ -85,6 +85,7 @@
       border
       stripe
       class="hc-detail-table"
+      @sort-change="handleDetailSortChange"
     >
       <el-table-column label="序号" type="index" width="60" align="center" :index="detailRowIndex" fixed="left" />
       <el-table-column label="就诊类型" prop="visitType" width="80">
@@ -93,37 +94,37 @@
         </template>
       </el-table-column>
       <template v-if="detailVisitType === 'IN'">
-        <el-table-column label="住院号" prop="inpatientNo" width="120" show-overflow-tooltip />
+        <el-table-column label="住院号" prop="inpatientNo" width="140" min-width="130" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="开单科室" prop="deptName" min-width="120" show-overflow-tooltip />
         <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else-if="detailVisitType === 'OUT'">
-        <el-table-column label="门诊号" prop="outpatientNo" width="120" show-overflow-tooltip />
+        <el-table-column label="门诊号" prop="outpatientNo" width="140" min-width="130" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="开单科室" prop="clinicName" min-width="120" show-overflow-tooltip />
         <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
       </template>
       <template v-else>
-        <el-table-column label="住院号/门诊号" prop="visitNo" width="130" show-overflow-tooltip />
+        <el-table-column label="住院号/门诊号" prop="visitNo" width="150" min-width="140" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="开单科室" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
         <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
       </template>
-      <el-table-column label="姓名" prop="patientName" width="100" show-overflow-tooltip />
+      <el-table-column label="姓名" prop="patientName" width="110" min-width="100" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="性别" prop="patientSex" width="60" align="center" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ formatPatientSex(scope.row.patientSex) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="收费编码" prop="chargeItemId" width="120" show-overflow-tooltip />
+      <el-table-column label="收费编码" prop="chargeItemId" width="130" min-width="120" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="收费明细主键" prop="hisChargeId" width="140" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ scope.row.hisChargeId || scope.row.hisInpatientChargeId || scope.row.hisOutpatientChargeId || '' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="项目名称" prop="itemName" min-width="160" show-overflow-tooltip />
-      <el-table-column label="规格" prop="specModel" width="100" show-overflow-tooltip />
+      <el-table-column label="项目名称" prop="itemName" min-width="180" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+      <el-table-column label="规格" prop="specModel" width="130" min-width="110" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="数量" prop="quantity" width="90" align="center" />
       <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
-      <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
+      <el-table-column label="金额" prop="totalAmount" width="110" min-width="100" align="right" sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="核销状态" prop="processStatus" width="100" align="center" show-overflow-tooltip>
         <template slot-scope="scope">
           <span :class="writeOffStatusClass(scope.row.processStatus)">{{ writeOffStatusText(scope.row.processStatus) }}</span>
@@ -375,6 +376,8 @@ export default {
         departmentId: undefined,
         itemName: undefined,
         processed: undefined,
+        sortField: undefined,
+        sortOrder: undefined,
         ...buildDefaultChargeDateRange()
       },
       highDialogVisible: false,
@@ -813,6 +816,17 @@ export default {
       this.detailQuery.pageNum = 1
       this.loadDetailList()
     },
+    onDetailVisitTypeChange() {
+      this.detailQuery.sortField = undefined
+      this.detailQuery.sortOrder = undefined
+      this.handleDetailQuery()
+    },
+    handleDetailSortChange({ prop, order }) {
+      this.detailQuery.sortField = order ? prop : undefined
+      this.detailQuery.sortOrder = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : undefined
+      this.detailQuery.pageNum = 1
+      this.loadDetailList()
+    },
     resetDetailQuery() {
       this.detailVisitType = 'ALL'
       this.detailQuery = {
@@ -825,6 +839,8 @@ export default {
         departmentId: undefined,
         itemName: undefined,
         processed: undefined,
+        sortField: undefined,
+        sortOrder: undefined,
         ...buildDefaultChargeDateRange()
       }
       this.loadDetailList()
@@ -865,7 +881,6 @@ export default {
           this.detailTotal = res.total || 0
         }).finally(done)
       } else {
-        delete q.visitNo
         listHighChargeAllMirror(q).then(res => {
           this.detailList = res.rows || []
           this.detailTotal = res.total || 0
