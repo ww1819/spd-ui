@@ -34,6 +34,12 @@ const getters = {
     if (!t) return false
     return t.tenantKey === 'HS_003' || t.customerId === 'hengsui-third-001'
   },
+  /** 枣强县中医院（tenantKey=ZQ_TCM 或 customerId=zaoqiang-tcm-001） */
+  isZqTcmTenant: state => {
+    const t = state.user.tenant
+    if (!t) return false
+    return t.tenantKey === 'ZQ_TCM' || t.customerId === 'zaoqiang-tcm-001'
+  },
   permission_routes: state => state.permission.routes,
   topbarRouters:state => state.permission.topbarRouters,
   defaultRoutes:state => state.permission.defaultRoutes,

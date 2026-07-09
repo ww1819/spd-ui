@@ -77,7 +77,7 @@
     </div>
 
     <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+      <el-col :span="1.5" v-if="!isZqTcmTenant">
         <el-button
           type="primary" size="small"
           @click="handleAdd"
@@ -115,7 +115,7 @@
           v-hasPermi="['foundation:depart:export']"
         >导出</el-button>
       </el-col>
-      <el-col :span="1.8">
+      <el-col :span="1.8" v-if="!isZqTcmTenant">
         <el-button
           type="info"
           plain
@@ -354,7 +354,7 @@ export default {
   name: "depart",
   components: { Treeselect, MsunHisSyncButton },
   computed: {
-    ...mapGetters(["departImportRequiresHisDeptId"]),
+    ...mapGetters(["departImportRequiresHisDeptId", "isZqTcmTenant"]),
     showMsunProbe() {
       return isMsunIntegratedTenant(this.$store.getters.customerId);
     },
@@ -617,6 +617,10 @@ export default {
     },
     /** 新增按钮操作 */
     handleAdd() {
+      if (this.isZqTcmTenant) {
+        this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
+        return;
+      }
       this.reset();
       this.open = true;
       this.title = "添加科室";
@@ -680,6 +684,10 @@ export default {
       }, `depart_${new Date().getTime()}.xlsx`)
     },
     handleImport(mode) {
+      if (this.isZqTcmTenant && mode === 'add') {
+        this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
+        return;
+      }
       this.upload.mode = mode === "update" ? "update" : "add";
       this.upload.updateSupport = this.upload.mode === "update";
       this.upload.title = this.upload.mode === "update" ? "科室更新导入" : "科室新增导入";

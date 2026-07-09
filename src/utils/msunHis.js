@@ -4,6 +4,14 @@ export const ZQ_TCM_TENANT = 'zaoqiang-tcm-001'
 /** 衡水市第三人民医院 customerId */
 export const HS_THIRD_TENANT = 'hengsui-third-001'
 
+/** 枣强县中医院：禁止手工新增基础档案时的提示 */
+export const ZQ_TCM_MANUAL_ADD_DENIED_MSG = '枣强县中医院不允许手工新增，请从HIS系统同步'
+
+export function isZqTcmTenant(customerId) {
+  const id = customerId == null ? '' : String(customerId).trim()
+  return id === ZQ_TCM_TENANT
+}
+
 /** 枣强入库单打印版式（新版） */
 export function isZqInboundPrintTenant(customerId) {
   const id = customerId == null ? '' : String(customerId).trim()

@@ -206,7 +206,7 @@
       </div>
     </div>
     <el-row :gutter="10" class="mb8 material-toolbar-row" style="padding-top: 0px; margin-top: -8px">
-      <el-col :span="1.5">
+      <el-col :span="1.5" v-if="!isZqTcmTenant">
         <el-button
           type="primary" size="medium"
           @click="handleAdd"
@@ -274,7 +274,7 @@
           v-hasPermi="['foundation:chargeItem:query','foundation:material:query']"
         >收费项目维护</el-button>
       </el-col>
-      <el-col :span="1.5">
+      <el-col :span="1.5" v-if="!isZqTcmTenant">
         <el-button
           type="primary"
           plain
@@ -2328,6 +2328,10 @@ export default {
       this.handleQuery();
     },
     handleMaterialImport(mode) {
+      if (this.isZqTcmTenant && mode === 'add') {
+        this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
+        return;
+      }
       if (this.isZqTcmTenant && mode === 'update') {
         this.$modal.msgWarning('枣强县中医院暂不支持更新导入，请在产品档案中逐条修改财务分类、生产厂家、供应商与单价');
         return;
@@ -2556,6 +2560,10 @@ export default {
     },
     /** 新增按钮操作 */
     async handleAdd() {
+      if (this.isZqTcmTenant) {
+        this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
+        return;
+      }
       this.reset();
       this.open = true;
       this.dialogMode = 'add';

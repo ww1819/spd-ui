@@ -91,7 +91,7 @@
             <el-col :span="24">
               <div class="query-actions-bar">
                 <div class="query-actions-left">
-                  <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
+                  <el-button v-if="!isZqTcmTenant" type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
                   <el-button type="success" icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
                   <el-button type="primary" icon="el-icon-s-custom" size="small" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']">批量设置工作组</el-button>
                   <el-button v-if="isTenantSuper" type="warning" icon="el-icon-key" size="small" @click="openBatchPassword">批量修改密码</el-button>
@@ -104,7 +104,7 @@
                       更多功能<i class="el-icon-arrow-down el-icon--right"></i>
                     </el-button>
                     <el-dropdown-menu slot="dropdown">
-                      <el-dropdown-item command="importAdd" v-hasPermi="['system:user:import']">新增导入</el-dropdown-item>
+                      <el-dropdown-item v-if="!isZqTcmTenant" command="importAdd" v-hasPermi="['system:user:import']">新增导入</el-dropdown-item>
                       <el-dropdown-item command="importUpdate" v-hasPermi="['system:user:import']">更新导入</el-dropdown-item>
                       <el-dropdown-item command="export" v-hasPermi="['system:user:export']">导出</el-dropdown-item>
                       <el-dropdown-item command="reset">重置</el-dropdown-item>
@@ -614,12 +614,14 @@ import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import MenuAuthDualTree from "@/components/MenuAuthDualTree";
 import { mergeMenuAuthIds, filterMenuIdsByAllowed, toMenuIdNumbers } from "@/utils/menuAuthUtils";
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
+import { mapGetters } from 'vuex';
 
 export default {
   name: "User",
   dicts: ['sys_normal_disable', 'sys_user_sex','warehouse_role'],
   components: { Treeselect, MenuAuthDualTree, MsunHisSyncButton },
   computed: {
+    ...mapGetters(['isZqTcmTenant']),
     /** 是否机构管理员（super 账号） */
     isTenantSuper() {
       return !!this.$store.state.user.tenantSuper;
@@ -864,6 +866,10 @@ export default {
   },
   methods: {
     handleMoreCommand(command) {
+      if (this.isZqTcmTenant && command === 'importAdd') {
+        this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
+        return;
+      }
       switch (command) {
         case "importAdd":
           this.handleImport("add");
@@ -1484,6 +1490,10 @@ export default {
     },
     /** 新增按钮操作 */
     handleAdd() {
+      if (this.isZqTcmTenant) {
+        this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
+        return;
+      }
       this.reset();
       getUser().then(response => {
         this.postOptions = response.posts;

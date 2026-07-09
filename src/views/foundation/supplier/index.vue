@@ -75,7 +75,7 @@
     </div>
 
     <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+      <el-col :span="1.5" v-if="!isZqTcmTenant">
         <el-button
           type="primary"
           size="small"
@@ -118,7 +118,7 @@
           v-hasPermi="['foundation:supplier:export']"
         >导出</el-button>
       </el-col>
-      <el-col :span="1.8">
+      <el-col :span="1.8" v-if="!isZqTcmTenant">
         <el-button
           type="info"
           plain
@@ -528,7 +528,7 @@ export default {
   components: { MsunHisSyncButton },
   dicts: ['is_use_status'],
   computed: {
-    ...mapGetters(["supplierImportRequiresHisId"]),
+    ...mapGetters(["supplierImportRequiresHisId", "isZqTcmTenant"]),
     hisIdPlaceholder() {
       if (this.form && this.form.id) {
         return "保存后不可修改";
@@ -729,6 +729,10 @@ export default {
     },
     /** 新增按钮操作 */
     handleAdd() {
+      if (this.isZqTcmTenant) {
+        this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
+        return;
+      }
       this.reset();
       // 默认选中"耗材"
       this.form.supplierTypeList = ['耗材'];
@@ -872,6 +876,10 @@ export default {
       }).catch(() => {});
     },
     handleImport(mode) {
+      if (this.isZqTcmTenant && mode === 'add') {
+        this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
+        return;
+      }
       this.upload.mode = mode === "update" ? "update" : "add";
       this.upload.updateSupport = this.upload.mode === "update";
       this.upload.title = this.upload.mode === "update" ? "供应商更新导入" : "供应商新增导入";
