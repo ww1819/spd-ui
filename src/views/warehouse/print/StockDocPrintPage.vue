@@ -10,6 +10,14 @@
         :disabled="!printReady || !canPrint"
         @click="handleBrowserPrint"
       >打印</el-button>
+      <el-button
+        v-if="showLodopPrint"
+        type="success"
+        size="small"
+        :disabled="!printReady || !canPrint"
+        :loading="lodopPrinting"
+        @click="handleLodopPrint"
+      >Lodop打印</el-button>
       <span class="toolbar-label">一页打印</span>
       <el-input-number
         v-model="formRows"
@@ -46,6 +54,7 @@ import { buildRefundGoodsPrintRowFromDetail } from '@/views/warehouse/print/refu
 import outOrderPrint from '@/views/outWarehouse/audit/outOrderPrint'
 import refundDepotOrderPrint from '@/views/outWarehouse/refundDepotAudit/refundDepotOrderPrint'
 import refundGoodsOrderPrint from '@/views/inWarehouse/refundGoodsAudit/refundGoodsOrderPrint'
+import { isHsThirdTenant } from '@/utils/msunHis'
 
 const ROUTE_META = {
   '/print/outbound': {
@@ -99,7 +108,8 @@ export default {
       formRows: 6,
       rowsPerPageForPrint: 6,
       reloadTick: 0,
-      canPrint: false
+      canPrint: false,
+      lodopPrinting: false
     }
   },
   computed: {
@@ -114,6 +124,13 @@ export default {
     },
     printReady() {
       return !!this.printRow && !this.loading
+    },
+    /** 衡水三院出库单：显示 Lodop 打印入口 */
+    showLodopPrint() {
+      if (this.docKind !== 'OUTBOUND') return false
+      const tenant = this.$store.getters.tenant
+      if (tenant && tenant.tenantKey === 'HS_003') return true
+      return isHsThirdTenant(this.$store.getters.customerId)
     },
     printChildProps() {
       if (!this.printRow) return {}
@@ -241,6 +258,40 @@ export default {
         }
       }
       doPrint()
+    },
+    handleLodopPrint() {
+      if (!this.printReady || !this.canPrint || this.lodopPrinting) return
+      const billId = this.$route.query.id
+      const doLodop = () => {
+        const ref = this.$refs.orderPrintRef
+        if (!ref || typeof ref.startLodop !== 'function') {
+          this.$modal.msgWarning('当前打印模板不支持 Lodop')
+          this.lodopPrinting = false
+          return Promise.resolve()
+        }
+        return ref
+          .startLodop({ preview: true })
+          .catch(err => {
+            const msg = (err && err.message) || 'Lodop 打印失败'
+            this.$modal.msgError(msg)
+          })
+          .finally(() => {
+            this.lodopPrinting = false
+          })
+      }
+      this.lodopPrinting = true
+      if (billId) {
+        const recordPrint = RECORD_PRINT_FN[this.docKind]
+        if (recordPrint) {
+          recordPrint(billId)
+            .catch(() => {})
+            .finally(() => {
+              doLodop()
+            })
+          return
+        }
+      }
+      doLodop()
     }
   }
 }

@@ -109,6 +109,8 @@
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { getDefaultTemplate } from '@/api/system/printSetting'
 import { formatQuantity } from '@/utils/format-quantity'
+import { lodopPrintHtml } from '@/utils/lodop'
+import { buildHsOutboundLodopHtml } from '@/utils/lodopOutOrderHs'
 
 export default {
   name: 'OutOrderPrintHs',
@@ -432,6 +434,60 @@ export default {
       } else {
         printNow()
       }
+    },
+    /**
+     * C-Lodop 打印：使用 Lodop 兼容表格模板（不依赖 CSS grid/flex），
+     * 字段与屏上预览一致；纸张默认 210mm×140mm（针式联单）。
+     * @param {{ preview?: boolean, printerName?: string }} [options]
+     * @returns {Promise<void>}
+     */
+    startLodop(options) {
+      const opts = options || {}
+      const preview = opts.preview !== false
+      const printerName = opts.printerName || ''
+
+      const printNow = () => {
+        try {
+          const html = buildHsOutboundLodopHtml({
+            hospitalName: this.hospitalName || '',
+            row: this.row || {},
+            detailPages: this.detailPages,
+            formatOutboundDate: this.formatOutboundDate,
+            formatSpecModel: this.formatSpecModel,
+            formatNum: this.formatNum,
+            formatPrice: this.formatPrice,
+            formatAmt: this.formatAmt,
+            formatValidDate: this.formatValidDate,
+            // 仅表体字号跟打印设置；标题/表头信息在 Lodop 模板内按屏上预览写死
+            tableFontSize: this.printSetting.tableFontSize || 12
+          })
+          const orient = this.effectiveOrientation === 'landscape' ? 2 : 1
+          // 与屏上联单可视区域一致：210mm × 140mm
+          const payload = {
+            html,
+            taskName: '物资出库单',
+            orient,
+            preview,
+            printerName: printerName || undefined,
+            pageWidthMm: 210,
+            pageHeightMm: 140,
+            pageName: 'LodopCustomPage',
+            marginTopMm: 2,
+            marginLeftMm: 2,
+            marginRightMm: 2,
+            marginBottomMm: 2
+          }
+          return lodopPrintHtml(payload)
+        } catch (e) {
+          return Promise.reject(e)
+        }
+      }
+
+      const waitName =
+        typeof this.ensureHospitalNameLoaded === 'function'
+          ? this.ensureHospitalNameLoaded().catch(() => {})
+          : Promise.resolve()
+      return waitName.then(printNow)
     }
   }
 }

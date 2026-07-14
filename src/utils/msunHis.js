@@ -12,6 +12,12 @@ export function isZqTcmTenant(customerId) {
   return id === ZQ_TCM_TENANT
 }
 
+/** 衡水市第三人民医院 */
+export function isHsThirdTenant(customerId) {
+  const id = customerId == null ? '' : String(customerId).trim()
+  return id === HS_THIRD_TENANT
+}
+
 /** 枣强入库单打印版式（新版） */
 export function isZqInboundPrintTenant(customerId) {
   const id = customerId == null ? '' : String(customerId).trim()
