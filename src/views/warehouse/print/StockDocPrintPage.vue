@@ -54,7 +54,7 @@ import { buildRefundGoodsPrintRowFromDetail } from '@/views/warehouse/print/refu
 import outOrderPrint from '@/views/outWarehouse/audit/outOrderPrint'
 import refundDepotOrderPrint from '@/views/outWarehouse/refundDepotAudit/refundDepotOrderPrint'
 import refundGoodsOrderPrint from '@/views/inWarehouse/refundGoodsAudit/refundGoodsOrderPrint'
-import { isHsThirdTenant } from '@/utils/msunHis'
+// import { isHsThirdTenant } from '@/utils/msunHis' // Lodop 入口恢复时一并打开
 
 const ROUTE_META = {
   '/print/outbound': {
@@ -63,7 +63,7 @@ const ROUTE_META = {
     fetchDetail: id => getOutWarehouse(id),
     buildRow: buildOutboundPrintRowFromDetail,
     printComponentName: 'outOrderPrint',
-    paperType: 'a4',
+    paperType: 'third-split',
     printOrientation: 'portrait'
   },
   '/print/refund-depot': {
@@ -72,7 +72,7 @@ const ROUTE_META = {
     fetchDetail: id => getTkInventory(id),
     buildRow: buildRefundDepotPrintRowFromDetail,
     printComponentName: 'refundDepotOrderPrint',
-    paperType: 'a4',
+    paperType: 'third-split',
     printOrientation: 'portrait'
   },
   '/print/refund-goods': {
@@ -125,12 +125,13 @@ export default {
     printReady() {
       return !!this.printRow && !this.loading
     },
-    /** 衡水三院出库单：显示 Lodop 打印入口 */
+    /** 衡水三院出库单：Lodop 入口（暂屏蔽，待针式字体方案稳定后再开） */
     showLodopPrint() {
-      if (this.docKind !== 'OUTBOUND') return false
-      const tenant = this.$store.getters.tenant
-      if (tenant && tenant.tenantKey === 'HS_003') return true
-      return isHsThirdTenant(this.$store.getters.customerId)
+      return false
+      // if (this.docKind !== 'OUTBOUND') return false
+      // const tenant = this.$store.getters.tenant
+      // if (tenant && tenant.tenantKey === 'HS_003') return true
+      // return isHsThirdTenant(this.$store.getters.customerId)
     },
     printChildProps() {
       if (!this.printRow) return {}

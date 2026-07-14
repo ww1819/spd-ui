@@ -104,6 +104,7 @@
 </template>
 
 <script>
+import { applyPrintFontToEl, browserPrintOptions } from '@/utils/printFont'
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { formatQuantity } from '@/utils/format-quantity'
 
@@ -268,12 +269,8 @@ export default {
       const run = () => {
         this.$nextTick(() => {
           requestAnimationFrame(() => {
-            this.applyPrintCellAutoFont()
-            this.$print(
-              this.$refs.receiptRefundGoodsPrintRef,
-              { injectPageSize: true, pageMargin: '0 4mm', waitForAssets: true, beforePrintDelay: 320 },
-              this.pageSizeForPrint
-            )
+            this.applyPrintCellAutoFont();
+            (() => { const _el = this.$refs.receiptRefundGoodsPrintRef; applyPrintFontToEl(_el); this.$print(_el, browserPrintOptions(), this.pageSizeForPrint) })()
           })
         })
       }
@@ -330,7 +327,7 @@ export default {
   box-sizing border-box
   padding-left 1ch
   padding-right 1ch
-  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
+  font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
 
 .print-page
   position relative
@@ -550,7 +547,7 @@ export default {
     padding-left 0 !important
     padding-right 0 !important
     font-size 16px !important
-    font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
     font-weight normal
     -webkit-font-smoothing none !important
     -moz-osx-font-smoothing none !important
@@ -607,7 +604,7 @@ export default {
     padding 0 !important
     margin 0 !important
     line-height 1.7 !important
-    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
     overflow visible !important
     page-break-inside avoid !important
 
@@ -642,7 +639,7 @@ export default {
     width 100% !important
     table-layout fixed
     border-collapse collapse
-    font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
     font-size 14px !important
 
   .detail-table th,

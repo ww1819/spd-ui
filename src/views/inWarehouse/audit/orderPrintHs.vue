@@ -107,6 +107,7 @@
 </template>
 
 <script>
+import { applyPrintFontToEl, browserPrintOptions } from '@/utils/printFont'
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { getDefaultTemplate } from '@/api/system/printSetting'
 import { formatQuantity } from '@/utils/format-quantity'
@@ -181,13 +182,13 @@ export default {
         padding: margin,
         fontSize: Math.round(m.fontSize || 14) + 'px',
         // 鐐归樀鏈烘洿閫傚悎绛夊瀛椾綋锛屽噺灏戝瓧绗︽尋鍘?妯＄硦宸紓
-        fontFamily: '"Courier New", "Consolas", "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif'
+        fontFamily: '"Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif'
       }
     },
     tableStyle() {
       return {
         fontSize: Math.round(this.printSetting.tableFontSize || 12) + 'px',
-        fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif'
+        fontFamily: '"Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif'
       }
     }
   },
@@ -380,14 +381,9 @@ export default {
             const pageSize = this.pagePaperSize || '210mm 140mm'
             // 璁╂祻瑙堝櫒鍏堝畬鎴愬竷灞€锛屽啀娴嬮噺/璋冩暣瀛楀彿锛屾渶鍚庤繘鍏ユ墦鍗?iframe
             this.applyPrintCellAutoFont()
+            applyPrintFontToEl(el)
             if (typeof this.$print === 'function') {
-              this.$print(el, {
-                injectPageSize: true,
-                // 宸﹀彸鐣欏畨鍏ㄨ竟璺濓細閽堝紡鏈虹墿鐞嗕笉鍙墦鍗板尯浼氳鎺夎创杈硅竟妗嗭紱涓婁笅淇濇寔 0锛岄伩鍏嶆妸涓€椤碘€滄尋鈥濇垚涓ら〉
-                pageMargin: '0 4mm',
-                waitForAssets: true,
-                beforePrintDelay: 320
-              }, pageSize)
+              this.$print(el, browserPrintOptions(), pageSize)
             } else {
               try {
                 window.print()
@@ -417,7 +413,7 @@ export default {
   /* 宸﹀彸鍚勭缉杩涚害 1 涓眽瀛楀搴︼紙ch 鍦ㄤ腑鏂囩瓑瀹藉瓧浣撲笅鈮?瀛楀锛?*/
   padding-left 1ch
   padding-right 1ch
-  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
+  font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
 
 .print-page
   position relative
@@ -664,7 +660,7 @@ export default {
     padding-right 0 !important
     /* Epson LQ-690K 鐐归樀鎵撳嵃锛氱瓑瀹?鍥哄畾瀛楀彿锛屽噺灏戞ā绯?瀛楀舰宸紓 */
     font-size 16px !important
-    font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
     font-weight normal
     -webkit-font-smoothing none !important
     -moz-osx-font-smoothing none !important
@@ -709,7 +705,7 @@ export default {
     padding 0 !important
     margin 0 !important
     line-height 1.65 !important
-    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
     overflow visible !important
     page-break-inside avoid !important
 
@@ -770,7 +766,7 @@ export default {
     table-layout fixed
     border-collapse collapse
     /* 瑕嗙洊琛屽唴 style锛氬悗鍙伴厤缃殑瀛楀彿/瀛椾綋瀵圭偣闃垫満瀹规槗瑙﹀彂妯＄硦/瑁佸垏 */
-    font-family "Courier New", Consolas, "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
     font-size 14px !important
 
   .detail-table th,

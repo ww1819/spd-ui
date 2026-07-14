@@ -136,6 +136,7 @@
 </template>
 
 <script>
+import { applyPrintFontToEl, browserPrintOptions } from '@/utils/printFont'
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { getDefaultTemplate } from '@/api/system/printSetting'
 import { formatQuantity } from '@/utils/format-quantity'
@@ -207,13 +208,13 @@ export default {
       return {
         padding: margin,
         fontSize: Math.round(m.fontSize || 14) + 'px',
-        fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif'
+        fontFamily: '"Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif'
       }
     },
     tableStyle() {
       return {
         fontSize: Math.round(this.printSetting.tableFontSize || 12) + 'px',
-        fontFamily: 'SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif'
+        fontFamily: '"Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif'
       }
     }
   },
@@ -367,13 +368,9 @@ export default {
             if (!el) return
             const pageSize = this.pagePaperSize || '210mm 140mm'
             this.applyPrintCellAutoFont()
+            applyPrintFontToEl(el)
             if (typeof this.$print === 'function') {
-              this.$print(el, {
-                injectPageSize: true,
-                pageMargin: '0 4mm',
-                waitForAssets: true,
-                beforePrintDelay: 320
-              }, pageSize)
+              this.$print(el, browserPrintOptions(), pageSize)
             } else {
               try {
                 window.print()
@@ -402,7 +399,7 @@ export default {
   box-sizing border-box
   padding-left 1ch
   padding-right 1ch
-  font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
+  font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
 
 .print-page
   position relative
@@ -579,17 +576,22 @@ export default {
     padding-left 0 !important
     padding-right 0 !important
     font-size 14px !important
-    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
 
   .print-page
     width 100% !important
-    min-height auto !important
+    min-height 140mm !important
     height auto !important
     padding-top 4mm !important
+    display block !important
+    page-break-inside avoid !important
+    break-inside avoid !important
     page-break-after auto !important
 
   .print-page.print-page-break
+    /* zq-page-fix */
     page-break-after always !important
+    break-after page !important
 
   .doc-header
     display grid !important

@@ -98,6 +98,7 @@
 </template>
 
 <script>
+import { applyPrintFontToEl, browserPrintOptions } from '@/utils/printFont'
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { formatQuantity } from '@/utils/format-quantity'
 
@@ -179,7 +180,7 @@ export default {
       return {
         padding: '0mm',
         fontSize: Math.round(m.fontSize || 14) + 'px',
-        fontFamily: '"Courier New", "Consolas", "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif',
+        fontFamily: '"Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif',
         width: wide ? '297mm' : '210mm',
         maxWidth: wide ? '297mm' : '210mm'
       }
@@ -188,7 +189,7 @@ export default {
       const px = this.printSetting.tableFontSize || 12
       return {
         fontSize: px + 'px',
-        fontFamily: '"Courier New", "Consolas", "SimSun", "宋体", "NSimSun", "STSong", "Songti SC", serif'
+        fontFamily: '"Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif'
       }
     }
   },
@@ -334,24 +335,16 @@ export default {
         // 等待Vue更新DOM并让浏览器完成一次布局后再触发打印
         this.$nextTick(() => {
           requestAnimationFrame(() => {
-            this.applyPrintCellAutoFont()
-            this.$print(
-              this.$refs.receiptRefundDepotOrderPrintRef,
-              { injectPageSize: true, pageMargin: '0 4mm', waitForAssets: true, beforePrintDelay: 320 },
-              this.pageSizeForPrint
-            )
+            this.applyPrintCellAutoFont();
+            (() => { const _el = this.$refs.receiptRefundDepotOrderPrintRef; applyPrintFontToEl(_el); this.$print(_el, browserPrintOptions(), this.pageSizeForPrint) })()
           })
         })
       }).catch(() => {
         // 即使加载失败也继续打印
         this.$nextTick(() => {
           requestAnimationFrame(() => {
-            this.applyPrintCellAutoFont()
-            this.$print(
-              this.$refs.receiptRefundDepotOrderPrintRef,
-              { injectPageSize: true, pageMargin: '0 4mm', waitForAssets: true, beforePrintDelay: 320 },
-              this.pageSizeForPrint
-            )
+            this.applyPrintCellAutoFont();
+            (() => { const _el = this.$refs.receiptRefundDepotOrderPrintRef; applyPrintFontToEl(_el); this.$print(_el, browserPrintOptions(), this.pageSizeForPrint) })()
           })
         })
       })
@@ -361,7 +354,7 @@ export default {
 </script>
 
 <style lang="stylus" scoped>
-$font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
+$font-song = "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
 
 .print-root-offscreen
   position fixed
@@ -634,7 +627,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     height auto !important
     break-inside auto !important
     page-break-inside auto !important
-    font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
     font-size 16px !important
 
   .print-copy-block
@@ -678,7 +671,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     padding 0 !important
     margin 0 !important
     line-height 1.65 !important
-    font-family SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
     page-break-inside avoid !important
 
   .print-head-info
@@ -714,7 +707,7 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     width 94% !important
     margin-left auto !important
     margin-right auto !important
-    font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
     font-size 14px !important
 
   .refund-depot-order-print .print-copy-block.is-third-split-copy .detail-table
@@ -791,12 +784,14 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     right auto !important
     bottom auto !important
     box-sizing border-box !important
+    width 94% !important
+    margin 8px auto 0 !important
     padding 0
     border-top none
     background transparent
     font-size 17px
     line-height 1.55 !important
-    font-family "Courier New", Consolas, SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif !important
+    font-family "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif !important
 
   .print-sign-footer-fixed .sign-block
     display grid !important
@@ -804,4 +799,5 @@ $font-song = SimSun, "宋体", "NSimSun", "STSong", "Songti SC", serif
     column-gap 12px !important
     margin-top 2px !important
     padding-right 0 !important
+    width 100% !important
 </style>

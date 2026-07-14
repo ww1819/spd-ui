@@ -19,6 +19,14 @@ const MARGIN_R = 3
 const MARGIN_T = 3
 const CONTENT_W = PAGE_W - MARGIN_L - MARGIN_R // 204
 
+/**
+ * 针式机默认字体：
+ * - 宋体：横笔过细，「三」底横易虚
+ * - 黑体+粗：过粗
+ * - 微软雅黑（不加粗）：介于两者之间，横笔比宋体实、比黑体细
+ */
+const FONT_DOT_MATRIX = '微软雅黑'
+
 /** 明细列宽：批号≈8位、效期≈10位固定，列宽够用即可；其余还给名称/规格/产地 */
 const COL_RATIO = [14, 12, 7, 6, 11, 12, 14, 11, 13]
 const COL_HEADERS = ['消耗品名称', '规格型号', '数量', '单位', '采购价', '采购金额', '产地', '批号', '效期']
@@ -127,11 +135,12 @@ function drawTableGrid(LODOP, top, left, widths, rowHeights, mergeLast) {
   const lastH = rowHeights.length ? rowHeights[rowHeights.length - 1] : 0
   const bodyBottom = mergeLast && rowHeights.length > 1 ? bottom - lastH : bottom
 
-  // 外框
-  LODOP.ADD_PRINT_LINE(mm(top), mm(left), mm(top), mm(right), 0, 1)
-  LODOP.ADD_PRINT_LINE(mm(bottom), mm(left), mm(bottom), mm(right), 0, 1)
-  LODOP.ADD_PRINT_LINE(mm(top), mm(left), mm(bottom), mm(left), 0, 1)
-  LODOP.ADD_PRINT_LINE(mm(top), mm(right), mm(bottom), mm(right), 0, 1)
+  // 外框（线宽 2，针式横线更易看清）
+  const lw = 2
+  LODOP.ADD_PRINT_LINE(mm(top), mm(left), mm(top), mm(right), 0, lw)
+  LODOP.ADD_PRINT_LINE(mm(bottom), mm(left), mm(bottom), mm(right), 0, lw)
+  LODOP.ADD_PRINT_LINE(mm(top), mm(left), mm(bottom), mm(left), 0, lw)
+  LODOP.ADD_PRINT_LINE(mm(top), mm(right), mm(bottom), mm(right), 0, lw)
 
   // 竖线：表头+数据行画满；合计行只保留合并分界线（对齐浏览器 colspan=4 / colspan=2）
   let x = left
@@ -139,12 +148,12 @@ function drawTableGrid(LODOP, top, left, widths, rowHeights, mergeLast) {
   const amtCols = (mergeLast && mergeLast.amtCols) || 2
   for (let i = 0; i < widths.length - 1; i++) {
     x += widths[i]
-    LODOP.ADD_PRINT_LINE(mm(top), mm(x), mm(bodyBottom), mm(x), 0, 1)
+    LODOP.ADD_PRINT_LINE(mm(top), mm(x), mm(bodyBottom), mm(x), 0, lw)
     if (mergeLast && rowHeights.length > 1) {
       const afterLabel = i === labelCols - 1
       const afterAmt = i === labelCols + amtCols - 1
       if (afterLabel || afterAmt) {
-        LODOP.ADD_PRINT_LINE(mm(bodyBottom), mm(x), mm(bottom), mm(x), 0, 1)
+        LODOP.ADD_PRINT_LINE(mm(bodyBottom), mm(x), mm(bottom), mm(x), 0, lw)
       }
     }
   }
@@ -153,14 +162,14 @@ function drawTableGrid(LODOP, top, left, widths, rowHeights, mergeLast) {
   let y = top
   for (let i = 0; i < rowHeights.length - 1; i++) {
     y += rowHeights[i]
-    LODOP.ADD_PRINT_LINE(mm(y), mm(left), mm(y), mm(right), 0, 1)
+    LODOP.ADD_PRINT_LINE(mm(y), mm(left), mm(y), mm(right), 0, lw)
   }
 }
 
 function addText(LODOP, top, left, width, height, content, style) {
   const s = style || {}
   LODOP.ADD_PRINT_TEXT(mm(top), mm(left), mm(width), mm(height), str(content))
-  LODOP.SET_PRINT_STYLEA(0, 'FontName', s.fontName || '宋体')
+  LODOP.SET_PRINT_STYLEA(0, 'FontName', s.fontName || FONT_DOT_MATRIX)
   LODOP.SET_PRINT_STYLEA(0, 'FontSize', s.fontSize != null ? s.fontSize : 10)
   if (s.bold) LODOP.SET_PRINT_STYLEA(0, 'Bold', 1)
   if (s.align) LODOP.SET_PRINT_STYLEA(0, 'Alignment', s.align) // 1左 2中 3右
@@ -170,7 +179,7 @@ function addText(LODOP, top, left, width, height, content, style) {
  * 在单元格内多行文本（上对齐）
  * 批号/效期等数字列按半角宽度计算，避免误截断
  */
-function addCellText(LODOP, top, left, width, height, text, fontSize, align, maxLines) {
+function addCellText(LODOP, top, left, width, height, text, fontSize, align, maxLines, bold) {
   const padX = 0.5
   const padY = 0.5
   const innerW = Math.max(2, width - padX * 2)
@@ -179,8 +188,10 @@ function addCellText(LODOP, top, left, width, height, text, fontSize, align, max
   const lineH = innerH / Math.max(lines.length, 1)
   for (let i = 0; i < lines.length; i++) {
     addText(LODOP, top + padY + i * lineH, left + padX, innerW, lineH, lines[i], {
+      fontName: FONT_DOT_MATRIX,
       fontSize,
-      align: align || 1
+      align: align || 1,
+      bold: !!bold
     })
   }
 }
@@ -209,13 +220,16 @@ function printOnePage(LODOP, ctx) {
   const titleH = 7
   const sideW = 24
   addText(LODOP, titleTop, left0 + sideW, CONTENT_W - sideW * 2, titleH, str(hospitalName) + '物资出库单', {
-    fontSize: 12,
+    fontName: FONT_DOT_MATRIX,
+    fontSize: 13,
     align: 2,
     bold: 0
   })
   addText(LODOP, titleTop + 1, left0 + CONTENT_W - sideW, sideW, 5, pageIndex + 1 + '/' + pageCount, {
+    fontName: FONT_DOT_MATRIX,
     fontSize: 9,
-    align: 3
+    align: 3,
+    bold: 0
   })
 
   // —— 表头信息（两行，列宽 52/19/29）——
@@ -229,9 +243,24 @@ function printOnePage(LODOP, ctx) {
   const xB = left0 + wA
   const xC = left0 + wA + wB
 
-  addText(LODOP, headTop, xA, wA, headRowH, '发往科:' + str(row.departmentName), { fontSize: headFs, align: 1 })
-  addText(LODOP, headTop, xB, wB, headRowH, '仓库:' + str(row.warehouseName), { fontSize: headFs, align: 1 })
-  addText(LODOP, headTop, xC, wC, headRowH, '单据号:' + str(row.billNo), { fontSize: headFs, align: 1 })
+  addText(LODOP, headTop, xA, wA, headRowH, '发往科:' + str(row.departmentName), {
+    fontName: FONT_DOT_MATRIX,
+    fontSize: headFs,
+    align: 1,
+    bold: 0
+  })
+  addText(LODOP, headTop, xB, wB, headRowH, '仓库:' + str(row.warehouseName), {
+    fontName: FONT_DOT_MATRIX,
+    fontSize: headFs,
+    align: 1,
+    bold: 0
+  })
+  addText(LODOP, headTop, xC, wC, headRowH, '单据号:' + str(row.billNo), {
+    fontName: FONT_DOT_MATRIX,
+    fontSize: headFs,
+    align: 1,
+    bold: 0
+  })
 
   addText(
     LODOP,
@@ -240,7 +269,7 @@ function printOnePage(LODOP, ctx) {
     wA,
     headRowH,
     '出库日期（审核）:' + str(fmt.date(row.auditDate || row.billDate)),
-    { fontSize: headFs, align: 1 }
+    { fontName: FONT_DOT_MATRIX, fontSize: headFs, align: 1, bold: 0 }
   )
   addText(
     LODOP,
@@ -249,7 +278,7 @@ function printOnePage(LODOP, ctx) {
     wB + wC,
     headRowH,
     '资金来源:' + str(row.fundSource),
-    { fontSize: headFs, align: 1 }
+    { fontName: FONT_DOT_MATRIX, fontSize: headFs, align: 1, bold: 0 }
   )
 
   // —— 明细表 ——
@@ -285,7 +314,7 @@ function printOnePage(LODOP, ctx) {
   // 表头文字
   let y = tableTop
   for (let c = 0; c < COL_HEADERS.length; c++) {
-    addCellText(LODOP, y, lefts[c], widths[c], headRowHeight, COL_HEADERS[c], fontTable, 2, 1)
+    addCellText(LODOP, y, lefts[c], widths[c], headRowHeight, COL_HEADERS[c], fontTable, 2, 1, false)
   }
   y += headRowHeight
 
@@ -306,7 +335,7 @@ function printOnePage(LODOP, ctx) {
       str(fmt.valid(it.endTime || it.periodDate))
     ]
     for (let c = 0; c < cells.length; c++) {
-      addCellText(LODOP, y, lefts[c], widths[c], dataRowHeight, cells[c], fontTable, alignOf[c], maxLinesOf[c])
+      addCellText(LODOP, y, lefts[c], widths[c], dataRowHeight, cells[c], fontTable, alignOf[c], maxLinesOf[c], false)
     }
     y += dataRowHeight
   }
@@ -316,8 +345,10 @@ function printOnePage(LODOP, ctx) {
     const totalLabelW = widths[0] + widths[1] + widths[2] + widths[3]
     const totalAmtW = widths[4] + widths[5]
     addText(LODOP, y + 0.8, lefts[0] + 1, totalLabelW - 2, totalRowHeight - 1.2, '合计：' + str(row.totalAmtConverter), {
+      fontName: FONT_DOT_MATRIX,
       fontSize: fontTable,
-      align: 1
+      align: 1,
+      bold: 0
     })
     addText(
       LODOP,
@@ -327,8 +358,10 @@ function printOnePage(LODOP, ctx) {
       totalRowHeight - 1.2,
       row.totalAmt != null ? str(fmt.amt(row.totalAmt)) : '',
       {
+        fontName: FONT_DOT_MATRIX,
         fontSize: fontTable,
-        align: 3
+        align: 3,
+        bold: 0
       }
     )
     y += totalRowHeight
@@ -338,8 +371,18 @@ function printOnePage(LODOP, ctx) {
   const signTop = Math.min(y + 2.5, PAGE_H - 8)
   const signW = CONTENT_W / 3
   const signFs = 9
-  addText(LODOP, signTop, left0, signW, 5, '领用人：', { fontSize: signFs, align: 1 })
-  addText(LODOP, signTop, left0 + signW, signW, 5, '保管：', { fontSize: signFs, align: 1 })
+  addText(LODOP, signTop, left0, signW, 5, '领用人：', {
+    fontName: FONT_DOT_MATRIX,
+    fontSize: signFs,
+    align: 1,
+    bold: 0
+  })
+  addText(LODOP, signTop, left0 + signW, signW, 5, '保管：', {
+    fontName: FONT_DOT_MATRIX,
+    fontSize: signFs,
+    align: 1,
+    bold: 0
+  })
   addText(
     LODOP,
     signTop,
@@ -347,7 +390,7 @@ function printOnePage(LODOP, ctx) {
     signW,
     5,
     '出库操作员：' + str(row.outboundOperator || row.createBy),
-    { fontSize: signFs, align: 1 }
+    { fontName: FONT_DOT_MATRIX, fontSize: signFs, align: 1, bold: 0 }
   )
 }
 

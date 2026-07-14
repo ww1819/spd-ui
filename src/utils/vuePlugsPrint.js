@@ -15,7 +15,9 @@ const Print = function (dom, options, pageSize) {
     /** 打印前额外等待时间，默认给驱动和浏览器排版缓冲 */
     'beforePrintDelay': 260,
     /** afterprint 兜底超时，避免 iframe 遗留 */
-    'cleanupDelay': 15000
+    'cleanupDelay': 15000,
+    /** 追加到 iframe head 末尾的 CSS（后写入，可覆盖其它页 @media print） */
+    'extraStyle': ''
   }, options);
 
   if ((typeof dom) === "string") {
@@ -82,6 +84,11 @@ Print.prototype = {
       if (!mergedMm) {
         str += "<style>@page { margin: " + this.options.pageMargin + " !important; }</style>";
       }
+    }
+
+    // 业务可注入覆盖样式（放在最后，优先于其它组件的 media=print）
+    if (this.options.extraStyle && String(this.options.extraStyle).trim()) {
+      str += "<style type=\"text/css\">" + this.options.extraStyle + "</style>";
     }
 
     return str;
