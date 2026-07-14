@@ -109,8 +109,7 @@
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { getDefaultTemplate } from '@/api/system/printSetting'
 import { formatQuantity } from '@/utils/format-quantity'
-import { lodopPrintHtml } from '@/utils/lodop'
-import { buildHsOutboundLodopHtml } from '@/utils/lodopOutOrderHs'
+import { printHsOutboundLodopText } from '@/utils/lodopOutOrderHsText'
 
 export default {
   name: 'OutOrderPrintHs',
@@ -436,8 +435,8 @@ export default {
       }
     },
     /**
-     * C-Lodop 打印：使用 Lodop 兼容表格模板（不依赖 CSS grid/flex），
-     * 字段与屏上预览一致；纸张默认 210mm×140mm（针式联单）。
+     * C-Lodop 纯文本打印（ADD_PRINT_TEXT + 画线）。
+     * 版式按 210×140 与屏上预览同一套比例定位，便于针式机清晰输出。
      * @param {{ preview?: boolean, printerName?: string }} [options]
      * @returns {Promise<void>}
      */
@@ -447,40 +446,21 @@ export default {
       const printerName = opts.printerName || ''
 
       const printNow = () => {
-        try {
-          const html = buildHsOutboundLodopHtml({
-            hospitalName: this.hospitalName || '',
-            row: this.row || {},
-            detailPages: this.detailPages,
-            formatOutboundDate: this.formatOutboundDate,
-            formatSpecModel: this.formatSpecModel,
-            formatNum: this.formatNum,
-            formatPrice: this.formatPrice,
-            formatAmt: this.formatAmt,
-            formatValidDate: this.formatValidDate,
-            // 仅表体字号跟打印设置；标题/表头信息在 Lodop 模板内按屏上预览写死
-            tableFontSize: this.printSetting.tableFontSize || 12
-          })
-          const orient = this.effectiveOrientation === 'landscape' ? 2 : 1
-          // 与屏上联单可视区域一致：210mm × 140mm
-          const payload = {
-            html,
-            taskName: '物资出库单',
-            orient,
-            preview,
-            printerName: printerName || undefined,
-            pageWidthMm: 210,
-            pageHeightMm: 140,
-            pageName: 'LodopCustomPage',
-            marginTopMm: 2,
-            marginLeftMm: 2,
-            marginRightMm: 2,
-            marginBottomMm: 2
-          }
-          return lodopPrintHtml(payload)
-        } catch (e) {
-          return Promise.reject(e)
-        }
+        return printHsOutboundLodopText({
+          hospitalName: this.hospitalName || '',
+          row: this.row || {},
+          detailPages: this.detailPages,
+          formatOutboundDate: this.formatOutboundDate,
+          formatSpecModel: this.formatSpecModel,
+          formatNum: this.formatNum,
+          formatPrice: this.formatPrice,
+          formatAmt: this.formatAmt,
+          formatValidDate: this.formatValidDate,
+          // 文本模式字号略收，避免针式挤字；与屏上表体同量级
+          tableFontSize: Math.min(10, Math.round(Number(this.printSetting.tableFontSize) || 10)),
+          preview,
+          printerName: printerName || undefined
+        })
       }
 
       const waitName =
