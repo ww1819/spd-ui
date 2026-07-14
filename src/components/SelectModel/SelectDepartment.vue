@@ -9,7 +9,7 @@
     <el-option
       v-for="item in departmentOptions"
       :key="item.id"
-      :label="item.name"
+      :label="optionLabel(item)"
       :value="item.id"
     ></el-option>
   </el-select>
@@ -38,6 +38,13 @@ export default {
      * 亦用于科室库存选明细等弹窗，避免 foundation:depart:list 等权限不足。
      */
     financePickMode: {
+      type: Boolean,
+      default: false
+    },
+    /**
+     * 为 true 时下拉选项显示「编码 名称」，便于核销等场景核对科室编码。
+     */
+    showCodeInLabel: {
       type: Boolean,
       default: false
     },
@@ -99,6 +106,13 @@ export default {
     this.getList();
   },
   methods: {
+    optionLabel(item) {
+      if (!item) return ''
+      const name = item.name || ''
+      if (!this.showCodeInLabel) return name
+      const code = item.code != null && String(item.code).trim() !== '' ? String(item.code).trim() : ''
+      return code ? `${code} ${name}` : name
+    },
     /** 查询科室列表 */
     getList() {
       if (this.financePickMode) {

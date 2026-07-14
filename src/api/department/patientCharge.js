@@ -103,11 +103,18 @@ export function listHisFetchBatch(limit) {
 }
 
 export function processMirrorLowValue(data) {
+  const payload = data && typeof data === 'object' ? { ...data } : data
+  if (payload && payload.consumeDepartmentId != null && payload.consumeDepartmentId !== '') {
+    const n = Number(payload.consumeDepartmentId)
+    if (!Number.isNaN(n)) {
+      payload.consumeDepartmentId = n
+    }
+  }
   return request({
     url: '/his/patientCharge/mirror/processLowValue',
     method: 'post',
     timeout: 120000,
-    data
+    data: payload
   })
 }
 

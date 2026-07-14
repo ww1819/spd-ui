@@ -60,10 +60,10 @@
               @keyup.enter.native="handleDetailQuery"
             />
           </el-form-item>
-          <el-form-item label="执行科室名称">
+          <el-form-item label="执行科室">
             <el-input
               v-model="detailQuery.execDeptName"
-              placeholder="执行科室模糊"
+              placeholder="编码/名称/简码"
               clearable
               style="width:160px"
               @keyup.enter.native="handleDetailQuery"
@@ -148,13 +148,17 @@
               <span>{{ orderDeptCode(scope.row) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="开单科室" min-width="120" show-overflow-tooltip>
+          <el-table-column label="开单科室" min-width="220" class-name="pc-dept-name-col">
             <template slot-scope="scope">
-              <span>{{ orderDeptName(scope.row) }}</span>
+              <div class="pc-dept-name-wrap">{{ orderDeptName(scope.row) }}</div>
             </template>
           </el-table-column>
           <el-table-column label="执行科室编码" prop="execDeptId" min-width="100" show-overflow-tooltip />
-          <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="执行科室" min-width="220" class-name="pc-dept-name-col">
+            <template slot-scope="scope">
+              <div class="pc-dept-name-wrap">{{ scope.row.execDeptName || '' }}</div>
+            </template>
+          </el-table-column>
           <el-table-column label="患者" prop="patientName" width="100" show-overflow-tooltip />
           <el-table-column label="收费项ID" prop="chargeItemId" width="120" show-overflow-tooltip />
           <el-table-column label="费用明细主键" prop="hisChargeId" width="130" show-overflow-tooltip>
@@ -201,7 +205,7 @@
           <el-table-column label="处理方" prop="processParty" width="100" show-overflow-tooltip />
           <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
           <el-table-column label="本地入库" prop="createTime" width="160" />
-          <el-table-column label="操作" align="center" width="220" fixed="right">
+          <el-table-column label="操作" align="center" width="300" fixed="right">
             <template slot-scope="scope">
               <el-button
                 type="text"
@@ -210,6 +214,13 @@
                 :disabled="!canProcessLow(scope.row)"
                 @click="processLowValue(scope.row)"
               >低值</el-button>
+              <el-button
+                type="text"
+                size="mini"
+                v-hasPermi="['department:patientCharge:generateConsume','department:patientCharge:processMirrorLow']"
+                :disabled="!canProcessLow(scope.row)"
+                @click="openSelfDeptLowConsume(scope.row)"
+              >自选科室核销</el-button>
               <el-button
                 type="text"
                 size="mini"
@@ -292,6 +303,11 @@
         <el-table-column label="单状态" width="80" align="center">
           <template slot-scope="scope">
             <span>{{ consumeBillStatusText(scope.row.consumeBillStatus) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="核销科室编码" prop="writeOffDeptCode" min-width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.writeOffDeptCode || '--' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="核销科室" prop="writeOffDeptName" min-width="110" show-overflow-tooltip>
@@ -444,6 +460,33 @@
         <el-button type="primary" :loading="execDeptBackfillSubmitting" @click="submitExecDeptBackfill">确 定</el-button>
       </div>
     </el-dialog>
+    <el-dialog title="自选科室核销" :visible.sync="selfDeptLowDialog.visible" width="480px" append-to-body @close="resetSelfDeptLowDialog">
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        class="mb8"
+        title="请使用「自选科室核销」并选择库存所在科室（看编码，勿点普通「低值」）。同名科室可能编码不同：库存为 487 的「二科」与执行科室对照的其它呼吸危重症科室不是同一科室。"
+      />
+      <el-form label-width="100px" size="small">
+        <el-form-item label="执行科室">
+          <span>{{ selfDeptLowDialog.execDeptText || '--' }}</span>
+        </el-form-item>
+        <el-form-item label="核销科室" required>
+          <SelectDepartment
+            v-model="selfDeptLowDialog.consumeDepartmentId"
+            field-placeholder="编码/名称/简码（请核对该编码与库存一致，如 487）"
+            :show-code-in-label="true"
+            :finance-pick-mode="true"
+            style="width:100%"
+          />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="selfDeptLowDialog.visible = false">取 消</el-button>
+        <el-button type="primary" :loading="selfDeptLowDialog.submitting" @click="submitSelfDeptLowConsume">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -472,6 +515,8 @@ import {
   listMirrorConsumeRecords,
   writeOffMirrorLowValue
 } from '@/api/department/patientCharge'
+import { fetchFinancePickDepartments } from '@/api/finance/settlementSummary'
+import SelectDepartment from '@/components/SelectModel/SelectDepartment'
 
 function buildDefaultChargeDateRange() {
   const today = new Date()
@@ -484,6 +529,7 @@ function buildDefaultChargeDateRange() {
 
 export default {
   name: 'PatientChargeHis',
+  components: { SelectDepartment },
   data() {
     return {
       patientChargeHisSlowHint: PATIENT_CHARGE_HIS_SLOW_HINT,
@@ -537,6 +583,13 @@ export default {
         loading: false,
         title: '消耗记录',
         rows: []
+      },
+      selfDeptLowDialog: {
+        visible: false,
+        submitting: false,
+        row: null,
+        execDeptText: '',
+        consumeDepartmentId: undefined
       }
     }
   },
@@ -965,6 +1018,98 @@ export default {
         this.handleDetailQuery()
       }).catch(() => {})
     },
+    openSelfDeptLowConsume(row) {
+      if (this.isUnknownValueLevel(row)) {
+        this.$modal.msgWarning('收费项目未维护高低值标识，请先在耗材档案维护是否高值后再核销')
+        return
+      }
+      if (!this.isLowValueLevel(row)) {
+        this.$modal.msgWarning('该行为高值收费项，请至高值管理-高值使用-高值扫描核销处理')
+        return
+      }
+      if (!this.canProcessLow(row)) {
+        this.$modal.msgWarning('仅待处理的低值明细可自选科室核销')
+        return
+      }
+      const code = row.execDeptId || ''
+      const name = row.execDeptName || ''
+      this.selfDeptLowDialog = {
+        visible: true,
+        submitting: false,
+        row,
+        execDeptText: code && name ? `${code} / ${name}` : (code || name || '--'),
+        consumeDepartmentId: undefined
+      }
+      this.prefillSelfDeptFromExec(code)
+    },
+    /** 默认带出执行科室：按 HIS 编码在 pick 列表匹配；不在列表或无法匹配则保持空 */
+    prefillSelfDeptFromExec(execHisCode) {
+      const key = execHisCode != null ? String(execHisCode).trim() : ''
+      if (!key) {
+        return
+      }
+      fetchFinancePickDepartments()
+        .then(res => {
+          const rows = res && res.data != null ? res.data : res
+          const list = Array.isArray(rows) ? rows : []
+          const hit = list.find(d => {
+            if (!d) return false
+            const code = d.code != null ? String(d.code).trim() : ''
+            const hisId = d.hisId != null ? String(d.hisId).trim() : ''
+            return code === key || hisId === key
+          })
+          if (hit && hit.id != null && this.selfDeptLowDialog.visible) {
+            this.selfDeptLowDialog.consumeDepartmentId = hit.id
+          }
+        })
+        .catch(() => {})
+    },
+    resetSelfDeptLowDialog() {
+      this.selfDeptLowDialog = {
+        visible: false,
+        submitting: false,
+        row: null,
+        execDeptText: '',
+        consumeDepartmentId: undefined
+      }
+    },
+    submitSelfDeptLowConsume() {
+      const row = this.selfDeptLowDialog.row
+      if (!row || !row.id) {
+        this.$modal.msgWarning('未选择计费明细')
+        return
+      }
+      if (!this.selfDeptLowDialog.consumeDepartmentId) {
+        this.$modal.msgWarning('请选择核销科室')
+        return
+      }
+      const visitKind = row.visitType ? row.visitType : this.currentVisitKind
+      if (!visitKind) {
+        this.$modal.msgWarning('请先切换到住院或门诊后再核销')
+        return
+      }
+      const consumeDepartmentId = Number(this.selfDeptLowDialog.consumeDepartmentId)
+      if (Number.isNaN(consumeDepartmentId)) {
+        this.$modal.msgWarning('核销科室无效，请重新选择')
+        return
+      }
+      this.selfDeptLowDialog.submitting = true
+      processMirrorLowValue({
+        visitKind,
+        mirrorRowId: row.id,
+        consumeDepartmentId,
+        requireConsumeDepartment: true
+      }).then(res => {
+        const d = res.data || {}
+        this.$modal.msgSuccess(
+          `自选科室核销完成：消耗单 ${d.consumeBillCount || 0} 张，明细 ${d.consumeEntryCount || 0} 条，追溯 ${d.linkRowCount || 0} 条`
+        )
+        this.selfDeptLowDialog.visible = false
+        this.handleDetailQuery()
+      }).catch(() => {}).finally(() => {
+        this.selfDeptLowDialog.submitting = false
+      })
+    },
     batchProcessLowValue() {
       if (!this.detailSelection.length) {
         this.$modal.msgWarning('请先勾选待处理的低值计费明细')
@@ -1138,6 +1283,18 @@ export default {
 
 .patient-charge-page .pc-detail-table {
   width: 100%;
+}
+
+.patient-charge-page .pc-detail-table >>> .pc-dept-name-col .cell {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.patient-charge-page .pc-dept-name-wrap {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
 }
 
 .patient-charge-page .pc-pagination-wrap {

@@ -114,6 +114,7 @@
         </el-table-column>
         <el-table-column label="耗材编码" align="center" prop="material.code" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
         <el-table-column label="耗材" align="center" prop="material.name" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" />
+        <el-table-column label="科室编码" align="center" prop="department.code" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByDepartmentCode"/>
         <el-table-column label="科室" align="center" prop="department.name" width="160" min-width="140" show-overflow-tooltip resizable sortable :sort-method="sortByDepartment"/>
         <el-table-column label="规格" align="center" prop="material.speci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci"/>
         <el-table-column label="型号" align="center" prop="material.model" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel"/>
@@ -411,6 +412,7 @@ export default {
     sortByMaterialCode(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.code) || ''); },
     sortByMaterialName(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.name) || ''); },
     sortByDepartment(a, b) { return this.sortByStr(a, b, r => (r.department && r.department.name) || ''); },
+    sortByDepartmentCode(a, b) { return this.sortByStr(a, b, r => (r.department && r.department.code) || ''); },
     sortBySpeci(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.speci) || ''); },
     sortByModel(a, b) { return this.sortByStr(a, b, r => (r.material && r.material.model) || ''); },
     sortByUnit(a, b) {

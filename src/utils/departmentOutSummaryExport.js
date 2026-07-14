@@ -2505,6 +2505,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '序号',
     '耗材编码',
     '耗材',
+    '科室编码',
     '科室',
     '规格',
     '型号',
@@ -2537,9 +2538,9 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     '收费项目单位',
     '收费项目单价',
   ];
-  const qtyCol = 9;
-  const amtCol = includeNearExpiryDays ? 11 : 10;
-  const numericCols = [8, qtyCol, amtCol];
+  const qtyCol = 10;
+  const amtCol = includeNearExpiryDays ? 12 : 11;
+  const numericCols = [9, qtyCol, amtCol];
   return exportInventoryQueryStyledXlsx({
     sheetName: '科室库存明细',
     titleBoldText: '科室库存明细查询表',
@@ -2563,6 +2564,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
         0,
         m.code || '',
         m.name || '',
+        (row.department && row.department.code) || '',
         (row.department && row.department.name) || '',
         m.speci || '',
         m.model || '',
@@ -2616,6 +2618,7 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
     '规格',
     '型号',
     '单位',
+    '科室编码',
     '科室',
     '单价',
     '库存数量',
@@ -2627,7 +2630,7 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
     '注册证号',
     '注册证有效期',
   ];
-  const numericCols = [8, 13, 14, 15];
+  const numericCols = [8, 14, 15, 16];
   return exportInventoryQueryStyledXlsx({
     sheetName: '科室库存汇总',
     titleBoldText: '科室库存汇总查询表',
@@ -2637,8 +2640,8 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
     rows,
     numericCols1Based: numericCols,
     sumExtractors: {
-      14: (row) => Number(row.totalQty || 0),
-      15: (row) => Number(row.totalAmount || 0),
+      15: (row) => Number(row.totalQty || 0),
+      16: (row) => Number(row.totalAmount || 0),
     },
     buildCells: (row) => {
       let billing = '--';
@@ -2653,6 +2656,7 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
         row.specification || '',
         row.model || '',
         row.unit || '',
+        row.departmentCode || '',
         row.departmentName || '',
         row.avgUnitPrice != null && row.avgUnitPrice !== '' ? Number(row.avgUnitPrice) : null,
         Number(row.totalQty || 0),

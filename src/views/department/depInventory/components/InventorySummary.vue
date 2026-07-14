@@ -112,6 +112,7 @@
         <el-table-column label="规格" align="center" prop="specification" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci"/>
         <el-table-column label="型号" align="center" prop="model" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel"/>
         <el-table-column label="单位" align="center" prop="unit" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnit"/>
+        <el-table-column label="科室编码" align="center" prop="departmentCode" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByDepartmentCode"/>
         <el-table-column label="科室" align="center" prop="departmentName" width="160" min-width="140" show-overflow-tooltip resizable sortable :sort-method="sortByDepartment"/>
         <el-table-column label="单价" align="center" prop="avgUnitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice">
           <template slot-scope="scope">
@@ -248,6 +249,7 @@ export default {
     sortByModel(a, b) { return this.sortByStr(a, b, r => r.model || ''); },
     sortByUnit(a, b) { return this.sortByStr(a, b, r => r.unit || ''); },
     sortByDepartment(a, b) { return this.sortByStr(a, b, r => r.departmentName || ''); },
+    sortByDepartmentCode(a, b) { return this.sortByStr(a, b, r => r.departmentCode || ''); },
     sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'avgUnitPrice'); },
     sortByTotalQty(a, b) { return this.sortByNum(a, b, 'totalQty'); },
     getList() {
