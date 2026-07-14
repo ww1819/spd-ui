@@ -56,10 +56,19 @@
                   @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
+              <el-form-item label="主条码" prop="masterBarcode" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.masterBarcode"
+                  placeholder="主条码模糊"
+                  clearable
+                  style="width: 180px"
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
               <el-form-item label="辅条码" prop="secondaryBarcode" class="query-item-inline">
                 <el-input
                   v-model="queryParams.secondaryBarcode"
-                  placeholder="辅条码"
+                  placeholder="辅条码模糊"
                   clearable
                   style="width: 180px"
                   @keyup.enter.native="handleQuery"
@@ -189,6 +198,7 @@ export default {
         supplierId: null,
         batchNo: null,
         inHospitalCode: null,
+        masterBarcode: null,
         secondaryBarcode: null,
         materialNo: null,
         materialDate: null,
@@ -247,6 +257,10 @@ export default {
       params.materialKeyword = kw || null;
       const code = params.inHospitalCode != null ? String(params.inHospitalCode).trim() : '';
       params.inHospitalCode = code || null;
+      const master = params.masterBarcode != null ? String(params.masterBarcode).trim() : '';
+      params.masterBarcode = master || null;
+      const secondary = params.secondaryBarcode != null ? String(params.secondaryBarcode).trim() : '';
+      params.secondaryBarcode = secondary || null;
       return params;
     },
     async handleExport() {

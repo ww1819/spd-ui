@@ -198,6 +198,10 @@ export default {
       params.materialKeyword = kw || null;
       const code = params.inHospitalCode != null ? String(params.inHospitalCode).trim() : '';
       params.inHospitalCode = code || null;
+      const master = params.masterBarcode != null ? String(params.masterBarcode).trim() : '';
+      params.masterBarcode = master || null;
+      const secondary = params.secondaryBarcode != null ? String(params.secondaryBarcode).trim() : '';
+      params.secondaryBarcode = secondary || null;
       return params;
     },
     getList() {

@@ -34,6 +34,8 @@
                     <el-option label="收费编码" value="chargeCodeKeyword" />
                     <el-option label="门诊号/住院号" value="hospitalNumber" />
                     <el-option label="病人姓名" value="patientName" />
+                    <el-option label="主条码" value="masterBarcode" />
+                    <el-option label="辅条码" value="secondaryBarcode" />
                     <el-option label="UDI码" value="udiKeyword" />
                     <el-option label="阳光平台编码" value="sunshineCodeKeyword" />
                     <el-option label="医保编码" value="medicalNoKeyword" />
@@ -268,6 +270,8 @@ export default {
         chargeCodeKeyword: null,
         hospitalNumber: null,
         patientName: null,
+        masterBarcode: null,
+        secondaryBarcode: null,
         udiKeyword: null,
         sunshineCodeKeyword: null,
         medicalNoKeyword: null,
@@ -342,6 +346,12 @@ export default {
       if (!set.has('patientName')) {
         this.queryParams.patientName = null;
       }
+      if (!set.has('masterBarcode')) {
+        this.queryParams.masterBarcode = null;
+      }
+      if (!set.has('secondaryBarcode')) {
+        this.queryParams.secondaryBarcode = null;
+      }
       if (!set.has('udiKeyword')) {
         this.queryParams.udiKeyword = null;
       }
@@ -364,6 +374,8 @@ export default {
         chargeCodeKeyword: '收费编码',
         hospitalNumber: '门诊号/住院号',
         patientName: '病人姓名',
+        masterBarcode: '主条码',
+        secondaryBarcode: '辅条码',
         udiKeyword: 'UDI码',
         sunshineCodeKeyword: '阳光平台编码',
         medicalNoKeyword: '医保编码'
@@ -379,6 +391,8 @@ export default {
         chargeCodeKeyword: '收费编码模糊',
         hospitalNumber: '门诊号/住院号模糊',
         patientName: '病人姓名模糊',
+        masterBarcode: '主条码模糊',
+        secondaryBarcode: '辅条码模糊',
         udiKeyword: 'UDI码模糊',
         sunshineCodeKeyword: '阳光平台编码模糊',
         medicalNoKeyword: '医保编码模糊'
@@ -400,7 +414,8 @@ export default {
     normalizeSearchTextParams() {
       const fields = [
         'inHospitalCode', 'materialKeyword', 'materialSpeci', 'materialNo', 'supplierKeyword',
-        'chargeCodeKeyword', 'hospitalNumber', 'patientName', 'udiKeyword', 'sunshineCodeKeyword', 'medicalNoKeyword'
+        'chargeCodeKeyword', 'hospitalNumber', 'patientName', 'masterBarcode', 'secondaryBarcode',
+        'udiKeyword', 'sunshineCodeKeyword', 'medicalNoKeyword'
       ];
       fields.forEach((f) => {
         const v = this.queryParams[f];
@@ -429,6 +444,8 @@ export default {
       this.queryParams.chargeCodeKeyword = null;
       this.queryParams.hospitalNumber = null;
       this.queryParams.patientName = null;
+      this.queryParams.masterBarcode = null;
+      this.queryParams.secondaryBarcode = null;
       this.queryParams.udiKeyword = null;
       this.queryParams.sunshineCodeKeyword = null;
       this.queryParams.medicalNoKeyword = null;
