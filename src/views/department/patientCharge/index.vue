@@ -94,10 +94,12 @@
             <el-button
               type="warning"
               plain
-              :disabled="detailSelection.length === 0"
+              :disabled="detailVisitType === 'ALL' || batchLowSubmitting"
+              :loading="batchLowSubmitting"
               v-hasPermi="['department:patientCharge:generateConsume','department:patientCharge:processMirrorLow']"
-              @click="batchProcessLowValue"
+              @click="openBatchLowDialog"
             >批量低值核销</el-button>
+            <span v-if="cachedSelectionCount > 0" class="pc-cached-sel-hint">已跨页勾选 {{ cachedSelectionCount }} 条</span>
           </el-form-item>
           <el-form-item>
             <el-button
@@ -122,13 +124,14 @@
           ref="detailTable"
           v-loading="detailLoading"
           :data="detailList"
+          :row-key="getDetailRowKey"
           height="60vh"
           border
           stripe
           class="pc-detail-table"
-          @selection-change="rows => (detailSelection = rows)"
+          @selection-change="onDetailSelectionChange"
         >
-          <el-table-column type="selection" width="48" align="center" :selectable="row => canProcessLow(row)" />
+          <el-table-column type="selection" width="48" align="center" :reserve-selection="true" :selectable="row => canProcessLow(row)" />
           <el-table-column label="类型" prop="visitType" width="80">
             <template slot-scope="scope">
               <span>{{ scope.row.visitType === 'INPATIENT' ? '住院' : '门诊' }}</span>
@@ -487,6 +490,25 @@
         <el-button type="primary" :loading="selfDeptLowDialog.submitting" @click="submitSelfDeptLowConsume">确 定</el-button>
       </div>
     </el-dialog>
+    <el-dialog title="批量低值核销" :visible.sync="batchLowDialog.visible" width="520px" append-to-body>
+      <el-alert
+        type="warning"
+        :closable="false"
+        show-icon
+        class="mb8"
+        title="请选择核销范围。并发下同一条只能被一名用户核销成功，另一人将提示「正在核销或已被他人处理」。"
+      />
+      <el-radio-group v-model="batchLowDialog.scope" class="pc-batch-scope">
+        <el-radio label="SELECTED">已勾选记录（跨页 {{ cachedSelectionCount }} 条）</el-radio>
+        <el-radio label="QUERY">当前查询条件下全部待处理低值结果</el-radio>
+      </el-radio-group>
+      <p class="pc-batch-tip">「全部」将按当前筛选条件分页收集待处理低值明细后再核销，条数多时可能较久。</p>
+      <p class="pc-batch-tip">开始核销前：若已设计费日期且有权限，将按该区间自动「补全执行科室」（仅回写本地为空且 HIS 有值的行），再逐条核销。</p>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="batchLowDialog.visible = false">取 消</el-button>
+        <el-button type="primary" :loading="batchLowSubmitting" @click="confirmBatchLowProcess">开始核销</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -539,6 +561,14 @@ export default {
       detailList: [],
       detailTotal: 0,
       detailSelection: [],
+      /** 跨页勾选缓存：key = visitType:id */
+      detailSelectionCache: Object.create(null),
+      detailSelectionSyncing: false,
+      batchLowSubmitting: false,
+      batchLowDialog: {
+        visible: false,
+        scope: 'SELECTED'
+      },
       detailQuery: {
         pageNum: 1,
         pageSize: 10,
@@ -607,6 +637,9 @@ export default {
       if (this.detailVisitType === 'IN') return 'INPATIENT'
       if (this.detailVisitType === 'OUT') return 'OUTPATIENT'
       return ''
+    },
+    cachedSelectionCount() {
+      return Object.keys(this.detailSelectionCache || {}).length
     }
   },
   created() {
@@ -684,6 +717,81 @@ export default {
       }
       return this.isLowValueLevel(row)
     },
+    getDetailRowKey(row) {
+      if (!row || row.id == null || row.id === '') return ''
+      return String(row.id)
+    },
+    selectionCacheKey(row) {
+      if (!row || row.id == null || row.id === '') return ''
+      const vk = row.visitType || this.currentVisitKind || 'UNKNOWN'
+      return `${vk}:${String(row.id)}`
+    },
+    /**
+     * 跨页勾选：依赖 el-table row-key + reserve-selection + 自维护 cache。
+     * 翻页/换数时 Element 常先回调 []，且可能发生在 restore 之前；
+     * 绝不可用空回调整表清空，也不可在 loading/syncing 期间按「本页曾勾过」误删 cache。
+     */
+    onDetailSelectionChange(rows) {
+      if (this.detailSelectionSyncing || this.detailLoading) {
+        return
+      }
+      const list = rows || []
+      this.detailSelection = list
+      if (list.length === 0) {
+        // 稳定态下用户取消本页全部勾选：只移除本页 cache，保留其它页
+        ;(this.detailList || []).forEach(r => {
+          const k = this.selectionCacheKey(r)
+          if (k && this.detailSelectionCache[k]) this.$delete(this.detailSelectionCache, k)
+        })
+        return
+      }
+      // reserve-selection 时 rows 含跨页已选；本页未出现在 rows 中的视为取消
+      const next = Object.create(null)
+      Object.keys(this.detailSelectionCache).forEach(k => {
+        const onPage = (this.detailList || []).some(r => this.selectionCacheKey(r) === k)
+        if (!onPage) next[k] = this.detailSelectionCache[k]
+      })
+      list.forEach(r => {
+        const k = this.selectionCacheKey(r)
+        if (!k || !this.canProcessLow(r)) return
+        next[k] = { id: String(r.id), visitType: r.visitType || this.currentVisitKind }
+      })
+      this.detailSelectionCache = next
+    },
+    restoreDetailSelection() {
+      const table = this.$refs.detailTable
+      if (!table || typeof table.toggleRowSelection !== 'function') {
+        this.detailSelectionSyncing = false
+        return
+      }
+      this.detailSelectionSyncing = true
+      try {
+        ;(this.detailList || []).forEach(row => {
+          const k = this.selectionCacheKey(row)
+          if (k && this.detailSelectionCache[k] && this.canProcessLow(row)) {
+            table.toggleRowSelection(row, true)
+          }
+        })
+      } finally {
+        this.$nextTick(() => {
+          this.$nextTick(() => {
+            this.detailSelectionSyncing = false
+          })
+        })
+      }
+    },
+    clearDetailSelectionCache() {
+      this.detailSelectionCache = Object.create(null)
+      this.detailSelection = []
+      const table = this.$refs.detailTable
+      if (table && typeof table.clearSelection === 'function') {
+        this.detailSelectionSyncing = true
+        table.clearSelection()
+        this.$nextTick(() => {
+          this.detailSelectionSyncing = false
+        })
+      }
+    },
     consumeBillStatusText(v) {
       if (v === 1 || v === '1') return '未审核'
       if (v === 2 || v === '2') return '已审核'
@@ -729,6 +837,7 @@ export default {
     },
     handleDetailQuery() {
       this.detailQuery.pageNum = 1
+      this.clearDetailSelectionCache()
       this.loadDetailList()
     },
     resetDetailQuery() {
@@ -747,10 +856,12 @@ export default {
         beginProcessTime: undefined,
         endProcessTime: undefined
       }
-      this.detailSelection = []
+      this.clearDetailSelectionCache()
       this.loadDetailList()
     },
     loadDetailList() {
+      // 换页换数前先锁住 selection 回调，避免 data 替换瞬间的 [] 误清跨页 cache
+      this.detailSelectionSyncing = true
       this.detailLoading = true
       const q = { ...this.detailQuery }
       q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
@@ -774,7 +885,10 @@ export default {
           this.detailTotal = res.total || 0
         }).finally(() => {
           this.detailLoading = false
-          this.$nextTick(() => this.layoutDetailTable())
+          this.$nextTick(() => {
+            this.restoreDetailSelection()
+            this.layoutDetailTable()
+          })
         })
       } else if (this.detailVisitType === 'OUT') {
         q.outpatientNo = q.visitNo
@@ -793,7 +907,10 @@ export default {
           this.detailTotal = res.total || 0
         }).finally(() => {
           this.detailLoading = false
-          this.$nextTick(() => this.layoutDetailTable())
+          this.$nextTick(() => {
+            this.restoreDetailSelection()
+            this.layoutDetailTable()
+          })
         })
       } else {
         listAllMirror(q).then(res => {
@@ -801,7 +918,10 @@ export default {
           this.detailTotal = res.total || 0
         }).finally(() => {
           this.detailLoading = false
-          this.$nextTick(() => this.layoutDetailTable())
+          this.$nextTick(() => {
+            this.restoreDetailSelection()
+            this.layoutDetailTable()
+          })
         })
       }
     },
@@ -1110,22 +1230,70 @@ export default {
         this.selfDeptLowDialog.submitting = false
       })
     },
-    batchProcessLowValue() {
-      if (!this.detailSelection.length) {
-        this.$modal.msgWarning('请先勾选待处理的低值计费明细')
-        return
-      }
+    openBatchLowDialog() {
       if (this.detailVisitType === 'ALL') {
         this.$modal.msgWarning('“全部”模式下批量低值核销请先切换到住院或门诊后分别执行')
         return
       }
-      const ids = this.detailSelection.map(r => r.id)
+      this.batchLowDialog.scope = this.cachedSelectionCount > 0 ? 'SELECTED' : 'QUERY'
+      this.batchLowDialog.visible = true
+    },
+    async confirmBatchLowProcess() {
+      if (this.detailVisitType === 'ALL' || !this.currentVisitKind) {
+        this.$modal.msgWarning('“全部”模式下批量低值核销请先切换到住院或门诊后分别执行')
+        return
+      }
+      let ids = []
+      try {
+        if (this.batchLowDialog.scope === 'SELECTED') {
+          ids = Object.values(this.detailSelectionCache).map(x => x.id).filter(Boolean)
+          if (!ids.length) {
+            this.$modal.msgWarning('请先勾选待处理的低值计费明细（支持跨页勾选）')
+            return
+          }
+        } else {
+          this.batchLowSubmitting = true
+          ids = await this.collectQueryablePendingLowIds()
+          if (!ids.length) {
+            this.$modal.msgWarning('当前查询条件下没有可低值核销的待处理明细')
+            this.batchLowSubmitting = false
+            return
+          }
+        }
+      } catch (e) {
+        this.batchLowSubmitting = false
+        return
+      }
+      this.batchLowDialog.visible = false
+      const scopeText = this.batchLowDialog.scope === 'SELECTED' ? '已勾选' : '查询结果'
       this.$modal
-        .confirm(`将对勾选的 ${ids.length} 条明细逐条执行低值核销；单条失败不影响其它条（失败原因将汇总提示）。是否继续？`)
-        .then(() => {
+        .confirm(
+          `将对${scopeText}共 ${ids.length} 条：先按计费日期自动补全空执行科室（有权限时），再逐条低值核销；单条失败不影响其它条。是否继续？`
+        )
+        .then(async () => {
+          this.batchLowSubmitting = true
+          try {
+            await this.ensureExecDeptBeforeBatchLow()
+          } catch (e) {
+            if (e === 'cancel' || (e && e.message === 'cancel')) {
+              return
+            }
+            const cont = await this.$modal
+              .confirm(
+                formatHisChargeSlowError(e, {
+                  timeoutMsg: '补全执行科室失败或超时。是否仍继续核销（缺执行科室的记录可能失败）？'
+                })
+              )
+              .then(() => true)
+              .catch(() => false)
+            if (!cont) {
+              return
+            }
+          }
           return processMirrorLowValueBatch({ visitKind: this.currentVisitKind, mirrorRowIds: ids })
         })
         .then(res => {
+          if (!res) return
           const d = res.data || {}
           const ok = d.successCount != null ? d.successCount : 0
           const fail = d.failCount != null ? d.failCount : 0
@@ -1135,10 +1303,131 @@ export default {
             extra += '…'
           }
           this.$modal.msgSuccess(`完成：成功 ${ok} 条，失败 ${fail} 条${extra}`)
-          this.detailSelection = []
+          this.clearDetailSelectionCache()
           this.handleDetailQuery()
         })
         .catch(() => {})
+        .finally(() => {
+          this.batchLowSubmitting = false
+        })
+    },
+    /**
+     * PC-F-008：批量核销前按当前计费日期区间自动补全空执行科室。
+     * 复用既有 backfillExecDept（仅写本地为空且 HIS 有值）。
+     */
+    async ensureExecDeptBeforeBatchLow() {
+      const beginRaw = this.detailQuery.beginChargeDate
+      const endRaw = this.detailQuery.endChargeDate
+      if (!beginRaw || !endRaw) {
+        const go = await this.$modal
+          .confirm('当前未设置计费日期，无法自动补全执行科室。将直接核销，缺执行科室的记录可能失败。是否继续？')
+          .then(() => true)
+          .catch(() => false)
+        if (!go) {
+          return Promise.reject(new Error('cancel'))
+        }
+        return { ran: false, reason: 'noDate' }
+      }
+      const wantIn = this.detailVisitType === 'IN'
+      const wantOut = this.detailVisitType === 'OUT'
+      if (wantIn && !this.canFetchInpatient) {
+        const go = await this.$modal
+          .confirm('无住院补全执行科室权限，将直接核销。缺执行科室的记录可能失败。是否继续？')
+          .then(() => true)
+          .catch(() => false)
+        if (!go) {
+          return Promise.reject(new Error('cancel'))
+        }
+        return { ran: false, reason: 'noPerm' }
+      }
+      if (wantOut && !this.canFetchOutpatient) {
+        const go = await this.$modal
+          .confirm('无门诊补全执行科室权限，将直接核销。缺执行科室的记录可能失败。是否继续？')
+          .then(() => true)
+          .catch(() => false)
+        if (!go) {
+          return Promise.reject(new Error('cancel'))
+        }
+        return { ran: false, reason: 'noPerm' }
+      }
+      const beginDate = this.toQueryDayStart(beginRaw)
+      const endDate = this.toQueryDayEnd(endRaw)
+      const chunkDays = normalizeChargeFetchChunkDays(CHARGE_FETCH_DEFAULT_CHUNK_DAYS)
+      const segments = splitChargeFetchDateRange(beginDate, endDate, chunkDays)
+      if (!segments.length) {
+        const go = await this.$modal
+          .confirm('计费日期无效，无法自动补全执行科室。是否仍继续核销？')
+          .then(() => true)
+          .catch(() => false)
+        if (!go) {
+          return Promise.reject(new Error('cancel'))
+        }
+        return { ran: false, reason: 'badDate' }
+      }
+      let agg = null
+      await runPatientChargeSegments({
+        segments,
+        getProgressText: (cur, total, seg) =>
+          `批量核销前补全执行科室 第 ${cur}/${total} 段（${seg.beginDate} ~ ${seg.endDate}）`,
+        runOneSegment: async (seg) => {
+          const body = { beginDate: seg.beginDate, endDate: seg.endDate, chunkDays }
+          let data
+          if (wantIn) {
+            data = await backfillInpatientExecDept(body).then(res => res.data)
+          } else {
+            data = await backfillOutpatientExecDept(body).then(res => res.data)
+          }
+          agg = this.mergeBackfillAgg(agg, data)
+        }
+      })
+      if (agg) {
+        const label = wantIn ? '住院' : '门诊'
+        this.$modal.msgSuccess(this.formatBackfillResult(`批量前${label}补全`, agg, segments.length))
+      }
+      return { ran: true, agg }
+    },
+    async collectQueryablePendingLowIds() {
+      const pageSize = 200
+      let pageNum = 1
+      const ids = []
+      const maxPages = 100
+      while (pageNum <= maxPages) {
+        const q = { ...this.detailQuery, pageNum, pageSize, processed: 'N' }
+        q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
+        q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
+        q.beginProcessTime = this.toQueryDayStart(q.beginProcessTime)
+        q.endProcessTime = this.toQueryDayEnd(q.endProcessTime)
+        let res
+        if (this.detailVisitType === 'IN') {
+          q.inpatientNo = q.visitNo
+          q.hisInpatientChargeId = q.hisChargeId
+          q.hisInpatientChargeIdTf = q.chargeIdTf
+          delete q.visitNo
+          delete q.hisChargeId
+          delete q.chargeIdTf
+          res = await listInpatientMirror(q)
+          ;(res.rows || []).forEach(r => {
+            const row = { ...r, visitType: 'INPATIENT', processStatus: r.processStatus, valueLevel: r.valueLevel }
+            if (this.canProcessLow(row)) ids.push(r.id)
+          })
+        } else {
+          q.outpatientNo = q.visitNo
+          q.hisOutpatientChargeId = q.hisChargeId
+          q.hisOutpatientChargeIdTf = q.chargeIdTf
+          delete q.visitNo
+          delete q.hisChargeId
+          delete q.chargeIdTf
+          res = await listOutpatientMirror(q)
+          ;(res.rows || []).forEach(r => {
+            const row = { ...r, visitType: 'OUTPATIENT', processStatus: r.processStatus, valueLevel: r.valueLevel }
+            if (this.canProcessLow(row)) ids.push(r.id)
+          })
+        }
+        const got = (res && res.rows) ? res.rows.length : 0
+        if (got < pageSize) break
+        pageNum += 1
+      }
+      return ids
     },
     buildExportParams() {
       const q = { ...this.detailQuery }
@@ -1295,6 +1584,27 @@ export default {
   white-space: normal;
   word-break: break-word;
   line-height: 1.4;
+}
+
+.patient-charge-page .pc-cached-sel-hint {
+  margin-left: 8px;
+  color: #e6a23c;
+  font-size: 13px;
+}
+
+.patient-charge-page .pc-batch-scope {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+
+.patient-charge-page .pc-batch-tip {
+  margin: 8px 0 0;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .patient-charge-page .pc-pagination-wrap {
