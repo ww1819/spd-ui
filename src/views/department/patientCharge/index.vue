@@ -136,19 +136,25 @@
           </el-table-column>
           <template v-if="detailVisitType === 'IN'">
             <el-table-column label="住院号" prop="inpatientNo" width="120" show-overflow-tooltip />
-            <el-table-column label="开单科室" prop="deptName" min-width="120" show-overflow-tooltip />
-            <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
           </template>
           <template v-else-if="detailVisitType === 'OUT'">
             <el-table-column label="门诊号" prop="outpatientNo" width="120" show-overflow-tooltip />
-            <el-table-column label="开单科室" prop="clinicName" min-width="120" show-overflow-tooltip />
-            <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
           </template>
           <template v-else>
             <el-table-column label="号" prop="visitNo" width="120" show-overflow-tooltip />
-            <el-table-column label="开单科室" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
-            <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
           </template>
+          <el-table-column label="开单科室编码" min-width="100" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ orderDeptCode(scope.row) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="开单科室" min-width="120" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ orderDeptName(scope.row) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="执行科室编码" prop="execDeptId" min-width="100" show-overflow-tooltip />
+          <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
           <el-table-column label="患者" prop="patientName" width="100" show-overflow-tooltip />
           <el-table-column label="收费项ID" prop="chargeItemId" width="120" show-overflow-tooltip />
           <el-table-column label="费用明细主键" prop="hisChargeId" width="130" show-overflow-tooltip>
@@ -562,6 +568,14 @@ export default {
       if (table && table.doLayout) {
         table.doLayout()
       }
+    },
+    orderDeptCode(row) {
+      if (!row) return ''
+      return row.deptCode || row.clinicCode || ''
+    },
+    orderDeptName(row) {
+      if (!row) return ''
+      return row.deptName || row.clinicName || row.deptDisplayName || ''
     },
     toQueryDayStart(s) {
       if (!s) return undefined
