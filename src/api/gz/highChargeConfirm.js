@@ -23,3 +23,11 @@ export function getHighChargeConfirmDetail(confirmId) {
     method: 'get'
   })
 }
+
+export function writeOffHighChargeConfirm(data) {
+  return request({
+    url: '/gz/highChargeConfirm/writeOff',
+    method: 'post',
+    data
+  })
+}

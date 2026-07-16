@@ -72,10 +72,19 @@
         plain
         icon="el-icon-check"
         size="small"
-        :disabled="selectedRows.length === 0"
+        :disabled="!canConfirm"
         v-hasPermi="['gz:highChargeConfirm:confirm']"
         @click="openConfirmDialog"
       >消耗确认</el-button>
+      <el-button
+        v-if="canWriteOff"
+        type="danger"
+        plain
+        icon="el-icon-refresh-left"
+        size="small"
+        v-hasPermi="['gz:highChargeConfirm:writeOff']"
+        @click="submitWriteOff"
+      >冲销</el-button>
       <span v-if="selectedRows.length" class="hc-selected-tip">已选 {{ selectedRows.length }} 条</span>
       <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">查询</el-button>
       <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
@@ -97,6 +106,11 @@
         <el-table-column label="确认状态" prop="confirmStatus" width="112" align="center" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
             <span :class="confirmStatusClass(scope.row.confirmStatus)">{{ confirmStatusText(scope.row.confirmStatus) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="即入即出" prop="instantIoAuditStatus" width="100" align="center" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ instantIoStatusText(scope.row.instantIoAuditStatus) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="核销时间" prop="consumeAuditTime" width="165" show-overflow-tooltip>
@@ -152,31 +166,23 @@
       />
     </div>
 
-    <el-dialog title="消耗确认" :visible.sync="confirmDialogVisible" width="520px" append-to-body @close="resetConfirmDialog">
+    <el-dialog title="消耗确认" :visible.sync="confirmDialogVisible" width="480px" append-to-body @close="resetConfirmDialog">
       <p>已选 <strong>{{ selectedRows.length }}</strong> 条明细，合计数量 <strong>{{ selectedTotalQty }}</strong>，合计金额 <strong>{{ selectedTotalAmt }}</strong></p>
       <el-form label-width="100px" size="small">
         <el-form-item label="核销科室">
           <span class="hc-confirm-dept-text">{{ confirmDepartmentName || '--' }}</span>
         </el-form-item>
-        <el-form-item label="仓库" required>
-          <el-select v-model="confirmWarehouseId" placeholder="请选择结算仓库" filterable style="width:100%">
-            <el-option v-for="w in warehouseOptions" :key="w.id" :label="w.name" :value="w.id" />
-          </el-select>
-        </el-form-item>
       </el-form>
+      <p class="hc-confirm-tip">确认后不生成入出库单，待库房在「高值即入即出」审核建单。</p>
       <div slot="footer">
         <el-button @click="confirmDialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="confirmSubmitting" @click="submitConfirm">确认</el-button>
       </div>
     </el-dialog>
 
-    <el-dialog title="确认结果" :visible.sync="resultDialogVisible" width="640px" append-to-body>
-      <p>确认批次：<strong>{{ result.confirmNo }}</strong>，共 {{ result.lineCount }} 条明细</p>
-      <el-table :data="result.bills || []" border size="small">
-        <el-table-column label="供应商" prop="supplierName" min-width="140" />
-        <el-table-column label="入库单 G-RK" prop="inboundBillNo" min-width="160" />
-        <el-table-column label="出库单 G-CK" prop="outboundBillNo" min-width="160" />
-      </el-table>
+    <el-dialog title="确认结果" :visible.sync="resultDialogVisible" width="480px" append-to-body>
+      <p>确认批次：<strong>{{ result.confirmNo }}</strong>，共 {{ result.lineCount }} 条明细。</p>
+      <p>已确认，待库房即入即出审核。</p>
       <div slot="footer">
         <el-button type="primary" @click="resultDialogVisible = false">知道了</el-button>
       </div>
@@ -186,8 +192,7 @@
 
 <script>
 import { listDepartTenantOptionselect, listDepartOptionselect } from '@/api/foundation/depart'
-import { listSettlementWarehousePick } from '@/api/foundation/warehouse'
-import { listHighChargeConfirm, confirmHighChargeConsume } from '@/api/gz/highChargeConfirm'
+import { listHighChargeConfirm, confirmHighChargeConsume, writeOffHighChargeConfirm } from '@/api/gz/highChargeConfirm'
 import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
 
 function pad2(n) {
@@ -221,7 +226,6 @@ export default {
       permDeptOptions: [],
       orderingDeptOptions: [],
       execDeptOptions: [],
-      warehouseOptions: [],
       selectedRows: [],
       query: {
         pageNum: 1,
@@ -242,7 +246,6 @@ export default {
       confirmDialogVisible: false,
       confirmDepartmentId: undefined,
       confirmDepartmentName: '',
-      confirmWarehouseId: undefined,
       confirmSubmitting: false,
       resultDialogVisible: false,
       result: { bills: [], confirmNo: '', lineCount: 0 }
@@ -254,6 +257,16 @@ export default {
     },
     selectedTotalAmt() {
       return this.selectedRows.reduce((s, r) => s + Number(r.amt || 0), 0).toFixed(2)
+    },
+    canConfirm() {
+      return this.selectedRows.length > 0 && this.selectedRows.every(r => Number(r.confirmStatus) !== 1)
+    },
+    canWriteOff() {
+      // 临床段档 A/B：未即入即出审核即可冲销；库房已审不显示
+      return this.selectedRows.length > 0 && this.selectedRows.every(r => {
+        const io = Number(r.instantIoAuditStatus)
+        return io !== 1 && io !== 2
+      })
     }
   },
   created() {
@@ -275,6 +288,12 @@ export default {
     },
     confirmStatusClass(v) {
       return v === 1 ? 'hc-writeoff-done' : 'hc-writeoff-pending'
+    },
+    instantIoStatusText(v) {
+      if (v === 1) return '已审核'
+      if (v === 2) return '已冲销'
+      if (v === 0 || v === '0') return '待审核'
+      return '--'
     },
     formatDateCell(v) {
       if (!v) return '--'
@@ -328,12 +347,6 @@ export default {
     filterExecDeptMethod(query) {
       this.filterDeptList(query, 'execDeptOptions')
     },
-    loadWarehouseOptions() {
-      listSettlementWarehousePick().then(res => {
-        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : [])
-        this.warehouseOptions = list.filter(w => w && w.id != null)
-      })
-    },
     toQueryDayStart(s) {
       if (!s) return undefined
       const t = String(s).trim()
@@ -345,7 +358,10 @@ export default {
       return t.length > 10 ? t : `${t} 23:59:59`
     },
     rowSelectable(row) {
-      return row && row.confirmStatus !== 1
+      // 可选：未确认(A)、已确认待库房审(B)；库房已审/已冲销不可选
+      if (!row) return false
+      const io = Number(row.instantIoAuditStatus)
+      return io !== 1 && io !== 2
     },
     handleSelectionChange(rows) {
       this.selectedRows = rows || []
@@ -394,8 +410,8 @@ export default {
       })
     },
     openConfirmDialog() {
-      if (!this.selectedRows.length) {
-        this.$modal.msgWarning('请先选择未确认的明细')
+      if (!this.canConfirm) {
+        this.$modal.msgWarning('请先选择未确认的明细（已确认请用冲销）')
         return
       }
       const deptIds = [...new Set(this.selectedRows.map(r => r.departmentId).filter(Boolean))]
@@ -415,23 +431,16 @@ export default {
       if (!this.assertWriteOffDeptPermission(this.confirmDepartmentId)) {
         return
       }
-      this.confirmWarehouseId = undefined
-      this.loadWarehouseOptions()
       this.confirmDialogVisible = true
     },
     resetConfirmDialog() {
       this.confirmDepartmentId = undefined
       this.confirmDepartmentName = ''
-      this.confirmWarehouseId = undefined
       this.confirmSubmitting = false
     },
     submitConfirm() {
       if (!this.confirmDepartmentId) {
         this.$modal.msgWarning('所选明细缺少核销科室，无法确认')
-        return
-      }
-      if (!this.confirmWarehouseId) {
-        this.$modal.msgWarning('请选择仓库')
         return
       }
       if (!this.assertWriteOffDeptPermission(this.confirmDepartmentId)) {
@@ -440,7 +449,6 @@ export default {
       this.confirmSubmitting = true
       confirmHighChargeConsume({
         linkIds: this.selectedRows.map(r => r.linkId),
-        warehouseId: this.confirmWarehouseId,
         departmentId: this.confirmDepartmentId
       }).then(res => {
         this.result = res.data || { bills: [], confirmNo: '', lineCount: 0 }
@@ -451,8 +459,32 @@ export default {
           this.$refs.table.clearSelection()
         }
         this.loadList()
-        this.$modal.msgSuccess('消耗确认成功')
+        this.$modal.msgSuccess('已确认，待库房即入即出审核')
       }).finally(() => {
+        this.confirmSubmitting = false
+      })
+    },
+    submitWriteOff() {
+      if (!this.canWriteOff) {
+        this.$modal.msgWarning('请选择临床段明细冲销（未做即入即出审核）；库房已审请到「高值即入即出」处理')
+        return
+      }
+      this.$modal.confirm('冲销将回补科室库存，并撤销临床确认（若已确认），计费行恢复待核销。是否继续？').then(() => {
+        this.confirmSubmitting = true
+        return writeOffHighChargeConfirm({
+          linkIds: this.selectedRows.map(r => r.linkId),
+          remark: '高值核销确认页冲销',
+          source: 'CONFIRM'
+        })
+      }).then(res => {
+        const data = (res && res.data) || {}
+        this.selectedRows = []
+        if (this.$refs.table) {
+          this.$refs.table.clearSelection()
+        }
+        this.loadList()
+        this.$modal.msgSuccess(`冲销完成，回补 ${data.restoredCount || 0} 条`)
+      }).catch(() => {}).finally(() => {
         this.confirmSubmitting = false
       })
     }
@@ -496,6 +528,13 @@ export default {
   display: block;
   width: 100%;
   clear: both;
+}
+
+.high-charge-confirm-page .hc-confirm-tip {
+  margin: 0;
+  color: #909399;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .high-charge-confirm-page .hc-query-form-second-row .el-form-item {
