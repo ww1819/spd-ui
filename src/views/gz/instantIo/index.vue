@@ -4,8 +4,6 @@
       <el-tabs v-model="activeQueue" type="card" @tab-click="onQueueChange">
         <el-tab-pane label="待审核" name="pending" />
         <el-tab-pane label="已审核" name="audited" />
-        <el-tab-pane label="退费待反向" name="refundReverse" />
-        <el-tab-pane label="已冲销" name="reversed" />
         <el-tab-pane label="全部" name="all" />
       </el-tabs>
       <el-form :model="query" inline size="small">
@@ -33,7 +31,6 @@
 
     <div class="io-action-bar">
       <el-button type="primary" plain icon="el-icon-check" size="small" :disabled="!canAudit" v-hasPermi="['gz:instantIo:audit']" @click="openAuditDialog">审核建单</el-button>
-      <el-button type="warning" plain icon="el-icon-document" size="small" :disabled="!canReverse" v-hasPermi="['gz:instantIo:reverse']" @click="submitReverse">生成退货退库</el-button>
       <el-button type="danger" plain icon="el-icon-refresh-left" size="small" :disabled="!canWriteOff" v-hasPermi="['gz:instantIo:writeOff']" @click="submitWriteOff">冲销</el-button>
       <span v-if="selectedRows.length" class="io-selected-tip">已选 {{ selectedRows.length }} 条</span>
       <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">查询</el-button>
@@ -109,7 +106,7 @@
 <script>
 import { listDepartTenantOptionselect } from '@/api/foundation/depart'
 import { listSettlementWarehousePick } from '@/api/foundation/warehouse'
-import { listGzInstantIo, auditGzInstantIo, reverseGzInstantIo, writeOffGzInstantIo } from '@/api/gz/instantIo'
+import { listGzInstantIo, auditGzInstantIo, writeOffGzInstantIo } from '@/api/gz/instantIo'
 import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
 
 function pad2(n) {
@@ -143,7 +140,6 @@ export default {
         pageSize: 10,
         departmentId: undefined,
         instantIoAuditStatus: '0',
-        pendingRefundReverse: undefined,
         beginConsumeAuditTime: month.begin,
         endConsumeAuditTime: month.end,
         patientName: undefined,
@@ -162,13 +158,6 @@ export default {
       return this.activeQueue === 'pending'
         && this.selectedRows.length > 0
         && this.selectedRows.every(r => Number(r.instantIoAuditStatus) === 0)
-    },
-    canReverse() {
-      // 已审核或退费待反向队列均可生成 301/401
-      const qOk = this.activeQueue === 'audited' || this.activeQueue === 'refundReverse' || this.activeQueue === 'all'
-      return qOk
-        && this.selectedRows.length > 0
-        && this.selectedRows.every(r => Number(r.instantIoAuditStatus) === 1)
     },
     canWriteOff() {
       return this.selectedRows.length > 0 && this.selectedRows.every(r => {
@@ -193,16 +182,11 @@ export default {
       return this.parseTime(v, '{y}-{m}-{d} {h}:{i}:{s}')
     },
     applyQueueToQuery() {
-      this.query.pendingRefundReverse = undefined
       this.query.instantIoAuditStatus = undefined
       if (this.activeQueue === 'pending') {
         this.query.instantIoAuditStatus = '0'
       } else if (this.activeQueue === 'audited') {
         this.query.instantIoAuditStatus = '1'
-      } else if (this.activeQueue === 'reversed') {
-        this.query.instantIoAuditStatus = '2'
-      } else if (this.activeQueue === 'refundReverse') {
-        this.query.pendingRefundReverse = '1'
       }
     },
     onQueueChange() {
@@ -257,7 +241,6 @@ export default {
         pageSize: 10,
         departmentId: undefined,
         instantIoAuditStatus: '0',
-        pendingRefundReverse: undefined,
         beginConsumeAuditTime: month.begin,
         endConsumeAuditTime: month.end,
         patientName: undefined,
@@ -272,11 +255,6 @@ export default {
       const q = { ...this.query }
       q.beginConsumeAuditTime = this.toQueryDayStart(q.beginConsumeAuditTime)
       q.endConsumeAuditTime = this.toQueryDayEnd(q.endConsumeAuditTime)
-      if (q.pendingRefundReverse !== '1') {
-        delete q.pendingRefundReverse
-      } else {
-        delete q.instantIoAuditStatus
-      }
       listGzInstantIo(q).then(res => {
         this.list = res.rows || []
         this.total = res.total || 0
@@ -319,26 +297,6 @@ export default {
         this.loadList()
         this.$modal.msgSuccess('审核建单成功')
       }).finally(() => {
-        this.submitting = false
-      })
-    },
-    submitReverse() {
-      if (!this.canReverse) {
-        this.$modal.msgWarning('请选择已审核未冲销的明细')
-        return
-      }
-      this.$modal.confirm('将按原入出库单仓库生成退货单(301)与退库单(401)，不选仓库。是否继续？').then(() => {
-        this.submitting = true
-        return reverseGzInstantIo({
-          linkIds: this.selectedRows.map(r => r.linkId)
-        })
-      }).then(res => {
-        this.result = res.data || { bills: [], lineCount: 0 }
-        this.resultDialogVisible = true
-        this.clearSelection()
-        this.loadList()
-        this.$modal.msgSuccess('已生成退货/退库单')
-      }).catch(() => {}).finally(() => {
         this.submitting = false
       })
     },
