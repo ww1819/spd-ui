@@ -48,9 +48,9 @@ export default {
     },
     dialogDesc() {
       if (this.syncType === 'materials') {
-        return '确认后将执行全量耗材同步（不传筛选条件，invalidFlag 不填）并更新 SPD 表。'
+        return '确认后将执行全量耗材同步（不传筛选条件，invalidFlag 不填）并更新 SPD 表。HIS 下载数据可能耗时数分钟，请耐心等待，勿重复点击；若提示超时，请稍后刷新列表查看是否已同步完成。'
       }
-      return '可选填写筛选条件（经 SPD 后端调众阳 HIS）；确认后将执行全量同步并更新 SPD 表。'
+      return '可选填写筛选条件（经 SPD 后端调众阳 HIS）；确认后将执行全量同步并更新 SPD 表。数据量较大时可能较慢，请耐心等待，勿重复点击；若提示超时，请稍后刷新列表核对。'
     }
   },
   methods: {
