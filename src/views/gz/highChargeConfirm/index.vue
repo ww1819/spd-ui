@@ -262,10 +262,11 @@ export default {
       return this.selectedRows.length > 0 && this.selectedRows.every(r => Number(r.confirmStatus) !== 1)
     },
     canWriteOff() {
-      // 临床段档 A/B：未即入即出审核即可冲销；库房已审不显示
+      // HV-Q-006：确认页仅档 A（未确认）；已确认未即入即出须到即入即出页冲销
       return this.selectedRows.length > 0 && this.selectedRows.every(r => {
+        const confirmed = Number(r.confirmStatus) === 1
         const io = Number(r.instantIoAuditStatus)
-        return io !== 1 && io !== 2
+        return !confirmed && io !== 1 && io !== 2
       })
     }
   },
@@ -358,8 +359,9 @@ export default {
       return t.length > 10 ? t : `${t} 23:59:59`
     },
     rowSelectable(row) {
-      // 可选：未确认(A)、已确认待库房审(B)；库房已审/已冲销不可选
+      // 可选：未确认(A) 用于确认/冲销；已确认待审到即入即出页处理
       if (!row) return false
+      if (Number(row.confirmStatus) === 1) return false
       const io = Number(row.instantIoAuditStatus)
       return io !== 1 && io !== 2
     },
@@ -466,10 +468,10 @@ export default {
     },
     submitWriteOff() {
       if (!this.canWriteOff) {
-        this.$modal.msgWarning('请选择临床段明细冲销（未做即入即出审核）；库房已审请到「高值即入即出」处理')
+        this.$modal.msgWarning('仅未确认明细可在本页冲销；已确认请到「高值即入即出」由库房处理')
         return
       }
-      this.$modal.confirm('冲销将回补科室库存，并撤销临床确认（若已确认），计费行恢复待核销。是否继续？').then(() => {
+      this.$modal.confirm('冲销将回补科室库存，并使计费行恢复待核销。是否继续？').then(() => {
         this.confirmSubmitting = true
         return writeOffHighChargeConfirm({
           linkIds: this.selectedRows.map(r => r.linkId),

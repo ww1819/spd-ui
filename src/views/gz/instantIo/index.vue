@@ -49,7 +49,7 @@
         :disabled="!canWriteOff"
         v-hasPermi="['gz:instantIo:writeOff']"
         @click="submitWriteOff"
-      >冲销</el-button>
+      >{{ writeOffBtnLabel }}</el-button>
       <el-button size="small" plain icon="el-icon-check" @click="selectAllCurrentPage">全选</el-button>
       <el-button size="small" plain icon="el-icon-close" @click="clearSelectionCache">取消全选</el-button>
       <el-button size="small" plain type="warning" icon="el-icon-download" v-hasPermi="['gz:instantIo:list']" @click="handleExport">导出</el-button>
@@ -190,7 +190,11 @@ export default {
       return this.activeQueue === 'pending'
     },
     showWriteOffBtn() {
-      return this.activeQueue === 'audited'
+      // HV-Q-006：待审核=核销冲销(档B)；已审核=即入即出冲销(档C)；全部不显示
+      return this.activeQueue === 'pending' || this.activeQueue === 'audited'
+    },
+    writeOffBtnLabel() {
+      return this.activeQueue === 'audited' ? '即入即出冲销' : '核销冲销'
     },
     selectedRows() {
       return Object.keys(this.selectionCache).map(k => this.selectionCache[k]).filter(Boolean)
@@ -204,9 +208,14 @@ export default {
         && this.selectedRows.every(r => Number(r.instantIoAuditStatus) === 0)
     },
     canWriteOff() {
-      return this.showWriteOffBtn
-        && this.selectedCount > 0
-        && this.selectedRows.every(r => Number(r.instantIoAuditStatus) === 1)
+      if (!this.showWriteOffBtn || this.selectedCount === 0) return false
+      if (this.activeQueue === 'pending') {
+        return this.selectedRows.every(r => Number(r.instantIoAuditStatus) === 0)
+      }
+      if (this.activeQueue === 'audited') {
+        return this.selectedRows.every(r => Number(r.instantIoAuditStatus) === 1)
+      }
+      return false
     }
   },
   watch: {
@@ -431,14 +440,20 @@ export default {
     },
     submitWriteOff() {
       if (!this.canWriteOff) {
-        this.$modal.msgWarning('请选择已审核明细进行冲销')
+        this.$modal.msgWarning(this.activeQueue === 'audited'
+          ? '请选择已审核明细进行即入即出冲销'
+          : '请选择待审核明细进行核销冲销')
         return
       }
-      this.$modal.confirm('冲销将先生成退货/退库单（若尚未生成），再回补科室库存并使计费行恢复待核销。是否继续？').then(() => {
+      const tip = this.activeQueue === 'audited'
+        ? '即入即出冲销将先生成退货/退库单（若尚未生成），再回补科室库存并使计费行恢复待核销。是否继续？'
+        : '核销冲销将撤销临床确认、回补科室库存，并使计费行恢复待核销（临床向库房申请后由仓库操作）。是否继续？'
+      const remark = this.activeQueue === 'audited' ? '高值即入即出冲销' : '高值核销冲销（即入即出待审核）'
+      this.$modal.confirm(tip).then(() => {
         this.submitting = true
         return writeOffGzInstantIo({
           linkIds: this.selectedRows.map(r => r.linkId),
-          remark: '高值即入即出页冲销'
+          remark
         })
       }).then(res => {
         const data = (res && res.data) || {}
