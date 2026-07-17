@@ -31,12 +31,12 @@
           <span class="info-value">{{ row.departmentName || '' }}</span>
         </div>
         <div class="print-head-cell">
-          <span class="info-label">单据号</span>
-          <span class="info-value">{{ row.billNo || '' }}</span>
-        </div>
-        <div class="print-head-cell">
           <span class="info-label">仓库</span>
           <span class="info-value">{{ row.warehouseName || '' }}</span>
+        </div>
+        <div class="print-head-cell print-head-cell--bill">
+          <span class="info-label">单据号</span>
+          <span class="info-value info-value--bill">{{ row.billNo || '' }}</span>
         </div>
         <div class="print-head-cell">
           <span class="info-label">审核时间</span>
@@ -432,14 +432,21 @@ $font-song = "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
 
 .print-head-grid
   display grid
-  grid-template-columns 1fr 1fr
-  column-gap 8px
-  row-gap 1px
+  grid-template-columns minmax(0, 1fr) minmax(0, 1fr)
+  column-gap 12px
+  row-gap 4px
   font-size 12px
 
 .print-head-cell
   display flex
-  align-items center
+  align-items baseline
+  min-width 0
+  max-width 100%
+  overflow hidden
+  box-sizing border-box
+
+.print-head-cell--bill
+  /* 单据号单独占满半行，避免与仓库同区叠字 */
   min-width 0
 
 .info-label
@@ -456,7 +463,15 @@ $font-song = "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
 .info-value
   flex 1 1 auto
   min-width 0
-  margin-right 8px
+  margin-right 0
+  overflow hidden
+  text-overflow ellipsis
+  white-space nowrap
+
+.info-value--bill
+  white-space nowrap
+  letter-spacing 0
+  font-variant-numeric tabular-nums
 
 .detail-table
   width 100%
@@ -683,25 +698,36 @@ $font-song = "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
 
   .print-head-grid
     display grid !important
-    grid-template-columns 1fr 1fr !important
-    column-gap 8px !important
-    row-gap 1px !important
+    grid-template-columns minmax(0, 1fr) minmax(0, 1fr) !important
+    column-gap 12px !important
+    row-gap 4px !important
 
   .print-head-cell
     display flex !important
-    align-items center !important
+    align-items baseline !important
     min-width 0 !important
+    max-width 100% !important
+    overflow hidden !important
+    box-sizing border-box !important
 
   .print-head-info .info-label
     text-align left !important
     margin-right 0 !important
+    flex 0 0 auto !important
 
   .print-head-info .info-label::after
     content ':' !important
     margin-right 2px !important
 
   .print-head-info .info-value
-    margin-right 8px !important
+    margin-right 0 !important
+    min-width 0 !important
+    overflow hidden !important
+    text-overflow ellipsis !important
+    white-space nowrap !important
+
+  .print-head-info .info-value--bill
+    white-space nowrap !important
 
   .detail-table
     width 94% !important
