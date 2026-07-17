@@ -9,3 +9,12 @@ export function selectWarehousePsiReport(query) {
   })
 }
 
+/** 进销存汇总（按产品档案） */
+export function selectWarehousePsiReportByMaterial(query) {
+  return request({
+    url: '/department/consumeDetail/selectWarehousePsiReportByMaterial',
+    method: 'get',
+    params: query
+  })
+}
+
