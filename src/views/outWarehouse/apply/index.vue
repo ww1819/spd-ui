@@ -31,6 +31,16 @@
               <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
             </div>
           </el-form-item>
+          <el-form-item prop="materialId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectMaterial v-model="queryParams.materialId" />
+            </div>
+          </el-form-item>
+          <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectSupplier v-model="queryParams.supplerId"/>
+            </div>
+          </el-form-item>
         </el-col>
       </el-row>
 
@@ -697,6 +707,7 @@ import { fetchStockQtyMapBatched } from '@/views/caigou/jihua/utils/planEntryUti
 import { getInWarehouse } from "@/api/warehouse/warehouse";
 import { listInventoryMaterialAll } from "@/api/warehouse/inventory";
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
+import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
@@ -720,7 +731,7 @@ import {
 export default {
   name: "Apply",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectDApply,SelectDepPurchaseApply,SelectRkApply,outOrderPrint},
+  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectInventory,SelectDApply,SelectDepPurchaseApply,SelectRkApply,outOrderPrint},
   data() {
     return {
       docRefStatusOptions: DOC_REF_STATUS_OPTIONS,
@@ -798,6 +809,7 @@ export default {
         pageSize: 10,
         billNo: null,
         refBillNo: null,
+        materialId: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,

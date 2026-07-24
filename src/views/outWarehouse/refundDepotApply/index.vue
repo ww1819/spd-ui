@@ -12,6 +12,15 @@
                       @keyup.enter.native="handleQuery"
             />
           </el-form-item>
+          <el-form-item prop="refBillNo" class="query-item-inline">
+            <el-input
+              v-model="queryParams.refBillNo"
+              placeholder="引用单号"
+              clearable
+              style="width: 180px"
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
           <el-form-item prop="departmentId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectDepartment v-model="queryParams.departmentId" />
@@ -20,6 +29,16 @@
           <el-form-item prop="warehouseId" class="query-item-inline">
             <div class="query-select-wrapper">
               <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+            </div>
+          </el-form-item>
+          <el-form-item prop="materialId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectMaterial v-model="queryParams.materialId" />
+            </div>
+          </el-form-item>
+          <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectSupplier v-model="queryParams.supplerId"/>
             </div>
           </el-form-item>
         </el-col>
@@ -481,6 +500,7 @@ import {
 } from "@/api/warehouse/tkInventory";
 import {createEntriesByDApply, listCTKWarehouse, listEntryChangeLog} from '@/api/warehouse/outWarehouse'; // 新增引用
 import SelectMaterial from '@/components/SelectModel/SelectMaterial';
+import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
@@ -495,7 +515,7 @@ export default {
   name: "RefundDepotApply",
   dicts: ['biz_status','bill_type','way_status'],
   components: {
-    SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory,SelectCkApply, refundDepotOrderPrint},
+    SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory,SelectCkApply, refundDepotOrderPrint},
   data() {
     return {
       docRefStatusOptions: DOC_REF_STATUS_OPTIONS,
@@ -545,6 +565,8 @@ export default {
         pageNum: 1,
         pageSize: 10,
         billNo: null,
+        refBillNo: null,
+        materialId: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,

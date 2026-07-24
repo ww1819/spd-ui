@@ -22,6 +22,20 @@
               <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
             </div>
           </el-form-item>
+          <el-form-item prop="materialId" class="query-item-inline">
+            <div class="query-select-wrapper">
+              <SelectMaterial v-model="queryParams.materialId" />
+            </div>
+          </el-form-item>
+          <el-form-item prop="refBillNo" class="query-item-inline">
+            <el-input
+              v-model="queryParams.refBillNo"
+              placeholder="引用单号"
+              clearable
+              style="width: 180px"
+              @keyup.enter.native="handleQuery"
+            />
+          </el-form-item>
         </el-col>
       </el-row>
 
@@ -677,6 +691,8 @@ export default {
         pageNum: 1,
         pageSize: 10,
         billNo: null,
+        refBillNo: null,
+        materialId: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,
