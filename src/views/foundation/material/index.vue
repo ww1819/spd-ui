@@ -1260,6 +1260,9 @@
               <div class="material-detail-card__header">
                 <i class="el-icon-picture-outline" />
                 <span>产品图片</span>
+                <div v-if="!isViewMode && !zqTcmLimitedEdit" class="material-detail-card__header-actions">
+                  <el-button type="primary" size="mini" icon="el-icon-camera" @click="openGaopayiCapture">高拍仪拍摄</el-button>
+                </div>
               </div>
               <div class="material-detail-card__body image-tab-content" style="text-align: center; padding: 40px 20px;">
             <div class="material-image-container" style="display: inline-block;">
@@ -1420,6 +1423,12 @@
         <img :src="imagePreviewUrl" style="max-width: 100%; max-height: 600px;" alt="预览图片" />
       </div>
     </el-dialog>
+
+    <gaopayi-capture
+      :visible.sync="gaopayiCaptureVisible"
+      title="高拍仪拍摄产品图片"
+      @confirm="handleGaopayiConfirm"
+    />
     <el-dialog :title="zoomEditor.label + ' - 放大编辑'" :visible.sync="zoomEditor.visible" width="760px" append-to-body>
       <el-input
         v-model="zoomEditor.value"
@@ -1713,11 +1722,12 @@ import { getToken } from "@/utils/auth";
 import { sanitizeUdiNo } from '@/utils/udi';
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 import { syncMsunHisMaterialSingle } from '@/api/foundation/msunHisSync';
+import GaopayiCapture from '@/components/GaopayiCapture';
 
 export default {
   name: "Material",
   dicts: ['is_use_status', 'is_yes_no','way_status','material_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
-  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords, MsunHisSyncButton},
+  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords, MsunHisSyncButton, GaopayiCapture},
   computed: {
     ...mapGetters(['customerId']),
     isHsThirdTenant() {
@@ -1991,6 +2001,7 @@ export default {
       imageUploadHeaders: { Authorization: "Bearer " + getToken() },
       imagePreviewVisible: false,
       imagePreviewUrl: '',
+      gaopayiCaptureVisible: false,
       zoomEditor: {
         visible: false,
         prop: '',
@@ -3259,6 +3270,60 @@ export default {
         this.$modal.msgError(response.msg || '图片上传失败');
       }
     },
+    /** 打开高拍仪拍摄 */
+    openGaopayiCapture() {
+      if (this.isViewMode || this.zqTcmLimitedEdit) return;
+      this.gaopayiCaptureVisible = true;
+    },
+    /** 高拍仪拍摄确认后上传（支持连续多张勾选后一并上传） */
+    handleGaopayiConfirm(payload) {
+      const files = (payload && payload.files && payload.files.length)
+        ? payload.files
+        : (payload && payload.file ? [payload.file] : []);
+      if (!files.length) {
+        this.$modal.msgError('未获取到拍摄图片');
+        return;
+      }
+      for (let i = 0; i < files.length; i++) {
+        if (!this.beforeImageUpload(files[i])) {
+          return;
+        }
+      }
+      const loading = this.$loading({ text: '正在上传高拍仪图片(0/' + files.length + ')...', lock: true });
+      const uploadOne = (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return fetch(this.imageUploadUrl, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + getToken() },
+          body: formData
+        }).then(res => res.json()).then(data => {
+          if (!data || data.code !== 200) {
+            throw new Error((data && data.msg) || '上传失败');
+          }
+          return data.url || data.data || data.fileName;
+        });
+      };
+      let done = 0;
+      const run = async () => {
+        let lastUrl = null;
+        for (const file of files) {
+          lastUrl = await uploadOne(file);
+          done += 1;
+          loading.text = '正在上传高拍仪图片(' + done + '/' + files.length + ')...';
+        }
+        // 档案当前仅持久化一张展示图：取最后一张；多图字段待扩展
+        this.form.imageUrl = lastUrl;
+        this.$modal.msgSuccess(files.length > 1
+          ? ('已上传 ' + files.length + ' 张，档案当前展示最后一张')
+          : '图片上传成功');
+      };
+      run().catch(err => {
+        this.$modal.msgError((err && err.message) || '高拍仪图片上传失败');
+      }).finally(() => {
+        loading.close();
+      });
+    },
     /** 预览图片 */
     previewImage() {
       this.imagePreviewUrl = this.form.imageUrl;
@@ -3697,6 +3762,10 @@ export default {
   font-weight: 600;
   color: #303133;
   border-bottom: 1px solid #E5E6EB;
+}
+
+.material-detail-card__header-actions {
+  margin-left: auto;
 }
 
 .material-detail-card__header i {

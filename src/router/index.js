@@ -116,6 +116,19 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/tool/gaopayi-debug',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/tool/gaopayiDebug/index'),
+        name: 'GaopayiDebug',
+        meta: { title: '高拍仪调试' }
+      }
+    ]
+  },
+  {
     path: '',
     component: Layout,
     redirect: 'index',
