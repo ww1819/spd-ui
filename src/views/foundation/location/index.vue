@@ -95,6 +95,17 @@
           <el-table-column label="序号" align="center" prop="index" width="50"/>
           <el-table-column label="货位编码" align="center" prop="locationCode" width="120"/>
           <el-table-column label="货位名称" align="center" prop="locationName" width="180"/>
+          <el-table-column label="五区" align="center" prop="zoneType" width="100">
+            <template slot-scope="scope">
+              <span>{{ zoneTypeLabel(scope.row.zoneType) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="货架" align="center" prop="shelfCode" width="90"/>
+          <el-table-column label="层/格" align="center" width="80">
+            <template slot-scope="scope">
+              <span v-if="scope.row.layerNo != null || scope.row.slotNo != null">{{ scope.row.layerNo || '-' }}/{{ scope.row.slotNo || '-' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="仓库" align="center" prop="warehouseName" width="150"/>
           <el-table-column label="组织机构ID" align="center" prop="tenantId" width="120" show-overflow-tooltip />
           <el-table-column label="备注" align="center" prop="remark" min-width="100" show-overflow-tooltip />
@@ -185,6 +196,54 @@
           </el-row>
           <el-row :gutter="20">
             <el-col :span="12">
+              <el-form-item label="五区类型" prop="zoneType">
+                <el-select v-model="form.zoneType" placeholder="五区" clearable style="width: 100%">
+                  <el-option v-for="z in zoneOptions" :key="z.value" :label="z.label" :value="z.value" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="货架编码" prop="shelfCode">
+                <el-input v-model="form.shelfCode" placeholder="如 A01" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="层号" prop="layerNo">
+                <el-input-number v-model="form.layerNo" :min="1" :max="99" controls-position="right" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="格口号" prop="slotNo">
+                <el-input-number v-model="form.slotNo" :min="1" :max="99" controls-position="right" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="容量" prop="capacity">
+                <el-input-number v-model="form.capacity" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="坐标X(米)" prop="posX">
+                <el-input-number v-model="form.posX" :precision="2" :step="0.5" controls-position="right" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="坐标Y(米)" prop="posY">
+                <el-input-number v-model="form.posY" :precision="2" :step="0.5" controls-position="right" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="坐标Z(米)" prop="posZ">
+                <el-input-number v-model="form.posZ" :precision="2" :step="0.1" controls-position="right" style="width: 100%" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
               <el-form-item label="组织机构ID">
                 <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
               </el-form-item>
@@ -262,7 +321,14 @@ export default {
         locationName: [
           { required: true, message: "货位名称不能为空", trigger: "blur" }
         ],
-      }
+      },
+      zoneOptions: [
+        { value: 'PENDING_CHECK', label: '待验区' },
+        { value: 'QUALIFIED', label: '合格区' },
+        { value: 'UNQUALIFIED', label: '不合格区' },
+        { value: 'RETURN', label: '退货区' },
+        { value: 'PENDING_SHIP', label: '待发区' }
+      ]
     };
   },
   computed: {
@@ -275,6 +341,10 @@ export default {
     this.getList();
   },
   methods: {
+    zoneTypeLabel(val) {
+      const hit = this.zoneOptions.find(z => z.value === val);
+      return hit ? hit.label : (val || '合格区');
+    },
     /** 查询货位列表 */
     getList() {
       this.loading = true;
@@ -374,6 +444,14 @@ export default {
         locationCode: null,
         locationName: null,
         warehouseId: null,
+        zoneType: 'QUALIFIED',
+        shelfCode: null,
+        layerNo: null,
+        slotNo: null,
+        posX: null,
+        posY: null,
+        posZ: null,
+        capacity: null,
         delFlag: null,
         tenantId: null,
         remark: null,
