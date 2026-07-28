@@ -649,14 +649,19 @@
             </el-col>
                 <el-col :span="4" class="period-date-col">
                   <el-form-item label="注册证有效期：" prop="periodDate">
-                    <div class="period-date-longterm-wrap">
+                    <div
+                      class="period-date-longterm-wrap"
+                      @input.capture="onPeriodDateCaptureInput"
+                      @blur.capture="onPeriodDateCaptureBlur"
+                      @keydown.enter.capture="onPeriodDateCaptureEnter"
+                    >
                       <el-date-picker
                         clearable
                         v-model="form.periodDate"
                         type="date"
                         value-format="yyyy-MM-dd"
                         class="period-date-picker"
-                        placeholder="请选择注册证有效期"
+                        placeholder="支持 20270214 / 2027/02/14 / 2027年02月14日"
                         :disabled="periodDateLongTerm"
                         @change="onPeriodDatePickerChange"
                       />
@@ -749,7 +754,14 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="储存方式：" prop="isWay">
-                    <el-input v-model="form.isWay" placeholder="储存方式" clearable />
+                    <el-select v-model="form.isWay" placeholder="请选择储存方式" clearable style="width: 100%">
+                      <el-option
+                        v-for="d in dict.type.way_status"
+                        :key="d.value"
+                        :label="d.label"
+                        :value="d.value"
+                      />
+                    </el-select>
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
@@ -1260,9 +1272,6 @@
               <div class="material-detail-card__header">
                 <i class="el-icon-picture-outline" />
                 <span>产品图片</span>
-                <div v-if="!isViewMode && !zqTcmLimitedEdit" class="material-detail-card__header-actions">
-                  <el-button type="primary" size="mini" icon="el-icon-camera" @click="openGaopayiCapture">高拍仪拍摄</el-button>
-                </div>
               </div>
               <div class="material-detail-card__body image-tab-content" style="text-align: center; padding: 40px 20px;">
             <div class="material-image-container" style="display: inline-block;">
@@ -1423,12 +1432,6 @@
         <img :src="imagePreviewUrl" style="max-width: 100%; max-height: 600px;" alt="预览图片" />
       </div>
     </el-dialog>
-
-    <gaopayi-capture
-      :visible.sync="gaopayiCaptureVisible"
-      title="高拍仪拍摄产品图片"
-      @confirm="handleGaopayiConfirm"
-    />
     <el-dialog :title="zoomEditor.label + ' - 放大编辑'" :visible.sync="zoomEditor.visible" width="760px" append-to-body>
       <el-input
         v-model="zoomEditor.value"
@@ -1722,12 +1725,11 @@ import { getToken } from "@/utils/auth";
 import { sanitizeUdiNo } from '@/utils/udi';
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 import { syncMsunHisMaterialSingle } from '@/api/foundation/msunHisSync';
-import GaopayiCapture from '@/components/GaopayiCapture';
 
 export default {
   name: "Material",
   dicts: ['is_use_status', 'is_yes_no','way_status','material_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
-  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords, MsunHisSyncButton, GaopayiCapture},
+  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords, MsunHisSyncButton},
   computed: {
     ...mapGetters(['customerId']),
     isHsThirdTenant() {
@@ -2001,7 +2003,6 @@ export default {
       imageUploadHeaders: { Authorization: "Bearer " + getToken() },
       imagePreviewVisible: false,
       imagePreviewUrl: '',
-      gaopayiCaptureVisible: false,
       zoomEditor: {
         visible: false,
         prop: '',
@@ -2010,6 +2011,8 @@ export default {
       },
       /** 注册证有效期「长期」：点亮后固定为 2099-12-12 */
       periodDateLongTerm: false,
+      /** 日期框输入原文（失焦前缓存，避免组件先清空非法格式） */
+      periodDateTypedRaw: '',
       // 当前激活的标签页：'form' 表单视图，'image' 图片视图
       activeTab: 'form'
     };
@@ -2235,6 +2238,7 @@ export default {
       this.form = this.createDefaultForm();
       this.originalIsUse = null;
       this.periodDateLongTerm = false;
+      this.periodDateTypedRaw = '';
       this.statusLogList = [];
       this.changeLogList = [];
       this.timelineList = [];
@@ -2268,6 +2272,74 @@ export default {
     },
     onPeriodDatePickerChange(val) {
       this.periodDateLongTerm = val === '2099-12-12';
+      if (val) this.periodDateTypedRaw = '';
+    },
+    onPeriodDateCaptureInput(e) {
+      if (!e || !e.target || e.target.tagName !== 'INPUT') return;
+      this.periodDateTypedRaw = e.target.value;
+    },
+    onPeriodDateCaptureBlur(e) {
+      if (!e || !e.target || e.target.tagName !== 'INPUT') return;
+      if (this.periodDateLongTerm || this.isViewMode) return;
+      const raw = this.periodDateTypedRaw || e.target.value;
+      this.applyFlexiblePeriodDate(raw);
+    },
+    onPeriodDateCaptureEnter(e) {
+      if (!e || !e.target || e.target.tagName !== 'INPUT') return;
+      if (this.periodDateLongTerm || this.isViewMode) return;
+      const raw = this.periodDateTypedRaw || e.target.value;
+      const ok = this.applyFlexiblePeriodDate(raw);
+      if (ok) {
+        e.preventDefault();
+        e.target.blur();
+      }
+    },
+    applyFlexiblePeriodDate(raw) {
+      const normalized = this.normalizeFlexibleDate(raw);
+      if (!normalized) return false;
+      this.form.periodDate = normalized;
+      this.periodDateLongTerm = normalized === '2099-12-12';
+      this.periodDateTypedRaw = '';
+      this.$nextTick(() => {
+        // 再写一次，覆盖日期组件把非法输入清空后的空值
+        this.form.periodDate = normalized;
+      });
+      return true;
+    },
+    /**
+     * 兼容：20270214、2027/02/14、2027.02.14、2027年02月14日、2027-2-14
+     */
+    normalizeFlexibleDate(input) {
+      if (input == null) return null;
+      let s = String(input).trim().replace(/[,，。.]+$/g, '').trim();
+      if (!s) return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        return this.isValidYmd(s) ? s : null;
+      }
+      let m = s.match(/^(\d{4})[\/.\-](\d{1,2})[\/.\-](\d{1,2})$/);
+      if (m) return this.toYmd(m[1], m[2], m[3]);
+      m = s.match(/^(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?$/);
+      if (m) return this.toYmd(m[1], m[2], m[3]);
+      m = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+      if (m) return this.toYmd(m[1], m[2], m[3]);
+      return null;
+    },
+    toYmd(y, m, d) {
+      const yy = String(y);
+      const mm = String(m).padStart(2, '0');
+      const dd = String(d).padStart(2, '0');
+      const s = `${yy}-${mm}-${dd}`;
+      return this.isValidYmd(s) ? s : null;
+    },
+    isValidYmd(s) {
+      const parts = String(s).split('-');
+      if (parts.length !== 3) return false;
+      const y = Number(parts[0]);
+      const m = Number(parts[1]);
+      const d = Number(parts[2]);
+      if (!y || !m || !d) return false;
+      const dt = new Date(y, m - 1, d);
+      return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
     },
     hydrateMaterialForm(row) {
       const merged = { ...this.createDefaultForm(), ...(row || {}) };
@@ -3270,60 +3342,6 @@ export default {
         this.$modal.msgError(response.msg || '图片上传失败');
       }
     },
-    /** 打开高拍仪拍摄 */
-    openGaopayiCapture() {
-      if (this.isViewMode || this.zqTcmLimitedEdit) return;
-      this.gaopayiCaptureVisible = true;
-    },
-    /** 高拍仪拍摄确认后上传（支持连续多张勾选后一并上传） */
-    handleGaopayiConfirm(payload) {
-      const files = (payload && payload.files && payload.files.length)
-        ? payload.files
-        : (payload && payload.file ? [payload.file] : []);
-      if (!files.length) {
-        this.$modal.msgError('未获取到拍摄图片');
-        return;
-      }
-      for (let i = 0; i < files.length; i++) {
-        if (!this.beforeImageUpload(files[i])) {
-          return;
-        }
-      }
-      const loading = this.$loading({ text: '正在上传高拍仪图片(0/' + files.length + ')...', lock: true });
-      const uploadOne = (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return fetch(this.imageUploadUrl, {
-          method: 'POST',
-          headers: { Authorization: 'Bearer ' + getToken() },
-          body: formData
-        }).then(res => res.json()).then(data => {
-          if (!data || data.code !== 200) {
-            throw new Error((data && data.msg) || '上传失败');
-          }
-          return data.url || data.data || data.fileName;
-        });
-      };
-      let done = 0;
-      const run = async () => {
-        let lastUrl = null;
-        for (const file of files) {
-          lastUrl = await uploadOne(file);
-          done += 1;
-          loading.text = '正在上传高拍仪图片(' + done + '/' + files.length + ')...';
-        }
-        // 档案当前仅持久化一张展示图：取最后一张；多图字段待扩展
-        this.form.imageUrl = lastUrl;
-        this.$modal.msgSuccess(files.length > 1
-          ? ('已上传 ' + files.length + ' 张，档案当前展示最后一张')
-          : '图片上传成功');
-      };
-      run().catch(err => {
-        this.$modal.msgError((err && err.message) || '高拍仪图片上传失败');
-      }).finally(() => {
-        loading.close();
-      });
-    },
     /** 预览图片 */
     previewImage() {
       this.imagePreviewUrl = this.form.imageUrl;
@@ -3762,10 +3780,6 @@ export default {
   font-weight: 600;
   color: #303133;
   border-bottom: 1px solid #E5E6EB;
-}
-
-.material-detail-card__header-actions {
-  margin-left: auto;
 }
 
 .material-detail-card__header i {
