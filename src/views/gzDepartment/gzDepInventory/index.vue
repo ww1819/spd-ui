@@ -50,30 +50,32 @@
               <el-form-item label="院内码" prop="inHospitalCode" class="query-item-inline">
                 <el-input
                   v-model="queryParams.inHospitalCode"
-                  placeholder="院内码"
+                  placeholder="院内码模糊"
                   clearable
                   style="width: 180px"
                   @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
-              <el-form-item label="主条码" prop="masterBarcode" class="query-item-inline">
-                <el-input
-                  v-model="queryParams.masterBarcode"
-                  placeholder="主条码模糊"
-                  clearable
-                  style="width: 180px"
-                  @keyup.enter.native="handleQuery"
-                />
-              </el-form-item>
-              <el-form-item label="辅条码" prop="secondaryBarcode" class="query-item-inline">
-                <el-input
-                  v-model="queryParams.secondaryBarcode"
-                  placeholder="辅条码模糊"
-                  clearable
-                  style="width: 180px"
-                  @keyup.enter.native="handleQuery"
-                />
-              </el-form-item>
+              <span class="barcode-query-pair">
+                <el-form-item label="主条码" prop="masterBarcode" class="query-item-inline">
+                  <el-input
+                    v-model="queryParams.masterBarcode"
+                    placeholder="主条码模糊"
+                    clearable
+                    style="width: 180px"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </el-form-item>
+                <el-form-item label="辅条码" prop="secondaryBarcode" class="query-item-inline">
+                  <el-input
+                    v-model="queryParams.secondaryBarcode"
+                    placeholder="辅条码模糊"
+                    clearable
+                    style="width: 180px"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </el-form-item>
+              </span>
             </el-col>
           </el-row>
           <el-row :gutter="16" class="query-row-second">
@@ -410,6 +412,17 @@ body.inventory-query-fixed .main-container {
 }
 .query-item-inline {
   display: inline-block;
+  margin-right: 16px;
+  margin-bottom: 2px;
+}
+.barcode-query-pair {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.barcode-query-pair .query-item-inline {
   margin-right: 16px;
   margin-bottom: 2px;
 }
