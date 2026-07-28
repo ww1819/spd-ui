@@ -9,7 +9,7 @@
       <div class="form-fields-container">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
           <el-row class="query-row-left">
-            <el-col :span="24">
+            <el-col :span="24" class="query-row-first-inner">
               <el-form-item prop="materialKeyword" class="query-item-inline">
                 <el-input
                   v-model="queryParams.materialKeyword"
@@ -56,26 +56,24 @@
                   @keyup.enter.native="handleQuery"
                 />
               </el-form-item>
-              <span class="barcode-query-pair">
-                <el-form-item label="主条码" prop="masterBarcode" class="query-item-inline">
-                  <el-input
-                    v-model="queryParams.masterBarcode"
-                    placeholder="主条码模糊"
-                    clearable
-                    style="width: 180px"
-                    @keyup.enter.native="handleQuery"
-                  />
-                </el-form-item>
-                <el-form-item label="辅条码" prop="secondaryBarcode" class="query-item-inline">
-                  <el-input
-                    v-model="queryParams.secondaryBarcode"
-                    placeholder="辅条码模糊"
-                    clearable
-                    style="width: 180px"
-                    @keyup.enter.native="handleQuery"
-                  />
-                </el-form-item>
-              </span>
+              <el-form-item label="主条码" prop="masterBarcode" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.masterBarcode"
+                  placeholder="主条码模糊"
+                  clearable
+                  style="width: 180px"
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
+              <el-form-item label="辅条码" prop="secondaryBarcode" class="query-item-inline">
+                <el-input
+                  v-model="queryParams.secondaryBarcode"
+                  placeholder="辅条码模糊"
+                  clearable
+                  style="width: 180px"
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="16" class="query-row-second">
@@ -410,19 +408,29 @@ body.inventory-query-fixed .main-container {
 .query-row-left {
   margin-bottom: 2px;
 }
-.query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 2px;
-}
-.barcode-query-pair {
-  display: inline-flex;
+.query-row-first-inner {
+  display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  white-space: nowrap;
-  vertical-align: top;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  gap: 4px;
+  padding-bottom: 2px;
 }
-.barcode-query-pair .query-item-inline {
+.query-row-first-inner .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.query-row-first-inner .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.query-item-inline {
+  display: inline-block;
   margin-right: 16px;
   margin-bottom: 2px;
 }
