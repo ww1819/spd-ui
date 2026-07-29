@@ -21,6 +21,33 @@
         <el-form-item label="产品名称">
           <el-input v-model="query.materialName" clearable style="width:160px" @keyup.enter.native="handleQuery" />
         </el-form-item>
+        <el-form-item label="规格">
+          <el-input v-model="query.materialSpeci" clearable style="width:120px" @keyup.enter.native="handleQuery" />
+        </el-form-item>
+        <el-form-item label="型号">
+          <el-input v-model="query.materialModel" clearable style="width:120px" @keyup.enter.native="handleQuery" />
+        </el-form-item>
+        <el-form-item label="院内码">
+          <el-input v-model="query.inHospitalCode" clearable style="width:140px" @keyup.enter.native="handleQuery" />
+        </el-form-item>
+        <el-form-item label="供应商">
+          <el-select
+            v-model="query.supplierId"
+            placeholder="名称/编码/简拼"
+            clearable
+            filterable
+            :filter-method="filterSupplierMethod"
+            style="width:160px"
+          >
+            <el-option v-for="s in supplierOptions" :key="s.id" :label="s.name" :value="s.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="费用明细主键">
+          <el-input v-model="query.hisChargeId" placeholder="HIS费用明细主键" clearable style="width:160px" @keyup.enter.native="handleQuery" />
+        </el-form-item>
+        <el-form-item label="项目编码">
+          <el-input v-model="query.chargeItemId" placeholder="收费项目编码" clearable style="width:140px" @keyup.enter.native="handleQuery" />
+        </el-form-item>
         <el-form-item label="核销日期">
           <el-date-picker v-model="query.beginConsumeAuditTime" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
           <span style="margin:0 6px">至</span>
@@ -80,7 +107,16 @@
       <el-table-column label="患者姓名" prop="patientName" width="110" show-overflow-tooltip />
       <el-table-column label="住院/门诊号" prop="visitNo" width="140" show-overflow-tooltip />
       <el-table-column label="产品名称" prop="materialName" min-width="160" show-overflow-tooltip />
+      <el-table-column label="产品档案编码" prop="materialCode" width="130" show-overflow-tooltip />
+      <el-table-column label="规格" prop="materialSpeci" width="110" show-overflow-tooltip />
+      <el-table-column label="型号" prop="materialModel" width="100" show-overflow-tooltip />
+      <el-table-column label="单位" prop="unitName" width="70" align="center" show-overflow-tooltip />
       <el-table-column label="院内码" prop="inHospitalCode" width="140" show-overflow-tooltip />
+      <el-table-column label="生产厂家" prop="factoryName" min-width="120" show-overflow-tooltip />
+      <el-table-column label="主条码" prop="mainBarcode" width="140" show-overflow-tooltip />
+      <el-table-column label="辅条码" prop="subBarcode" width="140" show-overflow-tooltip />
+      <el-table-column label="费用明细主键" prop="hisChargeId" width="160" show-overflow-tooltip />
+      <el-table-column label="收费项目编码" prop="chargeItemId" width="130" show-overflow-tooltip />
       <el-table-column label="数量" prop="entryQty" width="80" align="center" />
       <el-table-column label="已退费量" prop="returnedQty" width="90" align="center" />
       <el-table-column label="单价" prop="unitPrice" width="90" align="right" />
@@ -136,6 +172,7 @@
 
 <script>
 import { listDepartTenantOptionselect } from '@/api/foundation/depart'
+import { listSupplierAll } from '@/api/foundation/supplier'
 import { listSettlementWarehousePick } from '@/api/foundation/warehouse'
 import { listGzInstantIo, auditGzInstantIo, writeOffGzInstantIo } from '@/api/gz/instantIo'
 import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
@@ -163,6 +200,8 @@ export default {
       total: 0,
       deptOptions: [],
       allDeptOptions: [],
+      supplierOptions: [],
+      allSupplierOptions: [],
       warehouseOptions: [],
       selectionCache: Object.create(null),
       selectionSyncing: false,
@@ -176,7 +215,13 @@ export default {
         endConsumeAuditTime: month.end,
         patientName: undefined,
         visitNo: undefined,
-        materialName: undefined
+        materialName: undefined,
+        materialSpeci: undefined,
+        materialModel: undefined,
+        inHospitalCode: undefined,
+        supplierId: undefined,
+        hisChargeId: undefined,
+        chargeItemId: undefined
       },
       auditDialogVisible: false,
       auditWarehouseId: undefined,
@@ -228,6 +273,7 @@ export default {
   },
   created() {
     this.loadDeptOptions()
+    this.loadSupplierOptions()
     this.applyQueueToQuery()
     this.loadList()
   },
@@ -261,6 +307,29 @@ export default {
     },
     filterDeptMethod(query) {
       this.deptOptions = filterDepartPickList(this.allDeptOptions, query)
+    },
+    loadSupplierOptions() {
+      listSupplierAll().then(res => {
+        const list = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : (res && Array.isArray(res.rows) ? res.rows : []))
+        this.allSupplierOptions = (list || []).filter(s => s && s.id != null)
+        this.supplierOptions = this.allSupplierOptions
+      }).catch(() => {
+        this.allSupplierOptions = []
+        this.supplierOptions = []
+      })
+    },
+    filterSupplierMethod(query) {
+      const q = (query || '').trim().toLowerCase()
+      if (!q) {
+        this.supplierOptions = this.allSupplierOptions
+        return
+      }
+      this.supplierOptions = (this.allSupplierOptions || []).filter(s => {
+        const name = String(s.name || '').toLowerCase()
+        const code = String(s.code || '').toLowerCase()
+        const pinyin = String(s.pinyinCode || s.pinyin || s.spell || '').toLowerCase()
+        return name.includes(q) || code.includes(q) || pinyin.includes(q)
+      })
     },
     loadWarehouseOptions() {
       listSettlementWarehousePick().then(res => {
@@ -373,8 +442,15 @@ export default {
         endConsumeAuditTime: month.end,
         patientName: undefined,
         visitNo: undefined,
-        materialName: undefined
+        materialName: undefined,
+        materialSpeci: undefined,
+        materialModel: undefined,
+        inHospitalCode: undefined,
+        supplierId: undefined,
+        hisChargeId: undefined,
+        chargeItemId: undefined
       }
+      this.supplierOptions = this.allSupplierOptions
       if (this.activeQueue !== 'pending') {
         this.activeQueue = 'pending'
         return
