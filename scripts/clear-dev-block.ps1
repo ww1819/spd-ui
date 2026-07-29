@@ -1,14 +1,24 @@
-# 清理 spd-ui 开发服务被 JS Debugger Auto Attach 卡住的状态
-# - 释放 8100/8101 端口上的监听进程
-# - 结束卡在 vue-cli-service / cross-env 的相关 node（尽量保守，仅匹配命令行特征）
-# - 提示清除本终端调试注入环境变量
+# Clear spd-ui hang caused by Cursor/VS Code JS Auto Attach bootloader.
+# Usage:
+#   .\clear-dev-block.ps1
+#   .\clear-dev-block.ps1 -StartDev
+param(
+  [switch]$StartDev
+)
 
 $ErrorActionPreference = 'Continue'
+$uiRoot = Split-Path -Parent $PSScriptRoot
 $ports = @(8100, 8101)
 $killed = @{}
+$CleanNodeOptions = '--max-old-space-size=4096 --openssl-legacy-provider'
 
-function Stop-PidSafe([int]$ProcessId, [string]$Reason) {
-  if ($ProcessId -le 0 -or $killed.ContainsKey($ProcessId)) { return }
+function Stop-PidSafe {
+  param(
+    [int]$ProcessId,
+    [string]$Reason
+  )
+  if ($ProcessId -le 0) { return }
+  if ($killed.ContainsKey($ProcessId)) { return }
   try {
     $p = Get-Process -Id $ProcessId -ErrorAction Stop
     Write-Host ("[kill] pid={0} name={1} reason={2}" -f $ProcessId, $p.ProcessName, $Reason)
@@ -19,58 +29,94 @@ function Stop-PidSafe([int]$ProcessId, [string]$Reason) {
   }
 }
 
-Write-Host '=== 清理 spd-ui 调试阻塞 ==='
+function Clear-DebugInjectEnv {
+  if (Test-Path Env:VSCODE_INSPECTOR_OPTIONS) {
+    Remove-Item Env:VSCODE_INSPECTOR_OPTIONS -ErrorAction SilentlyContinue
+    Write-Host '[env] cleared VSCODE_INSPECTOR_OPTIONS'
+  }
+  if (Test-Path Env:NODE_OPTIONS) {
+    $val = [string]$env:NODE_OPTIONS
+    if ($val -match 'js-debug|bootloader|inspect-publish-uid|inspectorIpc') {
+      Remove-Item Env:NODE_OPTIONS -ErrorAction SilentlyContinue
+      Write-Host '[env] cleared injected NODE_OPTIONS'
+    }
+  }
+  $env:NODE_OPTIONS = $CleanNodeOptions
+  Write-Host ('[env] NODE_OPTIONS -> {0}' -f $env:NODE_OPTIONS)
+}
+
+Write-Host '=== clear spd-ui debug block ==='
+Clear-DebugInjectEnv
 
 foreach ($port in $ports) {
   try {
-    $conns = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+    $conns = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
   } catch {
     $conns = @()
   }
-  if (-not $conns) {
-    Write-Host ("[port {0}] 无监听" -f $port)
+  if ($conns.Count -eq 0) {
+    Write-Host ('[port {0}] no listener' -f $port)
     continue
   }
   foreach ($c in $conns) {
-    Stop-PidSafe -ProcessId ([int]$c.OwningProcess) -Reason ("listen :{0}" -f $port)
+    $reason = 'listen-port-' + $port
+    Stop-PidSafe -ProcessId ([int]$c.OwningProcess) -Reason $reason
   }
 }
 
-# 匹配被 js-debug bootloader 注入、或卡在 vue-cli-service serve 的 node
-Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction SilentlyContinue | ForEach-Object {
+Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | ForEach-Object {
+  $name = [string]$_.Name
+  if ($name -ne 'node.exe' -and $name -ne 'npm.exe' -and $name -ne 'npm.cmd') {
+    return
+  }
   $cmd = [string]$_.CommandLine
-  if (-not $cmd) { return }
-  $hit =
-    ($cmd -match 'ms-vscode\.js-debug' -and $cmd -match 'spd-ui') -or
-    ($cmd -match 'vue-cli-service(\.js)?\s+serve') -or
-    ($cmd -match 'cross-env.*vue-cli-service')
-  if ($hit) {
-    Stop-PidSafe -ProcessId ([int]$_.ProcessId) -Reason 'matched hung/dev node'
+  if ([string]::IsNullOrEmpty($cmd)) {
+    return
   }
-}
-
-# 当前会话：去掉调试注入，保留合法 NODE_OPTIONS（若有）
-if ($env:VSCODE_INSPECTOR_OPTIONS) {
-  Remove-Item Env:VSCODE_INSPECTOR_OPTIONS -ErrorAction SilentlyContinue
-  Write-Host '[env] 已清除 VSCODE_INSPECTOR_OPTIONS'
-}
-if ($env:NODE_OPTIONS -and $env:NODE_OPTIONS -match 'js-debug|bootloader|inspect-publish-uid') {
-  $cleaned = ($env:NODE_OPTIONS -replace '--require\s+"[^"]*js-debug[^"]*"', '' -replace '--inspect-publish-uid=\S+', '').Trim()
-  if ($cleaned) {
-    $env:NODE_OPTIONS = $cleaned
-    Write-Host ('[env] 已清洗 NODE_OPTIONS -> {0}' -f $cleaned)
-  } else {
-    Remove-Item Env:NODE_OPTIONS -ErrorAction SilentlyContinue
-    Write-Host '[env] 已清除含调试注入的 NODE_OPTIONS'
+  $hit = $false
+  if ($cmd -match 'ms-vscode\.js-debug|bootloader\.js') { $hit = $true }
+  if ($cmd -match 'vue-cli-service(\.js)?\s+serve') { $hit = $true }
+  if ($cmd -match 'cross-env.*vue-cli-service') { $hit = $true }
+  if (($cmd -match 'spd-ui') -and ($cmd -match 'npm.*run\s+dev')) { $hit = $true }
+  if (($cmd -match '[\\/]spd-ui[\\/]') -and ($cmd -match 'vue-cli-service')) { $hit = $true }
+  if ($hit) {
+    Stop-PidSafe -ProcessId ([int]$_.ProcessId) -Reason 'matched-hung-dev-node'
   }
 }
 
 if ($killed.Count -eq 0) {
-  Write-Host '未发现需结束的进程（或已清理）。'
+  Write-Host 'no process killed (already clean).'
 } else {
-  Write-Host ("已结束 {0} 个进程。" -f $killed.Count)
+  Write-Host ('killed {0} process(es).' -f $killed.Count)
+}
+
+if (-not $StartDev) {
+  Write-Host ''
+  Write-Host 'Cleanup only. To start frontend, run task: spd-ui: clear then start dev'
+  Write-Host 'or: npm run dev:clear'
+  exit 0
 }
 
 Write-Host ''
-Write-Host '建议：工作区已关闭 debug.javascript.autoAttachFilter；新开终端后执行 npm run dev'
-Write-Host '或运行任务：spd-ui: 清理后启动 dev'
+Write-Host '=== start npm run dev with clean env ==='
+Clear-DebugInjectEnv
+Set-Location -LiteralPath $uiRoot
+Write-Host ('cwd={0}' -f (Get-Location))
+Write-Host ('NODE_OPTIONS={0}' -f $env:NODE_OPTIONS)
+Write-Host ('VSCODE_INSPECTOR_OPTIONS present? {0}' -f [bool](Test-Path Env:VSCODE_INSPECTOR_OPTIONS))
+
+$npmCmd = $null
+$npm = Get-Command npm.cmd -ErrorAction SilentlyContinue
+if ($npm) {
+  $npmCmd = $npm.Source
+} else {
+  $npm2 = Get-Command npm -ErrorAction SilentlyContinue
+  if ($npm2) { $npmCmd = $npm2.Source }
+}
+if (-not $npmCmd) {
+  Write-Host '[error] npm not found'
+  exit 1
+}
+
+& $npmCmd run dev
+exit $LASTEXITCODE
