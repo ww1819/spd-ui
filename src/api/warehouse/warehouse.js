@@ -1,10 +1,11 @@
 import request from '@/utils/request'
 
-// 按科室汇总当月出退库金额与数量（数据可视化大屏：科室领用排名、高值消耗图等）
-export function outboundSummaryByDepartment() {
+// 按科室汇总指定月出退库金额与数量（数据可视化大屏：科室领用排名、高值消耗图等）
+export function outboundSummaryByDepartment(yearMonth) {
   return request({
     url: '/warehouse/warehouse/outboundSummaryByDepartment',
-    method: 'get'
+    method: 'get',
+    params: yearMonth ? { yearMonth } : undefined
   })
 }
 
@@ -16,51 +17,57 @@ export function biScreenConsumablesTotals() {
   })
 }
 
-/** 数据可视化大屏：本月送货入库前十供应商（按配送金额合计降序） */
-export function biScreenInboundSupplierTop10() {
+/** 数据可视化大屏：指定月送货入库前十供应商（按配送金额合计降序） */
+export function biScreenInboundSupplierTop10(yearMonth) {
   return request({
     url: '/warehouse/warehouse/biScreenInboundSupplierTop10',
-    method: 'get'
+    method: 'get',
+    params: yearMonth ? { yearMonth } : undefined
   })
 }
 
-/** 数据可视化大屏：近 20 天入退货按日汇总金额（高值/低值耗材，折线+柱图） */
-export function biScreenInboundDailyHighLowValue() {
+/** 数据可视化大屏：指定月入退货按日汇总金额（高值/低值耗材，折线+柱图） */
+export function biScreenInboundDailyHighLowValue(yearMonth) {
   return request({
     url: '/warehouse/warehouse/biScreenInboundDailyHighLowValue',
-    method: 'get'
+    method: 'get',
+    params: yearMonth ? { yearMonth } : undefined
   })
 }
 
-/** 数据可视化大屏：当月出退库按耗材汇总金额 TOP20（耗材排行榜） */
-export function biScreenOutboundMaterialMonthTop() {
+/** 数据可视化大屏：指定月出退库按耗材汇总金额 TOP20（耗材排行榜） */
+export function biScreenOutboundMaterialMonthTop(yearMonth) {
   return request({
     url: '/warehouse/warehouse/biScreenOutboundMaterialMonthTop',
-    method: 'get'
+    method: 'get',
+    params: yearMonth ? { yearMonth } : undefined
   })
 }
 
-/** 数据可视化大屏：当月入退货按财务分类汇总入库金额（玫瑰饼图/圆环图） */
-export function biScreenInboundFinanceCategoryMonth() {
+/** 数据可视化大屏：指定月入退货按财务分类汇总入库金额（玫瑰饼图/圆环图） */
+export function biScreenInboundFinanceCategoryMonth(yearMonth) {
   return request({
     url: '/warehouse/warehouse/biScreenInboundFinanceCategoryMonth',
-    method: 'get'
+    method: 'get',
+    params: yearMonth ? { yearMonth } : undefined
   })
 }
 
-/** 数据可视化大屏：今日已审核出库单笔数、今日已审核入库单(101)笔数 */
-export function biScreenTodayInboundOutboundBillCount() {
+/** 数据可视化大屏：出库/入库单据笔数（当月按今日，历史月按整月） */
+export function biScreenTodayInboundOutboundBillCount(yearMonth) {
   return request({
     url: '/warehouse/warehouse/biScreenTodayInboundOutboundBillCount',
-    method: 'get'
+    method: 'get',
+    params: yearMonth ? { yearMonth } : undefined
   })
 }
 
-/** 数据可视化大屏：当年按自然月汇总入库金额(101)、退货入库金额(301)（年度采购/入退货曲线） */
-export function biScreenYearInboundReturnByMonth() {
+/** 数据可视化大屏：指定年按自然月汇总入库金额(101)、退货入库金额(301)（年度采购/入退货曲线） */
+export function biScreenYearInboundReturnByMonth(yearMonth) {
   return request({
     url: '/warehouse/warehouse/biScreenYearInboundReturnByMonth',
-    method: 'get'
+    method: 'get',
+    params: yearMonth ? { yearMonth } : undefined
   })
 }
 

@@ -20,6 +20,18 @@
             <el-col :span="6"
             ><div class="title_time">{{ dateYear + dateWeek + dateDay }}</div>
               <div class="title_controls">
+                <el-date-picker
+                  v-model="queryYearMonth"
+                  type="month"
+                  size="small"
+                  value-format="yyyy-MM"
+                  format="yyyy年MM月"
+                  placeholder="统计月份"
+                  :clearable="false"
+                  :editable="false"
+                  class="month-picker"
+                  @change="onYearMonthChange"
+                />
                 <el-button 
                   type="primary" 
                   size="small" 
@@ -76,7 +88,7 @@
               <!-- 供应商排行（与右侧科室领用排名同一标题样式） -->
               <div class="left_box3">
                 <dv-border-box-12 :reverse="true">
-                  <div class="cone_title">本月供应商排行TOP10</div>
+                  <div class="cone_title">供应商排行TOP10（{{ queryYearMonth }}）</div>
                   <div class="cone_chart_wrapper">
                     <dv-scroll-board
                       :config="board_info"
@@ -331,33 +343,21 @@ export default {
         outboundQuantity: '0',          // 出库总数量
         consumptionQuantity: '0'        // 消耗总数量
       },
+      // 大屏统计月：月初 1～3 日默认上月，避免「暂无当月数据」尴尬
+      queryYearMonth: "",
     };
   },
 
   mounted() {
+    this.queryYearMonth = this.defaultBiScreenYearMonth();
+    this.syncPeriodLabels();
     //获取实时时间
     this.timeFn();
     //加载loading图
     this.cancelLoading();
-    //大屏顶部六项：验收/出库/消耗 金额与数量
+    //大屏顶部六项：验收/出库/消耗 金额与数量（全量累计，不随月份切换）
     this.loadStatsTotals();
-    // 左下三项：今日出库单笔数、今日入退货单笔数
-    this.loadTodayBillCounts();
-    //送货入库前十供应商轮播表
-    this.loadSupplierBoard();
-    this.loadConsumablesRanking();
-    //右侧：科室领用排名（轮播表，全部科室）
-    this.loadDepartmentRankBoard();
-    //中国地图
-    // this.china_map();
-    //左侧玫瑰饼图 + 圆环：当月按财务分类入库金额
-    this.loadFinanceInboundByCategoryChart();
-    //左侧高值消耗柱状图（科室出库数据）
-    this.loadColumnarData();
-    //中间折线图：当年按月入库/退货金额
-    this.loadYearInboundReturnLineChart();
-    //虚线柱状图
-    this.dotter_bar();
+    this.reloadMonthBoundCharts();
     //监听全屏状态变化
     this.addFullscreenListener();
   },
@@ -459,9 +459,48 @@ export default {
         this.loading = false;
       }, 500);
     },
-    /** 大屏左侧：本月送货入库前十供应商（已审核入退货，按金额降序；仅名称+金额两列） */
+    /** 月初默认上月，其余默认当月 */
+    defaultBiScreenYearMonth() {
+      const now = new Date();
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (d.getDate() <= 3) {
+        d.setMonth(d.getMonth() - 1);
+      }
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      return `${y}-${m}`;
+    },
+    isCurrentQueryMonth() {
+      const now = new Date();
+      const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      return this.queryYearMonth === cur;
+    },
+    syncPeriodLabels() {
+      const todayMode = this.isCurrentQueryMonth();
+      this.$set(this.numberData[0], "text", todayMode ? "今日配送总单" : "当月配送总单");
+      this.$set(this.numberData[1], "text", todayMode ? "今日验收总量" : "当月验收总量");
+    },
+    onYearMonthChange() {
+      if (!this.queryYearMonth) {
+        this.queryYearMonth = this.defaultBiScreenYearMonth();
+      }
+      this.syncPeriodLabels();
+      this.reloadMonthBoundCharts();
+    },
+    /** 随统计月刷新的图表（顶部六项全量合计除外） */
+    reloadMonthBoundCharts() {
+      this.loadTodayBillCounts();
+      this.loadSupplierBoard();
+      this.loadConsumablesRanking();
+      this.loadDepartmentRankBoard();
+      this.loadFinanceInboundByCategoryChart();
+      this.loadColumnarData();
+      this.loadYearInboundReturnLineChart();
+      this.dotter_bar();
+    },
+    /** 大屏左侧：指定月送货入库前十供应商（已审核入退货，按金额降序；仅名称+金额两列） */
     loadSupplierBoard() {
-      biScreenInboundSupplierTop10()
+      biScreenInboundSupplierTop10(this.queryYearMonth)
         .then((res) => {
           const raw = res && res.data;
           const rows = Array.isArray(raw) ? raw : [];
@@ -504,7 +543,7 @@ export default {
         const v = Number(item && item.value);
         return Number.isFinite(v) ? "¥" + v.toFixed(2) : "¥0.00";
       };
-      biScreenOutboundMaterialMonthTop()
+      biScreenOutboundMaterialMonthTop(this.queryYearMonth)
         .then((res) => {
           const rows = Array.isArray(res && res.data) ? res.data : [];
           const data = rows.map((r) => {
@@ -560,9 +599,9 @@ export default {
         })
         .catch(() => {});
     },
-    /** 左下角：今日已审核出库单(201)笔数、今日已审核入库单(101)笔数 */
+    /** 左下角：当月按今日、历史月按整月的出库(201)/入库(101)单据笔数 */
     loadTodayBillCounts() {
-      biScreenTodayInboundOutboundBillCount()
+      biScreenTodayInboundOutboundBillCount(this.queryYearMonth)
         .then((res) => {
           const d = res && res.data;
           if (!d || typeof d !== "object") {
@@ -583,7 +622,7 @@ export default {
     loadColumnarData() {
       Promise.all([
         listdepart({ pageNum: 1, pageSize: 200 }),
-        outboundSummaryByDepartment()
+        outboundSummaryByDepartment(this.queryYearMonth)
       ]).then(([deptRes, outboundRes]) => {
         const rows = deptRes.rows || deptRes.data || [];
         const outboundList = outboundRes.data || outboundRes || [];
@@ -619,12 +658,12 @@ export default {
       });
     },
     /**
-     * 科室领用排名：系统全部科室 + 当月出退库金额汇总，轮播表展示（金额高→低，金额为 0 的科室不展示）。
+     * 科室领用排名：系统全部科室 + 指定月出退库金额汇总，轮播表展示（金额高→低，金额为 0 的科室不展示）。
      */
     loadDepartmentRankBoard() {
       Promise.all([
         listdepart({ pageNum: 1, pageSize: 500 }),
-        outboundSummaryByDepartment()
+        outboundSummaryByDepartment(this.queryYearMonth)
       ]).then(([deptRes, outboundRes]) => {
         const rows = deptRes.rows || deptRes.data || [];
         const outboundList = outboundRes.data || outboundRes || [];
@@ -1054,7 +1093,7 @@ export default {
         .filter((x) => x.value > 0)
         .sort((a, b) => b.value - a.value);
       if (!parsed.length) {
-        return [{ name: "暂无当月入库", value: 0 }];
+        return [{ name: "暂无该月入库", value: 0 }];
       }
       if (parsed.length <= 6) {
         return parsed;
@@ -1063,9 +1102,9 @@ export default {
       const rest = parsed.slice(5).reduce((s, x) => s + x.value, 0);
       return head.concat([{ name: "其他", value: rest }]);
     },
-    /** 左侧玫瑰饼图 + 右侧圆环：接口「当月入退货按财务分类汇总金额」 */
+    /** 左侧玫瑰饼图 + 右侧圆环：接口「指定月入退货按财务分类汇总金额」 */
     loadFinanceInboundByCategoryChart() {
-      biScreenInboundFinanceCategoryMonth()
+      biScreenInboundFinanceCategoryMonth(this.queryYearMonth)
         .then((res) => {
           const rows = Array.isArray(res && res.data) ? res.data : [];
           const slices = this.mergeFinanceInboundPieSlices(rows);
@@ -1119,6 +1158,7 @@ export default {
         const isZeroDisplay =
           !Number.isFinite(real) ||
           real <= 0 ||
+          s.name === "暂无该月入库" ||
           s.name === "暂无当月入库" ||
           s.name === "加载失败";
         const v = isZeroDisplay ? 1 : real;
@@ -1156,7 +1196,7 @@ export default {
         },
         series: [
           {
-            name: "当月财务分类入库",
+            name: "财务分类入库",
             type: "pie",
             radius: [10, 50],
             roseType: "area",
@@ -1304,7 +1344,8 @@ export default {
         this._yearLineChart = chart;
       }
       const monthLabels = ["一月份", "二月份", "三月份", "四月份", "五月份", "六月份", "七月份", "八月份", "九月份", "十月份", "十一月份", "十二月份"];
-      const currentYear = new Date().getFullYear();
+      const ym = this.queryYearMonth || this.defaultBiScreenYearMonth();
+      const currentYear = parseInt(String(ym).substring(0, 4), 10) || new Date().getFullYear();
       const moneyFmt = (v) => {
         const n = typeof v === "number" ? v : Number(v);
         return Number.isFinite(n) ? "¥" + n.toFixed(2) : v;
@@ -1395,7 +1436,7 @@ export default {
           },
         ],
       });
-      biScreenYearInboundReturnByMonth()
+      biScreenYearInboundReturnByMonth(ym)
         .then((res) => {
           const rows = Array.isArray(res && res.data) ? res.data : [];
           const { inbound, ret } = this.fillYearInboundReturnSeries(rows);
@@ -1405,7 +1446,7 @@ export default {
           chart.setOption(buildOption(new Array(12).fill(0), new Array(12).fill(0)), true);
         });
     },
-    //右侧虚线柱状图：近 20 天入退货金额（折线=高值耗材，柱=低值耗材）
+    //右侧虚线柱状图：指定月按日入退货金额（折线=高值耗材，柱=低值耗材）
     dotter_bar() {
       const dom = document.getElementById("dotter_bar");
       if (!dom) {
@@ -1518,23 +1559,22 @@ export default {
         const keys = [];
         const highData = [];
         const lowData = [];
-        for (let i = 19; i >= 0; i--) {
-          const dt = new Date();
-          dt.setHours(0, 0, 0, 0);
-          dt.setDate(dt.getDate() - i);
-          const y = dt.getFullYear();
-          const mo = dt.getMonth() + 1;
-          const da = dt.getDate();
+        const ym = this.queryYearMonth || this.defaultBiScreenYearMonth();
+        const parts = String(ym).split("-");
+        const y = parseInt(parts[0], 10) || new Date().getFullYear();
+        const mo = parseInt(parts[1], 10) || (new Date().getMonth() + 1);
+        const daysInMonth = new Date(y, mo, 0).getDate();
+        for (let da = 1; da <= daysInMonth; da++) {
           keys.push(
             `${y}-${String(mo).padStart(2, "0")}-${String(da).padStart(2, "0")}`
           );
-          category.push(`${y}-${mo}-${da}`);
+          category.push(`${mo}-${da}`);
           highData.push(0);
           lowData.push(0);
         }
         return { category, keys, highData, lowData };
       };
-      biScreenInboundDailyHighLowValue()
+      biScreenInboundDailyHighLowValue(this.queryYearMonth)
         .then((res) => {
           const list = Array.isArray(res && res.data) ? res.data : [];
           const { category, keys, highData, lowData } = fillAxis();
@@ -1650,6 +1690,25 @@ a {
   .title_controls {
     text-align: center;
     margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .month-picker {
+    width: 140px;
+  }
+  .month-picker .el-input__inner {
+    background: rgba(0, 40, 80, 0.65);
+    border-color: rgba(0, 173, 221, 0.55);
+    color: #e8f7ff;
+    height: 32px;
+    line-height: 32px;
+  }
+  .month-picker .el-input__prefix,
+  .month-picker .el-input__suffix {
+    color: #7ec8ff;
   }
   //全屏按钮样式
   .fullscreen-btn {
