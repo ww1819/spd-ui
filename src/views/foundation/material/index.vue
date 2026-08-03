@@ -434,6 +434,12 @@
           >{{ isMaterialYesValue(scope.row.isProcure) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="集采类型" align="center" prop="fdJcType.name" width="120" key="jcType" show-overflow-tooltip resizable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.fdJcType && scope.row.fdJcType.name">{{ scope.row.fdJcType.name }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
       <el-table-column label="品牌" align="center" prop="brand" width="120" key="brand" v-if="columns[22].visible" show-overflow-tooltip resizable/>
       <el-table-column label="创建日期" align="center" prop="createTime" width="100" key="createTime" v-if="columns[21].visible" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -968,6 +974,9 @@
                         :inactive-value="'2'"
                       />
                     </div>
+                  </el-form-item>
+                  <el-form-item v-if="form.isProcure === '1'" label="集采类型：" prop="jcTypeId" class="switch-form-item" style="min-width: 220px;">
+                    <SelectJcType v-model="form.jcTypeId" placeholder="请选择集采类型" />
                   </el-form-item>
                   <el-form-item label="" prop="isSunshineProcurement" class="switch-form-item">
                     <div class="switch-with-label-left">
@@ -1569,6 +1578,9 @@
             <el-option v-for="dict in dict.type.is_yes_no" :key="'p'+dict.value" :label="dict.label" :value="dict.value"/>
           </el-select>
         </el-form-item>
+        <el-form-item label="集采类型">
+          <SelectJcType v-model="batchUpdateDialog.form.jcTypeId" placeholder="不修改请留空" />
+        </el-form-item>
         <el-form-item label="阳采">
           <el-select v-model="batchUpdateDialog.form.isSunshineProcurement" placeholder="不修改" clearable style="width: 100%">
             <el-option v-for="dict in dict.type.is_yes_no" :key="'s'+dict.value" :label="dict.label" :value="dict.value"/>
@@ -1717,6 +1729,7 @@ import SelectMaterialCategory from "@/components/SelectModel/SelectMaterialCateg
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import SelectUnit from "@/components/SelectModel/SelectUnit";
 import SelectLocation from "@/components/SelectModel/SelectLocation";
+import SelectJcType from "@/components/SelectModel/SelectJcType";
 import MaterialInboundRecords from "@/views/foundation/material/components/MaterialInboundRecords";
 import { getWarehouseCategory } from "@/api/foundation/warehouseCategory";
 import { getFinanceCategory } from "@/api/foundation/financeCategory";
@@ -1729,7 +1742,7 @@ import { syncMsunHisMaterialSingle } from '@/api/foundation/msunHisSync';
 export default {
   name: "Material",
   dicts: ['is_use_status', 'is_yes_no','way_status','material_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
-  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation, MaterialInboundRecords, MsunHisSyncButton},
+  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation,SelectJcType, MaterialInboundRecords, MsunHisSyncButton},
   computed: {
     ...mapGetters(['customerId']),
     isHsThirdTenant() {
@@ -1775,6 +1788,7 @@ export default {
           isGz: null,
           isFollow: null,
           isProcure: null,
+          jcTypeId: null,
           isSunshineProcurement: null
         }
       },
@@ -2189,6 +2203,7 @@ export default {
         isMonitor: '2', // 默认否
         isProcure: '2', // 集采（后端字段）
         isCentralizedProcurement: '2', // 仅兼容旧数据
+        jcTypeId: null, // 集采类型
         isSunshineProcurement: '2', // 默认否
         isTemporaryPurchase: '2', // 默认否
         isServiceFee: '2', // 默认否
@@ -2991,7 +3006,7 @@ export default {
         'id', 'code', 'name', 'referredName', 'supplierId', 'factoryId', 'speci', 'model', 'price', 'producer',
         'useName', 'registerName', 'registerNo', 'storeroomId', 'materialCategoryId', 'financeCategoryId', 'medicalNo', 'medicalName',
         'salePrice', 'successfulPrice', 'successfulNo', 'successfulType', 'selectionReason', 'packageSpeci', 'minPackageQty',
-        'unitId', 'isUse', 'isGz', 'isFollow', 'isMonitor', 'isProcure', 'isSunshineProcurement',
+        'unitId', 'isUse', 'isGz', 'isFollow', 'isMonitor', 'isProcure', 'jcTypeId', 'isSunshineProcurement',
         'isTemporaryPurchase', 'isServiceFee', 'isBilling', 'materialLevel', 'registerLevel', 'riskLevel',
         'firstaidLevel', 'doctorLevel', 'brand', 'useto', 'quality', 'function', 'isWay', 'locationId', 'udiNo',
         'sunshineCode', 'countryNo', 'permitNo', 'description', 'countryName', 'periodDate', 'imageUrl',
@@ -3111,6 +3126,13 @@ export default {
               valueGetter: (row) => dictLabel(yesNoDict, row && row.isProcure),
             },
             {
+              label: "集采类型",
+              valueGetter: (row) => {
+                const v = row && row.fdJcType && row.fdJcType.name;
+                return v ? v : "--";
+              },
+            },
+            {
               label: "计费",
               valueGetter: (row) => yesNoText(row && row.isBilling),
             },
@@ -3194,6 +3216,7 @@ export default {
       assignIfSet("isGz", f.isGz);
       assignIfSet("isFollow", f.isFollow);
       assignIfSet("isProcure", f.isProcure);
+      assignIfSet("jcTypeId", f.jcTypeId);
       assignIfSet("isSunshineProcurement", f.isSunshineProcurement);
       return { payload, hasField };
     },
@@ -3272,6 +3295,7 @@ export default {
         isGz: null,
         isFollow: null,
         isProcure: null,
+        jcTypeId: null,
         isSunshineProcurement: null
       };
     },
