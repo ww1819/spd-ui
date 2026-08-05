@@ -6,12 +6,16 @@ const MATERIAL_IMPORT_TIMEOUT_MS = 300000
 /** 产品档案批量修改（可能数千条） */
 const MATERIAL_BATCH_UPDATE_TIMEOUT_MS = 600000
 
-// 查询耗材产品列表（GET）
+// 查询耗材产品列表（GET）；大分页单独加长超时，避免默认 10s 误报（不影响其它接口）
 export function listMaterial(query) {
+  const pageSize = query && query.pageSize != null ? Number(query.pageSize) : 0
+  const largePage = pageSize >= 100
   return request({
     url: '/foundation/material/list',
     method: 'get',
-    params: query
+    params: query,
+    timeout: largePage ? 60000 : undefined,
+    timeoutMsg: largePage ? '耗材列表数据量较大，请稍后重试或减小每页条数' : undefined
   })
 }
 

@@ -315,14 +315,26 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </el-row>
 
-      <el-table ref="materialTable" class="material-main-table" v-loading="loading" :data="materialList" :row-key="getMaterialRowKey" :row-class-name="materialIndex" @selection-change="handleSelectionChange" @sort-change="handleSortChange" height="60vh" border stripe>
-      <el-table-column type="selection" width="55" align="center" fixed="left" :reserve-selection="true" />
-      <el-table-column type="index" label="序号" align="center" width="80" key="index" v-if="columns[0].visible" show-overflow-tooltip resizable>
+      <el-table
+        ref="materialTable"
+        class="material-main-table"
+        :class="{ 'material-main-table--heavy': !materialTableLightMode }"
+        v-loading="loading"
+        :data="materialList"
+        :row-key="getMaterialRowKey"
+        @selection-change="handleSelectionChange"
+        @sort-change="handleSortChange"
+        height="60vh"
+        border
+        :stripe="materialTableLightMode"
+      >
+      <el-table-column type="selection" width="55" align="center" :fixed="materialTableLightMode ? 'left' : false" :reserve-selection="true" />
+      <el-table-column type="index" label="序号" align="center" width="80" key="index" v-if="columns[0].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="启用" align="center" prop="isUse" width="72" key="isUse" v-if="columns[12].visible" show-overflow-tooltip resizable>
+      <el-table-column label="启用" align="center" prop="isUse" width="72" key="isUse" v-if="columns[12].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
         <template slot-scope="scope">
           <span
             class="material-yn-btn"
@@ -330,7 +342,7 @@
           >{{ isMaterialYesValue(scope.row.isUse) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="计费" align="center" prop="isBilling" width="72" key="isBilling" v-if="columns[19].visible" show-overflow-tooltip resizable>
+      <el-table-column label="计费" align="center" prop="isBilling" width="72" key="isBilling" v-if="columns[19].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
         <template slot-scope="scope">
           <span
             class="material-yn-btn"
@@ -353,7 +365,7 @@
           <div class="material-cell-body-left" :title="scope.row.speci || ''">{{ scope.row.speci }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" sortable="custom" show-overflow-tooltip resizable class-name="cell-pad-tight"/>
+      <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" sortable="custom" :show-overflow-tooltip="materialTableLightMode" resizable class-name="cell-pad-tight"/>
       <el-table-column label="价格" align="center" prop="price" width="130" key="price" v-if="columns[5].visible" sortable="custom" resizable class-name="material-price-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.price) || '')">{{ formatPrice4(scope.row.price) }}</div>
@@ -369,7 +381,7 @@
           <div class="material-cell-body-left" :title="(scope.row.supplier && scope.row.supplier.name) ? scope.row.supplier.name : ''">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '' }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" key="warehouseCategory" v-if="columns[9].visible" show-overflow-tooltip resizable/>
+      <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" key="warehouseCategory" v-if="columns[9].visible" :show-overflow-tooltip="materialTableLightMode" resizable/>
       <el-table-column label="材料类别" align="center" prop="fdMaterialCategory.materialCategoryName" width="120" key="materialCategory" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-top-left" :title="(scope.row.fdMaterialCategory && scope.row.fdMaterialCategory.materialCategoryName) ? scope.row.fdMaterialCategory.materialCategoryName : ''">
@@ -399,18 +411,18 @@
           <div class="material-cell-top-left" :title="scope.row.model || ''">{{ scope.row.model }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="储存方式" align="center" prop="isWay" width="100" key="storageMethod" v-if="columns[10].visible" show-overflow-tooltip resizable>
+      <el-table-column label="储存方式" align="center" prop="isWay" width="100" key="storageMethod" v-if="columns[10].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
         <template slot-scope="scope">
           <span>{{ formatStorageWay(scope.row.isWay) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="货位" align="center" prop="fdLocation.locationName" width="120" key="location" v-if="columns[11].visible" show-overflow-tooltip resizable>
+      <el-table-column label="货位" align="center" prop="fdLocation.locationName" width="120" key="location" v-if="columns[11].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.fdLocation && scope.row.fdLocation.locationName">{{ scope.row.fdLocation.locationName }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="高值" align="center" prop="isGz" width="80" key="isGz" v-if="columns[13].visible" show-overflow-tooltip resizable>
+      <el-table-column label="高值" align="center" prop="isGz" width="80" key="isGz" v-if="columns[13].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
         <template slot-scope="scope">
           <span
             class="material-yn-btn"
@@ -418,7 +430,7 @@
           >{{ isMaterialYesValue(scope.row.isGz) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="跟台" align="center" prop="isFollow" width="80" key="isFollow" v-if="columns[14].visible" show-overflow-tooltip resizable>
+      <el-table-column label="跟台" align="center" prop="isFollow" width="80" key="isFollow" v-if="columns[14].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
         <template slot-scope="scope">
           <span
             class="material-yn-btn"
@@ -426,7 +438,7 @@
           >{{ isMaterialYesValue(scope.row.isFollow) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="集采" align="center" prop="isProcure" width="80" key="isProcure" show-overflow-tooltip resizable>
+      <el-table-column label="集采" align="center" prop="isProcure" width="80" key="isProcure" :show-overflow-tooltip="materialTableLightMode" resizable>
         <template slot-scope="scope">
           <span
             class="material-yn-btn"
@@ -434,14 +446,14 @@
           >{{ isMaterialYesValue(scope.row.isProcure) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="集采类型" align="center" prop="fdJcType.name" width="120" key="jcType" show-overflow-tooltip resizable>
+      <el-table-column label="集采类型" align="center" prop="fdJcType.name" width="120" key="jcType" :show-overflow-tooltip="materialTableLightMode" resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.fdJcType && scope.row.fdJcType.name">{{ scope.row.fdJcType.name }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="品牌" align="center" prop="brand" width="120" key="brand" v-if="columns[22].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="创建日期" align="center" prop="createTime" width="100" key="createTime" v-if="columns[21].visible" show-overflow-tooltip resizable>
+      <el-table-column label="品牌" align="center" prop="brand" width="120" key="brand" v-if="columns[22].visible" :show-overflow-tooltip="materialTableLightMode" resizable/>
+      <el-table-column label="创建日期" align="center" prop="createTime" width="100" key="createTime" v-if="columns[21].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
@@ -451,12 +463,12 @@
           <div class="material-cell-top-left" :title="scope.row.hisChargeItemId || ''">{{ scope.row.hisChargeItemId }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="收费项目名称" align="center" prop="hisChargeItemName" min-width="160" key="hisChargeItemName" v-if="columns[27].visible" show-overflow-tooltip resizable class-name="material-top-cell cell-pad-tight">
+      <el-table-column label="收费项目名称" align="center" prop="hisChargeItemName" min-width="160" key="hisChargeItemName" v-if="columns[27].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-top-left" :title="scope.row.hisChargeItemName || ''">{{ scope.row.hisChargeItemName || '--' }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="收费项目规格" align="center" prop="hisChargeItemSpeci" width="140" key="hisChargeItemSpeci" v-if="columns[28].visible" show-overflow-tooltip resizable class-name="material-top-cell cell-pad-tight">
+      <el-table-column label="收费项目规格" align="center" prop="hisChargeItemSpeci" width="140" key="hisChargeItemSpeci" v-if="columns[28].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-top-left" :title="scope.row.hisChargeItemSpeci || ''">{{ scope.row.hisChargeItemSpeci || '--' }}</div>
         </template>
@@ -466,8 +478,9 @@
           <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.hisChargeItemPrice) || '')">{{ scope.row.hisChargeItemPrice != null && scope.row.hisChargeItemPrice !== '' ? formatPrice4(scope.row.hisChargeItemPrice) : '--' }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" show-overflow-tooltip resizable/>
-      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="260" fixed="right">
+      <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" :show-overflow-tooltip="materialTableLightMode" resizable/>
+      <!-- 大分页取消固定列：避免左右/上下滚动时同步固定区导致卡顿 -->
+      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="260" :fixed="materialTableLightMode ? 'right' : false">
         <template slot-scope="scope">
           <div class="material-row-actions">
             <el-button
@@ -517,7 +530,7 @@
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
-      :page-sizes="[10, 20, 30, 50, 100, 500, 1000]"
+      :page-sizes="[10, 20, 30, 50, 100, 200]"
       @pagination="getList"
     />
 
@@ -1766,6 +1779,10 @@ export default {
     },
     chargeItemCrossPageSelectedCount() {
       return Object.keys(this.chargeItemDialog.selectedRowMap || {}).length;
+    },
+    /** 小分页启用 tooltip/固定列/斑马纹；>=100 条/页关闭以加快滚动与渲染 */
+    materialTableLightMode() {
+      return Number(this.queryParams.pageSize || 0) < 100;
     }
   },
   data() {
@@ -2032,6 +2049,10 @@ export default {
     };
   },
   created() {
+    // 每页超过 200 条时 Element 表格渲染会严重卡顿，统一回落
+    if (Number(this.queryParams.pageSize || 0) > 200) {
+      this.queryParams.pageSize = 200;
+    }
     this.getList();
   },
   methods: {
@@ -2130,11 +2151,38 @@ export default {
     /** 查询耗材产品列表 */
     getList() {
       this.loading = true;
+      if (Number(this.queryParams.pageSize || 0) > 200) {
+        this.queryParams.pageSize = 200;
+      }
+      const pageSize = Number(this.queryParams.pageSize || 0);
+      const heavy = pageSize >= 100;
       listMaterial(this.buildMaterialQueryParams(true)).then(response => {
-        this.materialList = response.rows;
+        const rows = response.rows || [];
         this.total = response.total;
+        // 冻结行数据，降低 Vue2 对大列表的深层响应式开销（不影响详情：编辑仍走 getMaterial）
+        const frozen = heavy
+          ? Object.freeze(rows.map((r) => Object.freeze(r)))
+          : rows;
+        if (heavy) {
+          // 先快速画出首屏，再补齐剩余行，避免主线程长时间卡死导致“超时”观感
+          const first = Math.min(60, frozen.length);
+          this.materialList = Object.freeze(frozen.slice(0, first));
+          this.loading = false;
+          this.$nextTick(() => {
+            requestAnimationFrame(() => {
+              if (frozen.length > first) {
+                this.materialList = frozen;
+              }
+              this.$nextTick(() => this.restorePageSelection());
+            });
+          });
+        } else {
+          this.materialList = frozen;
+          this.loading = false;
+          this.$nextTick(() => this.restorePageSelection());
+        }
+      }).catch(() => {
         this.loading = false;
-        this.$nextTick(() => this.restorePageSelection());
       });
     },
     /** 新增/修改/复制保存后刷新列表并回到第一页 */
@@ -2156,12 +2204,25 @@ export default {
       if (!table || !this.materialList || this.materialList.length === 0) {
         return;
       }
-      this.materialList.forEach((row) => {
-        const key = this.getMaterialRowKey(row);
-        if (key && this.selectedRowMap[key]) {
-          table.toggleRowSelection(row, true);
-        }
-      });
+      const keys = this.selectedRowMap || {};
+      const hasSelected = Object.keys(keys).length > 0;
+      if (!hasSelected) {
+        return;
+      }
+      // 大列表勾选恢复放到空闲时段，避免阻塞首屏渲染
+      const run = () => {
+        this.materialList.forEach((row) => {
+          const key = this.getMaterialRowKey(row);
+          if (key && keys[key]) {
+            table.toggleRowSelection(row, true);
+          }
+        });
+      };
+      if (this.materialList.length >= 100 && typeof window !== 'undefined' && window.requestIdleCallback) {
+        window.requestIdleCallback(run, { timeout: 500 });
+      } else {
+        run();
+      }
     },
     clearCrossPageSelection() {
       this.selectedRowMap = {};
@@ -3048,9 +3109,6 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
-    },
-    materialIndex({ row, rowIndex }) {
-      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     /** 导出：与列表相同筛选条件分页拉全量，列展示与表格一致（runConfiguredTableExport） */
     async handleExport() {
@@ -5197,44 +5255,100 @@ export default {
   background-color: #EBEEF5 !important;
 }
 
+/* 仅主明细表：大分页滚动性能（不影响弹窗等其它表格） */
 .material-page-container .material-main-table .el-table__body-wrapper {
-  overflow-x: auto !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* 列表主表表头：蓝色背景（仅耗材产品维护主明细表，弹窗/导入等其它表格不受影响） */
-.material-page-container .material-main-table th {
-  background-color: #5B9BD5 !important;
-  color: #fff !important;
+.material-page-container .material-main-table--heavy .el-table__body-wrapper {
+  /* 独立合成层，减少滚动时整表重绘 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.material-page-container .material-main-table--heavy .el-table__body td,
+.material-page-container .material-main-table--heavy .el-table__body td .cell {
+  /* 大列表减少 hover/重绘成本 */
+  transition: none !important;
+}
+
+.material-page-container .material-main-table--heavy .el-table__body tr:hover > td {
+  background-color: #f5f7fa !important;
+}
+
+/* 固定操作列必须不透明，否则横向滚动时后面的「材料类别」等会透出来 */
+.material-page-container .material-main-table .el-table__fixed-right,
+.material-page-container .material-main-table .el-table__fixed-right-patch {
+  background-color: #fff !important;
+}
+.material-page-container .material-main-table .el-table__fixed-right .el-table__body td {
+  background-color: #fff !important;
+}
+.material-page-container .material-main-table .el-table__fixed-right .el-table__body tr.el-table__row--striped td {
+  background-color: #fafafa !important;
+}
+.material-page-container .material-main-table .el-table__fixed-right .el-table__body tr:hover > td {
+  background-color: #f5f7fa !important;
+}
+.material-page-container .material-main-table td.material-action-col,
+.material-page-container .material-main-table td.material-action-col .cell {
+  background-color: #fff !important;
+  overflow: hidden !important;
+}
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.material-action-col,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.material-action-col .cell {
+  background-color: #fafafa !important;
+}
+.material-page-container .material-main-table .el-table__body tr:hover > td.material-action-col,
+.material-page-container .material-main-table .el-table__body tr:hover > td.material-action-col .cell {
+  background-color: #f5f7fa !important;
+}
+
+/* 列表主表表头：淡蓝色（仅耗材产品维护主明细表，弹窗/导入等其它表格不受影响）
+   选择器需压过 Element UI 的 th.el-table__cell.is-leaf 默认灰底 */
+.material-page-container .material-main-table .el-table__header-wrapper th,
+.material-page-container .material-main-table .el-table__header-wrapper th.el-table__cell,
+.material-page-container .material-main-table .el-table__fixed-header-wrapper th,
+.material-page-container .material-main-table .el-table__fixed-header-wrapper th.el-table__cell,
+.material-page-container .material-main-table .el-table__fixed-right-header-wrapper th,
+.material-page-container .material-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #D6EAF8 !important;
+  color: #303133 !important;
   font-size: 15px !important;
   font-weight: 600 !important;
-  border-right-color: rgba(255, 255, 255, 0.28) !important;
-  border-bottom-color: rgba(255, 255, 255, 0.28) !important;
+  border-right-color: #B8D4E8 !important;
+  border-bottom-color: #B8D4E8 !important;
 }
 
-.material-page-container .material-main-table th:first-child {
-  border-left-color: rgba(255, 255, 255, 0.28) !important;
+.material-page-container .material-main-table .el-table__header-wrapper th:first-child,
+.material-page-container .material-main-table .el-table__fixed-header-wrapper th:first-child {
+  border-left-color: #B8D4E8 !important;
 }
 
-.material-page-container .material-main-table th .cell {
-  color: #fff !important;
+.material-page-container .material-main-table .el-table__header-wrapper th .cell,
+.material-page-container .material-main-table .el-table__fixed-header-wrapper th .cell,
+.material-page-container .material-main-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #303133 !important;
   font-size: 15px !important;
   font-weight: 600 !important;
 }
 
 .material-page-container .material-main-table .sort-caret.ascending {
-  border-bottom-color: rgba(255, 255, 255, 0.55);
+  border-bottom-color: rgba(48, 49, 51, 0.35);
 }
 
 .material-page-container .material-main-table .sort-caret.descending {
-  border-top-color: rgba(255, 255, 255, 0.55);
+  border-top-color: rgba(48, 49, 51, 0.35);
 }
 
 .material-page-container .material-main-table .ascending .sort-caret.ascending {
-  border-bottom-color: #fff;
+  border-bottom-color: #409EFF;
 }
 
 .material-page-container .material-main-table .descending .sort-caret.descending {
-  border-top-color: #fff;
+  border-top-color: #409EFF;
 }
 
 /* 其它表格表头保持原样式 */
