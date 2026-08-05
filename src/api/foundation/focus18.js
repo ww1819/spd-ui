@@ -12,7 +12,16 @@ export function listFocus18All(query) {
   return request({
     url: '/foundation/focus18/listAll',
     method: 'get',
-    params: query
+    params: query,
+    timeout: 60000
+  })
+}
+
+/** 左侧树：耗材类别（去重，轻量） */
+export function listFocus18Categories() {
+  return request({
+    url: '/foundation/focus18/categories',
+    method: 'get'
   })
 }
 

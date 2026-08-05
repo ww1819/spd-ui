@@ -74,11 +74,16 @@
         <el-table v-loading="loading" :data="dataList" :row-class-name="rowIndex" @selection-change="handleSelectionChange" height="calc(100vh - 300px)" stripe>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="序号" align="center" prop="index" width="55" />
+          <el-table-column label="上级菜单" align="center" prop="parentName" min-width="140" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span>{{ scope.row.parentName || '全部分类' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="耗材类别" align="center" prop="category" min-width="110" show-overflow-tooltip />
-          <el-table-column label="耗材分类代码" align="center" prop="classCode" min-width="120" show-overflow-tooltip />
-          <el-table-column label="一级分类(学科/品类)" align="center" prop="level1" min-width="150" show-overflow-tooltip />
-          <el-table-column label="二级分类(用途/品目)" align="center" prop="level2" min-width="150" show-overflow-tooltip />
-          <el-table-column label="三级分类(部位/功能/品种)" align="center" prop="level3" min-width="170" show-overflow-tooltip />
+          <el-table-column label="耗材分类代码" align="center" prop="classCode" min-width="170" show-overflow-tooltip />
+          <el-table-column label="一级分类(学科/品类)" align="center" prop="level1" min-width="160" show-overflow-tooltip />
+          <el-table-column label="二级分类(用途/品目)" align="center" prop="level2" min-width="160" show-overflow-tooltip />
+          <el-table-column label="三级分类(部位/功能/品种)" align="center" prop="level3" min-width="220" show-overflow-tooltip />
           <el-table-column label="通用名代码" align="center" prop="genericCode" min-width="110" show-overflow-tooltip />
           <el-table-column label="医保通用名" align="center" prop="medicalGenericName" min-width="140" show-overflow-tooltip />
           <el-table-column label="材质代码" align="center" prop="materialCode" min-width="100" show-overflow-tooltip />
@@ -182,7 +187,7 @@
 </template>
 
 <script>
-import { listFocus18, listFocus18All, getFocus18, addFocus18, updateFocus18, delFocus18 } from "@/api/foundation/focus18";
+import { listFocus18, listFocus18Categories, getFocus18, addFocus18, updateFocus18, delFocus18 } from "@/api/foundation/focus18";
 
 export default {
   name: "Focus18",
@@ -202,24 +207,20 @@ export default {
         label: "label",
         children: "children"
       },
-      /** 左侧树选中过滤条件 */
-      treeFilter: {
-        category: null,
-        level1: null,
-        level2: null,
-        level3: null,
-        emptyCategory: false
-      },
+      /** 左侧树选中的耗材类别（精确匹配）；null=全部 */
+      treeCategory: null,
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         category: null,
+        categoryExact: null,
         classCode: null,
         medicalGenericName: null,
         genericCode: null,
         level1: null,
         level2: null,
         level3: null,
+        parentId: null,
         emptyCategory: null
       },
       form: {},
@@ -232,14 +233,25 @@ export default {
   },
   methods: {
     loadTree() {
-      listFocus18All({}).then(rows => {
-        const list = Array.isArray(rows) ? rows : [];
+      listFocus18Categories().then(rows => {
+        const cats = Array.isArray(rows) ? rows.filter(Boolean) : [];
         this.treeData = [{
           id: "root",
           label: "全部分类",
           nodeType: "root",
-          children: this.buildCategoryTree(list)
+          children: cats.map(name => ({
+            id: "cat:" + name,
+            label: name,
+            nodeType: "category",
+            category: name,
+            children: []
+          }))
         }];
+        this.$nextTick(() => {
+          if (this.$refs.categoryTree) {
+            this.$refs.categoryTree.setCurrentKey("root");
+          }
+        });
       }).catch(() => {
         this.treeData = [{
           id: "root",
@@ -249,142 +261,23 @@ export default {
         }];
       });
     },
-    buildCategoryTree(rows) {
-      const catMap = {};
-      rows.forEach(row => {
-        const category = (row.category && String(row.category).trim()) || "未分类";
-        const level1 = (row.level1 && String(row.level1).trim()) || "";
-        const level2 = (row.level2 && String(row.level2).trim()) || "";
-        const level3 = (row.level3 && String(row.level3).trim()) || "";
-
-        if (!catMap[category]) {
-          catMap[category] = {
-            id: "c:" + category,
-            label: category,
-            nodeType: "category",
-            category: category === "未分类" ? "" : category,
-            childrenMap: {}
-          };
-        }
-        const catNode = catMap[category];
-        if (!level1) return;
-
-        if (!catNode.childrenMap[level1]) {
-          catNode.childrenMap[level1] = {
-            id: "c:" + category + "|1:" + level1,
-            label: level1,
-            nodeType: "level1",
-            category: catNode.category,
-            level1,
-            childrenMap: {}
-          };
-        }
-        const l1Node = catNode.childrenMap[level1];
-        if (!level2) return;
-
-        if (!l1Node.childrenMap[level2]) {
-          l1Node.childrenMap[level2] = {
-            id: "c:" + category + "|1:" + level1 + "|2:" + level2,
-            label: level2,
-            nodeType: "level2",
-            category: catNode.category,
-            level1,
-            level2,
-            childrenMap: {}
-          };
-        }
-        const l2Node = l1Node.childrenMap[level2];
-        if (!level3) return;
-
-        if (!l2Node.childrenMap[level3]) {
-          l2Node.childrenMap[level3] = {
-            id: "c:" + category + "|1:" + level1 + "|2:" + level2 + "|3:" + level3,
-            label: level3,
-            nodeType: "level3",
-            category: catNode.category,
-            level1,
-            level2,
-            level3,
-            childrenMap: {}
-          };
-        }
-      });
-
-      return Object.keys(catMap).sort().map(catKey => {
-        const catNode = catMap[catKey];
-        const children = Object.keys(catNode.childrenMap).sort().map(l1Key => {
-          const l1Node = catNode.childrenMap[l1Key];
-          const l1Children = Object.keys(l1Node.childrenMap).sort().map(l2Key => {
-            const l2Node = l1Node.childrenMap[l2Key];
-            const l2Children = Object.keys(l2Node.childrenMap).sort().map(l3Key => {
-              const l3Node = l2Node.childrenMap[l3Key];
-              return {
-                id: l3Node.id,
-                label: l3Node.label,
-                nodeType: l3Node.nodeType,
-                category: l3Node.category,
-                level1: l3Node.level1,
-                level2: l3Node.level2,
-                level3: l3Node.level3
-              };
-            });
-            return {
-              id: l2Node.id,
-              label: l2Node.label,
-              nodeType: l2Node.nodeType,
-              category: l2Node.category,
-              level1: l2Node.level1,
-              level2: l2Node.level2,
-              children: l2Children
-            };
-          });
-          return {
-            id: l1Node.id,
-            label: l1Node.label,
-            nodeType: l1Node.nodeType,
-            category: l1Node.category,
-            level1: l1Node.level1,
-            children: l1Children
-          };
-        });
-        return {
-          id: catNode.id,
-          label: catNode.label,
-          nodeType: catNode.nodeType,
-          category: catNode.category,
-          children
-        };
-      });
-    },
     handleNodeClick(data) {
       if (!data || data.nodeType === "root") {
-        this.treeFilter = { category: null, level1: null, level2: null, level3: null, emptyCategory: false };
-      } else if (data.nodeType === "category" && data.label === "未分类") {
-        this.treeFilter = { category: null, level1: null, level2: null, level3: null, emptyCategory: true };
-      } else {
-        this.treeFilter = {
-          category: data.category || null,
-          level1: data.level1 || null,
-          level2: data.level2 || null,
-          level3: data.level3 || null,
-          emptyCategory: false
-        };
+        this.treeCategory = null;
+        this.queryParams.categoryExact = null;
+      } else if (data.nodeType === "category") {
+        this.treeCategory = data.category;
+        this.queryParams.categoryExact = data.category;
       }
       this.queryParams.pageNum = 1;
       this.getList();
     },
     buildListQuery() {
       const q = { ...this.queryParams };
-      if (this.treeFilter.emptyCategory) {
-        q.emptyCategory = true;
+      // 左侧树精确类别优先；避免与搜索框模糊类别同时生效
+      if (q.categoryExact) {
         q.category = null;
-      } else if (this.treeFilter.category) {
-        q.category = this.treeFilter.category;
-        q.emptyCategory = null;
       }
-      if (this.treeFilter.level1) q.level1 = this.treeFilter.level1;
-      if (this.treeFilter.level2) q.level2 = this.treeFilter.level2;
-      if (this.treeFilter.level3) q.level3 = this.treeFilter.level3;
       return q;
     },
     getList() {
@@ -406,7 +299,8 @@ export default {
     reset() {
       this.form = {
         id: null,
-        category: null,
+        parentId: 0,
+        category: this.treeCategory || null,
         classCode: null,
         level1: null,
         level2: null,
@@ -419,20 +313,23 @@ export default {
         featureParam: null,
         remark: null
       };
-      // 新增时带上当前树选中分类
-      if (this.treeFilter.category) this.form.category = this.treeFilter.category;
-      if (this.treeFilter.level1) this.form.level1 = this.treeFilter.level1;
-      if (this.treeFilter.level2) this.form.level2 = this.treeFilter.level2;
-      if (this.treeFilter.level3) this.form.level3 = this.treeFilter.level3;
       this.resetForm("form");
     },
     handleQuery() {
+      // 手动搜索时以表单为准，清掉树精确条件
+      this.treeCategory = null;
+      this.queryParams.categoryExact = null;
+      if (this.$refs.categoryTree) {
+        this.$refs.categoryTree.setCurrentKey("root");
+      }
       this.queryParams.pageNum = 1;
       this.getList();
     },
     resetQuery() {
       this.resetForm("queryForm");
-      this.treeFilter = { category: null, level1: null, level2: null, level3: null, emptyCategory: false };
+      this.treeCategory = null;
+      this.queryParams.categoryExact = null;
+      this.queryParams.parentId = null;
       if (this.$refs.categoryTree) {
         this.$refs.categoryTree.setCurrentKey("root");
       }
@@ -496,6 +393,10 @@ export default {
 }
 .tree-card ::v-deep .el-card__body {
   padding: 12px;
+}
+/* 表头不换行，避免「三级分类」等长标题把行高撑开 */
+.app-container ::v-deep .el-table th > .cell {
+  white-space: nowrap;
 }
 .custom-tree-node {
   display: inline-flex;
