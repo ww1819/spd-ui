@@ -81,7 +81,8 @@
               value-format="yyyy-MM-dd"
               placeholder="起始日期"
               clearable
-              style="width: 100px; margin-right: 4px;"
+              class="query-date-picker"
+              style="margin-right: 4px;"
             />
             <span style="margin: 0 2px;">至</span>
             <el-date-picker
@@ -90,7 +91,8 @@
               value-format="yyyy-MM-dd"
               placeholder="截止日期"
               clearable
-              style="width: 100px; margin-left: 4px;"
+              class="query-date-picker"
+              style="margin-left: 4px;"
             />
           </el-form-item>
 
@@ -174,7 +176,7 @@
     </el-form>
       </div>
     </div>
-    <el-row :gutter="10" class="mb8 material-toolbar-row" style="padding-top: 0px; margin-top: -8px">
+    <el-row :gutter="10" class="mb8 material-toolbar-row">
       <el-col :span="1.5" v-if="!isZqTcmTenant">
         <el-button
           type="primary" size="medium"
@@ -4346,7 +4348,13 @@ export default {
 /* 查询容器样式 */
 .query-container {
   margin-top: -15px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+}
+
+/* 日期：刚好显示完整 yyyy-MM-dd（含日历图标） */
+.material-page-container .query-item-date .query-date-picker.el-date-editor,
+.material-page-container .query-item-date .query-date-picker.el-input {
+  width: 130px !important;
 }
 
 /* 更多检索：只做水平对齐，不改高度 */
@@ -4505,7 +4513,7 @@ export default {
   min-width: 0; /* 配合省略号 */
 }
 
-/* 查询条件容器框样式：左右内边距 8px，容器更宽 */
+/* 查询条件容器框样式：左右内边距 8px，容器更宽；底部边框需完整可见 */
 .form-fields-container {
   background: #F5F7FA;
   padding: 8px 8px;
@@ -4515,6 +4523,11 @@ export default {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  overflow: visible;
+}
+.material-page-container .material-toolbar-row {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 /* 顶部查询条件：框内上下对齐（内容区统一居中） */
