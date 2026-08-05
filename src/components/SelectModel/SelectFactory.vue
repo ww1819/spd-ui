@@ -1,6 +1,5 @@
 <template>
   <el-select v-model="factory"
-             size="small"
              popper-class="select-dropdown--multiline"
              filterable
              remote

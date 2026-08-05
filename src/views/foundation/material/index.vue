@@ -555,7 +555,7 @@
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="耗材名称：" prop="name">
+                  <el-form-item label="耗材名称：" prop="name" class="material-label-hint-red">
                 <el-input v-model="form.name" @dblclick.native="openZoomEditor('name', '耗材名称')" @input="nameChange" placeholder="耗材名称" />
               </el-form-item>
             </el-col>
@@ -565,17 +565,17 @@
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="供应商：" prop="supplierId" class="zq-editable-field">
+                  <el-form-item label="供应商：" prop="supplierId" class="zq-editable-field material-label-hint-red">
                 <SelectSupplier v-model="form.supplierId" :onlyEnabled="true" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="生产厂家：" prop="factoryId" class="zq-editable-field">
+                  <el-form-item label="生产厂家：" prop="factoryId" class="zq-editable-field material-label-hint-red">
                     <SelectFactory v-model="form.factoryId" :onlyEnabled="true"/>
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="规格：" prop="speci">
+                  <el-form-item label="规格：" prop="speci" class="material-label-hint-red">
                     <el-input v-model="form.speci" @dblclick.native="openZoomEditor('speci', '规格')" placeholder="规格" />
               </el-form-item>
             </el-col>
@@ -584,27 +584,27 @@
               <!-- 第二行 -->
           <el-row :gutter="20">
                 <el-col :span="4">
-                  <el-form-item label="型号：" prop="model">
+                  <el-form-item label="型号：" prop="model" class="material-label-hint-red">
                     <el-input v-model="form.model" @dblclick.native="openZoomEditor('model', '型号')" placeholder="型号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="单位：" prop="unitId">
+                  <el-form-item label="单位：" prop="unitId" class="material-label-hint-red">
                 <SelectUnit v-model="form.unitId" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="单价：" prop="price" class="zq-editable-field">
+                  <el-form-item label="单价：" prop="price" class="zq-editable-field material-label-hint-red">
                     <el-input v-model="form.price" placeholder="请输入单价" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
-                  <el-form-item label="库房分类：" prop="storeroomId">
+                  <el-form-item label="库房分类：" prop="storeroomId" class="material-label-hint-red">
                     <SelectWarehouseCategory v-model="form.storeroomId" @input="onStoreroomChange"/>
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="财务分类：" prop="financeCategoryId" class="zq-editable-field">
+                  <el-form-item label="财务分类：" prop="financeCategoryId" class="zq-editable-field material-label-hint-red">
                     <SelectFinanceCategory v-model="form.financeCategoryId"/>
               </el-form-item>
             </el-col>
@@ -615,30 +615,20 @@
                 </el-col>
           </el-row>
 
-              <!-- 第三行 -->
+              <!-- 第三行：注册证字段 → 注册证级别 → 产地/通用名称 -->
           <el-row :gutter="20">
-                <el-col :span="4">
-                  <el-form-item label="产地：" prop="producer">
-                    <el-input v-model="form.producer" placeholder="产地" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="通用名称：" prop="useName">
-                    <el-input v-model="form.useName" placeholder="通用名称" />
-              </el-form-item>
-            </el-col>
                 <el-col :span="4">
                   <el-form-item label="注册证名称：" prop="registerName">
                     <el-input v-model="form.registerName" placeholder="注册证名称" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="注册证号：" prop="registerNo">
+                  <el-form-item label="注册证号：" prop="registerNo" class="material-label-hint-red">
                     <el-input v-model="form.registerNo" @dblclick.native="openZoomEditor('registerNo', '注册证号')" placeholder="注册证号" />
               </el-form-item>
             </el-col>
                 <el-col :span="4" class="period-date-col">
-                  <el-form-item label="注册证有效期：" prop="periodDate">
+                  <el-form-item label="注册证有效期：" prop="periodDate" class="material-label-hint-red">
                     <div
                       class="period-date-longterm-wrap"
                       @input.capture="onPeriodDateCaptureInput"
@@ -664,10 +654,6 @@
                     </div>
                   </el-form-item>
                 </el-col>
-          </el-row>
-
-              <!-- 第四行 -->
-          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="注册证级别：">
                     <el-select v-model="form.registerLevel" placeholder="请选择注册证级别" style="width: 100%">
@@ -681,20 +667,34 @@
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="货位：" prop="locationId">
-                    <SelectLocation v-model="form.locationId" />
+                  <el-form-item label="产地：" prop="producer">
+                    <el-input v-model="form.producer" placeholder="产地" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="医保编码：" prop="medicalNo">
-                <el-input v-model="form.medicalNo" @dblclick.native="openZoomEditor('medicalNo', '医保编码')" placeholder="医保编码" />
+                  <el-form-item label="通用名称：" prop="useName">
+                    <el-input v-model="form.useName" placeholder="通用名称" />
               </el-form-item>
             </el-col>
+          </el-row>
+
+              <!-- 第四行：医保字段在前，再货位等 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="医保名称：" prop="medicalName">
                     <el-input v-model="form.medicalName" placeholder="医保名称" />
                   </el-form-item>
                 </el-col>
+                <el-col :span="4">
+                  <el-form-item label="医保编码：" prop="medicalNo" class="material-label-hint-red">
+                <el-input v-model="form.medicalNo" @dblclick.native="openZoomEditor('medicalNo', '医保编码')" placeholder="医保编码" />
+              </el-form-item>
+            </el-col>
+                <el-col :span="4">
+                  <el-form-item label="货位：" prop="locationId">
+                    <SelectLocation v-model="form.locationId" />
+              </el-form-item>
+            </el-col>
                 <el-col :span="4">
                   <el-form-item label="销售价：" prop="salePrice">
                     <el-input v-model="form.salePrice" placeholder="销售价" />
@@ -705,15 +705,15 @@
                     <el-input v-model="form.successfulPrice" placeholder="中标价格" />
               </el-form-item>
             </el-col>
-          </el-row>
-
-              <!-- 第五行 -->
-          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="中标号：" prop="successfulNo">
                     <el-input v-model="form.successfulNo" placeholder="中标号" />
                   </el-form-item>
                 </el-col>
+          </el-row>
+
+              <!-- 第五行：招标/入选原因后接包装与储存方式 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="招标类别：" prop="successfulType">
                     <el-input v-model="form.successfulType" placeholder="招标类别" />
@@ -724,10 +724,6 @@
                     <el-input v-model="form.selectionReason" type="textarea" :rows="2" placeholder="入选原因" />
                   </el-form-item>
                 </el-col>
-          </el-row>
-
-              <!-- 第六行 -->
-          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="包装规格：" prop="packageSpeci">
                     <el-input v-model="form.packageSpeci" placeholder="包装规格" />
@@ -744,16 +740,13 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="储存方式：" prop="isWay">
-                    <el-select v-model="form.isWay" placeholder="请选择储存方式" clearable style="width: 100%">
-                      <el-option
-                        v-for="d in dict.type.way_status"
-                        :key="d.value"
-                        :label="d.label"
-                        :value="d.value"
-                      />
-                    </el-select>
+                    <el-input v-model="form.isWay" placeholder="如：常温存储、冷链存储、常温 20℃" clearable maxlength="100" />
                   </el-form-item>
                 </el-col>
+          </el-row>
+
+              <!-- 第六行 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="品牌：" prop="brand">
                     <el-input v-model="form.brand" placeholder="品牌" />
@@ -784,7 +777,7 @@
               <!-- 第七行 -->
           <el-row :gutter="20">
                 <el-col :span="4">
-                  <el-form-item label="阳光平台编码：" prop="sunshineCode">
+                  <el-form-item label="阳光平台编码：" prop="sunshineCode" class="material-label-hint-red">
                 <el-input v-model="form.sunshineCode" placeholder="阳光平台编码" />
               </el-form-item>
             </el-col>
@@ -2415,6 +2408,13 @@ export default {
       merged.isTemporaryPurchase = this.normalizeSwitchValue(merged.isTemporaryPurchase);
       merged.isServiceFee = this.normalizeSwitchValue(merged.isServiceFee);
       merged.udiNo = sanitizeUdiNo(merged.udiNo);
+      // 储存方式改为文本框：库内码值(1/2)展示为中文，保存时后端再归一化
+      if (merged.isWay != null && merged.isWay !== '') {
+        const wayLabel = this.formatStorageWay(merged.isWay);
+        if (wayLabel && wayLabel !== '--') {
+          merged.isWay = wayLabel;
+        }
+      }
       return merged;
     },
     nameChange(val){
@@ -4785,6 +4785,26 @@ export default {
 
 <style>
 /* 非scoped样式，确保弹窗宽度生效 */
+
+/* 仅改标签字色为红色，不改变必填校验逻辑（须非 scoped，才能命中 Element 内部 label） */
+.material-modal-content .material-label-hint-red > .el-form-item__label,
+.material-modal-content .el-form-item.material-label-hint-red .el-form-item__label {
+  color: #F56C6C !important;
+}
+
+/* 基础档案区：统一输入框/下拉高度，与供应商等控件一致 */
+.material-modal-content .material-six-col-grid .el-input:not(.el-textarea) .el-input__inner,
+.material-modal-content .material-six-col-grid .el-select .el-input__inner,
+.material-modal-content .material-six-col-grid .el-date-editor .el-input__inner {
+  height: 36px !important;
+  line-height: 36px !important;
+}
+.material-modal-content .material-six-col-grid .el-select,
+.material-modal-content .material-six-col-grid .el-select .el-input,
+.material-modal-content .material-six-col-grid .el-date-editor.el-input {
+  width: 100%;
+}
+
 .material-cell-top-left {
   /* 列表单元格：强制单行 + 省略号（避免“生产厂家”等列换行） */
   white-space: nowrap;

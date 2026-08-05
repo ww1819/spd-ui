@@ -1,7 +1,6 @@
 <template>
   <el-select
     v-model="innerValue"
-    size="small"
     filterable
     :filter-method="filterMethod"
     clearable
