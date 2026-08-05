@@ -712,7 +712,7 @@
                 </el-col>
           </el-row>
 
-              <!-- 第五行：招标/入选原因后接包装与储存方式 -->
+              <!-- 第五行：招标/入选原因后接包装、储存方式、贯标码 -->
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="招标类别：" prop="successfulType">
@@ -743,10 +743,20 @@
                     <el-input v-model="form.isWay" placeholder="如：常温存储、冷链存储、常温 20℃" clearable maxlength="100" />
                   </el-form-item>
                 </el-col>
+                <el-col :span="4">
+                  <el-form-item label="贯标码：" prop="countryNo">
+                    <el-input v-model="form.countryNo" placeholder="贯标码" />
+              </el-form-item>
+            </el-col>
           </el-row>
 
-              <!-- 第六行 -->
+              <!-- 第六行：UDI 在品牌前；许可证编号在功能后 -->
           <el-row :gutter="20">
+                <el-col :span="4">
+                  <el-form-item label="UDI码：" prop="udiNo">
+                <el-input v-model="form.udiNo" placeholder="UDI码" @blur="onFormUdiNoBlur" />
+              </el-form-item>
+            </el-col>
                 <el-col :span="4">
                   <el-form-item label="品牌：" prop="brand">
                     <el-input v-model="form.brand" placeholder="品牌" />
@@ -768,13 +778,13 @@
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
-                  <el-form-item label="UDI码：" prop="udiNo">
-                <el-input v-model="form.udiNo" placeholder="UDI码" @blur="onFormUdiNoBlur" />
+                  <el-form-item label="许可证编号：" prop="permitNo">
+                    <el-input v-model="form.permitNo" placeholder="许可证编号" />
               </el-form-item>
             </el-col>
           </el-row>
 
-              <!-- 第七行 -->
+              <!-- 第七行：商品说明在医用级别后 -->
           <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="阳光平台编码：" prop="sunshineCode" class="material-label-hint-red">
@@ -829,25 +839,15 @@
                 </el-select>
               </el-form-item>
             </el-col>
-          </el-row>
-
-              <!-- 第七行 -->
-          <el-row :gutter="20">
-                <el-col :span="4">
-                  <el-form-item label="贯标码：" prop="countryNo">
-                    <el-input v-model="form.countryNo" placeholder="贯标码" />
-              </el-form-item>
-            </el-col>
-                <el-col :span="4">
-                  <el-form-item label="许可证编号：" prop="permitNo">
-                    <el-input v-model="form.permitNo" placeholder="许可证编号" />
-              </el-form-item>
-            </el-col>
                 <el-col :span="4">
                   <el-form-item label="商品说明：" prop="description">
                     <el-input v-model="form.description" placeholder="商品说明" />
               </el-form-item>
             </el-col>
+          </el-row>
+
+              <!-- 第八行 -->
+          <el-row :gutter="20">
                 <el-col :span="4">
                   <el-form-item label="备注：" prop="countryName">
                 <el-input v-model="form.countryName" @dblclick.native="openZoomEditor('countryName', '备注')" placeholder="备注" />
@@ -982,6 +982,77 @@
               </div>
             </el-col>
           </el-row>
+                </div>
+              </div>
+
+              <!-- 18类重点耗材 -->
+              <div class="material-detail-card">
+                <div class="material-detail-card__header">
+                  <i class="el-icon-document" />
+                  <span>18类重点耗材</span>
+                </div>
+                <div class="material-detail-card__body material-six-col-grid focus18-material-grid">
+                  <el-row :gutter="20">
+                    <el-col :span="4">
+                      <el-form-item label="耗材类别：" prop="focus18Category">
+                        <el-input v-model="form.focus18Category" placeholder="耗材类别" maxlength="100" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="4">
+                      <el-form-item label="耗材分类代码：" prop="focus18ClassCode">
+                        <el-input v-model="form.focus18ClassCode" placeholder="耗材分类代码" maxlength="100" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="4">
+                      <el-form-item label="通用名代码：" prop="focus18GenericCode">
+                        <el-input v-model="form.focus18GenericCode" placeholder="通用名代码" maxlength="100" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="4">
+                      <el-form-item label="医保通用名：" prop="focus18MedicalGenericName">
+                        <el-input v-model="form.focus18MedicalGenericName" placeholder="医保通用名" maxlength="200" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="4">
+                      <el-form-item label="材质代码：" prop="focus18MaterialCode">
+                        <el-input v-model="form.focus18MaterialCode" placeholder="材质代码" maxlength="100" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="4">
+                      <el-form-item label="材质：" prop="focus18Material">
+                        <el-input v-model="form.focus18Material" placeholder="材质" maxlength="200" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row :gutter="20">
+                    <el-col :span="8">
+                      <el-form-item label="一级分类(学科/品类)：" prop="focus18Level1" label-width="160px">
+                        <el-input v-model="form.focus18Level1" placeholder="一级分类" maxlength="200" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="二级分类(用途/品目)：" prop="focus18Level2" label-width="160px">
+                        <el-input v-model="form.focus18Level2" placeholder="二级分类" maxlength="200" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                      <el-form-item label="三级分类(部位/功能/品种)：" prop="focus18Level3" label-width="190px">
+                        <el-input v-model="form.focus18Level3" placeholder="三级分类" maxlength="200" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <el-row :gutter="20">
+                    <el-col :span="4">
+                      <el-form-item label="特征代码：" prop="focus18FeatureCode">
+                        <el-input v-model="form.focus18FeatureCode" placeholder="特征代码" maxlength="100" />
+                      </el-form-item>
+                    </el-col>
+                    <el-col :span="4">
+                      <el-form-item label="特征参数：" prop="focus18FeatureParam">
+                        <el-input v-model="form.focus18FeatureParam" placeholder="特征参数" maxlength="500" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
                 </div>
               </div>
 
@@ -1196,7 +1267,7 @@
                   <i class="el-icon-link" />
                   <span class="hrp-compare-title">HRP对照</span>
                 </div>
-                <div class="hrp-compare-content">
+                <div class="hrp-compare-content material-six-col-grid">
                   <el-row :gutter="20">
                     <el-col :span="4">
                       <el-form-item label="HRP编码：" prop="hrpCode">
@@ -1209,8 +1280,8 @@
                       </el-form-item>
                     </el-col>
                     <el-col :span="4">
-                      <el-form-item label="HRP序号：" prop="hrpSeq">
-                        <el-input v-model="form.hrpSeq" placeholder="HRP序号" />
+                      <el-form-item label="HRP型号：" prop="hrpSeq">
+                        <el-input v-model="form.hrpSeq" placeholder="HRP型号" />
                       </el-form-item>
                     </el-col>
                     <el-col :span="4">
@@ -1218,8 +1289,6 @@
                         <el-input v-model="form.hrpUnit" placeholder="HRP单位" />
                       </el-form-item>
                     </el-col>
-                  </el-row>
-                  <el-row :gutter="20">
                     <el-col :span="4">
                       <el-form-item label="HRP单价：" prop="hrpPrice">
                         <el-input v-model="form.hrpPrice" placeholder="HRP单价" />
@@ -2282,6 +2351,17 @@ export default {
         sunshineSource: null,
         sunshineCoefficient: null,
         selectionReason: null,
+        focus18Category: null,
+        focus18ClassCode: null,
+        focus18Level1: null,
+        focus18Level2: null,
+        focus18Level3: null,
+        focus18GenericCode: null,
+        focus18MedicalGenericName: null,
+        focus18MaterialCode: null,
+        focus18Material: null,
+        focus18FeatureCode: null,
+        focus18FeatureParam: null,
         minPackageQty: null
       };
     },
@@ -3146,7 +3226,10 @@ export default {
         'isTemporaryPurchase', 'isServiceFee', 'isBilling', 'materialLevel', 'registerLevel', 'riskLevel',
         'firstaidLevel', 'doctorLevel', 'brand', 'useto', 'quality', 'function', 'isWay', 'locationId', 'udiNo',
         'sunshineCode', 'countryNo', 'permitNo', 'description', 'countryName', 'periodDate', 'imageUrl',
-        'mainBarcode', 'subBarcode', 'defaultWarehouseId', 'hisId', 'hisChargeItemId'
+        'mainBarcode', 'subBarcode', 'defaultWarehouseId', 'hisId', 'hisChargeItemId',
+        'focus18Category', 'focus18ClassCode', 'focus18Level1', 'focus18Level2', 'focus18Level3',
+        'focus18GenericCode', 'focus18MedicalGenericName', 'focus18MaterialCode', 'focus18Material',
+        'focus18FeatureCode', 'focus18FeatureParam'
       ];
       const payload = {};
       allowFields.forEach(k => {
@@ -3971,6 +4054,16 @@ export default {
   max-width: 16.66666667%;
 }
 
+.material-form-grid .focus18-material-grid .el-row .el-col-8 {
+  width: 33.33333333%;
+  flex: 0 0 33.33333333%;
+  max-width: 33.33333333%;
+}
+
+.focus18-material-grid .el-form-item__label {
+  white-space: nowrap;
+}
+
 .material-six-col-grid .el-form-item__label {
   padding-right: 4px;
   font-size: 12px;
@@ -4775,11 +4868,11 @@ export default {
 
 .period-date-longterm-wrap .period-longterm-btn {
   position: absolute;
-  left: calc(100% + 6px);
+  left: calc(100% + 4px);
   top: 50%;
   transform: translateY(-50%);
   flex-shrink: 0;
-  z-index: 1;
+  z-index: 2;
 }
 </style>
 
@@ -4803,6 +4896,16 @@ export default {
 .material-modal-content .material-six-col-grid .el-select .el-input,
 .material-modal-content .material-six-col-grid .el-date-editor.el-input {
   width: 100%;
+}
+
+/* 注册证有效期旁「长期」：保持原布局（在日期框外侧），仅限制按钮宽度避免盖住注册证级别 */
+.material-modal-content .period-date-longterm-wrap .period-longterm-btn.el-button {
+  width: auto !important;
+  min-width: auto !important;
+  max-width: 44px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  box-sizing: border-box !important;
 }
 
 .material-cell-top-left {
