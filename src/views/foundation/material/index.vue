@@ -4,201 +4,170 @@
       <div class="form-fields-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
 
-      <el-row class="query-row-first">
+      <!-- 第一行：更多检索（与库存明细查询一致） -->
+      <el-row class="query-row-more">
         <el-col :span="24">
-          <el-form-item prop="supplierId" class="query-item-inline">
-                <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
-              <SelectSupplier v-model="queryParams.supplierId"/>
+          <el-form-item class="query-item-inline more-search-item">
+            <div class="more-search-row more-search-row--multi">
+              <span class="more-search-label">更多检索</span>
+              <el-select
+                v-model="moreSearchTypes"
+                multiple
+                collapse-tags
+                placeholder="选择检索条件（可多选）"
+                class="more-search-type"
+                @change="onMoreSearchTypesChange"
+              >
+                <el-option label="供应商" value="supplier" />
+                <el-option label="耗材编码" value="code" />
+                <el-option label="耗材名称" value="name" />
+                <el-option label="UDI" value="udiNo" />
+                <el-option label="注册证号" value="registerNo" />
+                <el-option label="阳采编码" value="sunshineCode" />
+                <el-option label="生产厂家" value="factory" />
+                <el-option label="规格" value="speci" />
+                <el-option label="his收费项目编码" value="hisChargeItemId" />
+              </el-select>
+              <div
+                v-for="t in moreSearchTypes"
+                :key="t"
+                class="more-search-dynamic-field"
+              >
+                <span class="more-search-field-label">{{ moreSearchTypeLabel(t) }}</span>
+                <template v-if="t === 'supplier'">
+                  <div class="query-select-wrapper more-search-select-wrap">
+                    <SelectSupplier v-model="queryParams.supplierId" />
+                  </div>
+                </template>
+                <template v-else-if="t === 'factory'">
+                  <div class="query-select-wrapper more-search-select-wrap">
+                    <SelectFactory v-model="queryParams.factoryId" placeholder="生产厂家" />
+                  </div>
+                </template>
+                <el-input
+                  v-else
+                  v-model="queryParams[t]"
+                  :placeholder="moreSearchPlaceholderFor(t)"
+                  clearable
+                  class="more-search-input more-search-input--dynamic"
+                  @input="normalizeQueryTextField(t)"
+                  @blur="onMoreSearchInputBlur(t)"
+                  @keyup.enter.native="handleQuery"
+                />
+              </div>
             </div>
-          </el-form-item>
-
-          <el-form-item prop="code" class="query-item-inline">
-            <el-input
-              v-model="queryParams.code"
-              placeholder="耗材编码"
-              clearable
-              @keyup.enter.native="handleQuery"
-              style="width: 150px"
-            />
-          </el-form-item>
-
-          <el-form-item prop="name" class="query-item-inline">
-            <el-input
-              v-model="queryParams.name"
-                  placeholder="耗材名称"
-              clearable
-              @keyup.enter.native="handleQuery"
-                  style="width: 150px"
-            />
-          </el-form-item>
-
-          <el-form-item prop="udiNo" class="query-item-inline">
-            <el-input
-              v-model="queryParams.udiNo"
-              placeholder="UDI"
-              @blur="onQueryUdiNoBlur"
-              clearable
-              @keyup.enter.native="handleQuery"
-                  style="width: 150px"
-            />
-          </el-form-item>
-
-          <el-form-item prop="registerNo" class="query-item-inline">
-            <el-input
-              v-model="queryParams.registerNo"
-              placeholder="注册证号"
-              clearable
-              @keyup.enter.native="handleQuery"
-              style="width: 150px"
-            />
-          </el-form-item>
-
-          <el-form-item prop="sunshineCode" class="query-item-inline">
-            <el-input
-              v-model="queryParams.sunshineCode"
-              placeholder="阳采编码"
-              clearable
-              @keyup.enter.native="handleQuery"
-              style="width: 150px"
-            />
-          </el-form-item>
-          <el-form-item prop="hisChargeItemId" class="query-item-inline">
-            <el-input
-              v-model="queryParams.hisChargeItemId"
-              placeholder="his收费项目编码"
-              clearable
-              @keyup.enter.native="handleQuery"
-              style="width: 150px"
-            />
-          </el-form-item>
-          <el-form-item prop="hisBindStatus" class="query-item-inline query-item-compact">
-            <el-select v-model="queryParams.hisBindStatus" placeholder="是否对照HIS收费项目" style="width: 170px" clearable>
-              <el-option label="已对照" value="1" />
-              <el-option label="未对照" value="0" />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item prop="factoryId" class="query-item-inline">
-            <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
-              <SelectFactory v-model="queryParams.factoryId" placeholder="生产厂家"/>
-            </div>
-          </el-form-item>
-
-          <el-form-item prop="speci" class="query-item-inline">
-            <el-input
-              v-model="queryParams.speci"
-              placeholder="规格"
-              clearable
-              @keyup.enter.native="handleQuery"
-              style="width: 150px"
-            />
           </el-form-item>
         </el-col>
       </el-row>
 
-      <el-row class="query-row-third">
-        <el-col :span="24">
-              <el-form-item class="query-item-inline query-item-date">
+      <!-- 第二行：启用 → 日期 → 高值/集采/跟台/计费 → 其余常驻条件 -->
+      <el-row class="query-row-second">
+        <el-col :span="24" class="query-row-second-inner">
+          <el-form-item prop="isUse" class="query-item-inline query-item-compact">
+            <el-select v-model="queryParams.isUse" placeholder="启用" style="width: 100px" clearable>
+              <el-option
+                v-for="dict in dict.type.is_use_status"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item class="query-item-inline query-item-date">
             <el-date-picker
               v-model="queryParams.beginDate"
               type="date"
               value-format="yyyy-MM-dd"
               placeholder="起始日期"
               clearable
-                  style="width: 100px; margin-right: 4px;"
+              style="width: 100px; margin-right: 4px;"
             />
-                <span style="margin: 0 2px;">至</span>
+            <span style="margin: 0 2px;">至</span>
             <el-date-picker
               v-model="queryParams.endDate"
               type="date"
               value-format="yyyy-MM-dd"
               placeholder="截止日期"
               clearable
-                  style="width: 100px; margin-left: 4px;"
+              style="width: 100px; margin-left: 4px;"
             />
           </el-form-item>
 
-              <el-form-item prop="storeroomIds" class="query-item-inline">
-                <div class="query-select-wrapper query-select-wrapper-small" style="width: 160px !important;">
-                  <SelectWarehouseCategory v-model="queryParams.storeroomIds" :multiple="true" placeholder="库房分类" style="width: 100%"/>
-                </div>
-              </el-form-item>
-
-              <el-form-item prop="financeCategoryIds" class="query-item-inline">
-                <div class="query-select-wrapper query-select-wrapper-small" style="width: 160px !important;">
-                  <SelectFinanceCategory v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类" style="width: 100%"/>
-                </div>
-              </el-form-item>
-              <el-form-item prop="materialCategoryIds" class="query-item-inline">
-                <div class="query-select-wrapper query-select-wrapper-small" style="width: 160px !important;">
-                  <SelectMaterialCategory v-model="queryParams.materialCategoryIds" :multiple="true" placeholder="材料类别" style="width: 100%"/>
-                </div>
-              </el-form-item>
-
-              <el-form-item prop="locationId" class="query-item-inline">
-                <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
-                  <SelectLocation v-model="queryParams.locationId"/>
-                </div>
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-          <el-row class="query-row-fourth">
-            <el-col :span="24">
-          <el-form-item prop="isUse" class="query-item-inline">
-            <el-select v-model="queryParams.isUse" placeholder="启用" style="width: 110px" clearable>
-              <el-option
-                v-for="dict in dict.type.is_use_status"
-                :key="dict.value"
-                :label="dict.label"
-                :value="dict.value"
-              ></el-option>
-            </el-select>
-          </el-form-item>
-
-              <el-form-item prop="isGz" class="query-item-inline query-item-compact">
+          <el-form-item prop="isGz" class="query-item-inline query-item-compact">
             <el-select v-model="queryParams.isGz" placeholder="高值" style="width: 100px" clearable>
               <el-option
                 v-for="dict in dict.type.is_yes_no"
                 :key="dict.value"
                 :label="dict.label"
                 :value="dict.value"
-              ></el-option>
+              />
             </el-select>
           </el-form-item>
 
-              <el-form-item prop="isFollow" class="query-item-inline query-item-compact">
+          <el-form-item prop="isProcure" class="query-item-inline query-item-compact">
+            <el-select v-model="queryParams.isProcure" placeholder="集采" style="width: 100px" clearable>
+              <el-option
+                v-for="dict in dict.type.is_yes_no"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item prop="isFollow" class="query-item-inline query-item-compact">
             <el-select v-model="queryParams.isFollow" placeholder="跟台" style="width: 100px" clearable>
               <el-option
                 v-for="dict in dict.type.is_yes_no"
                 :key="dict.value"
                 :label="dict.label"
                 :value="dict.value"
-              ></el-option>
+              />
             </el-select>
           </el-form-item>
 
-              <el-form-item prop="isProcure" class="query-item-inline query-item-compact">
-                <el-select v-model="queryParams.isProcure" placeholder="集采" style="width: 100px" clearable>
-                  <el-option
-                    v-for="dict in dict.type.is_yes_no"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  ></el-option>
-                </el-select>
-              </el-form-item>
+          <el-form-item prop="isBilling" class="query-item-inline query-item-compact">
+            <el-select v-model="queryParams.isBilling" placeholder="计费" style="width: 100px" clearable>
+              <el-option
+                v-for="dict in dict.type.is_yes_no"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+          </el-form-item>
 
-              <el-form-item prop="isBilling" class="query-item-inline query-item-compact">
-                <el-select v-model="queryParams.isBilling" placeholder="计费" style="width: 100px" clearable>
-                  <el-option
-                    v-for="dict in dict.type.is_yes_no"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  ></el-option>
-                </el-select>
-              </el-form-item>
+          <el-form-item prop="hisBindStatus" class="query-item-inline query-item-compact">
+            <el-select v-model="queryParams.hisBindStatus" placeholder="对照" style="width: 100px" clearable>
+              <el-option label="已对照" value="1" />
+              <el-option label="未对照" value="0" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item prop="storeroomIds" class="query-item-inline">
+            <div class="query-select-wrapper query-select-wrapper-small query-select-multi-fix" style="width: 170px !important;">
+              <SelectWarehouseCategory v-model="queryParams.storeroomIds" :multiple="true" placeholder="库房分类" style="width: 100%"/>
+            </div>
+          </el-form-item>
+
+          <el-form-item prop="financeCategoryIds" class="query-item-inline">
+            <div class="query-select-wrapper query-select-wrapper-small query-select-multi-fix" style="width: 170px !important;">
+              <SelectFinanceCategory v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类" style="width: 100%"/>
+            </div>
+          </el-form-item>
+
+          <el-form-item prop="materialCategoryIds" class="query-item-inline">
+            <div class="query-select-wrapper query-select-wrapper-small query-select-multi-fix" style="width: 170px !important;">
+              <SelectMaterialCategory v-model="queryParams.materialCategoryIds" :multiple="true" placeholder="材料类别" style="width: 100%"/>
+            </div>
+          </el-form-item>
+
+          <el-form-item prop="locationId" class="query-item-inline">
+            <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
+              <SelectLocation v-model="queryParams.locationId"/>
+            </div>
+          </el-form-item>
         </el-col>
       </el-row>
 
@@ -324,7 +293,7 @@
         :row-key="getMaterialRowKey"
         @selection-change="handleSelectionChange"
         @sort-change="handleSortChange"
-        height="60vh"
+        height="65vh"
         border
         :stripe="materialTableLightMode"
       >
@@ -1857,6 +1826,8 @@ export default {
         orderByColumn: 'm.updateTime',
         isAsc: 'desc',
       },
+      /** 更多检索：已选检索维度（多选），与库存明细查询一致 */
+      moreSearchTypes: [],
       // 表单参数
       form: {},
       // 编辑时原始启用状态，用于检测是否变更并要求填写原因
@@ -2091,6 +2062,16 @@ export default {
     /** 构建列表/导出请求参数（不影响输入框显示） */
     buildMaterialQueryParams(includePagination = true) {
       const base = { ...this.queryParams };
+      // 未勾选的「更多检索」条件不参与查询
+      this.applyMoreSearchToQueryParams(base);
+      const strip = (v) => (v == null || v === '' ? v : String(v).replace(/[\s\u3000]+/g, ''));
+      base.code = strip(base.code);
+      base.name = strip(base.name);
+      base.udiNo = strip(base.udiNo);
+      base.registerNo = strip(base.registerNo);
+      base.sunshineCode = strip(base.sunshineCode);
+      base.hisChargeItemId = strip(base.hisChargeItemId);
+      base.speci = strip(base.speci);
       const keyword = base.name;
       const derived = this.deriveNameSearchParams(keyword);
       const explicitCode = base.code != null && String(base.code).trim() !== '' ? String(base.code).trim() : undefined;
@@ -2449,15 +2430,96 @@ export default {
 
       this.form.referredName = pinYinCode;
     },
+    /** 顶部查询文本：输入时自动去掉所有空白（含全角空格） */
+    stripQuerySpaces(val) {
+      if (val == null || val === '') {
+        return val == null ? '' : val;
+      }
+      return String(val).replace(/[\s\u3000]+/g, '');
+    },
+    normalizeQueryTextField(field) {
+      const current = this.queryParams[field];
+      const cleaned = this.stripQuerySpaces(current);
+      if (cleaned !== current) {
+        this.queryParams[field] = cleaned;
+      }
+    },
+    sanitizeAllQueryTextFields() {
+      ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'hisChargeItemId', 'speci'].forEach((field) => {
+        this.normalizeQueryTextField(field);
+      });
+      this.queryParams.udiNo = sanitizeUdiNo(this.queryParams.udiNo);
+    },
+    onMoreSearchTypesChange(val) {
+      const set = new Set(val || []);
+      if (!set.has('supplier')) {
+        this.queryParams.supplierId = undefined;
+      }
+      if (!set.has('factory')) {
+        this.queryParams.factoryId = undefined;
+      }
+      ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'speci', 'hisChargeItemId'].forEach((k) => {
+        if (!set.has(k)) {
+          this.queryParams[k] = undefined;
+        }
+      });
+    },
+    moreSearchTypeLabel(t) {
+      const map = {
+        supplier: '供应商',
+        code: '耗材编码',
+        name: '耗材名称',
+        udiNo: 'UDI',
+        registerNo: '注册证号',
+        sunshineCode: '阳采编码',
+        factory: '生产厂家',
+        speci: '规格',
+        hisChargeItemId: 'his收费项目编码'
+      };
+      return map[t] || t;
+    },
+    moreSearchPlaceholderFor(t) {
+      const map = {
+        code: '耗材编码',
+        name: '耗材名称',
+        udiNo: 'UDI',
+        registerNo: '注册证号',
+        sunshineCode: '阳采编码',
+        speci: '规格',
+        hisChargeItemId: 'his收费项目编码'
+      };
+      return map[t] || '请输入关键字';
+    },
+    /** 仅保留已勾选的更多检索条件到请求参数 */
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      if (!set.has('supplier')) {
+        target.supplierId = undefined;
+      }
+      if (!set.has('factory')) {
+        target.factoryId = undefined;
+      }
+      ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'speci', 'hisChargeItemId'].forEach((k) => {
+        if (!set.has(k)) {
+          target[k] = undefined;
+        }
+      });
+    },
     /** 搜索按钮操作 */
     handleQuery() {
-      this.queryParams.udiNo = sanitizeUdiNo(this.queryParams.udiNo);
+      this.sanitizeAllQueryTextFields();
       this.queryParams.pageNum = 1;
       this.clearCrossPageSelection();
       this.getList();
     },
     onQueryUdiNoBlur() {
+      this.normalizeQueryTextField('udiNo');
       this.queryParams.udiNo = sanitizeUdiNo(this.queryParams.udiNo);
+    },
+    onMoreSearchInputBlur(t) {
+      if (t === 'udiNo') {
+        this.onQueryUdiNoBlur();
+      }
     },
     onFormUdiNoBlur() {
       this.form.udiNo = sanitizeUdiNo(this.form.udiNo);
@@ -2465,6 +2527,7 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = [];
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
       this.queryParams.isUse = '1'; // 重置为启用
@@ -2475,8 +2538,18 @@ export default {
       this.queryParams.storeroomIds = [];
       this.queryParams.financeCategoryIds = [];
       this.queryParams.materialCategoryIds = [];
+      this.queryParams.supplierId = undefined;
+      this.queryParams.factoryId = undefined;
+      this.queryParams.locationId = undefined;
+      this.queryParams.udiNo = undefined;
+      this.queryParams.registerNo = undefined;
+      this.queryParams.sunshineCode = undefined;
+      this.queryParams.hisChargeItemId = undefined;
+      this.queryParams.hisBindStatus = undefined;
+      this.queryParams.speci = undefined;
       // 清空派生搜索参数，避免残留影响查询/导出
       this.queryParams.code = undefined;
+      this.queryParams.name = undefined;
       this.queryParams.nameSearch = undefined;
       this.queryParams.orderByColumn = 'm.updateTime';
       this.queryParams.isAsc = 'desc';
@@ -4049,38 +4122,38 @@ export default {
 }
 
 .form-fields-container .el-form-item__content {
-  line-height: 24px !important;
+  line-height: 32px !important;
 }
 
-/* 搜索框高度降低：输入框、下拉、日期选择器整体与内层统一压低 */
+/* 查询区输入框恢复 Element small 默认高度（32px），不要压矮 */
 .form-fields-container .el-input,
 .form-fields-container .el-select .el-input,
 .form-fields-container .el-date-editor {
-  height: 24px !important;
+  height: 32px !important;
 }
 .form-fields-container .el-input__inner {
-  height: 24px !important;
-  line-height: 24px !important;
+  height: 32px !important;
+  line-height: 32px !important;
 }
 
 .form-fields-container .el-select .el-input__inner {
-  height: 24px !important;
-  line-height: 24px !important;
+  height: 32px !important;
+  line-height: 32px !important;
 }
 
 .form-fields-container .el-date-editor .el-input__inner {
-  height: 24px !important;
-  line-height: 24px !important;
+  height: 32px !important;
+  line-height: 32px !important;
 }
 
 .form-fields-container .el-date-editor .el-input__prefix,
 .form-fields-container .el-date-editor .el-input__suffix {
-  line-height: 24px !important;
+  line-height: 32px !important;
 }
 
 .form-fields-container .el-form-item__label {
   padding-bottom: 0 !important;
-  line-height: 24px !important;
+  line-height: 32px !important;
 }
 
 /* 第一行查询条件左对齐紧凑布局 */
@@ -4276,6 +4349,124 @@ export default {
   margin-bottom: 16px;
 }
 
+/* 更多检索：只做水平对齐，不改高度 */
+.material-page-container .more-search-item {
+  margin-bottom: 6px !important;
+}
+.material-page-container .more-search-item >>> .el-form-item__content {
+  max-width: 100%;
+  display: flex !important;
+  align-items: center !important;
+}
+.material-page-container .more-search-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+.material-page-container .more-search-row--multi {
+  flex-wrap: wrap;
+  align-items: center !important;
+  max-width: 100%;
+}
+.material-page-container .more-search-dynamic-field {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin: 0 !important;
+}
+.material-page-container .more-search-field-label,
+.material-page-container .more-search-label {
+  color: #606266;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+}
+.material-page-container .more-search-type {
+  min-width: 220px;
+  width: auto;
+  max-width: 360px;
+}
+.material-page-container .more-search-input--dynamic {
+  width: 180px;
+}
+.material-page-container .more-search-select-wrap {
+  width: 210px;
+  display: inline-flex;
+  align-items: center;
+}
+.material-page-container .more-search-select-wrap >>> .el-select {
+  width: 100%;
+}
+.material-page-container .query-row-second {
+  margin-bottom: 2px;
+}
+.material-page-container .query-row-second-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+}
+.material-page-container .query-row-second-inner .query-item-inline {
+  flex-shrink: 0;
+  margin-right: 8px;
+  margin-bottom: 0;
+}
+
+/* 多选下拉强制单行，不撑高；高度保持 32px */
+.material-page-container .form-fields-container .el-select--multiple .el-select__tags {
+  flex-wrap: nowrap !important;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: calc(100% - 30px);
+  height: 28px !important;
+  display: flex !important;
+  align-items: center;
+  top: 50% !important;
+  transform: translateY(-50%);
+}
+.material-page-container .form-fields-container .el-select--multiple .el-select__tags > span {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+}
+.material-page-container .form-fields-container .el-select--multiple .el-tag {
+  max-width: 88px;
+  height: 20px !important;
+  line-height: 18px !important;
+  margin: 0 0 0 6px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+.material-page-container .form-fields-container .el-select--multiple .el-select__input {
+  margin-left: 6px !important;
+  max-width: 40px !important;
+  height: 28px !important;
+}
+.material-page-container .form-fields-container .el-select--multiple .el-input__inner,
+.material-page-container .form-fields-container .el-select--multiple .el-input {
+  height: 32px !important;
+  min-height: 32px !important;
+}
+.material-page-container .form-fields-container .el-select--multiple .el-input__inner {
+  line-height: 32px !important;
+}
+.material-page-container .form-fields-container .query-select-multi-fix .el-select {
+  width: 100%;
+}
+
 /* 表格列内容强制单行显示（不换行），超出省略号 + tooltip */
 .material-page-container .el-table .cell {
   white-space: nowrap !important;
@@ -4330,12 +4521,12 @@ export default {
 .material-page-container .form-fields-container .el-form-item__content {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  min-height: 32px;
 }
 .material-page-container .form-fields-container .el-form-item__label {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  min-height: 32px;
 }
 
 /* 图片容器样式 */
