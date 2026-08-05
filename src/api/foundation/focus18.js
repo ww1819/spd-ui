@@ -25,6 +25,15 @@ export function listFocus18Categories() {
   })
 }
 
+/** 医保编码前15位匹配耗材分类代码，回填18类字段 */
+export function matchFocus18ByMedicalNo(medicalNo) {
+  return request({
+    url: '/foundation/focus18/matchByMedicalNo',
+    method: 'get',
+    params: { medicalNo }
+  })
+}
+
 export function getFocus18(id) {
   return request({
     url: '/foundation/focus18/' + id,

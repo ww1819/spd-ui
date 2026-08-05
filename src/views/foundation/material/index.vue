@@ -687,7 +687,7 @@
                 </el-col>
                 <el-col :span="4">
                   <el-form-item label="医保编码：" prop="medicalNo" class="material-label-hint-red">
-                <el-input v-model="form.medicalNo" @dblclick.native="openZoomEditor('medicalNo', '医保编码')" placeholder="医保编码" />
+                <el-input v-model="form.medicalNo" @dblclick.native="openZoomEditor('medicalNo', '医保编码')" @blur="onMedicalNoBlur" placeholder="医保编码" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -1765,6 +1765,7 @@
 
 <script>
 import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, batchUpdateMaterial, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel, batchUpdateHisChargeItemValueLevel, syncMaterialValueLevelToHisChargeItem } from "@/api/foundation/material";
+import { matchFocus18ByMedicalNo } from "@/api/foundation/focus18";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import { runConfiguredTableExport } from "@/utils/tableExportRunner";
 import { mapGetters } from "vuex";
@@ -3255,8 +3256,39 @@ export default {
         if (this.zoomEditor.prop === 'name') {
           this.nameChange(this.zoomEditor.value);
         }
+        if (this.zoomEditor.prop === 'medicalNo') {
+          this.fillFocus18FromMedicalNo(this.zoomEditor.value);
+        }
       }
       this.zoomEditor.visible = false;
+    },
+    onMedicalNoBlur() {
+      this.fillFocus18FromMedicalNo(this.form && this.form.medicalNo);
+    },
+    /** 医保编码前15位匹配18类耗材分类代码，命中则回填下方18类字段 */
+    fillFocus18FromMedicalNo(medicalNo) {
+      const code = medicalNo != null ? String(medicalNo).trim() : '';
+      if (!code || code.length < 15) {
+        return;
+      }
+      matchFocus18ByMedicalNo(code).then(res => {
+        const hit = res && (res.data !== undefined ? res.data : res);
+        if (!hit || !hit.classCode) {
+          return;
+        }
+        this.$set(this.form, 'focus18Category', hit.category || null);
+        this.$set(this.form, 'focus18ClassCode', hit.classCode || null);
+        this.$set(this.form, 'focus18Level1', hit.level1 || null);
+        this.$set(this.form, 'focus18Level2', hit.level2 || null);
+        this.$set(this.form, 'focus18Level3', hit.level3 || null);
+        this.$set(this.form, 'focus18GenericCode', hit.genericCode || null);
+        this.$set(this.form, 'focus18MedicalGenericName', hit.medicalGenericName || null);
+        this.$set(this.form, 'focus18MaterialCode', hit.materialCode || null);
+        this.$set(this.form, 'focus18Material', hit.material || null);
+        this.$set(this.form, 'focus18FeatureCode', hit.featureCode || null);
+        this.$set(this.form, 'focus18FeatureParam', hit.featureParam || null);
+        this.$modal.msgSuccess('已按医保编码匹配并回填18类重点耗材信息');
+      }).catch(() => {});
     },
     /** 删除按钮操作 */
     handleDelete(row) {
