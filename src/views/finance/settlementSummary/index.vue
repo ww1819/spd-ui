@@ -135,6 +135,7 @@
             :summary-method="table2SummaryMethod"
             class="table-block table-block-wide"
           >
+            <el-table-column prop="campus" label="院区" align="left" min-width="100" show-overflow-tooltip />
             <el-table-column prop="departmentName" label="分科" align="left" min-width="140" show-overflow-tooltip />
             <el-table-column prop="plainConsumablesAmt" label="普通耗材" align="right" width="110">
               <template slot-scope="scope">
@@ -445,8 +446,12 @@ export default {
         g += Number(row.reagentAmt) || 0
       })
       columns.forEach((col, index) => {
-        if (index === 0) {
+        if (col.property === 'departmentName' || (index === 1 && !col.property)) {
           sums[index] = '合计'
+          return
+        }
+        if (index === 0 && col.property === 'campus') {
+          sums[index] = ''
           return
         }
         const prop = col.property

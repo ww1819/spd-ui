@@ -171,7 +171,7 @@ export async function exportFinanceSettlementSummaryXlsx(options) {
  * 财务结算汇总表二：科室领取器材、药品统计（多列表头，西药/中成药/中草药列为空占位）
  * @param {Object} options
  * @param {string} options.titleText 表头标题全文
- * @param {{ departmentName: string, plainConsumablesAmt?: number, highValueConsumablesAmt?: number, reagentAmt?: number }[]} options.rows
+ * @param {{ campus?: string, departmentName: string, plainConsumablesAmt?: number, highValueConsumablesAmt?: number, reagentAmt?: number }[]} options.rows
  * @param {string} options.fileName
  */
 export async function exportFinanceDeptConsumablePickupXlsx(options) {
@@ -182,7 +182,7 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
     views: [{ showGridLines: false }],
   });
 
-  ws.mergeCells('A1:H1');
+  ws.mergeCells('A1:I1');
   const t1 = ws.getCell(1, 1);
   t1.value = titleText || 'SPD报表2：科室领取器材、药品统计（金额：元）';
   t1.font = FONT_TITLE;
@@ -200,24 +200,26 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
   };
 
   ws.mergeCells('A2:A3');
-  setHeader('A2', '分科');
+  setHeader('A2', '院区');
   ws.mergeCells('B2:B3');
-  setHeader('B2', '普通耗材');
+  setHeader('B2', '分科');
   ws.mergeCells('C2:C3');
-  setHeader('C2', '高值耗材');
+  setHeader('C2', '普通耗材');
+  ws.mergeCells('D2:D3');
+  setHeader('D2', '高值耗材');
 
-  setHeader('D2', '西药');
-  setHeader('D3', '西药金额');
-  setHeader('E2', '中成药');
-  setHeader('E3', '零售金额');
+  setHeader('E2', '西药');
+  setHeader('E3', '西药金额');
+  setHeader('F2', '中成药');
+  setHeader('F3', '零售金额');
 
-  ws.mergeCells('F2:G2');
-  setHeader('F2', '中草药');
-  setHeader('F3', '中药进价');
-  setHeader('G3', '零售金额');
+  ws.mergeCells('G2:H2');
+  setHeader('G2', '中草药');
+  setHeader('G3', '中药进价');
+  setHeader('H3', '零售金额');
 
-  ws.mergeCells('H2:H3');
-  setHeader('H2', '试剂');
+  ws.mergeCells('I2:I3');
+  setHeader('I2', '试剂');
 
   let sumPlain = 0;
   let sumHigh = 0;
@@ -233,14 +235,15 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
     sumReag += reag;
 
     const cells = [
-      { c: 1, v: row.departmentName || '', align: 'left' },
-      { c: 2, v: plain, num: true },
-      { c: 3, v: high, num: true },
-      { c: 4, v: '', align: 'center' },
+      { c: 1, v: row.campus || '', align: 'left' },
+      { c: 2, v: row.departmentName || '', align: 'left' },
+      { c: 3, v: plain, num: true },
+      { c: 4, v: high, num: true },
       { c: 5, v: '', align: 'center' },
       { c: 6, v: '', align: 'center' },
       { c: 7, v: '', align: 'center' },
-      { c: 8, v: reag, num: true },
+      { c: 8, v: '', align: 'center' },
+      { c: 9, v: reag, num: true },
     ];
     cells.forEach(({ c, v, num, align }) => {
       const cell = ws.getCell(r, c);
@@ -255,7 +258,7 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
   }
 
   if (rows.length === 0) {
-    ws.mergeCells(`A${r}:H${r}`);
+    ws.mergeCells(`A${r}:I${r}`);
     const emptyCell = ws.getCell(r, 1);
     emptyCell.value = '当前条件下暂无统计数据（已审核科室出退库按产品档案库房分类 id 汇总）';
     emptyCell.font = FONT_BODY;
@@ -263,19 +266,24 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
     setCellBorder(emptyCell);
     r++;
   } else {
-    const tot = ws.getCell(r, 1);
+    const totCampus = ws.getCell(r, 1);
+    totCampus.value = '';
+    totCampus.font = { ...FONT_BODY, bold: true };
+    totCampus.alignment = { vertical: 'middle', horizontal: 'center' };
+    setCellBorder(totCampus);
+    const tot = ws.getCell(r, 2);
     tot.value = '合计';
     tot.font = { ...FONT_BODY, bold: true };
     tot.alignment = { vertical: 'middle', horizontal: 'center' };
     setCellBorder(tot);
     ;[
-      [2, sumPlain],
-      [3, sumHigh],
-      [4, ''],
+      [3, sumPlain],
+      [4, sumHigh],
       [5, ''],
       [6, ''],
       [7, ''],
-      [8, sumReag],
+      [8, ''],
+      [9, sumReag],
     ].forEach(([c, v]) => {
       const cell = ws.getCell(r, c);
       cell.value = typeof v === 'number' ? v : '';
@@ -288,7 +296,7 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
     r++;
   }
 
-  ws.mergeCells(`A${r}:H${r}`);
+  ws.mergeCells(`A${r}:I${r}`);
   const foot = ws.getCell(r, 1);
   foot.value = '药械科制表员：             ；审核员：';
   foot.font = FONT_BODY;
@@ -297,6 +305,7 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
   ws.getRow(r).height = 22;
 
   ws.columns = [
+    { width: 12 },
     { width: 14 },
     { width: 12 },
     { width: 12 },
