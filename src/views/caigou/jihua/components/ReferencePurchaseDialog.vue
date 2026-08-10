@@ -102,7 +102,7 @@
                   </el-table-column>
                   <el-table-column label="科室" prop="department.name" width="80" show-overflow-tooltip />
                   <el-table-column label="金额" prop="totalAmount" width="100" align="right">
-                    <template slot-scope="scope">{{ scope.row.totalAmount ? parseFloat(scope.row.totalAmount).toFixed(2) : '0.00' }}</template>
+                    <template slot-scope="scope">{{ scope.row.totalAmount != null && scope.row.totalAmount !== '' ? parseFloat(scope.row.totalAmount).toFixed(4) : '0.0000' }}</template>
                   </el-table-column>
                   <el-table-column label="制单日期" prop="purchaseBillDate" width="120">
                     <template slot-scope="scope">
@@ -152,10 +152,10 @@
                   <template slot-scope="scope">{{ scope.row.qty ? parseFloat(scope.row.qty).toFixed(2) : '0.00' }}</template>
                 </el-table-column>
                 <el-table-column label="单价" prop="unitPrice" width="100" align="right">
-                  <template slot-scope="scope">{{ scope.row.unitPrice ? parseFloat(scope.row.unitPrice).toFixed(2) : '0.00' }}</template>
+                  <template slot-scope="scope">{{ scope.row.unitPrice != null && scope.row.unitPrice !== '' ? parseFloat(scope.row.unitPrice).toFixed(4) : '0.0000' }}</template>
                 </el-table-column>
                 <el-table-column label="金额" prop="amt" width="100" align="right">
-                  <template slot-scope="scope">{{ scope.row.amt ? parseFloat(scope.row.amt).toFixed(2) : '0.00' }}</template>
+                  <template slot-scope="scope">{{ scope.row.amt != null && scope.row.amt !== '' ? parseFloat(scope.row.amt).toFixed(4) : '0.0000' }}</template>
                 </el-table-column>
                 <el-table-column label="供应商" width="150" show-overflow-tooltip>
                   <template slot-scope="scope">{{ scope.row.supplierName || (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</template>

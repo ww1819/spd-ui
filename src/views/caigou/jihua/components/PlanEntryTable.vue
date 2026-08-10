@@ -65,12 +65,12 @@
       </el-table-column>
       <el-table-column label="价格" prop="price" width="120" align="right" show-overflow-tooltip>
         <template slot-scope="scope">
-          <span>{{ formatMoney(scope.row.price) }}</span>
+          <span>{{ formatPrice4(scope.row.price) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="金额" prop="amt" width="120" align="right" show-overflow-tooltip>
         <template slot-scope="scope">
-          <span>{{ formatMoney(scope.row.amt) }}</span>
+          <span>{{ formatPrice4(scope.row.amt) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="供应商" align="center" width="200" show-overflow-tooltip>
@@ -202,10 +202,10 @@ export default {
       if (row._entryUid) return `u-${row._entryUid}`
       return `m-${row.materialId != null ? row.materialId : ''}`
     },
-    formatMoney(val) {
-      if (val == null || val === '') return '0.00'
+    formatPrice4(val) {
+      if (val == null || val === '') return '0.0000'
       const n = parseFloat(val)
-      return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+      return Number.isFinite(n) ? n.toFixed(4) : '0.0000'
     },
     wayStatusLabel(row) {
       const v = row && row.material && row.material.isWay

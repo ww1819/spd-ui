@@ -145,7 +145,7 @@
       </el-table-column>
       <el-table-column label="金额" align="center" prop="totalAmount" >
         <template slot-scope="scope">
-          <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
+          <span v-if="scope.row.totalAmount != null && scope.row.totalAmount !== ''">{{ formatPrice4(scope.row.totalAmount) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -400,7 +400,7 @@
           <span v-else>--</span>
         </el-descriptions-item>
         <el-descriptions-item label="计划日期">{{ planViewData.planDate | parseTime('{y}-{m}-{d}') || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="总金额">{{ planViewData.totalAmount | formatCurrency || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="总金额">{{ planViewData.totalAmount != null ? formatPrice4(planViewData.totalAmount) : '--' }}</el-descriptions-item>
         <el-descriptions-item label="仓库" :span="2">{{ planViewData.warehouse && planViewData.warehouse.name ? planViewData.warehouse.name : '--' }}</el-descriptions-item>
       </el-descriptions>
       <span slot="footer" class="dialog-footer">
@@ -563,6 +563,17 @@ export default {
   },
   methods: {
     formatIsGzLabel,
+    /** 单价/金额：四位小数（避免 0.025 显示成 0.03） */
+    formatPrice4(value) {
+      if (value === null || value === undefined || value === '') {
+        return '0.0000';
+      }
+      const n = Number(value);
+      if (Number.isNaN(n)) {
+        return value;
+      }
+      return n.toFixed(4);
+    },
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
@@ -582,13 +593,13 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = sums[index].toFixed(index === 3 ? 2 : 4);
           }
 
           if(index === 5){
             let res = parseFloat(sums[index]);
             if(!isNaN(res)){
-              let parRes = res.toFixed(2);
+              let parRes = res.toFixed(4);
               this.form.totalAmount = parRes;
             }
           }
@@ -651,7 +662,7 @@ export default {
         obj.materialId = item.id;
         obj.orderQty = 1; // 设置默认数量为1，避免空值
         obj.unitPrice = item.price;
-        obj.totalAmount = item.price ? (1 * item.price).toFixed(2) : "0.00";
+        obj.totalAmount = item.price ? (1 * item.price).toFixed(4) : "0.0000";
         obj.materialSpec = item.speci;
         obj.materialName = item.name;
         obj.materialCode = item.code;
@@ -784,7 +795,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.totalAmount = totalAmt.toFixed(2);
+      row.totalAmount = totalAmt.toFixed(4);
     },
     //价格改变事件
     priceChange(row){
@@ -798,7 +809,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.totalAmount = totalAmt.toFixed(2);
+      row.totalAmount = totalAmt.toFixed(4);
     },
     /** 搜索按钮操作 */
     handleQuery() {

@@ -952,9 +952,6 @@
                       />
                     </div>
                   </el-form-item>
-                  <el-form-item v-if="form.isProcure === '1'" label="集采类型：" prop="jcTypeId" class="switch-form-item" style="min-width: 220px;">
-                    <SelectJcType v-model="form.jcTypeId" placeholder="请选择集采类型" />
-                  </el-form-item>
                   <el-form-item label="" prop="isSunshineProcurement" class="switch-form-item">
                     <div class="switch-with-label-left">
                       <span class="switch-label" :class="{ 'active': form.isSunshineProcurement === '1' }">阳采</span>
@@ -966,6 +963,13 @@
                     </div>
                   </el-form-item>
                 </div>
+                <el-row v-if="form.isProcure === '1'" :gutter="20" style="margin-top: 8px;">
+                  <el-col :span="8">
+                    <el-form-item label="集采类型：" prop="jcTypeId">
+                      <SelectJcType v-model="form.jcTypeId" placeholder="请选择集采类型" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
                 <div
                   v-if="form.id && form.isUse !== originalIsUse"
                   class="switch-status-reason-row"

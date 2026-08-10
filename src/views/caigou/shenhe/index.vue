@@ -115,7 +115,7 @@
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
         <template slot-scope="scope">
-          <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
+          <span v-if="scope.row.totalAmount != null && scope.row.totalAmount !== ''">{{ formatPrice4(scope.row.totalAmount) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -262,12 +262,12 @@
           <el-table-column label="订单数量" align="center" prop="orderQty" width="100" show-overflow-tooltip resizable/>
           <el-table-column label="单价" align="right" prop="unitPrice" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.unitPrice != null ? Number(scope.row.unitPrice).toFixed(2) : '--' }}</span>
+              <span>{{ scope.row.unitPrice != null ? formatPrice4(scope.row.unitPrice) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="金额" align="right" prop="totalAmount" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.totalAmount != null ? Number(scope.row.totalAmount).toFixed(2) : '--' }}</span>
+              <span>{{ scope.row.totalAmount != null ? formatPrice4(scope.row.totalAmount) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="生产厂家" align="center" width="140" show-overflow-tooltip resizable>
@@ -397,12 +397,12 @@
         <el-table-column label="订单数量" prop="qty" width="100" align="right" />
         <el-table-column label="单价" width="100" align="right">
           <template slot-scope="scope">
-            <span>{{ scope.row.price != null ? Number(scope.row.price).toFixed(2) : '--' }}</span>
+            <span>{{ scope.row.price != null ? formatPrice4(scope.row.price) : '--' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="金额" width="100" align="right">
           <template slot-scope="scope">
-            <span>{{ scope.row.amt != null ? Number(scope.row.amt).toFixed(2) : '--' }}</span>
+            <span>{{ scope.row.amt != null ? formatPrice4(scope.row.amt) : '--' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="生产厂家" width="120" show-overflow-tooltip>
@@ -509,6 +509,17 @@ export default {
     this.getList();
   },
   methods: {
+    /** 单价/金额：四位小数（避免 0.025 显示成 0.03） */
+    formatPrice4(value) {
+      if (value === null || value === undefined || value === '') {
+        return '0.0000';
+      }
+      const n = Number(value);
+      if (Number.isNaN(n)) {
+        return value;
+      }
+      return n.toFixed(4);
+    },
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
@@ -525,7 +536,7 @@ export default {
               if (!isNaN(value)) return prev + curr;
               return prev;
             }, 0);
-            if (column.property !== 'orderQty') sums[index] = Number(sums[index]).toFixed(2);
+            if (column.property !== 'orderQty') sums[index] = Number(sums[index]).toFixed(4);
           }
         }
       });

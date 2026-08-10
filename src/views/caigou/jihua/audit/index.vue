@@ -119,7 +119,7 @@
       <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
         <template slot-scope="scope">
-          <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
+          <span v-if="scope.row.totalAmount != null && scope.row.totalAmount !== ''">{{ formatPrice4(scope.row.totalAmount) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -316,12 +316,12 @@
           </el-table-column>
           <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.price }}</span>
+              <span>{{ formatPrice4(scope.row.price) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.amt }}</span>
+              <span>{{ formatPrice4(scope.row.amt) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="供应商" align="center" width="140" show-overflow-tooltip resizable>
@@ -546,6 +546,17 @@ export default {
     }
   },
   methods: {
+    /** 单价/金额展示：保留四位小数（与产品档案一致，避免 0.0250 显示成 0.03） */
+    formatPrice4(value) {
+      if (value === null || value === undefined || value === '') {
+        return '0.0000';
+      }
+      const n = Number(value);
+      if (Number.isNaN(n)) {
+        return value;
+      }
+      return n.toFixed(4);
+    },
     // 为主表提供稳定的 row-key，减少 DOM 复用导致的抖动
     planRowKey(row) {
       return row.id || row.planNo;
@@ -570,9 +581,9 @@ export default {
           });
 
           if (values.length > 0) {
-            sums[index] = values.reduce((prev, curr) => prev + curr, 0).toFixed(2);
+            sums[index] = values.reduce((prev, curr) => prev + curr, 0).toFixed(column.property === 'amt' ? 4 : 2);
           } else {
-            sums[index] = '0.00';
+            sums[index] = column.property === 'amt' ? '0.0000' : '0.00';
           }
 
           // 更新总金额

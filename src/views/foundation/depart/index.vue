@@ -157,6 +157,7 @@
       <el-table-column label="简码" align="center" prop="referredName" width="120" show-overflow-tooltip />
       <el-table-column label="备注" align="center" prop="deptRemark" min-width="140" show-overflow-tooltip />
       <el-table-column label="HIS科室ID" align="center" prop="hisId" width="140" show-overflow-tooltip />
+      <el-table-column label="院区" align="center" prop="campus" width="120" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right">
         <template slot-scope="scope">
           <el-button
@@ -225,6 +226,11 @@
                   :disabled="!!form.id || !departImportRequiresHisDeptId"
                   :placeholder="hisThirdPartyPlaceholder"
                 />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="院区" prop="campus">
+                <el-input v-model="form.campus" placeholder="可手工维护，非必填" clearable maxlength="128" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -584,6 +590,7 @@ export default {
         referredName: null,
         deptRemark: null,
         hisId: null,
+        campus: null,
         parentId: null,
         createBy: null,
         createTime: null,

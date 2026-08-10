@@ -147,7 +147,7 @@
       </el-table-column>
       <el-table-column label="金额" align="center" prop="totalAmount" width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
         <template slot-scope="scope">
-          <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
+          <span v-if="scope.row.totalAmount != null && scope.row.totalAmount !== ''">{{ formatPrice4(scope.row.totalAmount) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -526,6 +526,17 @@ export default {
   },
   methods: {
     formatIsGzLabel,
+    /** 金额展示：四位小数（与产品单价一致，避免 0.025 显示成 0.03） */
+    formatPrice4(value) {
+      if (value === null || value === undefined || value === '') {
+        return '0.0000';
+      }
+      const n = Number(value);
+      if (Number.isNaN(n)) {
+        return value;
+      }
+      return n.toFixed(4);
+    },
     /** 未提交（0）、待审核（1）状态允许修改/删除 */
     isPlanEditable(row) {
       const status = row && row.planStatus;
@@ -692,9 +703,9 @@ export default {
         }
         if (column.property === 'amt') {
           const t = sumNum('amt');
-          sums[index] = '￥' + t.toFixed(2);
+          sums[index] = '￥' + t.toFixed(4);
           if (this.form && this.action) {
-            this.form.totalAmount = t.toFixed(2);
+            this.form.totalAmount = t.toFixed(4);
           }
           return;
         }
@@ -1048,7 +1059,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = totalAmt.toFixed(4);
 
       // 重新计算总金额
       this.calculateTotalAmount();
@@ -1061,7 +1072,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = totalAmt.toFixed(4);
 
       // 重新计算总金额
       this.calculateTotalAmount();
@@ -1392,7 +1403,7 @@ export default {
           total += parseFloat(item.amt);
         }
       });
-      this.form.totalAmount = total.toFixed(2);
+      this.form.totalAmount = total.toFixed(4);
     },
     /** 获取用户列表 */
     getUserList() {

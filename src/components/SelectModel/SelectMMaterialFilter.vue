@@ -68,7 +68,7 @@
           </el-table-column>
           <el-table-column label="单价" align="center" prop="price" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span v-if="scope.row.price">{{ scope.row.price | formatCurrency}}</span>
+              <span v-if="scope.row.price != null && scope.row.price !== ''">{{ formatPrice4(scope.row.price) }}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
@@ -255,6 +255,17 @@ export default {
     // this.getList();
   },
   methods: {
+    /** 单价展示：四位小数（与产品档案一致，避免 0.025 显示成 0.03） */
+    formatPrice4(value) {
+      if (value === null || value === undefined || value === '') {
+        return '';
+      }
+      const n = Number(value);
+      if (Number.isNaN(n)) {
+        return value;
+      }
+      return n.toFixed(4);
+    },
     applyDeptSafeClientPage() {
       const all = this.deptSafeAllRows || [];
       this.total = all.length;
