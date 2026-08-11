@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     class="gz-order-print"
     :class="{'orientation-portrait': orientation === 'portrait', 'orientation-landscape': orientation === 'landscape'}"

@@ -176,7 +176,8 @@
     </el-form>
       </div>
     </div>
-    <el-row :gutter="10" class="mb8 material-toolbar-row">
+    <el-row :gutter="0" class="mb8 material-toolbar-row">
+      <!-- 左侧主操作 -->
       <el-col :span="1.5" v-if="!isZqTcmTenant">
         <el-button
           type="primary" size="medium"
@@ -184,50 +185,18 @@
           v-hasPermi="['foundation:material:add']"
         >新增</el-button>
       </el-col>
+      <span class="material-toolbar-divider" aria-hidden="true"></span>
       <el-col :span="1.5">
         <el-button
-          type="text" size="medium"
-          class="material-toolbar-btn material-toolbar-btn--muted"
+          type="primary"
+          plain
+          size="medium"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:material:edit']"
         >修改</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary" size="medium"
-          :disabled="multiple"
-          @click="handleDelete()"
-          v-hasPermi="['foundation:material:remove']"
-        >批量删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="text" size="medium"
-          class="material-toolbar-btn material-toolbar-btn--muted"
-          :disabled="multiple"
-          @click="handleUpdateReferred"
-          v-hasPermi="['foundation:material:updateReferred']"
-        >更新简码</el-button>
-      </el-col>
-      <el-col :span="1.5" v-if="!isZqTcmTenant">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="openBatchUpdateDialog"
-          v-hasPermi="['foundation:material:edit']"
-        >批量修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="text"
-          size="medium"
-          class="material-toolbar-btn material-toolbar-btn--muted"
-          :loading="syncGzToChargeItemLoading"
-          @click="handleSyncGzToChargeItem"
-          v-hasPermi="['foundation:material:edit','foundation:chargeItem:edit']"
-        >同步高低值到收费项目</el-button>
-      </el-col>
+      <span class="material-toolbar-divider" aria-hidden="true"></span>
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -237,44 +206,7 @@
           v-hasPermi="['foundation:material:export']"
         >导出</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          size="medium"
-          @click="openChargeItemDialog"
-          v-hasPermi="['foundation:chargeItem:query','foundation:material:query']"
-        >收费项目维护</el-button>
-      </el-col>
-      <el-col :span="1.5" v-if="!isZqTcmTenant">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-upload2"
-          size="medium"
-          @click="handleMaterialImport('add')"
-          v-hasPermi="['foundation:material:import']"
-          >新增导入</el-button>
-      </el-col>
-      <el-col :span="1.5" v-if="!isZqTcmTenant">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-upload2"
-          size="medium"
-          @click="handleMaterialImport('update')"
-          v-hasPermi="['foundation:material:import']"
-        >更新导入</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          size="medium"
-          :disabled="!queryParams.supplierId"
-          @click="handlePushArchive"
-          v-hasPermi="['foundation:material:push']"
-        >推送档案</el-button>
-      </el-col>
+      <span class="material-toolbar-divider" aria-hidden="true"></span>
       <el-col :span="1.5">
         <el-button
           type="primary"
@@ -282,10 +214,61 @@
           @click="handleQuery"
         >搜索</el-button>
       </el-col>
+      <span class="material-toolbar-divider" aria-hidden="true"></span>
       <msun-his-sync-button sync-type="materials" label="HIS耗材同步" :refresh="getList" />
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
+
+      <!-- 右侧：更多操作 + 工具图标 -->
+      <div class="material-toolbar-right">
+        <el-dropdown trigger="click" class="material-more-ops" @command="handleMoreOpsCommand">
+          <el-button type="primary" plain size="medium">
+            更多操作<i class="el-icon-arrow-down el-icon--right"></i>
+          </el-button>
+          <el-dropdown-menu slot="dropdown" class="material-more-ops-menu">
+            <el-dropdown-item
+              v-if="!isZqTcmTenant"
+              command="batchUpdate"
+              v-hasPermi="['foundation:material:edit']"
+            >批量修改</el-dropdown-item>
+            <el-dropdown-item
+              command="updateReferred"
+              :disabled="multiple"
+              v-hasPermi="['foundation:material:updateReferred']"
+            >更新简码</el-dropdown-item>
+            <el-dropdown-item
+              command="batchDelete"
+              :disabled="multiple"
+              v-hasPermi="['foundation:material:remove']"
+            >批量删除</el-dropdown-item>
+            <el-dropdown-item
+              command="chargeItem"
+              v-hasPermi="['foundation:chargeItem:query','foundation:material:query']"
+            >收费项目维护</el-dropdown-item>
+            <el-dropdown-item
+              v-if="!isZqTcmTenant"
+              command="importAdd"
+              v-hasPermi="['foundation:material:import']"
+            >新增导入</el-dropdown-item>
+            <el-dropdown-item
+              v-if="!isZqTcmTenant"
+              command="importUpdate"
+              v-hasPermi="['foundation:material:import']"
+            >更新导入</el-dropdown-item>
+            <el-dropdown-item
+              command="syncGzToChargeItem"
+              v-hasPermi="['foundation:material:edit','foundation:chargeItem:edit']"
+            >同步高低值到收费项目</el-dropdown-item>
+            <el-dropdown-item
+              command="pushArchive"
+              :disabled="!queryParams.supplierId"
+              v-hasPermi="['foundation:material:push']"
+            >推送档案</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
+      </div>
     </el-row>
 
+      <div class="material-table-panel" ref="tablePanel">
       <el-table
         ref="materialTable"
         class="material-main-table"
@@ -295,17 +278,17 @@
         :row-key="getMaterialRowKey"
         @selection-change="handleSelectionChange"
         @sort-change="handleSortChange"
-        height="65vh"
+        :height="mainTableHeight"
         border
         :stripe="materialTableLightMode"
       >
-      <el-table-column type="selection" width="55" align="center" :fixed="materialTableLightMode ? 'left' : false" :reserve-selection="true" />
-      <el-table-column type="index" label="序号" align="center" width="80" key="index" v-if="columns[0].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="material-col-center material-select-col" />
+      <el-table-column type="index" label="序号" align="center" header-align="center" width="80" key="index" v-if="columns[0].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="启用" align="center" prop="isUse" width="72" key="isUse" v-if="columns[12].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
+      <el-table-column label="启用" align="center" header-align="center" prop="isUse" width="72" key="isUse" v-if="columns[12].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
         <template slot-scope="scope">
           <span
             class="material-yn-btn"
@@ -313,7 +296,7 @@
           >{{ isMaterialYesValue(scope.row.isUse) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="计费" align="center" prop="isBilling" width="72" key="isBilling" v-if="columns[19].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
+      <el-table-column label="计费" align="center" header-align="center" prop="isBilling" width="72" key="isBilling" v-if="columns[19].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
         <template slot-scope="scope">
           <span
             class="material-yn-btn"
@@ -336,7 +319,7 @@
           <div class="material-cell-body-left" :title="scope.row.speci || ''">{{ scope.row.speci }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" sortable="custom" :show-overflow-tooltip="materialTableLightMode" resizable class-name="cell-pad-tight"/>
+      <el-table-column label="单位" align="center" header-align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" sortable="custom" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center cell-pad-tight"/>
       <el-table-column label="价格" align="center" prop="price" width="130" key="price" v-if="columns[5].visible" sortable="custom" resizable class-name="material-price-cell cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.price) || '')">{{ formatPrice4(scope.row.price) }}</div>
@@ -393,7 +376,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="高值" align="center" prop="isGz" width="80" key="isGz" v-if="columns[13].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
+      <el-table-column label="高值" align="center" header-align="center" prop="isGz" width="80" key="isGz" v-if="columns[13].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
         <template slot-scope="scope">
           <span
             class="material-yn-btn"
@@ -401,7 +384,7 @@
           >{{ isMaterialYesValue(scope.row.isGz) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="跟台" align="center" prop="isFollow" width="80" key="isFollow" v-if="columns[14].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
+      <el-table-column label="跟台" align="center" header-align="center" prop="isFollow" width="80" key="isFollow" v-if="columns[14].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
         <template slot-scope="scope">
           <span
             class="material-yn-btn"
@@ -409,7 +392,7 @@
           >{{ isMaterialYesValue(scope.row.isFollow) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="集采" align="center" prop="isProcure" width="80" key="isProcure" :show-overflow-tooltip="materialTableLightMode" resizable>
+      <el-table-column label="集采" align="center" header-align="center" prop="isProcure" width="80" key="isProcure" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
         <template slot-scope="scope">
           <span
             class="material-yn-btn"
@@ -450,13 +433,13 @@
         </template>
       </el-table-column>
       <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" :show-overflow-tooltip="materialTableLightMode" resizable/>
-      <!-- 大分页取消固定列：避免左右/上下滚动时同步固定区导致卡顿 -->
-      <el-table-column label="操作" align="center" class-name="material-action-col small-padding fixed-width" width="260" :fixed="materialTableLightMode ? 'right' : false">
+      <!-- 操作列 sticky（单表）：视觉钉右，悬停/滚动与主列同行 -->
+      <el-table-column label="操作" align="center" header-align="center" class-name="material-action-col material-col-center small-padding fixed-width" width="200">
         <template slot-scope="scope">
           <div class="material-row-actions">
             <el-button
               v-if="isZqTcmTenant"
-              size="small"
+              size="mini"
               type="text"
               class="material-row-action-btn"
               :loading="hisSyncLoadingId === scope.row.id"
@@ -465,28 +448,28 @@
               v-hasPermi="['foundation:material:edit']"
             >HIS同步</el-button>
             <el-button
-              size="small"
+              size="mini"
               type="text"
-              class="material-row-action-btn"
+              class="material-row-action-btn material-row-action-btn--copy"
               @click="handleCopy(scope.row)"
               v-hasPermi="['foundation:material:add']"
             >复制</el-button>
             <el-button
-              size="small"
+              size="mini"
               type="text"
-              class="material-row-action-btn"
+              class="material-row-action-btn material-row-action-btn--view"
               @click="handleView(scope.row)"
               v-hasPermi="['foundation:material:query']"
             >查看</el-button>
             <el-button
-              size="small"
+              size="mini"
               type="text"
               class="material-row-action-btn material-row-action-btn--muted"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['foundation:material:edit']"
             >修改</el-button>
             <el-button
-              size="small"
+              size="mini"
               type="text"
               class="material-row-action-btn material-row-action-btn--danger"
               @click="handleDelete(scope.row)"
@@ -496,6 +479,7 @@
         </template>
       </el-table-column>
     </el-table>
+    <div class="material-pagination-wrap" ref="paginationWrap">
     <pagination
       v-show="total>0"
       :total="total"
@@ -504,6 +488,8 @@
       :page-sizes="[10, 20, 30, 50, 100, 200]"
       @pagination="getList"
     />
+    </div>
+      </div>
 
     <!-- 添加或修改耗材产品局部弹窗 -->
     <div v-if="open" class="local-modal-mask">
@@ -2085,7 +2071,9 @@ export default {
       /** 日期框输入原文（失焦前缓存，避免组件先清空非法格式） */
       periodDateTypedRaw: '',
       // 当前激活的标签页：'form' 表单视图，'image' 图片视图
-      activeTab: 'form'
+      activeTab: 'form',
+      /** 主列表表格高度（按可视区动态计算，保证翻页完整显示） */
+      mainTableHeight: 420
     };
   },
   created() {
@@ -2095,7 +2083,82 @@ export default {
     }
     this.getList();
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateMainTableHeight();
+      requestAnimationFrame(() => this.updateMainTableHeight());
+    });
+    window.addEventListener('resize', this.updateMainTableHeight);
+    if (typeof ResizeObserver !== 'undefined') {
+      this._materialLayoutObserver = new ResizeObserver(() => {
+        this.updateMainTableHeight();
+      });
+      this.$nextTick(() => {
+        if (this.$el) this._materialLayoutObserver.observe(this.$el);
+        if (this.$refs.tablePanel) this._materialLayoutObserver.observe(this.$refs.tablePanel);
+      });
+    }
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateMainTableHeight);
+    if (this._materialLayoutObserver) {
+      this._materialLayoutObserver.disconnect();
+      this._materialLayoutObserver = null;
+    }
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    moreSearchTypes: {
+      deep: true,
+      handler() {
+        this.$nextTick(() => this.updateMainTableHeight());
+      }
+    }
+  },
   methods: {
+    /** 按表格卡片剩余高度计算主表高度，保证翻页完整可见 */
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagVisible = this.total > 0;
+      // 预留翻页实际高度 + 额外空隙，避免底栏贴边/被裁
+      const pagH = pagVisible
+        ? Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 12
+        : 0;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        if (this.$refs.materialTable && this.$refs.materialTable.doLayout) {
+          this.$refs.materialTable.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncMaterialActionSticky();
+          requestAnimationFrame(() => this.syncMaterialActionSticky());
+        });
+      });
+    },
+    /** 测量纵向滚动条宽度，供操作列表头 sticky 与 gutter 对齐 */
+    syncMaterialActionSticky() {
+      const table = this.$refs.materialTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--material-v-scrollbar', `${sw}px`);
+    },
+
     /**
      * 将「耗材名称」输入转换为后端筛选参数（不改写输入框本身的值）
      * - 含中文：按名称 name 查，同时带 nameSearch（首字母）
@@ -2223,13 +2286,19 @@ export default {
               if (frozen.length > first) {
                 this.materialList = frozen;
               }
-              this.$nextTick(() => this.restorePageSelection());
+              this.$nextTick(() => {
+                this.restorePageSelection();
+                this.updateMainTableHeight();
+              });
             });
           });
         } else {
           this.materialList = frozen;
           this.loading = false;
-          this.$nextTick(() => this.restorePageSelection());
+          this.$nextTick(() => {
+            this.restorePageSelection();
+            this.updateMainTableHeight();
+          });
         }
       }).catch(() => {
         this.loading = false;
@@ -2598,6 +2667,37 @@ export default {
       this.queryParams.pageNum = 1;
       this.clearCrossPageSelection();
       this.getList();
+    },
+    /** 工具栏「更多操作」 */
+    handleMoreOpsCommand(command) {
+      switch (command) {
+        case 'batchUpdate':
+          this.openBatchUpdateDialog();
+          break;
+        case 'updateReferred':
+          this.handleUpdateReferred();
+          break;
+        case 'batchDelete':
+          this.handleDelete();
+          break;
+        case 'chargeItem':
+          this.openChargeItemDialog();
+          break;
+        case 'importAdd':
+          this.handleMaterialImport('add');
+          break;
+        case 'importUpdate':
+          this.handleMaterialImport('update');
+          break;
+        case 'syncGzToChargeItem':
+          this.handleSyncGzToChargeItem();
+          break;
+        case 'pushArchive':
+          this.handlePushArchive();
+          break;
+        default:
+          break;
+      }
     },
     onQueryUdiNoBlur() {
       this.normalizeQueryTextField('udiNo');
@@ -4247,24 +4347,28 @@ export default {
   padding: 0 !important;
 }
 
-/* 末行不再额外撑高：底部留白由容器 padding-bottom 提供，保证与顶部一致 */
+/* 末行保留与其它行一致的底边距，避免日期框底边贴住卡片边 */
 .material-page-container .form-fields-container .el-row:last-child .el-form-item {
-  margin-bottom: 0 !important;
+  margin-bottom: 6px !important;
 }
 
 .form-fields-container .el-form-item__content {
   line-height: 32px !important;
 }
 
-/* 查询区输入框恢复 Element small 默认高度（32px），不要压矮 */
+/* 查询区输入框恢复 Element small 默认高度（32px），不要压矮；日期框勿裁底边 */
 .form-fields-container .el-input,
 .form-fields-container .el-select .el-input,
 .form-fields-container .el-date-editor {
   height: 32px !important;
 }
+.form-fields-container .el-date-editor {
+  overflow: visible !important;
+}
 .form-fields-container .el-input__inner {
   height: 32px !important;
   line-height: 32px !important;
+  box-sizing: border-box !important;
 }
 
 .form-fields-container .el-select .el-input__inner {
@@ -4456,28 +4560,37 @@ export default {
   flex-wrap: nowrap;
 }
 
-/* 页面左右仅留 8px，使顶部搜索容器更宽；底部少留白 */
+/* 页面四周留白一致：上下左右均为 8px */
 .material-page-container.app-container {
   position: relative;
-  min-height: calc(100vh - 84px);
+  padding-top: 8px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
-  padding-bottom: 8px !important;
 }
 
-/* 翻页：更贴近表格（覆盖 Pagination 组件默认 padding: 32px 16px） */
+/* 翻页：覆盖 ruoyi 全局 height:25px + absolute，避免翻页被裁切 */
 .material-page-container .pagination-container {
+  height: auto !important;
+  min-height: 52px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  transform: translateY(-6px);
+  padding: 10px 14px 14px !important;
+  transform: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.material-page-container .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
 }
 
 /* 查询容器样式 */
 .query-container {
-  margin-top: -15px;
-  margin-bottom: 8px;
+  margin-top: 0;
+  margin-bottom: 4px;
 }
 
 /* 日期：刚好显示完整 yyyy-MM-dd（含日历图标） */
@@ -4515,8 +4628,9 @@ export default {
 }
 .material-page-container .more-search-field-label,
 .material-page-container .more-search-label {
-  color: #606266;
+  color: #64748b;
   font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
   display: inline-flex;
@@ -4543,7 +4657,10 @@ export default {
   width: 100%;
 }
 .material-page-container .query-row-second {
-  margin-bottom: 2px;
+  margin-bottom: 0;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid #eef2f7;
 }
 .material-page-container .query-row-second-inner {
   display: flex;
@@ -4552,10 +4669,11 @@ export default {
   overflow-x: auto;
   overflow-y: hidden;
   width: 100%;
+  gap: 2px;
 }
 .material-page-container .query-row-second-inner .query-item-inline {
   flex-shrink: 0;
-  margin-right: 8px;
+  margin-right: 6px;
   margin-bottom: 0;
 }
 
@@ -4642,13 +4760,13 @@ export default {
   min-width: 0; /* 配合省略号 */
 }
 
-/* 查询条件容器框样式：左右内边距 8px，容器更宽；底部边框需完整可见 */
+/* 查询条件容器：白底卡片；底部多留一点，避免日期等输入框底边贴边 */
 .form-fields-container {
-  background: #F5F7FA;
-  padding: 8px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
-  border: 1px solid #DCDFE6;
+  background: #fff;
+  padding: 8px 14px 12px;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04);
+  border: 1px solid #e8ecf1;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -4656,7 +4774,29 @@ export default {
 }
 .material-page-container .material-toolbar-row {
   margin-top: 0 !important;
-  padding-top: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 8px;
+}
+
+.material-page-container .material-toolbar-row > .el-col {
+  width: auto !important;
+  max-width: none !important;
+  flex: 0 0 auto;
+  float: none !important;
+}
+
+.material-page-container .material-toolbar-divider {
+  display: inline-block;
+  width: 1px;
+  height: 22px;
+  margin: 0 10px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 /* 顶部查询条件：框内上下对齐（内容区统一居中） */
@@ -4951,14 +5091,13 @@ export default {
   overflow-wrap: normal;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: center;
+  text-align: left;
   line-height: 22px;
   width: 100%;
   box-sizing: border-box;
-  /* 兜底：有些列使用自定义 div 渲染，强制垂直居中 */
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .material-cell-body-left {
@@ -4993,8 +5132,16 @@ export default {
   justify-content: flex-start !important;
 }
 
-.material-page-container .el-table td.material-action-col .cell,
 .material-page-container .el-table th.material-action-col .cell {
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box;
+}
+
+.material-page-container .el-table td.material-action-col .cell {
   padding-left: 4px !important;
   padding-right: 4px !important;
   display: flex !important;
@@ -5013,14 +5160,12 @@ export default {
   align-items: center;
   justify-content: center;
   flex-wrap: nowrap;
-  gap: 0 2px;
-  width: 100%;
+  gap: 0;
+  width: auto;
   max-width: 100%;
+  margin: 0 auto;
   white-space: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  overflow: hidden;
 }
 
 .material-row-actions::-webkit-scrollbar {
@@ -5047,19 +5192,45 @@ export default {
 }
 
 .material-page-container .material-row-action-btn.el-button--text {
-  padding: 2px 3px;
-  margin: 0;
-  font-size: 12px;
-  line-height: 18px;
-  min-height: 24px;
-  height: 24px;
-  font-weight: 500;
+  padding: 0 3px !important;
+  margin: 0 !important;
+  font-size: 14px !important;
+  line-height: 22px !important;
+  min-height: 22px !important;
+  height: auto !important;
+  font-weight: 400;
   flex-shrink: 0;
+  border-radius: 0;
+  transition: none !important;
+}
+
+.material-page-container .material-row-actions .el-button + .el-button {
+  margin-left: 0 !important;
 }
 
 .material-page-container .material-row-action-btn.el-button--text:hover,
 .material-page-container .material-row-action-btn.el-button--text:focus {
-  color: #409eff;
+  color: #2563eb;
+  background-color: #eff6ff;
+}
+
+/* 复制：主色蓝；查看：青绿，便于区分 */
+.material-page-container .material-row-action-btn--copy.el-button--text {
+  color: #2563eb;
+}
+.material-page-container .material-row-action-btn--copy.el-button--text:hover,
+.material-page-container .material-row-action-btn--copy.el-button--text:focus {
+  color: #1d4ed8;
+  background-color: #eff6ff;
+}
+
+.material-page-container .material-row-action-btn--view.el-button--text {
+  color: #0d9488;
+}
+.material-page-container .material-row-action-btn--view.el-button--text:hover,
+.material-page-container .material-row-action-btn--view.el-button--text:focus {
+  color: #0f766e;
+  background-color: #f0fdfa;
 }
 
 .material-page-container .material-row-action-btn--muted.el-button--text {
@@ -5086,13 +5257,13 @@ export default {
   overflow-wrap: normal;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: center;
+  text-align: left;
   line-height: 22px;
   width: 100%;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .material-top-cell {
@@ -5108,13 +5279,13 @@ export default {
   vertical-align: middle !important;
 }
 
-/* 列间距：默认更舒展；按列单独收紧（cell-pad-tight） */
-.material-page-container .el-table th .cell,
-.material-page-container .el-table td .cell {
+/* 列间距：主表明细统一收紧；其它表格保持原样 */
+.material-page-container .el-table:not(.material-main-table) th .cell,
+.material-page-container .el-table:not(.material-main-table) td .cell {
   padding-left: 10px !important;
   padding-right: 10px !important;
 }
-.material-page-container .el-table .cell-pad-tight .cell {
+.material-page-container .material-main-table .cell-pad-tight .cell {
   padding-left: 4px !important;
   padding-right: 4px !important;
 }
@@ -5455,29 +5626,15 @@ export default {
   line-height: 30px;
 }
 
-/* 表格滚动条样式 - 加粗滚动条 */
-/* 确保固定列正常显示 */
-.el-table__fixed-right {
-  z-index: 12 !important;
-}
-
-.el-table__fixed-right .el-table__body-wrapper {
-  z-index: 12 !important;
+/* 表格滚动条样式 - 固定加粗，不随 hover 变粗 */
+.material-page-container .material-main-table .el-table__body-wrapper {
+  z-index: 2;
 }
 
 .el-table__body-wrapper::-webkit-scrollbar,
 .el-table__fixed-body-wrapper::-webkit-scrollbar,
 .el-table__fixed-right::-webkit-scrollbar,
 .el-table__fixed::-webkit-scrollbar {
-  width: 3px !important;
-  height: 6px !important;
-  transition: width 0.2s ease, height 0.2s ease;
-}
-
-.el-table__body-wrapper:hover::-webkit-scrollbar,
-.el-table__fixed-body-wrapper:hover::-webkit-scrollbar,
-.el-table__fixed-right:hover::-webkit-scrollbar,
-.el-table__fixed:hover::-webkit-scrollbar {
   width: 8px !important;
   height: 12px !important;
 }
@@ -5486,14 +5643,6 @@ export default {
 .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
 .el-table__fixed-right::-webkit-scrollbar:vertical,
 .el-table__fixed::-webkit-scrollbar:vertical {
-  width: 3px !important;
-  transition: width 0.2s ease;
-}
-
-.el-table__body-wrapper:hover::-webkit-scrollbar:vertical,
-.el-table__fixed-body-wrapper:hover::-webkit-scrollbar:vertical,
-.el-table__fixed-right:hover::-webkit-scrollbar:vertical,
-.el-table__fixed:hover::-webkit-scrollbar:vertical {
   width: 8px !important;
 }
 
@@ -5501,14 +5650,6 @@ export default {
 .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
 .el-table__fixed-right::-webkit-scrollbar:horizontal,
 .el-table__fixed::-webkit-scrollbar:horizontal {
-  height: 6px !important;
-  transition: height 0.2s ease;
-}
-
-.el-table__body-wrapper:hover::-webkit-scrollbar:horizontal,
-.el-table__fixed-body-wrapper:hover::-webkit-scrollbar:horizontal,
-.el-table__fixed-right:hover::-webkit-scrollbar:horizontal,
-.el-table__fixed:hover::-webkit-scrollbar:horizontal {
   height: 12px !important;
 }
 
@@ -5524,28 +5665,19 @@ export default {
 .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
 .el-table__fixed-right::-webkit-scrollbar-thumb,
 .el-table__fixed::-webkit-scrollbar-thumb {
-  background: #c1c1c1 !important;
+  background: #a8a8a8 !important;
   border-radius: 3px !important;
   min-width: 2px !important;
   min-height: 4px !important;
-  /* 通过background-clip和padding来减小滚动条滑块视觉长度 */
   background-clip: padding-box;
   border: 2px solid transparent;
-  transition: background 0.3s ease;
-}
-
-.el-table__body-wrapper:hover::-webkit-scrollbar-thumb,
-.el-table__fixed-body-wrapper:hover::-webkit-scrollbar-thumb,
-.el-table__fixed-right:hover::-webkit-scrollbar-thumb,
-.el-table__fixed:hover::-webkit-scrollbar-thumb {
-  background: #a8a8a8 !important;
 }
 
 .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
 .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
 .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
 .el-table__fixed::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8 !important;
+  background: #909090 !important;
 }
 
 /* 针对Element UI表格的滚动条组件 */
@@ -5584,7 +5716,7 @@ export default {
   position: relative;
 }
 
-/* 表格线条淡色（参考耗材对照明细框）：使用 #EBEEF5 细线 */
+/* 表格线条：主表更淡；其它表保持原细线 */
 .material-page-container .el-table {
   border: 1px solid #EBEEF5 !important;
 }
@@ -5606,6 +5738,55 @@ export default {
 
 .material-page-container .el-table td:first-child {
   border-left: 1px solid #EBEEF5 !important;
+}
+
+.material-page-container .material-main-table.el-table,
+.material-page-container .material-main-table {
+  border-color: #e8ecf1 !important;
+}
+
+.material-page-container .material-main-table th {
+  border-right-color: #eef2f7 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding: 4px 0 !important;
+  height: 34px !important;
+}
+
+.material-page-container .material-main-table td {
+  border-right-color: #f1f5f9 !important;
+  border-bottom-color: #f1f5f9 !important;
+  padding: 10px 0 !important;
+}
+
+/* 表头居中且行高收紧；明细默认靠左，指定列仍居中 */
+.material-page-container .material-main-table th .cell {
+  text-align: center !important;
+  justify-content: center !important;
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.material-page-container .material-main-table td .cell {
+  text-align: left !important;
+  justify-content: flex-start !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+/* 勾选列 + 序号/启用/计费/单位/高值/集采/跟台：明细居中 */
+.material-page-container .material-main-table th.el-table-column--selection .cell,
+.material-page-container .material-main-table td.el-table-column--selection .cell,
+.material-page-container .material-main-table td.material-col-center .cell {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.material-page-container .material-main-table td.material-col-center .cell > * {
+  justify-content: center !important;
+  text-align: center !important;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .material-page-container .el-table::before {
@@ -5637,65 +5818,128 @@ export default {
   transition: none !important;
 }
 
-.material-page-container .material-main-table--heavy .el-table__body tr:hover > td {
-  background-color: #f5f7fa !important;
+/* 勾选列 sticky（单表）：视觉钉左，横滑时仍可选 */
+.material-page-container .material-main-table th.material-select-col,
+.material-page-container .material-main-table td.material-select-col,
+.material-page-container .material-main-table th.el-table-column--selection,
+.material-page-container .material-main-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
 }
-
-/* 固定操作列必须不透明，否则横向滚动时后面的「材料类别」等会透出来 */
-.material-page-container .material-main-table .el-table__fixed-right,
-.material-page-container .material-main-table .el-table__fixed-right-patch {
+.material-page-container .material-main-table td.material-select-col,
+.material-page-container .material-main-table td.el-table-column--selection {
   background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
 }
-.material-page-container .material-main-table .el-table__fixed-right .el-table__body td {
-  background-color: #fff !important;
+.material-page-container .material-main-table th.material-select-col,
+.material-page-container .material-main-table th.el-table-column--selection {
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
 }
-.material-page-container .material-main-table .el-table__fixed-right .el-table__body tr.el-table__row--striped td {
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.material-select-col,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.material-select-col .cell,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection .cell {
   background-color: #fafafa !important;
 }
-.material-page-container .material-main-table .el-table__fixed-right .el-table__body tr:hover > td {
-  background-color: #f5f7fa !important;
+.material-page-container .material-main-table td.material-select-col .cell,
+.material-page-container .material-main-table td.el-table-column--selection .cell,
+.material-page-container .material-main-table th.material-select-col .cell,
+.material-page-container .material-main-table th.el-table-column--selection .cell {
+  background-color: transparent !important;
 }
-.material-page-container .material-main-table td.material-action-col,
-.material-page-container .material-main-table td.material-action-col .cell {
+
+/* 操作列 sticky（单表）：视觉钉右；原生 tr:hover 整行同时变蓝 */
+.material-page-container .material-main-table.el-table {
+  position: relative;
+}
+/* 表头 gutter 盖住纵向滚动条上方，与表头同色 */
+.material-page-container .material-main-table .el-table__header th.gutter {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+.material-page-container .material-main-table th.material-action-col,
+.material-page-container .material-main-table td.material-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+.material-page-container .material-main-table td.material-action-col {
+  right: 0 !important;
   background-color: #fff !important;
-  overflow: hidden !important;
+  border-left: 1px solid #e2e8f0;
+}
+.material-page-container .material-main-table th.material-action-col {
+  right: var(--material-v-scrollbar, 0px) !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
 }
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.material-action-col,
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.material-action-col .cell {
   background-color: #fafafa !important;
 }
-.material-page-container .material-main-table .el-table__body tr:hover > td.material-action-col,
-.material-page-container .material-main-table .el-table__body tr:hover > td.material-action-col .cell {
-  background-color: #f5f7fa !important;
+.material-page-container .material-main-table td.material-action-col .cell,
+.material-page-container .material-main-table th.material-action-col .cell {
+  background-color: transparent !important;
+  overflow: hidden !important;
+}
+.material-page-container .material-main-table .el-table__body tr > td,
+.material-page-container .material-main-table .el-table__body tr > td .cell {
+  transition: none !important;
 }
 
-/* 列表主表表头：淡蓝色（仅耗材产品维护主明细表，弹窗/导入等其它表格不受影响）
-   选择器需压过 Element UI 的 th.el-table__cell.is-leaf 默认灰底 */
+/* 整行悬停（含 sticky 勾选列 / 操作列）立刻同色 */
+.material-page-container .material-main-table .el-table__body tr:hover > td,
+.material-page-container .material-main-table .el-table__body tr:hover > td .cell,
+.material-page-container .material-main-table .el-table__body tr:hover > td.material-select-col,
+.material-page-container .material-main-table .el-table__body tr:hover > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr:hover > td.material-select-col .cell,
+.material-page-container .material-main-table .el-table__body tr:hover > td.el-table-column--selection .cell,
+.material-page-container .material-main-table .el-table__body tr:hover > td.material-action-col,
+.material-page-container .material-main-table .el-table__body tr:hover > td.material-action-col .cell {
+  background-color: #D6EBFF !important;
+}
+
+/* 列表主表表头：冷静灰蓝，行高收紧，表头文字居中 */
 .material-page-container .material-main-table .el-table__header-wrapper th,
 .material-page-container .material-main-table .el-table__header-wrapper th.el-table__cell,
 .material-page-container .material-main-table .el-table__fixed-header-wrapper th,
 .material-page-container .material-main-table .el-table__fixed-header-wrapper th.el-table__cell,
 .material-page-container .material-main-table .el-table__fixed-right-header-wrapper th,
 .material-page-container .material-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
-  background-color: #D6EAF8 !important;
-  color: #303133 !important;
-  font-size: 15px !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
-  border-right-color: #B8D4E8 !important;
-  border-bottom-color: #B8D4E8 !important;
+  letter-spacing: 0.02em;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
 }
 
 .material-page-container .material-main-table .el-table__header-wrapper th:first-child,
 .material-page-container .material-main-table .el-table__fixed-header-wrapper th:first-child {
-  border-left-color: #B8D4E8 !important;
+  border-left-color: #e2e8f0 !important;
 }
 
 .material-page-container .material-main-table .el-table__header-wrapper th .cell,
 .material-page-container .material-main-table .el-table__fixed-header-wrapper th .cell,
 .material-page-container .material-main-table .el-table__fixed-right-header-wrapper th .cell {
-  color: #303133 !important;
-  font-size: 15px !important;
+  color: #334155 !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
+  text-align: center !important;
+  justify-content: center !important;
+  line-height: 20px !important;
 }
 
 .material-page-container .material-main-table .sort-caret.ascending {
@@ -5760,25 +6004,191 @@ export default {
 .timeline-item-desc { font-size: 12px; color: #606266; line-height: 1.4; word-break: break-all; }
 .el-timeline { padding-left: 8px; }
 
-/* 列表「启用」列：是/否按钮式展示 */
+/* 列表「启用/计费」等：状态胶囊，替代实心蓝灰色块 */
 .material-yn-btn {
   display: inline-block;
   min-width: 36px;
-  padding: 2px 10px;
-  border-radius: 4px;
+  padding: 1px 10px;
+  border-radius: 999px;
   font-size: 12px;
   line-height: 20px;
   text-align: center;
-  color: #fff;
   cursor: default;
   user-select: none;
   box-sizing: border-box;
+  font-weight: 500;
+  border: 1px solid transparent;
 }
 .material-yn-btn--yes {
-  background-color: #409eff;
+  color: #1d4ed8;
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
 }
 .material-yn-btn--no {
-  background-color: #909399;
+  color: #64748b;
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+</style>
+
+<style>
+/* 本页质感：浅底 + 工具栏分组 + 主表卡片化（仅 material-page-container） */
+.app-container.material-page-container {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #f4f6f9 0%, #eef1f6 100%);
+  min-height: calc(100vh - 84px);
+  height: calc(100vh - 84px);
+  max-height: calc(100vh - 84px);
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-top: 8px !important;
+  padding-bottom: 14px !important;
+}
+
+.app-container.material-page-container .query-container {
+  flex: 0 0 auto;
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.app-container.material-page-container .material-toolbar-row {
+  flex: 0 0 auto;
+  margin-bottom: 4px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding: 8px 14px !important;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.app-container.material-page-container .material-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+}
+
+.app-container.material-page-container .material-pagination-wrap {
+  flex: 0 0 auto;
+}
+
+.app-container.material-page-container .material-toolbar-row .el-button {
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.app-container.material-page-container .material-toolbar-row .el-button--primary:not(.is-plain) {
+  border-radius: 6px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.18);
+}
+
+.app-container.material-page-container .material-toolbar-row .el-button--primary:not(.is-plain):hover,
+.app-container.material-page-container .material-toolbar-row .el-button--primary:not(.is-plain):focus {
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.22);
+}
+
+.app-container.material-page-container .material-toolbar-row .el-button--primary.is-plain {
+  border-radius: 6px;
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #334155;
+  font-weight: 500;
+}
+
+.app-container.material-page-container .material-toolbar-row .el-button--primary.is-plain:hover,
+.app-container.material-page-container .material-toolbar-row .el-button--primary.is-plain:focus {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.app-container.material-page-container .material-toolbar-divider {
+  width: 1px;
+  height: 22px;
+  margin: 0 10px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.app-container.material-page-container .material-toolbar-row .top-right-btn {
+  margin-left: 0;
+}
+
+.app-container.material-page-container .material-toolbar-right {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-container.material-page-container .material-more-ops {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.app-container.material-page-container .material-more-ops .el-button {
+  margin-left: 0;
+}
+
+.app-container.material-page-container .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.app-container.material-page-container .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+
+.app-container.material-page-container .material-main-table {
+  flex: 0 0 auto;
+  background: #fff;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+  box-shadow: none;
+  border: none;
+  border-bottom: none;
+}
+
+/* 筛选区输入更干净 */
+.app-container.material-page-container .form-fields-container .el-input__inner,
+.app-container.material-page-container .form-fields-container .el-range-editor.el-input__inner {
+  border-color: #e2e8f0;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.app-container.material-page-container .form-fields-container .el-input__inner:hover,
+.app-container.material-page-container .form-fields-container .el-range-editor.el-input__inner:hover {
+  border-color: #cbd5e1;
+}
+
+.app-container.material-page-container .form-fields-container .el-input__inner:focus,
+.app-container.material-page-container .form-fields-container .el-range-editor.is-active {
+  border-color: #93c5fd !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
 }
 </style>
 

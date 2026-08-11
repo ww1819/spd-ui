@@ -163,6 +163,13 @@
             <el-button
               size="small"
               type="text"
+              @click="handleView(scope.row)"
+              v-if="scope.row.goodsStatus == 2"
+              style="padding: 0 5px; margin: 0;"
+            >查看</el-button>
+            <el-button
+              size="small"
+              type="text"
               @click="handlePrint(scope.row,true)"
               v-if="scope.row.goodsStatus == 2"
               style="padding: 0 5px; margin: 0;"
