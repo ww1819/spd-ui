@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container focus18-page">
     <el-row :gutter="20">
       <!-- 左侧根目录分类 -->
       <el-col :span="4">
@@ -102,82 +102,54 @@
       </el-col>
     </el-row>
 
-    <div v-if="open" class="local-modal-mask">
-      <div class="local-modal-content">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-        <el-form ref="form" :model="form" :rules="rules" label-width="180px">
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="耗材类别" prop="category">
-                <el-input v-model="form.category" placeholder="耗材类别" maxlength="100" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="耗材分类代码" prop="classCode">
-                <el-input v-model="form.classCode" placeholder="耗材分类代码" maxlength="100" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="一级分类(学科/品类)" prop="level1">
-                <el-input v-model="form.level1" placeholder="一级分类" maxlength="200" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="二级分类(用途/品目)" prop="level2">
-                <el-input v-model="form.level2" placeholder="二级分类" maxlength="200" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="三级分类(部位/功能/品种)" prop="level3">
-                <el-input v-model="form.level3" placeholder="三级分类" maxlength="200" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="通用名代码" prop="genericCode">
-                <el-input v-model="form.genericCode" placeholder="通用名代码" maxlength="100" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="医保通用名" prop="medicalGenericName">
-                <el-input v-model="form.medicalGenericName" placeholder="医保通用名" maxlength="200" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="材质代码" prop="materialCode">
-                <el-input v-model="form.materialCode" placeholder="材质代码" maxlength="100" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="材质" prop="material">
-                <el-input v-model="form.material" placeholder="材质" maxlength="200" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="特征代码" prop="featureCode">
-                <el-input v-model="form.featureCode" placeholder="特征代码" maxlength="100" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="24">
-              <el-form-item label="特征参数" prop="featureParam">
-                <el-input v-model="form.featureParam" placeholder="特征参数" maxlength="500" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-form-item label="备注" prop="remark">
-            <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
-          </el-form-item>
-        </el-form>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+    <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
+    <div v-if="open" class="focus18-drawer-mask" @click.self="cancel">
+      <div class="focus18-drawer-panel" @click.stop>
+        <div class="focus18-drawer-header">
+          <span class="focus18-drawer-title">{{ title }}</span>
+          <i class="el-icon-close focus18-drawer-close" @click="cancel" />
+        </div>
+        <div class="focus18-drawer-body">
+          <el-form ref="form" :model="form" :rules="rules" label-width="180px">
+            <el-form-item label="耗材类别" prop="category">
+              <el-input v-model="form.category" placeholder="耗材类别" maxlength="100" />
+            </el-form-item>
+            <el-form-item label="耗材分类代码" prop="classCode">
+              <el-input v-model="form.classCode" placeholder="耗材分类代码" maxlength="100" />
+            </el-form-item>
+            <el-form-item label="一级分类(学科/品类)" prop="level1">
+              <el-input v-model="form.level1" placeholder="一级分类" maxlength="200" />
+            </el-form-item>
+            <el-form-item label="二级分类(用途/品目)" prop="level2">
+              <el-input v-model="form.level2" placeholder="二级分类" maxlength="200" />
+            </el-form-item>
+            <el-form-item label="三级分类(部位/功能/品种)" prop="level3">
+              <el-input v-model="form.level3" placeholder="三级分类" maxlength="200" />
+            </el-form-item>
+            <el-form-item label="通用名代码" prop="genericCode">
+              <el-input v-model="form.genericCode" placeholder="通用名代码" maxlength="100" />
+            </el-form-item>
+            <el-form-item label="医保通用名" prop="medicalGenericName">
+              <el-input v-model="form.medicalGenericName" placeholder="医保通用名" maxlength="200" />
+            </el-form-item>
+            <el-form-item label="材质代码" prop="materialCode">
+              <el-input v-model="form.materialCode" placeholder="材质代码" maxlength="100" />
+            </el-form-item>
+            <el-form-item label="材质" prop="material">
+              <el-input v-model="form.material" placeholder="材质" maxlength="200" />
+            </el-form-item>
+            <el-form-item label="特征代码" prop="featureCode">
+              <el-input v-model="form.featureCode" placeholder="特征代码" maxlength="100" />
+            </el-form-item>
+            <el-form-item label="特征参数" prop="featureParam">
+              <el-input v-model="form.featureParam" placeholder="特征参数" maxlength="500" />
+            </el-form-item>
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
+            </el-form-item>
+          </el-form>
+        </div>
+        <div class="focus18-drawer-footer">
           <el-button type="primary" @click="submitForm">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
@@ -387,6 +359,10 @@ export default {
 </script>
 
 <style scoped>
+.focus18-page {
+  position: relative;
+  min-height: calc(100vh - 84px);
+}
 .tree-card {
   height: calc(100vh - 160px);
   overflow: auto;
@@ -410,26 +386,57 @@ export default {
 .custom-tree-node i {
   color: #409EFF;
 }
-.local-modal-mask {
-  position: fixed;
+.focus18-drawer-mask {
+  position: absolute;
   left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  justify-content: flex-end;
 }
-.local-modal-content {
-  background-color: #fff;
-  padding: 24px;
-  border-radius: 6px;
-  min-width: 860px;
-  max-width: 92vw;
-  max-height: 90vh;
+.focus18-drawer-panel {
+  width: 560px;
+  max-width: 100%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+.focus18-drawer-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+.focus18-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.focus18-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
+}
+.focus18-drawer-close:hover {
+  color: #409EFF;
+}
+.focus18-drawer-body {
+  flex: 1;
   overflow: auto;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: 12px 16px 8px;
+}
+.focus18-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
 }
 </style>

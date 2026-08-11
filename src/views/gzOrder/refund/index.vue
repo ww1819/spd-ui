@@ -433,7 +433,7 @@
       </template>
       <!-- 打印预览 -->
       <template v-else-if=" modalObj.component === 'window-print-preview' ">
-        <gz-order-print v-if=" modalObj.form.row && modalObj.form.row.detailList && modalObj.form.row.detailList.length > 0 " :key="`print-${modalObj.form.row.goodsNo || Date.now()}-${modalObj.form.orientation || 'landscape'}-${modalObj.form.row.detailList.length}`" :row=" modalObj.form.row " :orientation=" modalObj.form.orientation || 'landscape' " :printType="'refund'" ref="receiptOrderPrintRef"></gz-order-print>
+        <gz-order-print v-if=" modalObj.form.row && modalObj.form.row.detailList && modalObj.form.row.detailList.length > 0 " :key="`print-${modalObj.form.row.goodsNo || Date.now()}-${modalObj.form.orientation || 'landscape'}-${modalObj.form.row.detailList.length}`" :row=" modalObj.form.row " :orientation=" modalObj.form.orientation || 'landscape' " :printType="'refundStock'" ref="receiptOrderPrintRef"></gz-order-print>
         <div v-else-if=" modalObj.form.row " style="padding: 20px; text-align: center; color: #999;">
           <p>正在加载打印数据...</p>
         </div>
@@ -445,7 +445,7 @@
     </el-dialog>
     <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
     <div v-show="false">
-      <gz-order-print v-if="printRowData" :row="printRowData" :orientation="printOrientation || 'landscape'" :printType="'refund'" ref="receiptOrderPrintRefAuto"></gz-order-print>
+      <gz-order-print v-if="printRowData" :row="printRowData" :orientation="printOrientation || 'landscape'" :printType="'refundStock'" ref="receiptOrderPrintRefAuto"></gz-order-print>
     </div>
 
     <!-- 3、使用组件 -->
@@ -1501,10 +1501,21 @@ export default {
 
         return {
           orderNo: row.goodsNo,
-          supplierName: row.supplier ? row.supplier.name : '',
-          warehouseName: row.warehouse ? row.warehouse.name : '',
-          orderDate: row.goodsDate,
-          auditDate: row.auditDate,
+          departmentName: (row.department && row.department.name)
+            || row.departmentName
+            || (response.data.department && response.data.department.name)
+            || response.data.departmentName
+            || '',
+          supplierName: (row.supplier && row.supplier.name)
+            || row.supplierName
+            || (response.data.supplier && response.data.supplier.name)
+            || '',
+          warehouseName: (row.warehouse && row.warehouse.name)
+            || row.warehouseName
+            || (response.data.warehouse && response.data.warehouse.name)
+            || '',
+          orderDate: row.goodsDate || response.data.goodsDate,
+          auditDate: row.auditDate || response.data.auditDate,
           totalAmt: totalAmt,
           totalQty: totalQty,
           totalAmtConverter: totalAmtConverter,

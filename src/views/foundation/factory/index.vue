@@ -176,63 +176,46 @@
       </el-col>
     </el-row>
 
-    <!-- 添加或修改厂家维护对话框 -->
-    <div v-if="open" class="local-modal-mask">
-      <div class="local-modal-content">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
-          <span>{{ title }}</span>
-          <el-button type="text" @click="cancel" style="font-size:14px;padding:0;color:#909399;">关闭</el-button>
+    <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
+    <div v-if="open" class="page-drawer-mask" @click.self="cancel">
+      <div class="page-drawer-panel" @click.stop>
+        <div class="page-drawer-header">
+          <span class="page-drawer-title">{{ title }}</span>
+          <i class="el-icon-close page-drawer-close" @click="cancel" />
         </div>
-        <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-          <el-row>
-            <el-col :span="6">
-              <el-form-item label="厂家编码" prop="factoryCode">
-                <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="厂家编码（不填自动生成）" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="厂家名称" prop="factoryName">
-                <el-input v-model="form.factoryName" @input="factoryNameChange" placeholder="厂家名称" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="厂家简码" prop="factoryReferredCode">
-                <el-input v-model="form.factoryReferredCode" :disabled="true" placeholder="厂家名称" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="使用状态" prop="factoryStatus">
-                <el-select v-model="form.factoryStatus" placeholder="使用状态" style="width: 100%">
-                  <el-option
-                    v-for="dict in dict.type.is_use_status"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  ></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-          <el-row>
-            <el-col :span="6">
-              <el-form-item label="厂家联系方式" prop="factoryContact">
-                <el-input v-model="form.factoryContact" placeholder="厂家联系方式" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="厂家地址" prop="factoryAddress">
-                <el-input v-model="form.factoryAddress" type="textarea" placeholder="厂家地址" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="备注" prop="remark">
-                <el-input v-model="form.remark" type="textarea" placeholder="备注" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
-        <div class="modal-footer-fixed">
+        <div class="page-drawer-body">
+          <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+            <el-form-item label="厂家编码" prop="factoryCode">
+              <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="厂家编码（不填自动生成）" />
+            </el-form-item>
+            <el-form-item label="厂家名称" prop="factoryName">
+              <el-input v-model="form.factoryName" @input="factoryNameChange" placeholder="厂家名称" />
+            </el-form-item>
+            <el-form-item label="厂家简码" prop="factoryReferredCode">
+              <el-input v-model="form.factoryReferredCode" :disabled="true" placeholder="厂家名称" />
+            </el-form-item>
+            <el-form-item label="使用状态" prop="factoryStatus">
+              <el-select v-model="form.factoryStatus" placeholder="使用状态" style="width: 100%">
+                <el-option
+                  v-for="dict in dict.type.is_use_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="厂家联系方式" prop="factoryContact">
+              <el-input v-model="form.factoryContact" placeholder="厂家联系方式" />
+            </el-form-item>
+            <el-form-item label="厂家地址" prop="factoryAddress">
+              <el-input v-model="form.factoryAddress" type="textarea" :rows="2" placeholder="厂家地址" />
+            </el-form-item>
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
+            </el-form-item>
+          </el-form>
+        </div>
+        <div class="page-drawer-footer">
           <el-button type="primary" @click="submitForm">保 存</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
@@ -707,16 +690,75 @@ export default {
 .local-modal-content {
   background: #fff;
   border-radius: 6px;
-  width: 100% !important;
-  max-width: 1900px !important;
-  min-width: 1700px !important;
-  max-height: 92%;
-  min-height: 870px;
-  display: flex;
-  flex-direction: column;
   padding: 24px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   overflow-y: auto;
+  max-height: 90%;
+}
+
+.page-drawer-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.page-drawer-panel {
+  width: 520px;
+  max-width: 100%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+
+.page-drawer-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.page-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.page-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
+}
+
+.page-drawer-close:hover {
+  color: #409EFF;
+}
+
+.page-drawer-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 16px 8px;
+}
+
+.page-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
+
+.page-drawer-footer .el-button {
+  margin: 0 8px;
 }
 
 /* 厂家卡片样式 */
@@ -802,30 +844,11 @@ export default {
   overflow-x: auto;
 }
 
-/* 确保厂家容器有相对定位，以便弹窗正确定位 */
+/* 确保厂家容器有相对定位，以便抽屉正确定位在内容区内 */
 .factory-container {
   position: relative;
   min-height: calc(100vh - 84px);
   width: 100%;
   overflow: visible;
-}
-
-/* 固定底部按钮样式 */
-.modal-footer-fixed {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #fff;
-  padding: 16px 24px;
-  text-align: center;
-  border-top: 1px solid #EBEEF5;
-  margin-top: 20px;
-  z-index: 10;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.modal-footer-fixed .el-button {
-  margin: 0 8px;
 }
 </style>

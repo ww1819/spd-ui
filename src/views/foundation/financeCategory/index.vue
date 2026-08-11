@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container finance-category-page">
     <el-row :gutter="20">
       <!-- 左侧固定高度树形结构 -->
       <el-col :span="4">
@@ -166,82 +166,6 @@
           @pagination="getList"
         />
 
-        <!-- 新增/修改弹窗 -->
-        <div v-if="open" class="local-modal-mask">
-          <div class="local-modal-content">
-            <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="110px">
-              <el-row :gutter="20">
-                <el-col :span="6">
-                  <el-form-item label="财务类别编码" prop="financeCategoryCode">
-                    <el-input v-model="form.financeCategoryCode" :disabled="isDisabled" placeholder="请输入编码" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="6">
-                  <el-form-item label="财务类别名称" prop="financeCategoryName">
-                    <el-input v-model="form.financeCategoryName" placeholder="请输入名称" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="6">
-                  <el-form-item label="名称简码" prop="referredName">
-                    <el-input v-model="form.referredName" placeholder="可点「更新简码」生成" clearable />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="6">
-                  <el-form-item label="使用状态" prop="isUse">
-                    <el-select v-model="form.isUse" placeholder="使用状态" style="width: 100%">
-                      <el-option
-                        v-for="dict in dict.type.is_use_status"
-                        :key="dict.value"
-                        :label="dict.label"
-                        :value="dict.value"
-                      ></el-option>
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="6">
-                  <el-form-item label="HIS系统ID" prop="hisId">
-                    <el-input
-                      v-model="form.hisId"
-                      :disabled="!!form.financeCategoryId"
-                      :placeholder="form.financeCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水新增必填' : '非衡水无需填写')"
-                      clearable
-                    />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row :gutter="20">
-                <el-col :span="12">
-                  <el-form-item label="地址" prop="financeCategoryAddress">
-                    <el-input v-model="form.financeCategoryAddress" placeholder="地址" clearable />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="联系方式" prop="financeCategoryContact">
-                    <el-input v-model="form.financeCategoryContact" placeholder="联系方式" clearable />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row :gutter="20">
-                <el-col :span="12">
-                  <el-form-item label="组织机构ID" prop="tenantId">
-                    <el-input v-model="form.tenantId" disabled placeholder="保存时默认当前组织机构" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="备注" prop="remark">
-                    <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-            </el-form>
-            <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-              <el-button type="primary" @click="submitForm">确 定</el-button>
-              <el-button @click="cancel">取 消</el-button>
-            </div>
-          </div>
-        </div>
-
         <div v-if="upload.open" class="local-modal-mask">
           <div class="local-modal-content" style="width: 520px; min-width: 400px; min-height: auto;">
             <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
@@ -314,6 +238,63 @@
         <el-button @click="importPreview.visible = false">关 闭</el-button>
       </span>
     </el-dialog>
+
+    <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
+    <div v-if="open" class="page-drawer-mask" @click.self="cancel">
+      <div class="page-drawer-panel" @click.stop>
+        <div class="page-drawer-header">
+          <span class="page-drawer-title">{{ title }}</span>
+          <i class="el-icon-close page-drawer-close" @click="cancel" />
+        </div>
+        <div class="page-drawer-body">
+          <el-form ref="form" :model="form" :rules="rules" label-width="110px">
+            <el-form-item label="财务类别编码" prop="financeCategoryCode">
+              <el-input v-model="form.financeCategoryCode" :disabled="isDisabled" placeholder="请输入编码" />
+            </el-form-item>
+            <el-form-item label="财务类别名称" prop="financeCategoryName">
+              <el-input v-model="form.financeCategoryName" placeholder="请输入名称" />
+            </el-form-item>
+            <el-form-item label="名称简码" prop="referredName">
+              <el-input v-model="form.referredName" placeholder="可点「更新简码」生成" clearable />
+            </el-form-item>
+            <el-form-item label="使用状态" prop="isUse">
+              <el-select v-model="form.isUse" placeholder="使用状态" style="width: 100%">
+                <el-option
+                  v-for="dict in dict.type.is_use_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="HIS系统ID" prop="hisId">
+              <el-input
+                v-model="form.hisId"
+                :disabled="!!form.financeCategoryId"
+                :placeholder="form.financeCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水新增必填' : '非衡水无需填写')"
+                clearable
+              />
+            </el-form-item>
+            <el-form-item label="地址" prop="financeCategoryAddress">
+              <el-input v-model="form.financeCategoryAddress" placeholder="地址" clearable />
+            </el-form-item>
+            <el-form-item label="联系方式" prop="financeCategoryContact">
+              <el-input v-model="form.financeCategoryContact" placeholder="联系方式" clearable />
+            </el-form-item>
+            <el-form-item label="组织机构ID" prop="tenantId">
+              <el-input v-model="form.tenantId" disabled placeholder="保存时默认当前组织机构" />
+            </el-form-item>
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
+            </el-form-item>
+          </el-form>
+        </div>
+        <div class="page-drawer-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -648,7 +629,7 @@ export default {
   background-color: #fff;
   padding: 24px;
   border-radius: 6px;
-  min-width: 880px;
+  min-width: 520px;
   max-width: 90vw;
   max-height: 90vh;
   overflow: auto;
@@ -657,5 +638,76 @@ export default {
 .dialog-footer {
   text-align: right;
   margin-top: 16px;
+}
+
+.finance-category-page {
+  position: relative;
+  min-height: calc(100vh - 84px);
+  width: 100%;
+}
+
+.page-drawer-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.page-drawer-panel {
+  width: 520px;
+  max-width: 100%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+
+.page-drawer-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.page-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.page-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
+}
+
+.page-drawer-close:hover {
+  color: #409EFF;
+}
+
+.page-drawer-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 16px 8px;
+}
+
+.page-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
+
+.page-drawer-footer .el-button {
+  margin: 0 8px;
 }
 </style>

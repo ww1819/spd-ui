@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container unit-page">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
       <el-row :gutter="20">
         <el-col :span="6">
@@ -93,48 +93,37 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改单位明细对话框 -->
-    <div v-if="open" class="local-modal-mask">
-      <div class="local-modal-content">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-        <el-form ref="form" :model="form" :rules="rules" label-width="120px">
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="单位编码">
-                <el-input v-model="form.unitCode" placeholder="留空则自动生成D开头的编码" style="width: 100%" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="单位名称" prop="unitName">
-                <el-input v-model="form.unitName" placeholder="单位名称" style="width: 100%" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="启用">
-                <el-switch
-                  v-model="form.delFlag"
-                  :active-value="0"
-                  :inactive-value="1"
-                ></el-switch>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="组织机构ID">
-                <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="24">
-              <el-form-item label="备注" prop="remark">
-                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+    <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
+    <div v-if="open" class="page-drawer-mask" @click.self="cancel">
+      <div class="page-drawer-panel" @click.stop>
+        <div class="page-drawer-header">
+          <span class="page-drawer-title">{{ title }}</span>
+          <i class="el-icon-close page-drawer-close" @click="cancel" />
+        </div>
+        <div class="page-drawer-body">
+          <el-form ref="form" :model="form" :rules="rules" label-width="110px">
+            <el-form-item label="单位编码">
+              <el-input v-model="form.unitCode" placeholder="留空则自动生成D开头的编码" />
+            </el-form-item>
+            <el-form-item label="单位名称" prop="unitName">
+              <el-input v-model="form.unitName" placeholder="单位名称" />
+            </el-form-item>
+            <el-form-item label="启用">
+              <el-switch
+                v-model="form.delFlag"
+                :active-value="0"
+                :inactive-value="1"
+              />
+            </el-form-item>
+            <el-form-item label="组织机构ID">
+              <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
+            </el-form-item>
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选" />
+            </el-form-item>
+          </el-form>
+        </div>
+        <div class="page-drawer-footer">
           <el-button type="primary" @click="submitForm">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
@@ -304,33 +293,74 @@ export default {
 </script>
 
 <style scoped>
-.local-modal-mask {
-  position: fixed;
+.unit-page {
+  position: relative;
+  min-height: calc(100vh - 84px);
+  width: 100%;
+}
+
+.page-drawer-mask {
+  position: absolute;
   left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+}
+
+.page-drawer-panel {
+  width: 520px;
+  max-width: 100%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+
+.page-drawer-header {
+  flex-shrink: 0;
+  display: flex;
   align-items: center;
-  z-index: 1000;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
 }
 
-.local-modal-content {
-  background-color: #fff;
-  padding: 24px;
-  border-radius: 6px;
-  min-width: 900px;
-  width: 900px;
-  max-width: 90vw;
-  max-height: 90vh;
+.page-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.page-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
+}
+
+.page-drawer-close:hover {
+  color: #409EFF;
+}
+
+.page-drawer-body {
+  flex: 1;
   overflow: auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 12px 16px 8px;
 }
 
-.dialog-footer {
-  text-align: right;
-  margin-top: 16px;
+.page-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
+
+.page-drawer-footer .el-button {
+  margin: 0 8px;
 }
 </style>

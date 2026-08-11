@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container material-category-page">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
       <el-row :gutter="20">
         <el-col :span="6">
@@ -137,40 +137,33 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改耗材分类对话框 -->
-    <div v-if="open" class="local-modal-mask">
-      <div class="local-modal-content">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-        <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-          <el-row :gutter="20">
-            <el-col :span="6">
-              <el-form-item label="分类编码" prop="materialCategoryCode">
-                <el-input v-model="form.materialCategoryCode" :disabled="isDisabled" placeholder="分类编码" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="分类名称" prop="materialCategoryName">
-                <el-input v-model="form.materialCategoryName" placeholder="分类名称" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="拼音简码" prop="pinyinCode">
-                <el-input v-model="form.pinyinCode" placeholder="自动生成" disabled />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="分类地址" prop="materialCategoryAddress">
-                <el-input v-model="form.materialCategoryAddress" type="textarea" placeholder="分类地址" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="联系方式" prop="materialCategoryContact">
-                <el-input v-model="form.materialCategoryContact" placeholder="联系方式" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+    <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
+    <div v-if="open" class="material-category-drawer-mask" @click.self="cancel">
+      <div class="material-category-drawer-panel" @click.stop>
+        <div class="material-category-drawer-header">
+          <span class="material-category-drawer-title">{{ title }}</span>
+          <i class="el-icon-close material-category-drawer-close" @click="cancel" />
+        </div>
+        <div class="material-category-drawer-body">
+          <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+            <el-form-item label="分类编码" prop="materialCategoryCode">
+              <el-input v-model="form.materialCategoryCode" :disabled="isDisabled" placeholder="分类编码" />
+            </el-form-item>
+            <el-form-item label="分类名称" prop="materialCategoryName">
+              <el-input v-model="form.materialCategoryName" placeholder="分类名称" />
+            </el-form-item>
+            <el-form-item label="拼音简码" prop="pinyinCode">
+              <el-input v-model="form.pinyinCode" placeholder="自动生成" disabled />
+            </el-form-item>
+            <el-form-item label="分类地址" prop="materialCategoryAddress">
+              <el-input v-model="form.materialCategoryAddress" type="textarea" :rows="2" placeholder="分类地址" />
+            </el-form-item>
+            <el-form-item label="联系方式" prop="materialCategoryContact">
+              <el-input v-model="form.materialCategoryContact" placeholder="联系方式" />
+            </el-form-item>
+          </el-form>
+        </div>
+        <div class="material-category-drawer-footer">
           <el-button type="primary" @click="submitForm">确 定</el-button>
           <el-button @click="cancel">取 消</el-button>
         </div>
@@ -358,32 +351,74 @@ export default {
 </script>
 
 <style scoped>
-.local-modal-mask {
-  position: fixed;
+.material-category-page {
+  position: relative;
+  min-height: calc(100vh - 84px);
+  width: 100%;
+}
+
+.material-category-drawer-mask {
+  position: absolute;
   left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+}
+
+.material-category-drawer-panel {
+  width: 520px;
+  max-width: 100%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+
+.material-category-drawer-header {
+  flex-shrink: 0;
+  display: flex;
   align-items: center;
-  z-index: 1000;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
 }
 
-.local-modal-content {
-  background-color: #fff;
-  padding: 24px;
-  border-radius: 6px;
-  min-width: 600px;
-  max-width: 90vw;
-  max-height: 90vh;
+.material-category-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.material-category-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
+}
+
+.material-category-drawer-close:hover {
+  color: #409EFF;
+}
+
+.material-category-drawer-body {
+  flex: 1;
   overflow: auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 12px 16px 8px;
 }
 
-.dialog-footer {
-  text-align: right;
-  margin-top: 16px;
+.material-category-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
+
+.material-category-drawer-footer .el-button {
+  margin: 0 8px;
 }
 </style>

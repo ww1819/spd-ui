@@ -7,12 +7,16 @@
     v-bind="embedPreview ? {} : { hidden: 'hidden' }"
   >
     <div style="font-size: 22px;text-align: center;">
-      <span v-if="hospitalName">{{ hospitalName }}</span><span v-if="printType === 'refund'">备货退货单</span><span v-else>高值入库单</span>
+      <span v-if="hospitalName">{{ hospitalName }}</span>
+      <span v-if="printType === 'refundStock'">备货退库单</span>
+      <span v-else-if="printType === 'refund'">备货退货单</span>
+      <span v-else>高值入库单</span>
     </div>
     <div class="summary">
       <div class="col1" style="width:45%">单号: {{ row.orderNo }}</div>
       <div class="col1" style="width:30%">仓库: {{ row.warehouseName }}</div>
-      <div class="col1" style="width:25%">供应商: {{ row.supplierName }}</div>
+      <div v-if="printType === 'refundStock'" class="col1" style="width:25%">科室: {{ row.departmentName || '' }}</div>
+      <div v-else class="col1" style="width:25%">供应商: {{ row.supplierName }}</div>
 
       <div class="col1" style="width:45%">申请时间: {{ row.orderDate }}</div>
       <div class="col1" style="width:30%">审核时间: {{ row.auditDate }}</div>

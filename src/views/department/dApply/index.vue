@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container d-apply-page">
+  <div class="app-container d-apply-page" :class="{ 'is-select-filter-open': DialogComponentShow && selectTarget === 'apply' }">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
 
       <el-row class="query-row-left">
@@ -2341,11 +2341,22 @@ export default {
   background-color: #fff !important;
 }
 
-/* 不再使用 min-height:95vh，避免高于 #app 主内容区时带动整页滚动 */
-::v-deep .local-modal-content:not(.template-dialog-content) {
+/* 科室申领主弹窗：限制在内容区内。可用库存选择排除，按到货验收 SelectMaterialFilter 同等处理 */
+::v-deep .local-modal-content:not(.template-dialog-content):not(.select-material-filter-content) {
   min-height: 0 !important;
   max-height: 100% !important;
   height: 100% !important;
+}
+
+/* 可用库存弹窗：铺满锁定后的内容区；底栏翻页不被裁切 */
+::v-deep .select-material-filter-content {
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 ::v-deep .local-modal-content .el-table .el-table__body-wrapper {
@@ -2539,36 +2550,41 @@ export default {
   border-radius: 6px;
 }
 
-/* 确保操作列固定 */
-::v-deep .el-table__fixed-right {
+/* 确保操作列固定（仅主列表/明细表，勿作用于可用库存选择弹窗） */
+::v-deep .d-apply-page > .el-table .el-table__fixed-right,
+::v-deep .modal-detail-section .el-table .el-table__fixed-right {
   right: 0 !important;
   z-index: 12 !important;
 }
 
-::v-deep .el-table__fixed-header-wrapper {
+::v-deep .d-apply-page > .el-table .el-table__fixed-header-wrapper,
+::v-deep .modal-detail-section .el-table .el-table__fixed-header-wrapper {
   z-index: 11;
 }
 
-::v-deep .el-table__fixed-right-patch {
+::v-deep .d-apply-page > .el-table .el-table__fixed-right-patch,
+::v-deep .modal-detail-section .el-table .el-table__fixed-right-patch {
   right: 0 !important;
   z-index: 12 !important;
 }
 
-/* 确保固定列头部和主体都有正确的z-index */
-::v-deep .el-table__fixed-right .el-table__header-wrapper {
+::v-deep .d-apply-page > .el-table .el-table__fixed-right .el-table__header-wrapper,
+::v-deep .modal-detail-section .el-table .el-table__fixed-right .el-table__header-wrapper {
   z-index: 12 !important;
 }
 
-::v-deep .el-table__fixed-right .el-table__body-wrapper {
+::v-deep .d-apply-page > .el-table .el-table__fixed-right .el-table__body-wrapper,
+::v-deep .modal-detail-section .el-table .el-table__fixed-right .el-table__body-wrapper {
   z-index: 12 !important;
 }
 
-/* 确保固定列在滚动时保持固定 */
-::v-deep .el-table__fixed {
+::v-deep .d-apply-page > .el-table .el-table__fixed,
+::v-deep .modal-detail-section .el-table .el-table__fixed {
   position: absolute !important;
 }
 
-::v-deep .el-table__fixed-right {
+::v-deep .d-apply-page > .el-table .el-table__fixed-right,
+::v-deep .modal-detail-section .el-table .el-table__fixed-right {
   position: absolute !important;
   right: 0 !important;
 }
@@ -2589,6 +2605,17 @@ export default {
   padding-bottom: 8px !important;
 }
 
+/* 打开可用库存：禁止页面被撑出滚动，弹窗由组件按 app-main 可视区 fixed 定位 */
+.app-container.d-apply-page.is-select-filter-open {
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding-top: 8px !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box !important;
+}
+
 .app-container.d-apply-page > .el-form.query-form-compact {
   margin-top: -12px !important;
 }
@@ -2599,11 +2626,22 @@ export default {
   margin-bottom: 8px !important;
 }
 
-.app-container.d-apply-page .local-modal-mask {
+.app-container.d-apply-page .local-modal-mask:not(.select-material-filter-mask) {
   left: -8px;
   right: -8px;
   width: auto;
   overflow: hidden;
+}
+
+/* 可用库存遮罩：尺寸由 JS 按 app-main 可视区写入，这里只保底 */
+.app-container.d-apply-page .select-material-filter-mask {
+  z-index: 3000;
+  overflow: hidden;
+}
+
+/* 翻页容器自身控制 padding，避免全局 8px 再挤占高度 */
+.app-container.d-apply-page .select-material-filter-content .pagination-container {
+  padding: 0 !important;
 }
 
 /* 表格与翻页之间更紧凑 */
