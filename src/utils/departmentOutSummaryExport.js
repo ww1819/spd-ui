@@ -913,6 +913,7 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
     '库房分类',
     '财务分类',
     '储存方式',
+    '计费',
   ];
   const colCount = headers.length;
   const priceCol = 10;
@@ -974,6 +975,7 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
       wc || '',
       fc || '',
       resolveWay ? resolveWay(m.isWay) : m.isWay != null && m.isWay !== '' ? String(m.isWay) : '',
+      rthBillingLabel(row),
     ];
 
     cells.forEach((v, ci) => {

@@ -171,6 +171,16 @@
           <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
         </template>
       </el-table-column>
+      <el-table-column label="计费" align="center" header-align="center" width="80" class-name="col-yn-center" resizable>
+        <template slot-scope="scope">
+          <span v-if="formatBillingYesNo(scope.row) === '--'">--</span>
+          <span
+            v-else
+            class="material-yn-btn"
+            :class="isBillingYes(scope.row) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+          >{{ formatBillingYesNo(scope.row) }}</span>
+        </template>
+      </el-table-column>
     </el-table>
     </div>
 
@@ -329,6 +339,17 @@ export default {
     sortByFactory(a, b) { return this.sortByStr(a, b, r => r.factoryName || ''); },
     sortBySupplier(a, b) {
       return this.sortByStr(a, b, r => r.supplierName || (r.supplier && r.supplier.name) || '');
+    },
+    /** 计费：取耗材档案 isBilling，1=是，0/2=否 */
+    formatBillingYesNo(row) {
+      const v = row && row.material ? row.material.isBilling : null;
+      if (v === '1' || v === 1) return '是';
+      if (v === '0' || v === 0 || v === '2' || v === 2) return '否';
+      return '--';
+    },
+    isBillingYes(row) {
+      const v = row && row.material ? row.material.isBilling : null;
+      return v === '1' || v === 1;
     },
     /** 同仓库 + 同耗材编码 + 同单价合并；单价不同则分行 */
     mergeSummaryRowsByWarehouseMaterial(rows) {
@@ -973,6 +994,13 @@ export default {
   width: 100%;
   text-align: center;
 }
+
+/* 计费列：是/否标签居中 */
+.table-container ::v-deep .el-table th.col-yn-center .cell,
+.table-container ::v-deep .el-table td.col-yn-center .cell {
+  text-align: center !important;
+  justify-content: center;
+}
 </style>
 
 <style>
@@ -1009,5 +1037,26 @@ export default {
 }
 .first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
   padding: 2px 0 !important;
+}
+
+/* 列表「计费」列：是/否按钮式展示（与耗材档案、出退库明细一致） */
+.material-yn-btn {
+  display: inline-block;
+  min-width: 36px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  color: #fff;
+  cursor: default;
+  user-select: none;
+  box-sizing: border-box;
+}
+.material-yn-btn--yes {
+  background-color: #409eff;
+}
+.material-yn-btn--no {
+  background-color: #909399;
 }
 </style>
