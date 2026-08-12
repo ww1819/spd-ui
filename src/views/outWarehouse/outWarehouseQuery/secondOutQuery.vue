@@ -140,7 +140,6 @@
       <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
       <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName"/>
       <el-table-column label="仓库" align="center" prop="warehouseName" width="130" min-width="110" show-overflow-tooltip resizable/>
-      <el-table-column label="科室" align="center" prop="departmentName" width="160" show-overflow-tooltip resizable/>
       <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel"/>
       <el-table-column label="规格" align="center" prop="materialSpeci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci"/>
       <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName"/>
@@ -331,18 +330,48 @@ export default {
     sortBySupplier(a, b) {
       return this.sortByStr(a, b, r => r.supplierName || (r.supplier && r.supplier.name) || '');
     },
+    /** 同仓库 + 同耗材编码 + 同单价合并；单价不同则分行 */
+    mergeSummaryRowsByWarehouseMaterial(rows) {
+      if (!rows || !rows.length) return [];
+      const map = new Map();
+      rows.forEach((row) => {
+        const wh = row.warehouseId != null && row.warehouseId !== ''
+          ? `id:${row.warehouseId}`
+          : `name:${(row.warehouseName || '').trim()}`;
+        const code = (row.materialCode || '').trim();
+        const priceNum = row.unitPrice == null || row.unitPrice === '' ? NaN : Number(row.unitPrice);
+        const priceKey = Number.isFinite(priceNum) ? priceNum.toFixed(2) : 'null';
+        const key = `${wh}||${code}||${priceKey}`;
+        const exist = map.get(key);
+        if (!exist) {
+          map.set(key, { ...row });
+          return;
+        }
+        const qty = Number(exist.materialQty || 0) + Number(row.materialQty || 0);
+        const amt = Number(exist.materialAmt || 0) + Number(row.materialAmt || 0);
+        exist.materialQty = qty;
+        exist.materialAmt = amt;
+        // 同单价合并，价格保持原值
+        if (exist.unitPrice == null && row.unitPrice != null) exist.unitPrice = row.unitPrice;
+        if (!exist.supplierName && row.supplierName) exist.supplierName = row.supplierName;
+        if (!exist.factoryName && row.factoryName) exist.factoryName = row.factoryName;
+      });
+      // 净数量为 0（出退库抵消）的行不展示
+      return Array.from(map.values()).filter((r) => Number(r.materialQty || 0) !== 0);
+    },
     /** 查询出/退货列表 */
     getList() {
       this.loading = true;
       const queryParams = this.buildListQueryParams();
       listCTKWarehouseSummary(queryParams).then(response => {
-        // 确保数据格式正确，处理单价和金额
-        this.warehouseList = (response.rows || response || []).map(item => ({
+        // 同仓库+同耗材编码+同单价兜底合并；单价不同保留分行
+        const rawRows = (response.rows || response || []).map(item => ({
           ...item,
           unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
           materialAmt: item.materialAmt != null ? Number(item.materialAmt) : null,
           materialQty: item.materialQty != null ? Number(item.materialQty) : 0
         }));
+        this.warehouseList = this.mergeSummaryRowsByWarehouseMaterial(rawRows);
         // 确保 total 正确设置，优先使用 response.total
         if (response && response.total !== undefined && response.total !== null) {
           this.total = Number(response.total);
@@ -588,12 +617,12 @@ export default {
       this.loading = true;
       try {
         const response = await listCTKWarehouseSummary(requestParams);
-        const rows = (response.rows || []).map(item => ({
+        const rows = this.mergeSummaryRowsByWarehouseMaterial((response.rows || []).map(item => ({
           ...item,
           unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
           materialAmt: item.materialAmt != null ? Number(item.materialAmt) : null,
           materialQty: item.materialQty != null ? Number(item.materialQty) : 0,
-        }));
+        })));
         if (!rows.length) {
           this.$message && this.$message.warning('暂无数据可导出');
           return;

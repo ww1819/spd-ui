@@ -900,7 +900,6 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
     '耗材编码',
     '耗材名称',
     '仓库',
-    '科室',
     '型号',
     '规格',
     '单位',
@@ -916,9 +915,9 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
     '储存方式',
   ];
   const colCount = headers.length;
-  const priceCol = 11;
-  const qtyCol = 12;
-  const amtCol = 13;
+  const priceCol = 10;
+  const qtyCol = 11;
+  const amtCol = 12;
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('出退库汇总', { views: [{ showGridLines: false }] });
@@ -962,7 +961,6 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
       row.materialCode || '',
       row.materialName || '',
       row.warehouseName || '',
-      row.departmentName || '',
       row.materialModel || '',
       row.materialSpeci || '',
       row.unitName || '',
@@ -1040,13 +1038,12 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
   ws.getColumn(2).width = 14;
   ws.getColumn(3).width = 18;
   ws.getColumn(4).width = 12;
-  ws.getColumn(5).width = 14;
-  ws.getColumn(10).width = 20;
-  for (let c = 6; c <= colCount; c++) {
+  ws.getColumn(9).width = 20;
+  for (let c = 5; c <= colCount; c++) {
     if (c === priceCol || c === qtyCol || c === amtCol) ws.getColumn(c).width = 14;
     else ws.getColumn(c).width = 12;
   }
-  ws.getColumn(13).width = 16;
+  ws.getColumn(12).width = 16;
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], {
