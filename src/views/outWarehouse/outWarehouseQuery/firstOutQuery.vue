@@ -878,7 +878,7 @@ export default {
 }
 .more-search-row--multi {
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   max-width: 100%;
 }
 .more-search-dynamic-field {
@@ -886,17 +886,19 @@ export default {
   align-items: center;
   flex-wrap: nowrap;
   gap: 6px;
-  margin-top: 2px;
+  height: 32px;
 }
 .more-search-field-label {
   color: #606266;
   font-size: 12px;
+  line-height: 32px;
   white-space: nowrap;
   flex-shrink: 0;
 }
 .more-search-label {
   color: #606266;
   font-size: 12px;
+  line-height: 32px;
   white-space: nowrap;
 }
 .more-search-type {
