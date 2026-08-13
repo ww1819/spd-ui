@@ -1,0 +1,64 @@
+{
+  "data": [
+    {
+      "id": "image-001",
+      "title": "现代医疗专业风 v2",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1723527600000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "naturalSize": {
+          "width": 1920,
+          "height": 1920
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/style-medical-professional-v2.jpg"
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "轻量化 SaaS 风 v2",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1723527600001,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "naturalSize": {
+          "width": 1920,
+          "height": 1920
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/style-lightweight-saas-v2.jpg"
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "深色医疗数据风",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1723527600002,
+      "canvasData": {
+        "x": 1240,
+        "y": 0,
+        "naturalSize": {
+          "width": 1920,
+          "height": 1920
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/style-dark-medical.jpg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "freeSize",
+    "projectName": "耗材产品维护页风格示例",
+    "visualEditorEnabled": true
+  }
+}

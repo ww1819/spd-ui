@@ -1,0 +1,34 @@
+{
+  "skillProvenance": {
+    "name": "solo-design",
+    "version": "2026.07.22.00.00.00",
+    "version_source": "skill-release-manifest.json",
+    "runtime_skill_dir": "c:\\Users\\Administrator\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+    "recorded_at": "2026-08-13T16:20:00+08:00"
+  },
+  "operation": "create-image-project",
+  "assetCount": 3,
+  "assets": [
+    {
+      "filename": "style-medical-professional-v2.jpg",
+      "title": "现代医疗专业风 v2",
+      "deliverableType": "UI mockup",
+      "intendedAspect": "square 1:1",
+      "status": "generated"
+    },
+    {
+      "filename": "style-lightweight-saas-v2.jpg",
+      "title": "轻量化 SaaS 风 v2",
+      "deliverableType": "UI mockup",
+      "intendedAspect": "square 1:1",
+      "status": "generated"
+    },
+    {
+      "filename": "style-dark-medical.jpg",
+      "title": "深色医疗数据风",
+      "deliverableType": "UI mockup",
+      "intendedAspect": "square 1:1",
+      "status": "generated"
+    }
+  ]
+}

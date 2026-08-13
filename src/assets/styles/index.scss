@@ -6,13 +6,17 @@
 @import './global.scss';
 @import './btn.scss';
 @import './select-dropdown-multiline.scss';
+@import './fonts.scss';
 
 body {
   height: 100%;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-font-smoothing: antialiased;
+  /* 不用 antialiased，避免高分屏把笔画“磨淡” */
+  -moz-osx-font-smoothing: auto;
+  -webkit-font-smoothing: auto;
   text-rendering: optimizeLegibility;
-  font-family: "Microsoft YaHei", "微软雅黑", PingFang SC, Hiragino Sans GB, "Noto Sans CJK SC", Arial, sans-serif;
+  /* Noto Medium(500) 更接近 PingFang Regular 的黑度 */
+  font-family: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+  font-weight: 500;
 }
 
 label {

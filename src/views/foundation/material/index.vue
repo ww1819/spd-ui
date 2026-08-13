@@ -1416,7 +1416,7 @@
                         :timestamp="item.eventTime"
                         placement="top"
                         :type="item.type === 'enable' ? 'success' : (item.type === 'disable' ? 'danger' : 'primary')"
-                        :color="item.type === 'enable' ? '#67c23a' : (item.type === 'disable' ? '#f56c6c' : '#409eff')"
+                        :color="item.type === 'enable' ? '#10B981' : (item.type === 'disable' ? '#ef4444' : '#2563eb')"
                       >
                         <div class="timeline-item-title">{{ item.title }}</div>
                         <div v-if="item.operator" class="timeline-item-meta">操作人：{{ item.operator }}</div>
@@ -4143,9 +4143,9 @@ export default {
 }
 
 .material-detail-tabs .el-tabs__item.is-active {
-  color: #409EFF;
-  background: #E8F3FF;
-  border-bottom-color: #409EFF;
+  color: #2563EB;
+  background: #EFF6FF;
+  border-bottom-color: #2563EB;
 }
 
 .material-tab-label {
@@ -4169,7 +4169,7 @@ export default {
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: #E8F3FF;
+  background: #EFF6FF;
   font-size: 14px;
   font-weight: 600;
   color: #303133;
@@ -4177,7 +4177,7 @@ export default {
 }
 
 .material-detail-card__header i {
-  color: #409EFF;
+  color: #2563EB;
   font-size: 16px;
 }
 
@@ -4277,9 +4277,9 @@ export default {
 
 .material-modal-header-btn--secondary:hover,
 .material-modal-header-btn--secondary:focus {
-  color: #409EFF;
-  border-color: #c6e2ff;
-  background: #ecf5ff;
+  color: #2563EB;
+  border-color: #BFDBFE;
+  background: #EFF6FF;
 }
 
 .material-modal-close-btn {
@@ -4894,7 +4894,7 @@ export default {
 }
 
 .material-image-preview .image-overlay i:hover {
-  color: #409eff;
+  color: #2563eb;
 }
 
 .material-image-placeholder {
@@ -4912,7 +4912,7 @@ export default {
 }
 
 .material-image-placeholder:hover {
-  border-color: #409eff;
+  border-color: #2563eb;
 }
 
 .material-image-placeholder i {
@@ -4977,7 +4977,7 @@ export default {
 }
 
 .material-image-preview-large .image-overlay i:hover {
-  color: #409eff;
+  color: #2563eb;
   background-color: rgba(64, 158, 255, 0.5);
 }
 
@@ -4997,7 +4997,7 @@ export default {
 }
 
 .material-image-placeholder-large:hover {
-  border-color: #409eff;
+  border-color: #2563eb;
 }
 
 .material-image-placeholder-large i {
@@ -5019,8 +5019,8 @@ export default {
   border-radius: 2px !important;
 }
 .material-modal-content ::v-deep .switch-container--square .el-switch.is-checked .el-switch__core {
-  border-color: #409eff !important;
-  background-color: #409eff !important;
+  border-color: #2563eb !important;
+  background-color: #2563eb !important;
 }
 .material-modal-content ::v-deep .switch-container--square .el-switch.is-checked .el-switch__core::after {
   left: 100% !important;
@@ -5126,7 +5126,7 @@ export default {
 /* 仅改标签字色为红色，不改变必填校验逻辑（须非 scoped，才能命中 Element 内部 label） */
 .material-modal-content .material-label-hint-red > .el-form-item__label,
 .material-modal-content .el-form-item.material-label-hint-red .el-form-item__label {
-  color: #F56C6C !important;
+  color: #EF4444 !important;
 }
 
 /* 基础档案区：统一输入框/下拉高度，与供应商等控件一致 */
@@ -5311,7 +5311,7 @@ export default {
 }
 
 .material-page-container .material-row-action-btn--danger.el-button--text {
-  color: #f56c6c;
+  color: #ef4444;
 }
 
 .material-page-container .material-row-action-btn--danger.el-button--text:hover,
@@ -5397,8 +5397,8 @@ export default {
 
 .material-modal-content.material-modal-view .el-radio.is-disabled.is-checked .el-radio__inner,
 .material-modal-content.material-modal-view .el-checkbox.is-disabled.is-checked .el-checkbox__inner {
-  background-color: #409eff !important;
-  border-color: #409eff !important;
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
 }
 
 .local-modal-content.material-modal-content {
@@ -5543,7 +5543,7 @@ export default {
 .material-modal-content .hrp-compare-header,
 .material-modal-content .sunshine-platform-header {
   padding: 10px 16px;
-  background: #E8F3FF;
+  background: #EFF6FF;
   border-bottom: 1px solid #E5E6EB;
 }
 
@@ -5648,12 +5648,12 @@ export default {
 }
 
 .switch-with-label-left .switch-label.active {
-  color: #409eff;
+  color: #2563eb;
   font-weight: 500;
 }
 
 .switch-with-label-left .switch-required-mark {
-  color: #f56c6c;
+  color: #ef4444;
   margin-right: 2px;
 }
 
@@ -5671,8 +5671,8 @@ export default {
   border-radius: 2px !important;
 }
 .material-modal-content .switch-container--square .el-switch.is-checked .el-switch__core {
-  border-color: #409eff !important;
-  background-color: #409eff !important;
+  border-color: #2563eb !important;
+  background-color: #2563eb !important;
 }
 .material-modal-content .switch-container--square .el-switch.is-checked .el-switch__core::after {
   left: 100% !important;
@@ -6022,11 +6022,11 @@ export default {
 }
 
 .material-page-container .material-main-table .ascending .sort-caret.ascending {
-  border-bottom-color: #409EFF;
+  border-bottom-color: #2563EB;
 }
 
 .material-page-container .material-main-table .descending .sort-caret.descending {
-  border-top-color: #409EFF;
+  border-top-color: #2563EB;
 }
 
 /* 其它表格表头保持原样式 */
