@@ -156,7 +156,7 @@
       <el-table-column label="科室名称" align="center" prop="name" min-width="200" show-overflow-tooltip />
       <el-table-column label="简码" align="center" prop="referredName" width="120" show-overflow-tooltip />
       <el-table-column label="备注" align="center" prop="deptRemark" min-width="140" show-overflow-tooltip />
-      <el-table-column label="HIS科室ID" align="center" prop="hisId" width="140" show-overflow-tooltip />
+      <el-table-column label="HIS科室编码" align="center" prop="hisId" width="140" show-overflow-tooltip />
       <el-table-column label="院区" align="center" prop="campus" width="120" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right">
         <template slot-scope="scope">
@@ -202,7 +202,7 @@
           <i class="el-icon-close page-drawer-close" @click="cancel" />
         </div>
         <div class="page-drawer-body">
-          <el-form ref="form" :model="form" :rules="rules" label-width="100px">
+          <el-form ref="form" :model="form" :rules="rules" label-width="110px">
             <el-form-item label="科室编码" prop="code">
               <el-input v-model="form.code" placeholder="科室编码" />
             </el-form-item>
@@ -212,7 +212,7 @@
             <el-form-item label="简码" prop="referredName">
               <el-input v-model="form.referredName" placeholder="可留空，保存后可用「更新简码」生成" />
             </el-form-item>
-            <el-form-item label="HIS科室ID" prop="hisId">
+            <el-form-item label="HIS科室编码" prop="hisId">
               <el-input
                 v-model="form.hisId"
                 :disabled="!!form.id || !departImportRequiresHisDeptId"
@@ -236,6 +236,16 @@
                 style="width:100%"
               />
             </el-form-item>
+            <el-form-item label="启用" prop="status">
+              <el-select v-model="form.status" placeholder="请选择" style="width: 100%">
+                <el-option
+                  v-for="dict in dict.type.is_use_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
           </el-form>
         </div>
         <div class="page-drawer-footer">
@@ -255,10 +265,10 @@
           :closable="false"
           show-icon
           style="margin-bottom:12px;"
-          title="衡水市第三人民医院：手工新增与 Excel 新增科室时「HIS科室ID」（第三方系统科室ID）必填；已存在科室的修改/导入更新不会改库中该 ID。"
+          title="衡水市第三人民医院：手工新增与 Excel 新增科室时「HIS科室编码」（第三方系统科室编码）必填；已存在科室的修改/导入更新不会改库中该编码。"
         />
         <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-          <strong>增量导入</strong>：只新增不存在的科室编码，或勾选「更新已存在」后<strong>仅更新科室名称</strong>（简码随名称自动生成，不更新备注与 HIS 科室 ID）。不会删除未出现在文件中的科室。先整单校验并确认后写入。
+          <strong>增量导入</strong>：只新增不存在的科室编码，或勾选「更新已存在」后<strong>仅更新科室名称</strong>（简码随名称自动生成，不更新备注与 HIS 科室编码）。不会删除未出现在文件中的科室。先整单校验并确认后写入。
         </p>
         <el-upload
           ref="upload"
@@ -343,6 +353,7 @@ import { isMsunIntegratedTenant } from '@/utils/msunHis';
 
 export default {
   name: "depart",
+  dicts: ['is_use_status'],
   components: { Treeselect, MsunHisSyncButton },
   computed: {
     ...mapGetters(["departImportRequiresHisDeptId", "isZqTcmTenant"]),
@@ -354,7 +365,7 @@ export default {
         return "仅展示，保存后不可在此修改";
       }
       if (this.departImportRequiresHisDeptId) {
-        return "必填：第三方系统科室ID（与 HIS 一致）";
+        return "必填：第三方系统科室编码（与 HIS 一致）";
       }
       return "本组织机构手工新增不维护此项";
     },
@@ -428,7 +439,7 @@ export default {
             validator: (rule, value, callback) => {
               if (!this.form.id && this.departImportRequiresHisDeptId) {
                 if (value === undefined || value === null || String(value).trim() === "") {
-                  callback(new Error("衡水市第三人民医院新增时必须填写HIS科室ID（第三方系统科室ID）"));
+                  callback(new Error("衡水市第三人民医院新增时必须填写HIS科室编码（第三方系统科室编码）"));
                   return;
                 }
               }
@@ -577,6 +588,7 @@ export default {
         hisId: null,
         campus: null,
         parentId: null,
+        status: "1",
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -627,7 +639,10 @@ export default {
         return;
       }
       getdepart(id).then(response => {
-        this.form = response.data;
+        this.form = response.data || {};
+        if (!this.form.status) {
+          this.$set(this.form, 'status', '1');
+        }
         this.open = true;
         this.title = "修改科室";
         this.$nextTick(() => this.rebuildParentTreeselectOptions());
