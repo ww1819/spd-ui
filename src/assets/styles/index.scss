@@ -14,9 +14,9 @@ body {
   -moz-osx-font-smoothing: auto;
   -webkit-font-smoothing: auto;
   text-rendering: optimizeLegibility;
-  /* Noto Medium(500) 更接近 PingFang Regular 的黑度 */
+  /* SemiBold(600) 再黑一点，接近 PingFang Medium 观感 */
   font-family: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 label {
