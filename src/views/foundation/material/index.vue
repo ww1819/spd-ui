@@ -492,7 +492,7 @@
       </div>
 
     <!-- 添加或修改耗材产品局部弹窗 -->
-    <div v-if="open" class="local-modal-mask">
+    <div v-if="open" class="local-modal-mask material-modal-mask">
       <div class="local-modal-content material-modal-content" :class="{ 'material-modal-view': isViewMode, 'zq-material-limited-modal': zqTcmLimitedEdit }">
         <div class="modal-header material-modal-header">
           <div class="modal-title">{{ isViewMode ? '耗材档案详情' : title }}</div>
@@ -4032,6 +4032,20 @@ export default {
   box-sizing: border-box;
 }
 
+/* 耗材编辑弹窗：铺满主内容区，去掉四周缝隙（避免顶部透出黑色遮罩线） */
+.material-page-container .local-modal-mask.material-modal-mask {
+  padding: 0 !important;
+  left: -8px !important;
+  right: -8px !important;
+  top: -8px !important;
+  bottom: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  background: #F5F7FA !important;
+}
+
 .local-modal-content {
   position: relative;
   z-index: 2001;
@@ -4050,13 +4064,17 @@ export default {
 }
 
 .local-modal-content.material-modal-content {
-  width: calc(100vw - 180px) !important;
-  min-width: calc(100vw - 180px) !important;
-  min-height: calc(100vh - 56px) !important;
-  max-height: calc(100vh - 56px) !important;
-  max-width: calc(100vw - 180px) !important;
-  background: #F5F7FA;
-  padding: 0;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  background: #F5F7FA !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
 }
 
 .local-modal-content.material-modal-content > .material-detail-tabs {
@@ -4219,17 +4237,24 @@ export default {
   margin-bottom: 12px;
 }
 
-.material-modal-header {
+.material-modal-content .modal-header.material-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0;
-  width: 100%;
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
   box-sizing: border-box;
-  padding: 8px 16px;
+  padding: 8px 16px !important;
   background: #fff;
+  border: none;
   border-bottom: 1px solid #E5E6EB;
-  border-radius: 6px 6px 0 0;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  flex-shrink: 0;
+  min-height: 48px;
+  position: relative;
+  z-index: 2;
 }
 
 .material-modal-header-actions {
@@ -5064,6 +5089,40 @@ export default {
 <style>
 /* 非scoped样式，确保弹窗宽度生效 */
 
+/* 耗材编辑弹窗铺满内容区，盖住顶部黑线（压过 assets/styles/modal.css） */
+.material-page-container .local-modal-mask.material-modal-mask {
+  padding: 0 !important;
+  left: -8px !important;
+  right: -8px !important;
+  top: -8px !important;
+  bottom: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  background: #F5F7FA !important;
+}
+.material-page-container .local-modal-mask.material-modal-mask > .local-modal-content.material-modal-content {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: #F5F7FA !important;
+}
+.material-page-container .material-modal-content .modal-header.material-modal-header {
+  margin: 0 !important;
+  width: 100% !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-top: none !important;
+}
+
 /* 仅改标签字色为红色，不改变必填校验逻辑（须非 scoped，才能命中 Element 内部 label） */
 .material-modal-content .material-label-hint-red > .el-form-item__label,
 .material-modal-content .el-form-item.material-label-hint-red .el-form-item__label {
@@ -5343,11 +5402,14 @@ export default {
 }
 
 .local-modal-content.material-modal-content {
-  width: calc(100vw - 180px) !important;
-  min-width: calc(100vw - 180px) !important;
-  min-height: calc(100vh - 56px) !important;
-  max-height: calc(100vh - 56px) !important;
-  max-width: calc(100vw - 180px) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 /* 标签页固定头部样式 */
