@@ -4137,7 +4137,7 @@ export default {
 .material-detail-card {
   background: #fff;
   border-radius: 6px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   border: 1px solid #E5E6EB;
   overflow: hidden;
 }
@@ -4164,7 +4164,16 @@ export default {
 }
 
 .material-detail-card__body {
-  padding: 16px;
+  padding: 12px 16px 8px;
+}
+
+/* 收紧分区卡片之间的垂直留白：去掉末行表单项默认底边距 */
+.material-form-grid > .material-detail-card .material-detail-card__body > .el-row:last-child .el-form-item,
+.material-form-grid > .el-row > .el-col > .material-detail-card .material-detail-card__body > .el-row:last-child .el-form-item,
+.material-form-grid > .el-row > .el-col > .material-detail-card .his-compare-content > .el-row:last-child .el-form-item,
+.material-form-grid > .el-row > .el-col > .material-detail-card .hrp-compare-content > .el-row:last-child .el-form-item,
+.material-form-grid > .el-row > .el-col > .material-detail-card .sunshine-platform-content > .el-row:last-child .el-form-item {
+  margin-bottom: 0;
 }
 
 .material-form-grid .el-row .el-col-4,
@@ -5479,7 +5488,7 @@ export default {
 .his-compare-content,
 .hrp-compare-content,
 .sunshine-platform-content {
-  padding: 16px;
+  padding: 12px 16px 8px;
 }
 
 .his-compare-title,
@@ -5495,7 +5504,7 @@ export default {
   background: #fafafa;
   border-radius: 4px;
   border: 1px solid #EBEEF5;
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .his-compare-header {
@@ -5511,7 +5520,7 @@ export default {
 }
 
 .his-compare-content {
-  padding: 16px 20px;
+  padding: 12px 16px 8px;
 }
 
 /* HRP对照框样式 */
@@ -5519,7 +5528,7 @@ export default {
   background: #fafafa;
   border-radius: 4px;
   border: 1px solid #EBEEF5;
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .hrp-compare-header {
@@ -5535,7 +5544,7 @@ export default {
 }
 
 .hrp-compare-content {
-  padding: 16px 20px;
+  padding: 12px 16px 8px;
 }
 
 /* 阳光平台信息框样式 */
@@ -5543,7 +5552,7 @@ export default {
   background: #fafafa;
   border-radius: 4px;
   border: 1px solid #EBEEF5;
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .sunshine-platform-header {
@@ -5559,7 +5568,7 @@ export default {
 }
 
 .sunshine-platform-content {
-  padding: 16px 20px;
+  padding: 12px 16px 8px;
 }
 
 /* 使用状态开关样式：启用文字在左边 */
