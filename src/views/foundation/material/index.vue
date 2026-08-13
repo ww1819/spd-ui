@@ -4026,9 +4026,9 @@ export default {
   background: rgba(0,0,0,0.3);
   z-index: 2000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px;
+  padding: 8px;
   box-sizing: border-box;
 }
 
@@ -4052,8 +4052,8 @@ export default {
 .local-modal-content.material-modal-content {
   width: calc(100vw - 180px) !important;
   min-width: calc(100vw - 180px) !important;
-  min-height: calc(100vh - 80px) !important;
-  max-height: calc(100vh - 80px) !important;
+  min-height: calc(100vh - 56px) !important;
+  max-height: calc(100vh - 56px) !important;
   max-width: calc(100vw - 180px) !important;
   background: #F5F7FA;
   padding: 0;
@@ -4073,7 +4073,7 @@ export default {
   top: 0;
   background: #fff;
   z-index: 10;
-  padding: 0 20px;
+  padding: 0 16px;
   border-bottom: 1px solid #E5E6EB;
 }
 
@@ -4092,7 +4092,7 @@ export default {
 }
 
 .material-tab-pane-body {
-  padding: 8px 20px 16px;
+  padding: 4px 16px 12px;
 }
 
 .material-tab-pane-body > .material-detail-card:first-child,
@@ -4110,8 +4110,8 @@ export default {
 }
 
 .material-detail-tabs .el-tabs__item {
-  height: 44px;
-  line-height: 44px;
+  height: 36px;
+  line-height: 36px;
   padding: 0 20px;
   color: #909399;
   background: #fff;
@@ -4217,7 +4217,7 @@ export default {
   margin: 0;
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 20px;
+  padding: 8px 16px;
   background: #fff;
   border-bottom: 1px solid #E5E6EB;
   border-radius: 6px 6px 0 0;
@@ -5336,8 +5336,8 @@ export default {
 .local-modal-content.material-modal-content {
   width: calc(100vw - 180px) !important;
   min-width: calc(100vw - 180px) !important;
-  min-height: calc(100vh - 80px) !important;
-  max-height: calc(100vh - 80px) !important;
+  min-height: calc(100vh - 56px) !important;
+  max-height: calc(100vh - 56px) !important;
   max-width: calc(100vw - 180px) !important;
 }
 
@@ -5356,14 +5356,14 @@ export default {
   top: 0;
   background: #fff;
   z-index: 10;
-  padding: 0 20px;
+  padding: 0 16px;
 }
 
 .local-modal-content.material-modal-content > .el-tabs > .el-tabs__content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-top: 16px;
+  padding-top: 0;
   /* 隐藏滚动条但保持滚动功能 */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE 和 Edge */
