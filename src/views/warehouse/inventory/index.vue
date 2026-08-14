@@ -8,7 +8,8 @@
       <el-tab-pane label="库存预警" name="alert"></el-tab-pane>
       <el-tab-pane label="有效期预警表" name="expiry"></el-tab-pane>
       <el-tab-pane label="库存分布分析表" name="distribution"></el-tab-pane>
-      <el-tab-pane label="历史库存明细" name="fourth"></el-tab-pane>
+      <!-- 运维对账用，暂不对客户开放：历史库存明细 -->
+      <!-- <el-tab-pane label="历史库存明细" name="fourth"></el-tab-pane> -->
     </el-tabs>
     <FirstInventory v-if="activeName === 'first'"></FirstInventory>
     <SecondInventory v-if="activeName === 'second'"></SecondInventory>
@@ -16,7 +17,7 @@
     <InventoryAlert v-if="activeName === 'alert'"></InventoryAlert>
     <ExpiryAlert v-if="activeName === 'expiry'"></ExpiryAlert>
     <InventoryDistribution v-if="activeName === 'distribution'"></InventoryDistribution>
-    <FourthInventory v-if="activeName === 'fourth'"></FourthInventory>
+    <!-- <FourthInventory v-if="activeName === 'fourth'"></FourthInventory> -->
 
   </div>
 </template>
