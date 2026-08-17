@@ -182,6 +182,7 @@
             </template>
           </el-table-column>
           <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
+          <el-table-column label="下载时间" prop="createTime" width="160" show-overflow-tooltip />
           <el-table-column label="数量" prop="quantity" width="90" align="right" />
           <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
           <el-table-column label="处理类型" prop="processType" width="120" show-overflow-tooltip>
@@ -207,7 +208,6 @@
           </el-table-column>
           <el-table-column label="处理方" prop="processParty" width="100" show-overflow-tooltip />
           <el-table-column label="处理时间" prop="processTime" width="160" show-overflow-tooltip />
-          <el-table-column label="本地入库" prop="createTime" width="160" />
           <el-table-column label="操作" align="center" width="300" fixed="right">
             <template slot-scope="scope">
               <el-button

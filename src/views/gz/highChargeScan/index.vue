@@ -124,6 +124,7 @@
       <el-table-column label="规格" prop="specModel" width="130" min-width="110" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="数量" prop="quantity" width="90" align="center" />
       <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
+      <el-table-column label="下载时间" prop="createTime" width="160" show-overflow-tooltip />
       <el-table-column label="金额" prop="totalAmount" width="110" min-width="100" align="right" sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="核销状态" prop="processStatus" width="100" align="center" show-overflow-tooltip>
         <template slot-scope="scope">
