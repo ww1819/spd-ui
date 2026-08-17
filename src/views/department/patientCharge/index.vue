@@ -183,6 +183,16 @@
           </el-table-column>
           <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
           <el-table-column label="下载时间" prop="createTime" width="160" show-overflow-tooltip />
+          <el-table-column label="抓取记录" width="90" align="center">
+            <template slot-scope="scope">
+              <el-button
+                type="text"
+                size="mini"
+                v-hasPermi="['department:patientCharge:list']"
+                @click="openFetchTraceDialog(scope.row)"
+              >查看</el-button>
+            </template>
+          </el-table-column>
           <el-table-column label="数量" prop="quantity" width="90" align="right" />
           <el-table-column label="金额" prop="totalAmount" width="100" align="right" />
           <el-table-column label="处理类型" prop="processType" width="120" show-overflow-tooltip>
@@ -374,6 +384,49 @@
       </div>
     </el-dialog>
 
+    <el-dialog :title="fetchTraceDialog.title" :visible.sync="fetchTraceDialog.visible" width="920px" append-to-body>
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        class="mb8"
+        :title="fetchTraceDialog.hint"
+      />
+      <el-table
+        v-loading="fetchTraceDialog.loading"
+        :data="fetchTraceDialog.rows"
+        border
+        size="small"
+        max-height="420"
+        empty-text="该区间内暂无抓取记录"
+      >
+        <el-table-column label="抓取时间" prop="createTime" width="160" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateTime(scope.row.createTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="类型" prop="chargeKind" width="72" align="center">
+          <template slot-scope="scope">
+            <span>{{ scope.row.chargeKind === 'OUTPATIENT' ? '门诊' : '住院' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="查询条件" prop="queryCondition" min-width="280" show-overflow-tooltip />
+        <el-table-column label="新增" prop="insertedCount" width="70" align="right" />
+        <el-table-column label="跳过" prop="skippedCount" width="70" align="right" />
+        <el-table-column label="指纹不一致" prop="driftCount" width="100" align="right" />
+        <el-table-column label="本条下载" width="100" align="center">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.downloadSuccess" type="success" size="mini">成功落库</el-tag>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="批次号" prop="id" min-width="140" show-overflow-tooltip />
+      </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="fetchTraceDialog.visible = false">关 闭</el-button>
+      </div>
+    </el-dialog>
+
     <el-dialog :title="fetchDialogTitle" :visible.sync="fetchDialogVisible" width="520px" append-to-body @close="resetFetchForm">
       <el-form :model="fetchForm" label-width="100px" size="small">
         <el-form-item label="开始时间" required>
@@ -535,6 +588,7 @@ import {
   processMirrorLowValue,
   processMirrorLowValueBatch,
   listMirrorConsumeRecords,
+  listFetchBatchesForMirror,
   writeOffMirrorLowValue
 } from '@/api/department/patientCharge'
 import { fetchFinancePickDepartments } from '@/api/finance/settlementSummary'
@@ -612,6 +666,13 @@ export default {
         visible: false,
         loading: false,
         title: '消耗记录',
+        rows: []
+      },
+      fetchTraceDialog: {
+        visible: false,
+        loading: false,
+        title: '抓取记录',
+        hint: '',
         rows: []
       },
       selfDeptLowDialog: {
@@ -828,6 +889,24 @@ export default {
         this.consumeRecordDialog.rows = res.data || []
       }).finally(() => {
         this.consumeRecordDialog.loading = false
+      })
+    },
+    openFetchTraceDialog(row) {
+      if (!row || !row.id) {
+        return
+      }
+      const vk = row.visitType === 'OUTPATIENT' ? 'OUTPATIENT' : 'INPATIENT'
+      const chargeAt = this.formatDateTime(row.chargeDate)
+      const downloadAt = this.formatDateTime(row.createTime)
+      this.fetchTraceDialog.title = `抓取记录 · ${row.patientName || ''} · 收费项 ${row.chargeItemId || ''}`
+      this.fetchTraceDialog.hint = `展示计费时间（${chargeAt}）至下载时间（${downloadAt}）之间的同类抓取；「成功落库」表示本条由此次抓取下载。`
+      this.fetchTraceDialog.visible = true
+      this.fetchTraceDialog.loading = true
+      this.fetchTraceDialog.rows = []
+      listFetchBatchesForMirror(vk, row.id).then(res => {
+        this.fetchTraceDialog.rows = res.data || []
+      }).finally(() => {
+        this.fetchTraceDialog.loading = false
       })
     },
     onMainTabClick(tab) {
