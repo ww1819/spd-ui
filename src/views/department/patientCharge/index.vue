@@ -398,7 +398,7 @@
         border
         size="small"
         max-height="420"
-        empty-text="该区间内暂无抓取记录"
+        empty-text="暂无相关抓取记录"
       >
         <el-table-column label="抓取时间" prop="createTime" width="160" show-overflow-tooltip>
           <template slot-scope="scope">
@@ -411,16 +411,27 @@
           </template>
         </el-table-column>
         <el-table-column label="查询条件" prop="queryCondition" min-width="280" show-overflow-tooltip />
-        <el-table-column label="新增" prop="insertedCount" width="70" align="right" />
-        <el-table-column label="跳过" prop="skippedCount" width="70" align="right" />
-        <el-table-column label="指纹不一致" prop="driftCount" width="100" align="right" />
-        <el-table-column label="本条下载" width="100" align="center">
+        <el-table-column label="新增" prop="insertedCount" width="70" align="right">
           <template slot-scope="scope">
-            <el-tag v-if="scope.row.downloadSuccess" type="success" size="mini">成功落库</el-tag>
+            <span>{{ scope.row.insertedCount != null ? scope.row.insertedCount : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="跳过" prop="skippedCount" width="70" align="right">
+          <template slot-scope="scope">
+            <span>{{ scope.row.skippedCount != null ? scope.row.skippedCount : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="需核对" prop="driftCount" width="80" align="right">
+          <template slot-scope="scope">
+            <span>{{ scope.row.driftCount != null ? scope.row.driftCount : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="本条结果" width="110" align="center">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.downloadSuccess" type="success" size="mini">本条下载成功</el-tag>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="批次号" prop="id" min-width="140" show-overflow-tooltip />
       </el-table>
       <div slot="footer" class="dialog-footer">
         <el-button @click="fetchTraceDialog.visible = false">关 闭</el-button>
@@ -899,7 +910,7 @@ export default {
       const chargeAt = this.formatDateTime(row.chargeDate)
       const downloadAt = this.formatDateTime(row.createTime)
       this.fetchTraceDialog.title = `抓取记录 · ${row.patientName || ''} · 收费项 ${row.chargeItemId || ''}`
-      this.fetchTraceDialog.hint = `展示计费时间（${chargeAt}）至下载时间（${downloadAt}）之间的同类抓取；「成功落库」表示本条由此次抓取下载。`
+      this.fetchTraceDialog.hint = `计费时间 ${chargeAt}，下载时间 ${downloadAt}。下列为相关抓取；标记「本条下载成功」的是写入本条的那一次。`
       this.fetchTraceDialog.visible = true
       this.fetchTraceDialog.loading = true
       this.fetchTraceDialog.rows = []
