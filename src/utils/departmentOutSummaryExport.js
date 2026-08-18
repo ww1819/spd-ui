@@ -2767,7 +2767,7 @@ export async function exportDepartmentInOutDetailStyledXlsx(options) {
     buildCells: (row) => [
       0,
       row.billNo || '',
-      dictLabel(row.billType, resBill),
+      dictLabel(row.billTypeName || row.billType, resBill),
       fmtYmd(row.billDate),
       row.materialCode || '',
       row.materialName || '',
