@@ -81,6 +81,13 @@
                   </el-form-item>
                 </el-col>
               </el-row>
+              <el-row :gutter="12" class="plan-form-row">
+                <el-col :span="4">
+                  <el-form-item label="备注" prop="remark">
+                    <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!editable" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
             </div>
             <div class="modal-detail-section">
               <el-row :gutter="10" class="detail-toolbar-row">
