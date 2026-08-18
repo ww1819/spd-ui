@@ -18,6 +18,15 @@ export function listInventoryDistribution(query) {
   })
 }
 
+/** 历史库存明细：截止时间点的结存明细（含时分秒） */
+export function listHistoryInventory(query) {
+  return request({
+    url: '/warehouse/inventory/listHistory',
+    method: 'get',
+    params: query
+  })
+}
+
 /** 盘点/弹窗对账：仅需登录，与 list 同源；支持 params.id 精确查一条（替代 GET /warehouse/inventory/:id）。 */
 export function listInventoryPick(query) {
   return request({

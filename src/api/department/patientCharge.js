@@ -102,6 +102,16 @@ export function listHisFetchBatch(limit) {
   })
 }
 
+/** 某条计费明细：计费时间～下载时间之间的抓取记录（按需查询） */
+export function listFetchBatchesForMirror(visitKind, mirrorRowId) {
+  return request({
+    url: '/his/patientCharge/fetchBatch/forMirror',
+    method: 'get',
+    timeout: 30000,
+    params: { visitKind, mirrorRowId }
+  })
+}
+
 export function processMirrorLowValue(data) {
   const payload = data && typeof data === 'object' ? { ...data } : data
   if (payload && payload.consumeDepartmentId != null && payload.consumeDepartmentId !== '') {
