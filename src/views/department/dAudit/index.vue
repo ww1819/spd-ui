@@ -287,10 +287,15 @@
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <el-row v-if="currentBillType !== '3'">
-                  <el-col :span="4">
+                <el-row>
+                  <el-col :span="4" v-if="currentBillType !== '3'">
                     <el-form-item label="仓库" prop="warehouseId" label-width="100px">
                       <SelectWarehouse v-model="form.warehouseId"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="备注" prop="remark">
+                      <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
                     </el-form-item>
                   </el-col>
                 </el-row>
