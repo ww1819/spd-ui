@@ -2194,8 +2194,8 @@ export default {
 
     /**
      * 将「耗材名称」输入转换为后端筛选参数（不改写输入框本身的值）
-     * - 含中文：按名称 name 查，同时带 nameSearch（首字母）
-     * - 不含中文：按 name 查（SQL 已覆盖编码/名称/简称等）；耗材编码请用独立查询框 code
+     * - 含中文：传 name + nameSearch（后端按名称或拼音简码 OR 匹配）
+     * - 纯字母：只传 nameSearch，按名称简码 referred_name 匹配
      */
     deriveNameSearchParams(keyword) {
       const nameValue = keyword;
@@ -2207,20 +2207,26 @@ export default {
       const hasChinese = /[\u4e00-\u9fa5]/.test(trimmedValue);
       const isLetterOnly = /^[A-Za-z]+$/.test(trimmedValue);
 
-      let pinyinCode = '';
       if (hasChinese) {
-        pinyinCode = pinyin(trimmedValue, {
+        const pinyinCode = pinyin(trimmedValue, {
           pattern: 'first',
           toneType: 'none',
           type: 'array',
         }).join('').toUpperCase();
-      } else if (isLetterOnly) {
-        pinyinCode = trimmedValue.toUpperCase();
+        return {
+          name: trimmedValue,
+          nameSearch: pinyinCode || undefined
+        };
       }
-
+      if (isLetterOnly) {
+        return {
+          name: undefined,
+          nameSearch: trimmedValue.toUpperCase()
+        };
+      }
       return {
         name: trimmedValue,
-        nameSearch: pinyinCode || undefined
+        nameSearch: undefined
       };
     },
 
