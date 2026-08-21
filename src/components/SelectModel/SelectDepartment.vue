@@ -5,6 +5,7 @@
              :clearable="!selectDisabled"
              :placeholder="selectPlaceholder"
              :disabled="selectDisabled"
+             @change="onSelectChange"
   >
     <el-option
       v-for="item in departmentOptions"
@@ -112,6 +113,25 @@ export default {
       if (!this.showCodeInLabel) return name
       const code = item.code != null && String(item.code).trim() !== '' ? String(item.code).trim() : ''
       return code ? `${code} ${name}` : name
+    },
+    /** 按 id 取缓存中的科室（含 status） */
+    getDepartmentById(id) {
+      if (id == null || id === '') return null;
+      return (this.allDepartments || []).find(d => String(d.id) === String(id)) || null;
+    },
+    /** 字典 is_use_status：2=停用；空视为启用（兼容未维护 status 的历史数据） */
+    isDepartmentDisabled(deptOrId) {
+      const dept = deptOrId && typeof deptOrId === 'object'
+        ? deptOrId
+        : this.getDepartmentById(deptOrId);
+      if (!dept) return false;
+      const s = dept.status;
+      if (s == null || s === '') return false;
+      return String(s) === '2';
+    },
+    onSelectChange(val) {
+      const dept = this.getDepartmentById(val);
+      this.$emit('change', val, dept);
     },
     /** 查询科室列表 */
     getList() {

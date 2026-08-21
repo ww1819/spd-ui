@@ -269,6 +269,11 @@
                       <el-input :value="totalAmountText" :disabled="true" class="input-total-amount-inline" />
                     </el-form-item>
                   </el-col>
+                  <el-col :span="4">
+                    <el-form-item label="备注" prop="remark">
+                      <el-input v-model="form.remark" placeholder="备注" clearable disabled />
+                    </el-form-item>
+                  </el-col>
                 </el-row>
                 <!-- 驳回原因输入框（仅未审核时显示） -->
                 <el-row v-if="form.stockStatus == 1">

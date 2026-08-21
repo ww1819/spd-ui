@@ -1414,7 +1414,7 @@
 
     <!-- 耗材档案：新增/更新导入 -->
     <div v-if="upload.open" class="local-modal-mask">
-      <div class="local-modal-content" style="width: 560px; min-width: 400px; min-height: auto;">
+      <div class="local-modal-content" style="width: 620px; min-width: 400px; min-height: auto;">
         <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
         <el-alert
           v-if="upload.mode === 'add'"
@@ -1430,7 +1430,7 @@
           :closable="false"
           show-icon
           style="margin-bottom:12px;"
-          title="更新导入：SPD系统主键须存在且属于本组织机构；仅更新名称、规格、型号、单位、单价、医保代码。"
+          title="三步：导出档案 → 发给供应商完善 → 把填好的文件上传回来。有勾选只导出勾选的，没勾选则导出当前查询全部。请勿删除隐藏的档案ID列；空着的格子表示不改。耗材编码不会被更新。"
         />
         <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
           先整单校验，通过后确认写入。解析结果可预览并导出以便排查。
@@ -1450,7 +1450,7 @@
           <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
           <div class="el-upload__tip text-center" slot="tip">
             <span>仅允许 xls、xlsx。</span>
-            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="downloadMaterialImportTemplate">下载模板</el-link>
+            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click.stop.prevent="downloadMaterialImportTemplate">{{ upload.mode === 'update' ? '导出待完善档案' : '下载模板' }}</el-link>
           </div>
         </el-upload>
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
@@ -1483,6 +1483,33 @@
       </el-table>
       <span slot="footer" class="dialog-footer">
         <el-button @click="importPreview.visible = false">关 闭</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog
+      title="系统中没有以下生产厂家"
+      :visible.sync="missingFactoryDialog.visible"
+      width="520px"
+      append-to-body
+      :close-on-click-modal="false"
+    >
+      <p style="margin:0 0 12px;color:#606266;line-height:1.6;">
+        请勾选需要创建的厂家，确定后写入厂家档案。未勾选的下次导入仍会提示。
+      </p>
+      <el-table
+        ref="missingFactoryTable"
+        :data="missingFactoryDialog.list"
+        border
+        max-height="360"
+        size="small"
+        @selection-change="onMissingFactorySelectionChange"
+      >
+        <el-table-column type="selection" width="48" align="center" />
+        <el-table-column prop="name" label="生产厂家" min-width="280" show-overflow-tooltip />
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="missingFactoryDialog.visible = false">取 消</el-button>
+        <el-button type="primary" :loading="missingFactoryDialog.loading" @click="confirmCreateMissingFactories">确定创建</el-button>
       </span>
     </el-dialog>
 
@@ -1675,7 +1702,7 @@
 </template>
 
 <script>
-import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, batchUpdateMaterial, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel, batchUpdateHisChargeItemValueLevel, syncMaterialValueLevelToHisChargeItem } from "@/api/foundation/material";
+import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, batchUpdateMaterial, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, createFactoriesForMaterialImport, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel, batchUpdateHisChargeItemValueLevel, syncMaterialValueLevelToHisChargeItem } from "@/api/foundation/material";
 import { matchFocus18ByMedicalNo } from "@/api/foundation/focus18";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import { runConfiguredTableExport } from "@/utils/tableExportRunner";
@@ -1970,6 +1997,12 @@ export default {
         isUploading: false,
         mode: "add",
         pendingFile: null
+      },
+      missingFactoryDialog: {
+        visible: false,
+        loading: false,
+        list: [],
+        selectedNames: []
       },
       chargeItemValueLevelOptions: [
         { label: '高值', value: '1' },
@@ -2790,9 +2823,18 @@ export default {
       this.upload.pendingFile = null;
     },
     downloadMaterialImportTemplate() {
-      const api = this.upload.mode === "update" ? "foundation/material/importUpdateTemplate" : "foundation/material/importAddTemplate";
-      const name = this.upload.mode === "update" ? "耗材档案更新导入模板.xlsx" : "耗材档案新增导入模板.xlsx";
-      this.download(api, {}, name);
+      if (this.upload.mode !== "update") {
+        this.download("foundation/material/importAddTemplate", {}, "耗材档案新增导入模板.xlsx");
+        return;
+      }
+      const selectedIds = Object.keys(this.selectedRowMap || {}).filter(Boolean);
+      let params;
+      if (selectedIds.length) {
+        params = { includeMaterialIds: selectedIds.join(","), includeDisabledInList: true };
+      } else {
+        params = this.buildMaterialQueryParams(false);
+      }
+      this.download("foundation/material/importUpdateTemplate", params, "耗材档案更新导入模板.xlsx", { timeout: 300000 });
     },
     showMaterialImportPreviewFromPayload(payload, title) {
       const rows = (payload && payload.previewRows) || [];
@@ -2822,10 +2864,18 @@ export default {
         const res = isUpdate ? await validateMaterialImportUpdate(f) : await validateMaterialImportAdd(f);
         const d = res.data || {};
         this.showMaterialImportPreviewFromPayload(d, isUpdate ? "耗材档案更新导入 — 解析结果" : "耗材档案新增导入 — 解析结果");
+        const missingFactories = (d.missingFactories || []).filter(Boolean);
+        if (isUpdate && missingFactories.length && !(d.errors && d.errors.length)) {
+          this.openMissingFactoryDialog(missingFactories);
+          return;
+        }
         if (!d.valid) {
           const errs = (d.errors && d.errors.length) ? d.errors.join("<br/>") : (res.msg || "校验失败");
           this.$alert("<div style='overflow:auto;max-height:60vh'>" + errs + "</div>", "校验未通过", { dangerouslyUseHTMLString: true });
           return;
+        }
+        if (isUpdate && d.warnings && d.warnings.length) {
+          await this.$alert("<div style='overflow:auto;max-height:60vh'>" + d.warnings.join("<br/>") + "</div>", "提示：更新导入不会变更产品档案编码", { dangerouslyUseHTMLString: true });
         }
         const tc = d.totalRows != null ? d.totalRows : 0;
         await this.$modal.confirm("校验已通过。共 " + tc + " 行数据，确认后写入数据库，是否继续？");
@@ -2841,6 +2891,40 @@ export default {
         }
       } finally {
         this.upload.isUploading = false;
+      }
+    },
+    openMissingFactoryDialog(names) {
+      this.missingFactoryDialog.list = names.map((name) => ({ name }));
+      this.missingFactoryDialog.selectedNames = names.slice();
+      this.missingFactoryDialog.visible = true;
+      this.$nextTick(() => {
+        const table = this.$refs.missingFactoryTable;
+        if (!table) {
+          return;
+        }
+        (this.missingFactoryDialog.list || []).forEach((row) => {
+          table.toggleRowSelection(row, true);
+        });
+      });
+    },
+    onMissingFactorySelectionChange(selection) {
+      this.missingFactoryDialog.selectedNames = (selection || []).map((r) => r.name).filter(Boolean);
+    },
+    async confirmCreateMissingFactories() {
+      const names = this.missingFactoryDialog.selectedNames || [];
+      if (!names.length) {
+        this.$modal.msgWarning("请勾选需要创建的生产厂家");
+        return;
+      }
+      this.missingFactoryDialog.loading = true;
+      try {
+        const res = await createFactoriesForMaterialImport(names);
+        this.$modal.msgSuccess((res && res.msg) || "已创建生产厂家，请再次点击「校验并导入」");
+        this.missingFactoryDialog.visible = false;
+      } catch (e) {
+        /* request 已提示 */
+      } finally {
+        this.missingFactoryDialog.loading = false;
       }
     },
     // 多选框选中数据（跨页缓存）

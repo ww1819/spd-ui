@@ -36,6 +36,16 @@ export function listHighChargeConsumeRecords(visitKind, mirrorRowId) {
   })
 }
 
+/** 某条计费明细：计费时间～下载时间之间的抓取记录（按需查询） */
+export function listHighChargeFetchBatches(visitKind, mirrorRowId) {
+  return request({
+    url: '/gz/highChargeMirror/mirror/fetchBatches',
+    method: 'get',
+    timeout: 30000,
+    params: { visitKind, mirrorRowId }
+  })
+}
+
 export function scanHighChargeBarcode(data) {
   return request({
     url: '/gz/highChargeMirror/mirror/scanHighBarcode',

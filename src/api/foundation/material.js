@@ -255,6 +255,16 @@ export function importMaterialUpdateData(file, confirm) {
   })
 }
 
+/** 更新导入：勾选创建系统中不存在的生产厂家 */
+export function createFactoriesForMaterialImport(names) {
+  return request({
+    url: '/foundation/material/importUpdateCreateFactories',
+    method: 'post',
+    data: { names },
+    timeout: MATERIAL_IMPORT_TIMEOUT_MS
+  })
+}
+
 // 产品档案停用（记录停用原因）
 export function disableMaterial(id, reason) {
   return request({

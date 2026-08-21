@@ -232,6 +232,11 @@
               />
             </el-form-item>
           </el-col>
+          <el-col :span="4">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
+            </el-form-item>
+          </el-col>
         </el-row>
         <el-row :gutter="8" style="margin-top: 10px;">
           <el-col :span="8">
@@ -554,6 +559,11 @@
           <el-col :span="4">
             <el-form-item label="引用单号" prop="refBillNo">
               <el-input v-model="viewForm.refBillNo" :disabled="true" placeholder="引用采购订单号" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="viewForm.remark" placeholder="备注" clearable disabled />
             </el-form-item>
           </el-col>
         </el-row>

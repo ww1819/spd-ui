@@ -269,7 +269,12 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="科室" prop="departmentId">
-              <SelectDepartment v-model="form.departmentId" :value2="stkIoBillEntryList.length > 0"/>
+              <SelectDepartment
+                ref="formDepartmentSelect"
+                v-model="form.departmentId"
+                :value2="stkIoBillEntryList.length > 0"
+                @change="handleFormDepartmentChange"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -292,6 +297,11 @@
           <el-col :span="4">
             <el-form-item label="领用人" prop="recipientName">
               <el-input v-model="form.recipientName" :disabled="true" placeholder="领用人" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -605,7 +615,7 @@
       </p>
       <el-form label-width="80px" size="small">
         <el-form-item label="出库科室" required>
-          <SelectDepartment v-model="rkOutDeptTempId" />
+          <SelectDepartment ref="rkOutDeptSelect" v-model="rkOutDeptTempId" @change="handleRkOutDeptChange" />
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
@@ -1125,12 +1135,52 @@ export default {
         this.$message({ message: '请先选择科室', type: 'warning' })
         return
       }
+      if (!this.assertOutboundDepartmentEnabled(this.form.departmentId)) {
+        return
+      }
 
       this.inventoryPickRowIndex = null
       this.inventoryLockedMaterialId = null
       //打开“弹窗组件”
       this.DialogComponentShow = true
       this.warehouseValue = this.form.warehouseId;
+    },
+    /** 出库弹窗：科室停用不可选 */
+    handleFormDepartmentChange(deptId, dept) {
+      if (deptId == null || deptId === '') {
+        return;
+      }
+      const hit = dept || (this.$refs.formDepartmentSelect && this.$refs.formDepartmentSelect.getDepartmentById(deptId));
+      if (this.isDepartmentStatusDisabled(hit)) {
+        this.$message.warning('该科室已经停用请核对！');
+        this.$nextTick(() => {
+          this.form.departmentId = null;
+        });
+      }
+    },
+    isDepartmentStatusDisabled(dept) {
+      if (!dept) {
+        const sel = this.$refs.formDepartmentSelect;
+        return !!(sel && sel.isDepartmentDisabled && sel.isDepartmentDisabled(this.form.departmentId));
+      }
+      const s = dept.status;
+      if (s == null || s === '') return false;
+      return String(s) === '2';
+    },
+    /** 返回 true 表示可继续出库；停用则提示并返回 false */
+    assertOutboundDepartmentEnabled(deptId) {
+      if (deptId == null || deptId === '') {
+        return true;
+      }
+      const sel = this.$refs.formDepartmentSelect;
+      const disabled = sel && sel.isDepartmentDisabled
+        ? sel.isDepartmentDisabled(deptId)
+        : this.isDepartmentStatusDisabled(sel && sel.getDepartmentById ? sel.getDepartmentById(deptId) : null);
+      if (disabled) {
+        this.$message.warning('该科室已经停用请核对！');
+        return false;
+      }
+      return true;
     },
     openPickBatchForRow(rowIndex) {
       if (!this.form.warehouseId) {
@@ -1199,6 +1249,9 @@ export default {
             this.form.createBy = keepCreateBy;
           }
           if (deptOverride != null && !this.isOutboundDeptEmpty(deptOverride)) {
+            if (!this.assertOutboundDepartmentEnabled(deptOverride)) {
+              return;
+            }
             this.form.departmentId = deptOverride;
           }
           this.stkIoBillEntryList = response.data.stkIoBillEntryList || [];
@@ -1219,8 +1272,26 @@ export default {
         this.$message.error('请选择出库科室');
         return;
       }
+      const rkSel = this.$refs.rkOutDeptSelect;
+      if (rkSel && rkSel.isDepartmentDisabled && rkSel.isDepartmentDisabled(this.rkOutDeptTempId)) {
+        this.$message.warning('该科室已经停用请核对！');
+        this.rkOutDeptTempId = null;
+        return;
+      }
       if (this.pendingRkApplyIdForCk) {
         this.loadCkEntriesByRkApply(this.pendingRkApplyIdForCk, this.rkOutDeptTempId);
+      }
+    },
+    handleRkOutDeptChange(deptId, dept) {
+      if (deptId == null || deptId === '') {
+        return;
+      }
+      const hit = dept || (this.$refs.rkOutDeptSelect && this.$refs.rkOutDeptSelect.getDepartmentById(deptId));
+      if (this.isDepartmentStatusDisabled(hit)) {
+        this.$message.warning('该科室已经停用请核对！');
+        this.$nextTick(() => {
+          this.rkOutDeptTempId = null;
+        });
       }
     },
     cancelRkOutDeptPick() {
@@ -1651,6 +1722,9 @@ export default {
     async submitForm() {
       this.$refs["form"].validate(async (valid) => {
         if (valid) {
+          if (!this.assertOutboundDepartmentEnabled(this.form.departmentId)) {
+            return;
+          }
           if (!assertBillHasEntries(this.stkIoBillEntryList, this, '请至少添加一条出库明细')) {
             return;
           }

@@ -2104,6 +2104,63 @@ export async function exportInventoryAlertStyledXlsx(options) {
   });
 }
 
+/** 历史库存明细（截止时间点结存） */
+export async function exportHistoryInventoryStyledXlsx(options) {
+  const { rows = [], asOfTime = '', fileName } = options;
+  const headers = [
+    '序号',
+    '仓库编码',
+    '仓库名称',
+    '耗材编码',
+    '耗材名称',
+    '规格',
+    '型号',
+    '单位',
+    '单价',
+    '批号',
+    '效期',
+    '批次',
+    '供应商编码',
+    '供应商名称',
+    '库存数量',
+    '库存金额',
+  ];
+  const numericCols = [9, 15, 16];
+  return exportInventoryQueryStyledXlsx({
+    sheetName: '历史库存明细',
+    titleBoldText: '历史库存明细表',
+    beginDate: '',
+    endDate: '',
+    filterLines: asOfTime ? [`时间点：${asOfTime}`] : [],
+    headers,
+    rows,
+    numericCols1Based: numericCols,
+    sumExtractors: {
+      15: (row) => Number(row.qty || 0),
+      16: (row) => Number(row.amt || 0),
+    },
+    buildCells: (row) => [
+      0,
+      row.warehouseCode || '',
+      row.warehouseName || '',
+      row.materialCode || '',
+      row.materialName || '',
+      row.materialSpeci || '',
+      row.materialModel || '',
+      row.unitName || '',
+      row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null,
+      row.batchNumber || '',
+      row.expiryDate || '',
+      row.batchNo || '',
+      row.supplierCode || '',
+      row.supplierName || '',
+      Number(row.qty || 0),
+      Number(row.amt || 0),
+    ],
+    fileName,
+  });
+}
+
 /** 有效期预警表 */
 export async function exportExpiryAlertStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
@@ -2710,7 +2767,7 @@ export async function exportDepartmentInOutDetailStyledXlsx(options) {
     buildCells: (row) => [
       0,
       row.billNo || '',
-      dictLabel(row.billType, resBill),
+      dictLabel(row.billTypeName || row.billType, resBill),
       fmtYmd(row.billDate),
       row.materialCode || '',
       row.materialName || '',

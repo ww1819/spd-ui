@@ -132,6 +132,7 @@
       <el-table-column label="审核时间" align="center" prop="auditTime" width="160">
         <template slot-scope="scope">{{ scope.row.auditTime ? parseTime(scope.row.auditTime, '{y}-{m}-{d} {h}:{i}') : '--' }}</template>
       </el-table-column>
+      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip />
       <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['finance:invoice:edit']" :disabled="scope.row.auditStatus === 1">修改</el-button>

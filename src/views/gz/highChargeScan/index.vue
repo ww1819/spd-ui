@@ -125,6 +125,18 @@
       <el-table-column label="规格" prop="specModel" width="130" min-width="110" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="数量" prop="quantity" width="90" align="center" />
       <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
+      <el-table-column label="下载时间" prop="createTime" width="160" show-overflow-tooltip />
+      <el-table-column label="抓取记录" width="90" align="center">
+        <template slot-scope="scope">
+          <el-button
+            type="text"
+            size="small"
+            class="hc-table-op-btn"
+            v-hasPermi="['gz:highChargeScan:list','department:patientCharge:list']"
+            @click="openFetchTraceDialog(scope.row)"
+          >查看</el-button>
+        </template>
+      </el-table-column>
       <el-table-column label="金额" prop="totalAmount" width="110" min-width="100" align="right" sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="核销状态" prop="processStatus" width="100" align="center" show-overflow-tooltip>
         <template slot-scope="scope">
@@ -217,6 +229,53 @@
       </el-table>
       <div slot="footer" class="dialog-footer">
         <el-button class="spd-btn spd-btn--secondary" @click="consumeRecordDialog.visible = false">关 闭</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog :title="fetchTraceDialog.title" :visible.sync="fetchTraceDialog.visible" width="920px" append-to-body>
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+        class="mb8"
+        :title="fetchTraceDialog.hint"
+      />
+      <el-table v-loading="fetchTraceDialog.loading" :data="fetchTraceDialog.rows" border size="small" max-height="420" empty-text="暂无相关抓取记录">
+        <el-table-column label="抓取时间" prop="createTime" width="160" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ formatDateTime(scope.row.createTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="类型" prop="chargeKind" width="72" align="center">
+          <template slot-scope="scope">
+            <span>{{ scope.row.chargeKind === 'OUTPATIENT' ? '门诊' : '住院' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="查询条件" prop="queryCondition" min-width="280" show-overflow-tooltip />
+        <el-table-column label="新增" prop="insertedCount" width="70" align="right">
+          <template slot-scope="scope">
+            <span>{{ scope.row.insertedCount != null ? scope.row.insertedCount : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="跳过" prop="skippedCount" width="70" align="right">
+          <template slot-scope="scope">
+            <span>{{ scope.row.skippedCount != null ? scope.row.skippedCount : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="需核对" prop="driftCount" width="80" align="right">
+          <template slot-scope="scope">
+            <span>{{ scope.row.driftCount != null ? scope.row.driftCount : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="本条结果" width="110" align="center">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.downloadSuccess" type="success" size="mini">本条下载成功</el-tag>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="fetchTraceDialog.visible = false">关 闭</el-button>
       </div>
     </el-dialog>
 
@@ -344,6 +403,7 @@ import {
   listHighChargeOutpatientMirror,
   listHighChargeAllMirror,
   listHighChargeConsumeRecords,
+  listHighChargeFetchBatches,
   scanHighChargeBarcode,
   applyHighChargeConsume
 } from '@/api/gz/highChargeScan'
@@ -406,6 +466,13 @@ export default {
         title: '消耗记录',
         rows: []
       },
+      fetchTraceDialog: {
+        visible: false,
+        loading: false,
+        title: '抓取记录',
+        hint: '',
+        rows: []
+      },
       fetchDialogVisible: false,
       fetchSubmitting: false,
       fetchForm: {
@@ -450,6 +517,10 @@ export default {
     this.$nextTick(() => this.layoutDetailTable())
   },
   methods: {
+    formatDateTime(v) {
+      if (!v) return '--'
+      return parseTime(v, '{y}-{m}-{d} {h}:{i}:{s}')
+    },
     formatDateOnly(v) {
       if (!v) return '--'
       return parseTime(v, '{y}-{m}-{d}')
@@ -811,6 +882,22 @@ export default {
         this.consumeRecordDialog.rows = res.data || []
       }).finally(() => {
         this.consumeRecordDialog.loading = false
+      })
+    },
+    openFetchTraceDialog(row) {
+      if (!row || !row.id) return
+      const vk = row.visitType === 'OUTPATIENT' ? 'OUTPATIENT' : 'INPATIENT'
+      const chargeAt = this.formatDateTime(row.chargeDate)
+      const downloadAt = this.formatDateTime(row.createTime)
+      this.fetchTraceDialog.title = `抓取记录 · ${row.patientName || ''} · 收费项 ${row.chargeItemId || ''}`
+      this.fetchTraceDialog.hint = `计费时间 ${chargeAt}，下载时间 ${downloadAt}。下列为相关抓取；标记「本条下载成功」的是写入本条的那一次。`
+      this.fetchTraceDialog.visible = true
+      this.fetchTraceDialog.loading = true
+      this.fetchTraceDialog.rows = []
+      listHighChargeFetchBatches(vk, row.id).then(res => {
+        this.fetchTraceDialog.rows = res.data || []
+      }).finally(() => {
+        this.fetchTraceDialog.loading = false
       })
     },
     handleDetailQuery() {

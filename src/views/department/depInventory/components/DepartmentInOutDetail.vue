@@ -64,10 +64,11 @@
             <el-form-item label="单据类型" prop="billType" class="query-item-inline">
               <el-select v-model="queryParams.billType" placeholder="请选择单据类型" clearable class="query-select-bill-type">
                 <el-option label="全部" :value="null" />
-                <el-option label="入库" :value="101" />
-                <el-option label="出库" :value="102" />
-                <el-option label="调拨" :value="103" />
-                <el-option label="盘点" :value="104" />
+                <el-option label="出库" :value="201" />
+                <el-option label="退库" :value="401" />
+                <el-option label="消耗" :value="601" />
+                <el-option label="盘点" :value="602" />
+                <el-option label="转科" :value="603" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -104,9 +105,9 @@
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column label="单据类型" align="center" prop="billType" width="100" show-overflow-tooltip resizable>
+        <el-table-column label="单据类型" align="center" prop="billTypeName" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            <dict-tag :options="dict.type.bill_type" :value="scope.row.billType"/>
+            <span>{{ scope.row.billTypeName || resolveBillTypeLabel(scope.row.billType) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="制单日期" align="center" prop="billDate" width="120" show-overflow-tooltip resizable>
@@ -128,8 +129,8 @@
         </el-table-column>
         <el-table-column label="数量" align="center" prop="qty" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByQty">
           <template slot-scope="scope">
-            <span :style="{ color: Number(scope.row.billType) === 101 ? '#67C23A' : '#F56C6C' }">
-              {{ Number(scope.row.billType) === 101 ? '+' : '-' }}{{ scope.row.qty }}
+            <span :style="{ color: Number(scope.row.qty) >= 0 ? '#67C23A' : '#F56C6C' }">
+              {{ Number(scope.row.qty) > 0 ? '+' : '' }}{{ scope.row.qty }}
             </span>
           </template>
         </el-table-column>
@@ -174,12 +175,7 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="单据类型" prop="billType">
-              <el-select v-model="form.billType" :disabled="true" clearable>
-                <el-option v-for="dict in dict.type.bill_type"
-                          :key="dict.value"
-                          :label="dict.label"
-                          :value="dict.value" />
-              </el-select>
+              <el-input :value="form.billTypeName || resolveBillTypeLabel(form.billType)" :disabled="true" />
             </el-form-item>
           </el-col>
           <el-col :span="6">
@@ -229,7 +225,7 @@
 </template>
 
 <script>
-import { listDepartmentInOutDetail, getInWarehouse } from "@/api/department/depInventory";
+import { listDepartmentInOutDetail } from "@/api/department/depInventory";
 import { exportDepartmentInOutDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
@@ -237,7 +233,7 @@ import RightToolbar from "@/components/RightToolbar";
 
 export default {
   name: "DepartmentInOutDetail",
-  dicts: ["biz_status", "bill_type"],
+  dicts: ["biz_status"],
   components: { SelectDepartment, SelectWarehouse, RightToolbar },
   data() {
     return {
@@ -316,6 +312,11 @@ export default {
     sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
     sortByQty(a, b) { return this.sortByNum(a, b, 'qty'); },
     sortByBatchNo(a, b) { return this.sortByStr(a, b, r => r.batchNo || ''); },
+    resolveBillTypeLabel(v) {
+      const map = { 201: '出库', 401: '退库', 601: '消耗', 602: '盘点', 603: '转科' };
+      if (v == null || v === '') return '';
+      return map[v] || String(v);
+    },
     getList() {
       this.loading = true;
       const queryParams = { ...this.queryParams };
@@ -394,11 +395,10 @@ export default {
           this.$message && this.$message.warning("暂无数据可导出");
           return;
         }
-        const billOpts = this.dict.type.bill_type || [];
         const resolveBillType = (v) => {
           if (v == null || v === "") return "";
-          const hit = billOpts.find((d) => String(d.value) === String(v));
-          return hit ? hit.label : String(v);
+          if (typeof v === "string" && !/^\d+$/.test(String(v))) return v;
+          return this.resolveBillTypeLabel(v);
         };
         const now = new Date();
         const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
@@ -417,12 +417,9 @@ export default {
       }
     },
     handleView(row) {
-      const id = row.id;
-      getInWarehouse(id).then(response => {
-        this.form = response.data;
-        this.open = true;
-        this.title = "查看单据";
-      });
+      this.form = { ...row };
+      this.open = true;
+      this.title = "查看单据";
     },
     cancel() {
       this.open = false;

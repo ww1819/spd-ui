@@ -150,6 +150,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
+      <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
@@ -234,7 +235,11 @@
                 <el-input v-model="form.createBy" :disabled="true" />
               </el-form-item>
             </el-col>
-            <el-col :span="4" />
+            <el-col :span="4">
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
+              </el-form-item>
+            </el-col>
           </el-row>
           <el-row v-if="false" :gutter="8">
             <el-col :span="4">

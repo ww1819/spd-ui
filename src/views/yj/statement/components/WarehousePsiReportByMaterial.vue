@@ -56,20 +56,22 @@
             <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                placeholder="起始时间"
                 clearable
                 class="query-date-start"
+                default-time="00:00:00"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                placeholder="截止时间"
                 clearable
                 class="query-date-end"
+                default-time="23:59:59"
               />
             </el-form-item>
             <el-form-item label="显示列" class="query-item-inline column-opts">
@@ -418,6 +420,9 @@ export default {
           showBatchNo: this.flag(this.columnOpts.showBatchNo)
         }
       };
+      if (queryParams.beginDate && String(queryParams.beginDate).length === 10) {
+        queryParams.beginDate = queryParams.beginDate + ' 00:00:00';
+      }
       if (queryParams.endDate && String(queryParams.endDate).length === 10) {
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
       }
@@ -461,10 +466,10 @@ export default {
     getStatDate() {
       const myDate = new Date();
       myDate.setDate(myDate.getDate() - 5);
-      return this.formatDate(myDate);
+      return this.formatDate(myDate) + " 00:00:00";
     },
     getEndDate() {
-      return this.formatDate(new Date());
+      return this.formatDate(new Date()) + " 23:59:59";
     },
     formatDate(myDate) {
       const year = myDate.getFullYear();

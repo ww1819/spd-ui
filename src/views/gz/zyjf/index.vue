@@ -134,6 +134,7 @@
                 <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
               </template>
             </el-table-column>
+            <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip />
           </el-table>
           </div>
         </el-card>

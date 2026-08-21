@@ -345,6 +345,11 @@
               <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
+          <el-col :span="4">
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" placeholder="备注" clearable disabled />
+            </el-form-item>
+          </el-col>
         </el-row>
 
         </div>

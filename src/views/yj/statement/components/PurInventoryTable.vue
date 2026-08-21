@@ -45,20 +45,22 @@
             <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                placeholder="起始时间"
                 clearable
                 class="query-date-start"
+                default-time="00:00:00"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                placeholder="截止时间"
                 clearable
                 class="query-date-end"
+                default-time="23:59:59"
               />
             </el-form-item>
             <el-form-item label="单据类型" prop="billType" class="query-item-inline">
@@ -318,7 +320,10 @@ export default {
       if (billTypeStr) {
         queryParams.billTypeStr = billTypeStr;
       }
-      // 处理日期参数：如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
+      // 处理日期参数：仅日期时补全时分秒；已含时分秒则原样提交
+      if (queryParams.beginDate && queryParams.beginDate.length === 10) {
+        queryParams.beginDate = queryParams.beginDate + ' 00:00:00';
+      }
       if (queryParams.endDate && queryParams.endDate.length === 10) {
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
       }
@@ -342,7 +347,7 @@ export default {
       });
     },
     getStatDate(){
-      // 当前日期往前推5天
+      // 当前日期往前推5天 00:00:00
       let myDate = new Date();
       myDate.setDate(myDate.getDate() - 5);
       let year = myDate.getFullYear();
@@ -350,19 +355,17 @@ export default {
       month = month < 10 ? "0" + month : month;
       let day = myDate.getDate();
       day = day < 10 ? "0" + day : day;
-      let statDate = year + "-" + month + "-" + day;
-      return statDate;
+      return year + "-" + month + "-" + day + " 00:00:00";
     },
     getEndDate(){
-      // 当前日期
+      // 当前日期 23:59:59
       let myDate = new Date();
       let year = myDate.getFullYear();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
       let day = myDate.getDate();
       day = day < 10 ? "0" + day : day;
-      let endDate = year + "-" + month + "-" + day;
-      return endDate;
+      return year + "-" + month + "-" + day + " 23:59:59";
     },
     /** 搜索按钮操作 */
     handleQuery() {

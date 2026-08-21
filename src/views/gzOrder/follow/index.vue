@@ -247,6 +247,11 @@
                     />
                   </el-form-item>
                 </el-col>
+                <el-col :span="8">
+                  <el-form-item label="备注" prop="remark">
+                    <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
+                  </el-form-item>
+                </el-col>
               </el-row>
               </div>
 

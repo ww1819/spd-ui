@@ -42,20 +42,22 @@
             <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                placeholder="起始时间"
                 clearable
                 class="query-date-start"
+                default-time="00:00:00"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                placeholder="截止时间"
                 clearable
                 class="query-date-end"
+                default-time="23:59:59"
               />
             </el-form-item>
             <el-form-item label="计费" prop="isBilling" class="query-item-inline">
@@ -207,22 +209,26 @@ export default {
       let myDate = new Date();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
-      let statDate = myDate.getFullYear().toString() + "-"  + month + "-" + "01"; //月初
-      return statDate;
+      return myDate.getFullYear().toString() + "-"  + month + "-" + "01" + " 00:00:00"; //月初
     },
     getEndDate(){
       let myDate = new Date();
       let month = myDate.getMonth() + 1;
       month = month < 10 ? "0" + month : month;
       let dayEnd = new Date(myDate.getFullYear(), month, 0).getDate(); //获取当月一共有多少天
-      let endDate = myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd; //月末
-      return endDate;
+      return myDate.getFullYear().toString() + "-" + month  + "-" + dayEnd + " 23:59:59"; //月末
     },
     /** 查询月结存汇总列表 */
     getList() {
       this.loading = true;
       const queryParams = { ...this.queryParams };
       this.applyMoreSearchToQueryParams(queryParams);
+      if (queryParams.beginDate && String(queryParams.beginDate).length === 10) {
+        queryParams.beginDate = queryParams.beginDate + ' 00:00:00';
+      }
+      if (queryParams.endDate && String(queryParams.endDate).length === 10) {
+        queryParams.endDate = queryParams.endDate + ' 23:59:59';
+      }
       listInventorySummary(queryParams).then(response => {
         // 汇总数据直接赋值，不使用分页结构
         this.inventoryList = Array.isArray(response) ? response : (response.rows || []);
