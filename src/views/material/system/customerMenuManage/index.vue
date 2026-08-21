@@ -39,8 +39,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitStatusForm">确 定</el-button>
-        <el-button @click="openStatus = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitStatusForm">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="openStatus = false">取 消</el-button>
       </div>
     </el-dialog>
     <el-dialog title="启停用记录" :visible.sync="openLog" width="720px" append-to-body>
@@ -51,7 +51,7 @@
         <el-table-column label="操作人" prop="operateBy" width="120" />
         <el-table-column label="原因" prop="reason" min-width="200" show-overflow-tooltip />
       </el-table>
-      <div slot="footer" class="dialog-footer"><el-button @click="openLog = false">关 闭</el-button></div>
+      <div slot="footer" class="dialog-footer"><el-button class="spd-btn spd-btn--secondary" @click="openLog = false">关 闭</el-button></div>
     </el-dialog>
     <el-dialog title="启停用时间段" :visible.sync="openPeriod" width="720px" append-to-body>
       <div class="log-dialog-header">{{ logForm.menuName }}</div>
@@ -60,7 +60,7 @@
         <el-table-column label="开始时间" width="170"><template slot-scope="scope">{{ parseTime(scope.row.startTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</template></el-table-column>
         <el-table-column label="结束时间" width="170"><template slot-scope="scope">{{ scope.row.endTime ? parseTime(scope.row.endTime, '{y}-{m}-{d} {h}:{i}:{s}') : '至今' }}</template></el-table-column>
       </el-table>
-      <div slot="footer" class="dialog-footer"><el-button @click="openPeriod = false">关 闭</el-button></div>
+      <div slot="footer" class="dialog-footer"><el-button class="spd-btn spd-btn--secondary" @click="openPeriod = false">关 闭</el-button></div>
     </el-dialog>
   </div>
 </template>

@@ -69,11 +69,12 @@
         type="success"
         plain
         size="small"
+        class="spd-btn spd-btn--secondary"
         v-hasPermi="['department:patientCharge:fetchInpatient', 'department:patientCharge:fetchOutpatient']"
         @click="openFetchDialog"
       >收费记录提取</el-button>
-      <el-button type="primary" icon="el-icon-search" size="small" @click="handleDetailQuery">查询</el-button>
-      <el-button icon="el-icon-refresh" size="small" @click="resetDetailQuery">重置</el-button>
+      <el-button type="primary" icon="el-icon-search" size="small" class="spd-btn spd-btn--primary" @click="handleDetailQuery">查询</el-button>
+      <el-button icon="el-icon-refresh" size="small" class="spd-btn spd-btn--secondary" @click="resetDetailQuery">重置</el-button>
     </div>
 
     <div class="hc-detail-box">
@@ -215,7 +216,7 @@
         <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="120" show-overflow-tooltip />
       </el-table>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="consumeRecordDialog.visible = false">关 闭</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="consumeRecordDialog.visible = false">关 闭</el-button>
       </div>
     </el-dialog>
 
@@ -285,8 +286,8 @@
         </el-table-column>
       </el-table>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="highDialogVisible = false">取 消</el-button>
-        <el-button type="primary" :loading="highSubmitting" :disabled="highLines.length === 0" @click="submitHighConsume">保存并审核</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="highDialogVisible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="highSubmitting" :disabled="highLines.length === 0" @click="submitHighConsume">保存并审核</el-button>
       </div>
     </el-dialog>
 
@@ -319,8 +320,8 @@
         <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；勾选住院/门诊后确定抓取；多选时先住院后门诊；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="fetchDialogVisible = false">取 消</el-button>
-        <el-button type="primary" :loading="fetchSubmitting" @click="submitFetch">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="fetchDialogVisible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="fetchSubmitting" @click="submitFetch">确 定</el-button>
       </div>
     </el-dialog>
   </div>

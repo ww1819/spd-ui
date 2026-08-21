@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container inventory-warning-container">
+  <div class="app-container list-page inventory-warning-container">
     <el-row :gutter="20">
       <!-- 左侧科室列表 -->
       <el-col :span="5">
@@ -23,58 +23,62 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="19">
-        <!-- 查询条件容器 -->
-        <div class="query-container" v-show="showSearch">
+        <div class="form-fields-container list-query-panel" v-show="showSearch">
           <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-            <el-row class="query-row-left">
-              <el-col :span="24">
-                <el-form-item prop="supplierId" class="query-item-inline">
-                  <div class="query-select-wrapper">
+            <more-search-bar
+              ref="moreSearchBar"
+              v-model="moreSearchTypes"
+              :options="moreSearchOptions"
+              :storage-key="moreSearchStorageKey"
+              :default-types="builtInMoreSearchDefaults"
+              :auto-load="false"
+              @change="onMoreSearchTypesChange"
+              @search="handleQuery"
+              @reset="resetQuery"
+            >
+              <div
+                v-for="t in moreSearchTypes"
+                :key="t"
+                class="more-search-dynamic-field"
+                :class="moreSearchFieldClass(t)"
+              >
+                <template v-if="t === 'supplier'">
+                  <div class="query-select-wrapper more-search-select-wrap">
                     <SelectSupplier v-model="queryParams.supplierId" />
                   </div>
-                </el-form-item>
-                <el-form-item prop="departmentId" class="query-item-inline">
-                  <div class="query-select-wrapper">
+                </template>
+                <template v-else-if="t === 'department'">
+                  <div class="query-select-wrapper more-search-select-wrap">
                     <SelectDepartment v-model="queryParams.departmentId" />
                   </div>
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row class="query-row-second">
-              <el-col :span="24">
-                <el-form-item prop="materialName" class="query-item-inline">
-                  <el-input
-                    v-model="queryParams.materialName"
-                    placeholder="产品名称"
-                    clearable
-                    style="width: 180px"
-                    @keyup.enter.native="handleQuery"
-                  />
-                </el-form-item>
-              </el-col>
-            </el-row>
+                </template>
+                <el-input
+                  v-else
+                  v-model="queryParams.materialName"
+                  placeholder="产品名称"
+                  clearable
+                  class="more-search-input more-search-input--dynamic"
+                  @keyup.enter.native="handleQuery"
+                />
+              </div>
+            </more-search-bar>
           </el-form>
         </div>
 
-        <el-row :gutter="10" class="mb8" style="margin-top: -8px;">
-          <el-col :span="1.5">
+        <el-row :gutter="0" class="mb8 list-toolbar">
+          <div class="list-toolbar-left">
             <el-button
               type="primary"
-              size="medium"
+              size="small"
+              class="spd-btn spd-btn--primary"
               :disabled="!selectedDepartmentId"
               @click="handleAdd"
               v-hasPermi="['department:inventoryWarning:add']"
             >新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button
-              type="primary"
-              icon="el-icon-search"
-              size="medium"
-              @click="handleQuery"
-            >搜索</el-button>
-          </el-col>
-          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
+          <div class="list-toolbar-right">
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
         </el-row>
 
         <!-- 明细表格 -->
@@ -206,9 +210,9 @@
 
         <!-- 查询按钮 -->
         <div style="text-align:left;margin:5px 0;">
-          <el-button @click="cancel" size="medium" style="margin-right:10px;">取消</el-button>
-          <el-button type="primary" icon="el-icon-check" size="medium" @click="submitForm" style="margin-right:10px;">保存</el-button>
-          <el-button type="primary" icon="el-icon-search" size="medium" @click="handleDialogQuery">搜索</el-button>
+          <el-button class="spd-btn spd-btn--secondary" size="small" style="margin-right:10px;" @click="cancel">取消</el-button>
+          <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" style="margin-right:10px;" @click="submitForm">保存</el-button>
+          <el-button type="primary" icon="el-icon-search" size="small" class="spd-btn spd-btn--primary" @click="handleDialogQuery">搜索</el-button>
         </div>
 
         <!-- 明细表格 -->
@@ -295,8 +299,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="warningDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="submitWarningForm">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="warningDialogVisible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitWarningForm">确 定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -329,6 +333,12 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '供应商', value: 'supplier' },
+        { label: '科室', value: 'department' },
+        { label: '产品名称', value: 'materialName' }
+      ],
       // 总条数
       total: 0,
       // 预警设置表格数据
@@ -392,7 +402,17 @@ export default {
       }
     };
   },
+  computed: {
+    moreSearchStorageKey() {
+      return 'spd.department.inventoryWarning.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
     this.getAllDepartmentList();
   },
@@ -407,7 +427,12 @@ export default {
     /** 查询预警设置列表 */
     getList() {
       this.loading = true;
-      listInventoryWarning(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      if (this.selectedDepartmentId) {
+        params.departmentId = this.selectedDepartmentId;
+      }
+      listInventoryWarning(params).then(response => {
         this.warningList = response.rows || [];
         this.total = response.total || 0;
         this.loading = false;
@@ -474,7 +499,53 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.selectedDepartmentId = null;
+      this.selectedDepartment = null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'materialName') {
+        return 'more-search-field--text';
+      }
+      return 'more-search-field--select';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        supplier: 'supplierId',
+        department: 'departmentId',
+        materialName: 'materialName'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+      if (this.selectedDepartmentId) {
+        this.queryParams.departmentId = this.selectedDepartmentId;
+      }
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -741,12 +812,8 @@ export default {
 }
 
 /* 查询条件容器 */
-.query-container {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
+.list-query-panel {
+  margin-top: -20px;
   width: calc(100% + 20px);
   margin-left: -15px;
   margin-right: -10px;

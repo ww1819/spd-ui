@@ -8,82 +8,62 @@
       <el-tab-pane label="高值耗材使用情况报表" name="usageReport"></el-tab-pane>
     </el-tabs>
 
-    <div class="app-container first-inventory-page">
-      <div class="form-fields-container">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-          <el-row class="query-row-more">
-            <el-col :span="24" class="query-row-more-inner">
-              <el-form-item class="query-item-inline more-search-item">
-                <div class="more-search-row">
-                  <span class="more-search-label">更多检索</span>
-                  <el-select
-                    v-model="moreSearchTypes"
-                    multiple
-                    collapse-tags
-                    placeholder="选择检索条件（可多选）"
-                    class="more-search-type"
-                    @change="onMoreSearchTypesChange"
-                  >
-                    <el-option label="院内码" value="inHospitalCode" />
-                    <el-option label="耗材名称" value="materialKeyword" />
-                    <el-option label="规格" value="materialSpeci" />
-                    <el-option label="仓库" value="warehouse" />
-                    <el-option label="生产厂家" value="factoryId" />
-                    <el-option label="供应商" value="supplierId" />
-                    <el-option label="批号" value="materialNo" />
-                    <el-option label="收费编码" value="chargeCodeKeyword" />
-                    <el-option label="门诊号/住院号" value="hospitalNumber" />
-                    <el-option label="病人姓名" value="patientName" />
-                    <el-option label="主条码" value="masterBarcode" />
-                    <el-option label="辅条码" value="secondaryBarcode" />
-                    <el-option label="UDI码" value="udiKeyword" />
-                    <el-option label="阳光平台编码" value="sunshineCodeKeyword" />
-                    <el-option label="医保编码" value="medicalNoKeyword" />
-                  </el-select>
-                  <div
-                    v-for="t in moreSearchTypes"
-                    :key="t"
-                    class="more-search-dynamic-field"
-                  >
-                    <span class="more-search-field-label">{{ moreSearchTypeLabel(t) }}</span>
-                    <template v-if="t === 'warehouse'">
-                      <div class="query-select-wrapper more-search-warehouse-wrap">
-                        <SelectWarehouse
-                          v-model="queryParams.warehouseId"
-                          includeWarehouseType="高值"
-                          placeholder="仓库编码/名称/简码搜索"
-                        />
-                      </div>
-                    </template>
-                    <template v-else-if="t === 'factoryId'">
-                      <div class="query-select-wrapper more-search-factory-wrap">
-                        <SelectFactory v-model="queryParams.factoryId" placeholder="厂家名称/编码/简码搜索" />
-                      </div>
-                    </template>
-                    <template v-else-if="t === 'supplierId'">
-                      <div class="query-select-wrapper more-search-supplier-wrap">
-                        <SelectSupplier
-                          v-model="queryParams.supplierId"
-                          :keyword.sync="queryParams.supplierKeyword"
-                          allow-keyword-blur
-                          placeholder="供应商编码/名称/简码搜索"
-                        />
-                      </div>
-                    </template>
-                    <el-input
-                      v-else
-                      v-model="queryParams[t]"
-                      :placeholder="moreSearchPlaceholderFor(t)"
-                      clearable
-                      class="more-search-input more-search-input--dynamic"
-                      @input="val => onMoreSearchInput(t, val)"
-                      @keyup.enter.native="handleQuery"
-                    />
-                  </div>
+    <div class="app-container list-page first-inventory-page">
+      <div class="form-fields-container list-query-panel" v-show="showSearch">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field"
+              :class="moreSearchFieldClass(t)"
+            >
+              <template v-if="t === 'warehouse'">
+                <div class="query-select-wrapper more-search-select-wrap">
+                  <SelectWarehouse
+                    v-model="queryParams.warehouseId"
+                    includeWarehouseType="高值"
+                    placeholder="仓库编码/名称/简码搜索"
+                  />
                 </div>
-              </el-form-item>
-            </el-col>
-          </el-row>
+              </template>
+              <template v-else-if="t === 'factoryId'">
+                <div class="query-select-wrapper more-search-select-wrap">
+                  <SelectFactory v-model="queryParams.factoryId" placeholder="厂家名称/编码/简码搜索" />
+                </div>
+              </template>
+              <template v-else-if="t === 'supplierId'">
+                <div class="query-select-wrapper more-search-select-wrap">
+                  <SelectSupplier
+                    v-model="queryParams.supplierId"
+                    :keyword.sync="queryParams.supplierKeyword"
+                    allow-keyword-blur
+                    placeholder="供应商编码/名称/简码搜索"
+                  />
+                </div>
+              </template>
+              <el-input
+                v-else
+                v-model="queryParams[t]"
+                :placeholder="moreSearchPlaceholderFor(t)"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @input="val => onMoreSearchInput(t, val)"
+                @keyup.enter.native="handleQuery"
+              />
+            </div>
+          </more-search-bar>
+
           <el-row :gutter="16" class="query-row-second">
             <el-col :span="24" class="query-row-second-inner">
               <el-form-item label="日期" class="query-item-inline query-item-date-range">
@@ -93,7 +73,7 @@
                   value-format="yyyy-MM-dd"
                   placeholder="起始日期"
                   clearable
-                  class="query-date-start"
+                  class="query-date-picker query-date-start"
                 />
                 <span class="query-date-sep">至</span>
                 <el-date-picker
@@ -102,7 +82,7 @@
                   value-format="yyyy-MM-dd"
                   placeholder="截止日期"
                   clearable
-                  class="query-date-end"
+                  class="query-date-picker query-date-end"
                 />
               </el-form-item>
               <el-form-item prop="orderStatus" class="query-item-inline">
@@ -110,7 +90,7 @@
                   v-model="queryParams.orderStatus"
                   placeholder="状态"
                   clearable
-                  style="width: 150px"
+                  class="more-search-select-wrap"
                 >
                   <el-option label="已审核" :value="2" />
                   <el-option label="未审核" :value="1" />
@@ -121,7 +101,7 @@
                   v-model="queryParams.isBilling"
                   placeholder="计费"
                   clearable
-                  style="width: 100px"
+                  class="more-search-short-select"
                 >
                   <el-option
                     v-for="dict in dict.type.is_yes_no"
@@ -136,7 +116,7 @@
                   v-model="queryParams.isProcure"
                   placeholder="集采"
                   clearable
-                  style="width: 100px"
+                  class="more-search-short-select"
                 >
                   <el-option
                     v-for="dict in dict.type.is_yes_no"
@@ -151,7 +131,7 @@
                   v-model="queryParams.isMonitor"
                   placeholder="重点耗材"
                   clearable
-                  style="width: 110px"
+                  class="more-search-short-select"
                 >
                   <el-option
                     v-for="dict in dict.type.is_yes_no"
@@ -166,28 +146,16 @@
         </el-form>
       </div>
 
-      <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
-        <div class="button-row-left">
+      <el-row :gutter="0" class="mb8 list-toolbar">
+        <div class="list-toolbar-left">
           <el-button
-            type="warning"
-            icon="el-icon-download"
-            size="medium"
+            size="small"
+            class="spd-btn spd-btn--secondary"
             @click="handleExport"
             v-hasPermi="['gz:retrospect:export']"
           >导出</el-button>
-          <el-button
-            type="primary"
-            icon="el-icon-search"
-            size="medium"
-            @click="handleQuery"
-          >搜索</el-button>
-          <el-button
-            icon="el-icon-refresh"
-            size="medium"
-            @click="resetQuery"
-          >重置</el-button>
         </div>
-        <div class="button-row-right">
+        <div class="list-toolbar-right">
           <right-toolbar :showSearch.sync="showSearch" @queryTable="handleQuery"></right-toolbar>
         </div>
       </el-row>
@@ -255,6 +223,23 @@ export default {
       multiple: true,
       showSearch: true,
       moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "院内码", value: "inHospitalCode" },
+        { label: "耗材名称", value: "materialKeyword" },
+        { label: "规格", value: "materialSpeci" },
+        { label: "仓库", value: "warehouse" },
+        { label: "生产厂家", value: "factoryId" },
+        { label: "供应商", value: "supplierId" },
+        { label: "批号", value: "materialNo" },
+        { label: "收费编码", value: "chargeCodeKeyword" },
+        { label: "门诊号/住院号", value: "hospitalNumber" },
+        { label: "病人姓名", value: "patientName" },
+        { label: "主条码", value: "masterBarcode" },
+        { label: "辅条码", value: "secondaryBarcode" },
+        { label: "UDI码", value: "udiKeyword" },
+        { label: "阳光平台编码", value: "sunshineCodeKeyword" },
+        { label: "医保编码", value: "medicalNoKeyword" }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -284,7 +269,17 @@ export default {
       }
     };
   },
+  computed: {
+    moreSearchStorageKey() {
+      return "spd.gz.retrospect.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.initDefaultScanDateRange();
   },
   activated() {
@@ -313,74 +308,14 @@ export default {
       this.queryParams.startDate = this.formatScanDate(start);
       this.queryParams.endDate = this.formatScanDate(end);
     },
-    onMoreSearchTypesChange(val) {
-      const set = new Set(val || []);
-      if (!set.has('inHospitalCode')) {
-        this.queryParams.inHospitalCode = null;
-      }
-      if (!set.has('materialKeyword')) {
-        this.queryParams.materialKeyword = null;
-      }
-      if (!set.has('materialSpeci')) {
-        this.queryParams.materialSpeci = null;
-      }
-      if (!set.has('warehouse')) {
-        this.queryParams.warehouseId = null;
-      }
-      if (!set.has('factoryId')) {
-        this.queryParams.factoryId = null;
-      }
-      if (!set.has('supplierId')) {
-        this.queryParams.supplierId = null;
-        this.queryParams.supplierKeyword = null;
-      }
-      if (!set.has('materialNo')) {
-        this.queryParams.materialNo = null;
-      }
-      if (!set.has('chargeCodeKeyword')) {
-        this.queryParams.chargeCodeKeyword = null;
-      }
-      if (!set.has('hospitalNumber')) {
-        this.queryParams.hospitalNumber = null;
-      }
-      if (!set.has('patientName')) {
-        this.queryParams.patientName = null;
-      }
-      if (!set.has('masterBarcode')) {
-        this.queryParams.masterBarcode = null;
-      }
-      if (!set.has('secondaryBarcode')) {
-        this.queryParams.secondaryBarcode = null;
-      }
-      if (!set.has('udiKeyword')) {
-        this.queryParams.udiKeyword = null;
-      }
-      if (!set.has('sunshineCodeKeyword')) {
-        this.queryParams.sunshineCodeKeyword = null;
-      }
-      if (!set.has('medicalNoKeyword')) {
-        this.queryParams.medicalNoKeyword = null;
-      }
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
-    moreSearchTypeLabel(t) {
-      const map = {
-        inHospitalCode: '院内码',
-        materialKeyword: '耗材名称',
-        materialSpeci: '规格',
-        warehouse: '仓库',
-        factoryId: '生产厂家',
-        supplierId: '供应商',
-        materialNo: '批号',
-        chargeCodeKeyword: '收费编码',
-        hospitalNumber: '门诊号/住院号',
-        patientName: '病人姓名',
-        masterBarcode: '主条码',
-        secondaryBarcode: '辅条码',
-        udiKeyword: 'UDI码',
-        sunshineCodeKeyword: '阳光平台编码',
-        medicalNoKeyword: '医保编码'
-      };
-      return map[t] || t;
+    moreSearchFieldClass(t) {
+      if (['warehouse', 'factoryId', 'supplierId'].includes(t)) {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
     },
     moreSearchPlaceholderFor(t) {
       const map = {
@@ -454,7 +389,8 @@ export default {
       this.queryParams.isProcure = null;
       this.queryParams.isMonitor = null;
       this.queryParams.pageNum = 1;
-      this.moreSearchTypes = [];
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.initDefaultScanDateRange();
       this.handleQuery();
     },
@@ -508,6 +444,52 @@ export default {
         return;
       }
       await ref.exportTable();
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        inHospitalCode: 'inHospitalCode',
+        materialKeyword: 'materialKeyword',
+        materialSpeci: 'materialSpeci',
+        warehouse: 'warehouseId',
+        factoryId: 'factoryId',
+        supplierId: 'supplierId',
+        materialNo: 'materialNo',
+        chargeCodeKeyword: 'chargeCodeKeyword',
+        hospitalNumber: 'hospitalNumber',
+        patientName: 'patientName',
+        masterBarcode: 'masterBarcode',
+        secondaryBarcode: 'secondaryBarcode',
+        udiKeyword: 'udiKeyword',
+        sunshineCodeKeyword: 'sunshineCodeKeyword',
+        medicalNoKeyword: 'medicalNoKeyword'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+      if (!set.has('supplierId')) {
+        target.supplierKeyword = null;
+      }
     }
   }
 };
@@ -620,102 +602,6 @@ body.inventory-query-fixed .main-container {
 .query-item-inline .el-form-item__label {
   width: 80px !important;
 }
-.query-item-inline .el-form-item {
-  margin-bottom: 0;
-}
-.query-select-wrapper {
-  width: 180px;
-}
-.query-input-material-name {
-  width: 170px;
-}
-.query-row-more {
-  margin-bottom: 2px;
-}
-.query-row-more-inner {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-  width: 100%;
-  padding-bottom: 2px;
-}
-.query-row-more-inner .more-search-item {
-  flex: 0 0 auto;
-  margin-bottom: 0 !important;
-  margin-right: 0;
-}
-.query-row-more-inner .more-search-item >>> .el-form-item__content {
-  line-height: 32px;
-}
-.more-search-item >>> .el-form-item__content {
-  line-height: 32px;
-  max-width: none;
-}
-.more-search-row {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 8px;
-  flex-shrink: 0;
-  min-height: 32px;
-}
-.more-search-dynamic-field {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.more-search-field-label {
-  color: #606266;
-  font-size: 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.more-search-label {
-  color: #606266;
-  font-size: 12px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.more-search-type {
-  min-width: 220px;
-  width: auto;
-  max-width: 360px;
-  flex-shrink: 0;
-}
-.more-search-type >>> .el-input__inner {
-  height: 32px !important;
-  line-height: 32px !important;
-}
-.more-search-type >>> .el-select__tags {
-  max-width: calc(100% - 28px);
-}
-.more-search-type >>> .el-input {
-  display: flex;
-  align-items: center;
-}
-.more-search-input {
-  width: 200px;
-}
-.more-search-input--dynamic {
-  width: 180px;
-}
-.more-search-warehouse-wrap {
-  width: 210px;
-}
-.more-search-factory-wrap,
-.more-search-supplier-wrap {
-  width: 210px;
-}
-.more-search-warehouse-wrap >>> .el-select,
-.more-search-factory-wrap >>> .el-select,
-.more-search-supplier-wrap >>> .el-select,
-.more-search-supplier-wrap >>> .el-autocomplete {
-  width: 100%;
-}
 .query-item-date-range .query-date-start,
 .query-item-date-range .query-date-end {
   width: 150px;
@@ -726,66 +612,8 @@ body.inventory-query-fixed .main-container {
 .query-item-date-range .query-date-end {
   margin-left: 6px;
 }
-.query-item-date-range .query-date-sep {
-  margin: 0 2px;
-  flex-shrink: 0;
-}
-.query-row-second {
-  margin-bottom: 2px;
-}
-.query-row-second-inner {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-  width: 100%;
-  gap: 4px;
-  padding-bottom: 2px;
-}
-.query-row-second-inner .el-form-item {
-  flex: 0 0 auto;
-  margin-bottom: 0 !important;
-  margin-right: 8px;
-  white-space: nowrap;
-}
-.query-row-second-inner .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
 
-.form-fields-container {
-  background: #fff;
-  padding: 6px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 8px;
+.list-query-panel {
   margin-top: -20px;
-  margin-left: 0;
-  margin-right: 0;
-  border: 1px solid #EBEEF5;
-}
-
-.button-row-inventory {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: 0 !important;
-}
-.button-row-inventory-flex {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.button-row-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.button-row-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
 }
 </style>

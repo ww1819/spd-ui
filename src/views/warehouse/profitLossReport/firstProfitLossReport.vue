@@ -1,59 +1,64 @@
 <template>
-  <div class="app-container first-profit-loss-report-page">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item label="盈亏单号" prop="billNo" class="query-item-inline">
-              <el-input
-                v-model="queryParams.billNo"
-                placeholder="盈亏单号"
-                clearable
-                style="width: 180px"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="盘点单号" prop="stocktakingNo" class="query-item-inline">
-              <el-input
-                v-model="queryParams.stocktakingNo"
-                placeholder="盘点单号"
-                clearable
-                style="width: 180px"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
+  <div class="app-container list-page first-profit-loss-report-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="(t === 'warehouse' || t === 'materialName') ? 'more-search-field--select' : 'more-search-field--text'"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectWarehouse v-model="queryParams.warehouseId" />
               </div>
-            </el-form-item>
-            <el-form-item label="耗材" prop="materialName" class="query-item-inline">
-              <div class="query-select-wrapper">
+            </template>
+            <template v-else-if="t === 'materialName'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <MaterialAutocomplete v-model="queryParams.materialName"/>
               </div>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams[t]"
+              :placeholder="moreSearchPlaceholderFor(t)"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
         <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24">
-            <el-form-item label="制单日期" style="display: flex; align-items: center;">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="制单日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                style="width: 180px; margin-right: 8px;"
+                class="query-date-picker query-date-start"
               />
-              <span style="margin: 0 4px;">至</span>
+              <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                style="width: 180px; margin-left: 8px;"
+                class="query-date-picker query-date-end"
               />
             </el-form-item>
           </el-col>
@@ -61,31 +66,17 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8 button-row-inventory">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
-          type="warning"
-          icon="el-icon-download"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          icon="el-icon-search"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          icon="el-icon-refresh"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <div class="table-container">
@@ -206,6 +197,13 @@ export default {
         totalQty: 0,
         totalAmt: 0
       },
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "billNo", label: "盈亏单号" },
+        { value: "stocktakingNo", label: "盘点单号" },
+        { value: "warehouse", label: "仓库" },
+        { value: "materialName", label: "耗材" }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -219,6 +217,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.warehouse.profitLoss.detail.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["billNo", "stocktakingNo", "warehouse", "materialName"];
+    },
     /** 当前页数量合计 */
     pageTotalQty() {
       return (this.dataList || []).reduce((s, r) => s + Number(r.profitQty || 0), 0);
@@ -232,9 +236,46 @@ export default {
     },
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = {
+        billNo: "盈亏单号",
+        stocktakingNo: "盘点单号"
+      };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      if (!set.has("billNo")) target.billNo = null;
+      if (!set.has("stocktakingNo")) target.stocktakingNo = null;
+      if (!set.has("warehouse")) target.warehouseId = null;
+      if (!set.has("materialName")) target.materialName = null;
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     formatNum(val) {
       if (val == null || val === '') return '--'
       const n = Number(val)
@@ -248,7 +289,9 @@ export default {
     },
     getList() {
       this.loading = true;
-      listProfitLossEntry(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listProfitLossEntry(params).then(response => {
         this.dataList = response.rows || [];
         this.total = response.total || 0;
         this.totalInfo = response.totalInfo || { totalQty: 0, totalAmt: 0 };
@@ -272,11 +315,14 @@ export default {
       this.queryParams.warehouseId = null;
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
     async handleExport() {
       const requestParams = { ...this.queryParams, pageNum: 1, pageSize: 10000 }
+      this.applyMoreSearchToQueryParams(requestParams)
       this.loading = true
       try {
         const response = await listProfitLossEntry(requestParams)
@@ -395,15 +441,10 @@ export default {
 
 /* 查询条件容器框样式：由外层 profit-loss-report-page 统一左右 8px，此处占满内容区 */
 .form-fields-container {
-  background: #fff;
-  padding: 6px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 8px;
   margin-top: -20px;
   margin-left: 0;
   margin-right: 0;
-  border: 1px solid #EBEEF5;
 }
 
 /* 导出/搜索/重置：与顶部搜索框、底部明细框间距均为 8px */

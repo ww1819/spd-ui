@@ -1,77 +1,82 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item label="业务单号" prop="stockNo" label-width="100px">
-            <el-input v-model="queryParams.stockNo"
-                      placeholder="业务单号"
-                      clearable
-                      @keyup.enter.native="handleQuery"
+  <div class="app-container list-page stocktaking-in-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseId"/>
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.stockNo"
+              placeholder="业务单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
             />
-          </el-form-item>
-        </el-col>
+          </div>
+        </more-search-bar>
 
-        <el-col :span="6">
-          <el-form-item label="制单日期" prop="stockDate" label-width="100px">
-            <el-date-picker clearable
-                            v-model="queryParams.stockDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="请选择制单日期">
-            </el-date-picker>
-          </el-form-item>
-        </el-col>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.stockDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="制单日期"
+                clearable
+                class="query-date-picker"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
 
-        <el-col :span="6">
-          <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-            <SelectWarehouse v-model="queryParams.warehouseId"/>
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6" label-width="100px">
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-
-      </el-row>
-    </el-form>
-
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
-          plain
-          icon="el-icon-plus"
           size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['stocktaking:in:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-upload2"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="openProfitImportDialog"
           v-hasPermi="['stocktaking:in:add']"
         >导入盘盈明细</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['stocktaking:in:export']"
         >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="inList" @selection-change="handleSelectionChange" height="54vh" border stripe>
@@ -406,8 +411,8 @@
         </el-table>
             </el-form>
             <div class="modal-footer" v-show="detailEditable">
-              <el-button @click="cancel">取 消</el-button>
-              <el-button type="primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
+              <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
+              <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
             </div>
           </div>
         </transition>
@@ -530,8 +535,8 @@
         </el-table-column>
       </el-table>
       <div slot="footer">
-        <el-button @click="cancelPendingNewEntries">取 消</el-button>
-        <el-button type="primary" @click="confirmPendingNewEntries">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="cancelPendingNewEntries">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmPendingNewEntries">确 定</el-button>
       </div>
     </el-dialog>
 
@@ -586,8 +591,8 @@
         </el-table-column>
       </el-table>
       <div slot="footer">
-        <el-button @click="saveQtyConfirmVisible = false">取 消</el-button>
-        <el-button type="primary" @click="confirmWhSaveQtyAndSubmit">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="saveQtyConfirmVisible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmWhSaveQtyAndSubmit">确 定</el-button>
       </div>
     </el-dialog>
 
@@ -669,9 +674,10 @@
         </el-table>
       </div>
       <div slot="footer">
-        <el-button @click="profitImport.visible = false">取 消</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="profitImport.visible = false">取 消</el-button>
         <el-button
           type="primary"
+          class="spd-btn spd-btn--primary"
           @click="confirmProfitImport"
           :loading="profitImport.confirmLoading"
           :disabled="!canConfirmProfitImport"
@@ -711,8 +717,8 @@
         </el-table-column>
       </el-table>
       <div slot="footer">
-        <el-button @click="whAuditQtyMismatchVisible = false">取 消</el-button>
-        <el-button type="primary" @click="confirmWhAuditQtyMismatchAndAudit">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="whAuditQtyMismatchVisible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmWhAuditQtyMismatchAndAudit">确 定</el-button>
       </div>
     </el-dialog>
 
@@ -759,6 +765,11 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "业务单号", value: "stockNo" },
+        { label: "仓库", value: "warehouse" }
+      ],
       // 总条数
       total: 0,
       // 盘点表格数据
@@ -829,6 +840,8 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   watch: {
@@ -842,6 +855,12 @@ export default {
     }
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.stocktaking.in.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
     warehouseLockedByAction() {
       return Array.isArray(this.stkIoStocktakingEntryList) && this.stkIoStocktakingEntryList.length > 0;
     },
@@ -1719,7 +1738,10 @@ export default {
     getList() {
       this.loading = true;
       this.queryParams.stockType = "501";
-      listStocktaking(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      params.stockType = "501";
+      listStocktaking(params).then(response => {
         this.inList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -1872,6 +1894,8 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     prefillStocktakingFormFromRow(row) {
@@ -2387,15 +2411,59 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('stocktaking/in/export', {
-        ...this.queryParams
-      }, `in_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      params.stockType = "501";
+      this.download('stocktaking/in/export', params, `in_${new Date().getTime()}.xlsx`)
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'warehouse') {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        stockNo: 'stockNo',
+        warehouse: 'warehouseId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     }
   }
 };
 </script>
 
 <style scoped>
+.list-query-panel {
+  margin-top: -20px;
+}
+
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;

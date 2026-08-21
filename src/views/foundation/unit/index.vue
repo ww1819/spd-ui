@@ -1,52 +1,56 @@
 <template>
-  <div class="app-container unit-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item prop="unitCode">
-            <el-input
-              v-model="queryParams.unitCode"
-              placeholder="单位编码"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item prop="unitName">
-            <el-input
-              v-model="queryParams.unitName"
-              placeholder="单位名称"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-            <el-button size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+  <div class="app-container list-page unit-page">
+    <div class="query-container" v-show="showSearch">
+      <div class="form-fields-container list-query-panel">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field more-search-field--text"
+            >
+              <el-input
+                v-model="queryParams[t]"
+                :placeholder="moreSearchPlaceholderFor(t)"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleQuery"
+              />
+            </div>
+          </more-search-bar>
+        </el-form>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
-          type="primary" size="small"
+          type="primary"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['foundation:unit:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['foundation:unit:export']"
         >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="unitList" :row-class-name="unitIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
@@ -93,7 +97,6 @@
       @pagination="getList"
     />
 
-    <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
     <div v-if="open" class="page-drawer-mask" @click.self="cancel">
       <div class="page-drawer-panel" @click.stop>
         <div class="page-drawer-header">
@@ -124,8 +127,8 @@
           </el-form>
         </div>
         <div class="page-drawer-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -140,37 +143,36 @@ export default {
   name: "Unit",
   computed: {
     ...mapGetters(["customerId"]),
+    moreSearchStorageKey() {
+      return "spd.foundation.unit.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["unitCode", "unitName"];
+    }
   },
   data() {
     return {
-      // 遮罩层
       loading: true,
-      // 选中数组
       ids: [],
-      // 非单个禁用
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      // 总条数
       total: 0,
-      // 单位明细表格数据
       unitList: [],
-      // 弹出层标题
       title: "",
-      // 是否显示弹出层
       open: false,
-      // 查询参数
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "unitCode", label: "单位编码" },
+        { value: "unitName", label: "单位名称" }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         unitCode: null,
         unitName: null,
       },
-      // 表单参数
       form: {},
-      // 表单校验
       rules: {
         unitName: [
           { required: true, message: "单位名称不能为空", trigger: "blur" }
@@ -179,24 +181,56 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange(this.moreSearchTypes);
     this.getList();
   },
   methods: {
-    /** 查询单位明细列表 */
+    moreSearchPlaceholderFor(t) {
+      const map = { unitCode: "单位编码", unitName: "单位名称" };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["unitCode", "unitName"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     getList() {
       this.loading = true;
-      listUnit(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listUnit(params).then(response => {
         this.unitList = response.rows;
         this.total = response.total;
         this.loading = false;
       });
     },
-    // 取消按钮
     cancel() {
       this.open = false;
       this.reset();
     },
-    // 表单重置
     reset() {
       this.form = {
         unitId: null,
@@ -212,30 +246,29 @@ export default {
       };
       this.resetForm("form");
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.unitCode = null;
+      this.queryParams.unitName = null;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
-    // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.unitId)
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
-    /** 新增按钮操作 */
     handleAdd() {
       this.reset();
       this.form.tenantId = this.customerId || null;
       this.open = true;
       this.title = "添加单位明细";
     },
-    /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
       const unitId = row.unitId || this.ids
@@ -245,22 +278,20 @@ export default {
         this.title = "修改单位明细";
       });
     },
-    /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          // 如果单位编码为空字符串，设置为null以便后端自动生成
           if (this.form.unitCode === "") {
             this.form.unitCode = null;
           }
           if (this.form.unitId != null) {
-            updateUnit(this.form).then(response => {
+            updateUnit(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
             });
           } else {
-            addUnit(this.form).then(response => {
+            addUnit(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
@@ -269,7 +300,6 @@ export default {
         }
       });
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const unitIds = row.unitId || this.ids;
       this.$modal.confirm('是否确认删除单位明细编号为"' + unitIds + '"的数据项？').then(function() {
@@ -282,11 +312,10 @@ export default {
     unitIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
-    /** 导出按钮操作 */
     handleExport() {
-      this.download('foundation/unit/export', {
-        ...this.queryParams
-      }, `unit_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('foundation/unit/export', params, `unit_${new Date().getTime()}.xlsx`)
     }
   }
 };

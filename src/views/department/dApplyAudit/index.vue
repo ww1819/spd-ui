@@ -1,97 +1,99 @@
 <template>
-  <div class="app-container d-apply-audit-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
-
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item prop="applyBillNo" class="query-item-inline">
+  <div class="app-container list-page d-apply-audit-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+              </div>
+            </template>
+            <template v-else-if="t === 'department'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectDepartment v-model="queryParams.departmentId" />
+              </div>
+            </template>
             <el-input
+              v-else
               v-model="queryParams.applyBillNo"
               placeholder="单号"
               clearable
-              style="width: 180px"
+              class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
             />
-          </el-form-item>
-          <el-form-item prop="warehouseId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-            </div>
-          </el-form-item>
-          <el-form-item prop="departmentId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectDepartment v-model="queryParams.departmentId" />
-            </div>
-          </el-form-item>
-          <el-form-item prop="applyBillStatus" class="query-item-inline">
-            <el-select v-model="queryParams.applyBillStatus" placeholder="状态"
-                       clearable
-                       style="width: 180px">
-              <el-option label="未审核" :value="1" />
-              <el-option label="已审核" :value="2" />
-              <el-option label="已驳回" :value="3" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
+          </div>
+        </more-search-bar>
 
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item style="display: flex; align-items: center;">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
-              clearable
-              style="width: 180px; margin-right: 8px;"
-            />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                class="query-date-picker"
+              />
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item prop="applyBillStatus" class="query-item-inline">
+              <el-select v-model="queryParams.applyBillStatus" placeholder="状态"
+                         clearable
+                         class="more-search-select-wrap">
+                <el-option label="未审核" :value="1" />
+                <el-option label="已审核" :value="2" />
+                <el-option label="已驳回" :value="3" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
 
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
-          size="medium"
-          @click="handleExport"
-          v-hasPermi="['department:dApplyAudit:export']"
-        >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleBatchAudit"
           v-hasPermi="['department:dApplyAudit:audit']"
         >审核</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          size="small"
+          class="spd-btn spd-btn--secondary"
+          @click="handleExport"
+          v-hasPermi="['department:dApplyAudit:export']"
+        >导出</el-button>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="64vh" border stripe>
@@ -336,8 +338,8 @@
               </div>
               <!-- 审核操作按钮（底部仅在审核模式下显示取消、驳回；审核按钮已移动到“科室申领明细信息”标题后面） -->
               <div class="modal-footer" v-if="dialogMode === 'audit' && isDetailUnAuditAndNotRejected">
-                <el-button @click="cancel">取 消</el-button>
-                <el-button type="danger" @click="handleRejectSubmit">驳 回</el-button>
+                <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
+                <el-button type="danger" class="spd-btn spd-btn--danger" @click="handleRejectSubmit">驳 回</el-button>
               </div>
               </div>
             </el-form>
@@ -365,8 +367,8 @@
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="rejectDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="confirmRejectDialog">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="rejectDialogVisible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmRejectDialog">确 定</el-button>
       </span>
     </el-dialog>
 
@@ -398,6 +400,12 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "单号", value: "applyBillNo" },
+        { label: "仓库", value: "warehouse" },
+        { label: "科室", value: "department" }
+      ],
       // 总条数
       total: 0,
       // 科室申领表格数据
@@ -441,6 +449,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.department.dApplyAudit.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
     /** 详情弹窗：状态显示值（与列表一致：未审核但有驳回原因也视为已驳回） */
     detailApplyStatusValue() {
       return this.getApplyStatusValue(this.form);
@@ -462,6 +476,8 @@ export default {
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
@@ -480,6 +496,7 @@ export default {
       // 确保只查询申领单类型（billType=1），排除转科申请（billType=3）
       // applyBillStatus根据用户选择：null=全部，1=未审核，2=已审核，3=已驳回
       const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
       params.billType = 1;
       // 如果applyBillStatus为null，则不传该参数，查询全部状态
       if (params.applyBillStatus === null || params.applyBillStatus === '') {
@@ -603,7 +620,49 @@ export default {
       this.queryParams.applyBillStatus = null; // 重置后显示全部状态
       this.queryParams.billType = 1; // 重置后仍只查询申领单类型
       Object.assign(this.queryParams, buildDefaultDateRange());
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (['warehouse', 'department'].includes(t)) {
+        return "more-search-field--select";
+      }
+      return "more-search-field--text";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        applyBillNo: "applyBillNo",
+        warehouse: "warehouseId",
+        department: "departmentId"
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -771,7 +830,7 @@ export default {
         return
       }
       this.download('department/apply/export', {
-        ...this.queryParams,
+        ...this.buildExportQueryParams(),
         exportBillIds: String(row.id)
       }, `applyAudit_${row.applyBillNo || row.id}_${new Date().getTime()}.xlsx`)
     },
@@ -781,16 +840,20 @@ export default {
         this.$modal.msgWarning('请先勾选要导出的单据')
         return
       }
-      const params = { ...this.queryParams };
-      params.billType = 1; // 只导出申领单类型
-      // 如果applyBillStatus为null，则不传该参数，导出全部状态
-      if (params.applyBillStatus === null || params.applyBillStatus === '') {
-        delete params.applyBillStatus;
-      }
+      const params = this.buildExportQueryParams();
       params.exportBillIds = this.ids.join(',')
       this.download('department/apply/export', {
         ...params
       }, `applyAudit_${new Date().getTime()}.xlsx`)
+    },
+    buildExportQueryParams() {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      params.billType = 1; // 只导出申领单类型
+      if (params.applyBillStatus === null || params.applyBillStatus === '') {
+        delete params.applyBillStatus;
+      }
+      return params;
     }
   }
 };
@@ -1324,14 +1387,8 @@ export default {
   padding-right: 8px !important;
 }
 
-.app-container.d-apply-audit-page > .el-form.query-form-compact {
-  margin-top: -12px !important;
-}
-
-.app-container.d-apply-audit-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .app-container.d-apply-audit-page .local-modal-mask {

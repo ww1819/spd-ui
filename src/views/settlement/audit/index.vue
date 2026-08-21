@@ -1,105 +1,99 @@
 <template>
-  <div class="app-container settlement-audit-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
-
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item label="结算单号" prop="billNo" class="query-item-inline">
-            <el-input v-model="queryParams.billNo"
-                      placeholder="结算单号"
-                      clearable
-                      style="width: 180px"
-                      @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-          <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectSupplier v-model="queryParams.supplierId"/>
-            </div>
-          </el-form-item>
-          <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
-            </div>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item label="制单日期" style="display: flex; align-items: center;">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
+  <div class="app-container list-page settlement-audit-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'supplier'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectSupplier v-model="queryParams.supplierId"/>
+              </div>
+            </template>
+            <template v-else-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.billNo"
+              placeholder="结算单号"
               clearable
-              style="width: 180px; margin-right: 8px;"
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
             />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.billStatus" placeholder="全部"
-                       clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.biz_status"
-                         :key="dict.value"
-                         :label="dict.label"
-                         :value="dict.value"
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="制单日期" class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                class="query-date-picker"
               />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item label="单据状态" prop="billStatus" class="query-item-inline">
+              <el-select v-model="queryParams.billStatus" placeholder="全部"
+                         clearable class="more-search-select-wrap">
+                <el-option v-for="dict in dict.type.biz_status"
+                           :key="dict.value"
+                           :label="dict.label"
+                           :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
 
-    </el-form>
-
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
-          type="success"
-          plain
-          icon="el-icon-upload"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleUploadSettlement"
           v-hasPermi="['settlement:audit:upload']"
         >上传结算单</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-document"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleInvoiceEntry"
           v-hasPermi="['settlement:audit:invoice']"
         >发票补录</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          icon="el-icon-search"
-          size="small"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          icon="el-icon-refresh"
-          size="small"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="warehouseList" class="table-compact"
@@ -418,8 +412,8 @@
         </div>
         </el-form>
         <div v-show="action" class="modal-footer">
-          <el-button @click="cancel">取 消</el-button>
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
+          <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
         </div>
           </div>
         </transition>
@@ -477,8 +471,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="cancelInvoiceEntry">取 消</el-button>
-        <el-button type="primary" @click="submitInvoiceEntry">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="cancelInvoiceEntry">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitInvoiceEntry">确 定</el-button>
       </div>
     </el-dialog>
 
@@ -533,6 +527,12 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "结算单号", value: "billNo" },
+        { label: "供应商", value: "supplier" },
+        { label: "仓库", value: "warehouse" }
+      ],
       // 总条数
       total: 0,
       // 入库表格数据
@@ -600,6 +600,12 @@ export default {
     /** 与到货验收 inWarehouse/audit 弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
+    },
+    moreSearchStorageKey() {
+      return "spd.settlement.audit.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
     }
   },
   watch: {
@@ -626,6 +632,8 @@ export default {
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
@@ -698,7 +706,9 @@ export default {
       this.loading = true;
 
       this.queryParams.billType = "501";
-      listSettlement(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listSettlement(params).then(response => {
         this.warehouseList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -811,6 +821,46 @@ export default {
       }
       row.amt = totalAmt.toFixed(2);
     },
+    moreSearchFieldClass(t) {
+      if (['supplier', 'warehouse'].includes(t)) {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        billNo: 'billNo',
+        supplier: 'supplierId',
+        warehouse: 'warehouseId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
@@ -821,6 +871,8 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     /** 上传结算单按钮操作 */
@@ -1133,9 +1185,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('settlement/settlement/export', {
-        ...this.queryParams
-      }, `settlement_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('settlement/settlement/export', params, `settlement_${new Date().getTime()}.xlsx`)
     }
   }
 };
@@ -1651,23 +1703,8 @@ export default {
   padding-right: 8px !important;
 }
 
-.app-container.settlement-audit-page > .el-form.query-form-compact {
-  margin-top: -12px !important;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  border: 1px solid #c0c4cc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
-}
-
-.app-container.settlement-audit-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .app-container.settlement-audit-page > .el-table.table-compact {

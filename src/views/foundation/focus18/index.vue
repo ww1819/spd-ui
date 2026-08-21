@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container focus18-page">
+  <div class="app-container list-page focus18-page">
     <el-row :gutter="20">
       <!-- 左侧根目录分类 -->
       <el-col :span="4">
@@ -24,51 +24,48 @@
 
       <!-- 右侧明细 -->
       <el-col :span="20">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-          <el-row :gutter="20">
-            <el-col :span="5">
-              <el-form-item prop="category">
-                <el-input v-model="queryParams.category" placeholder="耗材类别" clearable @keyup.enter.native="handleQuery" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="5">
-              <el-form-item prop="classCode">
-                <el-input v-model="queryParams.classCode" placeholder="耗材分类代码" clearable @keyup.enter.native="handleQuery" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="5">
-              <el-form-item prop="medicalGenericName">
-                <el-input v-model="queryParams.medicalGenericName" placeholder="医保通用名" clearable @keyup.enter.native="handleQuery" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="5">
-              <el-form-item prop="genericCode">
-                <el-input v-model="queryParams.genericCode" placeholder="通用名代码" clearable @keyup.enter.native="handleQuery" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="4">
-              <el-form-item>
-                <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-                <el-button size="small" @click="resetQuery">重置</el-button>
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
+        <div class="query-container" v-show="showSearch">
+          <div class="form-fields-container list-query-panel">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <more-search-bar
+                ref="moreSearchBar"
+                v-model="moreSearchTypes"
+                :options="moreSearchOptions"
+                :storage-key="moreSearchStorageKey"
+                :default-types="builtInMoreSearchDefaults"
+                :auto-load="false"
+                @change="onMoreSearchTypesChange"
+                @search="handleQuery"
+                @reset="resetQuery"
+              >
+                <div
+                  v-for="t in moreSearchTypes"
+                  :key="t"
+                  class="more-search-dynamic-field more-search-field--text"
+                >
+                  <el-input
+                    v-model="queryParams[t]"
+                    :placeholder="moreSearchPlaceholderFor(t)"
+                    clearable
+                    class="more-search-input more-search-input--dynamic"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </div>
+              </more-search-bar>
+            </el-form>
+          </div>
+        </div>
 
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
-            <el-button type="primary" size="small" @click="handleAdd" v-hasPermi="['foundation:focus18:add']">新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="primary" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['foundation:focus18:edit']">修改</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="primary" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['foundation:focus18:remove']">删除</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="primary" size="small" @click="handleExport" v-hasPermi="['foundation:focus18:export']">导出</el-button>
-          </el-col>
-          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+        <el-row :gutter="0" class="mb8 list-toolbar">
+          <div class="list-toolbar-left">
+            <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['foundation:focus18:add']">新增</el-button>
+            <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="single" @click="handleUpdate" v-hasPermi="['foundation:focus18:edit']">修改</el-button>
+            <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleDelete" v-hasPermi="['foundation:focus18:remove']">删除</el-button>
+            <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport" v-hasPermi="['foundation:focus18:export']">导出</el-button>
+          </div>
+          <div class="list-toolbar-right">
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+          </div>
         </el-row>
 
         <el-table v-loading="loading" :data="dataList" :row-class-name="rowIndex" @selection-change="handleSelectionChange" height="calc(100vh - 300px)" stripe>
@@ -150,8 +147,8 @@
           </el-form>
         </div>
         <div class="focus18-drawer-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -163,6 +160,14 @@ import { listFocus18, listFocus18Categories, getFocus18, addFocus18, updateFocus
 
 export default {
   name: "Focus18",
+  computed: {
+    moreSearchStorageKey() {
+      return "spd.foundation.focus18.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["category", "classCode", "medicalGenericName", "genericCode"];
+    }
+  },
   data() {
     return {
       loading: true,
@@ -174,6 +179,13 @@ export default {
       dataList: [],
       title: "",
       open: false,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "category", label: "耗材类别" },
+        { value: "classCode", label: "耗材分类代码" },
+        { value: "medicalGenericName", label: "医保通用名" },
+        { value: "genericCode", label: "通用名代码" }
+      ],
       treeData: [],
       treeProps: {
         label: "label",
@@ -200,10 +212,48 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.loadTree();
     this.getList();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = {
+        category: "耗材类别",
+        classCode: "耗材分类代码",
+        medicalGenericName: "医保通用名",
+        genericCode: "通用名代码"
+      };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["category", "classCode", "medicalGenericName", "genericCode"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     loadTree() {
       listFocus18Categories().then(rows => {
         const cats = Array.isArray(rows) ? rows.filter(Boolean) : [];
@@ -246,6 +296,7 @@ export default {
     },
     buildListQuery() {
       const q = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(q);
       // 左侧树精确类别优先；避免与搜索框模糊类别同时生效
       if (q.categoryExact) {
         q.category = null;
@@ -299,9 +350,15 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.category = null;
+      this.queryParams.classCode = null;
+      this.queryParams.medicalGenericName = null;
+      this.queryParams.genericCode = null;
       this.treeCategory = null;
       this.queryParams.categoryExact = null;
       this.queryParams.parentId = null;
+      this.onMoreSearchTypesChange();
       if (this.$refs.categoryTree) {
         this.$refs.categoryTree.setCurrentKey("root");
       }

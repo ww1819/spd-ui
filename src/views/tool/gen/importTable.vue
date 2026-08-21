@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <!-- 导入表 -->
   <el-dialog title="导入表" :visible.sync="visible" width="800px" top="5vh" append-to-body>
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true">
@@ -40,8 +40,8 @@
       />
     </el-row>
     <div slot="footer" class="dialog-footer">
-      <el-button type="primary" @click="handleImportTable">确 定</el-button>
-      <el-button @click="visible = false">取 消</el-button>
+      <el-button type="primary" class="spd-btn spd-btn--primary" @click="handleImportTable">确 定</el-button>
+      <el-button class="spd-btn spd-btn--secondary" @click="visible = false">取 消</el-button>
     </div>
   </el-dialog>
 </template>

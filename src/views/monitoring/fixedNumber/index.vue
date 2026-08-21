@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container fixed-number-page">
+  <div class="app-container list-page fixed-number-page">
     <el-row :gutter="20">
       <!-- 左侧：仓库列表面板 -->
       <el-col :span="5">
@@ -86,148 +86,138 @@
 
       <!-- 右侧：查询条件和表格区域 -->
       <el-col :span="19">
-        <!-- 查询条件容器 -->
-        <div class="query-container">
-          <div class="form-fields-container">
-            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="80px">
-              <el-row class="query-row-left">
-            <el-col :span="24">
-              <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
-                <div class="query-select-wrapper">
-                  <SelectSupplier v-model="queryParams.supplierId"/>
-                </div>
-              </el-form-item>
-              <el-form-item label="名称" prop="materialName" class="query-item-inline">
-                <el-input v-model="queryParams.materialName"
-                          placeholder="名称/编码/简码"
-                          clearable
-                          style="width: 300px"
-                          @keyup.enter.native="handleQuery"
+        <div class="form-fields-container list-query-panel" v-show="showSearch">
+          <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+            <more-search-bar
+              ref="moreSearchBar"
+              v-model="moreSearchTypes"
+              :options="moreSearchOptions"
+              :storage-key="moreSearchStorageKey"
+              :default-types="builtInMoreSearchDefaults"
+              :auto-load="false"
+              @change="onMoreSearchTypesChange"
+              @search="handleQuery"
+              @reset="resetQuery"
+            >
+              <div
+                v-for="t in moreSearchTypes"
+                :key="t"
+                class="more-search-dynamic-field"
+                :class="moreSearchFieldClass(t)"
+              >
+                <template v-if="t === 'supplier'">
+                  <div class="query-select-wrapper more-search-select-wrap">
+                    <SelectSupplier v-model="queryParams.supplierId"/>
+                  </div>
+                </template>
+                <el-input
+                  v-else-if="t === 'speci'"
+                  v-model="queryParams.speci"
+                  placeholder="规格型号"
+                  clearable
+                  class="more-search-input more-search-input--dynamic"
+                  @keyup.enter.native="handleQuery"
                 />
-              </el-form-item>
-              <el-form-item label="规格型号" prop="speci" class="query-item-inline">
-                <el-input v-model="queryParams.speci"
-                          placeholder="规格型号"
-                          clearable
-                          style="width: 300px"
-                          @keyup.enter.native="handleQuery"
+                <el-input
+                  v-else
+                  v-model="queryParams.materialName"
+                  placeholder="名称/编码/简码"
+                  clearable
+                  class="more-search-input more-search-input--dynamic"
+                  @keyup.enter.native="handleQuery"
                 />
-              </el-form-item>
-              <el-form-item label="实际数量" prop="actualQuantity" class="query-item-inline" v-show="false">
-                <el-input v-model="queryParams.actualQuantity"
-                          placeholder="实际数量"
-                          clearable
-                          style="width: 180px"
-                          @keyup.enter.native="handleQuery"
-                />
-              </el-form-item>
-            </el-col>
-          </el-row>
-              <el-row class="query-row-left">
-            <el-col :span="24">
-                  <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-                    <div class="query-select-wrapper">
-                      <SelectWarehouse v-model="queryParams.warehouseId"/>
-                    </div>
-                  </el-form-item>
-                  <el-form-item v-if="queryParams.fixedNumberType === '1'" label="监测启用" prop="enableStatus" class="query-item-inline">
-                    <el-select v-model="queryParams.enableStatus" clearable placeholder="全部" style="width: 120px">
-                      <el-option label="启用" value="0" />
-                      <el-option label="停用" value="1" />
-                    </el-select>
-                  </el-form-item>
-                  <el-form-item label="集采" prop="isProcure" class="query-item-inline">
-                    <el-select v-model="queryParams.isProcure" clearable placeholder="全部" style="width: 120px">
-                      <el-option label="是" value="1" />
-                      <el-option label="否" value="2" />
-                    </el-select>
-                  </el-form-item>
-                  <el-form-item label="是否高值" prop="isGz" class="query-item-inline">
-                    <el-select v-model="queryParams.isGz" clearable placeholder="全部" style="width: 120px">
-                      <el-option label="高值" value="1" />
-                      <el-option label="非高值" value="2" />
-                    </el-select>
-                  </el-form-item>
-                  <el-form-item label="库房分类" prop="storeroomIds" class="query-item-inline">
-                    <div class="query-select-wrapper">
-                      <SelectWarehouseCategory
-                        v-model="queryParams.storeroomIds"
-                        :multiple="true"
-                        placeholder="库房分类"
-                        style="width: 100%"
-                      />
-                    </div>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-            </el-form>
-          </div>
+              </div>
+            </more-search-bar>
+
+            <el-row :gutter="16" class="query-row-second">
+              <el-col :span="24" class="query-row-second-inner">
+                <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
+                  <div class="query-select-wrapper more-search-select-wrap">
+                    <SelectWarehouse v-model="queryParams.warehouseId"/>
+                  </div>
+                </el-form-item>
+                <el-form-item v-if="queryParams.fixedNumberType === '1'" label="监测启用" prop="enableStatus" class="query-item-inline">
+                  <el-select v-model="queryParams.enableStatus" clearable placeholder="全部" class="more-search-short-select">
+                    <el-option label="启用" value="0" />
+                    <el-option label="停用" value="1" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="集采" prop="isProcure" class="query-item-inline">
+                  <el-select v-model="queryParams.isProcure" clearable placeholder="全部" class="more-search-short-select">
+                    <el-option label="是" value="1" />
+                    <el-option label="否" value="2" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="是否高值" prop="isGz" class="query-item-inline">
+                  <el-select v-model="queryParams.isGz" clearable placeholder="全部" class="more-search-short-select">
+                    <el-option label="高值" value="1" />
+                    <el-option label="非高值" value="2" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="库房分类" prop="storeroomIds" class="query-item-inline">
+                  <div class="query-select-wrapper more-search-select-wrap">
+                    <SelectWarehouseCategory
+                      v-model="queryParams.storeroomIds"
+                      :multiple="true"
+                      placeholder="库房分类"
+                    />
+                  </div>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
         </div>
 
-        <!-- 按钮行 -->
-        <el-row :gutter="10" class="mb8 button-row-container">
-          <el-col :span="1.5">
-                <el-button
-                  type="primary"
-                  icon="el-icon-plus"
-              size="medium"
-                  :disabled="isAddDisabled"
-                  @click="handleAdd"
-                >新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
-                <el-button
-                  type="success"
-                  icon="el-icon-check"
-              size="medium"
-                  @click="handleSave"
-                >保存</el-button>
-          </el-col>
-          <el-col :span="1.5">
-                <el-button
-                  type="danger"
-                  icon="el-icon-delete"
-              size="medium"
-                  :disabled="multiple"
-                  @click="handleBatchDelete"
-                >删除</el-button>
-          </el-col>
-          <el-col v-if="queryParams.fixedNumberType === '1'" :span="1.5">
-                <el-button
-                  v-hasPermi="['monitoring:fixedNumber:disable']"
-                  type="warning"
-                  icon="el-icon-close"
-              size="medium"
-                  :disabled="multiple"
-                  @click="handleBatchDisable"
-                >停用</el-button>
-          </el-col>
-          <el-col v-if="queryParams.fixedNumberType === '1'" :span="1.5">
-                <el-button
-                  v-hasPermi="['monitoring:fixedNumber:enable']"
-                  type="success"
-                  icon="el-icon-check"
-              size="medium"
-                  :disabled="multiple"
-                  @click="handleBatchEnable"
-                >启用</el-button>
-          </el-col>
-          <el-col :span="1.5">
-                <el-button
-                  type="primary"
-                  icon="el-icon-search"
-              size="medium"
-                  @click="handleQuery"
-                >搜索</el-button>
-          </el-col>
-          <el-col :span="1.5">
-                <el-button
-                  icon="el-icon-refresh"
-              size="medium"
-                  @click="resetQuery"
-                >重置</el-button>
-            </el-col>
-          </el-row>
+        <el-row :gutter="0" class="mb8 list-toolbar">
+          <div class="list-toolbar-left">
+            <el-button
+              type="primary"
+              icon="el-icon-plus"
+              size="small"
+              class="spd-btn spd-btn--primary"
+              :disabled="isAddDisabled"
+              @click="handleAdd"
+            >新增</el-button>
+            <el-button
+              type="success"
+              icon="el-icon-check"
+              size="small"
+              class="spd-btn spd-btn--primary"
+              @click="handleSave"
+            >保存</el-button>
+            <el-button
+              type="danger"
+              icon="el-icon-delete"
+              size="small"
+              class="spd-btn spd-btn--danger"
+              :disabled="multiple"
+              @click="handleBatchDelete"
+            >删除</el-button>
+            <el-button
+              v-if="queryParams.fixedNumberType === '1'"
+              v-hasPermi="['monitoring:fixedNumber:disable']"
+              type="warning"
+              icon="el-icon-close"
+              size="small"
+              class="spd-btn spd-btn--secondary"
+              :disabled="multiple"
+              @click="handleBatchDisable"
+            >停用</el-button>
+            <el-button
+              v-if="queryParams.fixedNumberType === '1'"
+              v-hasPermi="['monitoring:fixedNumber:enable']"
+              type="success"
+              icon="el-icon-check"
+              size="small"
+              class="spd-btn spd-btn--primary"
+              :disabled="multiple"
+              @click="handleBatchEnable"
+            >启用</el-button>
+          </div>
+          <div class="list-toolbar-right">
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+          </div>
+        </el-row>
 
         <!-- 明细表 -->
         <div class="detail-table-container">
@@ -559,7 +549,8 @@
                   <el-button
                     type="primary"
                     icon="el-icon-search"
-                    size="medium"
+                    size="small"
+                    class="spd-btn spd-btn--primary"
                     @click="handleAddSearch"
                   >搜索</el-button>
                 </el-col>
@@ -567,7 +558,8 @@
                   <el-button
                     type="success"
                     icon="el-icon-check"
-                    size="medium"
+                    size="small"
+                    class="spd-btn spd-btn--primary"
                     :loading="addSelectAllLoading"
                     @click="handleAddSelectAll"
                   >全选</el-button>
@@ -575,7 +567,8 @@
                 <el-col :span="1.5">
                   <el-button
                     icon="el-icon-close"
-                    size="medium"
+                    size="small"
+                    class="spd-btn spd-btn--secondary"
                     :disabled="addCrossPageSelectedCount === 0"
                     @click="handleAddClearSelectAll"
                   >取消全选</el-button>
@@ -583,7 +576,8 @@
                 <el-col :span="1.5">
                   <el-button
                     icon="el-icon-refresh"
-                    size="medium"
+                    size="small"
+                    class="spd-btn spd-btn--secondary"
                     @click="resetAddQuery"
                   >重置</el-button>
                 </el-col>
@@ -592,14 +586,16 @@
                 </el-col>
                 <el-col :span="1.5">
                   <el-button
-                    size="medium"
+                    size="small"
+                    class="spd-btn spd-btn--secondary"
                     @click="addDialogVisible = false"
                   >取 消</el-button>
                 </el-col>
                 <el-col :span="1.5">
                   <el-button
                     type="primary"
-                    size="medium"
+                    size="small"
+                    class="spd-btn spd-btn--primary"
                     @click="handleAddConfirm"
                   >确 定</el-button>
                 </el-col>
@@ -734,6 +730,12 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '供应商', value: 'supplier' },
+        { label: '名称', value: 'materialName' },
+        { label: '规格型号', value: 'speci' }
+      ],
       // 总条数
       total: 0,
       // 定数监测表格数据（当前页，来自后端分页 + 未保存的前端行）
@@ -830,6 +832,12 @@ export default {
     },
     addCrossPageSelectedCount() {
       return Object.keys(this.addSelectedRowMap || {}).length;
+    },
+    moreSearchStorageKey() {
+      return 'spd.monitoring.fixedNumber.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
     }
   },
   watch: {
@@ -883,6 +891,8 @@ export default {
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     // 进入页面时：默认加载仓库列表和科室列表（科室按用户权限）
     this.getWarehouseList();
     this.getDepartmentList();
@@ -1120,6 +1130,7 @@ export default {
       try {
         this.loading = true;
         const params = { ...this.queryParams };
+        this.applyMoreSearchToQueryParams(params);
         if (Array.isArray(params.storeroomIds) && params.storeroomIds.length === 0) {
           delete params.storeroomIds;
         }
@@ -1283,7 +1294,49 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'supplier') {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        supplier: 'supplierId',
+        materialName: 'materialName',
+        speci: 'speci'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     /** 保存按钮操作 */
     handleSave() {
@@ -1919,22 +1972,9 @@ export default {
 }
 
 /* 第一行查询条件左对齐紧凑布局 */
-/* 查询容器样式 */
-.query-container {
-  margin-top: -2px;
-  margin-bottom: 12px;
-  /* 去掉左右 padding，让容器本身更宽，占满整列 */
-  padding: 0;
-}
-
 /* 查询条件容器框样式：降低高度，左右预留8px */
-.form-fields-container {
-  background: #fff;
-  /* 适当减小左右 padding，让白色容器视觉上更宽一点 */
-  padding: 10px 12px 6px 12px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid #EBEEF5;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 /* 查询条件样式 */

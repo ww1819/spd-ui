@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container department-container">
+  <div class="app-container list-page department-container">
     <el-row :gutter="20">
       <!-- 左侧科室列表 -->
       <el-col :span="6">
@@ -24,129 +24,100 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="18">
-    <!-- 查询条件容器 -->
     <div class="query-container" v-show="showSearch">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-form-item prop="code">
+      <div class="form-fields-container list-query-panel">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field more-search-field--text"
+            >
               <el-input
-                v-model="queryParams.code"
-                placeholder="科室编码"
+                v-model="queryParams[t]"
+                :placeholder="moreSearchPlaceholderFor(t)"
                 clearable
+                class="more-search-input more-search-input--dynamic"
                 @keyup.enter.native="handleQuery"
-                style="width: 150px"
               />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item prop="name">
-              <el-input
-                v-model="queryParams.name"
-                placeholder="科室名称"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item prop="referredName">
-              <el-input
-                v-model="queryParams.referredName"
-                placeholder="拼音简码"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item prop="deptRemark">
-              <el-input
-                v-model="queryParams.deptRemark"
-                placeholder="备注模糊查询"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+            </div>
+          </more-search-bar>
+        </el-form>
+      </div>
     </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5" v-if="!isZqTcmTenant">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
-          type="primary" size="small"
+          v-if="!isZqTcmTenant"
+          type="primary"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['foundation:depart:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:depart:edit']"
         >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:depart:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="multiple"
           @click="handleUpdateReferred"
           v-hasPermi="['foundation:depart:updateReferred']"
         >更新简码</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['foundation:depart:export']"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.8" v-if="!isZqTcmTenant">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-upload2"
+          v-if="!isZqTcmTenant"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleImport('add')"
           v-hasPermi="['foundation:depart:import']"
         >新增导入</el-button>
-      </el-col>
-      <el-col :span="1.8">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-refresh-right"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleImport('update')"
           v-hasPermi="['foundation:depart:import']"
         >更新导入</el-button>
-      </el-col>
-      <el-col :span="1.5">
+        <msun-his-sync-button sync-type="depts" label="HIS科室同步" :inline="true" :refresh="getList" />
         <el-button
-          type="primary"
+          v-if="showMsunProbe"
           size="small"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <msun-his-sync-button sync-type="depts" label="HIS科室同步" :refresh="getList" />
-      <el-col v-if="showMsunProbe" :span="1.5">
-        <el-button type="info" plain size="small" icon="el-icon-connection" @click="goMsunProbe">众阳接口联调</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          class="spd-btn spd-btn--secondary"
+          icon="el-icon-connection"
+          @click="goMsunProbe"
+        >众阳接口联调</el-button>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="departList" :row-class-name="departIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
@@ -249,8 +220,8 @@
           </el-form>
         </div>
         <div class="page-drawer-footer">
-          <el-button type="primary" @click="submitForm">保 存</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -369,6 +340,12 @@ export default {
       }
       return "本组织机构手工新增不维护此项";
     },
+    moreSearchStorageKey() {
+      return "spd.foundation.depart.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["code", "name", "referredName", "deptRemark"];
+    }
   },
   data() {
     return {
@@ -382,6 +359,13 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "code", label: "科室编码" },
+        { value: "name", label: "科室名称" },
+        { value: "referredName", label: "拼音简码" },
+        { value: "deptRemark", label: "备注" }
+      ],
       // 总条数
       total: 0,
       // 科室表格数据
@@ -452,6 +436,8 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.treeSelectedKey = "root";
     this.queryParams.treeParentId = null;
     this.refreshDeptTree().then(() => {
@@ -459,6 +445,37 @@ export default {
     });
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = { code: "科室编码", name: "科室名称", referredName: "拼音简码", deptRemark: "备注模糊查询" };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["code", "name", "referredName", "deptRemark"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     refreshDeptTree() {
       return departTree().then(res => {
         const data = res.data;
@@ -563,6 +580,7 @@ export default {
     getList() {
       this.loading = true;
       const q = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(q);
       if (q.treeParentId == null) {
         delete q.treeParentId;
       }
@@ -604,8 +622,14 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.code = null;
+      this.queryParams.name = null;
+      this.queryParams.referredName = null;
+      this.queryParams.deptRemark = null;
       this.treeSelectedKey = "root";
       this.queryParams.treeParentId = null;
+      this.onMoreSearchTypesChange();
       this.$nextTick(() => {
         if (this.$refs.deptTree) {
           this.$refs.deptTree.setCurrentKey("root");
@@ -686,9 +710,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('foundation/depart/export', {
-        ...this.queryParams
-      }, `depart_${new Date().getTime()}.xlsx`)
+      const q = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(q);
+      this.download('foundation/depart/export', q, `depart_${new Date().getTime()}.xlsx`)
     },
     handleImport(mode) {
       if (this.isZqTcmTenant && mode === 'add') {

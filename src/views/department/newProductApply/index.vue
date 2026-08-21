@@ -1,25 +1,65 @@
 <template>
-  <div class="app-container new-product-apply-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
-
-      <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item prop="applyNo" class="query-item-inline">
-              <el-input v-model="queryParams.applyNo"
-                        placeholder="申购单号"
-                        clearable
-                        style="width: 180px"
-                        @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item prop="departmentId" class="query-item-inline">
-              <div class="query-select-wrapper">
+  <div class="app-container list-page new-product-apply-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'department'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" />
               </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.applyNo"
+              placeholder="申购单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                class="query-date-picker"
+              />
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker"
+              />
             </el-form-item>
             <el-form-item prop="applyStatus" class="query-item-inline">
               <el-select v-model="queryParams.applyStatus" placeholder="单据状态"
-                         clearable style="width: 180px">
+                         clearable
+                         class="more-search-select-wrap">
                 <el-option v-for="dict in filteredBizStatus"
                            :key="dict.value"
                            :label="dict.label"
@@ -29,64 +69,28 @@
             </el-form-item>
           </el-col>
         </el-row>
+      </el-form>
+    </div>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
-            <el-form-item style="display: flex; align-items: center;">
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
-                clearable
-                style="width: 180px; margin-right: 8px;"
-              />
-              <span style="margin: 0 4px;">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
-                clearable
-                style="width: 180px; margin-left: 8px;"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-    </el-form>
-
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['department:newProductApply:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['department:newProductApply:export']"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="applyList"
@@ -262,7 +266,7 @@
                 </el-col>
                 <div v-show="action">
                   <el-col :span="1.5">
-                    <el-button type="primary" @click="submitForm">保存</el-button>
+                    <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">保存</el-button>
                   </el-col>
                 </div>
               </el-row>
@@ -395,6 +399,11 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "申购单号", value: "applyNo" },
+        { label: "科室", value: "department" }
+      ],
       // 总条数
       total: 0,
       // 新品申购申请表格数据
@@ -441,6 +450,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.department.newProductApply.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
     // 过滤单据状态选项，只保留"未审核"和"已审核"
     filteredBizStatus() {
       if (!this.dict.type.biz_status) {
@@ -453,6 +468,8 @@ export default {
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   mounted() {
@@ -474,8 +491,10 @@ export default {
     /** 查询新品申购申请列表 */
     getList() {
       this.loading = true;
-      console.log('[新品申购申请] 开始查询列表，参数:', this.queryParams);
-      listNewProductApply(this.queryParams).then(response => {
+      const queryParams = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(queryParams);
+      console.log('[新品申购申请] 开始查询列表，参数:', queryParams);
+      listNewProductApply(queryParams).then(response => {
         console.log('[新品申购申请] API响应:', response);
         if (response && response.code === 200) {
           const rows = response.rows || [];
@@ -649,7 +668,48 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'department') {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        applyNo: 'applyNo',
+        department: 'departmentId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -980,8 +1040,10 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
+      const queryParams = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(queryParams);
       this.download('department/newProductApply/export', {
-        ...this.queryParams
+        ...queryParams
       }, `newProductApply_${new Date().getTime()}.xlsx`)
     }
   }
@@ -1444,14 +1506,8 @@ body > .el-popper:last-child,
   padding-bottom: 8px !important;
 }
 
-.app-container.new-product-apply-page > .el-form.query-form-compact {
-  margin-top: -12px !important;
-}
-
-.app-container.new-product-apply-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .app-container.new-product-apply-page .local-modal-mask {

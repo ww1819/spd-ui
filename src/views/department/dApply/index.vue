@@ -1,95 +1,97 @@
 <template>
-  <div class="app-container d-apply-page" :class="{ 'is-select-filter-open': DialogComponentShow && selectTarget === 'apply' }">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
-
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item prop="applyBillNo" class="query-item-inline">
+  <div class="app-container list-page d-apply-page" :class="{ 'is-select-filter-open': DialogComponentShow && selectTarget === 'apply' }">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'department'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectDepartment v-model="queryParams.departmentId" />
+              </div>
+            </template>
             <el-input
+              v-else
               v-model="queryParams.applyBillNo"
               placeholder="单号"
               clearable
-              style="width: 180px"
+              class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
             />
-          </el-form-item>
-          <el-form-item prop="departmentId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectDepartment v-model="queryParams.departmentId" />
-            </div>
-          </el-form-item>
-          <el-form-item prop="applyBillStatus" class="query-item-inline">
-            <el-select v-model="queryParams.applyBillStatus" placeholder="单据状态"
-                       :disabled="false"
-                       clearable
-                       style="width: 180px">
-              <el-option v-for="dict in dict.type.biz_status.filter(item => item.value == '1' || item.value == '2' || item.value == 1 || item.value == 2)"
-                         :key="dict.value"
-                         :label="dict.label"
-                         :value="dict.value"
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                class="query-date-picker"
               />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item prop="applyBillStatus" class="query-item-inline">
+              <el-select v-model="queryParams.applyBillStatus" placeholder="单据状态"
+                         :disabled="false"
+                         clearable
+                         class="more-search-select-wrap">
+                <el-option v-for="dict in dict.type.biz_status.filter(item => item.value == '1' || item.value == '2' || item.value == 1 || item.value == 2)"
+                           :key="dict.value"
+                           :label="dict.label"
+                           :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
 
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item style="display: flex; align-items: center;">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
-              clearable
-              style="width: 180px; margin-right: 8px;"
-            />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
-
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['department:dApply:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['department:dApply:export']"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange" height="64vh" border stripe>
@@ -541,8 +543,8 @@
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="renameTemplateDialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="confirmRenameTemplate">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="renameTemplateDialogVisible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmRenameTemplate">确 定</el-button>
       </span>
     </el-dialog>
 
@@ -554,8 +556,8 @@
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="closeNewTemplateNameDialog">取 消</el-button>
-        <el-button type="primary" @click="confirmNewTemplateName">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="closeNewTemplateNameDialog">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmNewTemplateName">确 定</el-button>
       </span>
     </el-dialog>
 
@@ -792,6 +794,11 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "单号", value: "applyBillNo" },
+        { label: "科室", value: "department" }
+      ],
       // 总条数
       total: 0,
       // 科室申领表格数据
@@ -864,6 +871,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.department.dApply.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
     /** 引用模板-当前页的明细列表（前端分页） */
     templateDetailPageList() {
       if (!this.templateDetailList || this.templateDetailList.length === 0) {
@@ -952,6 +965,8 @@ export default {
     },
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   mounted() {
@@ -970,6 +985,7 @@ export default {
       this.loading = true;
       // 确保只查询申领单类型（billType=1），排除转科申请（billType=3）
       const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
       params.billType = 1;
       listApply(params).then(response => {
         this.applyList = response.rows || [];
@@ -1670,7 +1686,48 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.billType = 1; // 重置后仍只查询申领单类型
       Object.assign(this.queryParams, buildDefaultDateRange());
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (t === "department") {
+        return "more-search-field--select";
+      }
+      return "more-search-field--text";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        applyBillNo: "applyBillNo",
+        department: "departmentId"
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -1845,7 +1902,7 @@ export default {
         return
       }
       this.download('department/apply/export', {
-        ...this.queryParams,
+        ...this.buildExportQueryParams(),
         exportBillIds: String(row.id)
       }, `apply_${row.applyBillNo || row.id}_${new Date().getTime()}.xlsx`)
     },
@@ -1856,9 +1913,15 @@ export default {
         return
       }
       this.download('department/apply/export', {
-        ...this.queryParams,
+        ...this.buildExportQueryParams(),
         exportBillIds: this.ids.join(',')
       }, `apply_${new Date().getTime()}.xlsx`)
+    },
+    buildExportQueryParams() {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      params.billType = 1;
+      return params;
     }
   }
 };
@@ -2616,14 +2679,8 @@ export default {
   box-sizing: border-box !important;
 }
 
-.app-container.d-apply-page > .el-form.query-form-compact {
-  margin-top: -12px !important;
-}
-
-.app-container.d-apply-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .app-container.d-apply-page .local-modal-mask:not(.select-material-filter-mask) {

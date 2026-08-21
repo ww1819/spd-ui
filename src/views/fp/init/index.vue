@@ -1,62 +1,108 @@
 <template>
-    <div class="procurement-management" style="position: relative;">
-      <!-- 搜索框 -->
-      <el-form :inline="true" :model="searchForm" class="query-form search-form">
-        <el-form-item>
-          <SelectWarehouse v-model="searchForm.warehouseId" style="width: 180px;" />
-        </el-form-item>
-        <el-form-item>
-          <SelectSupplier v-model="searchForm.supplierId" style="width: 180px;" />
-        </el-form-item>
-        <el-form-item>
-          <el-input v-model="searchForm.billNo" placeholder="单号" clearable style="width: 180px;"></el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-select v-model="searchForm.type" placeholder="类型" clearable style="width: 180px;">
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-input v-model="searchForm.invoiceNumber" placeholder="发票号" clearable style="width: 180px;"></el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-input v-model="searchForm.createrName" placeholder="制单人" clearable style="width: 180px;"></el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-date-picker
-            v-model="searchForm.beginDate"
-            type="date"
-            placeholder="选择日期"
-            value-format="yyyy-MM-dd"
-            clearable
-            style="width: 180px;"
-          ></el-date-picker>
-        </el-form-item>
-        <el-form-item>
-          <el-date-picker
-            v-model="searchForm.endDate"
-            type="date"
-            placeholder="选择结束日期"
-            value-format="yyyy-MM-dd"
-            clearable
-            style="width: 180px;"
-          ></el-date-picker>
-        </el-form-item>
-        <el-form-item>
-          <el-select v-model="searchForm.reviewStatus" placeholder="复核状态" clearable style="width: 180px;">
-            <el-option label="已复核" value="已复核"></el-option>
-            <el-option label="未复核" value="未复核"></el-option>
-          </el-select>
-        </el-form-item>
+    <div class="app-container list-page procurement-management" style="position: relative;">
+      <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :inline="true" :model="searchForm" ref="queryForm" size="small" class="query-form search-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="onSearch"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="searchForm.warehouseId" />
+              </div>
+            </template>
+            <template v-else-if="t === 'supplier'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectSupplier v-model="searchForm.supplierId" />
+              </div>
+            </template>
+            <el-select
+              v-else-if="t === 'type'"
+              v-model="searchForm.type"
+              placeholder="类型"
+              clearable
+              class="more-search-select-wrap"
+            />
+            <el-input
+              v-else-if="t === 'invoiceNumber'"
+              v-model="searchForm.invoiceNumber"
+              placeholder="发票号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="onSearch"
+            />
+            <el-input
+              v-else-if="t === 'createrName'"
+              v-model="searchForm.createrName"
+              placeholder="制单人"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="onSearch"
+            />
+            <el-input
+              v-else
+              v-model="searchForm.billNo"
+              placeholder="单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="onSearch"
+            />
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="searchForm.beginDate"
+                type="date"
+                placeholder="起始日期"
+                value-format="yyyy-MM-dd"
+                clearable
+                class="query-date-picker"
+              />
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="searchForm.endDate"
+                type="date"
+                placeholder="结束日期"
+                value-format="yyyy-MM-dd"
+                clearable
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item prop="reviewStatus" class="query-item-inline">
+              <el-select v-model="searchForm.reviewStatus" placeholder="复核状态" clearable class="more-search-select-wrap">
+                <el-option label="已复核" value="已复核"></el-option>
+                <el-option label="未复核" value="未复核"></el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
-  
-      <!-- 功能按钮 -->
-      <div class="function-buttons">
-        <el-button type="primary" @click="onInvoiceSupplement" :disabled="selectedRows.length === 0">发票补录</el-button>
-        <el-button type="primary" @click="onReviewEntry">复核入库</el-button>
-        <el-button type="primary" @click="onUploadPlatform">上传供应链平台</el-button>
-        <el-button type="primary" @click="onExport">导出</el-button>
-        <el-button type="primary" @click="onSearch">搜索</el-button>
       </div>
+  
+      <el-row :gutter="0" class="mb8 list-toolbar">
+        <div class="list-toolbar-left">
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="onInvoiceSupplement" :disabled="selectedRows.length === 0">发票补录</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="onReviewEntry">复核入库</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="onUploadPlatform">上传供应链平台</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="onExport">导出</el-button>
+        </div>
+      </el-row>
   
       <!-- 表格 -->
       <div class="table-wrapper">
@@ -337,8 +383,8 @@
           </el-form-item>
         </el-form>
         <div slot="footer" class="dialog-footer">
-          <el-button @click="invoiceDialogVisible = false">取 消</el-button>
-          <el-button type="primary" @click="submitInvoiceForm">保 存</el-button>
+          <el-button class="spd-btn spd-btn--secondary" @click="invoiceDialogVisible = false">取 消</el-button>
+          <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitInvoiceForm">保 存</el-button>
         </div>
       </el-dialog>
 
@@ -362,6 +408,16 @@
     data() {
       return {
         loading: false,
+        showSearch: true,
+        moreSearchTypes: [],
+        moreSearchOptions: [
+          { label: '仓库', value: 'warehouse' },
+          { label: '供应商', value: 'supplier' },
+          { label: '单号', value: 'billNo' },
+          { label: '类型', value: 'type' },
+          { label: '发票号', value: 'invoiceNumber' },
+          { label: '制单人', value: 'createrName' }
+        ],
         searchForm: {
           warehouseId: null,
           supplierId: null,
@@ -413,8 +469,17 @@
         }
       };
     },
+    computed: {
+      moreSearchStorageKey() {
+        return 'spd.fp.init.moreSearchTypes'
+      },
+      builtInMoreSearchDefaults() {
+        return this.moreSearchOptions.map(o => o.value)
+      }
+    },
     created() {
-      // 不自动加载，等待用户选择仓库后查询
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
     },
     watch: {
       'searchForm.warehouseId'(newVal) {
@@ -440,19 +505,86 @@
         this.queryParams.pageNum = 1;
         this.getList();
       },
+      resetQuery() {
+        this.searchForm = {
+          warehouseId: null,
+          supplierId: null,
+          billNo: '',
+          type: '',
+          invoiceNumber: '',
+          createrName: '',
+          beginDate: '',
+          endDate: '',
+          reviewStatus: ''
+        };
+        this.moreSearchTypes = this.loadMoreSearchDefaults();
+        this.onMoreSearchTypesChange();
+        this.queryParams.pageNum = 1;
+        if (this.searchForm.warehouseId) {
+          this.getList();
+        } else {
+          this.tableData = [];
+          this.total = 0;
+        }
+      },
+      moreSearchFieldClass(t) {
+        if (t === 'warehouse' || t === 'supplier' || t === 'type') {
+          return 'more-search-field--select';
+        }
+        return 'more-search-field--text';
+      },
+      loadMoreSearchDefaults() {
+        const bar = this.$refs.moreSearchBar;
+        if (bar && typeof bar.loadDefaults === 'function') {
+          return bar.loadDefaults();
+        }
+        const fallback = this.builtInMoreSearchDefaults.slice();
+        try {
+          const raw = localStorage.getItem(this.moreSearchStorageKey);
+          if (!raw) return fallback;
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return fallback;
+          const allow = new Set(this.moreSearchOptions.map(o => o.value));
+          const cleaned = parsed.filter(v => allow.has(v));
+          return cleaned.length ? cleaned : fallback;
+        } catch (e) {
+          return fallback;
+        }
+      },
+      applyMoreSearchToQueryParams(target) {
+        const set = new Set(this.moreSearchTypes || []);
+        const map = {
+          warehouse: 'warehouseId',
+          supplier: 'supplierId',
+          billNo: 'billNo',
+          type: 'type',
+          invoiceNumber: 'invoiceNumber',
+          createrName: 'createrName'
+        };
+        Object.keys(map).forEach((type) => {
+          if (!set.has(type)) {
+            target[map[type]] = null;
+          }
+        });
+      },
+      onMoreSearchTypesChange() {
+        this.applyMoreSearchToQueryParams(this.searchForm);
+      },
       /** 查询入库单列表 */
       getList() {
         this.loading = true;
+        const searchForm = { ...this.searchForm };
+        this.applyMoreSearchToQueryParams(searchForm);
         const params = {
           ...this.queryParams,
           billType: '101', // 入库单
-          warehouseId: this.searchForm.warehouseId,
-          supplierId: this.searchForm.supplierId,
-          billNo: this.searchForm.billNo,
-          invoiceNumber: this.searchForm.invoiceNumber,
-          createrName: this.searchForm.createrName,
-          beginDate: this.searchForm.beginDate,
-          endDate: this.searchForm.endDate ? this.searchForm.endDate + ' 23:59:59' : ''
+          warehouseId: searchForm.warehouseId,
+          supplierId: searchForm.supplierId,
+          billNo: searchForm.billNo,
+          invoiceNumber: searchForm.invoiceNumber,
+          createrName: searchForm.createrName,
+          beginDate: searchForm.beginDate,
+          endDate: searchForm.endDate ? searchForm.endDate + ' 23:59:59' : ''
         };
         
         listWarehouse(params).then(response => {
@@ -610,13 +742,8 @@
     padding: 20px;
   }
   
-  .search-form {
-    margin-bottom: 20px;
-  }
-  
-  .function-buttons {
-    margin-bottom: 20px;
-    text-align: left;
+  .list-query-panel {
+    margin-top: -20px;
   }
 
   /* 表格样式优化 */

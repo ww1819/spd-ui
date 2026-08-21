@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container list-page d-audit-page">
     <el-alert
       v-if="!hasAnyListPermission"
       type="warning"
@@ -9,55 +9,73 @@
       title="您未被分配申领单、申购单或转科申请的任一列表权限，无法查询数据。"
     />
     <div v-if="hasAnyListPermission">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectDepartment v-if="currentBillType === '3'" v-model="queryParams.warehouseId" />
+                <SelectWarehouse v-else v-model="queryParams.warehouseId"/>
+              </div>
+            </template>
+            <template v-else-if="t === 'department'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectDepartment v-model="queryParams.departmentId" />
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.applyBillNo"
+              placeholder="单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item prop="billType" class="query-item-inline">
-              <el-select v-model="queryParams.billType" placeholder="单据类型"
-                         :disabled="true"
-                         clearable
-                         style="width: 180px">
-                <el-option label="申领单" value="1" />
-                <el-option label="申购单" value="2" />
-                <el-option label="转科申请单" value="3" />
-              </el-select>
-            </el-form-item>
-            <el-form-item prop="applyBillNo" class="query-item-inline">
-              <el-input
-                v-model="queryParams.applyBillNo"
-                placeholder="单号"
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
                 clearable
-                style="width: 180px"
-                @keyup.enter.native="handleQuery"
+                class="query-date-picker"
               />
-            </el-form-item>
-            <el-form-item v-if="currentBillType !== '3'" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="queryParams.warehouseId"/>
-              </div>
-            </el-form-item>
-            <el-form-item v-if="currentBillType !== '3'" prop="departmentId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
-            </el-form-item>
-            <el-form-item v-if="currentBillType === '3'" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectDepartment v-model="queryParams.warehouseId"/>
-              </div>
-            </el-form-item>
-            <el-form-item v-if="currentBillType === '3'" prop="departmentId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker"
+              />
             </el-form-item>
             <el-form-item prop="applyBillStatus" class="query-item-inline">
               <el-select v-model="queryParams.applyBillStatus" placeholder="单据状态"
                          :disabled="false"
                          clearable
-                         style="width: 180px">
+                         class="more-search-select-wrap">
                 <el-option v-for="dict in dict.type.biz_status.filter(item => item.value == '1' || item.value == '2' || item.value == 1 || item.value == 2)"
                            :key="dict.value"
                            :label="dict.label"
@@ -67,63 +85,28 @@
             </el-form-item>
           </el-col>
         </el-row>
-
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
-            <el-form-item style="display: flex; align-items: center;">
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
-                clearable
-                style="width: 180px; margin-right: 8px;"
-              />
-              <span style="margin: 0 4px;">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
-                clearable
-                style="width: 180px; margin-left: 8px;"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="6">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-radio-group v-model="currentBillType" @change="handleBillTypeChange" size="small">
           <el-radio-button v-if="canListBillType('1')" label="1">申领单</el-radio-button>
           <el-radio-button v-if="canListBillType('2')" label="2">申购单</el-radio-button>
           <el-radio-button v-if="canListBillType('3')" label="3">转科申请单</el-radio-button>
         </el-radio-group>
-      </el-col>
-      <el-col v-if="canListCurrent()" :span="1.5" style="margin-left: -10px;">
         <el-button
+          v-if="canAuditCurrent()"
           type="primary"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col v-if="canListCurrent()" :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <el-col v-if="canAuditCurrent()" :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleBatchAudit"
           :disabled="ids.length === 0"
         >审核</el-button>
-      </el-col>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="applyList" :row-class-name="rowApplyIndex" @selection-change="handleSelectionChange"  height="56vh" border stripe>
@@ -312,10 +295,10 @@
               <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteBasApplyEntry">删除</el-button>
             </el-col>
             <el-col :span="1.5" v-show="action">
-              <el-button @click="cancel">取 消</el-button>
+              <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
             </el-col>
             <el-col v-if="canEditCurrent()" :span="1.5" v-show="action">
-              <el-button type="primary" @click="submitForm">确 定</el-button>
+              <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
             </el-col>
           </div>
 
@@ -466,6 +449,7 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
       // 总条数
       total: 0,
       // 科室申领表格数据
@@ -512,6 +496,26 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.department.dAudit.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
+    moreSearchOptions() {
+      if (this.currentBillType === '3') {
+        return [
+          { label: "单号", value: "applyBillNo" },
+          { label: "调出科室", value: "warehouse" },
+          { label: "调入科室", value: "department" }
+        ];
+      }
+      return [
+        { label: "单号", value: "applyBillNo" },
+        { label: "仓库", value: "warehouse" },
+        { label: "科室", value: "department" }
+      ];
+    },
     hasAnyListPermission() {
       return (
         checkPermi(["department:dApply:list"]) ||
@@ -535,6 +539,8 @@ export default {
       }
     }
     this.queryParams.billType = this.currentBillType;
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
@@ -590,12 +596,14 @@ export default {
         return;
       }
       this.loading = true;
+      const queryParams = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(queryParams);
       if (this.currentBillType === '1') {
         // 查询申领单 - 设置billType=1，只查询申领单类型，排除转科申请（billType=3）
         const params = {
-          ...this.queryParams,
-          applyBillNo: this.queryParams.applyBillNo,
-          applyBillStatus: this.queryParams.applyBillStatus,
+          ...queryParams,
+          applyBillNo: queryParams.applyBillNo,
+          applyBillStatus: queryParams.applyBillStatus,
           billType: 1  // 明确指定只查询申领单类型（SL），排除转科申请（ZK）
         };
         listApply(params).then(response => {
@@ -655,9 +663,9 @@ export default {
       } else if (this.currentBillType === '2') {
         // 查询申购单
         const params = {
-          ...this.queryParams,
-          purchaseBillNo: this.queryParams.applyBillNo, // 使用申领单号字段作为申购单号
-          purchaseBillStatus: this.queryParams.applyBillStatus, // 使用申请状态字段
+          ...queryParams,
+          purchaseBillNo: queryParams.applyBillNo, // 使用申领单号字段作为申购单号
+          purchaseBillStatus: queryParams.applyBillStatus, // 使用申请状态字段
         };
         listPurchase(params).then(response => {
           this.applyList = (response.rows || response.data || []).map(item => ({
@@ -672,13 +680,13 @@ export default {
       } else if (this.currentBillType === '3') {
         // 查询转科申请单
         const params = {
-          ...this.queryParams,
-          transferBillNo: this.queryParams.applyBillNo,
-          transferBillStatus: this.queryParams.applyBillStatus,
-          outDepartmentId: this.queryParams.warehouseId, // 转科申请使用warehouseId作为调出科室
-          inDepartmentId: this.queryParams.departmentId, // 转科申请使用departmentId作为调入科室
-          beginDate: this.queryParams.beginDate,
-          endDate: this.queryParams.endDate
+          ...queryParams,
+          transferBillNo: queryParams.applyBillNo,
+          transferBillStatus: queryParams.applyBillStatus,
+          outDepartmentId: queryParams.warehouseId, // 转科申请使用warehouseId作为调出科室
+          inDepartmentId: queryParams.departmentId, // 转科申请使用departmentId作为调入科室
+          beginDate: queryParams.beginDate,
+          endDate: queryParams.endDate
         };
         listDepartmentTransfer(params).then(response => {
           // 字段映射：applyBillNo -> transferBillNo, warehouseId -> outDepartmentId, departmentId -> inDepartmentId
@@ -848,7 +856,50 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.queryParams.billType = this.currentBillType;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (['warehouse', 'department'].includes(t)) {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        applyBillNo: 'applyBillNo',
+        warehouse: 'warehouseId',
+        department: 'departmentId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -1194,8 +1245,10 @@ export default {
       }
       const exportUrl = this.currentBillType === '2' ? 'department/purchase/export' : 'department/apply/export'
       const billNo = this.getBillNo(row) || row.id
+      const query = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(query)
       this.download(exportUrl, {
-        ...this.queryParams,
+        ...query,
         exportBillIds: String(row.id)
       }, `${this.currentBillType === '2' ? 'purchase' : 'apply'}_${billNo}_${new Date().getTime()}.xlsx`)
     },
@@ -1206,8 +1259,10 @@ export default {
         return
       }
       const exportUrl = this.currentBillType === '2' ? 'department/purchase/export' : 'department/apply/export'
+      const query = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(query)
       this.download(exportUrl, {
-        ...this.queryParams,
+        ...query,
         exportBillIds: this.ids.join(',')
       }, `${this.currentBillType === '2' ? 'purchase' : 'apply'}_${new Date().getTime()}.xlsx`)
     },
@@ -1429,13 +1484,8 @@ export default {
 }
 
 /* 搜索条件容器样式 */
-.form-fields-container {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid #EBEEF5;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .query-row-left {

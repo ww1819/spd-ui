@@ -1,5 +1,18 @@
 <template>
   <div class="login">
+    <div class="warehouse-bg" aria-hidden="true"></div>
+    <div class="ceiling-glow" aria-hidden="true"></div>
+    <div class="ceiling-glow ceiling-glow-second" aria-hidden="true"></div>
+    <div class="light-breathe" aria-hidden="true"></div>
+    <div class="air-dust" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="brand" aria-hidden="false">
+      <h1 class="brand-title">SPD 医疗耗材管理系统</h1>
+      <p class="brand-subtitle">智慧供应链 · 精益化管理 · 全周期追溯</p>
+    </div>
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form">
       <h3 class="title"></h3><!-- SPD后台管理系统 -->
       <el-form-item v-if="showOrgSelector" prop="customerId" label="组织机构">
@@ -491,35 +504,290 @@ export default {
 <style rel="stylesheet/scss" lang="scss">
 .login {
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  align-items: center;
-  height: 100%;
-  //background-image: url("../assets/images/login-background.jpg");
-  //background-image: url("../assets/images/login.jpg");
-  background-image: url("../assets/images/log.png");
-  background-size: cover;
+  align-items: stretch;
+  height: 100vh;
+  padding: 0 6vw 0 8vw;
+  background-color: #f0f4f8;
+  overflow: hidden;
+  position: relative;
 }
+
+.warehouse-bg {
+  position: absolute;
+  inset: -2%;
+  background-image: url("../assets/images/login-bg-warehouse-shelves.jpg");
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  animation: warehouseShift 34s ease-in-out infinite alternate;
+}
+
+@keyframes warehouseShift {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+  100% {
+    transform: scale(1.03) translate(-0.6%, -0.3%);
+  }
+}
+
+.ceiling-glow {
+  position: absolute;
+  top: -15%;
+  left: 20%;
+  width: 55%;
+  height: 130%;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0) 25%,
+    rgba(255, 255, 255, 0.12) 45%,
+    rgba(255, 255, 255, 0.2) 55%,
+    rgba(255, 255, 255, 0.1) 65%,
+    rgba(255, 255, 255, 0) 80%
+  );
+  transform: rotate(18deg);
+  filter: blur(28px);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.6;
+  animation: glowSway 20s ease-in-out infinite alternate;
+}
+
+.ceiling-glow-second {
+  top: -5%;
+  left: 45%;
+  width: 35%;
+  height: 110%;
+  opacity: 0.35;
+  animation-delay: -10s;
+  animation-duration: 24s;
+}
+
+@keyframes glowSway {
+  0% {
+    transform: rotate(14deg) translateX(-1.5vw);
+    opacity: 0.45;
+  }
+  100% {
+    transform: rotate(22deg) translateX(1.5vw);
+    opacity: 0.7;
+  }
+}
+
+.light-breathe {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 5%,
+    rgba(230, 242, 255, 0.28) 0%,
+    rgba(230, 242, 255, 0.1) 35%,
+    transparent 65%
+  );
+  z-index: 1;
+  pointer-events: none;
+  animation: lightPulse 14s ease-in-out infinite alternate;
+}
+
+@keyframes lightPulse {
+  0% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0.9;
+  }
+}
+
+.air-dust {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.air-dust span {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  filter: blur(0.5px);
+  box-shadow: 0 0 3px rgba(255, 255, 255, 0.35);
+  animation: floatDust linear infinite;
+}
+
+.air-dust span:nth-child(1) { width: 2px; height: 2px; left: 15%; top: 78%; animation-duration: 26s; animation-delay: 0s; --dust-opacity: 0.4; }
+.air-dust span:nth-child(2) { width: 2px; height: 2px; left: 25%; top: 85%; animation-duration: 30s; animation-delay: 3s; --dust-opacity: 0.3; }
+.air-dust span:nth-child(3) { width: 3px; height: 3px; left: 35%; top: 72%; animation-duration: 24s; animation-delay: 7s; --dust-opacity: 0.35; }
+.air-dust span:nth-child(4) { width: 2px; height: 2px; left: 45%; top: 88%; animation-duration: 28s; animation-delay: 1s; --dust-opacity: 0.28; }
+.air-dust span:nth-child(5) { width: 2px; height: 2px; left: 55%; top: 76%; animation-duration: 22s; animation-delay: 11s; --dust-opacity: 0.32; }
+.air-dust span:nth-child(6) { width: 3px; height: 3px; left: 65%; top: 82%; animation-duration: 32s; animation-delay: 5s; --dust-opacity: 0.22; }
+.air-dust span:nth-child(7) { width: 2px; height: 2px; left: 18%; top: 68%; animation-duration: 27s; animation-delay: 9s; --dust-opacity: 0.26; }
+.air-dust span:nth-child(8) { width: 2px; height: 2px; left: 28%; top: 90%; animation-duration: 29s; animation-delay: 13s; --dust-opacity: 0.24; }
+.air-dust span:nth-child(9) { width: 2px; height: 2px; left: 38%; top: 80%; animation-duration: 25s; animation-delay: 2s; --dust-opacity: 0.34; }
+.air-dust span:nth-child(10) { width: 2px; height: 2px; left: 48%; top: 70%; animation-duration: 31s; animation-delay: 6s; --dust-opacity: 0.2; }
+.air-dust span:nth-child(11) { width: 3px; height: 3px; left: 58%; top: 86%; animation-duration: 23s; animation-delay: 10s; --dust-opacity: 0.3; }
+.air-dust span:nth-child(12) { width: 2px; height: 2px; left: 68%; top: 74%; animation-duration: 28s; animation-delay: 4s; --dust-opacity: 0.25; }
+.air-dust span:nth-child(13) { width: 2px; height: 2px; left: 20%; top: 92%; animation-duration: 33s; animation-delay: 8s; --dust-opacity: 0.18; }
+.air-dust span:nth-child(14) { width: 2px; height: 2px; left: 30%; top: 66%; animation-duration: 21s; animation-delay: 0s; --dust-opacity: 0.3; }
+.air-dust span:nth-child(15) { width: 2px; height: 2px; left: 40%; top: 84%; animation-duration: 26s; animation-delay: 14s; --dust-opacity: 0.22; }
+
+@keyframes floatDust {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--dust-opacity, 0.25);
+  }
+  90% {
+    opacity: var(--dust-opacity, 0.25);
+  }
+  100% {
+    transform: translateY(-58vh) translateX(10px);
+    opacity: 0;
+  }
+}
+
+.brand {
+  position: absolute;
+  top: 10vh;
+  left: 8vw;
+  z-index: 2;
+  max-width: 520px;
+  animation: brandEnter 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.brand-title {
+  margin: 0 0 12px 0;
+  font-size: 42px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 16px rgba(255, 255, 255, 0.75);
+}
+
+.brand-subtitle {
+  margin: 0;
+  font-size: 17px;
+  color: #4b5563;
+  line-height: 1.5;
+  text-shadow: 0 1px 10px rgba(255, 255, 255, 0.65);
+}
+
+@keyframes brandEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .title {
-  margin: 0px auto 30px auto;
-  text-align: center;
-  color: #707070;
+  display: none;
 }
 
 .login-form {
-  border-radius: 6px;
-  background: #ffffff;
-  width: 400px;
-  padding: 25px 25px 5px 25px;
+  position: absolute;
+  top: 50%;
+  right: 6vw;
+  transform: translateY(-50%);
+  z-index: 2;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 28px 70px rgba(30, 111, 219, 0.1), 0 10px 30px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  width: 380px;
+  padding: 32px 34px 16px 34px;
+  animation: cardEnter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+  opacity: 0;
   .el-input {
-    height: 38px;
+    height: 44px;
     input {
-      height: 38px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(30, 111, 219, 0.16);
+      border-radius: 10px;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      &:focus {
+        border-color: #1e6fdb;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(30, 111, 219, 0.1);
+      }
     }
   }
   .input-icon {
-    height: 39px;
+    height: 44px;
     width: 14px;
     margin-left: 2px;
+  }
+  .el-button--primary {
+    height: 46px;
+    background: linear-gradient(135deg, #1e6fdb, #3b93f7);
+    border-color: transparent;
+    box-shadow: 0 10px 24px rgba(30, 111, 219, 0.32);
+    transition: transform 0.15s, box-shadow 0.2s;
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(30, 111, 219, 0.38);
+    }
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .login {
+    padding: 8vh 24px 6vh;
+    justify-content: flex-start;
+    gap: 36px;
+  }
+  .brand {
+    position: relative;
+    top: auto;
+    left: auto;
+    align-self: center;
+    text-align: center;
+    margin-top: 4vh;
+  }
+  .brand-logo {
+    margin: 0 auto 20px;
+    width: 48px;
+    height: 48px;
+  }
+  .brand-title {
+    font-size: 28px;
+  }
+  .brand-subtitle {
+    font-size: 14px;
+  }
+  .login-form {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+    align-self: center;
+    width: 100%;
+    max-width: 380px;
+    padding: 28px 24px 12px;
   }
 }
 .login-tip {
@@ -576,5 +844,18 @@ export default {
 }
 .lic-section {
   margin-bottom: 4px;
+}
+
+@media (max-width: 768px) {
+  .login {
+    justify-content: center;
+    padding-right: 0;
+    padding: 24px;
+  }
+  .login-form {
+    width: 100%;
+    max-width: 400px;
+    padding: 28px 24px 8px;
+  }
 }
 </style>

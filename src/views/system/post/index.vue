@@ -1,101 +1,72 @@
 <template>
-  <div class="app-container">
-    <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
-      <el-form-item prop="postCode">
-        <el-input
-          v-model="queryParams.postCode"
-          placeholder="工作组编码"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item prop="postName">
-        <el-input
-          v-model="queryParams.postName"
-          placeholder="工作组名称"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item prop="status">
-        <el-select v-model="queryParams.status" placeholder="工作组状态" clearable>
-          <el-option
-            v-for="dict in dict.type.sys_normal_disable"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-        <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container list-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field more-search-field--text"
+          >
+            <el-input
+              v-if="t === 'postName'"
+              v-model="queryParams.postName"
+              placeholder="工作组名称"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else
+              v-model="queryParams.postCode"
+              placeholder="工作组编码"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          @click="handleAdd"
-          v-hasPermi="['system:post:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:post:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:post:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          @click="handleExport"
-          v-hasPermi="['system:post:export']"
-        >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          :disabled="multiple"
-          @click="handleSyncWarehouse"
-          v-hasPermi="['system:post:edit', 'system:post:sync']"
-        >同步仓库</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          :disabled="multiple"
-          @click="handleSyncDepartment"
-          v-hasPermi="['system:post:edit', 'system:post:sync']"
-        >同步科室</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          :disabled="multiple"
-          @click="handleSyncMenu"
-          v-hasPermi="['system:post:edit', 'system:post:sync']"
-        >同步菜单</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item prop="status" class="query-item-inline">
+              <el-select v-model="queryParams.status" placeholder="工作组状态" clearable class="more-search-select-wrap">
+                <el-option
+                  v-for="dict in dict.type.sys_normal_disable"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['system:post:add']">新增</el-button>
+        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="single" @click="handleUpdate" v-hasPermi="['system:post:edit']">修改</el-button>
+        <el-button size="small" class="spd-btn spd-btn--danger" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:post:remove']">删除</el-button>
+        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport" v-hasPermi="['system:post:export']">导出</el-button>
+        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncWarehouse" v-hasPermi="['system:post:edit', 'system:post:sync']">同步仓库</el-button>
+        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncDepartment" v-hasPermi="['system:post:edit', 'system:post:sync']">同步科室</el-button>
+        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncMenu" v-hasPermi="['system:post:edit', 'system:post:sync']">同步菜单</el-button>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="postList" stripe @selection-change="handleSelectionChange">
@@ -172,8 +143,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
 
@@ -252,8 +223,8 @@
       </el-tab-pane>
     </el-tabs>
     <span slot="footer" class="dialog-footer">
-      <el-button type="primary" @click="submitAuth">保 存</el-button>
-      <el-button @click="authOpen = false">取 消</el-button>
+      <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitAuth">保 存</el-button>
+      <el-button class="spd-btn spd-btn--secondary" @click="authOpen = false">取 消</el-button>
     </span>
     </el-dialog>
   </div>
@@ -284,6 +255,11 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '工作组编码', value: 'postCode' },
+        { label: '工作组名称', value: 'postName' }
+      ],
       // 总条数
       total: 0,
       // 工作组表格数据
@@ -352,7 +328,17 @@ export default {
       }
     };
   },
+  computed: {
+    moreSearchStorageKey() {
+      return 'spd.system.post.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   beforeDestroy() {
@@ -362,7 +348,9 @@ export default {
     /** 查询工作组列表 */
     getList() {
       this.loading = true;
-      listPost(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listPost(params).then(response => {
         this.postList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -393,7 +381,39 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = { postCode: 'postCode', postName: 'postName' };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     // 序号计算方法
@@ -457,9 +477,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('system/post/export', {
-        ...this.queryParams
-      }, `post_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('system/post/export', params, `post_${new Date().getTime()}.xlsx`)
     },
     /** 同步仓库：支持多选工作组，对每个组分别提交任务 */
     handleSyncWarehouse() {
@@ -966,6 +986,9 @@ export default {
 </script>
 
 <style scoped>
+.list-query-panel {
+  margin-top: -20px;
+}
 /* 授权树：客户未开通的目录节点不显示勾选框 */
 .auth-menu-tree ::v-deep .el-tree-node:has(.menu-folder-only) > .el-tree-node__content > .el-checkbox {
   display: none;

@@ -1,41 +1,72 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item prop="code">
-            <el-input v-model="queryParams.code" placeholder="类型编码" clearable @keyup.enter.native="handleQuery" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item prop="name">
-            <el-input v-model="queryParams.name" placeholder="类型名称" clearable @keyup.enter.native="handleQuery" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item prop="isUse">
-            <el-select v-model="queryParams.isUse" placeholder="使用状态" clearable style="width: 100%">
-              <el-option v-for="dict in dict.type.is_use_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-            <el-button size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+  <div class="app-container list-page">
+    <div class="query-container" v-show="showSearch">
+      <div class="form-fields-container list-query-panel">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field"
+              :class="t === 'isUse' ? 'more-search-field--short' : 'more-search-field--text'"
+            >
+              <el-select
+                v-if="t === 'isUse'"
+                v-model="queryParams.isUse"
+                placeholder="使用状态"
+                clearable
+                class="more-search-short-select"
+              >
+                <el-option
+                  v-for="dict in dict.type.is_use_status"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+              <el-input
+                v-else
+                v-model="queryParams[t]"
+                :placeholder="moreSearchPlaceholderFor(t)"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleQuery"
+              />
+            </div>
+          </more-search-bar>
+        </el-form>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button type="primary" size="small" @click="handleAdd" v-hasPermi="['foundation:jcType:add']">新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="primary" size="small" @click="handleExport" v-hasPermi="['foundation:jcType:export']">导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button
+          type="primary"
+          size="small"
+          class="spd-btn spd-btn--primary"
+          @click="handleAdd"
+          v-hasPermi="['foundation:jcType:add']"
+        >新增</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary"
+          @click="handleExport"
+          v-hasPermi="['foundation:jcType:export']"
+        >导出</el-button>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" :row-class-name="rowIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
@@ -100,8 +131,8 @@
           </el-form-item>
         </el-form>
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -114,6 +145,14 @@ import { listJcType, getJcType, addJcType, updateJcType, delJcType } from "@/api
 export default {
   name: "JcType",
   dicts: ["is_use_status"],
+  computed: {
+    moreSearchStorageKey() {
+      return "spd.foundation.jcType.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["code", "name", "isUse"];
+    }
+  },
   data() {
     return {
       loading: true,
@@ -125,6 +164,12 @@ export default {
       dataList: [],
       title: "",
       open: false,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "code", label: "类型编码" },
+        { value: "name", label: "类型名称" },
+        { value: "isUse", label: "使用状态" }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -139,12 +184,47 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange(this.moreSearchTypes);
     this.getList();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = { code: "类型编码", name: "类型名称" };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["code", "name", "isUse"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     getList() {
       this.loading = true;
-      listJcType(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listJcType(params).then(response => {
         this.dataList = response.rows || [];
         this.total = response.total || 0;
         this.loading = false;
@@ -175,6 +255,11 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.code = null;
+      this.queryParams.name = null;
+      this.queryParams.isUse = null;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     handleSelectionChange(selection) {
@@ -220,7 +305,9 @@ export default {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     handleExport() {
-      this.download("foundation/jcType/export", { ...this.queryParams }, `jcType_${new Date().getTime()}.xlsx`);
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download("foundation/jcType/export", params, `jcType_${new Date().getTime()}.xlsx`);
     }
   }
 };
@@ -228,11 +315,11 @@ export default {
 
 <style scoped>
 .local-modal-mask {
-  position: fixed;
+  position: absolute;
   left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
@@ -248,5 +335,9 @@ export default {
   max-height: 90vh;
   overflow: auto;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.app-container.list-page {
+  position: relative;
+  min-height: calc(100vh - 84px);
 }
 </style>

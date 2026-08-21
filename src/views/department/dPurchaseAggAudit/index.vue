@@ -1,104 +1,104 @@
 <template>
-  <div class="app-container d-purchase-agg-audit-page" :class="{ 'is-modal-open': open }">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
-
-      <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item prop="purchaseBillNo" class="query-item-inline">
-              <el-input
-                v-model="queryParams.purchaseBillNo"
-                placeholder="申购单号"
-                clearable
-                style="width: 180px"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
+  <div class="app-container list-page d-purchase-agg-audit-page" :class="{ 'is-modal-open': open }">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectWarehouse v-model="queryParams.warehouseId"/>
               </div>
-            </el-form-item>
-            <el-form-item prop="departmentId" class="query-item-inline">
-              <div class="query-select-wrapper">
+            </template>
+            <template v-else-if="t === 'department'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
-            </el-form-item>
-            <el-form-item prop="purchaseBillStatus" class="query-item-inline">
-              <el-select v-model="queryParams.purchaseBillStatus" placeholder="状态"
-                         clearable
-                         style="width: 180px">
-                <el-option label="未审核" :value="1" />
-                <el-option label="已审核" :value="2" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.purchaseBillNo"
+              placeholder="申购单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
         <el-row :gutter="16" class="query-row-second">
-          <el-col :span="12">
-            <el-form-item style="display: flex; align-items: center;">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                style="width: 180px; margin-right: 8px;"
+                class="query-date-picker"
               />
-              <span style="margin: 0 4px;">至</span>
+              <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                style="width: 180px; margin-left: 8px;"
+                class="query-date-picker"
               />
+            </el-form-item>
+            <el-form-item prop="purchaseBillStatus" class="query-item-inline">
+              <el-select v-model="queryParams.purchaseBillStatus" placeholder="状态"
+                         clearable
+                         class="more-search-select-wrap">
+                <el-option label="未审核" :value="1" />
+                <el-option label="已审核" :value="2" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
-    </el-form>
+      </el-form>
+    </div>
 
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleBatchAudit"
           v-hasPermi="['department:purchaseAudit:audit']"
         >审核</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--danger"
           @click="handleToolbarReject"
           v-hasPermi="['department:purchaseAudit:reject']"
         >驳回</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['department:purchaseAudit:export']"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="purchaseList" :row-class-name="rowPurchaseIndex" @selection-change="handleSelectionChange" height="64vh" border stripe>
@@ -434,6 +434,12 @@ export default {
       selectedRows: [],
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "申购单号", value: "purchaseBillNo" },
+        { label: "仓库", value: "warehouse" },
+        { label: "科室", value: "department" }
+      ],
       // 总条数
       total: 0,
       // 汇总申购表格数据
@@ -466,15 +472,27 @@ export default {
       rules: {}
     };
   },
+  computed: {
+    moreSearchStorageKey() {
+      return "spd.department.dPurchaseAggAudit.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    }
+  },
   created() {
-    this.applyRoutePurchaseBillQuery()
-    this.getList()
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.applyRoutePurchaseBillQuery();
+    this.onMoreSearchTypesChange();
+    this.getList();
   },
   watch: {
     '$route.query.purchaseBillNo'(val) {
       if (val) {
         this.queryParams.purchaseBillNo = String(val)
         this.queryParams.pageNum = 1
+        this.ensurePurchaseBillNoSearchType()
+        this.onMoreSearchTypesChange()
         this.getList()
       }
     }
@@ -498,12 +516,19 @@ export default {
       if (!ref) return
       this.queryParams.purchaseBillNo = String(ref)
       this.queryParams.pageNum = 1
+      this.ensurePurchaseBillNoSearchType()
+    },
+    ensurePurchaseBillNoSearchType() {
+      if (!(this.moreSearchTypes || []).includes('purchaseBillNo')) {
+        this.moreSearchTypes = ['purchaseBillNo'].concat(this.moreSearchTypes || [])
+      }
     },
     /** 查询申购单列表（支持全部、未审核、已审核） */
     getList() {
       this.loading = true;
       // applyBillStatus根据用户选择：null=全部，1=未审核，2=已审核
       const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
       // 如果purchaseBillStatus为null，则不传该参数，查询全部状态
       if (params.purchaseBillStatus === null || params.purchaseBillStatus === '') {
         delete params.purchaseBillStatus;
@@ -556,7 +581,50 @@ export default {
       this.resetForm("queryForm");
       Object.assign(this.queryParams, buildDefaultDateRange());
       this.queryParams.purchaseBillStatus = null; // 重置后显示全部状态
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.applyRoutePurchaseBillQuery();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (['warehouse', 'department'].includes(t)) {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        purchaseBillNo: 'purchaseBillNo',
+        warehouse: 'warehouseId',
+        department: 'departmentId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -770,7 +838,7 @@ export default {
         return
       }
       this.download('department/purchaseAgg/export', {
-        ...this.queryParams,
+        ...this.buildExportQueryParams(),
         exportBillIds: String(row.id)
       }, `purchase_agg_audit_${row.purchaseBillNo || row.id}_${new Date().getTime()}.xlsx`)
     },
@@ -780,15 +848,19 @@ export default {
         this.$modal.msgWarning('请先勾选要导出的单据')
         return
       }
-      const params = { ...this.queryParams };
-      // 如果purchaseBillStatus为null，则不传该参数，导出全部状态
-      if (params.purchaseBillStatus === null || params.purchaseBillStatus === '') {
-        delete params.purchaseBillStatus;
-      }
+      const params = this.buildExportQueryParams();
       params.exportBillIds = this.ids.join(',')
       this.download('department/purchaseAgg/export', {
         ...params
       }, `purchase_agg_audit_${new Date().getTime()}.xlsx`)
+    },
+    buildExportQueryParams() {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      if (params.purchaseBillStatus === null || params.purchaseBillStatus === '') {
+        delete params.purchaseBillStatus;
+      }
+      return params;
     }
   }
 };
@@ -1379,14 +1451,8 @@ export default {
   font-family: 'Roboto', sans-serif !important;
 }
 
-.app-container.d-purchase-agg-audit-page > .el-form.query-form-compact {
-  margin-top: -12px !important;
-}
-
-.app-container.d-purchase-agg-audit-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .app-container.d-purchase-agg-audit-page .local-modal-mask {

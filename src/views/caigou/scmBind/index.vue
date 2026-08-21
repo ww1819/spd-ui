@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container list-page">
     <el-card shadow="never" class="mb16">
       <div slot="header" class="clearfix">
         <span>当前租户 — 云平台医院编码</span>
@@ -17,7 +17,7 @@
           <el-input v-model="tenantForm.remark" type="textarea" :rows="2" style="max-width: 520px" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="saveTenant" v-hasPermi="['caigou:scmBind:edit']">保存</el-button>
+          <el-button type="primary" class="spd-btn spd-btn--primary" @click="saveTenant" v-hasPermi="['caigou:scmBind:edit']">保存</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -34,49 +34,66 @@
           <el-input v-model="newBind.scmSupplierCode" clearable placeholder="supplier_code" style="width: 200px" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="addSupplierBind">新增绑定</el-button>
+          <el-button type="primary" class="spd-btn spd-btn--primary" @click="addSupplierBind">新增绑定</el-button>
         </el-form-item>
       </el-form>
-      <el-form :inline="true" size="small" class="mb12 supplier-query-bar">
-        <el-form-item label="SPD供应商编码">
-          <el-input
-            v-model="supplierQuery.spdSupplierCode"
-            clearable
-            placeholder="模糊"
-            style="width: 168px"
-            @keyup.enter.native="handleSupplierQuery"
-          />
-        </el-form-item>
-        <el-form-item label="平台供应商编码">
-          <el-input
-            v-model="supplierQuery.scmSupplierCode"
-            clearable
-            placeholder="模糊"
-            style="width: 168px"
-            @keyup.enter.native="handleSupplierQuery"
-          />
-        </el-form-item>
-        <el-form-item label="名称简码">
-          <el-input
-            v-model="supplierQuery.referredCode"
-            clearable
-            placeholder="拼音简码，模糊"
-            style="width: 168px"
-            @keyup.enter.native="handleSupplierQuery"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSupplierQuery">查询</el-button>
-          <el-button @click="resetSupplierQuery">重置</el-button>
+      <div class="form-fields-container list-query-panel">
+        <el-form ref="supplierQueryForm" :model="supplierQuery" :inline="true" size="small" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleSupplierQuery"
+            @reset="resetSupplierQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field more-search-field--text"
+            >
+              <el-input
+                v-if="t === 'scmSupplierCode'"
+                v-model="supplierQuery.scmSupplierCode"
+                clearable
+                placeholder="平台供应商编码"
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleSupplierQuery"
+              />
+              <el-input
+                v-else-if="t === 'referredCode'"
+                v-model="supplierQuery.referredCode"
+                clearable
+                placeholder="名称简码"
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleSupplierQuery"
+              />
+              <el-input
+                v-else
+                v-model="supplierQuery.spdSupplierCode"
+                clearable
+                placeholder="SPD供应商编码"
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleSupplierQuery"
+              />
+            </div>
+          </more-search-bar>
+        </el-form>
+      </div>
+      <el-row :gutter="0" class="mb8 list-toolbar">
+        <div class="list-toolbar-left">
           <el-button
-            type="danger"
-            plain
+            size="small"
+            class="spd-btn spd-btn--danger"
             :disabled="supplierSelection.length === 0"
             @click="batchDeleteSupplier"
             v-hasPermi="['caigou:scmBind:remove']"
           >批量删除</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </el-row>
       <el-table
         ref="supplierTable"
         v-loading="supplierLoading"
@@ -128,8 +145,8 @@
           </el-form-item>
         </el-form>
         <div slot="footer" class="dialog-footer">
-          <el-button @click="supplierEditVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitSupplierEdit">确定</el-button>
+          <el-button class="spd-btn spd-btn--secondary" @click="supplierEditVisible = false">取消</el-button>
+          <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitSupplierEdit">确定</el-button>
         </div>
       </el-dialog>
       <p class="text-muted" style="margin-top: 12px; color: #909399; font-size: 13px;">
@@ -164,6 +181,12 @@ export default {
         scmSupplierCode: '',
         referredCode: ''
       },
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: 'SPD供应商编码', value: 'spdSupplierCode' },
+        { label: '平台供应商编码', value: 'scmSupplierCode' },
+        { label: '名称简码', value: 'referredCode' }
+      ],
       supplierSelection: [],
       supplierEditVisible: false,
       supplierEditForm: {
@@ -180,7 +203,17 @@ export default {
       }
     }
   },
+  computed: {
+    moreSearchStorageKey() {
+      return 'spd.caigou.scmBind.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.loadAll()
   },
   methods: {
@@ -200,7 +233,8 @@ export default {
     loadSuppliers() {
       this.supplierLoading = true
       const params = {}
-      const q = this.supplierQuery || {}
+      const q = { ...(this.supplierQuery || {}) }
+      this.applyMoreSearchToQueryParams(q)
       ;['spdSupplierCode', 'scmSupplierCode', 'referredCode'].forEach(key => {
         const v = q[key]
         if (v != null && String(v).trim() !== '') {
@@ -231,7 +265,43 @@ export default {
         scmSupplierCode: '',
         referredCode: ''
       }
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
       this.loadSuppliers()
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      const map = {
+        spdSupplierCode: 'spdSupplierCode',
+        scmSupplierCode: 'scmSupplierCode',
+        referredCode: 'referredCode'
+      }
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = ''
+        }
+      })
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.supplierQuery)
     },
     handleSupplierSelectionChange(rows) {
       this.supplierSelection = rows || []
@@ -360,5 +430,9 @@ export default {
 }
 .mb12 {
   margin-bottom: 12px;
+}
+.list-query-panel {
+  margin-top: 0;
+  margin-bottom: 8px;
 }
 </style>

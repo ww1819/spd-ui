@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container material-compare-page">
+  <div class="app-container list-page material-compare-page">
     <!-- 左右分栏布局：左边供应商列表，右边耗材明细 -->
     <el-row :gutter="10" style="margin-top: -10px;">
       <!-- 左边：供应商列表 -->
@@ -38,106 +38,71 @@
             <span v-else class="selected-supplier">当前供应商：全部</span>
           </div>
           
-          <!-- 搜索框容器 -->
-          <div class="query-container" style="margin-bottom: 0px;">
-            <div class="form-fields-container">
+          <div class="query-container" v-show="showSearch">
+            <div class="form-fields-container list-query-panel">
               <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-                <el-row class="query-row-first">
-                  <el-col :span="24">
-                    <el-form-item prop="code" class="query-item-inline">
-                      <el-input
-                        v-model="queryParams.code"
-                        placeholder="项目编码"
-                        clearable
-                        @keyup.enter.native="handleQuery"
-                        style="width: 160px"
-                      />
-                    </el-form-item>
-                    <el-form-item prop="name" class="query-item-inline">
-                      <el-input
-                        v-model="queryParams.name"
-                        placeholder="名称"
-                        clearable
-                        @keyup.enter.native="handleQuery"
-                        style="width: 160px"
-                      />
-                    </el-form-item>
-                    <el-form-item prop="referredName" class="query-item-inline">
-                      <el-input
-                        v-model="queryParams.referredName"
-                        placeholder="拼音简码"
-                        clearable
-                        @keyup.enter.native="handleQuery"
-                        style="width: 160px"
-                      />
-                    </el-form-item>
-                    <el-form-item prop="hisBindStatus" class="query-item-inline">
-                      <el-select
-                        v-model="queryParams.hisBindStatus"
-                        placeholder="是否对照"
-                        clearable
-                        style="width: 140px"
-                      >
-                        <el-option label="已对照" value="1" />
-                        <el-option label="未对照" value="0" />
-                      </el-select>
-                    </el-form-item>
-                    <el-form-item prop="isBilling" class="query-item-inline">
-                      <el-select
-                        v-model="queryParams.isBilling"
-                        placeholder="是否收费"
-                        clearable
-                        style="width: 140px"
-                      >
-                        <el-option label="是" value="1" />
-                        <el-option label="否" value="2" />
-                      </el-select>
-                    </el-form-item>
-
-                    <el-form-item prop="speci" class="query-item-inline">
-                      <el-input
-                        v-model="queryParams.speci"
-                        placeholder="规格"
-                        clearable
-                        @keyup.enter.native="handleQuery"
-                        style="width: 200px"
-                      />
-                    </el-form-item>
-                    <el-form-item prop="hisChargeItemId" class="query-item-inline">
-                      <el-input
-                        v-model="queryParams.hisChargeItemId"
-                        placeholder="收费项目ID"
-                        clearable
-                        @keyup.enter.native="handleQuery"
-                        style="width: 160px"
-                      />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
+                <more-search-bar
+                  ref="moreSearchBar"
+                  v-model="moreSearchTypes"
+                  :options="moreSearchOptions"
+                  :storage-key="moreSearchStorageKey"
+                  :default-types="builtInMoreSearchDefaults"
+                  :auto-load="false"
+                  @change="onMoreSearchTypesChange"
+                  @search="handleQuery"
+                  @reset="resetQuery"
+                >
+                  <div
+                    v-for="t in moreSearchTypes"
+                    :key="t"
+                    class="more-search-dynamic-field"
+                    :class="moreSearchFieldClass(t)"
+                  >
+                    <el-select
+                      v-if="t === 'hisBindStatus'"
+                      v-model="queryParams.hisBindStatus"
+                      placeholder="是否对照"
+                      clearable
+                      class="more-search-short-select"
+                    >
+                      <el-option label="已对照" value="1" />
+                      <el-option label="未对照" value="0" />
+                    </el-select>
+                    <el-select
+                      v-else-if="t === 'isBilling'"
+                      v-model="queryParams.isBilling"
+                      placeholder="是否收费"
+                      clearable
+                      class="more-search-short-select"
+                    >
+                      <el-option label="是" value="1" />
+                      <el-option label="否" value="2" />
+                    </el-select>
+                    <el-input
+                      v-else
+                      v-model="queryParams[t]"
+                      :placeholder="moreSearchPlaceholderFor(t)"
+                      clearable
+                      class="more-search-input more-search-input--dynamic"
+                      @keyup.enter.native="handleQuery"
+                    />
+                  </div>
+                </more-search-bar>
               </el-form>
             </div>
           </div>
 
-          <!-- 搜索按钮 -->
-          <el-row :gutter="10" class="mb8" style="margin-top: 2px; margin-bottom: 16px; padding: 0 16px;">
-            <el-col :span="1.5">
+          <el-row :gutter="0" class="mb8 list-toolbar">
+            <div class="list-toolbar-left">
               <el-button
-                type="primary"
-                size="medium"
-                @click="handleQuery"
-              >搜索</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button
-                type="warning"
-                size="medium"
+                size="small"
+                class="spd-btn spd-btn--secondary"
                 @click="handleFetchHisChargeItems"
               >抓取收费项目</el-button>
-            </el-col>
+            </div>
           </el-row>
 
-          <!-- 明细表格 -->
-          <div class="table-container" style="margin-top: -30px;">
+          <div class="table-container">
             <el-table v-loading="loading" :data="materialCompareList" border height="calc(100vh - 340px)" :cell-style="{whiteSpace: 'nowrap'}" stripe>
               <el-table-column type="selection" width="55" align="center" fixed="left" />
               <el-table-column type="index" label="序号" align="center" width="80" />
@@ -274,7 +239,7 @@
                 />
               </el-form-item>
               <el-form-item class="query-item-inline his-query-btn-item" label-width="0">
-                <el-button type="primary" size="medium" @click="handleHisQuery">搜索</el-button>
+                <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleHisQuery">搜索</el-button>
               </el-form-item>
             </el-col>
           </el-row>
@@ -361,20 +326,13 @@
                   style="width: 200px"
                 />
               </el-form-item>
+              <el-form-item class="query-item-inline" label-width="0">
+                <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleHrpQuery">搜索</el-button>
+              </el-form-item>
             </el-col>
           </el-row>
         </el-form>
       </div>
-
-      <!-- 搜索按钮 -->
-      <el-row :gutter="10" class="mb8" style="margin-top: 8px; margin-bottom: 16px; padding: 0 20px;">
-        <el-col :span="1.5">
-          <el-button
-            type="primary" size="medium"
-            @click="handleHrpQuery"
-          >搜索</el-button>
-        </el-col>
-      </el-row>
 
       <!-- 明细表格 -->
       <div class="hrp-table-container material-compare-dialog-table-wrap">
@@ -411,6 +369,14 @@ import { listSupplierAll } from "@/api/foundation/supplier";
 
 export default {
   name: "MaterialCompare",
+  computed: {
+    moreSearchStorageKey() {
+      return "spd.foundation.materialCompare.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["code", "name", "referredName", "hisBindStatus", "isBilling", "speci", "hisChargeItemId"];
+    }
+  },
   data() {
     return {
       // 遮罩层
@@ -424,6 +390,16 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "code", label: "项目编码" },
+        { value: "name", label: "名称" },
+        { value: "referredName", label: "拼音简码" },
+        { value: "hisBindStatus", label: "是否对照" },
+        { value: "isBilling", label: "是否收费" },
+        { value: "speci", label: "规格" },
+        { value: "hisChargeItemId", label: "收费项目ID" }
+      ],
       // 总条数
       total: 0,
       // 供应商列表
@@ -474,11 +450,54 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getSupplierList();
     // 默认显示全部供应商的产品
     this.handleShowAll();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = {
+        code: "项目编码",
+        name: "名称",
+        referredName: "拼音简码",
+        speci: "规格",
+        hisChargeItemId: "收费项目ID"
+      };
+      return map[t] || "请输入";
+    },
+    moreSearchFieldClass(t) {
+      if (t === "hisBindStatus" || t === "isBilling") return "more-search-field--short";
+      return "more-search-field--text";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["code", "name", "referredName", "hisBindStatus", "isBilling", "speci", "hisChargeItemId"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     /** 查询供应商列表 */
     getSupplierList() {
       this.supplierLoading = true;
@@ -517,7 +536,9 @@ export default {
     /** 查询耗材对照列表 */
     getList() {
       this.loading = true;
-      listMaterial(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listMaterial(params).then(response => {
         this.materialCompareList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -549,8 +570,18 @@ export default {
     },
     /** 重置按钮操作 */
     resetQuery() {
+      const supplierId = this.selectedSupplier ? this.selectedSupplier.id : null;
       this.resetForm("queryForm");
-      this.queryParams.supplierId = this.selectedSupplier ? this.selectedSupplier.id : null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.code = null;
+      this.queryParams.name = null;
+      this.queryParams.referredName = null;
+      this.queryParams.hisBindStatus = null;
+      this.queryParams.isBilling = null;
+      this.queryParams.speci = null;
+      this.queryParams.hisChargeItemId = null;
+      this.queryParams.supplierId = supplierId;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     // 多选框选中数据
@@ -878,15 +909,7 @@ export default {
 }
 
 .query-container {
-  margin: 16px;
-  margin-bottom: 16px;
-}
-
-.form-fields-container {
-  background: #fafafa;
-  padding: 6px 20px;
-  border-radius: 4px;
-  border: 1px solid #EBEEF5;
+  margin: 16px 16px 8px;
 }
 
 .app-container > .el-form .el-row {

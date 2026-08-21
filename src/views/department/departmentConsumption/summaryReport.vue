@@ -1,89 +1,99 @@
 <template>
-  <div class="app-container first-inventory-page">
-    <div class="form-fields-container">
-      <el-form :model="searchForm" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-        <el-row class="query-row-first">
-          <el-col :span="24" class="query-row-first-inner">
-            <el-form-item label="科室" prop="departmentId" class="query-item-inline">
-              <div class="query-select-wrapper">
+  <div class="app-container list-page first-inventory-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="searchForm" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'department'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectDepartment v-model="searchForm.departmentId" field-placeholder="科室" />
               </div>
-            </el-form-item>
-            <el-form-item label="单号" prop="consumeBillNo" class="query-item-inline">
-              <el-input
-                v-model="searchForm.consumeBillNo"
-                placeholder="单号"
-                clearable
-                class="query-input-text query-input-text--short"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="HIS收费编码" prop="hisChargeCode" class="query-item-inline query-item-wide-label">
-              <el-input
-                v-model="searchForm.hisChargeCode"
-                placeholder="HIS收费编码"
-                clearable
-                class="query-input-text query-input-text--short"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="住院/门诊号" prop="patientId" class="query-item-inline query-item-wide-label">
-              <el-input
-                v-model="searchForm.patientId"
-                placeholder="住院/门诊号"
-                clearable
-                class="query-input-text query-input-text--short"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
-              <el-input
-                v-model="searchForm.materialName"
-                placeholder="耗材名称"
-                clearable
-                class="query-input-text"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="规格" prop="specification" class="query-item-inline">
-              <el-input
-                v-model="searchForm.specification"
-                placeholder="规格"
-                clearable
-                class="query-input-text query-input-text--short"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="型号" prop="model" class="query-item-inline">
-              <el-input
-                v-model="searchForm.model"
-                placeholder="型号"
-                clearable
-                class="query-input-text query-input-text--short"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16" class="query-row-date">
-          <el-col :span="24">
-            <el-form-item label="消耗日期" class="query-item-inline query-item-daterange-row">
+            </template>
+            <el-input
+              v-else-if="t === 'consumeBillNo'"
+              v-model="searchForm.consumeBillNo"
+              placeholder="单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else-if="t === 'hisChargeCode'"
+              v-model="searchForm.hisChargeCode"
+              placeholder="HIS收费编码"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else-if="t === 'patientId'"
+              v-model="searchForm.patientId"
+              placeholder="住院/门诊号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else-if="t === 'specification'"
+              v-model="searchForm.specification"
+              placeholder="规格"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else-if="t === 'model'"
+              v-model="searchForm.model"
+              placeholder="型号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else
+              v-model="searchForm.materialName"
+              placeholder="耗材名称"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="消耗日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="searchForm.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
-                placeholder="开始日期"
+                placeholder="起始日期"
                 clearable
-                class="query-date-single"
+                class="query-date-picker query-date-start"
               />
-              <span class="query-date-separator">至</span>
+              <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="searchForm.endDate"
                 type="date"
                 value-format="yyyy-MM-dd"
-                placeholder="结束日期"
+                placeholder="截止日期"
                 clearable
-                class="query-date-single"
+                class="query-date-picker query-date-end"
               />
             </el-form-item>
           </el-col>
@@ -91,13 +101,11 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
-      <div class="button-row-left">
-        <el-button type="warning" icon="el-icon-download" size="medium" @click="handleExport">导出</el-button>
-        <el-button type="primary" icon="el-icon-search" size="medium" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="medium" @click="resetQuery">重置</el-button>
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport">导出</el-button>
       </div>
-      <div class="button-row-right">
+      <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
@@ -187,6 +195,16 @@ export default {
     return {
       loading: true,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "科室", value: "department" },
+        { label: "单号", value: "consumeBillNo" },
+        { label: "HIS收费编码", value: "hisChargeCode" },
+        { label: "住院/门诊号", value: "patientId" },
+        { label: "耗材名称", value: "materialName" },
+        { label: "规格", value: "specification" },
+        { label: "型号", value: "model" }
+      ],
       tableData: [],
       total: 0,
       totalInfo: {
@@ -212,6 +230,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.department.departmentConsumption.summary.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
     pageTotalQty() {
       return (this.tableData || []).reduce((s, r) => s + Number(r.totalQuantity || 0), 0);
     },
@@ -223,6 +247,8 @@ export default {
     }
   },
   mounted() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
@@ -231,16 +257,18 @@ export default {
       return Number(value).toFixed(2);
     },
     buildRequestParams() {
+      const form = { ...this.searchForm };
+      this.applyMoreSearchToQueryParams(form);
       const params = {
-        departmentId: this.searchForm.departmentId,
-        consumeBillNo: this.searchForm.consumeBillNo,
-        materialName: this.searchForm.materialName,
-        specification: this.searchForm.specification,
-        model: this.searchForm.model,
-        hisChargeCode: this.searchForm.hisChargeCode,
-        patientId: this.searchForm.patientId,
-        beginDate: this.searchForm.beginDate,
-        endDate: this.searchForm.endDate,
+        departmentId: form.departmentId,
+        consumeBillNo: form.consumeBillNo,
+        materialName: form.materialName,
+        specification: form.specification,
+        model: form.model,
+        hisChargeCode: form.hisChargeCode,
+        patientId: form.patientId,
+        beginDate: form.beginDate,
+        endDate: form.endDate,
         pageNum: this.queryParams.pageNum,
         pageSize: this.queryParams.pageSize,
         sortField: this.queryParams.sortField,
@@ -288,7 +316,53 @@ export default {
       this.searchForm.consumeBillNo = "";
       this.queryParams.sortField = null;
       this.queryParams.sortOrder = null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'department') {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        department: 'departmentId',
+        consumeBillNo: 'consumeBillNo',
+        hisChargeCode: 'hisChargeCode',
+        patientId: 'patientId',
+        materialName: 'materialName',
+        specification: 'specification',
+        model: 'model'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.searchForm);
     },
     handleSortChange({ prop, order }) {
       this.queryParams.sortField = order ? prop : null;
@@ -460,16 +534,23 @@ export default {
   flex-wrap: nowrap;
 }
 
-.form-fields-container {
-  background: #fff;
-  padding: 6px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 8px;
+.query-item-date-range .query-date-start,
+.query-item-date-range .query-date-end {
+  width: 150px;
+}
+.query-item-date-range .query-date-start {
+  margin-right: 6px;
+}
+.query-item-date-range .query-date-end {
+  margin-left: 6px;
+}
+.query-item-date-range .query-date-sep {
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+.list-query-panel {
   margin-top: -20px;
-  margin-left: 0;
-  margin-right: 0;
-  border: 1px solid #ebeef5;
 }
 
 .button-row-inventory {

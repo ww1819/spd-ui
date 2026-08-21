@@ -1,36 +1,87 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
-      <el-form-item label="客户名称" prop="customerName">
-        <el-input v-model="queryParams.customerName" placeholder="请输入客户名称" clearable style="width: 200px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="客户编码" prop="customerCode">
-        <el-input v-model="queryParams.customerCode" placeholder="请输入客户编码" clearable style="width: 200px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="耗材状态" prop="hcStatus">
-        <el-select v-model="queryParams.hcStatus" placeholder="耗材状态" clearable style="width: 120px">
-          <el-option v-for="dict in dict.type.sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button type="primary" plain icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['hc:system:customer:list']">新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="success" plain icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['hc:system:customer:query']">修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['hc:system:customer:list']">删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="el-icon-warning-outline" size="small" @click="openFullInitDialog" v-hasPermi="['hc:system:customer:initDb']">全库初始化</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+  <div class="app-container list-page hc-customer-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field more-search-field--text"
+          >
+            <el-input
+              v-if="t === 'customerCode'"
+              v-model="queryParams.customerCode"
+              placeholder="客户编码"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else
+              v-model="queryParams.customerName"
+              placeholder="客户名称"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item prop="hcStatus" class="query-item-inline">
+              <el-select v-model="queryParams.hcStatus" placeholder="耗材状态" clearable class="more-search-short-select">
+                <el-option v-for="dict in dict.type.sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button
+          type="primary"
+          size="small"
+          class="spd-btn spd-btn--primary"
+          @click="handleAdd"
+          v-hasPermi="['hc:system:customer:list']"
+        >新增</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary"
+          :disabled="single"
+          @click="handleUpdate"
+          v-hasPermi="['hc:system:customer:query']"
+        >修改</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--danger"
+          :disabled="multiple"
+          @click="handleDelete"
+          v-hasPermi="['hc:system:customer:list']"
+        >删除</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--danger"
+          @click="openFullInitDialog"
+          v-hasPermi="['hc:system:customer:initDb']"
+        >全库初始化</el-button>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
     <el-table v-loading="loading" :data="customerList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
@@ -80,8 +131,8 @@
         <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" placeholder="请输入备注" /></el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
     <el-dialog :title="statusDialogTitle" :visible.sync="openStatus" width="480px" append-to-body>
@@ -92,8 +143,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitStatusForm">确 定</el-button>
-        <el-button @click="openStatus = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitStatusForm">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="openStatus = false">取 消</el-button>
       </div>
     </el-dialog>
     <el-dialog title="启停用记录与时间段" :visible.sync="openLog" width="800px" append-to-body>
@@ -115,15 +166,15 @@
           </el-table>
         </el-tab-pane>
       </el-tabs>
-      <div slot="footer" class="dialog-footer"><el-button @click="openLog = false">关 闭</el-button></div>
+      <div slot="footer" class="dialog-footer"><el-button class="spd-btn spd-btn--secondary" @click="openLog = false">关 闭</el-button></div>
     </el-dialog>
     <el-dialog title="全库初始化（高危）" :visible.sync="openFullInit" width="520px" append-to-body @close="fullInitTokenInput = ''">
       <el-alert type="error" :closable="false" show-icon title="将清空所有租户与业务数据，仅保留 admin 与平台菜单/字典等。执行前请务必备份数据库。" style="margin-bottom: 12px" />
       <p style="color:#606266;font-size:13px;margin-bottom:8px">请在下方输入确认口令（区分大小写）：</p>
       <el-input v-model="fullInitTokenInput" placeholder="CONFIRM_PURGE_ALL_TENANT_DATA" clearable />
       <div slot="footer" class="dialog-footer">
-        <el-button type="danger" :disabled="fullInitTokenInput !== FULL_INIT_TOKEN" @click="submitFullInit">确认执行</el-button>
-        <el-button @click="openFullInit = false">取 消</el-button>
+        <el-button type="danger" class="spd-btn spd-btn--danger" :disabled="fullInitTokenInput !== FULL_INIT_TOKEN" @click="submitFullInit">确认执行</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="openFullInit = false">取 消</el-button>
       </div>
     </el-dialog>
     <el-dialog title="耗材客户权限" :visible.sync="openMenu" width="560px" append-to-body>
@@ -150,8 +201,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitMenuForm">确 定</el-button>
-        <el-button @click="openMenu = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitMenuForm">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="openMenu = false">取 消</el-button>
       </div>
     </el-dialog>
   </div>
@@ -173,6 +224,11 @@ export default {
       single: true,
       multiple: true,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '客户名称', value: 'customerName' },
+        { label: '客户编码', value: 'customerCode' }
+      ],
       total: 0,
       customerList: [],
       title: '',
@@ -207,19 +263,29 @@ export default {
     }
   },
   computed: {
+    moreSearchStorageKey() {
+      return 'spd.material.system.customer.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    },
     selectedTenantEnum() {
       if (!this.form.tenantKey || !this.tenantEnumList.length) return null
       return this.tenantEnumList.find(t => t.name === this.form.tenantKey) || null
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.getList()
     getTenantEnumList().then(res => { this.tenantEnumList = res.data || [] }).catch(() => { this.tenantEnumList = [] })
   },
   methods: {
     getList() {
       this.loading = true
-      listHcCustomers(this.queryParams).then(res => {
+      const params = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(params)
+      listHcCustomers(params).then(res => {
         this.customerList = res.rows || []
         this.total = res.total || 0
         this.loading = false
@@ -250,7 +316,7 @@ export default {
     },
     handleSelectionChange(selection) { this.ids = selection.map(item => item.customerId); this.single = selection.length !== 1; this.multiple = !selection.length },
     handleQuery() { this.queryParams.pageNum = 1; this.getList() },
-    resetQuery() { this.resetForm('queryForm'); this.handleQuery() },
+    resetQuery() { this.resetForm('queryForm'); this.moreSearchTypes = this.loadMoreSearchDefaults(); this.onMoreSearchTypesChange(); this.handleQuery() },
     collectCustomerMenuTreeIds(nodes, acc) {
       const set = acc || new Set()
       if (!nodes || !nodes.length) return set
@@ -351,12 +417,48 @@ export default {
         : this.menuSelectedIds || []
       ).map(String)
       saveHcCustomerMenus(this.menuForm.customerId, menuIds).then(() => { this.$modal.msgSuccess('保存成功'); this.openMenu = false })
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      const map = {
+        customerName: 'customerName',
+        customerCode: 'customerCode'
+      }
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null
+        }
+      })
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams)
     }
   }
 }
 </script>
 
 <style scoped>
+.list-query-panel {
+  margin-top: -20px;
+}
 .log-dialog-header { margin-bottom: 12px; font-weight: 600; color: #303133; }
 .text-danger { color: #f56c6c; }
 </style>

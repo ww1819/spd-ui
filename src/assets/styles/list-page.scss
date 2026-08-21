@@ -1,0 +1,339 @@
+/**
+ * 查询列表页框架默认 UI / 布局
+ * 作用面：.app-container 内查询区、工具栏、表格周边；弹窗/大屏可本地覆盖
+ */
+
+$spd-primary: #2563eb;
+$spd-primary-hover: #1d4ed8;
+$spd-text: #334155;
+$spd-text-strong: #0f172a;
+$spd-border: #cbd5e1;
+$spd-border-light: #e8ecf1;
+$spd-control-h: 32px;
+
+/* ---------- 按钮三档 ---------- */
+.spd-btn.el-button,
+.app-container .spd-btn.el-button,
+.app-container .material-btn.el-button {
+  height: $spd-control-h !important;
+  min-height: $spd-control-h !important;
+  padding: 0 14px !important;
+  font-size: 13px !important;
+  line-height: 30px !important;
+  border-radius: 6px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0;
+  box-shadow: none !important;
+  margin-left: 0 !important;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.spd-btn--primary.el-button--primary,
+.app-container .spd-btn--primary.el-button--primary,
+.app-container .material-btn--primary.el-button--primary {
+  background: $spd-primary !important;
+  border-color: $spd-primary !important;
+  color: #fff !important;
+}
+
+.spd-btn--primary.el-button--primary:hover,
+.spd-btn--primary.el-button--primary:focus,
+.app-container .spd-btn--primary.el-button--primary:hover,
+.app-container .spd-btn--primary.el-button--primary:focus,
+.app-container .material-btn--primary.el-button--primary:hover,
+.app-container .material-btn--primary.el-button--primary:focus {
+  background: $spd-primary-hover !important;
+  border-color: $spd-primary-hover !important;
+  color: #fff !important;
+}
+
+.spd-btn--secondary.el-button,
+.app-container .spd-btn--secondary.el-button,
+.app-container .material-btn--secondary.el-button {
+  background: #fff !important;
+  border: 1px solid $spd-border !important;
+  color: $spd-text !important;
+}
+
+.spd-btn--secondary.el-button:hover,
+.spd-btn--secondary.el-button:focus,
+.app-container .spd-btn--secondary.el-button:hover,
+.app-container .spd-btn--secondary.el-button:focus,
+.app-container .material-btn--secondary.el-button:hover,
+.app-container .material-btn--secondary.el-button:focus {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: $spd-text-strong !important;
+}
+
+.spd-btn--danger.el-button,
+.app-container .spd-btn--danger.el-button,
+.app-container .material-btn--danger.el-button {
+  background: #fff !important;
+  border-color: #fca5a5 !important;
+  color: #dc2626 !important;
+}
+
+.spd-btn--danger.el-button:hover,
+.spd-btn--danger.el-button:focus,
+.app-container .spd-btn--danger.el-button:hover,
+.app-container .spd-btn--danger.el-button:focus,
+.app-container .material-btn--danger.el-button:hover,
+.app-container .material-btn--danger.el-button:focus {
+  background: #fef2f2 !important;
+  border-color: #f87171 !important;
+  color: #b91c1c !important;
+}
+
+.spd-dropdown-item--danger,
+.material-dropdown-item--danger {
+  color: #dc2626 !important;
+}
+
+.spd-dropdown-item--danger:hover,
+.spd-dropdown-item--danger:focus,
+.material-dropdown-item--danger:hover,
+.material-dropdown-item--danger:focus {
+  color: #b91c1c !important;
+  background: #fef2f2 !important;
+}
+
+/* ---------- 列表页结构 ---------- */
+.app-container.list-page {
+  --list-query-control-h: #{$spd-control-h};
+}
+
+.app-container .list-query-panel,
+.app-container .form-fields-container {
+  background: #fff;
+  padding: 12px 14px 14px;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04);
+  border: 1px solid $spd-border-light;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.app-container .list-toolbar,
+.app-container .material-toolbar-row {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 !important;
+  padding: 8px 14px !important;
+  background: #fff;
+  border: 1px solid $spd-border-light;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.app-container .list-toolbar-left,
+.app-container .material-toolbar-left {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-container .list-toolbar-right,
+.app-container .material-toolbar-right {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-container .list-toolbar .el-button,
+.app-container .material-toolbar-row .el-button {
+  margin-left: 0 !important;
+}
+
+.app-container .list-toolbar-divider,
+.app-container .material-toolbar-divider {
+  display: none !important;
+}
+
+/* ---------- 更多检索 / 条件区尺度 ---------- */
+.app-container .more-search-item {
+  margin-bottom: 0 !important;
+  width: 100%;
+}
+
+.app-container .more-search-item .el-form-item__content {
+  max-width: 100%;
+  width: 100%;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.app-container .more-search-picker-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.app-container .more-search-picker-row > .el-button {
+  margin-left: 0 !important;
+  flex-shrink: 0;
+}
+
+.app-container .more-search-label {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: $spd-control-h;
+  height: $spd-control-h;
+  margin: 0;
+  padding: 0;
+}
+
+.app-container .more-search-type {
+  width: 340px;
+  min-width: 280px;
+  max-width: 420px;
+  flex-shrink: 0;
+}
+
+.app-container .query-row-fields {
+  margin: 10px 0 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.app-container .query-row-fields-inner,
+.app-container .query-row-second-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+.app-container .more-search-dynamic-field {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin: 0 !important;
+  min-height: $spd-control-h;
+}
+
+.app-container .more-search-input--dynamic,
+.app-container .more-search-field--text .more-search-input--dynamic,
+.app-container .more-search-field--text > .el-input {
+  width: 170px;
+}
+
+.app-container .more-search-select-wrap,
+.app-container .more-search-field--select .more-search-select-wrap {
+  width: 190px;
+  display: inline-flex;
+  align-items: center;
+  height: $spd-control-h;
+}
+
+.app-container .more-search-select-wrap .el-select,
+.app-container .more-search-select-wrap .el-input {
+  width: 100%;
+}
+
+.app-container .more-search-field--short {
+  flex-shrink: 0;
+}
+
+.app-container .more-search-short-select {
+  width: 100px !important;
+}
+
+.app-container .more-search-field--date .query-date-picker.el-date-editor,
+.app-container .more-search-field--date .query-date-picker.el-input {
+  width: 130px !important;
+}
+
+.app-container .query-date-sep {
+  color: #64748b;
+  font-size: 13px;
+  line-height: $spd-control-h;
+  height: $spd-control-h;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* 查询区控件统一高度 */
+.app-container .form-fields-container,
+.app-container .list-query-panel {
+  --material-query-control-h: #{$spd-control-h};
+  --list-query-control-h: #{$spd-control-h};
+}
+
+.app-container .form-fields-container .el-input__inner,
+.app-container .form-fields-container .el-range-editor.el-input__inner,
+.app-container .list-query-panel .el-input__inner,
+.app-container .list-query-panel .el-range-editor.el-input__inner {
+  height: $spd-control-h !important;
+  min-height: $spd-control-h !important;
+  line-height: $spd-control-h !important;
+  box-sizing: border-box !important;
+  font-size: 13px !important;
+  border-radius: 6px;
+  border-color: #e2e8f0;
+}
+
+.app-container .form-fields-container .el-input,
+.app-container .form-fields-container .el-select,
+.app-container .form-fields-container .el-select .el-input,
+.app-container .form-fields-container .el-autocomplete,
+.app-container .form-fields-container .el-date-editor,
+.app-container .list-query-panel .el-input,
+.app-container .list-query-panel .el-select,
+.app-container .list-query-panel .el-select .el-input,
+.app-container .list-query-panel .el-autocomplete,
+.app-container .list-query-panel .el-date-editor {
+  height: $spd-control-h !important;
+  min-height: $spd-control-h !important;
+  line-height: $spd-control-h !important;
+}
+
+.app-container .form-fields-container .el-select--multiple .el-input__inner,
+.app-container .form-fields-container .el-select--multiple .el-input,
+.app-container .list-query-panel .el-select--multiple .el-input__inner,
+.app-container .list-query-panel .el-select--multiple .el-input {
+  height: $spd-control-h !important;
+  min-height: $spd-control-h !important;
+}
+
+.app-container .form-fields-container .el-select--multiple .el-select__tags,
+.app-container .list-query-panel .el-select--multiple .el-select__tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  max-width: calc(100% - 30px);
+}
+
+.app-container .form-fields-container .el-select--multiple .el-tag,
+.app-container .list-query-panel .el-select--multiple .el-tag {
+  height: 20px;
+  line-height: 18px;
+  padding: 0 6px;
+  margin: 2px 0 2px 4px;
+  font-size: 12px;
+}
+
+.app-container .form-fields-container .query-select-multi-form .el-select,
+.app-container .list-query-panel .query-select-multi-form .el-select {
+  width: 100%;
+}

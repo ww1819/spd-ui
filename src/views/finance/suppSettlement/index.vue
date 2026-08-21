@@ -1,26 +1,58 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="90px">
-      <el-form-item label="单号" prop="billNo">
-        <el-input v-model="queryParams.billNo" placeholder="供应商结算单单号" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="供应商" prop="supplierId">
-        <SelectSupplier v-model="queryParams.supplierId" clearable style="width: 160px" />
-      </el-form-item>
-      <el-form-item label="审核状态" prop="auditStatus">
-        <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable style="width: 100px">
-          <el-option label="待审核" :value="0" />
-          <el-option label="已审核" :value="1" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container list-page finance-supp-settlement-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'supplier'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectSupplier v-model="queryParams.supplierId" clearable />
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.billNo"
+              placeholder="供应商结算单单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
-    <el-row :gutter="10" class="mb8">
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item prop="auditStatus" class="query-item-inline">
+              <el-select v-model="queryParams.auditStatus" placeholder="审核状态" clearable class="more-search-short-select">
+                <el-option label="待审核" :value="0" />
+                <el-option label="已审核" :value="1" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left"></div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="list" border>
@@ -74,6 +106,9 @@
           <template slot-scope="scope">{{ scope.row.amt != null ? Number(scope.row.amt).toFixed(2) : '--' }}</template>
         </el-table-column>
       </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button class="spd-btn spd-btn--secondary" @click="detailOpen = false">关 闭</el-button>
+      </div>
     </el-dialog>
 
     <!-- 关联发票弹窗 -->
@@ -99,6 +134,9 @@
           <el-option v-for="item in invoiceOptions" :key="item.id" :label="item.invoiceNo + ' | ' + (item.invoiceDate || '') + ' | ' + (item.totalAmount != null ? Number(item.totalAmount).toFixed(2) : '')" :value="item.id" />
         </el-select>
       </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button class="spd-btn spd-btn--secondary" @click="invoiceOpen = false">关 闭</el-button>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -115,6 +153,11 @@ export default {
     return {
       loading: false,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '单号', value: 'billNo' },
+        { label: '供应商', value: 'supplier' }
+      ],
       list: [],
       total: 0,
       queryParams: {
@@ -133,13 +176,25 @@ export default {
       selectedInvoiceId: null
     }
   },
+  computed: {
+    moreSearchStorageKey() {
+      return 'spd.finance.suppSettlement.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.getList()
   },
   methods: {
     getList() {
       this.loading = true
-      listSuppSettlement(this.queryParams).then(res => {
+      const params = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(params)
+      listSuppSettlement(params).then(res => {
         this.list = res.rows || []
         this.total = res.total || 0
         this.loading = false
@@ -200,8 +255,55 @@ export default {
     },
     resetQuery() {
       this.resetForm('queryForm')
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
       this.handleQuery()
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'supplier') {
+        return 'more-search-field--select'
+      }
+      return 'more-search-field--text'
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      const map = {
+        billNo: 'billNo',
+        supplier: 'supplierId'
+      }
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null
+        }
+      })
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams)
     }
   }
 }
 </script>
+
+<style scoped>
+.list-query-panel {
+  margin-top: -20px;
+}
+</style>

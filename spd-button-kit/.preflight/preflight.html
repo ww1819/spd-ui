@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preflight</title>
+    <style id="theme-vars">
+@layer theme {
+  :root {
+    --spd-background: #ffffff;
+    --spd-foreground: #1f2937;
+    --spd-card: #ffffff;
+    --spd-card-foreground: #1f2937;
+    --spd-popover: #ffffff;
+    --spd-popover-foreground: #1f2937;
+    --spd-primary: #2563eb;
+    --spd-primary-foreground: #ffffff;
+    --spd-secondary: #f3f4f6;
+    --spd-secondary-foreground: #374151;
+    --spd-muted: #f3f4f6;
+    --spd-muted-foreground: #6b7280;
+    --spd-accent: #eff6ff;
+    --spd-accent-foreground: #1d4ed8;
+    --spd-border: #e5e7eb;
+    --spd-input: #e5e7eb;
+    --spd-ring: #2563eb;
+
+    --spd-state-success: #10b981;
+    --spd-state-success-foreground: #ffffff;
+    --spd-state-warning: #f59e0b;
+    --spd-state-warning-foreground: #ffffff;
+    --spd-state-error: #ef4444;
+    --spd-state-error-foreground: #ffffff;
+    --spd-state-info: #3b82f6;
+    --spd-state-info-foreground: #ffffff;
+
+    --spd-radius-sm: 4px;
+    --spd-radius-md: 8px;
+    --spd-radius-lg: 12px;
+    --spd-radius-pill: 999px;
+
+    --spd-font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", Arial, sans-serif;
+    --spd-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+    --spd-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --spd-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.03);
+    --spd-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+    --spd-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.12);
+  }
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--spd-background);
+    --color-foreground: var(--spd-foreground);
+    --color-card: var(--spd-card);
+    --color-card-foreground: var(--spd-card-foreground);
+    --color-popover: var(--spd-popover);
+    --color-popover-foreground: var(--spd-popover-foreground);
+    --color-primary: var(--spd-primary);
+    --color-primary-foreground: var(--spd-primary-foreground);
+    --color-secondary: var(--spd-secondary);
+    --color-secondary-foreground: var(--spd-secondary-foreground);
+    --color-muted: var(--spd-muted);
+    --color-muted-foreground: var(--spd-muted-foreground);
+    --color-accent: var(--spd-accent);
+    --color-accent-foreground: var(--spd-accent-foreground);
+    --color-border: var(--spd-border);
+    --color-input: var(--spd-input);
+    --color-ring: var(--spd-ring);
+    --radius-sm: var(--spd-radius-sm);
+    --radius-md: var(--spd-radius-md);
+    --radius-lg: var(--spd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--spd-background); color: var(--spd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--spd-background); }
+      .text-background { color: var(--spd-background); }
+      .border-background { border-color: var(--spd-background); }
+      .ring-background { --tw-ring-color: var(--spd-background); }
+      .bg-foreground { background-color: var(--spd-foreground); }
+      .text-foreground { color: var(--spd-foreground); }
+      .border-foreground { border-color: var(--spd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--spd-foreground); }
+      .bg-card { background-color: var(--spd-card); }
+      .text-card { color: var(--spd-card); }
+      .border-card { border-color: var(--spd-card); }
+      .ring-card { --tw-ring-color: var(--spd-card); }
+      .bg-card-foreground { background-color: var(--spd-card-foreground); }
+      .text-card-foreground { color: var(--spd-card-foreground); }
+      .border-card-foreground { border-color: var(--spd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--spd-card-foreground); }
+      .bg-popover { background-color: var(--spd-popover); }
+      .text-popover { color: var(--spd-popover); }
+      .border-popover { border-color: var(--spd-popover); }
+      .ring-popover { --tw-ring-color: var(--spd-popover); }
+      .bg-popover-foreground { background-color: var(--spd-popover-foreground); }
+      .text-popover-foreground { color: var(--spd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--spd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--spd-popover-foreground); }
+      .bg-primary { background-color: var(--spd-primary); }
+      .text-primary { color: var(--spd-primary); }
+      .border-primary { border-color: var(--spd-primary); }
+      .ring-primary { --tw-ring-color: var(--spd-primary); }
+      .bg-primary-foreground { background-color: var(--spd-primary-foreground); }
+      .text-primary-foreground { color: var(--spd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--spd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--spd-primary-foreground); }
+      .bg-secondary { background-color: var(--spd-secondary); }
+      .text-secondary { color: var(--spd-secondary); }
+      .border-secondary { border-color: var(--spd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--spd-secondary); }
+      .bg-secondary-foreground { background-color: var(--spd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--spd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--spd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--spd-secondary-foreground); }
+      .bg-muted { background-color: var(--spd-muted); }
+      .text-muted { color: var(--spd-muted); }
+      .border-muted { border-color: var(--spd-muted); }
+      .ring-muted { --tw-ring-color: var(--spd-muted); }
+      .bg-muted-foreground { background-color: var(--spd-muted-foreground); }
+      .text-muted-foreground { color: var(--spd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--spd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--spd-muted-foreground); }
+      .bg-accent { background-color: var(--spd-accent); }
+      .text-accent { color: var(--spd-accent); }
+      .border-accent { border-color: var(--spd-accent); }
+      .ring-accent { --tw-ring-color: var(--spd-accent); }
+      .bg-accent-foreground { background-color: var(--spd-accent-foreground); }
+      .text-accent-foreground { color: var(--spd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--spd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--spd-accent-foreground); }
+      .bg-border { background-color: var(--spd-border); }
+      .text-border { color: var(--spd-border); }
+      .border-border { border-color: var(--spd-border); }
+      .ring-border { --tw-ring-color: var(--spd-border); }
+      .bg-input { background-color: var(--spd-input); }
+      .text-input { color: var(--spd-input); }
+      .border-input { border-color: var(--spd-input); }
+      .ring-input { --tw-ring-color: var(--spd-input); }
+      .bg-ring { background-color: var(--spd-ring); }
+      .text-ring { color: var(--spd-ring); }
+      .border-ring { border-color: var(--spd-ring); }
+      .ring-ring { --tw-ring-color: var(--spd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <main>preflight</main>
+</body>
+</html>

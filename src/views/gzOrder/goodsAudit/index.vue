@@ -1,111 +1,108 @@
 <template>
-  <div class="app-container refund-goods-audit-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form-compact query-form">
-
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item prop="orderNo" class="query-item-inline">
-            <el-input v-model="queryParams.orderNo"
-                      placeholder="退库单号"
-                      clearable
-                      style="width: 180px"
-                      @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-          <el-form-item prop="warehouseId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值"/>
-            </div>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item style="display: flex; align-items: center;">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
+  <div class="app-container list-page refund-goods-audit-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值"/>
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.orderNo"
+              placeholder="退库单号"
               clearable
-              style="width: 180px; margin-right: 8px;"
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
             />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12" class="query-status-col">
-          <el-form-item prop="orderStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.orderStatus" placeholder="单据状态"
-                       clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.biz_status"
-                         :key="dict.value"
-                         :label="dict.label"
-                         :value="dict.value"
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                class="query-date-picker"
               />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item prop="orderStatus" class="query-item-inline">
+              <el-select v-model="queryParams.orderStatus" placeholder="单据状态"
+                         clearable class="more-search-select-wrap">
+                <el-option v-for="dict in dict.type.biz_status"
+                           :key="dict.value"
+                           :label="dict.label"
+                           :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
 
-    </el-form>
-
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['gzOrder:apply:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['gzOrder:apply:export']"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleBatchAudit"
           v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="multiple"
           @click="handleBatchPrint"
         >批量打印</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="orderList" class="table-compact"
@@ -371,8 +368,8 @@
         </div>
             </el-form>
             <div v-show="action" class="modal-footer">
-              <el-button @click="cancel">取 消</el-button>
-              <el-button type="primary" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
+              <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
+              <el-button type="primary" class="spd-btn spd-btn--primary" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
               <el-button type="success" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
               <el-button type="primary" icon="el-icon-printer" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
             </div>
@@ -463,6 +460,11 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "退库单号", value: "orderNo" },
+        { label: "仓库", value: "warehouse" }
+      ],
       // 总条数
       total: 0,
       // 高值退货表格数据
@@ -508,6 +510,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.gzOrder.goodsAudit.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
     isAuditedForm() {
       const status = this.form && this.form.orderStatus;
       return status === '2' || status === 2;
@@ -519,6 +527,8 @@ export default {
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
@@ -587,7 +597,12 @@ export default {
       this.loading = true;
       // 设置退库类型
       this.queryParams.orderType = 301;
-      listOrder(this.queryParams).then(response => {
+      const queryParams = {
+        ...this.queryParams
+      };
+      this.applyMoreSearchToQueryParams(queryParams);
+      queryParams.orderType = 301;
+      listOrder(queryParams).then(response => {
         this.orderList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -801,7 +816,48 @@ export default {
       this.queryParams.endDate = null;
       // 重置后保持orderType
       this.queryParams.orderType = 301;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (t === "warehouse") {
+        return "more-search-field--select";
+      }
+      return "more-search-field--text";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        orderNo: "orderNo",
+        warehouse: "warehouseId"
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -1178,10 +1234,13 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('gz/order/export', {
+      const queryParams = {
         ...this.queryParams,
         orderType: 301
-      }, `order_${new Date().getTime()}.xlsx`)
+      };
+      this.applyMoreSearchToQueryParams(queryParams);
+      queryParams.orderType = 301;
+      this.download('gz/order/export', queryParams, `order_${new Date().getTime()}.xlsx`)
     }
   }
 };
@@ -1531,14 +1590,8 @@ html, body {
   padding-right: 8px !important;
 }
 
-.app-container.refund-goods-audit-page > .el-form.query-form-compact {
-  margin-top: -8px !important;
-}
-
-.app-container.refund-goods-audit-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .app-container.refund-goods-audit-page > .el-table.table-compact {

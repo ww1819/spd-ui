@@ -1,35 +1,49 @@
 <template>
-  <div class="app-container first-inventory-page">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item prop="materialId" class="query-item-inline">
-              <div class="query-select-wrapper">
+  <div class="app-container list-page first-inventory-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="(t === 'materialId' || t === 'warehouse' || t === 'department') ? 'more-search-field--select' : 'more-search-field--text'"
+          >
+            <template v-if="t === 'materialId'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectMaterial v-model="queryParams.materialId" />
               </div>
-            </el-form-item>
-            <el-form-item label="产品名称" prop="materialNameLike" class="query-item-inline">
-              <el-input v-model="queryParams.materialNameLike" placeholder="名称/编码/拼音简码" clearable style="width: 160px" />
-            </el-form-item>
-            <el-form-item label="规格" prop="materialSpeciLike" class="query-item-inline">
-              <el-input v-model="queryParams.materialSpeciLike" placeholder="规格模糊" clearable style="width: 140px" />
-            </el-form-item>
-            <el-form-item label="型号" prop="materialModelLike" class="query-item-inline">
-              <el-input v-model="queryParams.materialModelLike" placeholder="型号模糊" clearable style="width: 140px" />
-            </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
+            </template>
+            <template v-else-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
               </div>
-            </el-form-item>
-            <el-form-item label="出库科室" prop="departmentId" class="query-item-inline">
-              <div class="query-select-wrapper">
+            </template>
+            <template v-else-if="t === 'department'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectDepartment v-model="queryParams.departmentId" />
               </div>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams[t]"
+              :placeholder="moreSearchPlaceholderFor(t)"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -40,7 +54,7 @@
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                class="query-date-start"
+                class="query-date-picker query-date-start"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
@@ -49,12 +63,12 @@
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                class="query-date-end"
+                class="query-date-picker query-date-end"
               />
             </el-form-item>
 
             <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
-              <div class="query-select-wrapper">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectSupplier v-model="queryParams.supplerId" />
               </div>
             </el-form-item>
@@ -63,27 +77,15 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
-      <div class="button-row-left">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
-          type="warning"
-          icon="el-icon-download"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
         >导出</el-button>
-        <el-button
-          type="primary"
-          icon="el-icon-search"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-        <el-button
-          icon="el-icon-refresh"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
       </div>
-      <div class="button-row-right">
+      <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
@@ -171,6 +173,15 @@ export default {
       rawList: [],
       // 供应商聚合后的全量列表（用于前端分页）
       supplierAggList: [],
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "materialId", label: "耗材" },
+        { value: "materialNameLike", label: "产品名称" },
+        { value: "materialSpeciLike", label: "规格" },
+        { value: "materialModelLike", label: "型号" },
+        { value: "warehouse", label: "仓库" },
+        { value: "department", label: "出库科室" }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -190,6 +201,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.outWarehouse.query.third.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["materialId", "materialNameLike", "materialSpeciLike", "materialModelLike", "warehouse", "department"];
+    },
     sortedSupplierAggList() {
       const list = [...(this.supplierAggList || [])];
       if (!this.sortProp || !this.sortOrder) {
@@ -250,6 +267,10 @@ export default {
         : String(Number(amt).toFixed(2));
     },
   },
+  created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
+  },
   methods: {
     handleSortChange({ prop, order }) {
       this.sortProp = order ? prop : null;
@@ -296,8 +317,47 @@ export default {
       });
       return sums;
     },
+    moreSearchPlaceholderFor(t) {
+      const map = {
+        materialNameLike: "名称/编码/拼音简码",
+        materialSpeciLike: "规格模糊",
+        materialModelLike: "型号模糊"
+      };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      if (!set.has("materialId")) target.materialId = null;
+      if (!set.has("warehouse")) target.warehouseId = null;
+      if (!set.has("department")) target.departmentId = null;
+      if (!set.has("materialNameLike")) target.materialNameLike = null;
+      if (!set.has("materialSpeciLike")) target.materialSpeciLike = null;
+      if (!set.has("materialModelLike")) target.materialModelLike = null;
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     normalizeQueryParams() {
       const queryParams = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(queryParams);
       if (!queryParams.beginDate) queryParams.beginDate = null;
       if (!queryParams.endDate) {
         queryParams.endDate = null;
@@ -395,6 +455,8 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     handleSizeChange(val) {
@@ -527,15 +589,10 @@ export default {
 
 /* 查询条件容器框样式：由外层 inventory-query-page 统一左右 8px，此处占满内容区 */
 .form-fields-container {
-  background: #fff;
-  padding: 6px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 8px;
   margin-top: -20px;
   margin-left: 0;
   margin-right: 0;
-  border: 1px solid #EBEEF5;
 }
 
 /* 导出/搜索/重置：与顶部搜索框、底部明细框间距均为 8px */

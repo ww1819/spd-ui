@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container supplier-container">
+  <div class="app-container list-page supplier-container">
     <el-row :gutter="20">
       <!-- 左侧供应商列表 -->
       <el-col :span="6">
@@ -21,46 +21,33 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="18">
-    <!-- 查询条件容器 -->
     <div class="query-container" v-show="showSearch">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-form-item prop="code">
-              <el-input
-                v-model="queryParams.code"
-                placeholder="供应商编码"
+      <div class="form-fields-container list-query-panel">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field"
+              :class="t === 'supplierStatus' ? 'more-search-field--short' : 'more-search-field--text'"
+            >
+              <el-select
+                v-if="t === 'supplierStatus'"
+                v-model="queryParams.supplierStatus"
+                placeholder="状态"
                 clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item prop="name">
-              <el-input
-                v-model="queryParams.name"
-                placeholder="供应商名称"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="税号" prop="taxNumber" label-width="100px">
-              <el-input
-                v-model="queryParams.taxNumber"
-                placeholder="税号"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="状态" prop="supplierStatus" label-width="100px">
-              <el-select v-model="queryParams.supplierStatus" placeholder="全部" clearable style="width: 150px">
+                class="more-search-short-select"
+              >
                 <el-option
                   v-for="d in dict.type.is_use_status"
                   :key="d.value"
@@ -68,85 +55,75 @@
                   :value="d.value"
                 />
               </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+              <el-input
+                v-else
+                v-model="queryParams[t]"
+                :placeholder="moreSearchPlaceholderFor(t)"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleQuery"
+              />
+            </div>
+          </more-search-bar>
+        </el-form>
+      </div>
     </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5" v-if="!isZqTcmTenant">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
+          v-if="!isZqTcmTenant"
           type="primary"
           size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['foundation:supplier:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
           size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:supplier:edit']"
         >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
           size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:supplier:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
           size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="multiple"
           @click="handleUpdateReferred"
           v-hasPermi="['foundation:supplier:updateReferred']"
         >更新简码</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['foundation:supplier:export']"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.8" v-if="!isZqTcmTenant">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-upload2"
+          v-if="!isZqTcmTenant"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleImport('add')"
           v-hasPermi="['foundation:supplier:import']"
         >新增导入</el-button>
-      </el-col>
-      <el-col :span="1.8">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-refresh-right"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleImport('update')"
           v-hasPermi="['foundation:supplier:import']"
         >更新导入</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <msun-his-sync-button sync-type="suppliers" label="HIS供应商同步" :refresh="getList" />
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <msun-his-sync-button sync-type="suppliers" label="HIS供应商同步" :inline="true" :refresh="getList" />
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="supplierList" :row-class-name="supplierIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
@@ -424,8 +401,8 @@
           </el-row>
         </el-form>
         <div class="modal-footer-fixed">
-          <el-button type="primary" @click="submitForm">保 存</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -535,6 +512,12 @@ export default {
       }
       return "选填：HIS 供应商标识（不填不影响保存）";
     },
+    moreSearchStorageKey() {
+      return "spd.foundation.supplier.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["code", "name", "taxNumber", "supplierStatus"];
+    }
   },
     data() {
     return {
@@ -549,6 +532,13 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "code", label: "供应商编码" },
+        { value: "name", label: "供应商名称" },
+        { value: "taxNumber", label: "税号" },
+        { value: "supplierStatus", label: "状态" }
+      ],
       // 总条数
       total: 0,
       // 供应商表格数据
@@ -609,10 +599,43 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
     this.getAllSupplierList();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = { code: "供应商编码", name: "供应商名称", taxNumber: "税号" };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["code", "name", "taxNumber", "supplierStatus"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     /** 获取所有供应商列表（用于下拉框） */
     getAllSupplierList() {
       listSupplier({ pageNum: 1, pageSize: 10000 }).then(response => {
@@ -622,7 +645,9 @@ export default {
     /** 查询供应商列表 */
     getList() {
       this.loading = true;
-      listSupplier(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listSupplier(params).then(response => {
         this.supplierList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -719,6 +744,12 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.selectedSupplierId = null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.code = null;
+      this.queryParams.name = null;
+      this.queryParams.taxNumber = null;
+      this.queryParams.supplierStatus = null;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     // 多选框选中数据
@@ -858,9 +889,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('foundation/supplier/export', {
-        ...this.queryParams
-      }, `supplier_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('foundation/supplier/export', params, `supplier_${new Date().getTime()}.xlsx`)
     },
     /** 更新名称简码 */
     handleUpdateReferred() {

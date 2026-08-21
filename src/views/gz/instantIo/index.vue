@@ -63,6 +63,7 @@
         plain
         icon="el-icon-check"
         size="small"
+        class="spd-btn spd-btn--primary"
         :disabled="!canAudit"
         v-hasPermi="['gz:instantIo:audit']"
         @click="openAuditDialog"
@@ -73,16 +74,17 @@
         plain
         icon="el-icon-refresh-left"
         size="small"
+        class="spd-btn spd-btn--danger"
         :disabled="!canWriteOff"
         v-hasPermi="['gz:instantIo:writeOff']"
         @click="submitWriteOff"
       >{{ writeOffBtnLabel }}</el-button>
-      <el-button size="small" plain icon="el-icon-check" @click="selectAllCurrentPage">全选</el-button>
-      <el-button size="small" plain icon="el-icon-close" @click="clearSelectionCache">取消全选</el-button>
-      <el-button size="small" plain type="warning" icon="el-icon-download" v-hasPermi="['gz:instantIo:list']" @click="handleExport">导出</el-button>
+      <el-button size="small" plain icon="el-icon-check" class="spd-btn spd-btn--secondary" @click="selectAllCurrentPage">全选</el-button>
+      <el-button size="small" plain icon="el-icon-close" class="spd-btn spd-btn--secondary" @click="clearSelectionCache">取消全选</el-button>
+      <el-button size="small" plain type="warning" icon="el-icon-download" class="spd-btn spd-btn--secondary" v-hasPermi="['gz:instantIo:list']" @click="handleExport">导出</el-button>
       <span v-if="selectedCount" class="io-selected-tip">已选 {{ selectedCount }} 条</span>
-      <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">查询</el-button>
-      <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+      <el-button type="primary" icon="el-icon-search" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">查询</el-button>
+      <el-button icon="el-icon-refresh" size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
     </div>
 
     <el-table
@@ -149,8 +151,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer">
-        <el-button @click="auditDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitAudit">审核</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="auditDialogVisible = false">取消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="submitting" @click="submitAudit">审核</el-button>
       </div>
     </el-dialog>
 
@@ -164,7 +166,7 @@
         <el-table-column label="退库 G-TK" prop="returnDepotBillNo" min-width="140" />
       </el-table>
       <div slot="footer">
-        <el-button type="primary" @click="resultDialogVisible = false">知道了</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="resultDialogVisible = false">知道了</el-button>
       </div>
     </el-dialog>
   </div>

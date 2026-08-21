@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container finance-category-page">
+  <div class="app-container list-page finance-category-page">
     <el-row :gutter="20">
       <!-- 左侧固定高度树形结构 -->
       <el-col :span="4">
@@ -22,99 +22,90 @@
 
       <!-- 右侧内容区域 -->
       <el-col :span="20">
-        <!-- 搜索表单 -->
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-          <el-row :gutter="20">
-            <el-col :span="6">
-              <el-form-item prop="financeCategoryCode">
-                <el-input
-                  v-model="queryParams.financeCategoryCode"
-                  placeholder="财务分类编码"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item prop="financeCategoryName">
-                <el-input
-                  v-model="queryParams.financeCategoryName"
-                  placeholder="财务分类名称"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item>
-                <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-                <el-button size="small" @click="resetQuery">重置</el-button>
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
+        <div class="query-container" v-show="showSearch">
+          <div class="form-fields-container list-query-panel">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <more-search-bar
+                ref="moreSearchBar"
+                v-model="moreSearchTypes"
+                :options="moreSearchOptions"
+                :storage-key="moreSearchStorageKey"
+                :default-types="builtInMoreSearchDefaults"
+                :auto-load="false"
+                @change="onMoreSearchTypesChange"
+                @search="handleQuery"
+                @reset="resetQuery"
+              >
+                <div
+                  v-for="t in moreSearchTypes"
+                  :key="t"
+                  class="more-search-dynamic-field more-search-field--text"
+                >
+                  <el-input
+                    v-model="queryParams[t]"
+                    :placeholder="moreSearchPlaceholderFor(t)"
+                    clearable
+                    class="more-search-input more-search-input--dynamic"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </div>
+              </more-search-bar>
+            </el-form>
+          </div>
+        </div>
 
-        <!-- 操作按钮 -->
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
+        <el-row :gutter="0" class="mb8 list-toolbar">
+          <div class="list-toolbar-left">
             <el-button
-              type="primary" size="small"
+              type="primary"
+              size="small"
+              class="spd-btn spd-btn--primary"
               @click="handleAdd"
               v-hasPermi="['foundation:financeCategory:add']"
             >新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:financeCategory:edit']"
             >修改</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:financeCategory:remove']"
             >删除</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="multiple"
               @click="handleUpdateReferred"
               v-hasPermi="['foundation:financeCategory:updateReferred']"
             >更新简码</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleExport"
               v-hasPermi="['foundation:financeCategory:export']"
             >导出</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="info"
-              plain
-              icon="el-icon-upload2"
               size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleImport('add')"
               v-hasPermi="['foundation:financeCategory:import']"
             >新增导入</el-button>
-          </el-col>
-          <el-col :span="1.8">
             <el-button
-              type="info"
-              plain
-              icon="el-icon-refresh-right"
               size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleImport('update')"
               v-hasPermi="['foundation:financeCategory:import']"
             >更新导入</el-button>
-          </el-col>
-          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
+          <div class="list-toolbar-right">
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
         </el-row>
 
         <!-- 数据表格 -->
@@ -290,8 +281,8 @@
           </el-form>
         </div>
         <div class="page-drawer-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -310,6 +301,12 @@ export default {
     ...mapGetters(['customerId', 'factoryImportRequiresHisId']),
     isDisabled() {
       return this.form.financeCategoryId != null;
+    },
+    moreSearchStorageKey() {
+      return "spd.foundation.financeCategory.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["financeCategoryCode", "financeCategoryName"];
     }
   },
   data() {
@@ -328,6 +325,11 @@ export default {
       single: true,
       multiple: true,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "financeCategoryCode", label: "财务分类编码" },
+        { value: "financeCategoryName", label: "财务分类名称" }
+      ],
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -378,13 +380,48 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = { financeCategoryCode: "财务分类编码", financeCategoryName: "财务分类名称" };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["financeCategoryCode", "financeCategoryName"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     // 获取数据列表
     getList() {
       this.loading = true;
-      listFinanceCategory(this.queryParams)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listFinanceCategory(params)
         .then(response => {
           this.financeCategoryList = (response && response.rows) || [];
           this.total = (response && response.total) || 0;
@@ -415,6 +452,10 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.financeCategoryCode = null;
+      this.queryParams.financeCategoryName = null;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     // 表格多选
@@ -495,9 +536,9 @@ export default {
     },
     // 导出功能
     handleExport() {
-      this.download('foundation/financeCategory/export', {
-        ...this.queryParams
-      }, `financeCategory_${new Date().getTime()}.xlsx`);
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('foundation/financeCategory/export', params, `financeCategory_${new Date().getTime()}.xlsx`);
     },
     /** 更新财务分类名称简码 */
     handleUpdateReferred() {

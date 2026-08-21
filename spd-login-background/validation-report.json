@@ -1,0 +1,340 @@
+{
+  "success": false,
+  "outcome": "validation_failed",
+  "repairable": true,
+  "terminalViolations": [],
+  "terminalBlockingSummary": null,
+  "skillProvenance": {
+    "name": "solo-design",
+    "version": "2026.08.06.19.15.08",
+    "version_source": "skill-release-manifest.json",
+    "runtime_skill_dir": "c:\\Users\\Administrator\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+    "recorded_at": null,
+    "expected_version": "2026.08.06.19.15.08",
+    "status": "manifest_fallback",
+    "read_status": "ok",
+    "reason": "runtime-orchestration-summary.json missing skillProvenance; used skill-release-manifest.json"
+  },
+  "operatingMode": "free-explore",
+  "renderBlockingErrorCount": 6,
+  "softWarningCount": 2,
+  "renderBlockingErrors": [
+    "[html-infrastructure] [MAIN-AGENT] login-preview.html missing Tailwind CSS CDN (<script src=\"...@tailwindcss/browser@4\">). Impact: all utility classes stop working; page degrades to unstyled HTML. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+    "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <style id=\"theme-vars\"> theme CSS variable block. Impact: all semantic token colors degrade to transparent/default values. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+    "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @theme inline Tailwind <-> CSS variable bridge block. Impact: bg-primary, text-foreground and similar classes cannot map to theme colors. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+    "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @layer base global base styles. Impact: body background color, font, table word-break and other base styles are lost. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+    "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <html class=\"light\"> or <html class=\"dark\"> theme mode selector. Impact: CSS variable selectors do not match; all theme colors stop working. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+    "[semantic-token-fallback] login-preview.html: uses Tailwind semantic token classes such as bg-card/text-foreground/border-border, but <style id=\"semantic-token-fallback\"> is missing. If Tailwind browser runtime fails to compile @theme inline in the canvas iframe, the page can degrade to default black/white styling. Fix: regenerate the page head with apply-html-head-contract.mjs."
+  ],
+  "errorSignatures": [
+    {
+      "errorClass": "head-infrastructure",
+      "normalized": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing Tailwind CSS CDN (<script src=\"...@tailwindcss/browser@4\">). Impact: all utility classes stop working; page degrades to unstyled HTML. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "signature": "898e271796231103ac5283fb372b2b5d0b3ec6f53c695fc6d1a0ad58eb221444"
+    },
+    {
+      "errorClass": "head-infrastructure",
+      "normalized": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <style id=\"theme-vars\"> theme CSS variable block. Impact: all semantic token colors degrade to transparent/default values. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "signature": "d42b30eef1424bcec974f2226f31134f2e6849dee5d2b79062d255da962fa4fd"
+    },
+    {
+      "errorClass": "head-infrastructure",
+      "normalized": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @theme inline Tailwind <-> CSS variable bridge block. Impact: bg-primary, text-foreground and similar classes cannot map to theme colors. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "signature": "f87b980db0ed51a9cc7f8f555e068908935f5af75211456672b9ab0cd0a1942c"
+    },
+    {
+      "errorClass": "head-infrastructure",
+      "normalized": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @layer base global base styles. Impact: body background color, font, table word-break and other base styles are lost. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "signature": "595ede02d701acaeabe02303bbfe02968df615778ea626818cc569f094070b61"
+    },
+    {
+      "errorClass": "head-infrastructure",
+      "normalized": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <html class=\"light\"> or <html class=\"dark\"> theme mode selector. Impact: CSS variable selectors do not match; all theme colors stop working. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "signature": "b61c7c43fcd1e716f51f53ee7767f3f719bb9e5a3599ae400b917b3018018b16"
+    },
+    {
+      "errorClass": "head-infrastructure",
+      "normalized": "[semantic-token-fallback] login-preview.html: uses Tailwind semantic token classes such as bg-card/text-foreground/border-border, but <style id=\"semantic-token-fallback\"> is missing. If Tailwind browser runtime fails to compile @theme inline in the canvas iframe, the page can degrade to default black/white styling. Fix: regenerate the page head with apply-html-head-contract.mjs.",
+      "signature": "57e6be60a06930814137263de2de027a27661aa375a4c12c60a207d8751c4cfd"
+    }
+  ],
+  "softWarnings": [
+    "[html-head-style] login-preview.html: found 1 custom <style> block(s) in <head>. The <head> is owned by apply-html-head-contract.mjs; move custom styles before </body> or re-run apply-html-head-contract.mjs <css-path> <html-file> --replace-head to relocate them.",
+    "[html-quality] login-preview.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference."
+  ],
+  "repairPlanHints": [
+    {
+      "errorClass": "head-infrastructure-missing",
+      "owner": "main-agent",
+      "repairScope": "affected-page-head",
+      "strategy": "run_apply_html_head_replace",
+      "affectedFiles": [
+        "login-preview.html"
+      ],
+      "repairReportPath": null,
+      "repairAlreadyAttempted": false,
+      "allowSourceRead": "no-full-html-read",
+      "maxValidationRuns": 2
+    },
+    {
+      "errorClass": "hardcoded-color-in-body",
+      "owner": "sub-agent",
+      "repairScope": "targeted-token-replace",
+      "strategy": "targeted_token_replace_once",
+      "affectedFiles": [
+        "login-preview.html"
+      ],
+      "repairReportPath": null,
+      "repairAlreadyAttempted": false,
+      "allowSourceRead": "no-full-html-read",
+      "maxValidationRuns": 2
+    }
+  ],
+  "repairActionTable": [
+    {
+      "error": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing Tailwind CSS CDN (<script src=\"...@tailwindcss/browser@4\">). Impact: all utility classes stop working; page degrades to unstyled HTML. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    },
+    {
+      "error": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <style id=\"theme-vars\"> theme CSS variable block. Impact: all semantic token colors degrade to transparent/default values. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    },
+    {
+      "error": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @theme inline Tailwind <-> CSS variable bridge block. Impact: bg-primary, text-foreground and similar classes cannot map to theme colors. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    },
+    {
+      "error": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @layer base global base styles. Impact: body background color, font, table word-break and other base styles are lost. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    },
+    {
+      "error": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <html class=\"light\"> or <html class=\"dark\"> theme mode selector. Impact: CSS variable selectors do not match; all theme colors stop working. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    },
+    {
+      "error": "[semantic-token-fallback] login-preview.html: uses Tailwind semantic token classes such as bg-card/text-foreground/border-border, but <style id=\"semantic-token-fallback\"> is missing. If Tailwind browser runtime fails to compile @theme inline in the canvas iframe, the page can degrade to default black/white styling. Fix: regenerate the page head with apply-html-head-contract.mjs.",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    }
+  ],
+  "errorCount": 6,
+  "warningCount": 2,
+  "errors": [
+    "[html-infrastructure] [MAIN-AGENT] login-preview.html missing Tailwind CSS CDN (<script src=\"...@tailwindcss/browser@4\">). Impact: all utility classes stop working; page degrades to unstyled HTML. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+    "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <style id=\"theme-vars\"> theme CSS variable block. Impact: all semantic token colors degrade to transparent/default values. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+    "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @theme inline Tailwind <-> CSS variable bridge block. Impact: bg-primary, text-foreground and similar classes cannot map to theme colors. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+    "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @layer base global base styles. Impact: body background color, font, table word-break and other base styles are lost. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+    "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <html class=\"light\"> or <html class=\"dark\"> theme mode selector. Impact: CSS variable selectors do not match; all theme colors stop working. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+    "[semantic-token-fallback] login-preview.html: uses Tailwind semantic token classes such as bg-card/text-foreground/border-border, but <style id=\"semantic-token-fallback\"> is missing. If Tailwind browser runtime fails to compile @theme inline in the canvas iframe, the page can degrade to default black/white styling. Fix: regenerate the page head with apply-html-head-contract.mjs."
+  ],
+  "warnings": [
+    "[html-head-style] login-preview.html: found 1 custom <style> block(s) in <head>. The <head> is owned by apply-html-head-contract.mjs; move custom styles before </body> or re-run apply-html-head-contract.mjs <css-path> <html-file> --replace-head to relocate them.",
+    "[html-quality] login-preview.html: hardcoded colors are forbidden outside <style id=\"theme-vars\">. Use brand CSS variables from the token reference."
+  ],
+  "validationRunDisciplineStatus": {
+    "declared": false,
+    "restoreMode": false,
+    "maxFullValidationRuns": null,
+    "validationHistoryCount": 0,
+    "repairLedgerCount": 0,
+    "softWarningsTriggerRepair": null,
+    "terminalState": null,
+    "nextAction": null,
+    "violations": [],
+    "success": true
+  },
+  "terminalState": null,
+  "nextCheck": {
+    "type": "full",
+    "command": "node \"c:\\Users\\Administrator\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs\" \"e:\\workspace\\spd-ui\\spd-login-background\" --report-json=\"e:\\workspace\\spd-ui\\spd-login-background\\validation-report.json\"",
+    "fullValidationAllowed": true,
+    "reason": "no narrower deterministic targeted check is available for the current failure class"
+  },
+  "repairBatch": [
+    {
+      "error": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing Tailwind CSS CDN (<script src=\"...@tailwindcss/browser@4\">). Impact: all utility classes stop working; page degrades to unstyled HTML. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    },
+    {
+      "error": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <style id=\"theme-vars\"> theme CSS variable block. Impact: all semantic token colors degrade to transparent/default values. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    },
+    {
+      "error": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @theme inline Tailwind <-> CSS variable bridge block. Impact: bg-primary, text-foreground and similar classes cannot map to theme colors. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    },
+    {
+      "error": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @layer base global base styles. Impact: body background color, font, table word-break and other base styles are lost. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    },
+    {
+      "error": "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <html class=\"light\"> or <html class=\"dark\"> theme mode selector. Impact: CSS variable selectors do not match; all theme colors stop working. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    },
+    {
+      "error": "[semantic-token-fallback] login-preview.html: uses Tailwind semantic token classes such as bg-card/text-foreground/border-border, but <style id=\"semantic-token-fallback\"> is missing. If Tailwind browser runtime fails to compile @theme inline in the canvas iframe, the page can degrade to default black/white styling. Fix: regenerate the page head with apply-html-head-contract.mjs.",
+      "errorClass": "head-infrastructure",
+      "severity": "blocking",
+      "action": "run_apply_html_head_replace_once",
+      "owner": "main-agent",
+      "sourceReadPolicy": "no-validator-source-read"
+    }
+  ],
+  "repairContextPacket": {
+    "schema_version": "1.0",
+    "purpose": "small-context repair packet; read this before full validation-report.json",
+    "success": false,
+    "terminalState": null,
+    "skillProvenance": {
+      "name": "solo-design",
+      "version": "2026.08.06.19.15.08",
+      "version_source": "skill-release-manifest.json",
+      "runtime_skill_dir": "c:\\Users\\Administrator\\.trae-cn\\builtin\\design\\default\\skills\\solo-design",
+      "recorded_at": null,
+      "expected_version": "2026.08.06.19.15.08",
+      "status": "manifest_fallback",
+      "read_status": "ok",
+      "reason": "runtime-orchestration-summary.json missing skillProvenance; used skill-release-manifest.json"
+    },
+    "renderBlockingErrorCount": 6,
+    "softWarningCount": 2,
+    "renderBlockingErrors": [
+      "[html-infrastructure] [MAIN-AGENT] login-preview.html missing Tailwind CSS CDN (<script src=\"...@tailwindcss/browser@4\">). Impact: all utility classes stop working; page degrades to unstyled HTML. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <style id=\"theme-vars\"> theme CSS variable block. Impact: all semantic token colors degrade to transparent/default values. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @theme inline Tailwind <-> CSS variable bridge block. Impact: bg-primary, text-foreground and similar classes cannot map to theme colors. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "[html-infrastructure] [MAIN-AGENT] login-preview.html missing @layer base global base styles. Impact: body background color, font, table word-break and other base styles are lost. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "[html-infrastructure] [MAIN-AGENT] login-preview.html missing <html class=\"light\"> or <html class=\"dark\"> theme mode selector. Impact: CSS variable selectors do not match; all theme colors stop working. Fix: run apply-html-head-contract.mjs <css-path> login-preview.html --replace-head",
+      "[semantic-token-fallback] login-preview.html: uses Tailwind semantic token classes such as bg-card/text-foreground/border-border, but <style id=\"semantic-token-fallback\"> is missing. If Tailwind browser runtime fails to compile @theme inline in the canvas iframe, the page can degrade to default black/white styling. Fix: regenerate the page head with apply-html-head-contract.mjs."
+    ],
+    "repairActionTable": [
+      {
+        "errorClass": "head-infrastructure",
+        "owner": "main-agent",
+        "severity": "blocking",
+        "action": "run_apply_html_head_replace_once",
+        "affectedFiles": [],
+        "sourceReadPolicy": "no-validator-source-read"
+      },
+      {
+        "errorClass": "head-infrastructure",
+        "owner": "main-agent",
+        "severity": "blocking",
+        "action": "run_apply_html_head_replace_once",
+        "affectedFiles": [],
+        "sourceReadPolicy": "no-validator-source-read"
+      },
+      {
+        "errorClass": "head-infrastructure",
+        "owner": "main-agent",
+        "severity": "blocking",
+        "action": "run_apply_html_head_replace_once",
+        "affectedFiles": [],
+        "sourceReadPolicy": "no-validator-source-read"
+      },
+      {
+        "errorClass": "head-infrastructure",
+        "owner": "main-agent",
+        "severity": "blocking",
+        "action": "run_apply_html_head_replace_once",
+        "affectedFiles": [],
+        "sourceReadPolicy": "no-validator-source-read"
+      },
+      {
+        "errorClass": "head-infrastructure",
+        "owner": "main-agent",
+        "severity": "blocking",
+        "action": "run_apply_html_head_replace_once",
+        "affectedFiles": [],
+        "sourceReadPolicy": "no-validator-source-read"
+      },
+      {
+        "errorClass": "head-infrastructure",
+        "owner": "main-agent",
+        "severity": "blocking",
+        "action": "run_apply_html_head_replace_once",
+        "affectedFiles": [],
+        "sourceReadPolicy": "no-validator-source-read"
+      }
+    ],
+    "nextCheck": {
+      "type": "full",
+      "command": "node \"c:\\Users\\Administrator\\.trae-cn\\builtin\\design\\default\\skills\\solo-design\\shared-runtime\\deterministic-tooling\\validate-design-workspace.mjs\" \"e:\\workspace\\spd-ui\\spd-login-background\" --report-json=\"e:\\workspace\\spd-ui\\spd-login-background\\validation-report.json\"",
+      "fullValidationAllowed": true,
+      "reason": "no narrower deterministic targeted check is available for the current failure class"
+    },
+    "forbidden": [
+      "do not read validator source",
+      "do not rerun full validation when nextCheck.fullValidationAllowed=false",
+      "do not start preview/browser unless user explicitly asks",
+      "do not hand-edit repair ledger fields"
+    ]
+  },
+  "projectFileHashes": {
+    "spd-login-background.design": "03c6c1c1f8768ca3441bd3d96649ba33b7d133a5baca500dc426297101857330",
+    "pages/login-preview.html": "250ae8033c99540c59cf3e1ac4e64399120ef285b5b0e8f0bc6756b72293944d",
+    "assets/login-bg-bright-corridor.jpg": "ab54cd7cf641682cf7f8a7e708ba5eb4623a4ec62af2710cc93a4bcd56c4ebb4",
+    "assets/login-bg-bright-supplies.jpg": "33be15f5ac97a4176882fd5dc678502fc21bff912928a416876a5a7266692974",
+    "assets/login-bg-bright-warehouse.jpg": "af5fce2fca4890f1f42c12b6e2d44acca624c60bc1f37ad26edff120350fef56",
+    "assets/login-bg-city-logistics.jpg": "d1d6b2feea7cb150817e1bfde4e6e6d39e3249ea6ccbb74960c4eeaa4d7af563",
+    "assets/login-bg-deep-tech.jpg": "657644fffcb7ac81306e9dce8b4e89c0bc6b259570ef1d7c4f5cb7021611ebe3",
+    "assets/login-bg-digital-network.jpg": "9852e775d9b8914ab78ea2bcb80451c23ee8d7b9dcbe46007a59047b0ed6167c",
+    "assets/login-bg-dynamic-dataflow.jpg": "8601fa9423c5aa190f79e71660f17c90e60308e06bc7e8ba04dded759ea832c8",
+    "assets/login-bg-dynamic-light-rays.jpg": "fb37936fb4cc5a030d93b47458886101791590a10a122159453254742f8e1ce0",
+    "assets/login-bg-dynamic-scanning.jpg": "bfb49359e630ad9f1332c2b7ad8311096625baad345ffe16418964cc88ec53a3",
+    "assets/login-bg-holographic-command.jpg": "6f7dd64d477e1152fcad401794403e3cc8dea423d1f813772e5667e8edc7ec31",
+    "assets/login-bg-hospital-atrium.jpg": "1dff39229b150ab2bc346341a7075e7e072948fdee714a0192705b2221c1ec59",
+    "assets/login-bg-hospital-pharmacy.jpg": "622e167afd39cfa7f431e8dbcbd61ee1db9e37c49ed1b14db2890945b7594fed",
+    "assets/login-bg-minimal-glass.jpg": "d0c5bb3b28697ff7a7287010cde57e4e04c961e0fa507fd844464b6cf86b1c13",
+    "assets/login-bg-minimal-gradient.jpg": "3563b83b61ecd6ddfae3b193ff9a17b3f6bb6adda99fc7a8d17e4ae561df29bb",
+    "assets/login-bg-smart-warehouse.jpg": "3d8d2b12f59c26c10ef56f0c7bc27322321cba8442b859d97ee2171c8ceb3c7a",
+    "assets/login-bg-supplies-flatlay.jpg": "8c88d47cc0d952a7759ab45fed377f1497bb4dee9351ac68b0f636fc98300d09",
+    "assets/login-bg-supply-room.jpg": "aa1cde5f4f0774f09eed342d602c989224280a1074a2f10f5ff11382b1b324b4"
+  },
+  "designDir": "e:\\workspace\\spd-ui\\spd-login-background",
+  "expectedPages": null,
+  "requireInteractions": null,
+  "checkedAt": "2026-08-18T02:04:43.255Z"
+}

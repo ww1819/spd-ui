@@ -1,58 +1,43 @@
 <template>
-  <div class="app-container first-inventory-page">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item class="query-item-inline more-search-item">
-              <div class="more-search-row more-search-row--multi">
-                <span class="more-search-label">更多检索</span>
-                <el-select
-                  v-model="moreSearchTypes"
-                  multiple
-                  collapse-tags
-                  placeholder="选择检索条件（可多选）"
-                  class="more-search-type"
-                  @change="onMoreSearchTypesChange"
-                >
-                  <el-option label="供应商" value="supplier" />
-                  <el-option label="生产厂家" value="factory" />
-                  <el-option label="耗材" value="materialName" />
-                  <el-option label="规格" value="materialSpeci" />
-                  <el-option label="型号" value="materialModel" />
-                  <el-option label="仓库" value="warehouse" />
-                  <el-option label="财务分类" value="financeCategoryKeyword" />
-                  <el-option label="库房分类" value="warehouseCategoryKeyword" />
-                </el-select>
-                <div
-                  v-for="t in moreSearchTypes"
-                  :key="t"
-                  class="more-search-dynamic-field"
-                >
-                  <span class="more-search-field-label">{{ moreSearchTypeLabel(t) }}</span>
-                  <template v-if="t === 'warehouse'">
-                    <div class="query-select-wrapper more-search-warehouse-wrap">
-                      <SelectWarehouse
-                        v-model="queryParams.warehouseId"
-                        excludeWarehouseType="高值"
-                        placeholder="仓库编码/名称/简码搜索"
-                      />
-                    </div>
-                  </template>
-                  <el-input
-                    v-else
-                    v-model="moreSearchKeywords[t]"
-                    :placeholder="moreSearchPlaceholderFor(t)"
-                    clearable
-                    class="more-search-input more-search-input--dynamic"
-                    @keyup.enter.native="handleQuery"
-                  />
-                </div>
+  <div class="app-container list-page first-inventory-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="t === 'warehouse' ? 'more-search-field--select' : 'more-search-field--text'"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse
+                  v-model="queryParams.warehouseId"
+                  excludeWarehouseType="高值"
+                  placeholder="仓库编码/名称/简码搜索"
+                />
               </div>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            </template>
+            <el-input
+              v-else
+              v-model="moreSearchKeywords[t]"
+              :placeholder="moreSearchPlaceholderFor(t)"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
         <el-row :gutter="24" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -63,7 +48,7 @@
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                class="query-date-start"
+                class="query-date-picker query-date-start"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
@@ -72,52 +57,39 @@
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                class="query-date-end"
+                class="query-date-picker query-date-end"
               />
             </el-form-item>
             <el-form-item prop="isGz" class="query-item-inline">
-              <el-select v-model="queryParams.isGz" placeholder="是否高值" clearable style="width: 130px">
+              <el-select v-model="queryParams.isGz" placeholder="是否高值" clearable class="more-search-short-select">
                 <el-option label="是" value="1" />
                 <el-option label="否" value="2" />
               </el-select>
             </el-form-item>
             <el-form-item prop="financeCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper category-multi-wrap">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectFinanceCategoryLow v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类多选" />
               </div>
             </el-form-item>
             <el-form-item prop="warehouseCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper category-multi-wrap">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectWarehouseCategoryLow v-model="queryParams.warehouseCategoryIds" :multiple="true" placeholder="库房分类多选" />
               </div>
             </el-form-item>
           </el-col>
         </el-row>
-
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
-      <div class="button-row-left">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
-          type="warning"
-          icon="el-icon-download"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
         >导出</el-button>
-        <el-button
-          type="primary"
-          icon="el-icon-search"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-        <el-button
-          icon="el-icon-refresh"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
       </div>
-      <div class="button-row-right">
+      <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
       </div>
     </el-row>
@@ -230,6 +202,16 @@ export default {
       stkIoBillEntryList: [],
       moreSearchTypes: [],
       moreSearchKeywords: {},
+      moreSearchOptions: [
+        { value: "supplier", label: "供应商" },
+        { value: "factory", label: "生产厂家" },
+        { value: "materialName", label: "耗材" },
+        { value: "materialSpeci", label: "规格" },
+        { value: "materialModel", label: "型号" },
+        { value: "warehouse", label: "仓库" },
+        { value: "financeCategoryKeyword", label: "财务分类" },
+        { value: "warehouseCategoryKeyword", label: "库房分类" }
+      ],
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -303,6 +285,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.inWarehouse.query.second.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return [];
+    },
     sortedWarehouseList() {
       const list = [...(this.warehouseList || [])];
       if (!this.sortProp || !this.sortOrder) {
@@ -342,6 +330,8 @@ export default {
     },
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange(this.moreSearchTypes);
     this.getList();
   },
   methods: {
@@ -454,9 +444,28 @@ export default {
       this.queryParams.warehouseCategoryKeyword = null;
       this.queryParams.financeCategoryIds = [];
       this.queryParams.warehouseCategoryIds = [];
-      this.moreSearchTypes = [];
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
       this.moreSearchKeywords = {};
+      this.onMoreSearchTypesChange(this.moreSearchTypes);
       this.handleQuery();
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
     },
     onMoreSearchTypesChange(val) {
       const set = new Set(val || []);
@@ -801,15 +810,10 @@ export default {
 }
 
 .form-fields-container {
-  background: #fff;
-  padding: 6px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 8px;
   margin-top: -20px;
   margin-left: 0;
   margin-right: 0;
-  border: 1px solid #EBEEF5;
 }
 
 .button-row-inventory {

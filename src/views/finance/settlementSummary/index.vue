@@ -1,63 +1,104 @@
 <template>
-  <div class="app-container finance-settlement-summary">
-    <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" v-show="showSearch" label-width="88px">
-      <el-form-item label="审核日期">
-        <el-date-picker
-          v-model="queryParams.beginDate"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="起始"
-          clearable
-          style="width: 140px"
-        />
-        <span style="margin: 0 6px">至</span>
-        <el-date-picker
-          v-model="queryParams.endDate"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="截止"
-          clearable
-          style="width: 140px"
-        />
-      </el-form-item>
-      <el-form-item label="业务单号" prop="billNo">
-        <el-input v-model="queryParams.billNo" placeholder="单号模糊" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="仓库" prop="warehouseIds">
-        <SelectWarehouse v-model="queryParams.warehouseIds" :finance-pick-mode="true" :multiple="true" clearable style="width: 240px" />
-      </el-form-item>
-      <el-form-item label="科室" prop="departmentId">
-        <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" clearable style="width: 160px" />
-      </el-form-item>
-      <el-form-item label="供应商" prop="supplerId">
-        <SelectSupplier v-model="queryParams.supplerId" :finance-pick-mode="true" clearable style="width: 180px" />
-      </el-form-item>
-      <el-form-item label="是否集采" prop="materialIsProcure">
-        <el-select v-model="queryParams.materialIsProcure" clearable placeholder="全部" style="width: 120px">
-          <el-option label="是" value="1" />
-          <el-option label="否" value="2" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="耗材" prop="materialNameLike">
-        <el-input v-model="queryParams.materialNameLike" placeholder="名称/编码/简码" clearable style="width: 160px" />
-      </el-form-item>
-      <el-form-item label="财务分类" prop="financeCategoryIds">
-        <SelectFinanceCategoryLow
-          v-model="queryParams.financeCategoryIds"
-          :multiple="true"
-          placeholder="财务分类多选"
-          style="width: 200px"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container list-page finance-settlement-summary">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseIds" :finance-pick-mode="true" :multiple="true" clearable />
+              </div>
+            </template>
+            <template v-else-if="t === 'department'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" clearable />
+              </div>
+            </template>
+            <template v-else-if="t === 'supplier'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectSupplier v-model="queryParams.supplerId" :finance-pick-mode="true" clearable />
+              </div>
+            </template>
+            <template v-else-if="t === 'financeCategory'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectFinanceCategoryLow
+                  v-model="queryParams.financeCategoryIds"
+                  :multiple="true"
+                  placeholder="财务分类多选"
+                />
+              </div>
+            </template>
+            <el-input
+              v-else-if="t === 'materialNameLike'"
+              v-model="queryParams.materialNameLike"
+              placeholder="耗材名称/编码/简码"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else
+              v-model="queryParams.billNo"
+              placeholder="业务单号模糊"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5" />
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="loadData" />
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="审核日期" class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始"
+                clearable
+                class="query-date-picker query-date-start"
+              />
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止"
+                clearable
+                class="query-date-picker query-date-end"
+              />
+            </el-form-item>
+            <el-form-item prop="materialIsProcure" class="query-item-inline">
+              <el-select v-model="queryParams.materialIsProcure" clearable placeholder="是否集采" class="more-search-short-select">
+                <el-option label="是" value="1" />
+                <el-option label="否" value="2" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left"></div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="loadData" />
+      </div>
     </el-row>
 
     <el-tabs v-model="activeSheet" type="border-card" class="report-sheet-tabs">
@@ -69,6 +110,7 @@
                 type="warning"
                 icon="el-icon-download"
                 size="small"
+                class="spd-btn spd-btn--secondary"
                 @click="handleExportTable1"
                 v-hasPermi="['finance:settlementSummary:export']"
               >导出</el-button>
@@ -120,6 +162,7 @@
                 type="warning"
                 icon="el-icon-download"
                 size="small"
+                class="spd-btn spd-btn--secondary"
                 @click="handleExportTable2"
                 v-hasPermi="['finance:settlementSummary:export']"
               >导出</el-button>
@@ -192,6 +235,7 @@
                 type="warning"
                 icon="el-icon-download"
                 size="small"
+                class="spd-btn spd-btn--secondary"
                 @click="handleExportTable3"
                 v-hasPermi="['finance:settlementSummary:export']"
               >导出</el-button>
@@ -271,6 +315,15 @@ export default {
     return {
       loading: false,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '单号', value: 'billNo' },
+        { label: '仓库', value: 'warehouse' },
+        { label: '科室', value: 'department' },
+        { label: '供应商', value: 'supplier' },
+        { label: '耗材', value: 'materialNameLike' },
+        { label: '财务分类', value: 'financeCategory' }
+      ],
       queryParams: {
         ...getDefaultFinanceAuditDateRange(),
         billNo: null,
@@ -353,8 +406,16 @@ export default {
       if (e) return `科室月消耗表三（${monthCn(e)}）`
       return '科室月消耗表三'
     },
+    moreSearchStorageKey() {
+      return 'spd.finance.settlementSummary.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    },
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.loadData()
   },
   methods: {
@@ -498,6 +559,7 @@ export default {
     /** 请求参数：截止日期带上当天 23:59:59，与后端 audit_date 时分对齐 */
     buildApiQueryParams() {
       const p = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(p)
       if (p.endDate != null && p.endDate !== '') {
         const s = String(p.endDate).trim()
         if (s.length === 10 && !s.includes(' ')) {
@@ -552,7 +614,52 @@ export default {
         financeCategoryIds: [],
       })
       this.$refs.queryForm && this.$refs.queryForm.clearValidate()
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
       this.handleQuery()
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'billNo' || t === 'materialNameLike') {
+        return 'more-search-field--text'
+      }
+      return 'more-search-field--select'
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      const map = {
+        billNo: 'billNo',
+        warehouse: 'warehouseIds',
+        department: 'departmentId',
+        supplier: 'supplerId',
+        materialNameLike: 'materialNameLike',
+        financeCategory: 'financeCategoryIds'
+      }
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = (type === 'warehouse' || type === 'financeCategory') ? [] : null
+        }
+      })
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams)
     },
     async handleExportTable1() {
       await exportFinanceSettlementSummaryXlsx({
@@ -586,6 +693,9 @@ export default {
 </script>
 
 <style scoped>
+.list-query-panel {
+  margin-top: -20px;
+}
 .report-sheet-tabs {
   margin-top: 4px;
 }

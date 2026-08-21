@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container list-page">
     <el-row :gutter="20">
       <!-- 左侧68分类树 -->
       <el-col :span="4">
@@ -26,113 +26,111 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="20">
-        <!-- 查询条件容器 -->
-        <div class="query-container">
-          <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-            <el-row class="query-row-first">
-              <el-col :span="24">
-                <el-form-item prop="name" class="query-item-inline">
-                  <el-input
-                    v-model="queryParams.name"
-                    placeholder="档案名称"
+        <div class="query-container" v-show="showSearch">
+          <div class="form-fields-container list-query-panel">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <more-search-bar
+                ref="moreSearchBar"
+                v-model="moreSearchTypes"
+                :options="moreSearchOptions"
+                :storage-key="moreSearchStorageKey"
+                :default-types="builtInMoreSearchDefaults"
+                :auto-load="false"
+                @change="onMoreSearchTypesChange"
+                @search="handleQuery"
+                @reset="resetQuery"
+              >
+                <div
+                  v-for="t in moreSearchTypes"
+                  :key="t"
+                  class="more-search-dynamic-field"
+                  :class="moreSearchFieldClass(t)"
+                >
+                  <template v-if="t === 'dateRange'">
+                    <el-date-picker
+                      v-model="queryParams.beginDate"
+                      type="date"
+                      value-format="yyyy-MM-dd"
+                      placeholder="起始日期"
+                      clearable
+                      class="query-date-picker"
+                    />
+                    <span class="query-date-sep">至</span>
+                    <el-date-picker
+                      v-model="queryParams.endDate"
+                      type="date"
+                      value-format="yyyy-MM-dd"
+                      placeholder="截止日期"
+                      clearable
+                      class="query-date-picker"
+                    />
+                  </template>
+                  <el-select
+                    v-else-if="t === 'isUse'"
+                    v-model="queryParams.isUse"
+                    placeholder="状态"
+                    class="more-search-short-select"
                     clearable
-                    @keyup.enter.native="handleQuery"
-                    style="width: 180px"
-                  />
-                </el-form-item>
-              </el-col>
-            </el-row>
-
-            <el-row class="query-row-second">
-              <el-col :span="24" style="display: flex; flex-wrap: nowrap; align-items: center;">
-                <el-form-item class="query-item-inline" style="margin-right: 16px;">
-                  <el-date-picker
-                    v-model="queryParams.beginDate"
-                    type="date"
-                    value-format="yyyy-MM-dd"
-                    placeholder="起始日期"
-                    clearable
-                    style="width: 100px; margin-right: 4px;"
-                  />
-                  <span style="margin: 0 2px;">至</span>
-                  <el-date-picker
-                    v-model="queryParams.endDate"
-                    type="date"
-                    value-format="yyyy-MM-dd"
-                    placeholder="截止日期"
-                    clearable
-                    style="width: 100px; margin-left: 4px;"
-                  />
-                </el-form-item>
-
-                <el-form-item prop="isUse" class="query-item-inline" style="margin-right: 16px;">
-                  <el-select v-model="queryParams.isUse" placeholder="状态" style="width: 100px" clearable>
+                  >
                     <el-option
                       v-for="dict in dict.type.is_use_status"
                       :key="dict.value"
                       :label="dict.label"
                       :value="dict.value"
-                    ></el-option>
+                    />
                   </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-form>
+                  <el-input
+                    v-else
+                    v-model="queryParams[t]"
+                    :placeholder="moreSearchPlaceholderFor(t)"
+                    clearable
+                    class="more-search-input more-search-input--dynamic"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </div>
+              </more-search-bar>
+            </el-form>
+          </div>
         </div>
 
-        <!-- 操作按钮 -->
-        <el-row :gutter="10" class="mb8" style="padding-top: 10px">
-          <el-col :span="1.5">
+        <el-row :gutter="0" class="mb8 list-toolbar">
+          <div class="list-toolbar-left">
             <el-button
               type="primary" size="small"
+              class="spd-btn spd-btn--primary"
               @click="handleAdd"
               v-hasPermi="['foundation:equipmentDict:add']"
             >新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:equipmentDict:edit']"
             >修改</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:equipmentDict:remove']"
             >删除</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleExport"
               v-hasPermi="['foundation:equipmentDict:export']"
             >导出</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button
-              type="primary"
-              size="small"
-              @click="handleQuery"
-            >搜索</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
               size="small"
-              @click="resetQuery"
-            >重置</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button
-              type="primary" size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleImport"
               v-hasPermi="['foundation:equipmentDict:import']"
             >导入</el-button>
-          </el-col>
-          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
+          <div class="list-toolbar-right">
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
         </el-row>
 
     <el-table v-loading="loading" :data="equipmentDictList" :row-class-name="equipmentDictIndex" @selection-change="handleSelectionChange" height="58vh" border stripe>
@@ -302,8 +300,8 @@
         </el-tabs>
         
         <div class="dialog-footer" style="text-align:center;margin-top:16px;">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -371,6 +369,14 @@ export default {
   name: "EquipmentDict",
   dicts: ['is_use_status', 'is_yes_no','way_status','equipment_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
   components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectWarehouseCategory,SelectUnit,SelectLocation},
+  computed: {
+    moreSearchStorageKey() {
+      return "spd.foundation.equipmentDict.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["name", "dateRange", "isUse"];
+    }
+  },
   data() {
     return {
       // 树形数据
@@ -392,6 +398,12 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "name", label: "档案名称" },
+        { value: "dateRange", label: "创建日期" },
+        { value: "isUse", label: "状态" }
+      ],
       // 总条数
       total: 0,
       // 设备字典表格数据
@@ -493,11 +505,52 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.loadTreeData();
     this.loadCategory68Options();
     this.getList();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = { name: "档案名称" };
+      return map[t] || "请输入";
+    },
+    moreSearchFieldClass(t) {
+      if (t === "dateRange") return "more-search-field--date";
+      if (t === "isUse") return "more-search-field--short";
+      return "more-search-field--text";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      if (!set.has("name")) target.name = undefined;
+      if (!set.has("isUse")) target.isUse = undefined;
+      if (!set.has("dateRange")) {
+        target.beginDate = undefined;
+        target.endDate = undefined;
+      }
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     /** 加载68分类树形数据 */
     loadTreeData() {
       treeselect().then(response => {
@@ -614,7 +667,9 @@ export default {
     /** 查询设备字典列表 */
     getList() {
       this.loading = true;
-      listEquipmentDict(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listEquipmentDict(params).then(response => {
         this.equipmentDictList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -734,8 +789,12 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.name = undefined;
+      this.queryParams.isUse = undefined;
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     /** 导入按钮操作 */
@@ -945,9 +1004,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('foundation/equipmentDict/export', {
-        ...this.queryParams
-      }, `equipmentDict_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('foundation/equipmentDict/export', params, `equipmentDict_${new Date().getTime()}.xlsx`)
     },
     /** 图片上传前验证 */
     beforeImageUpload(file) {

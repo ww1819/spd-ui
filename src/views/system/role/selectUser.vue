@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <!-- 授权用户 -->
   <el-dialog title="选择用户" :visible.sync="visible" width="800px" top="5vh" append-to-body>
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true">
@@ -50,8 +50,8 @@
       />
     </el-row>
     <div slot="footer" class="dialog-footer">
-      <el-button type="primary" @click="handleSelectUser">确 定</el-button>
-      <el-button @click="visible = false">取 消</el-button>
+      <el-button type="primary" class="spd-btn spd-btn--primary" @click="handleSelectUser">确 定</el-button>
+      <el-button class="spd-btn spd-btn--secondary" @click="visible = false">取 消</el-button>
     </div>
   </el-dialog>
 </template>
