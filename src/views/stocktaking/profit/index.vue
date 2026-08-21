@@ -332,7 +332,7 @@
           </el-table-column>
           <el-table-column label="价格" align="center" header-align="center" prop="price" width="80" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.price || '--' }}</span>
+              <span>{{ scope.row.price != null && scope.row.price !== '' ? formatPrice(scope.row.price) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="盈亏数量" align="center" header-align="center" prop="profitQty" width="88" show-overflow-tooltip resizable>
@@ -342,7 +342,7 @@
           </el-table-column>
           <el-table-column label="金额" align="center" header-align="center" prop="amt" width="88" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.amt || '--' }}</span>
+              <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="盘点金额" align="center" header-align="center" prop="stockAmount" width="88" show-overflow-tooltip resizable>

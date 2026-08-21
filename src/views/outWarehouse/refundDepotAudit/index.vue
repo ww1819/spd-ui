@@ -297,7 +297,7 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
+              <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -362,11 +362,7 @@
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input
-                v-model="scope.row.unitPrice"
-                :disabled="true"
-                type="number"
-                placeholder="自动带出单价"/>
+              <span>{{ scope.row.unitPrice | formatPrice }}</span>
             </template>
           </el-table-column>
           <el-table-column label="已引用" prop="srcRefedQty" width="72" align="center" show-overflow-tooltip resizable>
@@ -391,7 +387,7 @@
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
+              <span>{{ scope.row.amt | formatAmount }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="320" show-overflow-tooltip resizable>

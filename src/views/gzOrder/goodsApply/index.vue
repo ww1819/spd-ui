@@ -349,12 +349,12 @@
           </el-table-column>
           <el-table-column label="价格" prop="price" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.price || '--' }}</span>
+              <span>{{ scope.row.price != null && scope.row.price !== '' ? formatPrice(scope.row.price) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.amt || '--' }}</span>
+              <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="150" show-overflow-tooltip resizable>

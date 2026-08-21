@@ -344,7 +344,7 @@
 
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
+              <span>{{ scope.row.amt | formatAmount }}</span>
             </template>
           </el-table-column>
 

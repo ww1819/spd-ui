@@ -65,7 +65,7 @@
     <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable />
     <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
       <template slot-scope="scope">
-        <span>{{ scope.row.unitPrice || '--' }}</span>
+        <span>{{ scope.row.unitPrice != null && scope.row.unitPrice !== '' ? formatPrice(scope.row.unitPrice) : '--' }}</span>
       </template>
     </el-table-column>
     <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
@@ -82,7 +82,7 @@
     </el-table-column>
     <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
       <template slot-scope="scope">
-        <span>{{ scope.row.amt || '--' }}</span>
+        <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
       </template>
     </el-table-column>
     <el-table-column label="来源消耗单号" align="center" prop="srcConsumeBillNo" width="140" show-overflow-tooltip resizable>

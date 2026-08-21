@@ -270,8 +270,7 @@
           <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
 <!--              <el-input v-model="scope.row.unitPrice" placeholder="单价" />-->
-              <el-input v-model="scope.row.unitPrice" type='number' :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="单价" />
+              <span>{{ scope.row.unitPrice | formatPrice }}</span>
             </template>
           </el-table-column>
 
@@ -283,7 +282,7 @@
 
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
+              <span>{{ scope.row.amt | formatAmount }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="240" show-overflow-tooltip resizable>

@@ -306,7 +306,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
+              <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -511,21 +511,14 @@
           <el-table-column label="价格" align="center" prop="unitPrice" width="100" min-width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
-                <el-input v-model="scope.row.unitPrice"
-                          type='number'
-                          :disabled="true"
-                          @input="priceChange(scope.row)"
-                          placeholder="价格"
-                          size="small"
-                          style="width: 100%"
-                />
+                <span>{{ scope.row.unitPrice | formatPrice }}</span>
               </div>
             </template>
           </el-table-column>
           <el-table-column label="金额" align="center" prop="amt" width="100" min-width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
-                <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" size="small" style="width: 100%"/>
+                <span>{{ scope.row.amt | formatAmount }}</span>
               </div>
             </template>
           </el-table-column>
@@ -1095,9 +1088,9 @@ export default {
           const values = data.map(row => Number(row[prop]));
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            sums[index] = this.formatAmount(total);
+            sums[index] = prop === 'unitPrice' ? this.formatPrice(total) : this.formatAmount(total);
             if (prop === 'amt') {
-              this.form.totalAmount = sums[index];
+              this.form.totalAmount = this.toMoneyStorage(total);
             }
           }
         }
