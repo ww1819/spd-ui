@@ -213,20 +213,15 @@ export default {
     inboundPageAmountFormatted() {
       const list = this.inboundList || []
       const s = list.reduce((acc, row) => acc + Number(row && row.amount != null ? row.amount : 0), 0)
-      return Number.isFinite(s) ? s.toFixed(2) : '0.00'
+      return Number.isFinite(s) ? this.formatAmount(s) : this.formatAmount(0)
     },
     outboundPageAmountFormatted() {
       const list = this.outboundList || []
       const s = list.reduce((acc, row) => acc + Number(row && row.amount != null ? row.amount : 0), 0)
-      return Number.isFinite(s) ? s.toFixed(2) : '0.00'
+      return Number.isFinite(s) ? this.formatAmount(s) : this.formatAmount(0)
     },
   },
   methods: {
-    formatAmount(v) {
-      const n = Number(v || 0)
-      if (Number.isNaN(n)) return v
-      return n.toFixed(2)
-    },
     buildBaseParams() {
       const p = {
         beginDate: this.queryParams.beginDate,

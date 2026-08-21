@@ -292,6 +292,7 @@
 <script>
 import { listCTKWarehouse} from "@/api/warehouse/outWarehouse";
 import { formatQuantity } from '@/utils/format-quantity'
+import { formatAmount as formatAmountByTenant } from '@/utils/moneyFormat'
 import { exportCTKWarehouseDetailStyledXlsx, exportCTKWarehouseDetailSupplierSimpleXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -443,7 +444,7 @@ export default {
       return formatQuantity(value, 2)
     },
     formatAmount(value) {
-      return this.formatNumber(value, 4);
+      return formatAmountByTenant(value, '0');
     },
     formatBillingYesNo(row) {
       const v = row && row.material ? row.material.isBilling : null;

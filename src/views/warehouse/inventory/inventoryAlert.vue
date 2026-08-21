@@ -220,7 +220,7 @@ export default {
       const amt = (this.list || []).reduce((s, r) => s + Number(r.totalAmt || 0), 0)
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : Number(amt).toFixed(2)
+        : this.formatAmount(amt)
     }
   },
   created() {

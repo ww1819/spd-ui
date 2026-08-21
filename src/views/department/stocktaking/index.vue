@@ -861,7 +861,7 @@ export default {
       if (head != null && head !== '') {
         const n = parseFloat(head);
         if (Number.isFinite(n)) {
-          return '￥' + n.toFixed(2);
+          return '￥' + this.formatAmount(n);
         }
       }
       let total = 0;
@@ -871,7 +871,7 @@ export default {
           total += amt;
         });
       }
-      return '￥' + total.toFixed(2);
+      return '￥' + this.formatAmount(total);
     },
     deptFormCreatorName() {
       const f = this.form || {};
@@ -1057,7 +1057,7 @@ export default {
         const sq = parseFloat(row.stockQty);
         const up = this.entryEffectiveUnitPriceNum(row);
         if (Number.isFinite(sq) && Number.isFinite(up)) {
-          row.amt = (sq * up).toFixed(2);
+          row.amt = this.calcLineAmt(sq, up);
         }
       });
       this.refreshEntrySaveSnapshots(list);
@@ -1154,7 +1154,7 @@ export default {
         }
         if (column.property === 'amt') {
           const total = sumNum('amt');
-          sums[index] = '￥' + total.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(total);
           return;
         }
         if (column.label === '盈亏数量') {
@@ -1172,7 +1172,7 @@ export default {
             t += pq * this.entryEffectiveUnitPriceNum(item);
           });
           const prefix = t > 0 ? '+' : '';
-          sums[index] = prefix + '￥' + t.toFixed(2);
+          sums[index] = prefix + '￥' + this.formatAmount(t);
           return;
         }
         sums[index] = '';
@@ -1190,7 +1190,7 @@ export default {
       if (val == null || val === '') return '--';
       const n = parseFloat(val);
       if (!Number.isFinite(n)) return '--';
-      return '￥' + n.toFixed(2);
+      return '￥' + this.formatAmount(n);
     },
     /** 列表盈亏金额展示（盘盈带 +） */
     formatStocktakingListProfitAmount(val) {
@@ -1198,7 +1198,7 @@ export default {
       const n = parseFloat(val);
       if (!Number.isFinite(n)) return '--';
       const prefix = n > 0 ? '+' : '';
-      return prefix + '￥' + n.toFixed(2);
+      return prefix + '￥' + this.formatAmount(n);
     },
     /** 打印操作 */
     handlePrint(row, isPrint) {
@@ -1522,7 +1522,7 @@ export default {
       if (amt == null || amt === '') {
         const up = parseFloat(resolvedUp != null && resolvedUp !== '' ? resolvedUp : 0);
         const a = (parseFloat(stockQty) || 0) * (Number.isFinite(up) ? up : 0);
-        amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
+        amt = Number.isFinite(a) ? this.toMoneyStorage(a) : 0;
       }
       const wh = item.warehouse || null;
       const wid =
@@ -1743,7 +1743,7 @@ export default {
         delete r._longTerm;
         r.price = r.unitPrice;
         const a = (parseFloat(r.stockQty) || 0) * (parseFloat(r.unitPrice) || 0);
-        r.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
+        r.amt = Number.isFinite(a) ? this.toMoneyStorage(a) : 0;
         r.countedFlag = 1;
       });
       this.stkIoStocktakingEntryList.push(...this.pendingNewEntries);
@@ -1833,7 +1833,7 @@ export default {
       const sq = parseFloat(row.stockQty);
       const up = this.entryEffectiveUnitPriceNum(row);
       const totalAmt = Number.isFinite(sq) && Number.isFinite(up) ? sq * up : 0;
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     handleStockQtyBlur(row) {
       if (!row) return;
@@ -1857,7 +1857,7 @@ export default {
       const sq = parseFloat(row.stockQty);
       const up = this.entryEffectiveUnitPriceNum(row);
       const totalAmt = Number.isFinite(sq) && Number.isFinite(up) ? sq * up : 0;
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     // 计算盈亏数量
     getProfitQty(row) {
@@ -1874,7 +1874,7 @@ export default {
       const profitQty = stockQty - qty;
       const profitAmount = profitQty * unitPrice;
       const prefix = profitAmount > 0 ? '+' : '';
-      return prefix + '￥' + profitAmount.toFixed(2);
+      return prefix + '￥' + this.formatAmount(profitAmount);
     },
     // 盈亏标志展示：优先后端字段，缺省时前端兜底
     formatProfitLossFlag(row) {
@@ -2300,7 +2300,7 @@ export default {
       const v = (stockQty - bookOnLine) * unitPrice;
       if (!Number.isFinite(v) || !Number.isFinite(stockQty)) return '--';
       const prefix = v > 0 ? '+' : '';
-      return `${prefix}￥${v.toFixed(2)}`;
+      return `${prefix}￥${this.formatAmount(v)}`;
     },
     confirmSaveQtyAndSubmit() {
       const unconfirmed = (this.saveQtyConfirmList || []).some((r) => !r.confirmed);

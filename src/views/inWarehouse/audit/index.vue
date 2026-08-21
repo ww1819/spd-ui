@@ -864,13 +864,13 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatAmount(sums[index]);
           }
 
           if(index === 5){
             let res = parseFloat(sums[index]);
             if(!isNaN(res)){
-              let parRes = res.toFixed(2);
+              let parRes = this.formatAmount(res);
               this.form.totalAmount = parRes;
             }
           }
@@ -897,7 +897,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatAmount(sums[index]);
           }
         }
       });
@@ -1094,7 +1094,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -1104,7 +1104,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     moreSearchFieldClass(t) {
       if (['supplier', 'warehouse', 'material'].includes(t)) {
@@ -1280,7 +1280,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          this.form.totalAmount = totalAmt.toFixed(2);
+          this.form.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
             updateWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");

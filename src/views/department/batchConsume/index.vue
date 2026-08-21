@@ -551,7 +551,7 @@ export default {
               totalAmount += parseFloat(item.amt);
             }
           });
-          sums[index] = '￥' + totalAmount.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(totalAmount);
         } else {
           sums[index] = '';
         }
@@ -625,7 +625,7 @@ export default {
           unitPrice: item.unitPrice || 0,
           qty: item.defaultConsumeQty || item.qty || 0,
           price: item.price || 0,
-          amt: item.defaultConsumeQty ? (parseFloat(item.defaultConsumeQty || 0) * parseFloat(item.unitPrice || 0)).toFixed(2) : (item.amt || 0),
+          amt: item.defaultConsumeQty ? this.calcLineAmt(item.defaultConsumeQty || 0, item.unitPrice || 0) : (item.amt || 0),
           batchNo: item.batchNo || '',
           batchNumer: item.batchNumer || item.materialNo || '',
           materialNo: item.materialNo || '',
@@ -716,7 +716,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.calculateTotals();
     },
     /** 搜索按钮操作 */
@@ -860,7 +860,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          this.form.totalAmount = totalAmt.toFixed(2);
+          this.form.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
             updateConsume(this.form).then(response => {
               this.$modal.msgSuccess((response && response.msg) || "修改成功");

@@ -738,7 +738,7 @@ export default {
           if (prop === 'amt') {
             const res = parseFloat(sums[index]);
             if (!isNaN(res)) {
-              this.form.totalAmount = res.toFixed(2);
+              this.form.totalAmount = this.toMoneyStorage(res);
             }
           }
         }
@@ -935,7 +935,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -945,7 +945,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     moreSearchFieldClass(t) {
       if (['material', 'warehouse', 'supplier'].includes(t)) {
@@ -1101,7 +1101,7 @@ export default {
             totalAmt += parseFloat(item.amt)
           }
         })
-        this.form.totalAmount = totalAmt.toFixed(2)
+        this.form.totalAmount = this.toMoneyStorage(totalAmt)
         if (this.form.id != null) {
           updateThInventory(this.form).then(response => {
             this.$modal.msgSuccess('修改成功')

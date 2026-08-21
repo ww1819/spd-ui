@@ -26,7 +26,7 @@
       <el-table-column label="单位" align="center" prop="unitName" width="100" show-overflow-tooltip resizable sortable :sort-method="sortSummaryUnitName"/>
       <el-table-column label="单价" align="center" prop="unitPrice" width="130" show-overflow-tooltip resizable sortable :sort-method="sortSummaryUnitPrice">
         <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
+          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -101,7 +101,7 @@ export default {
         const amt = Number(item.totalAmt) || 0;
         return sum + amt;
       }, 0);
-      return '￥' + totalAmt.toFixed(2);
+      return '¥' + this.formatAmount(totalAmt);
     }
   },
   watch: {

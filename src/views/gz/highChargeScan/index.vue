@@ -529,7 +529,7 @@ export default {
       if (v == null || v === '') return '--'
       const n = Number(v)
       if (isNaN(n)) return String(v)
-      return n.toFixed(2)
+      return this.formatAmount(n)
     },
     layoutDetailTable() {
       const table = this.$refs.detailTable

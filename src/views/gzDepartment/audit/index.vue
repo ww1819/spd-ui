@@ -403,7 +403,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -413,7 +413,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     /** 搜索按钮操作 */
     handleQuery() {

@@ -154,7 +154,7 @@
         </el-table-column>
         <el-table-column prop="invoiceAmount" label="发票金额" align="center" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            <span v-if="scope.row.invoiceAmount">{{ parseFloat(scope.row.invoiceAmount).toFixed(2) }}</span>
+            <span v-if="scope.row.invoiceAmount">{{ scope.row.invoiceAmount | formatCurrency }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
@@ -303,13 +303,13 @@
                     <el-table-column label="数量" align="center" prop="qty" width="100" show-overflow-tooltip></el-table-column>
                     <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip>
                       <template slot-scope="scope">
-                        <span v-if="scope.row.unitPrice">{{ parseFloat(scope.row.unitPrice).toFixed(2) }}</span>
+                        <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
                         <span v-else>--</span>
                       </template>
                     </el-table-column>
                     <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip>
                       <template slot-scope="scope">
-                        <span v-if="scope.row.amt">{{ parseFloat(scope.row.amt).toFixed(2) }}</span>
+                        <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency }}</span>
                         <span v-else>--</span>
                       </template>
                     </el-table-column>
@@ -635,9 +635,9 @@
             warehouseName: (data.warehouse && data.warehouse.name) || (data.warehouseName) || '--',
             createrName: (data.creater && data.creater.nickName) || (data.creater && data.creater.userName) || (data.createrName) || '--',
             billDate: data.billDate ? parseTime(data.billDate, '{y}-{m}-{d}') : '--',
-            totalAmount: data.totalAmount ? parseFloat(data.totalAmount).toFixed(2) : '--',
+            totalAmount: data.totalAmount ? this.formatAmount(data.totalAmount) : '--',
             invoiceNumber: data.invoiceNumber || '--',
-            invoiceAmount: data.invoiceAmount ? parseFloat(data.invoiceAmount).toFixed(2) : '--',
+            invoiceAmount: data.invoiceAmount ? this.formatAmount(data.invoiceAmount) : '--',
             invoiceTime: data.invoiceTime ? parseTime(data.invoiceTime, '{y}-{m}-{d}') : '--',
             stkIoBillEntryList: entryList
           };

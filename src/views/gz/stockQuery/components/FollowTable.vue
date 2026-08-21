@@ -15,7 +15,7 @@
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="总金额" align="center" prop="totalAmt" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.totalAmt">{{ parseFloat(scope.row.totalAmt).toFixed(2) }}</span>
+          <span v-if="scope.row.totalAmt">{{ scope.row.totalAmt | formatCurrency }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>

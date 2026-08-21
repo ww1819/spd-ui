@@ -125,7 +125,7 @@
         <el-table-column label="数量" align="center" prop="materialQty" width="90" show-overflow-tooltip resizable />
         <el-table-column label="采购价" align="center" prop="unitPrice" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== ''">{{ scope.row.unitPrice | formatCurrency }}</span>
+            <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== ''">{{ scope.row.unitPrice | formatPrice }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
@@ -226,7 +226,7 @@ export default {
       const amt = (this.dataList || []).reduce((s, r) => s + Number(r.materialAmt || 0), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     }
   },
   mounted() {
@@ -250,7 +250,7 @@ export default {
         if (column.property === "materialQty") {
           sums[index] = totalQty.toFixed(2);
         } else if (column.property === "materialAmt") {
-          sums[index] = fmt ? fmt(totalAmt) : totalAmt.toFixed(2);
+          sums[index] = fmt ? fmt(totalAmt) : this.formatAmount(totalAmt);
         }
       });
       sums[0] = "合计";

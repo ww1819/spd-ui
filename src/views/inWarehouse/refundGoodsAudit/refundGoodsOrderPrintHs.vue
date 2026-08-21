@@ -107,10 +107,11 @@
 import { applyPrintFontToEl, browserPrintOptions } from '@/utils/printFont'
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { formatQuantity } from '@/utils/format-quantity'
+import printMoneyMixin from '@/mixins/printMoneyMixin'
 
 export default {
   name: 'RefundGoodsOrderPrintHs',
-  mixins: [hospitalNameMixin],
+  mixins: [hospitalNameMixin, printMoneyMixin],
   props: {
     row: {
       type: Object,
@@ -278,19 +279,7 @@ export default {
     },
     formatQty(value) {
       return formatQuantity(value, 2)
-    },
-    formatPrice(value) {
-      if (value === null || value === undefined || value === '') return ''
-      const num = parseFloat(value)
-      if (isNaN(num)) return ''
-      return num.toFixed(4)
-    },
-    formatAmt(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(2)
-    },
-    /** 申请/审核/打印日期：yyyy-MM-dd */
+    },    /** 申请/审核/打印日期：yyyy-MM-dd */
     formatPrintDateTime(v) {
       if (!v) return ''
       const d = new Date(v)

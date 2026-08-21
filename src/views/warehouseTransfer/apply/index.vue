@@ -131,13 +131,13 @@
         <el-table-column label="总金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.totalAmount !== null && scope.row.totalAmount !== undefined && scope.row.totalAmount !== '' && !isNaN(scope.row.totalAmount) && parseFloat(scope.row.totalAmount) >= 0">
-              {{ parseFloat(scope.row.totalAmount).toFixed(2) }}
+              {{ scope.row.totalAmount | formatCurrency }}
             </span>
             <span v-else-if="scope.row.total_amount !== null && scope.row.total_amount !== undefined && scope.row.total_amount !== '' && !isNaN(scope.row.total_amount) && parseFloat(scope.row.total_amount) >= 0">
-              {{ parseFloat(scope.row.total_amount).toFixed(2) }}
+              {{ scope.row.total_amount | formatCurrency }}
             </span>
             <span v-else-if="scope.row.totalAmt !== null && scope.row.totalAmt !== undefined && scope.row.totalAmt !== '' && !isNaN(scope.row.totalAmt) && parseFloat(scope.row.totalAmt) >= 0">
-              {{ parseFloat(scope.row.totalAmt).toFixed(2) }}
+              {{ scope.row.totalAmt | formatCurrency }}
             </span>
             <span v-else>--</span>
           </template>
@@ -522,7 +522,7 @@ export default {
           }
         });
       }
-      return total > 0 ? '￥' + total.toFixed(2) : '￥0.00';
+      return total > 0 ? '¥' + this.formatAmount(total) : '￥0.00';
     },
     // 制单人显示名称
     createrDisplayName() {
@@ -578,7 +578,7 @@ export default {
               totalAmount += parseFloat(item.amt);
             }
           });
-          sums[index] = '￥' + totalAmount.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(totalAmount);
         } else {
           sums[index] = '';
         }
@@ -1012,7 +1012,7 @@ export default {
               billStatus: this.transferForm.status || '1',
               warehouseId: this.transferForm.fromWarehouseId, // 调出仓库
               departmentId: this.transferForm.toWarehouseId, // 暂时使用departmentId存储调入仓库ID
-              totalAmount: totalAmount.toFixed(2), // 计算并传递总金额
+              totalAmount: this.toMoneyStorage(totalAmount), // 计算并传递总金额
               remark: this.transferForm.remark || '',
               stkIoBillEntryList: this.transferDetails.map(detail => {
                 // 构建明细数据，确保所有必要字段都有值
@@ -1250,7 +1250,7 @@ export default {
     // 数量变化计算金额
     qtyChange(row) {
       if (row.transferQuantity && row.unitPrice) {
-        row.amt = (parseFloat(row.transferQuantity) * parseFloat(row.unitPrice)).toFixed(2);
+        row.amt = this.calcLineAmt(row.transferQuantity, row.unitPrice);
       } else {
         row.amt = '';
       }
@@ -1384,7 +1384,7 @@ export default {
           auditPersonName: (data.auditPerson && (data.auditPerson.nickName || data.auditPerson.userName)) || 
                           (row.auditPerson && (row.auditPerson.nickName || row.auditPerson.userName)) || 
                           row.auditPersonName || '',
-          totalAmt: totalAmt.toFixed(2),
+          totalAmt: this.toMoneyStorage(totalAmt),
           totalQty: totalQty,
           totalAmtConverter: totalAmtConverter,
           detailList: detailList

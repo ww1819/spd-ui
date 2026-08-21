@@ -663,7 +663,7 @@ export default {
   filters: {
     formatCurrency(value) {
       if (!value && value !== 0) return '--';
-      return '¥' + parseFloat(value).toFixed(2);
+      return '¥' + this.formatAmount(value);
     }
   },
   data() {
@@ -861,8 +861,8 @@ export default {
         stockQty,
         profitQty: 0,
         profitAmount: 0,
-        stockAmount: amt.toFixed(2),
-        amt: amt.toFixed(2),
+        stockAmount: this.toMoneyStorage(amt),
+        amt: this.toMoneyStorage(amt),
         batchNo: item.batchNo || '',
         batchNumber: item.batchNumber || item.materialNo || '',
         hisId: item.hisId != null && item.hisId !== '' ? String(item.hisId).trim() : '',
@@ -1326,8 +1326,8 @@ export default {
       const pr = parseFloat(row.price) || 0;
       const totalProfitQty = (Number.isFinite(sq) && Number.isFinite(bq)) ? sq - bq : 0;
       row.profitQty = Number.isFinite(totalProfitQty) ? totalProfitQty.toFixed(2) : '0.00';
-      row.profitAmount = (Number.isFinite(totalProfitQty) ? totalProfitQty * pr : 0).toFixed(2);
-      row.stockAmount = (Number.isFinite(sq) ? sq * pr : 0).toFixed(2);
+      row.profitAmount = this.toMoneyStorage(Number.isFinite(totalProfitQty) ? totalProfitQty * pr : 0);
+      row.stockAmount = this.toMoneyStorage(Number.isFinite(sq) ? sq * pr : 0);
       if (Number.isFinite(sq) && Number.isFinite(bq)) {
         if (sq > bq) row.profitLossFlag = 'PROFIT';
         else if (sq < bq) row.profitLossFlag = 'LOSS';
@@ -1353,7 +1353,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -1363,7 +1363,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     // 计算合计数量和金额
     getSummaries(param) {
@@ -1389,7 +1389,7 @@ export default {
             }, 0);
             // 金额类字段保留两位小数
             if(['amt', 'stockAmount', 'profitAmount'].includes(column.property)){
-              sums[index] = sums[index].toFixed(2);
+              sums[index] = this.formatAmount(sums[index]);
             }
             sums[index] += '';
           } else {

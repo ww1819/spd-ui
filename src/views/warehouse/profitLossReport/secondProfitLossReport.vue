@@ -98,7 +98,7 @@
         </el-table-column>
         <el-table-column label="单价" align="center" prop="unitPrice" width="120" min-width="90" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
+            <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
@@ -184,7 +184,7 @@ export default {
       const amt = (this.dataList || []).reduce((s, r) => s + Number(r.profitAmount || 0), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     },
   },
   created() {

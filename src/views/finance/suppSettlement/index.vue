@@ -103,7 +103,7 @@
           <template slot-scope="scope">{{ scope.row.unitPrice != null ? Number(scope.row.unitPrice).toFixed(4) : '--' }}</template>
         </el-table-column>
         <el-table-column prop="amt" label="金额" width="90" align="right">
-          <template slot-scope="scope">{{ scope.row.amt != null ? Number(scope.row.amt).toFixed(2) : '--' }}</template>
+          <template slot-scope="scope">{{ scope.row.amt != null ? this.formatAmount(scope.row.amt) : '--' }}</template>
         </el-table-column>
       </el-table>
       <div slot="footer" class="dialog-footer">
@@ -121,7 +121,7 @@
             <template slot-scope="scope">{{ scope.row.invoiceDate ? parseTime(scope.row.invoiceDate, '{y}-{m}-{d}') : '--' }}</template>
           </el-table-column>
           <el-table-column prop="totalAmount" label="价税合计" width="100" align="right">
-            <template slot-scope="scope">{{ scope.row.totalAmount != null ? Number(scope.row.totalAmount).toFixed(2) : '--' }}</template>
+            <template slot-scope="scope">{{ scope.row.totalAmount != null ? this.formatAmount(scope.row.totalAmount) : '--' }}</template>
           </el-table-column>
           <el-table-column label="操作" width="80" align="center">
             <template slot-scope="scope">
@@ -131,7 +131,7 @@
         </el-table>
         <div class="mb8" style="margin-top: 12px;">添加关联：</div>
         <el-select v-model="selectedInvoiceId" placeholder="选择发票" filterable clearable style="width: 100%" @change="onSelectInvoice">
-          <el-option v-for="item in invoiceOptions" :key="item.id" :label="item.invoiceNo + ' | ' + (item.invoiceDate || '') + ' | ' + (item.totalAmount != null ? Number(item.totalAmount).toFixed(2) : '')" :value="item.id" />
+          <el-option v-for="item in invoiceOptions" :key="item.id" :label="item.invoiceNo + ' | ' + (item.invoiceDate || '') + ' | ' + (item.totalAmount != null ? this.formatAmount(item.totalAmount) : '')" :value="item.id" />
         </el-select>
       </div>
       <div slot="footer" class="dialog-footer">

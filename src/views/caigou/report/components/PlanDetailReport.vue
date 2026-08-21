@@ -252,7 +252,7 @@ export default {
     pageTotalAmtFormatted() {
       const amt = (this.reportList || []).reduce((s, r) => s + Number(r.amt || 0), 0);
       const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-      return fmt ? fmt(amt) : String(Number(amt).toFixed(2));
+      return fmt ? fmt(amt) : String(this.formatAmount(amt));
     },
     planStatusFilterOptions() {
       const allowed = ['0', '1', '2'];

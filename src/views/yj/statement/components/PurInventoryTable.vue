@@ -117,7 +117,7 @@
       <el-table-column label="单价" align="center" prop="price" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.price != null && scope.row.price !== undefined && scope.row.price !== '' && Number(scope.row.price) !== 0">{{ Number(scope.row.price) | formatCurrency}}</span>
-          <span v-else-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== '' && Number(scope.row.unitPrice) !== 0">{{ Number(scope.row.unitPrice) | formatCurrency}}</span>
+          <span v-else-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== '' && Number(scope.row.unitPrice) !== 0">{{ Number(scope.row.unitPrice) | formatPrice }}</span>
           <span v-else-if="scope.row.materialAmt != null && scope.row.materialQty != null && Number(scope.row.materialQty) !== 0">
             {{ (Number(scope.row.materialAmt) / Number(scope.row.materialQty)) | formatCurrency}}
           </span>
@@ -275,7 +275,7 @@ export default {
               }
             }, 0);
             if(column.property === 'materialAmt') {
-              sums[index] = '￥' + sums[index].toFixed(2);
+              sums[index] = '￥' + this.formatAmount(sums[index]);
             } else {
               sums[index] = sums[index].toFixed(2);
             }

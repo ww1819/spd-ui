@@ -98,10 +98,11 @@
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { getDefaultTemplate } from '@/api/system/printSetting'
 import { formatQuantity } from '@/utils/format-quantity'
+import printMoneyMixin from '@/mixins/printMoneyMixin'
 
 export default {
   name: 'GzAcceptanceOrderPrint',
-  mixins: [hospitalNameMixin],
+  mixins: [hospitalNameMixin, printMoneyMixin],
   props: {
     row: { type: Object, required: true },
     billType: [String, Number],
@@ -189,16 +190,7 @@ export default {
     },
     formatNum(v) {
       return formatQuantity(v, 2)
-    },
-    formatPrice(v) {
-      const n = Number(v)
-      return isNaN(n) ? (v || '') : n.toFixed(4)
-    },
-    formatAmt(v) {
-      const n = Number(v)
-      return isNaN(n) ? (v || '') : n.toFixed(4)
-    },
-    start() {
+    },    start() {
       const doPrint = () => {
         this.$nextTick(() => {
           const raf = typeof requestAnimationFrame === 'function'

@@ -177,7 +177,7 @@
           <template slot-scope="scope">{{ scope.row.unitPrice != null ? Number(scope.row.unitPrice).toFixed(4) : '--' }}</template>
         </el-table-column>
         <el-table-column prop="amt" label="金额" width="90" align="right">
-          <template slot-scope="scope">{{ scope.row.amt != null ? Number(scope.row.amt).toFixed(2) : '--' }}</template>
+          <template slot-scope="scope">{{ scope.row.amt != null ? this.formatAmount(scope.row.amt) : '--' }}</template>
         </el-table-column>
         <el-table-column v-if="form.id && form.auditStatus !== 1" label="操作" width="80" align="center" fixed="right">
           <template slot-scope="scope">

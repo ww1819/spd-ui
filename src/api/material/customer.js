@@ -127,3 +127,38 @@ export function purgeConsumablesData(customerId) {
     data: { confirm: 'PURGE_HC' }
   })
 }
+
+/** 提交金额小数位变更申请 */
+export function submitMoneyScale(customerId, data) {
+  return request({
+    url: '/material/system/customer/' + customerId + '/moneyScale/submit',
+    method: 'post',
+    data
+  })
+}
+
+/** 审核通过金额小数位（允许自审） */
+export function approveMoneyScale(auditId, auditRemark) {
+  return request({
+    url: '/material/system/customer/moneyScale/approve/' + auditId,
+    method: 'put',
+    data: { auditRemark }
+  })
+}
+
+/** 驳回金额小数位申请 */
+export function rejectMoneyScale(auditId, auditRemark) {
+  return request({
+    url: '/material/system/customer/moneyScale/reject/' + auditId,
+    method: 'put',
+    data: { auditRemark }
+  })
+}
+
+/** 金额小数位变更记录 */
+export function listMoneyScaleAudits(customerId) {
+  return request({
+    url: '/material/system/customer/' + customerId + '/moneyScale/audits',
+    method: 'get'
+  })
+}

@@ -111,10 +111,11 @@ import { getDefaultTemplate } from '@/api/system/printSetting'
 import { formatQuantity } from '@/utils/format-quantity'
 import { printHsOutboundLodopText } from '@/utils/lodopOutOrderHsText'
 import { applyPrintFontToEl, browserPrintOptions } from '@/utils/printFont'
+import printMoneyMixin from '@/mixins/printMoneyMixin'
 
 export default {
   name: 'OutOrderPrintHs',
-  mixins: [hospitalNameMixin],
+  mixins: [hospitalNameMixin, printMoneyMixin],
   props: {
     row: Object,
     billType: [String, Number],
@@ -253,19 +254,7 @@ export default {
     },
     formatNum(v) {
       return formatQuantity(v, 2)
-    },
-    formatPrice(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(4)
-    },
-    /** 金额四位小数（与采购价一致） */
-    formatAmt(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(4)
-    },
-    /** 有效期显示：日期格式 yyyy-MM-dd */
+    },    /** 金额四位小数（与采购价一致） */    /** 有效期显示：日期格式 yyyy-MM-dd */
     formatValidDate(v) {
       if (v == null || v === '') return ''
       const d = new Date(v)

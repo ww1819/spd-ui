@@ -204,7 +204,7 @@ export default {
               totalAmount += parseFloat(item.amt);
             }
           });
-          sums[index] = '￥' + totalAmount.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(totalAmount);
         } else {
           sums[index] = '';
         }

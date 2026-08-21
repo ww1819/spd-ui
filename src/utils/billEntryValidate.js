@@ -1,3 +1,5 @@
+import { toMoneyStorage } from '@/utils/moneyFormat';
+
 /** 明细行未逻辑删除（delFlag 为空、0 或非 1） */
 export function isEntryNotDeleted(row) {
   if (!row) {
@@ -80,7 +82,8 @@ export function normalizeBillMaterialLineQtyDefaultOne(entryList, defaultQty = 1
       e.qty = defaultQty;
       const price = Number(e.unitPrice);
       if (Number.isFinite(price) && price > 0) {
-        e.amt = (defaultQty * price).toFixed(2);
+        // 存库精度 6 位，不按租户显示位截断
+        e.amt = toMoneyStorage(defaultQty * price);
       }
     }
   });

@@ -1095,7 +1095,7 @@ export default {
           const values = data.map(row => Number(row[prop]));
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            sums[index] = total.toFixed(2);
+            sums[index] = this.formatAmount(total);
             if (prop === 'amt') {
               this.form.totalAmount = sums[index];
             }
@@ -1123,7 +1123,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatAmount(sums[index]);
           }
         }
       });
@@ -1344,7 +1344,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.refreshDetailSummary();
     },
     //价格改变事件
@@ -1355,7 +1355,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.refreshDetailSummary();
     },
     /** 初始化/同步明细行的「长期」勾选状态：endTime 为 2099-01-01 时视为长期 */
@@ -1845,7 +1845,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          this.form.totalAmount = totalAmt.toFixed(2);
+          this.form.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
             updateWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -2043,7 +2043,7 @@ export default {
           const mat = res.data;
           const unitPrice = mat.price != null ? mat.price : "";
           const qty = 1;
-          const amt = (unitPrice && qty) ? (parseFloat(unitPrice) * qty).toFixed(2) : "";
+          const amt = (unitPrice && qty) ? this.calcLineAmt(qty, unitPrice) : "";
           const row = {
             materialId: mat.id,
             material: mat,

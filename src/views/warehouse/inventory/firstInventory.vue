@@ -176,7 +176,7 @@
       <el-table-column key="supplier" label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable sortable :sort-method="sortBySupplier" v-if="columns[7].visible"/>
       <el-table-column key="unitPrice" label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice" v-if="columns[8].visible">
         <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
+          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -435,7 +435,7 @@ export default {
       const amt = (this.inventoryList || []).reduce((s, r) => s + Number(r.amt || 0), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     },
   },
   created() {

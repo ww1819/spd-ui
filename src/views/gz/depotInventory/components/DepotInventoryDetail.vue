@@ -35,7 +35,7 @@
       <!-- 8. 单价 -->
       <el-table-column label="单价" align="center" prop="unitPrice" width="130" show-overflow-tooltip resizable sortable :sort-method="sortDepotUnitPrice">
         <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency}}</span>
+          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -208,7 +208,7 @@ export default {
       const amt = (this.depotInventoryList || []).reduce((s, r) => s + Number(r.amt || 0), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     }
   },
   watch: {

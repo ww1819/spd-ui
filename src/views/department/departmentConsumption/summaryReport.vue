@@ -65,6 +65,22 @@
               @keyup.enter.native="handleQuery"
             />
             <el-input
+              v-else-if="t === 'warehouseCategoryKeyword'"
+              v-model="searchForm.warehouseCategoryKeyword"
+              placeholder="耗材分类编码/名称/简码"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else-if="t === 'financeCategoryKeyword'"
+              v-model="searchForm.financeCategoryKeyword"
+              placeholder="财务分类编码/名称/简码"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
               v-else
               v-model="searchForm.materialName"
               placeholder="耗材名称"
@@ -150,6 +166,7 @@
           </template>
         </el-table-column>
         <el-table-column label="耗材分类" align="center" prop="category" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="财务分类" align="center" prop="financialCategory" width="120" show-overflow-tooltip resizable />
       </el-table>
     </div>
 
@@ -203,7 +220,9 @@ export default {
         { label: "住院/门诊号", value: "patientId" },
         { label: "耗材名称", value: "materialName" },
         { label: "规格", value: "specification" },
-        { label: "型号", value: "model" }
+        { label: "型号", value: "model" },
+        { label: "耗材分类", value: "warehouseCategoryKeyword" },
+        { label: "财务分类", value: "financeCategoryKeyword" }
       ],
       tableData: [],
       total: 0,
@@ -225,6 +244,8 @@ export default {
         model: "",
         hisChargeCode: "",
         patientId: "",
+        warehouseCategoryKeyword: "",
+        financeCategoryKeyword: "",
         ...createDefaultDates()
       }
     };
@@ -243,7 +264,7 @@ export default {
       const amt = (this.tableData || []).reduce((s, r) => s + Number(r.totalAmount || 0), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     }
   },
   mounted() {
@@ -254,7 +275,7 @@ export default {
   methods: {
     formatPercentage(value) {
       if (value !== 0 && !value) return "0.00";
-      return Number(value).toFixed(2);
+      return this.formatAmount(value);
     },
     buildRequestParams() {
       const form = { ...this.searchForm };
@@ -267,6 +288,8 @@ export default {
         model: form.model,
         hisChargeCode: form.hisChargeCode,
         patientId: form.patientId,
+        warehouseCategoryKeyword: form.warehouseCategoryKeyword,
+        financeCategoryKeyword: form.financeCategoryKeyword,
         beginDate: form.beginDate,
         endDate: form.endDate,
         pageNum: this.queryParams.pageNum,
@@ -353,7 +376,9 @@ export default {
         patientId: 'patientId',
         materialName: 'materialName',
         specification: 'specification',
-        model: 'model'
+        model: 'model',
+        warehouseCategoryKeyword: 'warehouseCategoryKeyword',
+        financeCategoryKeyword: 'financeCategoryKeyword'
       };
       Object.keys(map).forEach((type) => {
         if (!set.has(type)) {

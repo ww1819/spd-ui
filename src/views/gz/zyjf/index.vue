@@ -350,7 +350,7 @@
                       <td>{{ item.batchNo || '--' }}</td>
                       <td>{{ item.chargePrice || '0' }}</td>
                       <td>{{ item.quantity || '0' }}</td>
-                      <td>{{ ((parseFloat(item.chargePrice) || 0) * (parseFloat(item.quantity) || 0)).toFixed(2) }}</td>
+                      <td>{{ formatAmount((parseFloat(item.chargePrice) || 0) * (parseFloat(item.quantity) || 0)) }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -375,7 +375,7 @@
                   </div>
                   <div class="total-item">
                     <span class="total-label">合计金额：</span>
-                    <span class="total-value">{{ getTotalAmount().toFixed(2) }}</span>
+                    <span class="total-value">{{ formatAmount(getTotalAmount()) }}</span>
                   </div>
                 </div>
               </div>
@@ -533,7 +533,7 @@
             <el-table-column label="数量" prop="quantity" width="80" align="center" />
             <el-table-column label="收费价" prop="chargePrice" width="100" align="right">
               <template slot-scope="scope">
-                <span>{{ scope.row.chargePrice ? parseFloat(scope.row.chargePrice).toFixed(2) : '--' }}</span>
+                <span>{{ scope.row.chargePrice ? formatPrice(scope.row.chargePrice) : '--' }}</span>
               </template>
             </el-table-column>
             <el-table-column label="单位" prop="unit" width="80" show-overflow-tooltip>

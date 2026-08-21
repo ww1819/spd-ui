@@ -555,7 +555,7 @@ export default {
             formatter: (p) => {
               const d = p.data || {};
               const amt = d.realAmt != null ? Number(d.realAmt) : Number(p.value);
-              const money = Number.isFinite(amt) ? "¥" + amt.toFixed(2) : "¥0.00";
+              const money = Number.isFinite(amt) ? "¥" + this.formatAmount(amt) : "¥0.00";
               return `${p.name}<br/>金额：${money}（${p.percent}%）`;
             }
           },

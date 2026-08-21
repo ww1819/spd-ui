@@ -671,9 +671,9 @@ export default {
         }
         if (column.property === 'amt') {
           const t = sumNum('amt');
-          sums[index] = '￥' + t.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(t);
           if (this.form && this.action) {
-            this.form.totalAmount = t.toFixed(2);
+            this.form.totalAmount = this.toMoneyStorage(t);
           }
           return;
         }
@@ -815,7 +815,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -825,7 +825,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     moreSearchFieldClass(t) {
       if (['supplier', 'warehouse'].includes(t)) {
@@ -1010,7 +1010,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          this.form.totalAmount = totalAmt.toFixed(2);
+          this.form.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
             updateSettlement(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");

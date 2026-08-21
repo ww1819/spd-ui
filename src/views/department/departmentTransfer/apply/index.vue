@@ -119,7 +119,7 @@
       <el-table-column label="调入科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.totalAmount && parseFloat(scope.row.totalAmount) > 0">¥{{ parseFloat(scope.row.totalAmount).toFixed(2) }}</span>
+          <span v-if="scope.row.totalAmount && parseFloat(scope.row.totalAmount) > 0">¥{{ scope.row.totalAmount | formatCurrency }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -568,7 +568,7 @@ export default {
               totalAmount += parseFloat(item.amt);
             }
           });
-          sums[index] = '￥' + totalAmount.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(totalAmount);
         } else {
           sums[index] = '';
         }
@@ -584,7 +584,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.calculateTotals();
     },
     //价格改变事件
@@ -595,7 +595,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.calculateTotals();
     },
     moreSearchFieldClass(t) {
@@ -754,7 +754,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          submitData.totalAmount = totalAmt.toFixed(2);
+          submitData.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
             updateDepartmentTransfer(submitData).then(response => {
               this.$modal.msgSuccess("修改成功");

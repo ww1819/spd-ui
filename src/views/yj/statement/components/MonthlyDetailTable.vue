@@ -259,7 +259,7 @@ export default {
               }
             }, 0);
             if(column.property === 'materialAmt') {
-              sums[index] = '￥' + sums[index].toFixed(2);
+              sums[index] = '￥' + this.formatAmount(sums[index]);
             } else {
               sums[index] = sums[index].toFixed(2);
             }

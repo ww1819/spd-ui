@@ -127,7 +127,7 @@
       <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable >
           <template slot-scope="scope">
           <span v-if="scope.row.totalAmount !== null && scope.row.totalAmount !== undefined && scope.row.totalAmount !== ''">
-            {{ parseFloat(scope.row.totalAmount).toFixed(2) }}
+            {{ scope.row.totalAmount | formatCurrency }}
           </span>
           <span v-else>--</span>
           </template>
@@ -756,7 +756,7 @@ export default {
           auditPersonName: (data.auditPerson && (data.auditPerson.nickName || data.auditPerson.userName)) || 
                           (row.auditPerson && (row.auditPerson.nickName || row.auditPerson.userName)) || 
                           row.auditPersonName || '',
-          totalAmt: totalAmt.toFixed(2),
+          totalAmt: this.toMoneyStorage(totalAmt),
           totalQty: totalQty,
           totalAmtConverter: totalAmtConverter,
           detailList: detailList

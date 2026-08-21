@@ -507,7 +507,7 @@ export default {
           const data = rows.map((r) => {
             const name = (r.supplierName || r.supplier_name || "—").toString();
             const a = Number(r.totalAmt != null ? r.totalAmt : (r.total_amt != null ? r.total_amt : 0));
-            const amtStr = Number.isFinite(a) ? "¥" + a.toFixed(2) : "¥0.00";
+            const amtStr = Number.isFinite(a) ? "¥" + this.formatAmount(a) : "¥0.00";
             return [name, amtStr];
           });
           const finalData = data.length ? data : [["暂无数据", "¥0.00"]];
@@ -541,7 +541,7 @@ export default {
     loadConsumablesRanking() {
       const fmt = (item) => {
         const v = Number(item && item.value);
-        return Number.isFinite(v) ? "¥" + v.toFixed(2) : "¥0.00";
+        return Number.isFinite(v) ? "¥" + this.formatAmount(v) : "¥0.00";
       };
       biScreenOutboundMaterialMonthTop(this.queryYearMonth)
         .then((res) => {
@@ -704,7 +704,7 @@ export default {
           .sort((a, b) => b.value - a.value);
         const dataRows = sorted.map((r) => {
           const amt = Number(r.value);
-          const amtStr = Number.isFinite(amt) ? "¥" + amt.toFixed(2) : "¥0.00";
+          const amtStr = Number.isFinite(amt) ? "¥" + this.formatAmount(amt) : "¥0.00";
           return [r.name, amtStr];
         });
         const finalData = dataRows.length ? dataRows : [["暂无数据", "¥0.00"]];
@@ -1176,7 +1176,7 @@ export default {
           formatter: (p) => {
             const d = p.data || {};
             const amt = d.realAmt != null ? Number(d.realAmt) : Number(p.value);
-            const money = Number.isFinite(amt) ? "¥" + amt.toFixed(2) : "¥0.00";
+            const money = Number.isFinite(amt) ? "¥" + this.formatAmount(amt) : "¥0.00";
             return p.seriesName + "<br/>" + p.name + "：" + money + " (" + p.percent + "%)";
           },
         },
@@ -1226,7 +1226,7 @@ export default {
             const amt = params.find(p => p.seriesName === "金额");
             const qty = params.find(p => p.seriesName === "数量");
             let s = name + "<br/>";
-            if (amt != null) s += "金额：￥" + (typeof amt.value === "number" ? amt.value.toFixed(2) : amt.value) + "<br/>";
+            if (amt != null) s += "金额：￥" + (typeof amt.value === "number" ? this.formatAmount(amt.value) : amt.value) + "<br/>";
             if (qty != null) s += "数量：" + (qty.value != null ? qty.value : 0);
             return s;
           },
@@ -1348,7 +1348,7 @@ export default {
       const currentYear = parseInt(String(ym).substring(0, 4), 10) || new Date().getFullYear();
       const moneyFmt = (v) => {
         const n = typeof v === "number" ? v : Number(v);
-        return Number.isFinite(n) ? "¥" + n.toFixed(2) : v;
+        return Number.isFinite(n) ? "¥" + this.formatAmount(n) : v;
       };
       const buildOption = (inbound, ret) => ({
         title: {
@@ -1363,7 +1363,7 @@ export default {
         tooltip: {
           trigger: "axis",
           axisPointer: { type: "cross", label: { backgroundColor: "#6a7985" } },
-          valueFormatter: (v) => (typeof v === "number" && Number.isFinite(v) ? "¥" + v.toFixed(2) : v),
+          valueFormatter: (v) => (typeof v === "number" && Number.isFinite(v) ? "¥" + this.formatAmount(v) : v),
         },
         legend: {
           data: ["入库金额", "退货金额"],
@@ -1465,7 +1465,7 @@ export default {
           axisPointer: {
             type: "shadow",
           },
-          valueFormatter: (v) => (typeof v === "number" ? "¥" + v.toFixed(2) : v),
+          valueFormatter: (v) => (typeof v === "number" ? "¥" + this.formatAmount(v) : v),
         },
         grid: {
           left: 50,

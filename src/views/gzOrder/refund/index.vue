@@ -131,7 +131,7 @@
       </el-table-column>
       <el-table-column label="总金额" align="center" prop="totalAmt" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ (scope.row.totalAmt != null && scope.row.totalAmt !== undefined) ? parseFloat(scope.row.totalAmt).toFixed(2) : formatTotalAmt(scope.row) }}</span>
+          <span>{{ (scope.row.totalAmt != null && scope.row.totalAmt !== undefined) ? this.formatAmount(scope.row.totalAmt) : formatTotalAmt(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="单据状态" align="center" prop="goodsStatus" show-overflow-tooltip resizable>
@@ -715,7 +715,7 @@ export default {
         }
         if (column.property === 'amt') {
           const t = sumNum('amt');
-          sums[index] = '￥' + t.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(t);
           return;
         }
         sums[index] = '';
@@ -761,7 +761,7 @@ export default {
           model: (hit.material && hit.material.model) || "",
           qty,
           price,
-          amt: qty && price ? (parseFloat(qty) * parseFloat(price)).toFixed(2) : "",
+          amt: qty && price ? this.calcLineAmt(qty, price) : "",
           batchNo: hit.batchNo || "",
           batchNumber: hit.materialNo || "",
           beginTime: hit.materialDate || "",
@@ -785,14 +785,14 @@ export default {
     formatTotalAmt(row) {
       // 优先使用totalAmt字段
       if (row.totalAmt != null && row.totalAmt !== undefined) {
-        return parseFloat(row.totalAmt).toFixed(2);
+        return this.formatAmount(row.totalAmt);
       }
       // 如果没有totalAmt，从明细列表计算
       if (row.gzRefundGoodsEntryList && row.gzRefundGoodsEntryList.length > 0) {
         const total = row.gzRefundGoodsEntryList.reduce((sum, entry) => {
           return sum + (parseFloat(entry.amt) || 0);
         }, 0);
-        return total.toFixed(2);
+        return this.formatAmount(total);
       }
       return '0.00';
     },
@@ -802,7 +802,7 @@ export default {
         const total = this.gzRefundGoodsEntryList.reduce((sum, entry) => {
           return sum + (parseFloat(entry.amt) || 0);
         }, 0);
-        return total.toFixed(2);
+        return this.formatAmount(total);
       }
       return '0.00';
     },
@@ -887,9 +887,9 @@ export default {
         obj.price = item.unitPrice || item.price || "";
         // 计算金额：如果item.amt为空，则计算qty * price
         if (item.amt) {
-          obj.amt = parseFloat(item.amt).toFixed(2);
+          obj.amt = this.formatAmount(item.amt);
         } else if (obj.qty && obj.price) {
-          obj.amt = (parseFloat(obj.qty) * parseFloat(obj.price)).toFixed(2);
+          obj.amt = this.calcLineAmt(obj.qty, obj.price);
         } else {
           obj.amt = "";
         }
@@ -959,7 +959,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -1192,7 +1192,7 @@ export default {
       const price = e.price != null ? e.price : '';
       let amt = e.amt;
       if (amt == null && price && qty) {
-        amt = (parseFloat(price) * parseFloat(qty)).toFixed(2);
+        amt = this.calcLineAmt(price, qty);
       }
       return {
         materialId: e.materialId,

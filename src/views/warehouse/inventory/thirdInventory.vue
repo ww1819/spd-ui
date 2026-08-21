@@ -129,7 +129,7 @@
       <el-table-column label="单价" align="center" prop="price" width="120" min-width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.price != null && scope.row.price !== undefined && scope.row.price !== '' && Number(scope.row.price) !== 0">{{ Number(scope.row.price) | formatCurrency}}</span>
-          <span v-else-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== '' && Number(scope.row.unitPrice) !== 0">{{ Number(scope.row.unitPrice) | formatCurrency}}</span>
+          <span v-else-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== '' && Number(scope.row.unitPrice) !== 0">{{ Number(scope.row.unitPrice) | formatPrice }}</span>
           <span v-else-if="scope.row.materialAmt != null && scope.row.materialQty != null && Number(scope.row.materialQty) !== 0">
             {{ (Number(scope.row.materialAmt) / Number(scope.row.materialQty)) | formatCurrency}}
           </span>
@@ -251,7 +251,7 @@ export default {
       const amt = (this.inventoryList || []).reduce((s, r) => s + Number(r.materialAmt || 0), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     },
   },
   created() {

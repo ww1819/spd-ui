@@ -338,7 +338,7 @@
           <el-table-column label="单价" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input v-if="!scope.row.kcNo && detailEditable" v-model="scope.row.price" type="number" @input="priceChange(scope.row)" placeholder="单价" />
-              <span v-else>{{ scope.row.unitPrice != null ? parseFloat(scope.row.unitPrice).toFixed(2) : (scope.row.price != null ? parseFloat(scope.row.price).toFixed(2) : '--') }}</span>
+              <span v-else>{{ scope.row.unitPrice != null ? this.formatPrice(scope.row.unitPrice) : (scope.row.price != null ? this.formatAmount(scope.row.price) : '--') }}</span>
             </template>
           </el-table-column>
 
@@ -1009,7 +1009,7 @@ export default {
         const up = parseFloat(row.unitPrice != null && row.unitPrice !== '' ? row.unitPrice : row.price || 0);
         const sq = parseFloat(row.stockQty || 0);
         const a = sq * (Number.isFinite(up) ? up : 0);
-        row.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
+        row.amt = Number.isFinite(a) ? this.toMoneyStorage(a) : 0;
       });
       this.refreshEntrySaveSnapshots(list);
       return list || [];
@@ -1123,7 +1123,7 @@ export default {
         price: up,
         qty: book,
         stockQty,
-        amt: amt.toFixed(2),
+        amt: this.toMoneyStorage(amt),
         batchNo: item.batchNo || '',
         batchNumber: item.batchNumber || item.materialNo || '',
         hisId: item.hisId != null && item.hisId !== '' ? String(item.hisId).trim() : '',
@@ -1415,7 +1415,7 @@ export default {
       this.initProfitPendingEntryMeta(entry);
       const up = parseFloat(entry.unitPrice || 0);
       const a = sq * (Number.isFinite(up) ? up : 0);
-      entry.amt = Number.isFinite(a) ? a.toFixed(2) : "0.00";
+      entry.amt = Number.isFinite(a) ? this.toMoneyStorage(a) : 0;
       return entry;
     },
     findAutoSplitProfitRow(kcNo) {
@@ -1573,7 +1573,7 @@ export default {
         delete r._longTerm;
         r.price = r.unitPrice;
         const a = (parseFloat(r.stockQty) || 0) * (parseFloat(r.unitPrice) || 0);
-        r.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
+        r.amt = Number.isFinite(a) ? this.toMoneyStorage(a) : 0;
         r.kcNo = null;
         r.countedFlag = 1;
       });
@@ -1584,12 +1584,12 @@ export default {
     },
     priceChangePending(row) {
       const a = (parseFloat(row.stockQty) || 0) * (parseFloat(row.unitPrice) || 0);
-      row.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
+      row.amt = Number.isFinite(a) ? this.toMoneyStorage(a) : 0;
       row.price = row.unitPrice;
     },
     stockQtyChangePending(row) {
       const a = (parseFloat(row.stockQty) || 0) * (parseFloat(row.unitPrice) || 0);
-      row.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
+      row.amt = Number.isFinite(a) ? this.toMoneyStorage(a) : 0;
       if (row.unitPrice != null && row.unitPrice !== '') {
         row.price = row.unitPrice;
       }
@@ -1696,7 +1696,7 @@ export default {
       const sq = parseFloat(row.stockQty || 0);
       const book = parseFloat(row.qty || 0);
       const a = sq * (Number.isFinite(up) ? up : 0);
-      row.amt = Number.isFinite(a) ? a.toFixed(2) : '0.00';
+      row.amt = Number.isFinite(a) ? this.toMoneyStorage(a) : 0;
       if (Number.isFinite(sq) && Number.isFinite(book)) {
         const profitQty = sq - book;
         row.profitQty = profitQty;
@@ -1886,7 +1886,7 @@ export default {
       if (Number.isFinite(n) && Number.isFinite(p)) {
         totalAmt = n * p;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){

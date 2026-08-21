@@ -746,7 +746,7 @@ export default {
       if (value == null || value === '') {
         return '0.00';
       }
-      return parseFloat(value).toFixed(2);
+      return this.formatAmount(value);
     },
     /** 收费价与价格均存在且不相等时高亮 */
     isChargePriceMismatch(row) {

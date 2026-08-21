@@ -53,7 +53,7 @@
         <td>{{ item.materialName || '' }}</td>
         <td>{{ item.materialSpeci || '' }}</td>
 <!--        <td>{{ item.planQuantity }}</td>-->
-        <td>{{ formatAmount(item.price) }}</td>
+        <td>{{ formatPrice(item.price) }}</td>
         <td>{{ formatQty(item.qty) }}</td>
         <td>{{ formatAmount(item.amt) }}</td>
         <td>{{ item.batchNumber || '' }}</td>
@@ -98,9 +98,10 @@
 <script>
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { formatQuantity } from '@/utils/format-quantity'
+import printMoneyMixin from '@/mixins/printMoneyMixin'
 
 export default {
-  mixins: [hospitalNameMixin],
+  mixins: [hospitalNameMixin, printMoneyMixin],
   props: {
     printType: {
       type: String,
@@ -190,16 +191,6 @@ export default {
           })
         })
       })
-    },
-    formatAmount(value) {
-      if (value === null || value === undefined || value === '') {
-        return ''
-      }
-      const num = parseFloat(value)
-      if (isNaN(num)) {
-        return ''
-      }
-      return num.toFixed(2)
     },
     formatQty(value) {
       return formatQuantity(value, 2)
