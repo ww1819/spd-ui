@@ -1,23 +1,73 @@
 <template>
-  <div class="app-container first-inventory-page material-usage-rank-report">
-    <div class="form-fields-container">
+  <div class="app-container list-page first-inventory-page material-usage-rank-report">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form
         :model="searchParams"
         ref="queryForm"
         size="small"
         :inline="true"
-        v-show="showSearch"
         class="query-form"
       >
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item label="耗材名称" prop="materialName" class="query-item-inline">
-              <el-input
-                v-model="searchParams.materialName"
-                placeholder="名称/编码/拼音模糊"
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="searchParams.warehouseId" clearable />
+              </div>
+            </template>
+            <el-input
+              v-else-if="t === 'supplierKeyword'"
+              v-model="searchParams.supplierKeyword"
+              placeholder="供应商名称/编码/简码"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else
+              v-model="searchParams.materialName"
+              placeholder="耗材名称/编码/拼音模糊"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="searchParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
                 clearable
-                class="query-input-material-name"
-                @keyup.enter.native="handleQuery"
+                class="query-date-picker query-date-start"
+              />
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="searchParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker query-date-end"
               />
             </el-form-item>
             <el-form-item label="高值" prop="isGz" class="query-item-inline">
@@ -25,7 +75,7 @@
                 v-model="searchParams.isGz"
                 placeholder="是否高值"
                 clearable
-                class="query-select-gz"
+                class="more-search-short-select"
               >
                 <el-option label="是" value="1" />
                 <el-option label="否" value="2" />
@@ -36,7 +86,7 @@
                 v-model="searchParams.isBilling"
                 placeholder="请选择"
                 clearable
-                class="query-select-billing"
+                class="more-search-short-select"
               >
                 <el-option label="是" value="1" />
                 <el-option label="否" value="0" />
@@ -44,53 +94,14 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
-            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
-              <el-date-picker
-                v-model="searchParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始日期"
-                clearable
-                class="query-date-start"
-              />
-              <span class="query-date-sep">至</span>
-              <el-date-picker
-                v-model="searchParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止日期"
-                clearable
-                class="query-date-end"
-              />
-            </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
-                <SelectWarehouse v-model="searchParams.warehouseId" clearable />
-              </div>
-            </el-form-item>
-            <el-form-item label="供应商" prop="supplierKeyword" class="query-item-inline">
-              <el-input
-                v-model="searchParams.supplierKeyword"
-                placeholder="名称/编码/简码"
-                clearable
-                class="query-input-supplier"
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
-      <div class="button-row-left">
-        <el-button type="warning" icon="el-icon-download" size="medium" @click="handleExport">导出</el-button>
-        <el-button type="primary" icon="el-icon-search" size="medium" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="medium" @click="resetQuery">重置</el-button>
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport">导出</el-button>
       </div>
-      <div class="button-row-right">
+      <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="loadReport" />
       </div>
     </el-row>
@@ -200,6 +211,12 @@ export default {
     return {
       loading: false,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "耗材名称", value: "materialName" },
+        { label: "仓库", value: "warehouse" },
+        { label: "供应商", value: "supplierKeyword" }
+      ],
       allRows: [],
       tableList: [],
       total: 0,
@@ -224,6 +241,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.shared.materialUsageRank.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
     sortedAllRows() {
       const list = [...(this.allRows || [])];
       if (!this.sortProp || !this.sortOrder) {
@@ -265,6 +288,9 @@ export default {
   },
   mounted() {
     this.initSearchForm();
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.ensureIncomingMoreSearchTypes();
+    this.onMoreSearchTypesChange();
     if (this.inline) this.loadReport();
   },
   methods: {
@@ -300,6 +326,8 @@ export default {
       this.searchParams.isGz = null;
       this.searchParams.isBilling = null;
       this.searchParams.pageNum = 1;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.loadReport();
     },
     fmtDate(d) {
@@ -311,26 +339,28 @@ export default {
       return `${y}-${m}-${day}`;
     },
     normalizeQuery() {
+      const form = { ...this.searchParams };
+      this.applyMoreSearchToQueryParams(form);
       const q = { ...(this.$props.queryParams || {}) };
-      const begin = this.searchParams.beginDate || this.defaultBeginDate();
-      const end = this.searchParams.endDate || this.defaultEndDate();
+      const begin = form.beginDate || this.defaultBeginDate();
+      const end = form.endDate || this.defaultEndDate();
       q.beginDate = begin.length === 10 ? `${begin} 00:00:00` : begin;
       q.endDate = end.length === 10 ? `${end} 23:59:59` : end;
-      q.warehouseId = this.searchParams.warehouseId != null ? this.searchParams.warehouseId : null;
+      q.warehouseId = form.warehouseId != null ? form.warehouseId : null;
       q.supplerId = null;
-      q.supplierKeyword = this.searchParams.supplierKeyword
-        ? String(this.searchParams.supplierKeyword).trim()
+      q.supplierKeyword = form.supplierKeyword
+        ? String(form.supplierKeyword).trim()
         : null;
-      const materialKw = this.searchParams.materialName
-        ? String(this.searchParams.materialName).trim()
+      const materialKw = form.materialName
+        ? String(form.materialName).trim()
         : null;
       q.materialName = materialKw;
       q.materialNameLike = materialKw;
-      q.isGz = this.searchParams.isGz != null && this.searchParams.isGz !== ""
-        ? String(this.searchParams.isGz)
+      q.isGz = form.isGz != null && form.isGz !== ""
+        ? String(form.isGz)
         : null;
-      q.isBilling = this.searchParams.isBilling != null && this.searchParams.isBilling !== ""
-        ? String(this.searchParams.isBilling)
+      q.isBilling = form.isBilling != null && form.isBilling !== ""
+        ? String(form.isBilling)
         : null;
       Object.keys(q).forEach((k) => {
         if (q[k] === "") q[k] = null;
@@ -413,6 +443,57 @@ export default {
         q,
         `耗材使用排名_${new Date().getTime()}.xlsx`
       );
+    },
+    moreSearchFieldClass(t) {
+      if (t === "warehouse") {
+        return "more-search-field--select";
+      }
+      return "more-search-field--text";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        materialName: "materialName",
+        warehouse: "warehouseId",
+        supplierKeyword: "supplierKeyword"
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.searchParams);
+    },
+    ensureIncomingMoreSearchTypes() {
+      const q = this.$props.queryParams || {};
+      const extra = [];
+      if (q.warehouseId != null && q.warehouseId !== "") extra.push("warehouse");
+      if (q.materialName) extra.push("materialName");
+      if (q.supplierKeyword) extra.push("supplierKeyword");
+      if (!extra.length) return;
+      const set = new Set(this.moreSearchTypes || []);
+      extra.forEach(t => set.add(t));
+      this.moreSearchTypes = Array.from(set);
     }
   }
 };
@@ -457,59 +538,8 @@ export default {
   margin-top: -10px;
 }
 
-.query-row-left {
-  margin-bottom: 2px;
-}
-
-.query-row-second {
-  margin-bottom: 2px;
-  position: relative;
-}
-
-.query-input-material-name {
-  width: 170px;
-}
-
-.query-select-gz {
-  width: 130px;
-}
-
-.query-select-billing {
-  width: 120px;
-}
-
-.query-row-second-inner {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-  width: 100%;
-  gap: 4px;
-  padding-bottom: 2px;
-}
-
-.query-row-second-inner .el-form-item {
-  flex: 0 0 auto;
-  margin-bottom: 0 !important;
-  margin-right: 8px;
-  white-space: nowrap;
-}
-
-.query-row-second-inner .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 2px;
-}
-
-.query-item-inline .el-form-item__label {
-  width: 80px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .query-item-date-range .query-date-start,
@@ -521,53 +551,6 @@ export default {
 }
 .query-item-date-range .query-date-end {
   margin-left: 6px;
-}
-.query-item-date-range .query-date-sep {
-  margin: 0 2px;
-  flex-shrink: 0;
-}
-
-.query-select-wrapper {
-  width: 180px;
-}
-
-.query-input-supplier {
-  width: 200px;
-}
-
-.form-fields-container {
-  background: #fff;
-  padding: 6px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 8px;
-  margin-top: -20px;
-  margin-left: 0;
-  margin-right: 0;
-  border: 1px solid #ebeef5;
-}
-
-.button-row-inventory {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: 0 !important;
-}
-
-.button-row-inventory-flex {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.button-row-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.button-row-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
 }
 
 .table-container {

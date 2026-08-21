@@ -1,121 +1,113 @@
 <template>
-  <div class="app-container purchase-order-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
-
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item prop="orderNo">
-            <el-input v-model="queryParams.orderNo"
-                      placeholder="订单单号"
-                      clearable
-                      @keyup.enter.native="handleQuery"
+  <div class="app-container list-page purchase-order-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'supplier'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectSupplier v-model="queryParams.supplierId"/>
+              </div>
+            </template>
+            <template v-else-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseId"/>
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.orderNo"
+              placeholder="订单单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
             />
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item prop="supplierId">
-            <SelectSupplier v-model="queryParams.supplierId"/>
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item prop="warehouseId">
-            <SelectWarehouse v-model="queryParams.warehouseId"/>
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item prop="isGz">
-            <el-select v-model="queryParams.isGz" placeholder="高值/低值" clearable style="width: 100%">
-              <el-option label="高值" value="1" />
-              <el-option label="低值" value="2" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-
-        <el-col :span="6">
-          <el-form-item prop="orderStatus">
-            <el-select v-model="queryParams.orderStatus" placeholder="单据状态" clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.biz_status"
-                         :key="dict.value"
-                         :label="dict.label"
-                         :value="dict.value"
-              />
-            </el-select>
-          </el-form-item>
-        </el-col>
-
-      </el-row>
-
-      <el-row>
-        <el-col :span="6">
-          <div style="display: inline">
-            <span>起</span>
-            <el-date-picker clearable
-                            v-model="queryParams.beginDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="起始日期"
-                            style="width: 150px"
-            >
-            </el-date-picker>
-            <span>止</span>
-            <el-date-picker clearable
-                            v-model="queryParams.endDate"
-                            type="date"
-                            value-format="yyyy-MM-dd"
-                            placeholder="截止日期"
-                            style="width: 150px"
-            >
-            </el-date-picker>
           </div>
-        </el-col>
-      </el-row>
+        </more-search-bar>
 
-    </el-form>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                class="query-date-picker"
+              />
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item prop="orderStatus" class="query-item-inline">
+              <el-select v-model="queryParams.orderStatus" placeholder="单据状态" clearable class="more-search-select-wrap">
+                <el-option v-for="dict in dict.type.biz_status"
+                           :key="dict.value"
+                           :label="dict.label"
+                           :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item prop="isGz" class="query-item-inline more-search-field--short">
+              <el-select v-model="queryParams.isGz" placeholder="高值/低值" clearable class="more-search-short-select">
+                <el-option label="高值" value="1" />
+                <el-option label="低值" value="2" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
 
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
           size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['caigou:dingdan:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['caigou:dingdan:export']"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="primary"
           size="small"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleBatchPublish"
           :disabled="multiple"
           v-hasPermi="['caigou:dingdan:export']"
         >推送供应链</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="orderList" class="table-compact"
@@ -388,8 +380,8 @@
         </div>
       </el-form>
             <div v-show="action" class="modal-footer">
-              <el-button @click="cancel">取 消</el-button>
-              <el-button type="primary" @click="submitForm">确 定</el-button>
+              <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
+              <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
             </div>
           </div>
         </transition>
@@ -491,6 +483,12 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "订单单号", value: "orderNo" },
+        { label: "供应商", value: "supplier" },
+        { label: "仓库", value: "warehouse" }
+      ],
       // 总条数
       total: 0,
       // 订单表格数据
@@ -547,6 +545,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.caigou.dingdan.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
     },
@@ -563,6 +567,8 @@ export default {
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
     this.getUserList();
   },
@@ -644,7 +650,10 @@ export default {
       if (!this.queryParams.orderType) {
         this.queryParams.orderType = "1";
       }
-      listDingdan(this.queryParams).then(response => {
+      const queryParams = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(queryParams);
+      queryParams.orderType = queryParams.orderType || "1";
+      listDingdan(queryParams).then(response => {
         this.orderList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -826,7 +835,49 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (['supplier', 'warehouse'].includes(t)) {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        orderNo: 'orderNo',
+        supplier: 'supplierId',
+        warehouse: 'warehouseId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -986,9 +1037,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('caigou/dingdan/export', {
-        ...this.queryParams
-      }, `purchase_order_${new Date().getTime()}.xlsx`)
+      const queryParams = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(queryParams);
+      this.download('caigou/dingdan/export', queryParams, `purchase_order_${new Date().getTime()}.xlsx`)
     },
     /** 查看计划（订单表头） */
     handleViewPlan(row) {
@@ -1198,14 +1249,8 @@ export default {
   padding-right: 8px !important;
 }
 
-.app-container.purchase-order-page > .el-form.query-form-compact {
-  margin-top: -12px !important;
-}
-
-.app-container.purchase-order-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .app-container.purchase-order-page > .el-table.table-compact {

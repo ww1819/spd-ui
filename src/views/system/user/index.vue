@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container list-page">
     <el-row :gutter="20">
       <!--工作组数据-->
       <el-col :span="5" :xs="24">
@@ -35,91 +35,99 @@
       </el-col>
       <!--用户数据-->
       <el-col :span="19" :xs="24">
-        <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
-          <el-row>
-            <el-col :span="24">
-              <el-form-item prop="userName" class="query-item-inline">
+        <div class="form-fields-container list-query-panel" v-show="showSearch">
+          <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true">
+            <more-search-bar
+              ref="moreSearchBar"
+              v-model="moreSearchTypes"
+              :options="moreSearchOptions"
+              :storage-key="moreSearchStorageKey"
+              :default-types="builtInMoreSearchDefaults"
+              :auto-load="false"
+              @change="onMoreSearchTypesChange"
+              @search="handleQuery"
+              @reset="resetQuery"
+            >
+              <div
+                v-for="t in moreSearchTypes"
+                :key="t"
+                class="more-search-dynamic-field more-search-field--text"
+              >
                 <el-input
-                  v-model="queryParams.userName"
-                  placeholder="用户账户/用户姓名"
-                  clearable
-                  style="width: 180px"
-                  @keyup.enter.native="handleQuery"
-                />
-              </el-form-item>
-              <el-form-item prop="phonenumber" class="query-item-inline">
-                <el-input
+                  v-if="t === 'phonenumber'"
                   v-model="queryParams.phonenumber"
                   placeholder="手机号码"
                   clearable
-                  style="width: 180px"
+                  class="more-search-input more-search-input--dynamic"
                   @keyup.enter.native="handleQuery"
                 />
-              </el-form-item>
-              <el-form-item prop="status" class="query-item-inline">
-                <el-select
-                  v-model="queryParams.status"
-                  placeholder="用户状态"
+                <el-input
+                  v-else
+                  v-model="queryParams.userName"
+                  placeholder="用户账户/用户姓名"
                   clearable
-                  style="width: 180px"
-                >
-                  <el-option
-                    v-for="dict in dict.type.sys_normal_disable"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                  />
-                </el-select>
-              </el-form-item>
-              <el-form-item class="query-item-inline">
-                <el-checkbox v-model="onlyWithoutWorkgroup" @change="onOnlyWithoutWorkgroupChange">仅无工作组</el-checkbox>
-              </el-form-item>
-              <el-form-item class="query-item-inline">
-                <el-date-picker
-                  v-model="dateRange"
-                  style="width: 240px"
-                  value-format="yyyy-MM-dd"
-                  type="daterange"
-                  range-separator="-"
-                  start-placeholder="开始日期"
-                  end-placeholder="结束日期"
-                ></el-date-picker>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row class="query-actions-row">
-            <el-col :span="24">
-              <div class="query-actions-bar">
-                <div class="query-actions-left">
-                  <el-button v-if="!isZqTcmTenant" type="primary" icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
-                  <el-button type="success" icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
-                  <el-button type="primary" icon="el-icon-s-custom" size="small" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']">批量设置工作组</el-button>
-                  <el-button v-if="isTenantSuper" type="warning" icon="el-icon-key" size="small" @click="openBatchPassword">批量修改密码</el-button>
-                  <el-button type="danger" icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
-                  <el-button type="primary" icon="el-icon-refresh" size="small" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']">更新简码</el-button>
-                  <msun-his-sync-button sync-type="identities" label="HIS人员同步" :refresh="getList" inline />
-
-                  <el-dropdown trigger="click" @command="handleMoreCommand">
-                    <el-button size="small">
-                      更多功能<i class="el-icon-arrow-down el-icon--right"></i>
-                    </el-button>
-                    <el-dropdown-menu slot="dropdown">
-                      <el-dropdown-item v-if="!isZqTcmTenant" command="importAdd" v-hasPermi="['system:user:import']">新增导入</el-dropdown-item>
-                      <el-dropdown-item command="importUpdate" v-hasPermi="['system:user:import']">更新导入</el-dropdown-item>
-                      <el-dropdown-item command="export" v-hasPermi="['system:user:export']">导出</el-dropdown-item>
-                      <el-dropdown-item command="reset">重置</el-dropdown-item>
-                    </el-dropdown-menu>
-                  </el-dropdown>
-
-                  <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery" v-hasPermi="['system:user:list']">搜索</el-button>
-                </div>
-                <div class="query-actions-right">
-                  <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
-                </div>
+                  class="more-search-input more-search-input--dynamic"
+                  @keyup.enter.native="handleQuery"
+                />
               </div>
-            </el-col>
-          </el-row>
-        </el-form>
+            </more-search-bar>
+
+            <el-row :gutter="16" class="query-row-second">
+              <el-col :span="24" class="query-row-second-inner">
+                <el-form-item prop="status" class="query-item-inline">
+                  <el-select v-model="queryParams.status" placeholder="用户状态" clearable class="more-search-select-wrap">
+                    <el-option
+                      v-for="dict in dict.type.sys_normal_disable"
+                      :key="dict.value"
+                      :label="dict.label"
+                      :value="dict.value"
+                    />
+                  </el-select>
+                </el-form-item>
+                <el-form-item class="query-item-inline">
+                  <el-checkbox v-model="onlyWithoutWorkgroup" @change="onOnlyWithoutWorkgroupChange">仅无工作组</el-checkbox>
+                </el-form-item>
+                <el-form-item class="query-item-inline query-item-date-range">
+                  <el-date-picker
+                    v-model="dateRange"
+                    value-format="yyyy-MM-dd"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    class="query-date-picker"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+        </div>
+
+        <el-row :gutter="0" class="mb8 list-toolbar">
+          <div class="list-toolbar-left">
+            <el-button v-if="!isZqTcmTenant" type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
+            <el-button type="success" icon="el-icon-edit" size="small" class="spd-btn spd-btn--secondary" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
+            <el-button type="primary" icon="el-icon-s-custom" size="small" class="spd-btn spd-btn--secondary" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']">批量设置工作组</el-button>
+            <el-button v-if="isTenantSuper" type="warning" icon="el-icon-key" size="small" class="spd-btn spd-btn--secondary" @click="openBatchPassword">批量修改密码</el-button>
+            <el-button type="danger" icon="el-icon-delete" size="small" class="spd-btn spd-btn--danger" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
+            <el-button type="primary" icon="el-icon-refresh" size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']">更新简码</el-button>
+            <msun-his-sync-button sync-type="identities" label="HIS人员同步" :refresh="getList" inline />
+            <el-dropdown trigger="click" @command="handleMoreCommand">
+              <el-button size="small" class="spd-btn spd-btn--secondary">
+                更多功能<i class="el-icon-arrow-down el-icon--right"></i>
+              </el-button>
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item v-if="!isZqTcmTenant" command="importAdd" v-hasPermi="['system:user:import']">新增导入</el-dropdown-item>
+                <el-dropdown-item command="importUpdate" v-hasPermi="['system:user:import']">更新导入</el-dropdown-item>
+                <el-dropdown-item command="export" v-hasPermi="['system:user:export']">导出</el-dropdown-item>
+                <el-dropdown-item command="reset">重置</el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
+          </div>
+          <div class="list-toolbar-right">
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
+          </div>
+        </el-row>
 
         <div class="table-wrapper">
           <el-table ref="userTable" v-loading="loading" :data="userList" :row-key="getUserRowKey" stripe @selection-change="handleSelectionChange" height="66vh" border>
@@ -415,8 +423,8 @@
               </el-row>
             </el-form>
             <div class="modal-footer">
-              <el-button type="primary" v-if="canSubmitUserForm" @click="submitForm">确 定</el-button>
-              <el-button @click="cancel">取 消</el-button>
+              <el-button type="primary" class="spd-btn spd-btn--primary" v-if="canSubmitUserForm" @click="submitForm">确 定</el-button>
+              <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
             </div>
           </div>
         </transition>
@@ -448,8 +456,8 @@
         </div>
       </el-upload>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitFileForm" v-hasPermi="['system:user:import']">确 定</el-button>
-        <el-button @click="upload.open = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitFileForm" v-hasPermi="['system:user:import']">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="upload.open = false">取 消</el-button>
       </div>
     </el-dialog>
 
@@ -475,7 +483,7 @@
         />
       </el-table>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="importPreview.visible = false">关 闭</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="importPreview.visible = false">关 闭</el-button>
       </span>
     </el-dialog>
 
@@ -547,8 +555,8 @@
       </el-tab-pane>
     </el-tabs>
     <span slot="footer" class="dialog-footer">
-      <el-button type="primary" @click="submitAuth" v-hasPermi="['system:user:edit']">保 存</el-button>
-      <el-button @click="authOpen = false">取 消</el-button>
+      <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitAuth" v-hasPermi="['system:user:edit']">保 存</el-button>
+      <el-button class="spd-btn spd-btn--secondary" @click="authOpen = false">取 消</el-button>
     </span>
     </el-dialog>
 
@@ -570,8 +578,8 @@
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="batchPasswordOpen = false">取 消</el-button>
-        <el-button type="primary" @click="submitBatchPassword">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="batchPasswordOpen = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitBatchPassword">确 定</el-button>
       </span>
     </el-dialog>
 
@@ -593,8 +601,8 @@
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="batchWorkgroupOpen = false">取 消</el-button>
-        <el-button type="primary" :loading="batchWorkgroupLoading" @click="submitBatchWorkgroup">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="batchWorkgroupOpen = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="batchWorkgroupLoading" @click="submitBatchWorkgroup">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -682,6 +690,12 @@ export default {
     },
     crossPageSelectedCount() {
       return Object.keys(this.selectedRowMap || {}).length;
+    },
+    moreSearchStorageKey() {
+      return 'spd.system.user.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
     }
   },
   data() {
@@ -702,6 +716,11 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '用户账户/用户姓名', value: 'userName' },
+        { label: '手机号码', value: 'phonenumber' }
+      ],
       // 总条数
       total: 0,
       // 用户表格数据
@@ -851,6 +870,8 @@ export default {
   watch: {
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
     this.getWorkgroupTree();
     this.getWorkgroupList();
@@ -889,6 +910,7 @@ export default {
     },
     buildUserQueryParams(includePagination = true) {
       const q = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(q);
       if (this.onlyWithoutWorkgroup) {
         q.withoutWorkgroup = true;
       }
@@ -1451,7 +1473,39 @@ export default {
       this.queryParams.sysPostId = undefined;
       this.onlyWithoutWorkgroup = false;
       this.currentWorkgroupId = undefined;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = { userName: 'userName', phonenumber: 'phonenumber' };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 序号计算方法
     indexMethod(index) {
@@ -1700,6 +1754,7 @@ export default {
     /** 导出按钮操作 */
     handleExport() {
       const q = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(q);
       if (this.onlyWithoutWorkgroup) {
         q.withoutWorkgroup = true;
       }
@@ -1767,6 +1822,9 @@ export default {
 </script>
 
 <style scoped>
+.list-query-panel {
+  margin-top: -20px;
+}
 .pwd-lock-text {
   color: #e6a23c;
   font-weight: 500;

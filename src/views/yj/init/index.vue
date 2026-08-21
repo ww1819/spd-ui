@@ -1,39 +1,62 @@
 <template>
-  <div class="inventory-management">
-    <el-form :inline="true" :model="searchForm" class="query-form search-form">
-      <el-form-item label="医院">
-        <el-input
-          v-model="hospitalName"
-          disabled
-          placeholder="正在加载组织机构医院…"
-          class="query-input-hospital"
-        />
-      </el-form-item>
-      <el-form-item label="仓库">
-        <div class="query-select-warehouse">
-          <SelectWarehouse v-model="searchForm.warehouseId" />
-        </div>
-      </el-form-item>
-      <el-form-item label="期间">
-        <el-date-picker
-          v-model="searchForm.period"
-          type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          value-format="yyyy-MM-dd"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" @click="onSearch">查询</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container list-page inventory-management">
+    <div class="form-fields-container list-query-panel">
+      <el-form :inline="true" :model="searchForm" class="query-form" size="small">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="onSearch"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field more-search-field--select"
+          >
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectWarehouse v-model="searchForm.warehouseId" />
+            </div>
+          </div>
+        </more-search-bar>
 
-    <div class="function-buttons">
-      <el-button type="primary" @click="onInitialize">初始化</el-button>
-      <el-button type="primary" @click="onMonthEndProcessing">月结处理</el-button>
-      <el-button type="primary" @click="onClearMonthEnd">清除月结</el-button>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="医院" class="query-item-inline">
+              <el-input
+                v-model="hospitalName"
+                disabled
+                placeholder="正在加载组织机构医院…"
+                class="query-input-hospital"
+              />
+            </el-form-item>
+            <el-form-item label="期间" class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="searchForm.period"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                value-format="yyyy-MM-dd"
+                class="query-date-picker"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
     </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="onInitialize">初始化</el-button>
+        <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="onMonthEndProcessing">月结处理</el-button>
+        <el-button size="small" class="spd-btn spd-btn--secondary" @click="onClearMonthEnd">清除月结</el-button>
+      </div>
+    </el-row>
 
     <el-table :data="tableData" border stripe style="width: 100%">
       <el-table-column prop="category" label="分类" align="center" />
@@ -58,6 +81,10 @@ export default {
   data() {
     return {
       hospitalName: "",
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '仓库', value: 'warehouse' }
+      ],
       searchForm: {
         warehouseId: null,
         period: []
@@ -106,7 +133,17 @@ export default {
       ]
     };
   },
+  computed: {
+    moreSearchStorageKey() {
+      return 'spd.yj.init.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.initPeriod();
     this.loadHospitalName();
   },
@@ -139,11 +176,47 @@ export default {
         });
     },
     onSearch() {
+      const searchForm = { ...this.searchForm };
+      this.applyMoreSearchToQueryParams(searchForm);
       console.log("查询功能触发", {
         hospitalName: this.hospitalName,
-        warehouseId: this.searchForm.warehouseId,
-        period: this.searchForm.period
+        warehouseId: searchForm.warehouseId,
+        period: searchForm.period
       });
+    },
+    resetQuery() {
+      this.searchForm.warehouseId = null;
+      this.initPeriod();
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
+      this.onSearch();
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      if (!set.has('warehouse')) {
+        target.warehouseId = null;
+      }
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.searchForm);
     },
     onInitialize() {
       console.log("初始化功能触发");
@@ -163,22 +236,11 @@ export default {
   padding: 20px;
 }
 
-.search-form {
-  margin-bottom: 20px;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .query-input-hospital {
   width: 240px;
-}
-
-.query-select-warehouse {
-  width: 260px;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.function-buttons {
-  margin-bottom: 20px;
-  text-align: left;
 }
 </style>

@@ -68,12 +68,12 @@
               </el-form>
             </div>
             <div class="button-container">
-              <el-button type="warning" icon="el-icon-close" size="medium" :disabled="isRejectDisabled" @click="openReject">驳 回</el-button>
-              <el-button type="primary" icon="el-icon-search" size="medium" @click="handleSearch">搜索</el-button>
-              <el-button icon="el-icon-refresh" size="medium" @click="resetQuery">重置</el-button>
-              <el-button size="medium" @click="handleClose">取 消</el-button>
+              <el-button type="warning" icon="el-icon-close" size="medium" class="spd-btn spd-btn--danger" :disabled="isRejectDisabled" @click="openReject">驳 回</el-button>
+              <el-button type="primary" icon="el-icon-search" size="medium" class="spd-btn spd-btn--primary" @click="handleSearch">搜索</el-button>
+              <el-button icon="el-icon-refresh" size="medium" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button size="medium" class="spd-btn spd-btn--secondary" @click="handleClose">取 消</el-button>
               <span v-if="selectedCount > 0" class="ref-purchase-selected-tip">已选 {{ selectedCount }} 张申购单（含跨页）</span>
-              <el-button type="primary" size="medium" :disabled="selectedCount === 0" :loading="confirmLoading" @click="handleConfirm">确 定</el-button>
+              <el-button type="primary" size="medium" class="spd-btn spd-btn--primary" :disabled="selectedCount === 0" :loading="confirmLoading" @click="handleConfirm">确 定</el-button>
             </div>
           </div>
           <div class="reference-purchase-layout">
@@ -183,8 +183,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="rejectVisible = false">取 消</el-button>
-        <el-button type="primary" @click="submitReject">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="rejectVisible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitReject">确 定</el-button>
       </div>
     </el-dialog>
   </div>

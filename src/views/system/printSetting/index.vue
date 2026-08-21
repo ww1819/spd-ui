@@ -1,94 +1,97 @@
 <template>
-  <div class="app-container print-setting-page">
-    <!-- 顶部搜索容器 -->
-    <div class="form-fields-container">
+  <div class="app-container list-page print-setting-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form
         class="query-form"
         :model="queryParams"
         ref="queryForm"
         size="small"
         :inline="true"
-        v-show="showSearch"
       >
-        <el-form-item prop="templateName">
-          <el-input
-            v-model="queryParams.templateName"
-            placeholder="模板名称"
-            clearable
-            style="width: 240px"
-            @keyup.enter.native="handleQuery"
-          />
-        </el-form-item>
-        <el-form-item label="组织机构ID" prop="tenantId">
-          <el-input
-            v-model="queryParams.tenantId"
-            placeholder="全库默认留空"
-            clearable
-            style="width: 200px"
-            @keyup.enter.native="handleQuery"
-          />
-        </el-form-item>
-        <el-form-item label="单据类型" prop="billType">
-          <el-select v-model="queryParams.billType" placeholder="请选择单据类型" clearable style="width: 240px">
-            <el-option label="入库单" :value="101" />
-            <el-option label="退货单" :value="102" />
-            <el-option label="出库单" :value="201" />
-            <el-option label="退库单" :value="202" />
-            <el-option label="盘点单" :value="301" />
-            <el-option label="入库单(高值)" :value="111" />
-            <el-option label="退货单(高值)" :value="112" />
-            <el-option label="出库单(高值)" :value="211" />
-            <el-option label="退库单(高值)" :value="212" />
-            <el-option label="跟台条码" :value="401" />
-            <el-option label="备货条码" :value="402" />
-          </el-select>
-        </el-form-item>
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field more-search-field--text"
+          >
+            <el-input
+              v-if="t === 'tenantId'"
+              v-model="queryParams.tenantId"
+              placeholder="组织机构ID，全库默认留空"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else
+              v-model="queryParams.templateName"
+              placeholder="模板名称"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item prop="billType" class="query-item-inline">
+              <el-select v-model="queryParams.billType" placeholder="单据类型" clearable class="more-search-select-wrap">
+                <el-option label="入库单" :value="101" />
+                <el-option label="退货单" :value="102" />
+                <el-option label="出库单" :value="201" />
+                <el-option label="退库单" :value="202" />
+                <el-option label="盘点单" :value="301" />
+                <el-option label="入库单(高值)" :value="111" />
+                <el-option label="退货单(高值)" :value="112" />
+                <el-option label="出库单(高值)" :value="211" />
+                <el-option label="退库单(高值)" :value="212" />
+                <el-option label="跟台条码" :value="401" />
+                <el-option label="备货条码" :value="402" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
     </div>
 
-    <!-- 按钮行：位于搜索容器和表格之间，按钮大小参考到货验收页面 -->
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['system:printSetting:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['system:printSetting:edit']"
         >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--danger"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['system:printSetting:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <div class="table-pagination-wrapper">
@@ -223,6 +226,11 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '模板名称', value: 'templateName' },
+        { label: '组织机构ID', value: 'tenantId' }
+      ],
       // 总条数
       total: 0,
       // 打印设置表格数据
@@ -243,14 +251,26 @@ export default {
       form: {}
     };
   },
+  computed: {
+    moreSearchStorageKey() {
+      return 'spd.system.printSetting.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
     /** 查询打印设置列表 */
     getList() {
       this.loading = true;
-      listPrintSetting(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listPrintSetting(params).then(response => {
         this.printSettingList = response.rows;
         this.total = response.total;
         this.loading = false;
@@ -264,7 +284,45 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass() {
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        templateName: 'templateName',
+        tenantId: 'tenantId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -357,16 +415,8 @@ export default {
   padding-bottom: 16px;
 }
 
-.form-fields-container {
-  padding: 12px 24px 8px 24px;
-  margin-bottom: 10px;
-  background: #ffffff;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-
-.form-fields-container .el-form {
-  margin-bottom: 8px;
+.list-query-panel {
+  margin-top: -20px;
 }
 </style>
 

@@ -1,71 +1,92 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true">
-      <el-form-item label="收费项ID">
-        <el-input v-model="queryParams.chargeItemId" placeholder="收费项ID" clearable style="width: 150px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="收费编码">
-        <el-input v-model="queryParams.itemCode" placeholder="收费编码" clearable style="width: 140px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="收费名称">
-        <el-input v-model="queryParams.name" placeholder="收费名称" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="规格">
-        <el-input v-model="queryParams.speci" placeholder="规格" clearable style="width: 120px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="高低值">
-        <el-select v-model="queryParams.valueLevel" placeholder="全部" clearable style="width: 120px">
-          <el-option v-for="opt in valueLevelOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" @click="handleQuery">查询</el-button>
-        <el-button @click="resetQuery">重置</el-button>
-        <el-button
-          type="success"
-          :loading="fetching"
-          v-hasPermi="['foundation:chargeItem:fetch','foundation:material:query']"
-          @click="handleFetch"
-        >抓取收费项目</el-button>
-        <el-button
-          type="warning"
-          :loading="exporting"
-          v-hasPermi="['foundation:chargeItem:export','foundation:material:export']"
-          @click="handleExport"
-        >下载</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container list-page">
+    <div class="query-container">
+      <div class="form-fields-container list-query-panel">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field"
+              :class="t === 'valueLevel' ? 'more-search-field--short' : 'more-search-field--text'"
+            >
+              <el-select
+                v-if="t === 'valueLevel'"
+                v-model="queryParams.valueLevel"
+                placeholder="高低值"
+                clearable
+                class="more-search-short-select"
+              >
+                <el-option v-for="opt in valueLevelOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+              <el-input
+                v-else
+                v-model="queryParams[t]"
+                :placeholder="moreSearchPlaceholderFor(t)"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleQuery"
+              />
+            </div>
+          </more-search-bar>
+        </el-form>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <span class="batch-hint">
           已选 {{ crossPageSelectedCount }} 条<span v-if="crossPageSelectedCount > 0">（含跨页）</span>
         </span>
-      </el-col>
-      <el-col :span="1.5">
         <el-select
           v-model="batchValueLevel"
           placeholder="批量高低值"
           size="small"
           clearable
-          style="width: 120px"
+          class="more-search-short-select"
         >
           <el-option v-for="opt in valueLevelOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
         </el-select>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="primary"
           size="small"
+          class="spd-btn spd-btn--primary"
           :loading="batchSaving"
           :disabled="crossPageSelectedCount === 0"
           v-hasPermi="['foundation:chargeItem:edit','foundation:material:edit']"
           @click="handleBatchSave"
         >批量设置</el-button>
-      </el-col>
-      <el-col :span="1.5" v-if="crossPageSelectedCount > 0">
-        <el-button type="text" size="small" @click="clearCrossPageSelection">清空已选</el-button>
-      </el-col>
+        <el-button
+          v-if="crossPageSelectedCount > 0"
+          size="small"
+          class="spd-btn spd-btn--secondary"
+          @click="clearCrossPageSelection"
+        >清空已选</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary"
+          :loading="fetching"
+          v-hasPermi="['foundation:chargeItem:fetch','foundation:material:query']"
+          @click="handleFetch"
+        >抓取收费项目</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary"
+          :loading="exporting"
+          v-hasPermi="['foundation:chargeItem:export','foundation:material:export']"
+          @click="handleExport"
+        >下载</el-button>
+      </div>
     </el-row>
 
     <el-table
@@ -126,6 +147,17 @@ import {
 
 export default {
   name: 'ChargeItemMaintain',
+  computed: {
+    crossPageSelectedCount() {
+      return Object.keys(this.selectedRowMap || {}).length
+    },
+    moreSearchStorageKey() {
+      return 'spd.foundation.chargeItem.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return ['chargeItemId', 'itemCode', 'name', 'speci', 'valueLevel']
+    }
+  },
   data() {
     return {
       loading: false,
@@ -134,9 +166,16 @@ export default {
       batchSaving: false,
       total: 0,
       chargeItemList: [],
-      /** 跨页勾选缓存：key 为 chargeItemId */
       selectedRowMap: {},
       batchValueLevel: undefined,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: 'chargeItemId', label: '收费项ID' },
+        { value: 'itemCode', label: '收费编码' },
+        { value: 'name', label: '收费名称' },
+        { value: 'speci', label: '规格' },
+        { value: 'valueLevel', label: '高低值' }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -152,15 +191,48 @@ export default {
       ]
     }
   },
-  computed: {
-    crossPageSelectedCount() {
-      return Object.keys(this.selectedRowMap || {}).length
-    }
-  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.getList()
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = {
+        chargeItemId: '收费项ID',
+        itemCode: '收费编码',
+        name: '收费名称',
+        speci: '规格'
+      }
+      return map[t] || '请输入'
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      ;['chargeItemId', 'itemCode', 'name', 'speci', 'valueLevel'].forEach((k) => {
+        if (!set.has(k)) target[k] = undefined
+      })
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams)
+    },
     getChargeItemRowKey(row) {
       return row && row.chargeItemId != null ? String(row.chargeItemId).trim() : null
     },
@@ -188,7 +260,9 @@ export default {
     },
     getList() {
       this.loading = true
-      listHisChargeItem(this.queryParams).then(res => {
+      const params = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(params)
+      listHisChargeItem(params).then(res => {
         const rows = (res && Array.isArray(res.rows)) ? res.rows : []
         this.chargeItemList = rows.map(item => ({
           ...item,
@@ -224,6 +298,7 @@ export default {
     },
     resetQuery() {
       this.clearCrossPageSelection()
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
       this.queryParams = {
         pageNum: 1,
         pageSize: 10,
@@ -234,6 +309,7 @@ export default {
         valueLevel: undefined
       }
       this.batchValueLevel = undefined
+      this.onMoreSearchTypesChange()
       this.getList()
     },
     handleFetch() {
@@ -249,7 +325,9 @@ export default {
     async handleExport() {
       this.exporting = true
       try {
-        const blobData = await exportHisChargeItem(this.queryParams)
+        const params = { ...this.queryParams }
+        this.applyMoreSearchToQueryParams(params)
+        const blobData = await exportHisChargeItem(params)
         const blob = blobData instanceof Blob
           ? blobData
           : new Blob([blobData], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
@@ -318,5 +396,6 @@ export default {
   line-height: 32px;
   font-size: 13px;
   color: #606266;
+  margin-right: 4px;
 }
 </style>

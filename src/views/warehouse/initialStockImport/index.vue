@@ -1,42 +1,77 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-      <el-form-item label="期初单号" prop="billNo">
-        <el-input v-model="queryParams.billNo" placeholder="期初单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="仓库" prop="warehouseId">
-        <SelectWarehouse v-model="queryParams.warehouseId" />
-      </el-form-item>
-      <el-form-item label="单据状态" prop="billStatus">
-        <el-select v-model="queryParams.billStatus" placeholder="请选择" clearable style="width: 120px">
-          <el-option label="待审核" :value="0" />
-          <el-option label="已审核" :value="1" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="导入时间">
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          value-format="yyyy-MM-dd"
-          style="width: 240px"
-        />
-      </el-form-item>
-    </el-form>
+  <div class="app-container list-page initial-stock-import-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseId" />
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.billNo"
+              placeholder="期初单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button type="primary" plain icon="el-icon-upload2" size="medium" @click="openUpload" v-hasPermi="['warehouse:initialStockImport:import']">期初导入</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="primary" icon="el-icon-search" size="medium" @click="handleQuery">搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button icon="el-icon-refresh" size="medium" @click="resetQuery">重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="导入开始日期"
+                end-placeholder="导入结束日期"
+                value-format="yyyy-MM-dd"
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item prop="billStatus" class="query-item-inline">
+              <el-select v-model="queryParams.billStatus" placeholder="单据状态" clearable class="more-search-short-select">
+                <el-option label="待审核" :value="0" />
+                <el-option label="已审核" :value="1" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button
+          type="primary"
+          size="small"
+          class="spd-btn spd-btn--primary"
+          @click="openUpload"
+          v-hasPermi="['warehouse:initialStockImport:import']"
+        >期初导入</el-button>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" :row-class-name="tableRowIndex" height="54vh" border stripe>
@@ -134,8 +169,8 @@
           </el-table-column>
         </el-table>
         <div slot="footer" style="margin-top: 12px; text-align: right;">
-          <el-button @click="upload.visible = false">取 消</el-button>
-          <el-button type="primary" @click="confirmImport" :loading="upload.confirmLoading" :disabled="!canConfirmImport">确认导入</el-button>
+          <el-button class="spd-btn spd-btn--secondary" @click="upload.visible = false">取 消</el-button>
+          <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmImport" :loading="upload.confirmLoading" :disabled="!canConfirmImport">确认导入</el-button>
         </div>
       </div>
     </el-dialog>
@@ -176,8 +211,8 @@
         <el-table-column label="库存明细his_id" align="center" prop="hisId" min-width="120" show-overflow-tooltip />
       </el-table>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="detail.visible = false">关 闭</el-button>
-        <el-button type="primary" @click="handleAudit(detail.form)" v-hasPermi="['warehouse:initialStockImport:audit']" v-if="detail.form.billStatus === 0">审 核</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="detail.visible = false">关 闭</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="handleAudit(detail.form)" v-hasPermi="['warehouse:initialStockImport:audit']" v-if="detail.form.billStatus === 0">审 核</el-button>
       </div>
     </el-dialog>
   </div>
@@ -194,6 +229,11 @@ export default {
     return {
       loading: true,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '期初单号', value: 'billNo' },
+        { label: '仓库', value: 'warehouse' }
+      ],
       total: 0,
       dataList: [],
       dateRange: [],
@@ -218,6 +258,12 @@ export default {
     }
   },
   computed: {
+    moreSearchStorageKey() {
+      return 'spd.warehouse.initialStockImport.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    },
     canConfirmImport() {
       if (!this.upload.previewList || !this.upload.previewList.length) return false
       if (this.upload.previewList.some(p => p.error)) return false
@@ -227,6 +273,8 @@ export default {
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.getList()
   },
   methods: {
@@ -244,6 +292,7 @@ export default {
     getList() {
       this.loading = true
       const params = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(params)
       if (this.dateRange && this.dateRange.length === 2) {
         params.params = { beginTime: this.dateRange[0], endTime: this.dateRange[1] }
       }
@@ -260,6 +309,8 @@ export default {
     resetQuery() {
       this.dateRange = []
       this.resetForm('queryForm')
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
       this.handleQuery()
     },
     openUpload() {
@@ -347,10 +398,52 @@ export default {
         this.detail.visible = false
         this.getList()
       })
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'warehouse') {
+        return 'more-search-field--select'
+      }
+      return 'more-search-field--text'
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      const map = {
+        billNo: 'billNo',
+        warehouse: 'warehouseId'
+      }
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null
+        }
+      })
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams)
     }
   }
 }
 </script>
 
 <style scoped>
+.list-query-panel {
+  margin-top: -20px;
+}
 </style>

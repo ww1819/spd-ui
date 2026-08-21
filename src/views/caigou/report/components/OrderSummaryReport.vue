@@ -1,26 +1,41 @@
 <template>
-  <div class="app-container first-inventory-page">
-    <div class="form-fields-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-        <el-row class="query-row-left">
-          <el-col :span="24">
-            <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
-              <div class="query-select-wrapper">
+  <div class="app-container list-page first-inventory-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'supplier'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectSupplier v-model="queryParams.supplierId" />
               </div>
-            </el-form-item>
-            <el-form-item label="仓库" prop="warehouseId" class="query-item-inline">
-              <div class="query-select-wrapper">
+            </template>
+            <template v-else-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectWarehouse v-model="queryParams.warehouseId" />
               </div>
-            </el-form-item>
-            <el-form-item label="耗材" prop="materialId" class="query-item-inline">
-              <div class="query-select-wrapper">
+            </template>
+            <template v-else>
+              <div class="query-select-wrapper more-search-select-wrap">
                 <SelectMaterial v-model="queryParams.materialId" />
               </div>
-            </el-form-item>
-          </el-col>
-        </el-row>
+            </template>
+          </div>
+        </more-search-bar>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -48,13 +63,11 @@
       </el-form>
     </div>
 
-    <el-row :gutter="10" class="mb8 button-row-inventory button-row-inventory-flex">
-      <div class="button-row-left">
-        <el-button type="warning" icon="el-icon-download" size="medium" @click="handleExport">导出</el-button>
-        <el-button type="primary" icon="el-icon-search" size="medium" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="medium" @click="resetQuery">重置</el-button>
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport">导出</el-button>
       </div>
-      <div class="button-row-right">
+      <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
@@ -139,6 +152,12 @@ export default {
     return {
       loading: true,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "供应商", value: "supplier" },
+        { label: "仓库", value: "warehouse" },
+        { label: "耗材", value: "material" }
+      ],
       total: 0,
       fullSummaryList: [],
       reportList: [],
@@ -157,6 +176,12 @@ export default {
     };
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.caigou.report.orderSummary.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
     totalInfo() {
       const list = this.fullSummaryList || [];
       const totalQty = list.reduce((s, r) => s + Number(r.totalQty || 0), 0);
@@ -173,8 +198,10 @@ export default {
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.queryParams.beginDate = this.getStatDate();
     this.queryParams.endDate = this.getEndDate();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
@@ -184,6 +211,7 @@ export default {
         pageNum: 1,
         pageSize: 10000
       };
+      this.applyMoreSearchToQueryParams(params);
       Object.keys(params).forEach(key => {
         if (params[key] === null || params[key] === undefined || params[key] === "") {
           delete params[key];
@@ -371,7 +399,46 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass() {
+      return 'more-search-field--select';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        supplier: 'supplierId',
+        warehouse: 'warehouseId',
+        material: 'materialId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
     async handleExport() {
@@ -464,16 +531,8 @@ export default {
   flex-shrink: 0;
 }
 
-.form-fields-container {
-  background: #fff;
-  padding: 6px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 8px;
+.list-query-panel {
   margin-top: -20px;
-  margin-left: 0;
-  margin-right: 0;
-  border: 1px solid #ebeef5;
 }
 
 .button-row-inventory {

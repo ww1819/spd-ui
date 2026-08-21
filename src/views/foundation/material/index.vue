@@ -1,226 +1,152 @@
 <template>
-  <div class="app-container material-page-container">
+  <div class="app-container list-page material-page-container">
     <div class="query-container">
-      <div class="form-fields-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-
-      <!-- 第一行：更多检索（与库存明细查询一致） -->
-      <el-row class="query-row-more">
-        <el-col :span="24">
-          <el-form-item class="query-item-inline more-search-item">
-            <div class="more-search-row more-search-row--multi">
-              <span class="more-search-label">更多检索</span>
-              <el-select
-                v-model="moreSearchTypes"
-                multiple
-                collapse-tags
-                placeholder="选择检索条件（可多选）"
-                class="more-search-type"
-                @change="onMoreSearchTypesChange"
-              >
-                <el-option label="供应商" value="supplier" />
-                <el-option label="耗材编码" value="code" />
-                <el-option label="耗材名称" value="name" />
-                <el-option label="UDI" value="udiNo" />
-                <el-option label="注册证号" value="registerNo" />
-                <el-option label="阳采编码" value="sunshineCode" />
-                <el-option label="生产厂家" value="factory" />
-                <el-option label="规格" value="speci" />
-                <el-option label="his收费项目编码" value="hisChargeItemId" />
-              </el-select>
-              <div
-                v-for="t in moreSearchTypes"
-                :key="t"
-                class="more-search-dynamic-field"
-              >
-                <span class="more-search-field-label">{{ moreSearchTypeLabel(t) }}</span>
-                <template v-if="t === 'supplier'">
-                  <div class="query-select-wrapper more-search-select-wrap">
-                    <SelectSupplier v-model="queryParams.supplierId" />
-                  </div>
-                </template>
-                <template v-else-if="t === 'factory'">
-                  <div class="query-select-wrapper more-search-select-wrap">
-                    <SelectFactory v-model="queryParams.factoryId" placeholder="生产厂家" />
-                  </div>
-                </template>
-                <el-input
-                  v-else
-                  v-model="queryParams[t]"
-                  :placeholder="moreSearchPlaceholderFor(t)"
+      <div class="form-fields-container list-query-panel">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field"
+              :class="moreSearchFieldClass(t)"
+            >
+              <template v-if="t === 'supplier'">
+                <div class="query-select-wrapper more-search-select-wrap">
+                  <SelectSupplier v-model="queryParams.supplierId" />
+                </div>
+              </template>
+              <template v-else-if="t === 'factory'">
+                <div class="query-select-wrapper more-search-select-wrap">
+                  <SelectFactory v-model="queryParams.factoryId" placeholder="生产厂家" />
+                </div>
+              </template>
+              <template v-else-if="t === 'storeroomIds'">
+                <div class="query-select-wrapper more-search-select-wrap query-select-multi-form">
+                  <SelectWarehouseCategory v-model="queryParams.storeroomIds" :multiple="true" placeholder="库房分类" style="width: 100%"/>
+                </div>
+              </template>
+              <template v-else-if="t === 'financeCategoryIds'">
+                <div class="query-select-wrapper more-search-select-wrap query-select-multi-form">
+                  <SelectFinanceCategory v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类" style="width: 100%"/>
+                </div>
+              </template>
+              <template v-else-if="t === 'materialCategoryIds'">
+                <div class="query-select-wrapper more-search-select-wrap query-select-multi-form">
+                  <SelectMaterialCategory v-model="queryParams.materialCategoryIds" :multiple="true" placeholder="材料类别" style="width: 100%"/>
+                </div>
+              </template>
+              <template v-else-if="t === 'locationId'">
+                <div class="query-select-wrapper more-search-select-wrap">
+                  <SelectLocation v-model="queryParams.locationId"/>
+                </div>
+              </template>
+              <template v-else-if="t === 'dateRange'">
+                <el-date-picker
+                  v-model="queryParams.beginDate"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  placeholder="起始日期"
                   clearable
-                  class="more-search-input more-search-input--dynamic"
-                  @input="normalizeQueryTextField(t)"
-                  @blur="onMoreSearchInputBlur(t)"
-                  @keyup.enter.native="handleQuery"
+                  class="query-date-picker"
                 />
-              </div>
-            </div>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <!-- 第二行：启用 → 日期 → 高值/集采/跟台/计费 → 其余常驻条件 -->
-      <el-row class="query-row-second">
-        <el-col :span="24" class="query-row-second-inner">
-          <el-form-item prop="isUse" class="query-item-inline query-item-compact">
-            <el-select v-model="queryParams.isUse" placeholder="启用" style="width: 100px" clearable>
-              <el-option
-                v-for="dict in dict.type.is_use_status"
-                :key="dict.value"
-                :label="dict.label"
-                :value="dict.value"
+                <span class="query-date-sep">至</span>
+                <el-date-picker
+                  v-model="queryParams.endDate"
+                  type="date"
+                  value-format="yyyy-MM-dd"
+                  placeholder="截止日期"
+                  clearable
+                  class="query-date-picker"
+                />
+              </template>
+              <template v-else-if="t === 'isUse'">
+                <el-select v-model="queryParams.isUse" placeholder="启用" class="more-search-short-select" clearable>
+                  <el-option
+                    v-for="dict in dict.type.is_use_status"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  />
+                </el-select>
+              </template>
+              <template v-else-if="t === 'isGz' || t === 'isProcure' || t === 'isFollow' || t === 'isBilling'">
+                <el-select v-model="queryParams[t]" :placeholder="moreSearchTypeLabel(t)" class="more-search-short-select" clearable>
+                  <el-option
+                    v-for="dict in dict.type.is_yes_no"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  />
+                </el-select>
+              </template>
+              <template v-else-if="t === 'hisBindStatus'">
+                <el-select v-model="queryParams.hisBindStatus" placeholder="对照" class="more-search-short-select" clearable>
+                  <el-option label="已对照" value="1" />
+                  <el-option label="未对照" value="0" />
+                </el-select>
+              </template>
+              <el-input
+                v-else
+                v-model="queryParams[t]"
+                :placeholder="moreSearchPlaceholderFor(t)"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @input="normalizeQueryTextField(t)"
+                @blur="onMoreSearchInputBlur(t)"
+                @keyup.enter.native="handleQuery"
               />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item class="query-item-inline query-item-date">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
-              clearable
-              class="query-date-picker"
-              style="margin-right: 4px;"
-            />
-            <span style="margin: 0 2px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              class="query-date-picker"
-              style="margin-left: 4px;"
-            />
-          </el-form-item>
-
-          <el-form-item prop="isGz" class="query-item-inline query-item-compact">
-            <el-select v-model="queryParams.isGz" placeholder="高值" style="width: 100px" clearable>
-              <el-option
-                v-for="dict in dict.type.is_yes_no"
-                :key="dict.value"
-                :label="dict.label"
-                :value="dict.value"
-              />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item prop="isProcure" class="query-item-inline query-item-compact">
-            <el-select v-model="queryParams.isProcure" placeholder="集采" style="width: 100px" clearable>
-              <el-option
-                v-for="dict in dict.type.is_yes_no"
-                :key="dict.value"
-                :label="dict.label"
-                :value="dict.value"
-              />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item prop="isFollow" class="query-item-inline query-item-compact">
-            <el-select v-model="queryParams.isFollow" placeholder="跟台" style="width: 100px" clearable>
-              <el-option
-                v-for="dict in dict.type.is_yes_no"
-                :key="dict.value"
-                :label="dict.label"
-                :value="dict.value"
-              />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item prop="isBilling" class="query-item-inline query-item-compact">
-            <el-select v-model="queryParams.isBilling" placeholder="计费" style="width: 100px" clearable>
-              <el-option
-                v-for="dict in dict.type.is_yes_no"
-                :key="dict.value"
-                :label="dict.label"
-                :value="dict.value"
-              />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item prop="hisBindStatus" class="query-item-inline query-item-compact">
-            <el-select v-model="queryParams.hisBindStatus" placeholder="对照" style="width: 100px" clearable>
-              <el-option label="已对照" value="1" />
-              <el-option label="未对照" value="0" />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item prop="storeroomIds" class="query-item-inline">
-            <div class="query-select-wrapper query-select-wrapper-small query-select-multi-fix" style="width: 170px !important;">
-              <SelectWarehouseCategory v-model="queryParams.storeroomIds" :multiple="true" placeholder="库房分类" style="width: 100%"/>
             </div>
-          </el-form-item>
-
-          <el-form-item prop="financeCategoryIds" class="query-item-inline">
-            <div class="query-select-wrapper query-select-wrapper-small query-select-multi-fix" style="width: 170px !important;">
-              <SelectFinanceCategory v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类" style="width: 100%"/>
-            </div>
-          </el-form-item>
-
-          <el-form-item prop="materialCategoryIds" class="query-item-inline">
-            <div class="query-select-wrapper query-select-wrapper-small query-select-multi-fix" style="width: 170px !important;">
-              <SelectMaterialCategory v-model="queryParams.materialCategoryIds" :multiple="true" placeholder="材料类别" style="width: 100%"/>
-            </div>
-          </el-form-item>
-
-          <el-form-item prop="locationId" class="query-item-inline">
-            <div class="query-select-wrapper query-select-wrapper-small" style="width: 150px;">
-              <SelectLocation v-model="queryParams.locationId"/>
-            </div>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-    </el-form>
+          </more-search-bar>
+        </el-form>
       </div>
     </div>
-    <el-row :gutter="0" class="mb8 material-toolbar-row">
-      <!-- 左侧主操作 -->
-      <el-col :span="1.5" v-if="!isZqTcmTenant">
+    <el-row :gutter="0" class="mb8 list-toolbar material-toolbar-row">
+      <!-- 左侧：业务操作 -->
+      <div class="list-toolbar-left material-toolbar-left">
         <el-button
-          type="primary" size="medium"
+          v-if="!isZqTcmTenant"
+          type="primary"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['foundation:material:add']"
         >新增</el-button>
-      </el-col>
-      <span class="material-toolbar-divider" aria-hidden="true"></span>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:material:edit']"
         >修改</el-button>
-      </el-col>
-      <span class="material-toolbar-divider" aria-hidden="true"></span>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['foundation:material:export']"
         >导出</el-button>
-      </el-col>
-      <span class="material-toolbar-divider" aria-hidden="true"></span>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <span class="material-toolbar-divider" aria-hidden="true"></span>
-      <msun-his-sync-button sync-type="materials" label="HIS耗材同步" :refresh="getList" />
+        <msun-his-sync-button
+          class="material-his-sync"
+          sync-type="materials"
+          label="HIS耗材同步"
+          :inline="true"
+          :refresh="getList"
+        />
+      </div>
 
       <!-- 右侧：更多操作 + 工具图标 -->
-      <div class="material-toolbar-right">
+      <div class="list-toolbar-right material-toolbar-right">
         <el-dropdown trigger="click" class="material-more-ops" @command="handleMoreOpsCommand">
-          <el-button type="primary" plain size="medium">
+          <el-button size="small" class="spd-btn spd-btn--secondary">
             更多操作<i class="el-icon-arrow-down el-icon--right"></i>
           </el-button>
           <el-dropdown-menu slot="dropdown" class="material-more-ops-menu">
@@ -237,6 +163,7 @@
             <el-dropdown-item
               command="batchDelete"
               :disabled="multiple"
+              class="material-dropdown-item--danger"
               v-hasPermi="['foundation:material:remove']"
             >批量删除</el-dropdown-item>
             <el-dropdown-item
@@ -434,48 +361,42 @@
       </el-table-column>
       <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" :show-overflow-tooltip="materialTableLightMode" resizable/>
       <!-- 操作列 sticky（单表）：视觉钉右，悬停/滚动与主列同行 -->
-      <el-table-column label="操作" align="center" header-align="center" class-name="material-action-col material-col-center small-padding fixed-width" width="200">
+      <el-table-column label="操作" align="center" header-align="center" class-name="material-action-col material-col-center small-padding fixed-width" width="100">
         <template slot-scope="scope">
-          <div class="material-row-actions">
-            <el-button
-              v-if="isZqTcmTenant"
-              size="mini"
-              type="text"
-              class="material-row-action-btn"
-              :loading="hisSyncLoadingId === scope.row.id"
-              :disabled="hisSyncLoadingId != null && hisSyncLoadingId !== scope.row.id"
-              @click="handleHisSyncMaterial(scope.row)"
-              v-hasPermi="['foundation:material:edit']"
-            >HIS同步</el-button>
-            <el-button
-              size="mini"
-              type="text"
-              class="material-row-action-btn material-row-action-btn--copy"
-              @click="handleCopy(scope.row)"
-              v-hasPermi="['foundation:material:add']"
-            >复制</el-button>
-            <el-button
-              size="mini"
-              type="text"
-              class="material-row-action-btn material-row-action-btn--view"
-              @click="handleView(scope.row)"
-              v-hasPermi="['foundation:material:query']"
-            >查看</el-button>
-            <el-button
-              size="mini"
-              type="text"
-              class="material-row-action-btn material-row-action-btn--muted"
-              @click="handleUpdate(scope.row)"
-              v-hasPermi="['foundation:material:edit']"
-            >修改</el-button>
-            <el-button
-              size="mini"
-              type="text"
-              class="material-row-action-btn material-row-action-btn--danger"
-              @click="handleDelete(scope.row)"
-              v-hasPermi="['foundation:material:remove']"
-            >删除</el-button>
-          </div>
+          <el-dropdown
+            trigger="click"
+            class="material-row-ops"
+            @command="(cmd) => handleRowOpsCommand(cmd, scope.row)"
+          >
+            <el-button size="small" class="spd-btn spd-btn--secondary material-row-ops-btn">
+              操作<i class="el-icon-arrow-down el-icon--right"></i>
+            </el-button>
+            <el-dropdown-menu slot="dropdown" class="material-row-ops-menu">
+              <el-dropdown-item
+                v-if="isZqTcmTenant"
+                command="hisSync"
+                :disabled="hisSyncLoadingId != null && hisSyncLoadingId !== scope.row.id"
+                v-hasPermi="['foundation:material:edit']"
+              >{{ hisSyncLoadingId === scope.row.id ? '同步中...' : 'HIS同步' }}</el-dropdown-item>
+              <el-dropdown-item
+                command="copy"
+                v-hasPermi="['foundation:material:add']"
+              >复制</el-dropdown-item>
+              <el-dropdown-item
+                command="view"
+                v-hasPermi="['foundation:material:query']"
+              >查看</el-dropdown-item>
+              <el-dropdown-item
+                command="edit"
+                v-hasPermi="['foundation:material:edit']"
+              >修改</el-dropdown-item>
+              <el-dropdown-item
+                command="delete"
+                class="material-dropdown-item--danger"
+                v-hasPermi="['foundation:material:remove']"
+              >删除</el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
@@ -498,10 +419,10 @@
           <div class="modal-title">{{ isViewMode ? '耗材档案详情' : title }}</div>
           <div class="material-modal-header-actions">
             <template v-if="!isViewMode">
-              <el-button type="primary" size="medium" class="material-modal-header-btn" @click="submitForm">确 定</el-button>
-              <el-button size="medium" class="material-modal-header-btn material-modal-header-btn--secondary" @click="cancel">取 消</el-button>
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary material-modal-header-btn" @click="submitForm">确 定</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary material-modal-header-btn" @click="cancel">取 消</el-button>
             </template>
-            <el-button type="danger" size="medium" class="material-modal-close-btn" @click="cancel">关闭</el-button>
+            <el-button type="danger" plain size="small" class="spd-btn spd-btn--danger material-modal-close-btn" @click="cancel">关闭</el-button>
           </div>
         </div>
         <el-tabs v-model="activeTab" class="material-detail-tabs" @tab-click="onTabClick">
@@ -1834,6 +1755,12 @@ export default {
     /** 小分页启用 tooltip/固定列/斑马纹；>=100 条/页关闭以加快滚动与渲染 */
     materialTableLightMode() {
       return Number(this.queryParams.pageSize || 0) < 100;
+    },
+    moreSearchStorageKey() {
+      return 'spd.foundation.material.moreSearchTypes';
+    },
+    builtInMoreSearchDefaults() {
+      return ['code', 'name', 'speci', 'hisChargeItemId', 'supplier', 'factory'];
     }
   },
   data() {
@@ -1896,7 +1823,7 @@ export default {
         isFollow: '', // 默认全部
         isProcure: '', // 默认全部
         isBilling: '', // 默认全部
-        isUse: '1', // 默认启用
+        isUse: '', // 由「更多检索」勾选后才参与筛选
         udiNo: undefined,
         registerNo: undefined,
         sunshineCode: undefined,
@@ -1908,8 +1835,30 @@ export default {
         orderByColumn: 'm.updateTime',
         isAsc: 'desc',
       },
-      /** 更多检索：已选检索维度（多选），与库存明细查询一致 */
+      /** 更多检索：已选检索维度（多选）；默认从本地缓存/内置默认加载 */
       moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: 'code', label: '耗材编码' },
+        { value: 'name', label: '耗材名称' },
+        { value: 'speci', label: '规格' },
+        { value: 'hisChargeItemId', label: 'his收费项目编码' },
+        { value: 'supplier', label: '供应商' },
+        { value: 'factory', label: '生产厂家' },
+        { value: 'udiNo', label: 'UDI' },
+        { value: 'registerNo', label: '注册证号' },
+        { value: 'sunshineCode', label: '阳采编码' },
+        { value: 'isUse', label: '启用' },
+        { value: 'dateRange', label: '创建日期' },
+        { value: 'isGz', label: '高值' },
+        { value: 'isProcure', label: '集采' },
+        { value: 'isFollow', label: '跟台' },
+        { value: 'isBilling', label: '计费' },
+        { value: 'hisBindStatus', label: '对照' },
+        { value: 'storeroomIds', label: '库房分类' },
+        { value: 'financeCategoryIds', label: '财务分类' },
+        { value: 'materialCategoryIds', label: '材料类别' },
+        { value: 'locationId', label: '货位' }
+      ],
       // 表单参数
       form: {},
       // 编辑时原始启用状态，用于检测是否变更并要求填写原因
@@ -2114,6 +2063,8 @@ export default {
     if (Number(this.queryParams.pageSize || 0) > 200) {
       this.queryParams.pageSize = 200;
     }
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange(this.moreSearchTypes);
     this.getList();
   },
   mounted() {
@@ -2647,31 +2598,39 @@ export default {
     },
     onMoreSearchTypesChange(val) {
       const set = new Set(val || []);
-      if (!set.has('supplier')) {
-        this.queryParams.supplierId = undefined;
+      if (!set.has('supplier')) this.queryParams.supplierId = undefined;
+      if (!set.has('factory')) this.queryParams.factoryId = undefined;
+      if (!set.has('locationId')) this.queryParams.locationId = undefined;
+      if (!set.has('dateRange')) {
+        this.queryParams.beginDate = null;
+        this.queryParams.endDate = null;
       }
-      if (!set.has('factory')) {
-        this.queryParams.factoryId = undefined;
-      }
+      if (!set.has('isUse')) this.queryParams.isUse = '';
+      if (!set.has('isGz')) this.queryParams.isGz = '';
+      if (!set.has('isProcure')) this.queryParams.isProcure = '';
+      if (!set.has('isFollow')) this.queryParams.isFollow = '';
+      if (!set.has('isBilling')) this.queryParams.isBilling = '';
+      if (!set.has('hisBindStatus')) this.queryParams.hisBindStatus = undefined;
+      if (!set.has('storeroomIds')) this.queryParams.storeroomIds = [];
+      if (!set.has('financeCategoryIds')) this.queryParams.financeCategoryIds = [];
+      if (!set.has('materialCategoryIds')) this.queryParams.materialCategoryIds = [];
       ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'speci', 'hisChargeItemId'].forEach((k) => {
-        if (!set.has(k)) {
-          this.queryParams[k] = undefined;
-        }
+        if (!set.has(k)) this.queryParams[k] = undefined;
       });
     },
     moreSearchTypeLabel(t) {
-      const map = {
-        supplier: '供应商',
-        code: '耗材编码',
-        name: '耗材名称',
-        udiNo: 'UDI',
-        registerNo: '注册证号',
-        sunshineCode: '阳采编码',
-        factory: '生产厂家',
-        speci: '规格',
-        hisChargeItemId: 'his收费项目编码'
-      };
-      return map[t] || t;
+      const hit = (this.moreSearchOptions || []).find(o => o.value === t);
+      return (hit && hit.label) || t;
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'dateRange') return 'more-search-field--date';
+      if (['isUse', 'isGz', 'isProcure', 'isFollow', 'isBilling', 'hisBindStatus'].includes(t)) {
+        return 'more-search-field--short';
+      }
+      if (['supplier', 'factory', 'storeroomIds', 'financeCategoryIds', 'materialCategoryIds', 'locationId'].includes(t)) {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
     },
     moreSearchPlaceholderFor(t) {
       const map = {
@@ -2685,19 +2644,51 @@ export default {
       };
       return map[t] || '请输入关键字';
     },
+    getBuiltInMoreSearchDefaults() {
+      return this.builtInMoreSearchDefaults.slice();
+    },
+    getMoreSearchStorageKey() {
+      return this.moreSearchStorageKey;
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults();
+      }
+      const fallback = this.getBuiltInMoreSearchDefaults();
+      try {
+        const raw = localStorage.getItem(this.getMoreSearchStorageKey());
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set((this.moreSearchOptions || []).map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
     /** 仅保留已勾选的更多检索条件到请求参数 */
     applyMoreSearchToQueryParams(target) {
       const set = new Set(this.moreSearchTypes || []);
-      if (!set.has('supplier')) {
-        target.supplierId = undefined;
+      if (!set.has('supplier')) target.supplierId = undefined;
+      if (!set.has('factory')) target.factoryId = undefined;
+      if (!set.has('locationId')) target.locationId = undefined;
+      if (!set.has('dateRange')) {
+        target.beginDate = undefined;
+        target.endDate = undefined;
       }
-      if (!set.has('factory')) {
-        target.factoryId = undefined;
-      }
+      if (!set.has('isUse')) target.isUse = undefined;
+      if (!set.has('isGz')) target.isGz = undefined;
+      if (!set.has('isProcure')) target.isProcure = undefined;
+      if (!set.has('isFollow')) target.isFollow = undefined;
+      if (!set.has('isBilling')) target.isBilling = undefined;
+      if (!set.has('hisBindStatus')) target.hisBindStatus = undefined;
+      if (!set.has('storeroomIds')) target.storeroomIds = [];
+      if (!set.has('financeCategoryIds')) target.financeCategoryIds = [];
+      if (!set.has('materialCategoryIds')) target.materialCategoryIds = [];
       ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'speci', 'hisChargeItemId'].forEach((k) => {
-        if (!set.has(k)) {
-          target[k] = undefined;
-        }
+        if (!set.has(k)) target[k] = undefined;
       });
     },
     /** 搜索按钮操作 */
@@ -2738,6 +2729,28 @@ export default {
           break;
       }
     },
+    /** 表格行「操作」下拉 */
+    handleRowOpsCommand(command, row) {
+      switch (command) {
+        case 'hisSync':
+          this.handleHisSyncMaterial(row);
+          break;
+        case 'copy':
+          this.handleCopy(row);
+          break;
+        case 'view':
+          this.handleView(row);
+          break;
+        case 'edit':
+          this.handleUpdate(row);
+          break;
+        case 'delete':
+          this.handleDelete(row);
+          break;
+        default:
+          break;
+      }
+    },
     onQueryUdiNoBlur() {
       this.normalizeQueryTextField('udiNo');
       this.queryParams.udiNo = sanitizeUdiNo(this.queryParams.udiNo);
@@ -2753,10 +2766,10 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      this.moreSearchTypes = [];
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
-      this.queryParams.isUse = '1'; // 重置为启用
+      this.queryParams.isUse = '';
       this.queryParams.isGz = '';
       this.queryParams.isFollow = '';
       this.queryParams.isProcure = '';
@@ -2779,6 +2792,7 @@ export default {
       this.queryParams.nameSearch = undefined;
       this.queryParams.orderByColumn = 'm.updateTime';
       this.queryParams.isAsc = 'desc';
+      this.onMoreSearchTypesChange(this.moreSearchTypes);
       const table = this.$refs.materialTable;
       if (table && typeof table.clearSort === 'function') {
         table.clearSort();
@@ -4723,63 +4737,12 @@ export default {
   width: 130px !important;
 }
 
-/* 更多检索：只做水平对齐，不改高度 */
-.material-page-container .more-search-item {
-  margin-bottom: 6px !important;
-}
-.material-page-container .more-search-item >>> .el-form-item__content {
-  max-width: 100%;
-  display: flex !important;
-  align-items: center !important;
-}
-.material-page-container .more-search-row {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 8px;
-}
-.material-page-container .more-search-row--multi {
-  flex-wrap: wrap;
-  align-items: center !important;
-  max-width: 100%;
-}
-.material-page-container .more-search-dynamic-field {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 6px;
-  margin: 0 !important;
-}
-.material-page-container .more-search-field-label,
-.material-page-container .more-search-label {
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  line-height: 32px;
-  height: 32px;
-  margin: 0;
-  padding: 0;
-}
-.material-page-container .more-search-type {
-  min-width: 220px;
-  width: auto;
-  max-width: 360px;
-}
-.material-page-container .more-search-input--dynamic {
-  width: 180px;
-}
-.material-page-container .more-search-select-wrap {
-  width: 210px;
-  display: inline-flex;
+.material-page-container .form-fields-container .el-date-editor .el-input__prefix,
+.material-page-container .form-fields-container .el-date-editor .el-input__suffix {
+  display: flex;
   align-items: center;
 }
-.material-page-container .more-search-select-wrap >>> .el-select {
-  width: 100%;
-}
+
 .material-page-container .query-row-second {
   margin-bottom: 0;
   margin-top: 4px;
@@ -4884,10 +4847,10 @@ export default {
   min-width: 0; /* 配合省略号 */
 }
 
-/* 查询条件容器：白底卡片；底部多留一点，避免日期等输入框底边贴边 */
+/* 查询条件容器：白底卡片；内部对齐为主，外壳强度保持 */
 .form-fields-container {
   background: #fff;
-  padding: 8px 14px 12px;
+  padding: 12px 14px 14px;
   border-radius: 10px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04);
   border: 1px solid #e8ecf1;
@@ -4903,7 +4866,15 @@ export default {
   display: flex !important;
   flex-wrap: wrap;
   align-items: center;
+  gap: 8px;
   row-gap: 8px;
+}
+
+.material-page-container .material-toolbar-left {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .material-page-container .material-toolbar-row > .el-col {
@@ -4914,13 +4885,7 @@ export default {
 }
 
 .material-page-container .material-toolbar-divider {
-  display: inline-block;
-  width: 1px;
-  height: 22px;
-  margin: 0 10px;
-  background: #e2e8f0;
-  flex-shrink: 0;
-  align-self: center;
+  display: none;
 }
 
 /* 顶部查询条件：框内上下对齐（内容区统一居中） */
@@ -5313,100 +5278,13 @@ export default {
   vertical-align: middle !important;
 }
 
-.material-row-actions {
+.material-row-ops {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: nowrap;
-  gap: 0;
-  width: auto;
-  max-width: 100%;
-  margin: 0 auto;
-  white-space: nowrap;
-  overflow: hidden;
+  vertical-align: middle;
 }
 
-.material-row-actions::-webkit-scrollbar {
-  display: none;
-}
-
-.material-page-container .material-toolbar-btn.el-button--text {
-  padding: 10px 15px;
-  font-weight: 500;
-}
-
-.material-page-container .material-toolbar-btn--muted.el-button--text {
-  color: #909399;
-}
-
-.material-page-container .material-toolbar-btn--muted.el-button--text:hover,
-.material-page-container .material-toolbar-btn--muted.el-button--text:focus {
-  color: #606266;
-}
-
-.material-page-container .material-toolbar-btn--muted.el-button--text.is-disabled,
-.material-page-container .material-toolbar-btn--muted.el-button--text.is-disabled:hover {
-  color: #c0c4cc;
-}
-
-.material-page-container .material-row-action-btn.el-button--text {
-  padding: 0 3px !important;
-  margin: 0 !important;
-  font-size: 14px !important;
-  line-height: 22px !important;
-  min-height: 22px !important;
-  height: auto !important;
-  font-weight: 400;
-  flex-shrink: 0;
-  border-radius: 0;
-  transition: none !important;
-}
-
-.material-page-container .material-row-actions .el-button + .el-button {
-  margin-left: 0 !important;
-}
-
-.material-page-container .material-row-action-btn.el-button--text:hover,
-.material-page-container .material-row-action-btn.el-button--text:focus {
-  color: #2563eb;
-  background-color: #eff6ff;
-}
-
-/* 复制：主色蓝；查看：青绿，便于区分 */
-.material-page-container .material-row-action-btn--copy.el-button--text {
-  color: #2563eb;
-}
-.material-page-container .material-row-action-btn--copy.el-button--text:hover,
-.material-page-container .material-row-action-btn--copy.el-button--text:focus {
-  color: #1d4ed8;
-  background-color: #eff6ff;
-}
-
-.material-page-container .material-row-action-btn--view.el-button--text {
-  color: #0d9488;
-}
-.material-page-container .material-row-action-btn--view.el-button--text:hover,
-.material-page-container .material-row-action-btn--view.el-button--text:focus {
-  color: #0f766e;
-  background-color: #f0fdfa;
-}
-
-.material-page-container .material-row-action-btn--muted.el-button--text {
-  color: #909399;
-}
-
-.material-page-container .material-row-action-btn--muted.el-button--text:hover,
-.material-page-container .material-row-action-btn--muted.el-button--text:focus {
-  color: #606266;
-}
-
-.material-page-container .material-row-action-btn--danger.el-button--text {
-  color: #ef4444;
-}
-
-.material-page-container .material-row-action-btn--danger.el-button--text:hover,
-.material-page-container .material-row-action-btn--danger.el-button--text:focus {
-  color: #f78989;
+.material-row-ops-btn {
+  padding: 7px 12px !important;
 }
 
 .material-cell-price-right {
@@ -6218,11 +6096,6 @@ export default {
   margin-bottom: 4px !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  padding: 8px 14px !important;
-  background: #fff;
-  border: 1px solid #e8ecf1;
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 
 .app-container.material-page-container .material-table-panel {
@@ -6242,54 +6115,46 @@ export default {
 }
 
 .app-container.material-page-container .material-toolbar-row .el-button {
-  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  margin-left: 0 !important;
 }
 
-.app-container.material-page-container .material-toolbar-row .el-button--primary:not(.is-plain) {
+.app-container.material-page-container .query-actions {
+  margin-left: 4px !important;
+}
+
+.app-container.material-page-container .query-actions .el-button + .el-button {
+  margin-left: 8px !important;
+}
+
+.app-container.material-page-container .material-his-sync,
+.app-container.material-page-container .material-his-sync .msun-his-sync-inline {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.app-container.material-page-container .material-his-sync .el-button {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
   border-radius: 6px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.18);
+  font-weight: 400;
+  box-shadow: none !important;
+  background: #fff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
 }
 
-.app-container.material-page-container .material-toolbar-row .el-button--primary:not(.is-plain):hover,
-.app-container.material-page-container .material-toolbar-row .el-button--primary:not(.is-plain):focus {
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.22);
-}
-
-.app-container.material-page-container .material-toolbar-row .el-button--primary.is-plain {
-  border-radius: 6px;
-  background: #fff;
-  border-color: #cbd5e1;
-  color: #334155;
-  font-weight: 500;
-}
-
-.app-container.material-page-container .material-toolbar-row .el-button--primary.is-plain:hover,
-.app-container.material-page-container .material-toolbar-row .el-button--primary.is-plain:focus {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #0f172a;
-}
-
-.app-container.material-page-container .material-toolbar-divider {
-  width: 1px;
-  height: 22px;
-  margin: 0 10px;
-  background: #e2e8f0;
-  flex-shrink: 0;
+.app-container.material-page-container .material-his-sync .el-button:hover,
+.app-container.material-page-container .material-his-sync .el-button:focus {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
 }
 
 .app-container.material-page-container .material-toolbar-row .top-right-btn {
   margin-left: 0;
-}
-
-.app-container.material-page-container .material-toolbar-right {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .app-container.material-page-container .material-more-ops {
@@ -6331,14 +6196,6 @@ export default {
   box-shadow: none;
   border: none;
   border-bottom: none;
-}
-
-/* 筛选区输入更干净 */
-.app-container.material-page-container .form-fields-container .el-input__inner,
-.app-container.material-page-container .form-fields-container .el-range-editor.el-input__inner {
-  border-color: #e2e8f0;
-  border-radius: 6px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .app-container.material-page-container .form-fields-container .el-input__inner:hover,

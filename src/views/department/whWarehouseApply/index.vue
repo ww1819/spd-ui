@@ -1,29 +1,69 @@
 <template>
-  <div class="app-container">
-    <el-form v-show="showSearch" ref="queryForm" :model="queryParams" size="small" :inline="true" class="query-form">
-      <el-form-item label="库房申请单号" prop="applyBillNo">
-        <el-input v-model="queryParams.applyBillNo" placeholder="单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="科室申领单号" prop="basApplyBillNo">
-        <el-input v-model="queryParams.basApplyBillNo" placeholder="科室申领单号" clearable style="width: 180px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="仓库" prop="warehouseId">
-        <SelectWarehouse v-model="queryParams.warehouseId" style="width: 200px" />
-      </el-form-item>
-      <el-form-item label="科室" prop="departmentId">
-        <SelectDepartment v-model="queryParams.departmentId" style="width: 200px" />
-      </el-form-item>
-      <el-form-item label="含已作废单">
-        <el-switch v-model="queryParams.includeVoidWhole" active-color="#13ce66" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container list-page wh-warehouse-apply-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseId" />
+              </div>
+            </template>
+            <template v-else-if="t === 'department'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectDepartment v-model="queryParams.departmentId" />
+              </div>
+            </template>
+            <el-input
+              v-else-if="t === 'basApplyBillNo'"
+              v-model="queryParams.basApplyBillNo"
+              placeholder="科室申领单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else
+              v-model="queryParams.applyBillNo"
+              placeholder="库房申请单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
-    <el-row :gutter="10" class="mb8">
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline">
+              <span class="query-switch-label">含已作废单</span>
+              <el-switch v-model="queryParams.includeVoidWhole" active-color="#13ce66" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left"></div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" border height="calc(100vh - 260px)">
@@ -128,7 +168,7 @@
         </el-table-column>
       </el-table>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="viewOpen = false">关 闭</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="viewOpen = false">关 闭</el-button>
       </div>
     </el-dialog>
   </div>
@@ -146,6 +186,13 @@ export default {
     return {
       loading: false,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "库房申请单号", value: "applyBillNo" },
+        { label: "科室申领单号", value: "basApplyBillNo" },
+        { label: "仓库", value: "warehouse" },
+        { label: "科室", value: "department" }
+      ],
       total: 0,
       dataList: [],
       queryParams: {
@@ -162,7 +209,17 @@ export default {
       viewEntryList: []
     };
   },
+  computed: {
+    moreSearchStorageKey() {
+      return 'spd.department.whWarehouseApply.moreSearchTypes';
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
@@ -180,6 +237,7 @@ export default {
     getList() {
       this.loading = true;
       const q = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(q);
       if (!q.includeVoidWhole) {
         delete q.includeVoidWhole;
       }
@@ -198,7 +256,50 @@ export default {
     resetQuery() {
       this.resetForm('queryForm');
       this.queryParams.includeVoidWhole = false;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (['warehouse', 'department'].includes(t)) {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        applyBillNo: 'applyBillNo',
+        basApplyBillNo: 'basApplyBillNo',
+        warehouse: 'warehouseId',
+        department: 'departmentId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     handleView(row) {
       if (!row || !row.id) return;
@@ -216,5 +317,12 @@ export default {
 <style scoped>
 .mb12 {
   margin-bottom: 12px;
+}
+.list-query-panel {
+  margin-top: -20px;
+}
+.query-switch-label {
+  margin-right: 8px;
+  color: #606266;
 }
 </style>

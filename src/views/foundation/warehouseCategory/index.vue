@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container warehouse-category-page">
+  <div class="app-container list-page warehouse-category-page">
     <el-row :gutter="20">
       <!-- 左侧树形菜单 -->
       <el-col :span="4">
@@ -23,100 +23,91 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="20">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-          <el-row :gutter="20">
-            <el-col :span="10">
-              <el-form-item prop="warehouseCategoryCode">
-                <el-input
-                  v-model="queryParams.warehouseCategoryCode"
-                  placeholder="分类编码"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                  style="width: 100%"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="10">
-              <el-form-item prop="warehouseCategoryName">
-                <el-input
-                  v-model="queryParams.warehouseCategoryName"
-                  placeholder="分类名称"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                  style="width: 100%"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="4">
-              <el-form-item>
-                <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-                <el-button size="small" @click="resetQuery">重置</el-button>
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
+        <div class="query-container" v-show="showSearch">
+          <div class="form-fields-container list-query-panel">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <more-search-bar
+                ref="moreSearchBar"
+                v-model="moreSearchTypes"
+                :options="moreSearchOptions"
+                :storage-key="moreSearchStorageKey"
+                :default-types="builtInMoreSearchDefaults"
+                :auto-load="false"
+                @change="onMoreSearchTypesChange"
+                @search="handleQuery"
+                @reset="resetQuery"
+              >
+                <div
+                  v-for="t in moreSearchTypes"
+                  :key="t"
+                  class="more-search-dynamic-field more-search-field--text"
+                >
+                  <el-input
+                    v-model="queryParams[t]"
+                    :placeholder="moreSearchPlaceholderFor(t)"
+                    clearable
+                    class="more-search-input more-search-input--dynamic"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </div>
+              </more-search-bar>
+            </el-form>
+          </div>
+        </div>
 
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
+        <el-row :gutter="0" class="mb8 list-toolbar">
+          <div class="list-toolbar-left">
             <el-button
-              type="primary" size="small"
+              type="primary"
+              size="small"
+              class="spd-btn spd-btn--primary"
               @click="handleAdd"
               v-hasPermi="['foundation:warehouseCategory:add']"
             >新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:warehouseCategory:edit']"
             >修改</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:warehouseCategory:remove']"
             >删除</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="multiple"
               @click="handleUpdateReferred"
               v-hasPermi="['foundation:warehouseCategory:updateReferred']"
             >更新简码</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleExport"
               v-hasPermi="['foundation:warehouseCategory:export']"
             >导出</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="info"
-              plain
-              icon="el-icon-upload2"
               size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleImport('add')"
               v-hasPermi="['foundation:warehouseCategory:import']"
             >新增导入</el-button>
-          </el-col>
-          <el-col :span="1.8">
             <el-button
-              type="info"
-              plain
-              icon="el-icon-refresh-right"
               size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleImport('update')"
               v-hasPermi="['foundation:warehouseCategory:import']"
             >更新导入</el-button>
-          </el-col>
-          <msun-his-sync-button sync-type="categories" label="HIS库房分类同步" :refresh="getList" />
-          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+            <msun-his-sync-button sync-type="categories" label="HIS库房分类同步" :refresh="getList" :inline="true" />
+          </div>
+          <div class="list-toolbar-right">
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
         </el-row>
 
         <el-table v-loading="loading" :data="warehouseCategoryList" :row-class-name="warehouseCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
@@ -222,8 +213,8 @@
           </el-form>
         </div>
         <div class="page-drawer-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -311,6 +302,12 @@ export default {
     ...mapGetters(['customerId', 'factoryImportRequiresHisId']),
     isDisabled() {
       return this.form.warehouseCategoryId != null;
+    },
+    moreSearchStorageKey() {
+      return "spd.foundation.warehouseCategory.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["warehouseCategoryCode", "warehouseCategoryName"];
     }
   },
   data() {
@@ -339,6 +336,11 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "warehouseCategoryCode", label: "分类编码" },
+        { value: "warehouseCategoryName", label: "分类名称" }
+      ],
       upload: {
         open: false,
         title: "",
@@ -392,15 +394,50 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = { warehouseCategoryCode: "分类编码", warehouseCategoryName: "分类名称" };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["warehouseCategoryCode", "warehouseCategoryName"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     /** 查询库房分类列表 */
     getList() {
       this.loading = true;
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
       // 并行获取列表数据和树形数据
       Promise.all([
-        listWarehouseCategory(this.queryParams),
+        listWarehouseCategory(params),
         treeselect()
       ]).then(([listResponse, treeResponse]) => {
         const allData = treeResponse.data || [];
@@ -513,6 +550,10 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.warehouseCategoryCode = null;
+      this.queryParams.warehouseCategoryName = null;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     // 多选框选中数据
@@ -591,9 +632,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('foundation/warehouseCategory/export', {
-        ...this.queryParams
-      }, `warehouseCategory_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('foundation/warehouseCategory/export', params, `warehouseCategory_${new Date().getTime()}.xlsx`)
     },
     /** 更新库房分类名称简码 */
     handleUpdateReferred() {

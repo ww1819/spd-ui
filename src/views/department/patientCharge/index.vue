@@ -1,124 +1,145 @@
 <template>
-  <div class="app-container patient-charge-page">
+  <div class="app-container list-page patient-charge-page">
     <el-tabs v-model="activeMainTab" class="pc-tabs" @tab-click="onMainTabClick">
       <el-tab-pane label="患者费用明细" name="detail">
         <div class="pc-detail-layout">
-        <div class="pc-query-wrap">
-        <el-form :model="detailQuery" inline size="small" class="pc-query-form">
-          <el-form-item label="类型">
-            <el-radio-group v-model="detailVisitType" @change="handleDetailQuery">
-              <el-radio-button label="ALL">全部</el-radio-button>
-              <el-radio-button label="IN">住院</el-radio-button>
-              <el-radio-button label="OUT">门诊</el-radio-button>
-            </el-radio-group>
-          </el-form-item>
-          <el-form-item label="患者姓名">
-            <el-input v-model="detailQuery.patientName" placeholder="姓名" clearable style="width:140px" @keyup.enter.native="handleDetailQuery" />
-          </el-form-item>
-          <el-form-item :label="detailVisitType === 'IN' ? '住院号' : '门诊号'">
-            <el-input
-              v-model="detailQuery.visitNo"
-              :placeholder="detailVisitType === 'IN' ? '住院号' : '门诊号'"
-              clearable
-              style="width:160px"
-              @keyup.enter.native="handleDetailQuery"
-            />
-          </el-form-item>
-          <el-form-item label="收费项ID">
-            <el-input
-              v-model="detailQuery.chargeItemId"
-              placeholder="收费项目编码"
-              clearable
-              style="width:160px"
-              @keyup.enter.native="handleDetailQuery"
-            />
-          </el-form-item>
-          <el-form-item label="费用明细主键">
-            <el-input
-              v-model="detailQuery.hisChargeId"
-              placeholder="HIS费用明细主键"
-              clearable
-              style="width:160px"
-              @keyup.enter.native="handleDetailQuery"
-            />
-          </el-form-item>
-          <el-form-item label="退费关联ID">
-            <el-input
-              v-model="detailQuery.chargeIdTf"
-              placeholder="退费对应收费明细ID"
-              clearable
-              style="width:180px"
-              @keyup.enter.native="handleDetailQuery"
-            />
-          </el-form-item>
-          <el-form-item label="项目名称">
-            <el-input
-              v-model="detailQuery.itemName"
-              placeholder="项目名称模糊"
-              clearable
-              style="width:180px"
-              @keyup.enter.native="handleDetailQuery"
-            />
-          </el-form-item>
-          <el-form-item label="执行科室">
-            <el-input
-              v-model="detailQuery.execDeptName"
-              placeholder="编码/名称/简码"
-              clearable
-              style="width:160px"
-              @keyup.enter.native="handleDetailQuery"
-            />
-          </el-form-item>
-          <el-form-item label="是否处理">
-            <el-select v-model="detailQuery.processed" placeholder="全部" clearable style="width:110px">
-              <el-option label="已处理" value="Y" />
-              <el-option label="未处理" value="N" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="计费日期">
-            <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
-            <span style="margin:0 6px">至</span>
-            <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
-          </el-form-item>
-          <el-form-item label="处理时间">
-            <el-date-picker v-model="detailQuery.beginProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
-            <span style="margin:0 6px">至</span>
-            <el-date-picker v-model="detailQuery.endProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" @click="handleDetailQuery">查询</el-button>
-            <el-button icon="el-icon-refresh" @click="resetDetailQuery">重置</el-button>
-            <el-button type="warning" plain icon="el-icon-download" @click="handleExport">导出</el-button>
-          </el-form-item>
-          <el-form-item>
+        <div class="form-fields-container list-query-panel pc-query-wrap">
+        <el-form ref="detailQueryForm" :model="detailQuery" inline size="small" class="query-form pc-query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleDetailQuery"
+            @reset="resetDetailQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field more-search-field--text"
+            >
+              <el-input
+                v-if="t === 'visitNo'"
+                v-model="detailQuery.visitNo"
+                :placeholder="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院/门诊号')"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleDetailQuery"
+              />
+              <el-input
+                v-else-if="t === 'chargeItemId'"
+                v-model="detailQuery.chargeItemId"
+                placeholder="收费项目编码"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleDetailQuery"
+              />
+              <el-input
+                v-else-if="t === 'hisChargeId'"
+                v-model="detailQuery.hisChargeId"
+                placeholder="HIS费用明细主键"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleDetailQuery"
+              />
+              <el-input
+                v-else-if="t === 'chargeIdTf'"
+                v-model="detailQuery.chargeIdTf"
+                placeholder="退费关联ID"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleDetailQuery"
+              />
+              <el-input
+                v-else-if="t === 'itemName'"
+                v-model="detailQuery.itemName"
+                placeholder="项目名称模糊"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleDetailQuery"
+              />
+              <el-input
+                v-else-if="t === 'execDeptName'"
+                v-model="detailQuery.execDeptName"
+                placeholder="执行科室编码/名称/简码"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleDetailQuery"
+              />
+              <el-input
+                v-else
+                v-model="detailQuery.patientName"
+                placeholder="患者姓名"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleDetailQuery"
+              />
+            </div>
+          </more-search-bar>
+
+          <el-row :gutter="16" class="query-row-second">
+            <el-col :span="24" class="query-row-second-inner">
+              <el-form-item class="query-item-inline">
+                <el-radio-group v-model="detailVisitType" size="small" @change="handleDetailQuery">
+                  <el-radio-button label="ALL">全部</el-radio-button>
+                  <el-radio-button label="IN">住院</el-radio-button>
+                  <el-radio-button label="OUT">门诊</el-radio-button>
+                </el-radio-group>
+              </el-form-item>
+              <el-form-item class="query-item-inline">
+                <el-select v-model="detailQuery.processed" placeholder="是否处理" clearable class="more-search-select-wrap">
+                  <el-option label="已处理" value="Y" />
+                  <el-option label="未处理" value="N" />
+                </el-select>
+              </el-form-item>
+              <el-form-item class="query-item-inline">
+                <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="计费起" style="width:140px" clearable />
+                <span style="margin:0 6px">至</span>
+                <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="计费止" style="width:140px" clearable />
+              </el-form-item>
+              <el-form-item class="query-item-inline">
+                <el-date-picker v-model="detailQuery.beginProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="处理起" style="width:140px" clearable />
+                <span style="margin:0 6px">至</span>
+                <el-date-picker v-model="detailQuery.endProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="处理止" style="width:140px" clearable />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+        </div>
+
+        <el-row :gutter="0" class="mb8 list-toolbar">
+          <div class="list-toolbar-left">
             <el-button
-              type="warning"
-              plain
+              size="small"
+              class="spd-btn spd-btn--secondary"
+              @click="handleExport"
+            >导出</el-button>
+            <el-button
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="detailVisitType === 'ALL' || batchLowSubmitting"
               :loading="batchLowSubmitting"
               v-hasPermi="['department:patientCharge:generateConsume','department:patientCharge:processMirrorLow']"
               @click="openBatchLowDialog"
             >批量低值核销</el-button>
             <span v-if="cachedSelectionCount > 0" class="pc-cached-sel-hint">已跨页勾选 {{ cachedSelectionCount }} 条</span>
-          </el-form-item>
-          <el-form-item>
             <el-button
-              type="success"
-              plain
+              size="small"
+              class="spd-btn spd-btn--secondary"
               @click="openFetchDialog"
               v-hasPermi="['department:patientCharge:fetchInpatient', 'department:patientCharge:fetchOutpatient']"
             >HIS收费数据抓取</el-button>
-          </el-form-item>
-          <el-form-item>
             <el-button
-              type="primary"
-              plain
+              size="small"
+              class="spd-btn spd-btn--secondary"
               @click="openExecDeptBackfillDialog"
               v-hasPermi="['department:patientCharge:fetchInpatient', 'department:patientCharge:fetchOutpatient']"
             >补全执行科室</el-button>
-          </el-form-item>
-        </el-form>
-        </div>
+          </div>
+        </el-row>
 
         <el-table
           ref="detailTable"
@@ -263,16 +284,28 @@
       </el-tab-pane>
 
       <el-tab-pane label="患者费用汇总" name="summary">
-        <el-form :model="summaryQuery" inline size="small" class="mb8">
-          <el-form-item label="计费日期">
-            <el-date-picker v-model="summaryQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
-            <span style="margin:0 6px">至</span>
-            <el-date-picker v-model="summaryQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" icon="el-icon-search" @click="handleSummaryQuery">查询</el-button>
-          </el-form-item>
-        </el-form>
+        <div class="form-fields-container list-query-panel">
+          <el-form ref="summaryQueryForm" :model="summaryQuery" inline size="small" class="query-form">
+            <more-search-bar
+              v-model="summaryMoreSearchTypes"
+              :options="summaryMoreSearchOptions"
+              storage-key="spd.department.patientCharge.summary.moreSearchTypes"
+              :default-types="[]"
+              :auto-load="false"
+              @search="handleSummaryQuery"
+              @reset="resetSummaryQuery"
+            />
+            <el-row :gutter="16" class="query-row-second">
+              <el-col :span="24" class="query-row-second-inner">
+                <el-form-item class="query-item-inline">
+                  <el-date-picker v-model="summaryQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="计费起" style="width:140px" clearable />
+                  <span style="margin:0 6px">至</span>
+                  <el-date-picker v-model="summaryQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="计费止" style="width:140px" clearable />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+        </div>
         <el-table v-loading="summaryLoading" :data="summaryList" border stripe>
           <el-table-column label="类型" prop="visitType" width="100">
             <template slot-scope="scope">
@@ -380,7 +413,7 @@
         <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="120" show-overflow-tooltip />
       </el-table>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="consumeRecordDialog.visible = false">关 闭</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="consumeRecordDialog.visible = false">关 闭</el-button>
       </div>
     </el-dialog>
 
@@ -478,8 +511,8 @@
         <el-alert type="info" :closable="false" show-icon :title="patientChargeHisSlowHint" />
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="fetchDialogVisible = false">取 消</el-button>
-        <el-button type="primary" :loading="fetchSubmitting" @click="submitFetch">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="fetchDialogVisible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="fetchSubmitting" @click="submitFetch">确 定</el-button>
       </div>
     </el-dialog>
 
@@ -523,8 +556,8 @@
         <el-alert type="info" :closable="false" show-icon :title="patientChargeHisSlowHint + ' 仅更新已有收费行缺失的执行科室，不新增。'" />
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="execDeptBackfillDialogVisible = false">取 消</el-button>
-        <el-button type="primary" :loading="execDeptBackfillSubmitting" @click="submitExecDeptBackfill">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="execDeptBackfillDialogVisible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="execDeptBackfillSubmitting" @click="submitExecDeptBackfill">确 定</el-button>
       </div>
     </el-dialog>
     <el-dialog title="自选科室核销" :visible.sync="selfDeptLowDialog.visible" width="480px" append-to-body @close="resetSelfDeptLowDialog">
@@ -550,8 +583,8 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="selfDeptLowDialog.visible = false">取 消</el-button>
-        <el-button type="primary" :loading="selfDeptLowDialog.submitting" @click="submitSelfDeptLowConsume">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="selfDeptLowDialog.visible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="selfDeptLowDialog.submitting" @click="submitSelfDeptLowConsume">确 定</el-button>
       </div>
     </el-dialog>
     <el-dialog title="批量低值核销" :visible.sync="batchLowDialog.visible" width="520px" append-to-body>
@@ -569,8 +602,8 @@
       <p class="pc-batch-tip">「全部」将按当前筛选条件分页收集待处理低值明细后再核销，条数多时可能较久。</p>
       <p class="pc-batch-tip">开始核销前：若已设计费日期且有权限，将按该区间自动「补全执行科室」（仅回写本地为空且 HIS 有值的行），再逐条核销。</p>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="batchLowDialog.visible = false">取 消</el-button>
-        <el-button type="primary" :loading="batchLowSubmitting" @click="confirmBatchLowProcess">开始核销</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="batchLowDialog.visible = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="batchLowSubmitting" @click="confirmBatchLowProcess">开始核销</el-button>
       </div>
     </el-dialog>
   </div>
@@ -622,6 +655,18 @@ export default {
       patientChargeHisSlowHint: PATIENT_CHARGE_HIS_SLOW_HINT,
       activeMainTab: 'detail',
       detailVisitType: 'IN',
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '患者姓名', value: 'patientName' },
+        { label: '住院/门诊号', value: 'visitNo' },
+        { label: '收费项ID', value: 'chargeItemId' },
+        { label: '费用明细主键', value: 'hisChargeId' },
+        { label: '退费关联ID', value: 'chargeIdTf' },
+        { label: '项目名称', value: 'itemName' },
+        { label: '执行科室', value: 'execDeptName' }
+      ],
+      summaryMoreSearchTypes: [],
+      summaryMoreSearchOptions: [],
       detailLoading: false,
       detailList: [],
       detailTotal: 0,
@@ -696,6 +741,12 @@ export default {
     }
   },
   computed: {
+    moreSearchStorageKey() {
+      return 'spd.department.patientCharge.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    },
     fetchDialogTitle() {
       return 'HIS收费数据抓取'
     },
@@ -715,6 +766,8 @@ export default {
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.loadDetailList()
   },
   mounted() {
@@ -946,18 +999,63 @@ export default {
         beginProcessTime: undefined,
         endProcessTime: undefined
       }
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
       this.clearDetailSelectionCache()
       this.loadDetailList()
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      const map = {
+        patientName: 'patientName',
+        visitNo: 'visitNo',
+        chargeItemId: 'chargeItemId',
+        hisChargeId: 'hisChargeId',
+        chargeIdTf: 'chargeIdTf',
+        itemName: 'itemName',
+        execDeptName: 'execDeptName'
+      }
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null
+        }
+      })
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.detailQuery)
+    },
+    buildDetailQueryParams() {
+      const q = { ...this.detailQuery }
+      this.applyMoreSearchToQueryParams(q)
+      q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
+      q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
+      q.beginProcessTime = this.toQueryDayStart(q.beginProcessTime)
+      q.endProcessTime = this.toQueryDayEnd(q.endProcessTime)
+      return q
     },
     loadDetailList() {
       // 换页换数前先锁住 selection 回调，避免 data 替换瞬间的 [] 误清跨页 cache
       this.detailSelectionSyncing = true
       this.detailLoading = true
-      const q = { ...this.detailQuery }
-      q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
-      q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
-      q.beginProcessTime = this.toQueryDayStart(q.beginProcessTime)
-      q.endProcessTime = this.toQueryDayEnd(q.endProcessTime)
+      const q = this.buildDetailQueryParams()
       if (this.detailVisitType === 'IN') {
         q.inpatientNo = q.visitNo
         q.hisInpatientChargeId = q.hisChargeId
@@ -1021,6 +1119,13 @@ export default {
         return
       }
       this.loadSummary()
+    },
+    resetSummaryQuery() {
+      this.summaryQuery = {
+        beginChargeDate: undefined,
+        endChargeDate: undefined
+      }
+      this.summaryList = []
     },
     loadSummary() {
       this.summaryLoading = true
@@ -1483,6 +1588,7 @@ export default {
       const maxPages = 100
       while (pageNum <= maxPages) {
         const q = { ...this.detailQuery, pageNum, pageSize, processed: 'N' }
+        this.applyMoreSearchToQueryParams(q)
         q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
         q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
         q.beginProcessTime = this.toQueryDayStart(q.beginProcessTime)
@@ -1521,6 +1627,7 @@ export default {
     },
     buildExportParams() {
       const q = { ...this.detailQuery }
+      this.applyMoreSearchToQueryParams(q)
       delete q.pageNum
       delete q.pageSize
       q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
@@ -1655,9 +1762,12 @@ export default {
 }
 
 .patient-charge-page .pc-query-wrap {
-  max-height: 18vh;
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
   margin-bottom: 0.8vh;
+}
+.patient-charge-page .list-query-panel {
+  margin-top: 0;
 }
 
 .patient-charge-page .pc-detail-table {

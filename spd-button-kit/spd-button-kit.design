@@ -1,0 +1,32 @@
+{
+  "data": [
+    {
+      "id": "page-index",
+      "title": "按钮控件样式板",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1786687617000,
+      "canvasData": {
+        "x": 0,
+        "y": 48,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 2276,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-6b24c484",
+          "measuredAt": 1786688723458
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/index.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": false,
+    "deviceType": "desktop",
+    "projectName": "SPD 按钮控件样式板"
+  }
+}

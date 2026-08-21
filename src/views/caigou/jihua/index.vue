@@ -1,127 +1,135 @@
 <template>
-  <div class="app-container caigou-jihua-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item prop="planNo" class="query-item-inline">
-            <el-input v-model="queryParams.planNo"
-                      placeholder="计划单号"
-                      clearable
-                      style="width: 180px"
-                      @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-          <el-form-item prop="supplierId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectSupplier v-model="queryParams.supplierId"/>
-            </div>
-          </el-form-item>
-          <el-form-item prop="warehouseId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="设备"/>
-            </div>
-          </el-form-item>
-          <el-form-item prop="isGz" class="query-item-inline">
-            <el-select v-model="queryParams.isGz" placeholder="高值/低值" clearable style="width: 120px">
-              <el-option label="高值" value="1" />
-              <el-option label="低值" value="2" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item style="display: flex; align-items: center;">
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="起始日期"
+  <div class="app-container list-page caigou-jihua-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'supplier'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectSupplier v-model="queryParams.supplierId"/>
+              </div>
+            </template>
+            <template v-else-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="设备"/>
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.planNo"
+              placeholder="计划单号"
               clearable
-              style="width: 180px; margin-right: 8px;"
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
             />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12" class="query-status-col">
-          <el-form-item prop="planStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.planStatus" placeholder="单据状态"
-                       clearable style="width: 150px">
-              <el-option v-for="dict in planStatusFilterOptions"
-                         :key="dict.value"
-                         :label="dict.label"
-                         :value="dict.value"
-              />
-            </el-select>
-          </el-form-item>
-          <el-form-item prop="totalAmount" class="query-item-inline">
-            <el-input v-model="queryParams.totalAmount"
-                      placeholder="金额"
-                      clearable
-                      style="width: 180px"
-                      @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-          <el-form-item prop="planSource" class="query-item-inline">
-            <el-select v-model="queryParams.planSource" placeholder="计划来源"
-                       clearable style="width: 150px">
-              <el-option label="手工制单" value="手工制单" />
-              <el-option label="科室计划" value="科室计划" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+          </div>
+        </more-search-bar>
 
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                class="query-date-picker"
+              />
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item prop="planStatus" class="query-item-inline">
+              <el-select v-model="queryParams.planStatus" placeholder="单据状态"
+                         clearable class="more-search-select-wrap">
+                <el-option v-for="dict in planStatusFilterOptions"
+                           :key="dict.value"
+                           :label="dict.label"
+                           :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item prop="isGz" class="query-item-inline more-search-field--short">
+              <el-select v-model="queryParams.isGz" placeholder="高值/低值" clearable class="more-search-short-select">
+                <el-option label="高值" value="1" />
+                <el-option label="低值" value="2" />
+              </el-select>
+            </el-form-item>
+            <el-form-item prop="totalAmount" class="query-item-inline">
+              <el-input v-model="queryParams.totalAmount"
+                        placeholder="金额"
+                        clearable
+                        class="more-search-input more-search-input--dynamic"
+                        @keyup.enter.native="handleQuery"
+              />
+            </el-form-item>
+            <el-form-item prop="planSource" class="query-item-inline">
+              <el-select v-model="queryParams.planSource" placeholder="计划来源"
+                         clearable class="more-search-select-wrap">
+                <el-option label="手工制单" value="手工制单" />
+                <el-option label="科室计划" value="科室计划" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['caigou:jihua:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['caigou:jihua:export']"
         >导出计划明细</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExportSummary"
           v-hasPermi="['caigou:jihua:export']"
         >导出汇总</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           :disabled="multiple"
           @click="handleBatchSubmit"
           v-hasPermi="['caigou:jihua:edit']"
         >提交</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="primary" size="medium" @click="handleQuery">搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="primary" size="medium" @click="resetQuery">重置</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="warehouseList"
@@ -361,6 +369,12 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "计划单号", value: "planNo" },
+        { label: "供应商", value: "supplier" },
+        { label: "仓库", value: "warehouse" }
+      ],
       // 总条数
       total: 0,
       // 计划表格数据
@@ -429,6 +443,8 @@ export default {
   },
   created() {
     console.time('[Plan] created->getList');
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList(true);
     this.getUserList();
     console.timeEnd('[Plan] created->getList');
@@ -452,6 +468,12 @@ export default {
     }
   },
   computed: {
+    moreSearchStorageKey() {
+      return "spd.caigou.jihua.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
+    },
     /** 当前计划明细已关联的科室申购明细 id */
     planReferencedDepApplyEntryIdSet() {
       const set = new Set();
@@ -723,7 +745,9 @@ export default {
       }
       this.loading = true;
       const t0 = performance.now();
-      listPurchasePlan(this.queryParams).then(response => {
+      const queryParams = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(queryParams);
+      listPurchasePlan(queryParams).then(response => {
         const t1 = performance.now();
         // 预计算展示字段，减少模板计算
         const rows = response.rows || [];
@@ -1107,7 +1131,49 @@ export default {
       this.queryParams.endDate = this.getEndDate();
       this.queryParams.orderByColumn = 'pp.plan_date';
       this.queryParams.isAsc = 'desc';
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    moreSearchFieldClass(t) {
+      if (['supplier', 'warehouse'].includes(t)) {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        planNo: 'planNo',
+        supplier: 'supplierId',
+        warehouse: 'warehouseId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
@@ -1343,6 +1409,7 @@ export default {
     /** 导出计划明细（供货清单）：有勾选时仅导出所选计划；否则按当前筛选导出全部匹配明细 */
     handleExport() {
       const params = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(params)
       delete params.pageNum
       delete params.pageSize
       if (this.ids && this.ids.length > 0) {
@@ -1354,6 +1421,7 @@ export default {
     handleExportSummary() {
       const createParamsByScope = (scope) => {
         const params = { ...this.queryParams }
+        this.applyMoreSearchToQueryParams(params)
         params.exportScope = scope
         if (scope === 'all') {
           delete params.pageNum
@@ -2512,83 +2580,78 @@ export default {
   padding-right: 8px !important;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form {
+.list-query-panel .el-form {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  border: 1px solid #c0c4cc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form-compact {
-  margin-top: -12px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .el-row {
+.list-query-panel .el-form .el-row {
   margin-bottom: 8px;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .el-row:last-child {
+.list-query-panel .el-form .el-row:last-child {
   margin-bottom: 0;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .el-form-item {
+.list-query-panel .el-form .el-form-item {
   margin-bottom: 0;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-left .el-col {
+.list-query-panel .el-form .query-row-left .el-col {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-left .query-item-inline {
+.list-query-panel .el-form .query-row-left .query-item-inline {
   display: inline-block;
   margin-right: 16px;
   margin-bottom: 0;
   vertical-align: top;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
+.list-query-panel .el-form .query-row-left .query-item-inline:last-child {
   margin-right: 0;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
+.list-query-panel .el-form .query-row-left .query-item-inline .el-input {
   width: 180px;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
+.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper {
   width: 180px;
   display: inline-block;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
   width: 100%;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
+.list-query-panel .el-form .query-row-left .query-item-inline .el-select {
   width: 150px;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-second {
+.list-query-panel .el-form .query-row-second {
   position: relative;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-second .el-form-item {
+.list-query-panel .el-form .query-row-second .el-form-item {
   white-space: nowrap;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
+.list-query-panel .el-form .query-row-second .el-form-item .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
 
-.app-container.caigou-jihua-page > .el-form.query-form .query-row-second .query-status-col {
+.list-query-panel .el-form .query-row-second .query-status-col {
   position: absolute;
   left: 552px;
   width: auto;
@@ -2598,10 +2661,8 @@ export default {
   align-items: center;
 }
 
-.app-container.caigou-jihua-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.app-container.caigou-jihua-page > .list-toolbar {
+  margin-top: 4px !important;
 }
 
 .app-container.caigou-jihua-page > .el-table.table-compact {

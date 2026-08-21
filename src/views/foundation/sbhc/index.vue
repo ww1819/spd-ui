@@ -1,23 +1,49 @@
 <template>
-    <div class="inspection-platform">
-      <!-- 顶部搜索栏 -->
-      <div class="search-bar">
-        <el-form inline class="query-form">
-          <el-form-item>
-            <el-input v-model="searchForm.platform" placeholder="检验平台名称/编码..." clearable></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-input v-model="searchForm.instrument" placeholder="仪器名称" clearable></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-input v-model="searchForm.consumable" placeholder="耗材名称/编码..." clearable></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-          </el-form-item>
-          <el-form-item>
-            <el-button @click="handleReset">重置</el-button>
-          </el-form-item>
+    <div class="app-container list-page inspection-platform">
+      <div class="form-fields-container list-query-panel">
+        <el-form inline :model="searchForm" class="query-form" size="small">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleSearch"
+            @reset="handleReset"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field more-search-field--text"
+            >
+              <el-input
+                v-if="t === 'instrument'"
+                v-model="searchForm.instrument"
+                placeholder="仪器名称"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleSearch"
+              />
+              <el-input
+                v-else-if="t === 'consumable'"
+                v-model="searchForm.consumable"
+                placeholder="耗材名称/编码..."
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleSearch"
+              />
+              <el-input
+                v-else
+                v-model="searchForm.platform"
+                placeholder="检验平台名称/编码..."
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleSearch"
+              />
+            </div>
+          </more-search-bar>
         </el-form>
       </div>
   
@@ -86,7 +112,7 @@
             <div class="button-group">
               <el-button circle @click="handleMoveLeft"></el-button>
               <el-button circle @click="handleMoveRight"></el-button>
-              <el-button type="primary" @click="handleSave">保存</el-button>
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleSave">保存</el-button>
             </div>
           </div>
           <el-table 
@@ -128,6 +154,12 @@
           instrument: '',
           consumable: ''
         },
+        moreSearchTypes: [],
+        moreSearchOptions: [
+          { label: '检验平台', value: 'platform' },
+          { label: '仪器名称', value: 'instrument' },
+          { label: '耗材', value: 'consumable' }
+        ],
         consumableSearch: '',
         platformData: [
           { name: '免疫平台', code: '230508001' },
@@ -179,17 +211,67 @@
         ]
       };
     },
+    computed: {
+      moreSearchStorageKey() {
+        return 'spd.foundation.sbhc.moreSearchTypes'
+      },
+      builtInMoreSearchDefaults() {
+        return this.moreSearchOptions.map(o => o.value)
+      }
+    },
+    created() {
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
+    },
     methods: {
       handleSearch() {
-        console.log('查询条件:', this.searchForm);
-        // 这里可以添加查询逻辑
+        const params = { ...this.searchForm }
+        this.applyMoreSearchToQueryParams(params)
+        console.log('查询条件:', params)
       },
       handleReset() {
         this.searchForm = {
           platform: '',
           instrument: '',
           consumable: ''
-        };
+        }
+        this.moreSearchTypes = this.loadMoreSearchDefaults()
+        this.onMoreSearchTypesChange()
+        this.handleSearch()
+      },
+      loadMoreSearchDefaults() {
+        const bar = this.$refs.moreSearchBar
+        if (bar && typeof bar.loadDefaults === 'function') {
+          return bar.loadDefaults()
+        }
+        const fallback = this.builtInMoreSearchDefaults.slice()
+        try {
+          const raw = localStorage.getItem(this.moreSearchStorageKey)
+          if (!raw) return fallback
+          const parsed = JSON.parse(raw)
+          if (!Array.isArray(parsed)) return fallback
+          const allow = new Set(this.moreSearchOptions.map(o => o.value))
+          const cleaned = parsed.filter(v => allow.has(v))
+          return cleaned.length ? cleaned : fallback
+        } catch (e) {
+          return fallback
+        }
+      },
+      applyMoreSearchToQueryParams(target) {
+        const set = new Set(this.moreSearchTypes || [])
+        const map = {
+          platform: 'platform',
+          instrument: 'instrument',
+          consumable: 'consumable'
+        }
+        Object.keys(map).forEach((type) => {
+          if (!set.has(type)) {
+            target[map[type]] = null
+          }
+        })
+      },
+      onMoreSearchTypesChange() {
+        this.applyMoreSearchToQueryParams(this.searchForm)
       },
       handleMoveLeft() {
         console.log('移动到左侧');
@@ -274,11 +356,8 @@
     font-family: 'Arial', sans-serif;
   }
   
-  .search-bar {
-    margin-bottom: 15px;
-    padding: 10px;
-    background-color: #f5f7fa;
-    border-radius: 5px;
+  .list-query-panel {
+    margin-top: -20px;
   }
   
   .content {

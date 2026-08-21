@@ -1,0 +1,567 @@
+{
+  "data": [
+    {
+      "id": "image-001",
+      "title": "医疗耗材库房场景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-supply-room.jpg"
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "数字化医疗供应链",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 480,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-digital-network.jpg"
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "极简玻璃医疗科技",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 960,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-minimal-glass.jpg"
+      }
+    },
+    {
+      "id": "image-004",
+      "title": "深空医疗科技",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 1440,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-deep-tech.jpg"
+      }
+    },
+    {
+      "id": "image-005",
+      "title": "医院阳光中庭",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 1920,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-hospital-atrium.jpg"
+      }
+    },
+    {
+      "id": "image-006",
+      "title": "极简蓝白渐变",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 2400,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-minimal-gradient.jpg"
+      }
+    },
+    {
+      "id": "image-007",
+      "title": "医疗耗材平铺",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 2880,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-supplies-flatlay.jpg"
+      }
+    },
+    {
+      "id": "image-008",
+      "title": "智慧医疗仓储中心",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 3360,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-smart-warehouse.jpg"
+      }
+    },
+    {
+      "id": "image-009",
+      "title": "城市医疗物流网络",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 3840,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-city-logistics.jpg"
+      }
+    },
+    {
+      "id": "image-010",
+      "title": "全息医疗指挥中心",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 4320,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-holographic-command.jpg"
+      }
+    },
+    {
+      "id": "image-011",
+      "title": "明亮耗材仓库",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 4800,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-bright-warehouse.jpg"
+      }
+    },
+    {
+      "id": "image-012",
+      "title": "医院药房",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 5280,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-hospital-pharmacy.jpg"
+      }
+    },
+    {
+      "id": "image-013",
+      "title": "明亮耗材平铺",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 5760,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-bright-supplies.jpg"
+      }
+    },
+    {
+      "id": "image-014",
+      "title": "明亮医院走廊",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 6240,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-bright-corridor.jpg"
+      }
+    },
+    {
+      "id": "image-015",
+      "title": "光束动态背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 6720,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-dynamic-light-rays.jpg"
+      }
+    },
+    {
+      "id": "image-016",
+      "title": "扫描线动态背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 7200,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-dynamic-scanning.jpg"
+      }
+    },
+    {
+      "id": "image-017",
+      "title": "数据流动态背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787018071000,
+      "canvasData": {
+        "x": 7680,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-dynamic-dataflow.jpg"
+      }
+    },
+    {
+      "id": "image-018",
+      "title": "医院大厅科技融合",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787024455000,
+      "canvasData": {
+        "x": 8160,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-hospital-tech-fusion.jpg"
+      }
+    },
+    {
+      "id": "image-019",
+      "title": "供应链数字化仓储",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787024455000,
+      "canvasData": {
+        "x": 8640,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-supply-chain-digital.jpg"
+      }
+    },
+    {
+      "id": "image-020",
+      "title": "药房数据流动",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787024455000,
+      "canvasData": {
+        "x": 9120,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-pharmacy-dataflow.jpg"
+      }
+    },
+    {
+      "id": "image-021",
+      "title": "医疗走廊光线",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787024455000,
+      "canvasData": {
+        "x": 9600,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-medical-corridor-light.jpg"
+      }
+    },
+    {
+      "id": "image-022",
+      "title": "自然光影空间",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787033255000,
+      "canvasData": {
+        "x": 10080,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-natural-light-space.jpg"
+      }
+    },
+    {
+      "id": "image-023",
+      "title": "干净蓝白渐变",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787033255000,
+      "canvasData": {
+        "x": 10560,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-clean-blue-gradient.jpg"
+      }
+    },
+    {
+      "id": "image-024",
+      "title": "柔和雾气留白",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787033255000,
+      "canvasData": {
+        "x": 11040,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-soft-mist.jpg"
+      }
+    },
+    {
+      "id": "image-025",
+      "title": "极简科技留白",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787033255000,
+      "canvasData": {
+        "x": 11520,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-minimal-tech-space.jpg"
+      }
+    },
+    {
+      "id": "image-026",
+      "title": "环境光晕留白",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787033255000,
+      "canvasData": {
+        "x": 12000,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-ambient-glow.jpg"
+      }
+    },
+    {
+      "id": "image-027",
+      "title": "医院耗材货架仓库",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787035486000,
+      "canvasData": {
+        "x": 12480,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-warehouse-shelves.jpg"
+      }
+    },
+    {
+      "id": "image-028",
+      "title": "智能SPD仓库",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787035486000,
+      "canvasData": {
+        "x": 12960,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-smart-spd-warehouse.jpg"
+      }
+    },
+    {
+      "id": "image-029",
+      "title": "医院药房仓库",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787035486000,
+      "canvasData": {
+        "x": 13440,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-pharmacy-storage.jpg"
+      }
+    },
+    {
+      "id": "image-030",
+      "title": "医用物资存储区",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787035486000,
+      "canvasData": {
+        "x": 13920,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-supply-storage.jpg"
+      }
+    },
+    {
+      "id": "image-031",
+      "title": "仓库纵深走廊",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1787035486000,
+      "canvasData": {
+        "x": 14400,
+        "y": 0,
+        "naturalSize": {
+          "width": 2560,
+          "height": 1600
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg-warehouse-corridor.jpg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "freeSize",
+    "projectName": "SPD 登录页背景图"
+  }
+}

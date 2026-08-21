@@ -1,93 +1,83 @@
 <template>
-  <div class="app-container material-category-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item prop="materialCategoryCode">
-            <el-input
-              v-model="queryParams.materialCategoryCode"
-              placeholder="分类编码"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item prop="materialCategoryName">
-            <el-input
-              v-model="queryParams.materialCategoryName"
-              placeholder="分类名称"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item prop="pinyinCode">
-            <el-input
-              v-model="queryParams.pinyinCode"
-              placeholder="拼音简码"
-              clearable
-              @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-            <el-button size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+  <div class="app-container list-page material-category-page">
+    <div class="query-container" v-show="showSearch">
+      <div class="form-fields-container list-query-panel">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field more-search-field--text"
+            >
+              <el-input
+                v-model="queryParams[t]"
+                :placeholder="moreSearchPlaceholderFor(t)"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleQuery"
+              />
+            </div>
+          </more-search-bar>
+        </el-form>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
-          type="primary" size="small"
+          type="primary"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['foundation:materialCategory:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:materialCategory:edit']"
         >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:materialCategory:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['foundation:materialCategory:export']"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="multiple"
           @click="handleBatchUpdatePinyinCode"
           v-hasPermi="['foundation:materialCategory:edit']"
         >批量更新材料类别简码</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleUpdateAllPinyinCode"
           v-hasPermi="['foundation:materialCategory:edit']"
         >全量更新材料类别简码</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="materialCategoryList" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
@@ -137,7 +127,6 @@
       @pagination="getList"
     />
 
-    <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
     <div v-if="open" class="material-category-drawer-mask" @click.self="cancel">
       <div class="material-category-drawer-panel" @click.stop>
         <div class="material-category-drawer-header">
@@ -164,8 +153,8 @@
           </el-form>
         </div>
         <div class="material-category-drawer-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -177,27 +166,34 @@ import { listMaterialCategory, getMaterialCategory, delMaterialCategory, addMate
 
 export default {
   name: "MaterialCategory",
+  computed: {
+    isDisabled() {
+      return this.form.materialCategoryId != null;
+    },
+    moreSearchStorageKey() {
+      return "spd.foundation.materialCategory.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["materialCategoryCode", "materialCategoryName", "pinyinCode"];
+    }
+  },
   data() {
     return {
-      // 遮罩层
       loading: true,
-      // 选中数组
       ids: [],
-      // 非单个禁用
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      // 总条数
       total: 0,
-      // 耗材分类维护表格数据
       materialCategoryList: [],
-      // 弹出层标题
       title: "",
-      // 是否显示弹出层
       open: false,
-      // 查询参数
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "materialCategoryCode", label: "分类编码" },
+        { value: "materialCategoryName", label: "分类名称" },
+        { value: "pinyinCode", label: "拼音简码" }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -207,9 +203,7 @@ export default {
         materialCategoryAddress: null,
         materialCategoryContact: null,
       },
-      // 表单参数
       form: {},
-      // 表单校验
       rules: {
         materialCategoryCode: [
           { required: true, message: "耗材分类编码不能为空", trigger: "blur" }
@@ -221,24 +215,60 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
-    /** 查询耗材分类维护列表 */
+    moreSearchPlaceholderFor(t) {
+      const map = {
+        materialCategoryCode: "分类编码",
+        materialCategoryName: "分类名称",
+        pinyinCode: "拼音简码"
+      };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["materialCategoryCode", "materialCategoryName", "pinyinCode"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     getList() {
       this.loading = true;
-      listMaterialCategory(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listMaterialCategory(params).then(response => {
         this.materialCategoryList = response.rows;
         this.total = response.total;
         this.loading = false;
       });
     },
-    // 取消按钮
     cancel() {
       this.open = false;
       this.reset();
     },
-    // 表单重置
     reset() {
       this.form = {
         materialCategoryId: null,
@@ -255,29 +285,29 @@ export default {
       };
       this.resetForm("form");
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.materialCategoryCode = null;
+      this.queryParams.materialCategoryName = null;
+      this.queryParams.pinyinCode = null;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
-    // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.materialCategoryId)
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
-    /** 新增按钮操作 */
     handleAdd() {
       this.reset();
       this.open = true;
       this.title = "添加耗材分类维护";
     },
-    /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
       const materialCategoryId = row.materialCategoryId || this.ids
@@ -287,18 +317,17 @@ export default {
         this.title = "修改耗材分类维护";
       });
     },
-    /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (this.form.materialCategoryId != null) {
-            updateMaterialCategory(this.form).then(response => {
+            updateMaterialCategory(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
             });
           } else {
-            addMaterialCategory(this.form).then(response => {
+            addMaterialCategory(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
@@ -307,7 +336,6 @@ export default {
         }
       });
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const materialCategoryIds = row.materialCategoryId || this.ids;
       this.$modal.confirm('是否确认删除耗材分类维护编号为"' + materialCategoryIds + '"的数据项？').then(function() {
@@ -317,13 +345,11 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
-    /** 导出按钮操作 */
     handleExport() {
-      this.download('foundation/materialCategory/export', {
-        ...this.queryParams
-      }, `materialCategory_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('foundation/materialCategory/export', params, `materialCategory_${new Date().getTime()}.xlsx`)
     },
-    /** 批量更新材料类别拼音简码 */
     handleBatchUpdatePinyinCode() {
       const materialCategoryIds = this.ids || [];
       if (!materialCategoryIds.length) {
@@ -337,7 +363,6 @@ export default {
         this.getList();
       }).catch(() => {});
     },
-    /** 全量更新材料类别拼音简码 */
     handleUpdateAllPinyinCode() {
       this.$modal.confirm("是否确认全量更新当前租户所有材料类别的拼音简码？").then(() => {
         return updateMaterialCategoryPinyinCodeAll();

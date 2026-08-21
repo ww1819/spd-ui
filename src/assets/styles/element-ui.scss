@@ -108,3 +108,222 @@
 .el-message.spd-msg-error-lg .el-message__closeBtn {
   display: none !important;
 }
+
+/* =========================================================
+   按钮控件全局样式覆盖（SPD 设计系统）
+   ========================================================= */
+
+/* 基础按钮：统一字重、圆角、过渡 */
+.el-button {
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.el-button:focus-visible,
+.el-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* 主要按钮：医疗蓝 */
+.el-button--primary {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.15);
+}
+
+.el-button--primary:hover,
+.el-button--primary:focus {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+.el-button--primary:active {
+  background-color: #1e40af;
+  border-color: #1e40af;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.15);
+}
+
+.el-button--primary.is-plain {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.el-button--primary.is-plain:hover,
+.el-button--primary.is-plain:focus {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+/* 成功按钮 */
+.el-button--success {
+  background-color: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.el-button--success:hover,
+.el-button--success:focus {
+  background-color: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.el-button--success:active {
+  background-color: #047857;
+  border-color: #047857;
+}
+
+/* 警告按钮 */
+.el-button--warning {
+  background-color: #f59e0b;
+  border-color: #f59e0b;
+  color: #ffffff;
+}
+
+.el-button--warning:hover,
+.el-button--warning:focus {
+  background-color: #d97706;
+  border-color: #d97706;
+  color: #ffffff;
+}
+
+/* 危险按钮 */
+.el-button--danger {
+  background-color: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+.el-button--danger:hover,
+.el-button--danger:focus {
+  background-color: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
+}
+
+.el-button--danger:active {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+/* 默认/次要按钮 */
+.el-button--default {
+  background-color: #ffffff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.el-button--default:hover,
+.el-button--default:focus {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+  color: #1f2937;
+}
+
+.el-button--default:active {
+  background-color: #f3f4f6;
+  border-color: #6b7280;
+}
+
+/* 文字按钮 */
+.el-button--text {
+  color: #2563eb;
+  padding-left: 8px;
+  padding-right: 8px;
+  box-shadow: none;
+}
+
+.el-button--text:hover,
+.el-button--text:focus {
+  color: #1d4ed8;
+  background-color: rgba(37, 99, 235, 0.06);
+}
+
+.el-button--text:active {
+  color: #1e40af;
+}
+
+/* 图标按钮 */
+.el-button.is-circle {
+  border-radius: 50%;
+  padding: 9px;
+}
+
+.el-button--primary.is-circle {
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+/* 禁用状态 */
+.el-button.is-disabled,
+.el-button.is-disabled:hover,
+.el-button.is-disabled:focus,
+.el-button.is-disabled:active {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 加载状态 */
+.el-button.is-loading {
+  pointer-events: none;
+}
+
+/* 按钮组：工具栏场景 */
+.el-button-group {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.el-button-group .el-button {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.el-button-group .el-button:first-child {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+.el-button-group .el-button:last-child {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.el-button-group .el-button:not(:first-child):not(:last-child) {
+  border-left-color: rgba(255, 255, 255, 0.3);
+}
+
+/* 表格操作列链接按钮 */
+.el-table .cell .el-button--text {
+  padding: 0 4px;
+  font-size: 13px;
+  height: auto;
+}
+
+.el-table .cell .el-button--text.is-danger {
+  color: #ef4444;
+}
+
+.el-table .cell .el-button--text.is-danger:hover {
+  color: #dc2626;
+  background-color: rgba(239, 68, 68, 0.06);
+}
+
+/* 下拉按钮触发器 */
+.el-dropdown .el-button--primary {
+  display: inline-flex;
+  align-items: center;
+}
+
+.el-dropdown .el-button [class*="el-icon--right"] {
+  margin-left: 4px;
+}

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container hc-barcode-circulation">
+  <div class="app-container list-page hc-barcode-circulation">
     <el-row :gutter="12" type="flex" class="top-board-row" align="stretch">
       <el-col :xs="24" :sm="24" :md="7" :lg="6" :xl="5">
         <el-card shadow="never" class="product-card" :body-style="{ padding: '10px 14px', height: '100%' }">
@@ -24,30 +24,48 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="10" class="mb8 toolbar-row" type="flex" align="middle">
-      <el-col :xs="24" :sm="24" :md="18" :lg="19" :xl="20">
-        <div class="toolbar-inline">
-          <el-form v-show="showSearch" ref="queryForm" :model="queryParams" size="small" :inline="true" label-width="68px" class="toolbar-query-form">
-            <el-form-item label="条码值" prop="barcodeValue">
-              <el-input v-model="queryParams.barcodeValue" placeholder="模糊匹配" clearable style="width: 200px" @keyup.enter.native="handleQuery" />
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-              <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-form>
-          <el-button
-            type="warning"
-            icon="el-icon-download"
-            size="small"
-            @click="handleExport"
-            v-hasPermi="['hc:barcode:public:circulation:export']"
-          >导出</el-button>
-        </div>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="6" :lg="5" :xl="4" class="toolbar-right-col">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field more-search-field--text"
+          >
+            <el-input
+              v-model="queryParams.barcodeValue"
+              placeholder="条码值模糊匹配"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary"
+          @click="handleExport"
+          v-hasPermi="['hc:barcode:public:circulation:export']"
+        >导出</el-button>
+      </div>
+      <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
-      </el-col>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" border stripe size="small" :max-height="tableMaxHeight">
@@ -84,6 +102,10 @@ export default {
     return {
       loading: false,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '条码值', value: 'barcodeValue' }
+      ],
       total: 0,
       dataList: [],
       productInfo: {
@@ -107,7 +129,17 @@ export default {
       }
     }
   },
+  computed: {
+    moreSearchStorageKey() {
+      return 'spd.warehouse.hcBarcodeCirculation.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.getList()
   },
   mounted() {
@@ -353,7 +385,9 @@ export default {
     },
     getList() {
       this.loading = true
-      listHcBarcodeCirculation(this.queryParams).then(res => {
+      const params = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(params)
+      listHcBarcodeCirculation(params).then(res => {
         this.dataList = res.rows || []
         this.total = res.total || 0
         this.syncProductInfoFromList(this.dataList)
@@ -372,10 +406,41 @@ export default {
     resetQuery() {
       this.resetForm('queryForm')
       this.queryParams.hcBarcodeMasterId = undefined
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
       this.handleQuery()
     },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      if (!set.has('barcodeValue')) {
+        target.barcodeValue = null
+      }
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams)
+    },
     handleExport() {
-      this.download('hc/barcode/public/circulation/export', { ...this.queryParams }, `条码流通_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(params)
+      this.download('hc/barcode/public/circulation/export', params, `条码流通_${new Date().getTime()}.xlsx`)
     }
   }
 }
@@ -384,6 +449,10 @@ export default {
 <style scoped>
 .top-board-row {
   margin-bottom: 12px;
+}
+.list-query-panel {
+  margin-top: 0;
+  margin-bottom: 8px;
 }
 .top-board-row .el-col {
   display: flex;

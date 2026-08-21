@@ -1,62 +1,107 @@
 <template>
-  <div class="app-container finance-invoice-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="90px" class="query-form query-form-compact">
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item label="发票号码" prop="invoiceNo" class="query-item-inline">
-            <el-input v-model="queryParams.invoiceNo" placeholder="请输入发票号码" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
-          </el-form-item>
-          <el-form-item label="发票代码" prop="invoiceCode" class="query-item-inline">
-            <el-input v-model="queryParams.invoiceCode" placeholder="请输入发票代码" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
-          </el-form-item>
-          <el-form-item label="审核状态" prop="auditStatus" class="query-item-inline">
-            <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable style="width: 120px">
-              <el-option label="待审核" :value="0" />
-              <el-option label="已审核" :value="1" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="供应商" prop="supplierId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectSupplier v-model="queryParams.supplierId" />
-            </div>
-          </el-form-item>
-          <el-form-item label="购方名称" prop="buyerName" class="query-item-inline">
-            <el-input v-model="queryParams.buyerName" placeholder="购方名称" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
-          </el-form-item>
-          <el-form-item label="开票日期" class="query-item-inline">
-            <el-date-picker
-              v-model="dateRange"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              value-format="yyyy-MM-dd"
-              style="width: 240px"
+  <div class="app-container list-page finance-invoice-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'supplier'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectSupplier v-model="queryParams.supplierId" />
+              </div>
+            </template>
+            <el-input
+              v-else-if="t === 'invoiceCode'"
+              v-model="queryParams.invoiceCode"
+              placeholder="发票代码"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
             />
-          </el-form-item>
-        </el-col>
-      </el-row>
-      <el-row class="query-row-actions">
-        <el-col :span="24">
-          <el-form-item label-width="0">
-            <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-            <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+            <el-input
+              v-else-if="t === 'buyerName'"
+              v-model="queryParams.buyerName"
+              placeholder="购方名称"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else
+              v-model="queryParams.invoiceNo"
+              placeholder="发票号码"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
-        <el-button type="primary" plain icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['finance:invoice:add']">新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="success" plain icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate(selectedRow)" v-hasPermi="['finance:invoice:edit']">修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['finance:invoice:remove']">删除</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                value-format="yyyy-MM-dd"
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item prop="auditStatus" class="query-item-inline">
+              <el-select v-model="queryParams.auditStatus" placeholder="审核状态" clearable class="more-search-select-wrap">
+                <el-option label="待审核" :value="0" />
+                <el-option label="已审核" :value="1" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button
+          type="primary"
+          size="small"
+          class="spd-btn spd-btn--primary"
+          @click="handleAdd"
+          v-hasPermi="['finance:invoice:add']"
+        >新增</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary"
+          :disabled="single"
+          @click="handleUpdate(selectedRow)"
+          v-hasPermi="['finance:invoice:edit']"
+        >修改</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--danger"
+          :disabled="multiple"
+          @click="handleDelete"
+          v-hasPermi="['finance:invoice:remove']"
+        >删除</el-button>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="invoiceList" class="table-compact" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
@@ -166,8 +211,8 @@
         </el-row>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
   </div>
@@ -187,6 +232,13 @@ export default {
       single: true,
       multiple: true,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "发票号码", value: "invoiceNo" },
+        { label: "发票代码", value: "invoiceCode" },
+        { label: "供应商", value: "supplier" },
+        { label: "购方名称", value: "buyerName" }
+      ],
       total: 0,
       invoiceList: [],
       title: '',
@@ -208,13 +260,24 @@ export default {
       }
     }
   },
+  computed: {
+    moreSearchStorageKey() {
+      return 'spd.finance.invoice.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.getList()
   },
   methods: {
     getList() {
       this.loading = true
       const params = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(params)
       if (this.dateRange && this.dateRange.length === 2) {
         params.params = {}
         params.params.beginTime = this.dateRange[0]
@@ -328,7 +391,50 @@ export default {
     resetQuery() {
       this.dateRange = []
       this.resetForm('queryForm')
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
       this.handleQuery()
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'supplier') {
+        return 'more-search-field--select'
+      }
+      return 'more-search-field--text'
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      const map = {
+        invoiceNo: 'invoiceNo',
+        invoiceCode: 'invoiceCode',
+        supplier: 'supplierId',
+        buyerName: 'buyerName'
+      }
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null
+        }
+      })
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams)
     }
   }
 }
@@ -342,61 +448,8 @@ export default {
   padding-right: 8px !important;
 }
 
-.app-container.finance-invoice-page > .el-form.query-form-compact {
-  margin-top: -12px !important;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  border: 1px solid #c0c4cc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
-}
-
-.app-container.finance-invoice-page > .el-form.query-form-compact .el-row {
-  margin-bottom: 8px;
-}
-
-.app-container.finance-invoice-page > .el-form.query-form-compact .el-row:last-child {
-  margin-bottom: 0;
-}
-
-.app-container.finance-invoice-page > .el-form.query-form-compact .el-form-item {
-  margin-bottom: 0;
-}
-
-.app-container.finance-invoice-page > .el-form.query-form-compact .query-row-left .el-col {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.app-container.finance-invoice-page > .el-form.query-form-compact .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.app-container.finance-invoice-page > .el-form.query-form-compact .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-.app-container.finance-invoice-page > .el-form.query-form-compact .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.app-container.finance-invoice-page > .el-form.query-form-compact .query-select-wrapper > * {
-  width: 100%;
-}
-
-.app-container.finance-invoice-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .app-container.finance-invoice-page > .el-table.table-compact {

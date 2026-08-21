@@ -3,16 +3,27 @@
 * So I modified the default color and you can modify it to your liking.
 **/
 
-/* theme color */
-$--color-primary: #409EFF;
-$--color-success: #67C23A;
-$--color-warning: #E6A23C;
-$--color-danger: #F56C6C;
+/* theme color - 医疗物资管理系统主色板 */
+$--color-primary: #2563eb;
+$--color-success: #10b981;
+$--color-warning: #f59e0b;
+$--color-danger: #ef4444;
 // $--color-info: #1E1E1E;
 
-$--button-font-weight: 600;
+/* Button tokens */
+$--button-font-weight: 500;
+$--button-border-radius: 6px;
+$--button-padding-vertical: 9px;
+$--button-padding-horizontal: 18px;
+$--button-medium-padding-vertical: 8px;
+$--button-medium-padding-horizontal: 16px;
+$--button-small-padding-vertical: 6px;
+$--button-small-padding-horizontal: 12px;
+$--button-mini-padding-vertical: 4px;
+$--button-mini-padding-horizontal: 10px;
 
 // $--color-text-regular: #1f2d3d;
+$--color-text-regular: #404854;
 
 $--border-color-light: #EBEEF5;
 $--border-color-lighter: #F2F6FC;
@@ -27,8 +38,8 @@ $--table-current-row-background-color: #F5F7FA;
 $--table-header-height: 50px;
 $--table-row-height: 50px;
 $--table-border-color: #EBEEF5;
-$--table-text-color: #606266;
-$--table-header-text-color: #606266;
+$--table-text-color: #404854;
+$--table-header-text-color: #404854;
 $--table-header-font-weight: 500;
 $--table-cell-padding: 12px 0;
 

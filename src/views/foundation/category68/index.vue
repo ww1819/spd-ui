@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container list-page">
     <el-row :gutter="20">
       <!-- 左侧树形菜单 -->
       <el-col :span="6">
@@ -23,71 +23,71 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="18">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-          <el-row :gutter="20">
-            <el-col :span="10">
-              <el-form-item prop="category68Code">
-                <el-input
-                  v-model="queryParams.category68Code"
-                  placeholder="标准分类代码"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                  style="width: 100%"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="10">
-              <el-form-item prop="category68Name">
-                <el-input
-                  v-model="queryParams.category68Name"
-                  placeholder="分类名称"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                  style="width: 100%"
-                />
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
+        <div class="query-container" v-show="showSearch">
+          <div class="form-fields-container list-query-panel">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <more-search-bar
+                ref="moreSearchBar"
+                v-model="moreSearchTypes"
+                :options="moreSearchOptions"
+                :storage-key="moreSearchStorageKey"
+                :default-types="builtInMoreSearchDefaults"
+                :auto-load="false"
+                @change="onMoreSearchTypesChange"
+                @search="handleQuery"
+                @reset="resetQuery"
+              >
+                <div
+                  v-for="t in moreSearchTypes"
+                  :key="t"
+                  class="more-search-dynamic-field more-search-field--text"
+                >
+                  <el-input
+                    v-model="queryParams[t]"
+                    :placeholder="moreSearchPlaceholderFor(t)"
+                    clearable
+                    class="more-search-input more-search-input--dynamic"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </div>
+              </more-search-bar>
+            </el-form>
+          </div>
+        </div>
 
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
+        <el-row :gutter="0" class="mb8 list-toolbar">
+          <div class="list-toolbar-left">
             <el-button
-              type="primary" size="small"
+              type="primary"
+              size="small"
+              class="spd-btn spd-btn--primary"
               @click="handleAdd"
               v-hasPermi="['foundation:category68:add']"
             >新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:category68:edit']"
             >修改</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:category68:remove']"
             >删除</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleExport"
               v-hasPermi="['foundation:category68:export']"
             >导出</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-          </el-col>
-          <el-col :span="1.5">
-            <el-button size="small" @click="resetQuery">重置</el-button>
-          </el-col>
-          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
+          <div class="list-toolbar-right">
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
         </el-row>
 
         <el-table v-loading="loading" :data="category68List" :row-class-name="category68Index" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
@@ -177,8 +177,8 @@
           </el-row>
         </el-form>
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -190,6 +190,17 @@ import { listCategory68, getCategory68, delCategory68, addCategory68, updateCate
 
 export default {
   name: "Category68",
+  computed: {
+    moreSearchStorageKey() {
+      return "spd.foundation.category68.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["category68Code", "category68Name"];
+    },
+    isDisabled() {
+      return this.form.category68Id != null;
+    }
+  },
   data() {
     return {
       // 树形数据
@@ -218,6 +229,11 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "category68Code", label: "标准分类代码" },
+        { value: "category68Name", label: "分类名称" }
+      ],
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -243,15 +259,50 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = { category68Code: "标准分类代码", category68Name: "分类名称" };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["category68Code", "category68Name"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     /** 查询68分类列表 */
     getList() {
       this.loading = true;
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
       // 并行获取列表数据和树形数据
       Promise.all([
-        listCategory68(this.queryParams),
+        listCategory68(params),
         treeselect()
       ]).then(([listResponse, treeResponse]) => {
         const allData = treeResponse.data || [];
@@ -364,6 +415,10 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.category68Code = null;
+      this.queryParams.category68Name = null;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     // 多选框选中数据
@@ -441,9 +496,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('foundation/category68/export', {
-        ...this.queryParams
-      }, `category68_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('foundation/category68/export', params, `category68_${new Date().getTime()}.xlsx`)
     }
   }
 };

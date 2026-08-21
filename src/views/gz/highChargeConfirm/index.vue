@@ -72,6 +72,7 @@
         plain
         icon="el-icon-check"
         size="small"
+        class="spd-btn spd-btn--primary"
         :disabled="!canConfirm"
         v-hasPermi="['gz:highChargeConfirm:confirm']"
         @click="openConfirmDialog"
@@ -82,12 +83,13 @@
         plain
         icon="el-icon-refresh-left"
         size="small"
+        class="spd-btn spd-btn--danger"
         v-hasPermi="['gz:highChargeConfirm:writeOff']"
         @click="submitWriteOff"
       >冲销</el-button>
       <span v-if="selectedRows.length" class="hc-selected-tip">已选 {{ selectedRows.length }} 条</span>
-      <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">查询</el-button>
-      <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
+      <el-button type="primary" icon="el-icon-search" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">查询</el-button>
+      <el-button icon="el-icon-refresh" size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
     </div>
 
     <div class="hc-detail-box">
@@ -175,8 +177,8 @@
       </el-form>
       <p class="hc-confirm-tip">确认后不生成入出库单，待库房在「高值即入即出」审核建单。</p>
       <div slot="footer">
-        <el-button @click="confirmDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="confirmSubmitting" @click="submitConfirm">确认</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="confirmDialogVisible = false">取消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="confirmSubmitting" @click="submitConfirm">确认</el-button>
       </div>
     </el-dialog>
 
@@ -184,7 +186,7 @@
       <p>确认批次：<strong>{{ result.confirmNo }}</strong>，共 {{ result.lineCount }} 条明细。</p>
       <p>已确认，待库房即入即出审核。</p>
       <div slot="footer">
-        <el-button type="primary" @click="resultDialogVisible = false">知道了</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="resultDialogVisible = false">知道了</el-button>
       </div>
     </el-dialog>
   </div>

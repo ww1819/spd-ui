@@ -1,0 +1,43 @@
+@layer theme {
+  :root {
+    --spd-background: #ffffff;
+    --spd-foreground: #1f2937;
+    --spd-card: #ffffff;
+    --spd-card-foreground: #1f2937;
+    --spd-popover: #ffffff;
+    --spd-popover-foreground: #1f2937;
+    --spd-primary: #2563eb;
+    --spd-primary-foreground: #ffffff;
+    --spd-secondary: #f3f4f6;
+    --spd-secondary-foreground: #374151;
+    --spd-muted: #f3f4f6;
+    --spd-muted-foreground: #6b7280;
+    --spd-accent: #eff6ff;
+    --spd-accent-foreground: #1d4ed8;
+    --spd-border: #e5e7eb;
+    --spd-input: #e5e7eb;
+    --spd-ring: #2563eb;
+
+    --spd-state-success: #10b981;
+    --spd-state-success-foreground: #ffffff;
+    --spd-state-warning: #f59e0b;
+    --spd-state-warning-foreground: #ffffff;
+    --spd-state-error: #ef4444;
+    --spd-state-error-foreground: #ffffff;
+    --spd-state-info: #3b82f6;
+    --spd-state-info-foreground: #ffffff;
+
+    --spd-radius-sm: 4px;
+    --spd-radius-md: 8px;
+    --spd-radius-lg: 12px;
+    --spd-radius-pill: 999px;
+
+    --spd-font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", Arial, sans-serif;
+    --spd-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+    --spd-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --spd-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.03);
+    --spd-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+    --spd-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.12);
+  }
+}

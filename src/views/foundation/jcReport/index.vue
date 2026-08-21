@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container list-page">
     <el-alert
       :title="modeTip"
       type="info"
@@ -8,70 +8,96 @@
       style="margin-bottom: 12px;"
     />
 
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-form-item prop="periodId">
-            <el-select v-model="queryParams.periodId" placeholder="集采周期" clearable filterable style="width: 100%">
-              <el-option
-                v-for="item in periodOptions"
-                :key="item.id"
-                :label="formatPeriodLabel(item)"
-                :value="item.id"
+    <div class="query-container" v-show="showSearch">
+      <div class="form-fields-container list-query-panel">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field"
+              :class="moreSearchFieldClass(t)"
+            >
+              <el-select
+                v-if="t === 'periodId'"
+                v-model="queryParams.periodId"
+                placeholder="集采周期"
+                clearable
+                filterable
+                class="more-search-select-wrap"
+                style="width: 190px"
+              >
+                <el-option
+                  v-for="item in periodOptions"
+                  :key="item.id"
+                  :label="formatPeriodLabel(item)"
+                  :value="item.id"
+                />
+              </el-select>
+              <el-select
+                v-else-if="t === 'reportMode'"
+                v-model="queryParams.reportMode"
+                placeholder="报量模式"
+                class="more-search-select-wrap"
+                style="width: 190px"
+                @change="handleQuery"
+              >
+                <el-option :label="'当前模式（' + modeLabel(currentMode) + '）'" :value="currentMode" />
+                <el-option
+                  v-if="currentMode === 'PRODUCT'"
+                  label="历史：按类型（只读）"
+                  value="TYPE"
+                />
+                <el-option
+                  v-if="currentMode === 'TYPE'"
+                  label="历史：按产品（只读）"
+                  value="PRODUCT"
+                />
+              </el-select>
+              <el-input
+                v-else
+                v-model="queryParams[t]"
+                :placeholder="moreSearchPlaceholderFor(t)"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleQuery"
               />
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item prop="reportMode">
-            <el-select v-model="queryParams.reportMode" placeholder="报量模式" style="width: 100%" @change="handleQuery">
-              <el-option :label="'当前模式（' + modeLabel(currentMode) + '）'" :value="currentMode" />
-              <el-option
-                v-if="currentMode === 'PRODUCT'"
-                label="历史：按类型（只读）"
-                value="TYPE"
-              />
-              <el-option
-                v-if="currentMode === 'TYPE'"
-                label="历史：按产品（只读）"
-                value="PRODUCT"
-              />
-            </el-select>
-          </el-form-item>
-        </el-col>
-        <el-col :span="6" v-if="queryParams.reportMode === 'PRODUCT'">
-          <el-form-item prop="materialName">
-            <el-input v-model="queryParams.materialName" placeholder="耗材名称" clearable @keyup.enter.native="handleQuery" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6" v-if="queryParams.reportMode === 'TYPE'">
-          <el-form-item prop="jcTypeName">
-            <el-input v-model="queryParams.jcTypeName" placeholder="集采类型名称" clearable @keyup.enter.native="handleQuery" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item>
-            <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-            <el-button size="small" @click="resetQuery">重置</el-button>
-          </el-form-item>
-        </el-col>
-      </el-row>
-    </el-form>
+            </div>
+          </more-search-bar>
+        </el-form>
+      </div>
+    </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
           size="small"
+          class="spd-btn spd-btn--primary"
           :disabled="isHistoryMode"
           @click="handleAdd"
           v-hasPermi="['foundation:jcReport:add']"
         >新增报量</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="primary" size="small" @click="handleExport" v-hasPermi="['foundation:jcReport:export']">导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary"
+          @click="handleExport"
+          v-hasPermi="['foundation:jcReport:export']"
+        >导出</el-button>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="dataList" :row-class-name="rowIndex" height="calc(100vh - 360px)" stripe>
@@ -147,8 +173,8 @@
           </el-form-item>
         </el-form>
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -174,6 +200,13 @@ export default {
       currentMode: "PRODUCT",
       title: "",
       open: false,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "periodId", label: "集采周期" },
+        { value: "reportMode", label: "报量模式" },
+        { value: "materialName", label: "耗材名称" },
+        { value: "jcTypeName", label: "集采类型名称" }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -201,12 +234,55 @@ export default {
         return "当前租户启用「" + cur + "」报量；正在查看另一模式历史数据（只读，切换模式后可继续维护）。";
       }
       return "当前租户报量模式：「" + cur + "」。同一周期+维度重复提交会覆盖报量数。";
+    },
+    moreSearchStorageKey() {
+      return "spd.foundation.jcReport.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["periodId", "reportMode", "materialName", "jcTypeName"];
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.init();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = { materialName: "耗材名称", jcTypeName: "集采类型名称" };
+      return map[t] || "请输入";
+    },
+    moreSearchFieldClass(t) {
+      if (t === "periodId" || t === "reportMode") return "more-search-field--select";
+      return "more-search-field--text";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      if (!set.has("periodId")) target.periodId = null;
+      if (!set.has("materialName")) target.materialName = null;
+      if (!set.has("jcTypeName")) target.jcTypeName = null;
+      if (!target.reportMode) target.reportMode = this.currentMode;
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     modeLabel(mode) {
       return mode === "TYPE" ? "按类型" : "按产品";
     },
@@ -230,7 +306,9 @@ export default {
     },
     getList() {
       this.loading = true;
-      listJcReport(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listJcReport(params).then(response => {
         this.dataList = response.rows || [];
         this.total = response.total || 0;
         this.loading = false;
@@ -261,7 +339,12 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.periodId = null;
+      this.queryParams.materialName = null;
+      this.queryParams.jcTypeName = null;
       this.queryParams.reportMode = this.currentMode;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     handleAdd() {
@@ -313,7 +396,9 @@ export default {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     handleExport() {
-      this.download("foundation/jcReport/export", { ...this.queryParams }, `jcReport_${new Date().getTime()}.xlsx`);
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download("foundation/jcReport/export", params, `jcReport_${new Date().getTime()}.xlsx`);
     }
   }
 };

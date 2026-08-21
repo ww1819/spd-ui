@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>按钮控件样式板</title>
+    <style id="theme-vars">
+@layer theme {
+  :root {
+    --spd-background: #ffffff;
+    --spd-foreground: #1f2937;
+    --spd-card: #ffffff;
+    --spd-card-foreground: #1f2937;
+    --spd-popover: #ffffff;
+    --spd-popover-foreground: #1f2937;
+    --spd-primary: #2563eb;
+    --spd-primary-foreground: #ffffff;
+    --spd-secondary: #f3f4f6;
+    --spd-secondary-foreground: #374151;
+    --spd-muted: #f3f4f6;
+    --spd-muted-foreground: #6b7280;
+    --spd-accent: #eff6ff;
+    --spd-accent-foreground: #1d4ed8;
+    --spd-border: #e5e7eb;
+    --spd-input: #e5e7eb;
+    --spd-ring: #2563eb;
+
+    --spd-state-success: #10b981;
+    --spd-state-success-foreground: #ffffff;
+    --spd-state-warning: #f59e0b;
+    --spd-state-warning-foreground: #ffffff;
+    --spd-state-error: #ef4444;
+    --spd-state-error-foreground: #ffffff;
+    --spd-state-info: #3b82f6;
+    --spd-state-info-foreground: #ffffff;
+
+    --spd-radius-sm: 4px;
+    --spd-radius-md: 8px;
+    --spd-radius-lg: 12px;
+    --spd-radius-pill: 999px;
+
+    --spd-font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", Arial, sans-serif;
+    --spd-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+    --spd-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --spd-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.03);
+    --spd-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+    --spd-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.12);
+  }
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--spd-background);
+    --color-foreground: var(--spd-foreground);
+    --color-card: var(--spd-card);
+    --color-card-foreground: var(--spd-card-foreground);
+    --color-popover: var(--spd-popover);
+    --color-popover-foreground: var(--spd-popover-foreground);
+    --color-primary: var(--spd-primary);
+    --color-primary-foreground: var(--spd-primary-foreground);
+    --color-secondary: var(--spd-secondary);
+    --color-secondary-foreground: var(--spd-secondary-foreground);
+    --color-muted: var(--spd-muted);
+    --color-muted-foreground: var(--spd-muted-foreground);
+    --color-accent: var(--spd-accent);
+    --color-accent-foreground: var(--spd-accent-foreground);
+    --color-border: var(--spd-border);
+    --color-input: var(--spd-input);
+    --color-ring: var(--spd-ring);
+    --radius-sm: var(--spd-radius-sm);
+    --radius-md: var(--spd-radius-md);
+    --radius-lg: var(--spd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--spd-background); color: var(--spd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--spd-background); }
+      .text-background { color: var(--spd-background); }
+      .border-background { border-color: var(--spd-background); }
+      .ring-background { --tw-ring-color: var(--spd-background); }
+      .bg-foreground { background-color: var(--spd-foreground); }
+      .text-foreground { color: var(--spd-foreground); }
+      .border-foreground { border-color: var(--spd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--spd-foreground); }
+      .bg-card { background-color: var(--spd-card); }
+      .text-card { color: var(--spd-card); }
+      .border-card { border-color: var(--spd-card); }
+      .ring-card { --tw-ring-color: var(--spd-card); }
+      .bg-card-foreground { background-color: var(--spd-card-foreground); }
+      .text-card-foreground { color: var(--spd-card-foreground); }
+      .border-card-foreground { border-color: var(--spd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--spd-card-foreground); }
+      .bg-popover { background-color: var(--spd-popover); }
+      .text-popover { color: var(--spd-popover); }
+      .border-popover { border-color: var(--spd-popover); }
+      .ring-popover { --tw-ring-color: var(--spd-popover); }
+      .bg-popover-foreground { background-color: var(--spd-popover-foreground); }
+      .text-popover-foreground { color: var(--spd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--spd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--spd-popover-foreground); }
+      .bg-primary { background-color: var(--spd-primary); }
+      .text-primary { color: var(--spd-primary); }
+      .border-primary { border-color: var(--spd-primary); }
+      .ring-primary { --tw-ring-color: var(--spd-primary); }
+      .bg-primary-foreground { background-color: var(--spd-primary-foreground); }
+      .text-primary-foreground { color: var(--spd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--spd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--spd-primary-foreground); }
+      .bg-secondary { background-color: var(--spd-secondary); }
+      .text-secondary { color: var(--spd-secondary); }
+      .border-secondary { border-color: var(--spd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--spd-secondary); }
+      .bg-secondary-foreground { background-color: var(--spd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--spd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--spd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--spd-secondary-foreground); }
+      .bg-muted { background-color: var(--spd-muted); }
+      .text-muted { color: var(--spd-muted); }
+      .border-muted { border-color: var(--spd-muted); }
+      .ring-muted { --tw-ring-color: var(--spd-muted); }
+      .bg-muted-foreground { background-color: var(--spd-muted-foreground); }
+      .text-muted-foreground { color: var(--spd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--spd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--spd-muted-foreground); }
+      .bg-accent { background-color: var(--spd-accent); }
+      .text-accent { color: var(--spd-accent); }
+      .border-accent { border-color: var(--spd-accent); }
+      .ring-accent { --tw-ring-color: var(--spd-accent); }
+      .bg-accent-foreground { background-color: var(--spd-accent-foreground); }
+      .text-accent-foreground { color: var(--spd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--spd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--spd-accent-foreground); }
+      .bg-border { background-color: var(--spd-border); }
+      .text-border { color: var(--spd-border); }
+      .border-border { border-color: var(--spd-border); }
+      .ring-border { --tw-ring-color: var(--spd-border); }
+      .bg-input { background-color: var(--spd-input); }
+      .text-input { color: var(--spd-input); }
+      .border-input { border-color: var(--spd-input); }
+      .ring-input { --tw-ring-color: var(--spd-input); }
+      .bg-ring { background-color: var(--spd-ring); }
+      .text-ring { color: var(--spd-ring); }
+      .border-ring { border-color: var(--spd-ring); }
+      .ring-ring { --tw-ring-color: var(--spd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <main class="min-h-screen bg-muted text-foreground">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <header class="mb-10">
+      <h1 class="text-3xl font-semibold text-foreground">按钮控件样式板</h1>
+      <p class="mt-2 text-muted-foreground">SPD 医疗耗材管理系统按钮组件规范展示</p>
+    </header>
+
+    <section id="section-variants" class="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-sm mb-8">
+      <h2 class="text-2xl font-semibold text-foreground mb-6">按钮变体展示</h2>
+      <div class="space-y-8">
+
+        <!-- Primary -->
+        <div class="border-t border-border pt-6">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">主要按钮</h3>
+          <div class="flex flex-wrap items-end gap-6">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">默认</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <i data-lucide="plus" class="w-4 h-4"></i> 新增
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">悬停</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary/90 text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <i data-lucide="check" class="w-4 h-4"></i> 保存
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">按下</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground opacity-80 scale-[0.98] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                提交
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">禁用</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed">
+                禁用
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">加载中</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground opacity-80 disabled:cursor-wait">
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 保存中
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary -->
+        <div class="border-t border-border pt-6">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">次要按钮</h3>
+          <div class="flex flex-wrap items-end gap-6">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">默认</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <i data-lucide="x" class="w-4 h-4"></i> 取消
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">悬停</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary/80 text-secondary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">按下</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary text-secondary-foreground opacity-80 scale-[0.98] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                取消
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">禁用</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary text-secondary-foreground disabled:opacity-50 disabled:cursor-not-allowed">
+                取消
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">加载中</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary text-secondary-foreground opacity-80 disabled:cursor-wait">
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 处理中
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outline / Ghost -->
+        <div class="border-t border-border pt-6">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">轮廓按钮</h3>
+          <div class="flex flex-wrap items-end gap-6">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">默认</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium border border-border bg-card text-foreground hover:bg-muted hover:text-foreground active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <i data-lucide="eye" class="w-4 h-4"></i> 查看详情
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">悬停</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium border border-border bg-muted text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                查看详情
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">按下</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium border border-border bg-muted text-foreground opacity-80 scale-[0.98] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                查看详情
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">禁用</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium border border-border bg-card text-foreground disabled:opacity-50 disabled:cursor-not-allowed">
+                查看详情
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Text / Link -->
+        <div class="border-t border-border pt-6">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">文字按钮</h3>
+          <div class="flex flex-wrap items-end gap-6">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">默认</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-2 rounded-md text-sm font-medium text-primary hover:text-primary/80 hover:underline underline-offset-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <i data-lucide="pencil" class="w-4 h-4"></i> 编辑
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">悬停</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-2 rounded-md text-sm font-medium text-primary underline underline-offset-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                编辑
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">禁用</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-2 rounded-md text-sm font-medium text-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                编辑
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Danger -->
+        <div class="border-t border-border pt-6">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">危险按钮</h3>
+          <div class="flex flex-wrap items-end gap-6">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">默认</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-[var(--spd-state-error)] text-[var(--spd-state-error-foreground)] hover:opacity-90 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <i data-lucide="trash-2" class="w-4 h-4"></i> 删除
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">悬停</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-[var(--spd-state-error)] text-[var(--spd-state-error-foreground)] opacity-90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <i data-lucide="trash-2" class="w-4 h-4"></i> 删除
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">按下</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-[var(--spd-state-error)] text-[var(--spd-state-error-foreground)] opacity-80 scale-[0.98] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                删除
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">禁用</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-[var(--spd-state-error)] text-[var(--spd-state-error-foreground)] disabled:opacity-50 disabled:cursor-not-allowed">
+                删除
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">加载中</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-[var(--spd-state-error)] text-[var(--spd-state-error-foreground)] opacity-80 disabled:cursor-wait">
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 删除中
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Icon-only -->
+        <div class="border-t border-border pt-6">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">图标按钮</h3>
+          <div class="flex flex-wrap items-end gap-6">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">默认</span>
+              <div class="flex flex-wrap gap-3">
+                <button type="button" aria-label="搜索" class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <i data-lucide="search" class="w-4 h-4"></i>
+                </button>
+                <button type="button" aria-label="刷新" class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+                <button type="button" aria-label="设置" class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <i data-lucide="settings" class="w-4 h-4"></i>
+                </button>
+                <button type="button" aria-label="下载" class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <i data-lucide="download" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">禁用</span>
+              <button type="button" disabled aria-label="搜索" class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-secondary text-secondary-foreground disabled:opacity-50 disabled:cursor-not-allowed">
+                <i data-lucide="search" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Split / Dropdown -->
+        <div class="border-t border-border pt-6">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">下拉按钮</h3>
+          <div class="flex flex-wrap items-end gap-6">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">默认</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                批量操作 <i data-lucide="chevron-down" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">悬停</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary/90 text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                批量操作 <i data-lucide="chevron-down" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">禁用</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed">
+                批量操作 <i data-lucide="chevron-down" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">加载中</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground opacity-80 disabled:cursor-wait">
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 批量操作
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="section-states" class="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-sm mb-8">
+      <h2 class="text-2xl font-semibold text-foreground mb-6">状态与尺寸矩阵</h2>
+
+      <div class="space-y-8">
+        <div>
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">尺寸规格</h3>
+          <div class="flex flex-wrap items-end gap-6">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">大 (40px)</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-md text-base font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                主要操作
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">默认</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                主要操作
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">小 (24px)</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-7 px-2.5 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                主要操作
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-border pt-6">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">主要按钮状态</h3>
+          <div class="flex flex-wrap items-end gap-6">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">默认</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">保存</button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">悬停</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary/90 text-primary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">保存</button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">禁用</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed">保存</button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">加载中</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground opacity-80 disabled:cursor-wait">
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 保存
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">焦点环</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground ring-2 ring-ring ring-offset-2">保存</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-border pt-6">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">次要按钮状态</h3>
+          <div class="flex flex-wrap items-end gap-6">
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">默认</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">取消</button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">悬停</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary/80 text-secondary-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">取消</button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">禁用</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary text-secondary-foreground disabled:opacity-50 disabled:cursor-not-allowed">取消</button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">加载中</span>
+              <button type="button" disabled class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary text-secondary-foreground opacity-80 disabled:cursor-wait">
+                <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 取消
+              </button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-muted-foreground">焦点环</span>
+              <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary text-secondary-foreground ring-2 ring-ring ring-offset-2">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-toolbar" class="bg-card border border-border rounded-xl p-6 sm:p-8 shadow-sm">
+      <h2 class="text-2xl font-semibold text-foreground mb-6">工具栏按钮组</h2>
+
+      <div class="space-y-8">
+        <div>
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">页面主工具栏</h3>
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <i data-lucide="plus" class="w-4 h-4"></i> 新增
+            </button>
+            <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <i data-lucide="pencil" class="w-4 h-4"></i> 修改
+            </button>
+            <span class="h-6 w-px bg-border" aria-hidden="true"></span>
+            <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-[var(--spd-state-error)] text-[var(--spd-state-error-foreground)] hover:opacity-90 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <i data-lucide="trash-2" class="w-4 h-4"></i> 删除
+            </button>
+            <span class="h-6 w-px bg-border" aria-hidden="true"></span>
+            <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium border border-border bg-card text-foreground hover:bg-muted active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <i data-lucide="download" class="w-4 h-4"></i> 导出
+            </button>
+            <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium border border-border bg-card text-foreground hover:bg-muted active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <i data-lucide="upload" class="w-4 h-4"></i> 导入
+            </button>
+            <button type="button" class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 active:opacity-80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              更多操作 <i data-lucide="chevron-down" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="border-t border-border pt-6">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">表格行操作组</h3>
+          <div class="inline-flex rounded-md shadow-sm" role="group" aria-label="行操作">
+            <button type="button" class="inline-flex items-center justify-center gap-1.5 h-8 px-3 text-xs font-medium border border-border bg-card text-foreground rounded-l-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i> 查看
+            </button>
+            <button type="button" class="inline-flex items-center justify-center gap-1.5 h-8 px-3 text-xs font-medium border-t border-b border-r border-border bg-card text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i> 修改
+            </button>
+            <button type="button" class="inline-flex items-center justify-center gap-1.5 h-8 px-3 text-xs font-medium border-t border-b border-r border-border bg-card text-[var(--spd-state-error)] rounded-r-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 删除
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+  </script>
+</main>
+</body>
+</html>

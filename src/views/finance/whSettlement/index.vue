@@ -1,53 +1,98 @@
 <template>
-  <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="90px">
-      <el-form-item label="单号" prop="billNo">
-        <el-input v-model="queryParams.billNo" placeholder="仓库结算单单号" clearable style="width: 160px" @keyup.enter.native="handleQuery" />
-      </el-form-item>
-      <el-form-item label="仓库" prop="warehouseId">
-        <SelectWarehouse v-model="queryParams.warehouseId" clearable style="width: 160px" />
-      </el-form-item>
-      <el-form-item label="结算方式" prop="settlementMethod">
-        <el-select v-model="queryParams.settlementMethod" placeholder="全部" clearable style="width: 120px">
-          <el-option label="入库结算" value="1" />
-          <el-option label="出库结算" value="2" />
-          <el-option label="消耗结算" value="3" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="审核状态" prop="auditStatus">
-        <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable style="width: 100px">
-          <el-option label="待审核" :value="0" />
-          <el-option label="已审核" :value="1" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="制单日期">
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          value-format="yyyy-MM-dd"
-          style="width: 240px"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container list-page finance-wh-settlement-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseId" clearable />
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.billNo"
+              placeholder="仓库结算单单号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button type="primary" plain icon="el-icon-plus" size="small" @click="handleAdd" v-hasPermi="['finance:whSettlement:add']">新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="success" plain icon="el-icon-edit" size="small" :disabled="single" @click="handleUpdate(selectedRow)" v-hasPermi="['finance:whSettlement:edit']">修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button type="danger" plain icon="el-icon-delete" size="small" :disabled="multiple" @click="handleDelete" v-hasPermi="['finance:whSettlement:remove']">删除</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                value-format="yyyy-MM-dd"
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item prop="settlementMethod" class="query-item-inline">
+              <el-select v-model="queryParams.settlementMethod" placeholder="结算方式" clearable class="more-search-select-wrap">
+                <el-option label="入库结算" value="1" />
+                <el-option label="出库结算" value="2" />
+                <el-option label="消耗结算" value="3" />
+              </el-select>
+            </el-form-item>
+            <el-form-item prop="auditStatus" class="query-item-inline">
+              <el-select v-model="queryParams.auditStatus" placeholder="审核状态" clearable class="more-search-short-select">
+                <el-option label="待审核" :value="0" />
+                <el-option label="已审核" :value="1" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button
+          type="primary"
+          size="small"
+          class="spd-btn spd-btn--primary"
+          @click="handleAdd"
+          v-hasPermi="['finance:whSettlement:add']"
+        >新增</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary"
+          :disabled="single"
+          @click="handleUpdate(selectedRow)"
+          v-hasPermi="['finance:whSettlement:edit']"
+        >修改</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--danger"
+          :disabled="multiple"
+          @click="handleDelete"
+          v-hasPermi="['finance:whSettlement:remove']"
+        >删除</el-button>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" border>
@@ -117,7 +162,7 @@
         </el-row>
         <el-row v-if="!form.id">
           <el-col :span="24">
-            <el-button type="primary" size="small" @click="doExtractData" :loading="extractLoading">提取数据</el-button>
+            <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="doExtractData" :loading="extractLoading">提取数据</el-button>
             <span class="el-form-item__label" style="margin-left: 12px;">提取后将显示下方明细，可删除不需要的行再保存。</span>
           </el-col>
         </el-row>
@@ -141,8 +186,8 @@
         </el-table-column>
       </el-table>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="open = false">取 消</el-button>
-        <el-button type="primary" @click="submitForm" :loading="submitLoading">{{ form.id ? '保存明细' : '保存结算单' }}</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="open = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm" :loading="submitLoading">{{ form.id ? '保存明细' : '保存结算单' }}</el-button>
       </div>
     </el-dialog>
   </div>
@@ -159,6 +204,11 @@ export default {
     return {
       loading: false,
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '单号', value: 'billNo' },
+        { label: '仓库', value: 'warehouse' }
+      ],
       list: [],
       total: 0,
       queryParams: {
@@ -184,13 +234,24 @@ export default {
       submitLoading: false
     }
   },
+  computed: {
+    moreSearchStorageKey() {
+      return 'spd.finance.whSettlement.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    }
+  },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.getList()
   },
   methods: {
     getList() {
       this.loading = true
       const params = { ...this.queryParams }
+      this.applyMoreSearchToQueryParams(params)
       if (this.dateRange && this.dateRange.length === 2) {
         params.params = {}
         params.params.beginTime = this.dateRange[0]
@@ -331,8 +392,55 @@ export default {
     resetQuery() {
       this.dateRange = []
       this.resetForm('queryForm')
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
       this.handleQuery()
+    },
+    moreSearchFieldClass(t) {
+      if (t === 'warehouse') {
+        return 'more-search-field--select'
+      }
+      return 'more-search-field--text'
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      const map = {
+        billNo: 'billNo',
+        warehouse: 'warehouseId'
+      }
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null
+        }
+      })
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams)
     }
   }
 }
 </script>
+
+<style scoped>
+.list-query-panel {
+  margin-top: -20px;
+}
+</style>

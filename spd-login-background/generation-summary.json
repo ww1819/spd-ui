@@ -1,0 +1,230 @@
+{
+  "skillProvenance": {
+    "name": "solo-graphic-generation",
+    "version": "2026.08.06.21.24.57",
+    "versionSource": "skill-release-manifest.json"
+  },
+  "requestedSizeVerbatim": "2560x1600",
+  "actualToolImageSize": "2560x1600",
+  "sizeUserConfirmed": true,
+  "assetCount": 31,
+  "assets": [
+    {
+      "filename": "login-bg-supply-room.jpg",
+      "title": "医疗耗材库房场景",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-001"
+    },
+    {
+      "filename": "login-bg-digital-network.jpg",
+      "title": "数字化医疗供应链",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-002"
+    },
+    {
+      "filename": "login-bg-minimal-glass.jpg",
+      "title": "极简玻璃医疗科技",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-003"
+    },
+    {
+      "filename": "login-bg-deep-tech.jpg",
+      "title": "深空医疗科技",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-004"
+    },
+    {
+      "filename": "login-bg-hospital-atrium.jpg",
+      "title": "医院阳光中庭",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-005"
+    },
+    {
+      "filename": "login-bg-minimal-gradient.jpg",
+      "title": "极简蓝白渐变",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-006"
+    },
+    {
+      "filename": "login-bg-supplies-flatlay.jpg",
+      "title": "医疗耗材平铺",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-007"
+    },
+    {
+      "filename": "login-bg-smart-warehouse.jpg",
+      "title": "智慧医疗仓储中心",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-008"
+    },
+    {
+      "filename": "login-bg-city-logistics.jpg",
+      "title": "城市医疗物流网络",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-009"
+    },
+    {
+      "filename": "login-bg-holographic-command.jpg",
+      "title": "全息医疗指挥中心",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-010"
+    },
+    {
+      "filename": "login-bg-bright-warehouse.jpg",
+      "title": "明亮耗材仓库",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-011"
+    },
+    {
+      "filename": "login-bg-hospital-pharmacy.jpg",
+      "title": "医院药房",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-012"
+    },
+    {
+      "filename": "login-bg-bright-supplies.jpg",
+      "title": "明亮耗材平铺",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-013"
+    },
+    {
+      "filename": "login-bg-bright-corridor.jpg",
+      "title": "明亮医院走廊",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-014"
+    },
+    {
+      "filename": "login-bg-dynamic-light-rays.jpg",
+      "title": "光束动态背景",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-015"
+    },
+    {
+      "filename": "login-bg-dynamic-scanning.jpg",
+      "title": "扫描线动态背景",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-016"
+    },
+    {
+      "filename": "login-bg-dynamic-dataflow.jpg",
+      "title": "数据流动态背景",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-017"
+    },
+    {
+      "filename": "login-bg-hospital-tech-fusion.jpg",
+      "title": "医院大厅科技融合",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-018"
+    },
+    {
+      "filename": "login-bg-supply-chain-digital.jpg",
+      "title": "供应链数字化仓储",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-019"
+    },
+    {
+      "filename": "login-bg-pharmacy-dataflow.jpg",
+      "title": "药房数据流动",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-020"
+    },
+    {
+      "filename": "login-bg-medical-corridor-light.jpg",
+      "title": "医疗走廊光线",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-021"
+    },
+    {
+      "filename": "login-bg-natural-light-space.jpg",
+      "title": "自然光影空间",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-022"
+    },
+    {
+      "filename": "login-bg-clean-blue-gradient.jpg",
+      "title": "干净蓝白渐变",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-023"
+    },
+    {
+      "filename": "login-bg-soft-mist.jpg",
+      "title": "柔和雾气留白",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-024"
+    },
+    {
+      "filename": "login-bg-minimal-tech-space.jpg",
+      "title": "极简科技留白",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-025"
+    },
+    {
+      "filename": "login-bg-ambient-glow.jpg",
+      "title": "环境光晕留白",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-026"
+    },
+    {
+      "filename": "login-bg-warehouse-shelves.jpg",
+      "title": "医院耗材货架仓库",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-027"
+    },
+    {
+      "filename": "login-bg-smart-spd-warehouse.jpg",
+      "title": "智能SPD仓库",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-028"
+    },
+    {
+      "filename": "login-bg-pharmacy-storage.jpg",
+      "title": "医院药房仓库",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-029"
+    },
+    {
+      "filename": "login-bg-supply-storage.jpg",
+      "title": "医用物资存储区",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-030"
+    },
+    {
+      "filename": "login-bg-warehouse-corridor.jpg",
+      "title": "仓库纵深走廊",
+      "intendedSize": "2560x1600",
+      "generationStatus": "success",
+      "canvasNodeId": "image-031"
+    }
+  ]
+}

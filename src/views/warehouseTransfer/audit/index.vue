@@ -1,88 +1,95 @@
 <template>
-  <div class="app-container warehouseTransfer-audit-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
-
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item label="调拨单号" prop="billNo" class="query-item-inline">
-            <el-input v-model="queryParams.billNo"
-                      placeholder="调拨单号"
-                      clearable
-                      style="width: 180px"
-                      @keyup.enter.native="handleQuery"
-            />
-        </el-form-item>
-          <el-form-item label="调出仓库" prop="fromWarehouseId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.fromWarehouseId" :excludeWarehouseType="['高值', '设备']"/>
-            </div>
-        </el-form-item>
-          <el-form-item label="调入仓库" prop="toWarehouseId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.toWarehouseId" :excludeWarehouseType="['高值', '设备']"/>
-            </div>
-        </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="12">
-          <el-form-item label="制单日期" style="display: flex; align-items: center;">
-          <el-date-picker
-              v-model="queryParams.beginDate"
-              type="date"
-            value-format="yyyy-MM-dd"
-              placeholder="起始日期"
+  <div class="app-container list-page warehouseTransfer-audit-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'fromWarehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.fromWarehouseId" :excludeWarehouseType="['高值', '设备']"/>
+              </div>
+            </template>
+            <template v-else-if="t === 'toWarehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.toWarehouseId" :excludeWarehouseType="['高值', '设备']"/>
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="queryParams.billNo"
+              placeholder="调拨单号"
               clearable
-              style="width: 180px; margin-right: 8px;"
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
             />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="截止日期"
-              clearable
-              style="width: 180px; margin-left: 8px;"
-          />
-        </el-form-item>
-        </el-col>
-        <el-col :span="12" class="query-status-col">
-          <el-form-item label="单据状态" prop="billStatus" class="query-item-status-aligned">
-            <el-select v-model="queryParams.billStatus" placeholder="全部"
-                       clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.biz_status"
-                         :key="dict.value"
-                         :label="dict.label"
-                         :value="dict.value"
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="制单日期" class="query-item-inline query-item-date-range">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起始日期"
+                clearable
+                class="query-date-picker"
               />
-          </el-select>
-        </el-form-item>
-        </el-col>
-      </el-row>
-
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item label="单据状态" prop="billStatus" class="query-item-inline">
+              <el-select v-model="queryParams.billStatus" placeholder="全部"
+                         clearable class="more-search-select-wrap">
+                <el-option v-for="dict in dict.type.biz_status"
+                           :key="dict.value"
+                           :label="dict.label"
+                           :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
+    </div>
 
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
-          icon="el-icon-search"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          icon="el-icon-check"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           :disabled="multiple"
           @click="handleBatchAudit"
           v-hasPermi="['warehouseTransfer:apply:audit']"
         >审核</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="transferList"
@@ -350,6 +357,12 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "调拨单号", value: "billNo" },
+        { label: "调出仓库", value: "fromWarehouse" },
+        { label: "调入仓库", value: "toWarehouse" }
+      ],
       // 总条数
       total: 0,
       // 调拨表格数据
@@ -401,9 +414,17 @@ export default {
         return user.nickName;
       }
       return '';
+    },
+    moreSearchStorageKey() {
+      return "spd.warehouseTransfer.audit.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
@@ -484,6 +505,46 @@ export default {
       let endDate = year.toString() + "-" + month + "-" + day;
       return endDate;
     },
+    moreSearchFieldClass(t) {
+      if (['fromWarehouse', 'toWarehouse'].includes(t)) {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        billNo: 'billNo',
+        fromWarehouse: 'fromWarehouseId',
+        toWarehouse: 'toWarehouseId'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     /** 查询调拨列表 */
     getList() {
       this.loading = true;
@@ -491,6 +552,7 @@ export default {
       const queryParams = {
         ...this.queryParams
       };
+      this.applyMoreSearchToQueryParams(queryParams);
       if (queryParams.endDate && queryParams.endDate.length === 10) {
         // 如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
@@ -531,6 +593,8 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     // 多选框选中数据
@@ -1055,23 +1119,8 @@ export default {
   padding-right: 8px !important;
 }
 
-.app-container.warehouseTransfer-audit-page > .el-form.query-form-compact {
-  margin-top: -12px !important;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  border: 1px solid #c0c4cc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
-}
-
-.app-container.warehouseTransfer-audit-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .app-container.warehouseTransfer-audit-page > .el-table.table-compact {

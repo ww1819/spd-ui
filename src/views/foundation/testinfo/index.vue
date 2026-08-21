@@ -1,107 +1,114 @@
 <template>
-    <div class="app-container">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-form-item prop="name">
-              <el-input
-                v-model="queryParams.name"
-                placeholder="耗材名称"
-                clearable
-                @keyup.enter.native="handleQuery"
-              />
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="6">
-            <el-form-item prop="supplierId">
-              <SelectSupplier v-model="queryParams.supplierId"/>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <div style="display: inline">
-              <span>起</span>
-              <el-date-picker clearable
-                              v-model="queryParams.beginDate"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              placeholder="起始日期"
-                              style="width: 140px"
+    <div class="app-container list-page">
+      <div class="query-container" v-show="showSearch">
+        <div class="form-fields-container list-query-panel">
+          <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+            <more-search-bar
+              ref="moreSearchBar"
+              v-model="moreSearchTypes"
+              :options="moreSearchOptions"
+              :storage-key="moreSearchStorageKey"
+              :default-types="builtInMoreSearchDefaults"
+              :auto-load="false"
+              @change="onMoreSearchTypesChange"
+              @search="handleQuery"
+              @reset="resetQuery"
+            >
+              <div
+                v-for="t in moreSearchTypes"
+                :key="t"
+                class="more-search-dynamic-field"
+                :class="moreSearchFieldClass(t)"
               >
-              </el-date-picker>
-              <span>止</span>
-              <el-date-picker clearable
-                              v-model="queryParams.endDate"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              placeholder="截止日期"
-                              style="width: 140px"
-              >
-              </el-date-picker>
-            </div>
-          </el-col>
-
-          <el-col :span="6">
-            <el-form-item prop="isGz">
-              <el-select v-model="queryParams.isGz" placeholder="是否高值" clearable>
-                <el-option
-                  v-for="dict in dict.type.is_yes_no"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                ></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="6">
-            <el-form-item>
-              <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-              <el-button
-                type="primary" size="small"
-                @click="handleImport"
-                v-hasPermi="['foundation:material:import']"
-              >导入</el-button>
-              <el-button size="small" @click="resetQuery">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <el-row :gutter="10" class="mb8">
-        <el-col :span="1.5">
+                <template v-if="t === 'supplier'">
+                  <div class="query-select-wrapper more-search-select-wrap">
+                    <SelectSupplier v-model="queryParams.supplierId"/>
+                  </div>
+                </template>
+                <template v-else-if="t === 'dateRange'">
+                  <el-date-picker
+                    v-model="queryParams.beginDate"
+                    type="date"
+                    value-format="yyyy-MM-dd"
+                    placeholder="起始日期"
+                    clearable
+                    class="query-date-picker"
+                  />
+                  <span class="query-date-sep">至</span>
+                  <el-date-picker
+                    v-model="queryParams.endDate"
+                    type="date"
+                    value-format="yyyy-MM-dd"
+                    placeholder="截止日期"
+                    clearable
+                    class="query-date-picker"
+                  />
+                </template>
+                <el-select
+                  v-else-if="t === 'isGz'"
+                  v-model="queryParams.isGz"
+                  placeholder="是否高值"
+                  class="more-search-short-select"
+                  clearable
+                >
+                  <el-option
+                    v-for="dict in dict.type.is_yes_no"
+                    :key="dict.value"
+                    :label="dict.label"
+                    :value="dict.value"
+                  />
+                </el-select>
+                <el-input
+                  v-else
+                  v-model="queryParams[t]"
+                  :placeholder="moreSearchPlaceholderFor(t)"
+                  clearable
+                  class="more-search-input more-search-input--dynamic"
+                  @keyup.enter.native="handleQuery"
+                />
+              </div>
+            </more-search-bar>
+          </el-form>
+        </div>
+      </div>
+      <el-row :gutter="0" class="mb8 list-toolbar">
+        <div class="list-toolbar-left">
           <el-button
             type="primary" size="small"
+            class="spd-btn spd-btn--primary"
             @click="handleAdd"
             v-hasPermi="['foundation:material:add']"
           >新增</el-button>
-        </el-col>
-        <el-col :span="1.5">
           <el-button
-            type="primary" size="small"
+            size="small"
+            class="spd-btn spd-btn--secondary"
             :disabled="single"
             @click="handleUpdate"
             v-hasPermi="['foundation:material:edit']"
           >修改</el-button>
-        </el-col>
-        <el-col :span="1.5">
           <el-button
-            type="primary" size="small"
+            size="small"
+            class="spd-btn spd-btn--secondary"
             :disabled="single"
             @click="handleDelete"
             v-hasPermi="['foundation:material:remove']"
           >删除</el-button>
-        </el-col>
-        <el-col :span="1.5">
           <el-button
-            type="primary" size="small"
+            size="small"
+            class="spd-btn spd-btn--secondary"
             @click="handleExport"
             v-hasPermi="['foundation:material:export']"
           >导出</el-button>
-        </el-col>
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          <el-button
+            size="small"
+            class="spd-btn spd-btn--secondary"
+            @click="handleImport"
+            v-hasPermi="['foundation:material:import']"
+          >导入</el-button>
+        </div>
+        <div class="list-toolbar-right">
+          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        </div>
       </el-row>
 
       <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange" stripe>
@@ -492,8 +499,8 @@
 
         </el-form>
         <div slot="footer" class="dialog-footer">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </el-dialog>
       <!-- 耗材导入对话框 -->
@@ -542,6 +549,14 @@
     name: "Material",
     dicts: ['is_use_status', 'is_yes_no','way_status','material_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
     components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectWarehouseCategory,SelectUnit},
+    computed: {
+      moreSearchStorageKey() {
+        return "spd.foundation.testinfo.moreSearchTypes";
+      },
+      builtInMoreSearchDefaults() {
+        return ["name", "supplier", "dateRange", "isGz"];
+      }
+    },
     data() {
       return {
         // 遮罩层
@@ -555,6 +570,13 @@
         multiple: true,
         // 显示搜索条件
         showSearch: true,
+        moreSearchTypes: [],
+        moreSearchOptions: [
+          { value: "name", label: "耗材名称" },
+          { value: "supplier", label: "供应商" },
+          { value: "dateRange", label: "创建日期" },
+          { value: "isGz", label: "是否高值" }
+        ],
         // 总条数
         total: 0,
         // 耗材产品表格数据
@@ -633,13 +655,58 @@
       };
     },
     created() {
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.getList();
     },
     methods: {
+      moreSearchPlaceholderFor(t) {
+        const map = { name: "耗材名称" };
+        return map[t] || "请输入";
+      },
+      moreSearchFieldClass(t) {
+        if (t === "dateRange") return "more-search-field--date";
+        if (t === "isGz") return "more-search-field--short";
+        if (t === "supplier") return "more-search-field--select";
+        return "more-search-field--text";
+      },
+      loadMoreSearchDefaults() {
+        const bar = this.$refs.moreSearchBar;
+        if (bar && typeof bar.loadDefaults === "function") {
+          return bar.loadDefaults();
+        }
+        const fallback = this.builtInMoreSearchDefaults.slice();
+        try {
+          const raw = localStorage.getItem(this.moreSearchStorageKey);
+          if (!raw) return fallback;
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return fallback;
+          const allow = new Set(this.moreSearchOptions.map(o => o.value));
+          const cleaned = parsed.filter(v => allow.has(v));
+          return cleaned.length ? cleaned : fallback;
+        } catch (e) {
+          return fallback;
+        }
+      },
+      applyMoreSearchToQueryParams(target) {
+        const set = new Set(this.moreSearchTypes || []);
+        if (!set.has("name")) target.name = undefined;
+        if (!set.has("supplier")) target.supplierId = undefined;
+        if (!set.has("isGz")) target.isGz = undefined;
+        if (!set.has("dateRange")) {
+          target.beginDate = undefined;
+          target.endDate = undefined;
+        }
+      },
+      onMoreSearchTypesChange() {
+        this.applyMoreSearchToQueryParams(this.queryParams);
+      },
       /** 查询耗材产品列表 */
       getList() {
         this.loading = true;
-        listMaterial(this.queryParams).then(response => {
+        const params = { ...this.queryParams };
+        this.applyMoreSearchToQueryParams(params);
+        listMaterial(params).then(response => {
           this.materialList = response.rows;
           this.total = response.total;
           this.loading = false;
@@ -687,8 +754,13 @@
       /** 重置按钮操作 */
       resetQuery() {
         this.resetForm("queryForm");
+        this.moreSearchTypes = this.loadMoreSearchDefaults();
+        this.queryParams.name = undefined;
+        this.queryParams.supplierId = undefined;
+        this.queryParams.isGz = undefined;
         this.queryParams.beginDate = null;
         this.queryParams.endDate = null;
+        this.onMoreSearchTypesChange();
         this.handleQuery();
       },
       /** 导入按钮操作 */
@@ -775,9 +847,9 @@
       },
       /** 导出按钮操作 */
       handleExport() {
-        this.download('foundation/material/export', {
-          ...this.queryParams
-        }, `material_${new Date().getTime()}.xlsx`)
+        const params = { ...this.queryParams };
+        this.applyMoreSearchToQueryParams(params);
+        this.download('foundation/material/export', params, `material_${new Date().getTime()}.xlsx`)
       }
     }
   };

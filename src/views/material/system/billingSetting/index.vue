@@ -48,8 +48,8 @@
           </div>
         </el-form-item>
         <el-form-item v-if="canEdit">
-          <el-button type="primary" :loading="saving" @click="submitForm">保存</el-button>
-          <el-button @click="load">刷新</el-button>
+          <el-button type="primary" class="spd-btn spd-btn--primary" :loading="saving" @click="submitForm">保存</el-button>
+          <el-button class="spd-btn spd-btn--secondary" @click="load">刷新</el-button>
         </el-form-item>
         <el-form-item v-else>
           <el-tag type="info">无修改权限，仅可查看</el-tag>

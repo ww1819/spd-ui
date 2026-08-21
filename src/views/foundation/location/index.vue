@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container list-page">
     <el-row :gutter="20">
       <!-- 左侧树形菜单 -->
       <el-col :span="4">
@@ -23,71 +23,71 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="20">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
-          <el-row :gutter="20">
-            <el-col :span="8">
-              <el-form-item prop="locationCode">
-                <el-input
-                  v-model="queryParams.locationCode"
-                  placeholder="货位编码"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                  style="width: 100%"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item prop="locationName">
-                <el-input
-                  v-model="queryParams.locationName"
-                  placeholder="货位名称"
-                  clearable
-                  @keyup.enter.native="handleQuery"
-                  style="width: 100%"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item>
-                <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-                <el-button size="small" @click="resetQuery">重置</el-button>
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
+        <div class="query-container" v-show="showSearch">
+          <div class="form-fields-container list-query-panel">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <more-search-bar
+                ref="moreSearchBar"
+                v-model="moreSearchTypes"
+                :options="moreSearchOptions"
+                :storage-key="moreSearchStorageKey"
+                :default-types="builtInMoreSearchDefaults"
+                :auto-load="false"
+                @change="onMoreSearchTypesChange"
+                @search="handleQuery"
+                @reset="resetQuery"
+              >
+                <div
+                  v-for="t in moreSearchTypes"
+                  :key="t"
+                  class="more-search-dynamic-field more-search-field--text"
+                >
+                  <el-input
+                    v-model="queryParams[t]"
+                    :placeholder="moreSearchPlaceholderFor(t)"
+                    clearable
+                    class="more-search-input more-search-input--dynamic"
+                    @keyup.enter.native="handleQuery"
+                  />
+                </div>
+              </more-search-bar>
+            </el-form>
+          </div>
+        </div>
 
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
+        <el-row :gutter="0" class="mb8 list-toolbar">
+          <div class="list-toolbar-left">
             <el-button
-              type="primary" size="small"
+              type="primary"
+              size="small"
+              class="spd-btn spd-btn--primary"
               @click="handleAdd"
               v-hasPermi="['foundation:location:add']"
             >新增</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="single"
               @click="handleUpdate"
               v-hasPermi="['foundation:location:edit']"
             >修改</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               :disabled="single"
               @click="handleDelete"
               v-hasPermi="['foundation:location:remove']"
             >删除</el-button>
-          </el-col>
-          <el-col :span="1.5">
             <el-button
-              type="primary" size="small"
+              size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleExport"
               v-hasPermi="['foundation:location:export']"
             >导出</el-button>
-          </el-col>
-          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
+          <div class="list-toolbar-right">
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
         </el-row>
 
         <el-table v-loading="loading" :data="locationList" :row-class-name="locationIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
@@ -256,8 +256,8 @@
           </el-row>
         </el-form>
         <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -292,6 +292,11 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "locationCode", label: "货位编码" },
+        { value: "locationName", label: "货位名称" }
+      ],
       // 总条数
       total: 0,
       // 货位表格数据
@@ -335,12 +340,51 @@ export default {
     ...mapGetters(['customerId']),
     isDisabled() {
       return this.form.locationId != null;
+    },
+    moreSearchStorageKey() {
+      return "spd.foundation.location.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["locationCode", "locationName"];
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = { locationCode: "货位编码", locationName: "货位名称" };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["locationCode", "locationName"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     zoneTypeLabel(val) {
       const hit = this.zoneOptions.find(z => z.value === val);
       return hit ? hit.label : (val || '合格区');
@@ -348,9 +392,11 @@ export default {
     /** 查询货位列表 */
     getList() {
       this.loading = true;
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
       // 并行获取列表数据和树形数据
       Promise.all([
-        listLocation(this.queryParams),
+        listLocation(params),
         treeselect()
       ]).then(([listResponse, treeResponse]) => {
         const allData = treeResponse.data || [];
@@ -470,6 +516,10 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.locationCode = null;
+      this.queryParams.locationName = null;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     // 多选框选中数据
@@ -548,9 +598,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('foundation/location/export', {
-        ...this.queryParams
-      }, `location_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('foundation/location/export', params, `location_${new Date().getTime()}.xlsx`)
     }
   }
 };

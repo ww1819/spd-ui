@@ -1,115 +1,112 @@
 <template>
-  <div class="app-container refund-goods-audit-page">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form query-form-compact">
-
-      <el-row class="query-row-left">
-        <el-col :span="24">
-          <el-form-item prop="billNo" class="query-item-inline">
-            <el-input v-model="queryParams.billNo"
-                      placeholder="退货单号"
-                      clearable
-                      style="width: 180px"
-                      @keyup.enter.native="handleQuery"
-            />
-          </el-form-item>
-          <el-form-item prop="materialId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectMaterial v-model="queryParams.materialId" />
-            </div>
-          </el-form-item>
-          <el-form-item prop="warehouseId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-            </div>
-          </el-form-item>
-          <el-form-item label="供应商" prop="supplerId" class="query-item-inline">
-            <div class="query-select-wrapper">
-              <SelectSupplier v-model="queryParams.supplerId"/>
-            </div>
-          </el-form-item>
-          <el-form-item prop="refBillNo" class="query-item-inline">
+  <div class="app-container list-page refund-goods-audit-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="moreSearchFieldClass(t)"
+          >
+            <template v-if="t === 'material'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectMaterial v-model="queryParams.materialId" />
+              </div>
+            </template>
+            <template v-else-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+              </div>
+            </template>
+            <template v-else-if="t === 'supplier'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectSupplier v-model="queryParams.supplerId"/>
+              </div>
+            </template>
             <el-input
-              v-model="queryParams.refBillNo"
-              placeholder="引用单号"
+              v-else
+              v-model="queryParams[t]"
+              :placeholder="moreSearchPlaceholderFor(t)"
               clearable
-              style="width: 180px"
+              class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
             />
-          </el-form-item>
-        </el-col>
-      </el-row>
+          </div>
+        </more-search-bar>
 
-      <el-row :gutter="16" class="query-row-second">
-        <el-col :span="24" class="query-row-second-inner">
-          <el-form-item class="query-date-range-form-item query-item-inline">
-            <el-radio-group v-model="queryParams.dateQueryType" size="small" style="margin-right: 10px; margin-bottom: 4px;">
-              <el-radio-button label="bill">制单日期</el-radio-button>
-              <el-radio-button label="audit">审核日期</el-radio-button>
-            </el-radio-group>
-            <el-date-picker
-              v-model="queryParams.beginDate"
-              type="datetime"
-              value-format="yyyy-MM-dd HH:mm:ss"
-              placeholder="起始日期"
-              clearable
-              style="width: 200px; margin-right: 8px;"
-            />
-            <span style="margin: 0 4px;">至</span>
-            <el-date-picker
-              v-model="queryParams.endDate"
-              type="datetime"
-              value-format="yyyy-MM-dd HH:mm:ss"
-              placeholder="截止日期"
-              clearable
-              style="width: 200px; margin-left: 8px;"
-            />
-          </el-form-item>
-          <el-form-item prop="billStatus" class="query-item-inline query-item-status">
-            <el-select v-model="queryParams.billStatus" placeholder="单据状态"
-                       clearable style="width: 150px">
-              <el-option v-for="dict in dict.type.biz_status"
-                         :key="dict.value"
-                         :label="dict.label"
-                         :value="dict.value"
-                         v-if="dict.label !== '待审核'"
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-date-range-form-item query-item-inline">
+              <el-radio-group v-model="queryParams.dateQueryType" size="small" style="margin-right: 10px; margin-bottom: 4px;">
+                <el-radio-button label="bill">制单日期</el-radio-button>
+                <el-radio-button label="audit">审核日期</el-radio-button>
+              </el-radio-group>
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                placeholder="起始日期"
+                clearable
+                class="query-date-picker"
+                style="width: 200px; margin-right: 8px;"
               />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="被引用状态" label-width="88px" class="query-item-inline query-item-doc-ref">
-            <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" style="width: 150px">
-              <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                placeholder="截止日期"
+                clearable
+                class="query-date-picker"
+                style="width: 200px; margin-left: 8px;"
+              />
+            </el-form-item>
+            <el-form-item prop="billStatus" class="query-item-inline query-item-status">
+              <el-select v-model="queryParams.billStatus" placeholder="单据状态"
+                         clearable class="more-search-select-wrap">
+                <el-option v-for="dict in dict.type.biz_status"
+                           :key="dict.value"
+                           :label="dict.label"
+                           :value="dict.value"
+                           v-if="dict.label !== '待审核'"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="被引用状态" label-width="88px" class="query-item-inline query-item-doc-ref">
+              <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" class="more-search-select-wrap">
+                <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
 
-    </el-form>
-
-    <el-row :gutter="10" class="mb8 button-row-compact">
-      <el-col :span="1.5">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
           type="primary"
-          size="medium"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
-          @click="resetQuery"
-        >重置</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="medium"
+          size="small"
+          class="spd-btn spd-btn--primary"
           :disabled="multiple"
           @click="handleBatchAudit"
           v-hasPermi="['inWarehouse:refundGoodsApply:audit']"
         >审核</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="warehouseList" class="table-compact"
@@ -588,6 +585,14 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: "退货单号", value: "billNo" },
+        { label: "耗材", value: "material" },
+        { label: "仓库", value: "warehouse" },
+        { label: "供应商", value: "supplier" },
+        { label: "引用单号", value: "refBillNo" }
+      ],
       // 总条数
       total: 0,
       // 退货表格数据
@@ -654,9 +659,17 @@ export default {
     /** 与到货验收「添加入库」弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
+    },
+    moreSearchStorageKey() {
+      return "spd.inWarehouse.refundGoodsAudit.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value);
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList(true);
   },
   watch: {
@@ -767,6 +780,7 @@ export default {
       this.queryParams.billType = "301";
       // 如果 endDate 是日期格式（不包含时间），追加 " 23:59:59" 以包含当天的所有记录
       const queryParams = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(queryParams);
       if (queryParams.endDate && queryParams.endDate.length === 10 && !queryParams.endDate.includes(' ')) {
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
       }
@@ -933,6 +947,52 @@ export default {
       }
       row.amt = totalAmt.toFixed(2);
     },
+    moreSearchFieldClass(t) {
+      if (['material', 'warehouse', 'supplier'].includes(t)) {
+        return 'more-search-field--select';
+      }
+      return 'more-search-field--text';
+    },
+    moreSearchPlaceholderFor(t) {
+      const map = { billNo: '退货单号', refBillNo: '引用单号' };
+      return map[t] || '请输入';
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      const map = {
+        billNo: 'billNo',
+        material: 'materialId',
+        warehouse: 'warehouseId',
+        supplier: 'supplerId',
+        refBillNo: 'refBillNo'
+      };
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = null;
+        }
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
@@ -946,6 +1006,8 @@ export default {
       this.queryParams.endDate = null;
       this.queryParams.params = this.queryParams.params || {};
       this.queryParams.params.docRefStatus = null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     // 多选框选中数据
@@ -1140,9 +1202,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('warehouse/warehouse/export', {
-        ...this.queryParams
-      }, `warehouse_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('warehouse/warehouse/export', params, `warehouse_${new Date().getTime()}.xlsx`)
     }
   }
 };
@@ -1523,7 +1585,7 @@ export default {
 }
 
 /* 搜索区域：外层白底容器（宽度铺满、边框与阴影略加强） */
-.app-container > .el-form {
+.list-query-panel .el-form {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -1535,63 +1597,63 @@ export default {
   margin-bottom: 16px;
 }
 
-.app-container > .el-form .el-row {
+.list-query-panel .el-form .el-row {
   margin-bottom: 8px;
 }
 
-.app-container > .el-form .el-row:last-child {
+.list-query-panel .el-form .el-row:last-child {
   margin-bottom: 0;
 }
 
-.app-container > .el-form .el-form-item {
+.list-query-panel .el-form .el-form-item {
   margin-bottom: 0;
 }
 
 /* 第一行查询条件左对齐紧凑布局 */
-.app-container > .el-form .query-row-left .el-col {
+.list-query-panel .el-form .query-row-left .el-col {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline {
+.list-query-panel .el-form .query-row-left .query-item-inline {
   display: inline-block;
   margin-right: 16px;
   margin-bottom: 0;
   vertical-align: top;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline:last-child {
+.list-query-panel .el-form .query-row-left .query-item-inline:last-child {
   margin-right: 0;
 }
 
 /* 统一控制查询条件输入框宽度 */
-.app-container > .el-form .query-row-left .query-item-inline .el-input {
+.list-query-panel .el-form .query-row-left .query-item-inline .el-input {
   width: 180px;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper {
+.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper {
   width: 180px;
   display: inline-block;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
+.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
   width: 100%;
 }
 
-.app-container > .el-form .query-row-left .query-item-inline .el-select {
+.list-query-panel .el-form .query-row-left .query-item-inline .el-select {
   width: 150px;
 }
 
 /* 第二行：与到货申请一致，日期 + 单据状态 + 被引用状态 横向紧凑排列 */
-.app-container > .el-form .query-row-second-inner {
+.list-query-panel .el-form .query-row-second-inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 12px;
 }
 
-.app-container > .el-form .query-row-second > .query-row-second-inner > .el-form-item {
+.list-query-panel .el-form .query-row-second > .query-row-second-inner > .el-form-item {
   display: inline-flex !important;
   width: auto !important;
   margin-right: 0 !important;
@@ -1600,7 +1662,7 @@ export default {
   vertical-align: middle;
 }
 
-.app-container > .el-form .query-row-second-inner .query-date-range-form-item .el-form-item__content {
+.list-query-panel .el-form .query-row-second-inner .query-date-range-form-item .el-form-item__content {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1624,14 +1686,8 @@ export default {
   width: auto;
 }
 
-.app-container.refund-goods-audit-page > .el-form.query-form-compact {
-  margin-top: -12px !important;
-}
-
-.app-container.refund-goods-audit-page > .el-row.button-row-compact {
-  margin-top: -8px !important;
-  padding-top: 0 !important;
-  margin-bottom: 8px !important;
+.list-query-panel {
+  margin-top: -20px;
 }
 
 .app-container.refund-goods-audit-page > .el-table.table-compact {

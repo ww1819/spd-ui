@@ -1,38 +1,72 @@
 <template>
-  <div class="app-container">
-    <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" label-width="88px">
-      <el-form-item label="开始时间">
-        <el-date-picker
-          v-model="queryParams.beginDate"
-          type="datetime"
-          value-format="yyyy-MM-dd HH:mm:ss"
-          placeholder="开始时间"
-          style="width: 190px"
-        />
-      </el-form-item>
-      <el-form-item label="结束时间">
-        <el-date-picker
-          v-model="queryParams.endDate"
-          type="datetime"
-          value-format="yyyy-MM-dd HH:mm:ss"
-          placeholder="结束时间"
-          style="width: 190px"
-        />
-      </el-form-item>
-      <el-form-item label="仓库" prop="warehouseIds">
-        <SelectWarehouse v-model="queryParams.warehouseIds" :finance-pick-mode="true" :multiple="true" clearable style="width: 240px" />
-      </el-form-item>
-      <el-form-item label="供应商">
-        <SelectSupplier v-model="queryParams.supplerId" :finance-pick-mode="true" clearable style="width: 180px" />
-      </el-form-item>
-      <el-form-item label="科室">
-        <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" clearable style="width: 180px" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">查询</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container list-page medical-stock-summary-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" class="query-form">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field more-search-field--select"
+          >
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse v-model="queryParams.warehouseIds" :finance-pick-mode="true" :multiple="true" clearable />
+              </div>
+            </template>
+            <template v-else-if="t === 'supplier'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectSupplier v-model="queryParams.supplerId" :finance-pick-mode="true" clearable />
+              </div>
+            </template>
+            <template v-else>
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" clearable />
+              </div>
+            </template>
+          </div>
+        </more-search-bar>
+
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item label="开始时间" class="query-item-inline">
+              <el-date-picker
+                v-model="queryParams.beginDate"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                placeholder="开始时间"
+                class="query-date-picker"
+              />
+            </el-form-item>
+            <el-form-item label="结束时间" class="query-item-inline">
+              <el-date-picker
+                v-model="queryParams.endDate"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                placeholder="结束时间"
+                class="query-date-picker"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left"></div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="loadCurrentTab" />
+      </div>
+    </el-row>
     <p class="report-tip">统计口径：耗材出库单（201）金额计为正，退库单（401）金额计为负；两个 Tab 均按此出退库数据汇总。</p>
 
     <el-tabs v-model="activeTab" @tab-click="loadCurrentTab">
@@ -43,6 +77,7 @@
               type="warning"
               icon="el-icon-download"
               size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleExportInbound"
               v-hasPermi="['finance:medicalStockSummary:export']"
             >导出</el-button>
@@ -78,6 +113,7 @@
               type="warning"
               icon="el-icon-download"
               size="small"
+              class="spd-btn spd-btn--secondary"
               @click="handleExportOutbound"
               v-hasPermi="['finance:medicalStockSummary:export']"
             >导出</el-button>
@@ -136,6 +172,13 @@ export default {
   components: { SelectWarehouse, SelectSupplier, SelectDepartment },
   data() {
     return {
+      showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '仓库', value: 'warehouse' },
+        { label: '供应商', value: 'supplier' },
+        { label: '科室', value: 'department' }
+      ],
       activeTab: 'inbound',
       queryParams: {
         ...monthRange(),
@@ -156,9 +199,17 @@ export default {
     }
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults()
+    this.onMoreSearchTypesChange()
     this.loadInbound()
   },
   computed: {
+    moreSearchStorageKey() {
+      return 'spd.finance.medicalStockSummary.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    },
     inboundPageAmountFormatted() {
       const list = this.inboundList || []
       const s = list.reduce((acc, row) => acc + Number(row && row.amount != null ? row.amount : 0), 0)
@@ -184,6 +235,7 @@ export default {
         supplerId: this.queryParams.supplerId,
         departmentId: this.queryParams.departmentId,
       }
+      this.applyMoreSearchToQueryParams(p)
       if (Array.isArray(p.warehouseIds) && p.warehouseIds.length === 0) {
         p.warehouseIds = null
       }
@@ -251,9 +303,48 @@ export default {
         supplerId: null,
         departmentId: null,
       })
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
       this.inboundPage.pageNum = 1
       this.outboundPage.pageNum = 1
       this.loadCurrentTab()
+    },
+    moreSearchFieldClass() {
+      return 'more-search-field--select'
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults()
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice()
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey)
+        if (!raw) return fallback
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return fallback
+        const allow = new Set(this.moreSearchOptions.map(o => o.value))
+        const cleaned = parsed.filter(v => allow.has(v))
+        return cleaned.length ? cleaned : fallback
+      } catch (e) {
+        return fallback
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || [])
+      const map = {
+        warehouse: 'warehouseIds',
+        supplier: 'supplerId',
+        department: 'departmentId'
+      }
+      Object.keys(map).forEach((type) => {
+        if (!set.has(type)) {
+          target[map[type]] = type === 'warehouse' ? [] : null
+        }
+      })
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams)
     },
     handleExportInbound() {
       this.download('/finance/medicalStockSummary/inbound/export', this.buildBaseParams(), `卫材入库汇总_${Date.now()}.xlsx`)
@@ -266,6 +357,9 @@ export default {
 </script>
 
 <style scoped>
+.list-query-panel {
+  margin-top: -20px;
+}
 .report-tip {
   margin: 0 0 12px;
   font-size: 12px;

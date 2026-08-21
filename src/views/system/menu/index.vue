@@ -1,67 +1,60 @@
 <template>
-  <div class="app-container">
-    <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch">
-      <el-form-item prop="menuName">
-        <el-input
-          v-model="queryParams.menuName"
-          placeholder="菜单名称"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item prop="status">
-        <el-select v-model="queryParams.status" placeholder="菜单状态" clearable>
-          <el-option
-            v-for="dict in dict.type.sys_normal_disable"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" size="small" @click="handleQuery">搜索</el-button>
-        <el-button type="primary" size="small" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+  <div class="app-container list-page">
+    <div class="form-fields-container list-query-panel" v-show="showSearch">
+      <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true">
+        <more-search-bar
+          ref="moreSearchBar"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          @change="onMoreSearchTypesChange"
+          @search="handleQuery"
+          @reset="resetQuery"
+        >
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field more-search-field--text"
+          >
+            <el-input
+              v-model="queryParams.menuName"
+              placeholder="菜单名称"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+        </more-search-bar>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          @click="handleAdd"
-          v-hasPermi="['system:menu:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          @click="toggleExpandAll"
-        >展开/折叠</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-finished"
-          size="small"
-          @click="openDefaultOpenBatch"
-          v-hasPermi="['system:menu:edit']"
-        >批量默认开放</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-s-check"
-          size="small"
-          @click="openBatchGrant"
-          v-hasPermi="['system:menu:edit']"
-        >批量赋权</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item prop="status" class="query-item-inline">
+              <el-select v-model="queryParams.status" placeholder="菜单状态" clearable class="more-search-select-wrap">
+                <el-option
+                  v-for="dict in dict.type.sys_normal_disable"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
+        <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['system:menu:add']">新增</el-button>
+        <el-button size="small" class="spd-btn spd-btn--secondary" @click="toggleExpandAll">展开/折叠</el-button>
+        <el-button type="warning" plain icon="el-icon-finished" size="small" class="spd-btn spd-btn--secondary" @click="openDefaultOpenBatch" v-hasPermi="['system:menu:edit']">批量默认开放</el-button>
+        <el-button type="danger" plain icon="el-icon-s-check" size="small" class="spd-btn spd-btn--secondary" @click="openBatchGrant" v-hasPermi="['system:menu:edit']">批量赋权</el-button>
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table
@@ -323,8 +316,8 @@
         </el-row>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
 
@@ -371,8 +364,8 @@
         </span>
       </el-tree>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="defaultOpenOpen = false">取 消</el-button>
-        <el-button type="primary" :loading="defaultOpenSubmitting" @click="submitDefaultOpenBatch">保 存</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="defaultOpenOpen = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="defaultOpenSubmitting" @click="submitDefaultOpenBatch">保 存</el-button>
       </div>
     </el-dialog>
 
@@ -477,8 +470,8 @@
         <el-table-column prop="perms" label="权限标识" min-width="140" show-overflow-tooltip />
       </el-table>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="batchGrantOpen = false">取 消</el-button>
-        <el-button type="primary" :loading="batchGrantSubmitting" @click="submitBatchGrant">确 定</el-button>
+        <el-button class="spd-btn spd-btn--secondary" @click="batchGrantOpen = false">取 消</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="batchGrantSubmitting" @click="submitBatchGrant">确 定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -500,6 +493,10 @@ export default {
       loading: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { label: '菜单名称', value: 'menuName' }
+      ],
       // 菜单表格树数据
       menuList: [],
       // 菜单树选项
@@ -556,9 +553,17 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
   },
   computed: {
+    moreSearchStorageKey() {
+      return 'spd.system.menu.moreSearchTypes'
+    },
+    builtInMoreSearchDefaults() {
+      return this.moreSearchOptions.map(o => o.value)
+    },
     /** 回显库中每条勾选态时强制父子不关联，避免仅父级勾选掩盖子级/按钮实际状态 */
     defaultOpenTreeCheckStrictly() {
       if (this.applyingDefaultOpenDbKeys) return true;
@@ -573,7 +578,9 @@ export default {
     /** 查询菜单列表 */
     getList() {
       this.loading = true;
-      listMenu(this.queryParams).then(response => {
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listMenu(params).then(response => {
         this.menuList = this.handleTree(response.data, "menuId");
         this.loading = false;
       });
@@ -724,7 +731,36 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
       this.handleQuery();
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === 'function') {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      if (!set.has('menuName')) {
+        target.menuName = null;
+      }
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     /** 新增按钮操作 */
     handleAdd(row) {
@@ -917,3 +953,9 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.list-query-panel {
+  margin-top: -20px;
+}
+</style>

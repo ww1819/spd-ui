@@ -1,6 +1,6 @@
 <!--生产厂家信息维护-->
 <template>
-  <div class="app-container factory-container">
+  <div class="app-container list-page factory-container">
     <el-row :gutter="20">
       <!-- 左侧厂家列表 -->
       <el-col :span="6">
@@ -22,104 +22,93 @@
 
       <!-- 右侧表格区域 -->
       <el-col :span="18">
-    <!-- 查询条件容器 -->
     <div class="query-container" v-show="showSearch">
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-form-item prop="factoryCode">
+      <div class="form-fields-container list-query-panel">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field more-search-field--text"
+            >
               <el-input
-                v-model="queryParams.factoryCode"
-                placeholder="厂家编码"
+                v-model="queryParams[t]"
+                :placeholder="moreSearchPlaceholderFor(t)"
                 clearable
+                class="more-search-input more-search-input--dynamic"
                 @keyup.enter.native="handleQuery"
-                style="width: 150px"
               />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item prop="factoryName">
-              <el-input
-                v-model="queryParams.factoryName"
-                placeholder="厂家名称"
-                clearable
-                @keyup.enter.native="handleQuery"
-                style="width: 150px"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+            </div>
+          </more-search-bar>
+        </el-form>
+      </div>
     </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5" v-if="!isZqTcmTenant">
+    <el-row :gutter="0" class="mb8 list-toolbar">
+      <div class="list-toolbar-left">
         <el-button
-          type="primary" size="small"
+          v-if="!isZqTcmTenant"
+          type="primary"
+          size="small"
+          class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['foundation:factory:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:factory:edit']"
         >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleDelete"
           v-hasPermi="['foundation:factory:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :disabled="multiple"
           @click="handleUpdateReferred"
           v-hasPermi="['foundation:factory:updateReferred']"
         >更新简码</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
-          type="primary" size="small"
+          size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['foundation:factory:export']"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.8" v-if="!isZqTcmTenant">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-upload2"
+          v-if="!isZqTcmTenant"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleImport('add')"
           v-hasPermi="['foundation:factory:import']"
         >新增导入</el-button>
-      </el-col>
-      <el-col :span="1.8">
         <el-button
-          type="info"
-          plain
-          icon="el-icon-refresh-right"
           size="small"
+          class="spd-btn spd-btn--secondary"
           @click="handleImport('update')"
           v-hasPermi="['foundation:factory:import']"
         >更新导入</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          size="small"
-          @click="handleQuery"
-        >搜索</el-button>
-      </el-col>
-      <msun-his-sync-button sync-type="producers" label="HIS厂家同步" :refresh="getList" />
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <msun-his-sync-button sync-type="producers" label="HIS厂家同步" :inline="true" :refresh="getList" />
+      </div>
+      <div class="list-toolbar-right">
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      </div>
     </el-row>
 
     <el-table v-loading="loading" :data="factoryList" :row-class-name="factoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
@@ -216,8 +205,8 @@
           </el-form>
         </div>
         <div class="page-drawer-footer">
-          <el-button type="primary" @click="submitForm">保 存</el-button>
-          <el-button @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
         </div>
       </div>
     </div>
@@ -327,6 +316,12 @@ export default {
       }
       return "选填：HIS 生产厂家标识（不填不影响保存）";
     },
+    moreSearchStorageKey() {
+      return "spd.foundation.factory.moreSearchTypes";
+    },
+    builtInMoreSearchDefaults() {
+      return ["factoryCode", "factoryName"];
+    }
   },
   data() {
     return {
@@ -341,6 +336,11 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      moreSearchTypes: [],
+      moreSearchOptions: [
+        { value: "factoryCode", label: "厂家编码" },
+        { value: "factoryName", label: "厂家名称" }
+      ],
       // 总条数
       total: 0,
       // 厂家维护表格数据
@@ -394,10 +394,43 @@ export default {
     };
   },
   created() {
+    this.moreSearchTypes = this.loadMoreSearchDefaults();
+    this.onMoreSearchTypesChange();
     this.getList();
     this.getAllFactoryList();
   },
   methods: {
+    moreSearchPlaceholderFor(t) {
+      const map = { factoryCode: "厂家编码", factoryName: "厂家名称" };
+      return map[t] || "请输入";
+    },
+    loadMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.loadDefaults === "function") {
+        return bar.loadDefaults();
+      }
+      const fallback = this.builtInMoreSearchDefaults.slice();
+      try {
+        const raw = localStorage.getItem(this.moreSearchStorageKey);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return fallback;
+        const allow = new Set(this.moreSearchOptions.map(o => o.value));
+        const cleaned = parsed.filter(v => allow.has(v));
+        return cleaned.length ? cleaned : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    applyMoreSearchToQueryParams(target) {
+      const set = new Set(this.moreSearchTypes || []);
+      ["factoryCode", "factoryName"].forEach((k) => {
+        if (!set.has(k)) target[k] = null;
+      });
+    },
+    onMoreSearchTypesChange() {
+      this.applyMoreSearchToQueryParams(this.queryParams);
+    },
     /** 获取所有厂家列表（用于左侧列表，与 listAll 一致，避免分页/权限与 list 不一致导致空白） */
     getAllFactoryList() {
       listFactoryAll({})
@@ -411,7 +444,9 @@ export default {
     /** 查询厂家维护列表 */
     getList() {
       this.loading = true;
-      listFactory(this.queryParams)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      listFactory(params)
         .then((response) => {
           this.factoryList = (response && response.rows) || [];
           this.total = (response && response.total) || 0;
@@ -480,6 +515,10 @@ export default {
     resetQuery() {
       this.resetForm("queryForm");
       this.selectedFactoryId = null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.queryParams.factoryCode = null;
+      this.queryParams.factoryName = null;
+      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     // 多选框选中数据
@@ -549,9 +588,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      this.download('foundation/factory/export', {
-        ...this.queryParams
-      }, `factory_${new Date().getTime()}.xlsx`)
+      const params = { ...this.queryParams };
+      this.applyMoreSearchToQueryParams(params);
+      this.download('foundation/factory/export', params, `factory_${new Date().getTime()}.xlsx`)
     },
     /** 更新厂家简码 */
     handleUpdateReferred() {

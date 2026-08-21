@@ -1,34 +1,61 @@
 <template>
-    <div class="inspection-platform">
-      <!-- 顶部搜索栏 -->
-      <div class="search-bar">
-        <el-form inline class="query-form">
-          <el-form-item>
-            <el-input v-model="searchForm.keyword" placeholder="检验平台名称、编码..." clearable></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-input v-model="searchForm.instrument" placeholder="仪器名称" clearable></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-input v-model="searchForm.project" placeholder="项目编码、名称..." clearable></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="handleSearch">查询</el-button>
-          </el-form-item>
-          <el-form-item>
-            <el-button @click="handleReset">重置</el-button>
-          </el-form-item>
+    <div class="app-container list-page inspection-platform">
+      <div class="form-fields-container list-query-panel">
+        <el-form inline :model="searchForm" class="query-form" size="small">
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleSearch"
+            @reset="handleReset"
+          >
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field more-search-field--text"
+            >
+              <el-input
+                v-if="t === 'instrument'"
+                v-model="searchForm.instrument"
+                placeholder="仪器名称"
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleSearch"
+              />
+              <el-input
+                v-else-if="t === 'project'"
+                v-model="searchForm.project"
+                placeholder="项目编码、名称..."
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleSearch"
+              />
+              <el-input
+                v-else
+                v-model="searchForm.keyword"
+                placeholder="检验平台名称、编码..."
+                clearable
+                class="more-search-input more-search-input--dynamic"
+                @keyup.enter.native="handleSearch"
+              />
+            </div>
+          </more-search-bar>
         </el-form>
       </div>
-  
-      <!-- 功能按钮 -->
-      <div class="function-buttons">
-        <el-button type="primary" @click="handleAdd">新增</el-button>
-        <el-button type="primary" @click="handleEdit">修改</el-button>
-        <el-button type="primary" @click="handleExport">导出</el-button>
-        <el-button type="primary" @click="handleImport">导入</el-button>
-        <el-button type="primary" @click="handleTemplateDownload">下载模板</el-button>
-      </div>
+
+      <el-row :gutter="0" class="mb8 list-toolbar">
+        <div class="list-toolbar-left">
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleAdd">新增</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleEdit">修改</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport">导出</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleImport">导入</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleTemplateDownload">下载模板</el-button>
+        </div>
+      </el-row>
   
       <!-- 主内容区域 -->
       <div class="content">
@@ -110,7 +137,7 @@
             <div class="header-right">
               <el-button circle @click="handleMoveLeft"></el-button>
               <el-button circle @click="handleMoveRight"></el-button>
-              <el-button type="primary" @click="handleSave">保存</el-button>
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleSave">保存</el-button>
             </div>
           </div>
           <el-table :data="selectedEquipmentData" border style="width: 100%" :header-cell-style="{background:'#f5f7fa',color:'#606266'}" stripe>
@@ -154,8 +181,8 @@
             </el-row>
           </el-form>
           <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-            <el-button type="primary" @click="submitForm">确 定</el-button>
-            <el-button @click="cancel">取 消</el-button>
+            <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+            <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
           </div>
         </div>
       </div>
@@ -187,8 +214,8 @@
             </div>
           </el-upload>
           <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-            <el-button type="primary" @click="submitFileForm">确 定</el-button>
-            <el-button @click="upload.open = false">取 消</el-button>
+            <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitFileForm">确 定</el-button>
+            <el-button class="spd-btn spd-btn--secondary" @click="upload.open = false">取 消</el-button>
           </div>
         </div>
       </div>
@@ -206,6 +233,12 @@
           instrument: '',
           project: ''
         },
+        moreSearchTypes: [],
+        moreSearchOptions: [
+          { label: '检验平台', value: 'keyword' },
+          { label: '仪器名称', value: 'instrument' },
+          { label: '项目', value: 'project' }
+        ],
         filterForm: {
           profession: '全部'
         },
@@ -249,16 +282,67 @@
         }
       };
     },
+    computed: {
+      moreSearchStorageKey() {
+        return 'spd.foundation.testplat.moreSearchTypes'
+      },
+      builtInMoreSearchDefaults() {
+        return this.moreSearchOptions.map(o => o.value)
+      }
+    },
+    created() {
+      this.moreSearchTypes = this.loadMoreSearchDefaults()
+      this.onMoreSearchTypesChange()
+    },
     methods: {
       handleSearch() {
-        console.log('查询条件:', this.searchForm);
+        const params = { ...this.searchForm }
+        this.applyMoreSearchToQueryParams(params)
+        console.log('查询条件:', params)
       },
       handleReset() {
         this.searchForm = {
           keyword: '',
           instrument: '',
           project: ''
-        };
+        }
+        this.moreSearchTypes = this.loadMoreSearchDefaults()
+        this.onMoreSearchTypesChange()
+        this.handleSearch()
+      },
+      loadMoreSearchDefaults() {
+        const bar = this.$refs.moreSearchBar
+        if (bar && typeof bar.loadDefaults === 'function') {
+          return bar.loadDefaults()
+        }
+        const fallback = this.builtInMoreSearchDefaults.slice()
+        try {
+          const raw = localStorage.getItem(this.moreSearchStorageKey)
+          if (!raw) return fallback
+          const parsed = JSON.parse(raw)
+          if (!Array.isArray(parsed)) return fallback
+          const allow = new Set(this.moreSearchOptions.map(o => o.value))
+          const cleaned = parsed.filter(v => allow.has(v))
+          return cleaned.length ? cleaned : fallback
+        } catch (e) {
+          return fallback
+        }
+      },
+      applyMoreSearchToQueryParams(target) {
+        const set = new Set(this.moreSearchTypes || [])
+        const map = {
+          keyword: 'keyword',
+          instrument: 'instrument',
+          project: 'project'
+        }
+        Object.keys(map).forEach((type) => {
+          if (!set.has(type)) {
+            target[map[type]] = null
+          }
+        })
+      },
+      onMoreSearchTypesChange() {
+        this.applyMoreSearchToQueryParams(this.searchForm)
       },
       handleAdd() {
         this.open = true;
@@ -356,15 +440,8 @@
     font-family: 'Arial', sans-serif;
   }
   
-  .search-bar {
-    margin-bottom: 15px;
-    padding: 10px;
-    background-color: #f5f7fa;
-    border-radius: 5px;
-  }
-  
-  .function-buttons {
-    margin-bottom: 15px;
+  .list-query-panel {
+    margin-top: -20px;
   }
   
   .content {

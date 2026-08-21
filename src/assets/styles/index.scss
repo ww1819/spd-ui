@@ -5,18 +5,117 @@
 @import './sidebar.scss';
 @import './global.scss';
 @import './btn.scss';
+@import './list-page.scss';
 @import './select-dropdown-multiline.scss';
 @import './fonts.scss';
 
+/* 全局字体变量：改字重/字色只动这里 */
+$app-font-family: "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+$app-font-weight: 400;
+$app-font-color: #404854;
+
 body {
   height: 100%;
-  /* 不用 antialiased，避免高分屏把笔画“磨淡” */
+  /* Windows 下用默认渲染，减少发糊 */
   -moz-osx-font-smoothing: auto;
   -webkit-font-smoothing: auto;
-  text-rendering: optimizeLegibility;
-  /* SemiBold(600) 再黑一点，接近 PingFang Medium 观感 */
-  font-family: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
-  font-weight: 600;
+  text-rendering: auto;
+  font-family: $app-font-family;
+  font-weight: $app-font-weight;
+  color: $app-font-color;
+}
+
+/* 表单控件默认不继承 body 字体，统一强制覆盖 */
+button,
+input,
+select,
+textarea,
+.el-button,
+.el-input__inner,
+.el-textarea__inner,
+.el-select .el-input__inner,
+.el-range-editor .el-range-input,
+.el-form-item__label,
+.el-checkbox__label,
+.el-radio__label,
+.el-pagination,
+.more-search-label,
+.more-search-field-label {
+  font-family: $app-font-family !important;
+  font-weight: $app-font-weight !important;
+}
+
+/* 正文/表单字色（不含彩色按钮，避免盖住 primary 白字） */
+.el-input__inner,
+.el-textarea__inner,
+.el-select .el-input__inner,
+.el-range-editor .el-range-input,
+.el-form-item__label,
+.el-checkbox__label,
+.el-radio__label,
+.el-pagination,
+.more-search-label,
+.more-search-field-label,
+.el-button--default {
+  color: $app-font-color !important;
+}
+
+/* 表格字号层级：表头略大略重，内容略小，避免「内容比标题大」 */
+.el-table,
+.app-container .el-table {
+  font-family: $app-font-family !important;
+  font-size: 13px !important;
+  color: $app-font-color !important;
+}
+
+html body .el-table th,
+html body .el-table th.el-table__cell,
+html body .el-table th > .cell,
+html body .app-container .el-table th,
+html body .app-container .el-table th > .cell,
+html body .app-container > .el-table th,
+html body .app-container > .el-table th .cell {
+  font-family: $app-font-family !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: $app-font-color !important;
+}
+
+html body .el-table td,
+html body .el-table td.el-table__cell,
+html body .el-table td > .cell,
+html body .app-container .el-table td,
+html body .app-container .el-table td > .cell,
+html body .app-container > .el-table td,
+html body .app-container > .el-table td .cell {
+  font-family: $app-font-family !important;
+  font-size: 13px !important;
+  font-weight: $app-font-weight !important;
+  color: $app-font-color !important;
+}
+
+/* placeholder 单独设字重，否则常显偏细 */
+.el-input__inner::placeholder,
+.el-textarea__inner::placeholder,
+.el-range-input::placeholder,
+input::placeholder,
+textarea::placeholder {
+  font-family: $app-font-family !important;
+  font-weight: $app-font-weight !important;
+  color: #8b929c !important;
+  opacity: 1;
+}
+
+/* 日期条件里的「至」：与检索区同色同重 */
+.el-form-item__content > .el-date-editor + span,
+.el-form-item__content > .el-input + span,
+.query-date-sep,
+.query-date-range-sep,
+.ref-date-sep,
+.el-range-separator {
+  color: $app-font-color !important;
+  font-family: $app-font-family !important;
+  font-weight: $app-font-weight !important;
 }
 
 label {
