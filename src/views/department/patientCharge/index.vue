@@ -606,7 +606,7 @@
         <el-radio label="QUERY">当前查询条件下全部待处理低值结果</el-radio>
       </el-radio-group>
       <p class="pc-batch-tip">「全部」将按当前筛选条件分页收集待处理低值明细后再核销，条数多时可能较久。</p>
-      <p class="pc-batch-tip">开始核销前：若已设计费日期且有权限，将按该区间自动「补全执行科室」（仅回写本地为空且 HIS 有值的行），再逐条核销。</p>
+      <p class="pc-batch-tip">仅核销执行科室不为空的记录；执行科室为空的自动跳过。若范围内存在空执行科室，将询问是否先补全。</p>
       <div slot="footer" class="dialog-footer">
         <el-button class="spd-btn spd-btn--secondary" @click="batchLowDialog.visible = false">取 消</el-button>
         <el-button type="primary" class="spd-btn spd-btn--primary" :loading="batchLowSubmitting" @click="confirmBatchLowProcess">开始核销</el-button>
@@ -908,7 +908,11 @@ export default {
       list.forEach(r => {
         const k = this.selectionCacheKey(r)
         if (!k || !this.canProcessLow(r)) return
-        next[k] = { id: String(r.id), visitType: r.visitType || this.currentVisitKind }
+        next[k] = {
+          id: String(r.id),
+          visitType: r.visitType || this.currentVisitKind,
+          execDeptId: r.execDeptId
+        }
       })
       this.detailSelectionCache = next
     },
@@ -1468,95 +1472,144 @@ export default {
       this.batchLowDialog.scope = this.cachedSelectionCount > 0 ? 'SELECTED' : 'QUERY'
       this.batchLowDialog.visible = true
     },
+    isExecDeptEmpty(row) {
+      if (!row) return true
+      const id = row.execDeptId != null ? String(row.execDeptId).trim() : ''
+      return id === ''
+    },
+    async resolveBatchWriteOffCandidates(scope) {
+      if (scope === 'SELECTED') {
+        const rows = Object.values(this.detailSelectionCache || {}).filter(x => x && x.id)
+        let emptyCount = 0
+        const writableIds = []
+        rows.forEach(r => {
+          if (this.isExecDeptEmpty(r)) {
+            emptyCount += 1
+          } else {
+            writableIds.push(String(r.id))
+          }
+        })
+        return { writableIds, emptyCount, totalCount: rows.length }
+      }
+      return this.collectQueryablePendingLowCandidates()
+    },
     async confirmBatchLowProcess() {
       if (this.detailVisitType === 'ALL' || !this.currentVisitKind) {
         this.$modal.msgWarning('“全部”模式下批量低值核销请先切换到住院或门诊后分别执行')
         return
       }
-      let ids = []
+      const scope = this.batchLowDialog.scope
+      let candidates
       try {
-        if (this.batchLowDialog.scope === 'SELECTED') {
-          ids = Object.values(this.detailSelectionCache).map(x => x.id).filter(Boolean)
-          if (!ids.length) {
+        if (scope === 'SELECTED') {
+          if (!this.cachedSelectionCount) {
             this.$modal.msgWarning('请先勾选待处理的低值计费明细（支持跨页勾选）')
             return
           }
         } else {
           this.batchLowSubmitting = true
-          ids = await this.collectQueryablePendingLowIds()
-          if (!ids.length) {
-            this.$modal.msgWarning('当前查询条件下没有可低值核销的待处理明细')
-            this.batchLowSubmitting = false
-            return
-          }
+        }
+        candidates = await this.resolveBatchWriteOffCandidates(scope)
+        if (!candidates.totalCount) {
+          this.$modal.msgWarning('当前查询条件下没有可低值核销的待处理明细')
+          return
+        }
+        if (!candidates.writableIds.length) {
+          this.$modal.msgWarning(`共 ${candidates.emptyCount} 条待处理明细执行科室均为空，无法批量核销；可先补全执行科室或使用「自选科室核销」`)
+          return
         }
       } catch (e) {
-        this.batchLowSubmitting = false
         return
+      } finally {
+        if (scope !== 'SELECTED') {
+          this.batchLowSubmitting = false
+        }
       }
       this.batchLowDialog.visible = false
-      const scopeText = this.batchLowDialog.scope === 'SELECTED' ? '已勾选' : '查询结果'
-      this.$modal
+      const scopeText = scope === 'SELECTED' ? '已勾选' : '查询结果'
+      let skipHint = candidates.emptyCount > 0 ? `；${candidates.emptyCount} 条执行科室为空将跳过` : ''
+      const go = await this.$modal
         .confirm(
-          `将对${scopeText}共 ${ids.length} 条：先按计费日期自动补全空执行科室（有权限时），再逐条低值核销；单条失败不影响其它条。是否继续？`
+          `将对${scopeText}中执行科室不为空的 ${candidates.writableIds.length} 条逐条低值核销${skipHint}；单条失败不影响其它条。是否继续？`
         )
-        .then(async () => {
-          this.batchLowSubmitting = true
-          try {
-            await this.ensureExecDeptBeforeBatchLow()
-          } catch (e) {
-            if (e === 'cancel' || (e && e.message === 'cancel')) {
+        .then(() => true)
+        .catch(() => false)
+      if (!go) {
+        return
+      }
+      this.batchLowSubmitting = true
+      try {
+        if (candidates.emptyCount > 0) {
+          const doBackfill = await this.$modal
+            .confirm(
+              `当前范围内有 ${candidates.emptyCount} 条执行科室为空。是否先按计费日期从 HIS 补全执行科室？（补全后仍仅核销执行科室不为空的记录）`
+            )
+            .then(() => true)
+            .catch(() => false)
+          if (doBackfill) {
+            try {
+              await this.ensureExecDeptBeforeBatchLow()
+            } catch (e) {
+              if (e === 'cancel' || (e && e.message === 'cancel')) {
+                return
+              }
+              const cont = await this.$modal
+                .confirm(
+                  formatHisChargeSlowError(e, {
+                    timeoutMsg: '补全执行科室失败或超时。是否仍继续核销（仅执行科室不为空的记录）？'
+                  })
+                )
+                .then(() => true)
+                .catch(() => false)
+              if (!cont) {
+                return
+              }
+            }
+            candidates = await this.resolveBatchWriteOffCandidates(scope)
+            if (!candidates.writableIds.length) {
+              this.$modal.msgWarning('补全后仍无执行科室不为空的待核销明细')
               return
             }
-            const cont = await this.$modal
-              .confirm(
-                formatHisChargeSlowError(e, {
-                  timeoutMsg: '补全执行科室失败或超时。是否仍继续核销（缺执行科室的记录可能失败）？'
-                })
-              )
-              .then(() => true)
-              .catch(() => false)
-            if (!cont) {
-              return
-            }
+            skipHint = candidates.emptyCount > 0 ? `；${candidates.emptyCount} 条仍为空已跳过` : ''
           }
-          return processMirrorLowValueBatch({ visitKind: this.currentVisitKind, mirrorRowIds: ids })
+        }
+        const res = await processMirrorLowValueBatch({
+          visitKind: this.currentVisitKind,
+          mirrorRowIds: candidates.writableIds
         })
-        .then(res => {
-          if (!res) return
-          const d = res.data || {}
-          const ok = d.successCount != null ? d.successCount : 0
-          const fail = d.failCount != null ? d.failCount : 0
-          let stats = Array.isArray(d.failReasonStats) ? d.failReasonStats : []
-          if (!stats.length && Array.isArray(d.failMessages) && d.failMessages.length) {
-            // 兼容旧接口：从「id: 原因」明细聚合
-            const map = {}
-            d.failMessages.forEach(line => {
-              const s = String(line || '')
-              const i = s.indexOf(': ')
-              const reason = i >= 0 ? s.slice(i + 2).trim() : s.trim() || '(无具体原因)'
-              map[reason] = (map[reason] || 0) + 1
-            })
-            stats = Object.keys(map)
-              .map(reason => ({ reason, count: map[reason] }))
-              .sort((a, b) => b.count - a.count || String(a.reason).localeCompare(String(b.reason)))
-          }
-          this.batchLowResultDialog = {
-            visible: fail > 0 || stats.length > 0,
-            successCount: ok,
-            failCount: fail,
-            failReasonStats: stats
-          }
-          this.$modal.msgSuccess(`完成：成功 ${ok} 条，失败 ${fail} 条` + (stats.length ? `（已按原因汇总 ${stats.length} 类）` : ''))
-          this.clearDetailSelectionCache()
-          this.handleDetailQuery()
-        })
-        .catch(() => {
-          this.handleDetailQuery()
-        })
-        .finally(() => {
-          this.batchLowSubmitting = false
-        })
+        const d = res.data || {}
+        const ok = d.successCount != null ? d.successCount : 0
+        const fail = d.failCount != null ? d.failCount : 0
+        let stats = Array.isArray(d.failReasonStats) ? d.failReasonStats : []
+        if (!stats.length && Array.isArray(d.failMessages) && d.failMessages.length) {
+          const map = {}
+          d.failMessages.forEach(line => {
+            const s = String(line || '')
+            const i = s.indexOf(': ')
+            const reason = i >= 0 ? s.slice(i + 2).trim() : s.trim() || '(无具体原因)'
+            map[reason] = (map[reason] || 0) + 1
+          })
+          stats = Object.keys(map)
+            .map(reason => ({ reason, count: map[reason] }))
+            .sort((a, b) => b.count - a.count || String(a.reason).localeCompare(String(b.reason)))
+        }
+        this.batchLowResultDialog = {
+          visible: fail > 0 || stats.length > 0,
+          successCount: ok,
+          failCount: fail,
+          failReasonStats: stats
+        }
+        const skipMsg = candidates.emptyCount > 0 ? `，跳过 ${candidates.emptyCount} 条（执行科室为空）` : ''
+        this.$modal.msgSuccess(
+          `完成：成功 ${ok} 条，失败 ${fail} 条${skipMsg}` + (stats.length ? `（已按原因汇总 ${stats.length} 类）` : '')
+        )
+        this.clearDetailSelectionCache()
+        this.handleDetailQuery()
+      } catch (e) {
+        this.handleDetailQuery()
+      } finally {
+        this.batchLowSubmitting = false
+      }
     },
     copyBatchFailReasons() {
       const rows = this.batchLowResultDialog.failReasonStats || []
@@ -1663,10 +1716,11 @@ export default {
       }
       return { ran: true, agg }
     },
-    async collectQueryablePendingLowIds() {
+    async collectQueryablePendingLowCandidates() {
       const pageSize = 200
       let pageNum = 1
-      const ids = []
+      let emptyCount = 0
+      const writableIds = []
       const maxPages = 100
       while (pageNum <= maxPages) {
         const q = { ...this.detailQuery, pageNum, pageSize, processed: 'N' }
@@ -1686,7 +1740,12 @@ export default {
           res = await listInpatientMirror(q)
           ;(res.rows || []).forEach(r => {
             const row = { ...r, visitType: 'INPATIENT', processStatus: r.processStatus, valueLevel: r.valueLevel }
-            if (this.canProcessLow(row)) ids.push(r.id)
+            if (!this.canProcessLow(row)) return
+            if (this.isExecDeptEmpty(row)) {
+              emptyCount += 1
+            } else {
+              writableIds.push(String(r.id))
+            }
           })
         } else {
           q.outpatientNo = q.visitNo
@@ -1698,14 +1757,23 @@ export default {
           res = await listOutpatientMirror(q)
           ;(res.rows || []).forEach(r => {
             const row = { ...r, visitType: 'OUTPATIENT', processStatus: r.processStatus, valueLevel: r.valueLevel }
-            if (this.canProcessLow(row)) ids.push(r.id)
+            if (!this.canProcessLow(row)) return
+            if (this.isExecDeptEmpty(row)) {
+              emptyCount += 1
+            } else {
+              writableIds.push(String(r.id))
+            }
           })
         }
         const got = (res && res.rows) ? res.rows.length : 0
         if (got < pageSize) break
         pageNum += 1
       }
-      return ids
+      return { writableIds, emptyCount, totalCount: writableIds.length + emptyCount }
+    },
+    async collectQueryablePendingLowIds() {
+      const { writableIds } = await this.collectQueryablePendingLowCandidates()
+      return writableIds
     },
     buildExportParams() {
       const q = { ...this.detailQuery }
