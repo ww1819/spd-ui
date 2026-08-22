@@ -2,53 +2,42 @@
   <div class="app-container list-page inWarehouse-apply-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'supplier'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectSupplier v-model="queryParams.supplerId"/>
-              </div>
-            </template>
-            <template v-else-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-              </div>
-            </template>
-            <template v-else-if="t === 'material'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectMaterial v-model="queryParams.materialId" />
-              </div>
-            </template>
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-else
-              v-model="queryParams[t]"
-              :placeholder="moreSearchPlaceholderFor(t)"
+              v-model="queryParams.billNo"
+              placeholder="入库单号"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectSupplier v-model="queryParams.supplerId"/>
+            </div>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-warehouse">
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+            </div>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-material">
+              <SelectMaterial v-model="queryParams.materialId" />
+            </div>
+            <el-input
+              v-model="queryParams.refBillNo"
+              placeholder="引用单号"
+              clearable
+              class="apply-query-input"
+              @keyup.enter.native="handleQuery"
+            />
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
             <el-form-item class="query-date-range-form-item query-item-inline">
-              <el-radio-group v-model="queryParams.dateQueryType" size="small" style="margin-right: 10px; margin-bottom: 4px;">
+              <el-radio-group v-model="queryParams.dateQueryType" size="small" class="apply-date-type-group">
                 <el-radio-button label="bill">制单日期</el-radio-button>
                 <el-radio-button label="audit">审核日期</el-radio-button>
               </el-radio-group>
@@ -58,8 +47,7 @@
                 value-format="yyyy-MM-dd HH:mm:ss"
                 placeholder="起始日期"
                 clearable
-                class="query-date-picker"
-                style="width: 200px; margin-right: 8px;"
+                class="query-date-picker apply-query-date"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
@@ -68,8 +56,7 @@
                 value-format="yyyy-MM-dd HH:mm:ss"
                 placeholder="截止日期"
                 clearable
-                class="query-date-picker"
-                style="width: 200px; margin-left: 8px;"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
             <el-form-item prop="billStatus" class="query-item-inline query-item-status">
@@ -114,10 +101,13 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
-              :row-class-name="warehouseListIndex"
-              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
-      <el-table-column type="selection" width="55" align="center" fixed="left" />
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="warehouseList" class="table-compact apply-main-table"
+              row-key="id"
+              :row-class-name="applyMainRowClassName"
+              @selection-change="handleSelectionChange"
+              :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
@@ -193,7 +183,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="180">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -229,12 +219,15 @@
       </el-table-column>
     </el-table>
 
+    <div class="apply-pagination-wrap" ref="paginationWrap">
     <pagination
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
+    </div>
 
     <!-- 添加或修改入库对话框 -->
     <transition name="modal-fade">
@@ -410,7 +403,8 @@
 
         </el-row>
         <div class="table-wrapper">
-        <el-table :data="stkIoBillEntryList" :row-class-name="rowStkIoBillEntryIndex"
+        <el-table :data="stkIoBillEntryList" :row-class-name="applyDetailRowClassName"
+                  class="apply-detail-table"
                   show-summary :summary-method="getSummariesWithRefresh"
                   @selection-change="handleStkIoBillEntrySelectionChange"
                   ref="stkIoBillEntry"
@@ -854,6 +848,10 @@ export default {
       },
       // 选中数组
       ids: [],
+      // 主表跨页勾选缓存（行高亮）
+      selectedRowMap: {},
+      // 明细表勾选行（行高亮，按行下标）
+      detailSelectedRowMap: {},
       // 子表选中数据
       checkedStkIoBillEntry: [],
       // 非单个禁用
@@ -876,14 +874,7 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: "入库单号", value: "billNo" },
-        { label: "供应商", value: "supplier" },
-        { label: "仓库", value: "warehouse" },
-        { label: "耗材", value: "material" },
-        { label: "引用单号", value: "refBillNo" }
-      ],
+      mainTableHeight: 400,
       // 总条数
       total: 0,
       // 入库表格数据
@@ -981,18 +972,17 @@ export default {
     isZqTenant() {
       const cid = this.$store.getters.customerId;
       return cid != null && String(cid).trim() === ZQ_TCM_TENANT;
-    },
-    moreSearchStorageKey() {
-      return "spd.inWarehouse.apply.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value);
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList(true);
+  },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
   },
   watch: {
     open(val) {
@@ -1005,11 +995,63 @@ export default {
         });
       }
     },
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
     '$store.state.app.sidebarNavTick'(nav) {
       this.handleSidebarNavTick(nav);
     }
   },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    /** 按表格卡片剩余高度计算主表高度，保证翻页完整可见 */
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
+      });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
     normalizeRoutePath(path) {
       if (!path) {
         return '';
@@ -1189,7 +1231,6 @@ export default {
       const queryParams = {
         ...this.queryParams
       };
-      this.applyMoreSearchToQueryParams(queryParams);
       if (queryParams.endDate && queryParams.endDate.length === 10) {
         // 如果 endDate 只有日期部分（yyyy-MM-dd），添加时间部分为 23:59:59
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
@@ -1199,9 +1240,14 @@ export default {
         this.warehouseList = response.rows || [];
         this.total = response.total || 0;
         this.loading = false;
+        this.$nextTick(() => {
+          this.updateMainTableHeight();
+          this.restoreMainPageSelection();
+        });
       }).catch(error => {
         console.error('查询入库列表失败:', error);
         this.loading = false;
+        this.$nextTick(() => this.updateMainTableHeight());
       });
     },
     checkMaterialBtn() {
@@ -1327,6 +1373,7 @@ export default {
       };
       this.deliveryRefKeyword = "";
       this.stkIoBillEntryList = [];
+      this.detailSelectedRowMap = {};
       this.resetForm("form");
     },
     //数量改变事件
@@ -1540,52 +1587,6 @@ export default {
       }
       return true;
     },
-    moreSearchFieldClass(t) {
-      if (['supplier', 'warehouse', 'material'].includes(t)) {
-        return 'more-search-field--select';
-      }
-      return 'more-search-field--text';
-    },
-    moreSearchPlaceholderFor(t) {
-      const map = { billNo: '入库单号', refBillNo: '引用单号' };
-      return map[t] || '请输入';
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = {
-        billNo: 'billNo',
-        supplier: 'supplerId',
-        warehouse: 'warehouseId',
-        material: 'materialId',
-        refBillNo: 'refBillNo'
-      };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
-    },
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
@@ -1599,15 +1600,67 @@ export default {
       this.queryParams.endDate = this.getEndDate();
       this.queryParams.params = this.queryParams.params || {};
       this.queryParams.params.docRefStatus = null;
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
-    // 多选框选中数据
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : '';
+    },
+    /** 主表行 class：序号 + 勾选高亮 */
+    applyMainRowClassName({ row, rowIndex }) {
+      this.warehouseListIndex({ row, rowIndex });
+      const key = this.getApplyMainRowKey(row);
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable;
+      if (!table || !this.warehouseList || !this.warehouseList.length) {
+        return;
+      }
+      const keys = this.selectedRowMap || {};
+      if (!Object.keys(keys).length) {
+        return;
+      }
+      this.warehouseList.forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
+    /** 明细表行 class：序号 + 勾选高亮 */
+    applyDetailRowClassName({ row, rowIndex }) {
+      this.rowStkIoBillEntryIndex({ row, rowIndex });
+      if (this.detailSelectedRowMap && this.detailSelectedRowMap[rowIndex]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    // 多选框选中数据（跨页缓存）
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      const pageKeys = (this.warehouseList || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key) {
+          this.$set(this.selectedRowMap, key, row);
+        }
+      });
+      const ids = Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key);
+        return Number.isNaN(n) ? key : n;
+      });
+      this.ids = ids;
+      this.single = ids.length !== 1;
+      this.multiple = !ids.length;
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -2084,12 +2137,23 @@ export default {
     },
     /** 复选框选中数据 */
     handleStkIoBillEntrySelectionChange(selection) {
-      this.checkedStkIoBillEntry = selection.map(item => item.index)
+      this.checkedStkIoBillEntry = selection.map(item => item.index);
+      const pageIndices = (this.stkIoBillEntryList || []).map((row, idx) => idx);
+      pageIndices.forEach((idx) => {
+        if (this.detailSelectedRowMap[idx]) {
+          this.$delete(this.detailSelectedRowMap, idx);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const idx = this.stkIoBillEntryList.indexOf(row);
+        if (idx >= 0) {
+          this.$set(this.detailSelectedRowMap, idx, true);
+        }
+      });
     },
     /** 导出按钮操作 */
     handleExport() {
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
       this.download('warehouse/warehouse/export', params, `warehouse_${new Date().getTime()}.xlsx`)
     },
     refDingdan() {
@@ -2221,22 +2285,10 @@ export default {
   margin-bottom: 10px;
 }
 
-/* 主表格表头样式：字体加粗加大、背景加深 */
-.app-container > .el-table th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container > .el-table th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
+.apply-table-panel > .apply-main-table {
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 .el-table td {
@@ -2288,17 +2340,17 @@ export default {
   color: #409EFF;
 }
 
-/* 搜索区域：外层白底容器（宽度铺满、边框与阴影略加强，便于辨认区域边界） */
+/* 搜索区域：卡片样式由外层 .form-fields-container.list-query-panel 承担，内层 el-form 不再重复包一层 */
 .list-query-panel .el-form {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  border: 1px solid #c0c4cc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 .list-query-panel .el-form .el-row {
@@ -2311,6 +2363,61 @@ export default {
 
 .list-query-panel .el-form .el-form-item {
   margin-bottom: 0;
+}
+
+.list-query-panel .el-form .query-row-first {
+  margin-bottom: 10px;
+}
+
+.list-query-panel .el-form .query-row-first-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.list-query-panel .el-form .query-row-first-inner .apply-query-input {
+  width: 170px;
+}
+
+.list-query-panel .el-form .query-row-first-inner .more-search-select-wrap {
+  width: 190px;
+}
+
+.list-query-panel .el-form .query-row-first-inner .apply-query-warehouse {
+  width: 220px;
+}
+
+.list-query-panel .el-form .query-row-first-inner .apply-query-material {
+  width: 200px;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+.list-query-panel .el-form .query-row-second {
+  margin-bottom: 0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.list-query-panel .el-form .apply-date-type-group {
+  margin-right: 10px;
+}
+
+.list-query-panel .el-form .apply-query-date.el-date-editor {
+  width: 200px;
 }
 
 /* 第一行查询条件左对齐紧凑布局 */
@@ -2670,33 +2777,25 @@ export default {
   width: 100%;
 }
 
-/* 明细框表头样式：字体加粗、背景加深（仅明细区） */
-::v-deep .local-modal-content .modal-detail-section .el-table th {
-  font-size: 14px !important;
+/* 明细框表头：与耗材产品维护主表一致（冷静灰蓝） */
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table thead th,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th.is-leaf {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
-  background-color: #EBEEF5 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
 }
 
-::v-deep .local-modal-content .modal-detail-section .el-table th .cell {
-  font-size: 14px !important;
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th .cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table thead th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table thead th {
-  background-color: #EBEEF5 !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table thead th .cell {
-  font-size: 14px !important;
-  font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table th.is-leaf {
-  background-color: #EBEEF5 !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
 }
 
 /* 表体横向滚动条与合计行错开，避免视觉上压在合计数字区域 */
@@ -2891,48 +2990,7 @@ export default {
   background: #a8a8a8 !important;
 }
 
-/* 主列表表格滚动条（仅 table-compact，不含弹窗内明细表） */
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar,
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
-  width: 20px !important;
-  height: 12px !important;
-}
-
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb,
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #909399 !important;
-  border-radius: 10px !important;
-  border: 2px solid #f1f1f1 !important;
-  min-height: 12px !important;
-  min-width: 20px !important;
-  transition: background 0.2s ease !important;
-}
-
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #606266 !important;
-}
-
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:active,
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
-  background: #303133 !important;
-}
-
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track,
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1 !important;
-  border-radius: 10px !important;
-  border: 1px solid #e4e7ed !important;
-}
-
-::v-deep .app-container > .el-table.table-compact .el-table__body-wrapper {
-  scrollbar-width: thick;
-  -ms-overflow-style: -ms-autohiding-scrollbar;
-  scroll-behavior: smooth !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-/* 弹窗内明细表：Firefox 等使用细滚动条 */
+/* 主列表表格滚动条：与耗材产品维护一致（固定粗细，不随 hover 加粗） */
 ::v-deep .local-modal-content .el-table .el-table__body-wrapper {
   scrollbar-width: thin;
 }
@@ -3014,11 +3072,20 @@ export default {
   padding-bottom: 6px !important;
 }
 
-/* 本页主容器左右仅留 8px，使搜索框/按钮/表格整体更宽（非scoped确保生效） */
+/* 本页主容器：顶部与标签栏留 8px 细缝，左右 8px；纵向 flex 铺满视口 */
 .app-container.inWarehouse-apply-page {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 84px);
+  height: calc(100vh - 84px);
+  max-height: calc(100vh - 84px);
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-top: 8px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
+  padding-bottom: 14px !important;
 }
 
 /* 弹窗整层加宽：向外扩展抵消本页 container 左右 8px，只动外层遮罩不改表单内部 */
@@ -3028,118 +3095,339 @@ export default {
   width: auto;
 }
 
-.list-query-panel {
-  margin-top: -20px;
-}
 
 /* 明细框与按钮行间距由按钮行 margin-bottom 控制，此处不再负 margin */
-.app-container > .el-table.table-compact {
+.app-container.inWarehouse-apply-page .list-query-panel,
+.app-container.inWarehouse-apply-page .list-toolbar {
+  flex: 0 0 auto;
+}
+
+.app-container.inWarehouse-apply-page .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.app-container.inWarehouse-apply-page .apply-table-panel > .apply-main-table {
   margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
-/* 明细框表头样式：使用非scoped样式确保生效（仅入库明细区） */
-.local-modal-content .modal-detail-section .el-table th {
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  background-color: #EBEEF5 !important;
+.app-container.inWarehouse-apply-page .apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
 }
 
-.local-modal-content .modal-detail-section .el-table th .cell {
-  font-size: 14px !important;
-  font-weight: 600 !important;
+.app-container.inWarehouse-apply-page .apply-pagination-wrap .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
 }
 
-.local-modal-content .modal-detail-section .el-table thead th {
-  background-color: #EBEEF5 !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
+.app-container.inWarehouse-apply-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
 }
 
-.local-modal-content .modal-detail-section .el-table thead th .cell {
-  font-size: 14px !important;
+/* 主列表表头：与耗材产品维护 material-main-table 一致 */
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  font-family: inherit !important;
 }
 
-.local-modal-content .modal-detail-section .el-table th.is-leaf {
-  background-color: #EBEEF5 !important;
-  font-size: 14px !important;
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th .cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  font-family: inherit !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+/* 弹窗明细表头：与主列表一致 */
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th,
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell,
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th .cell,
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+}
+
+/* 单据状态列表头不换行 */
+.app-container.inWarehouse-apply-page .apply-main-table thead th:nth-child(9) .cell {
+  white-space: nowrap !important;
 }
 
 /* 序号列表头不换行 */
-.local-modal-content .el-table thead th:nth-child(2) .cell {
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table thead th:nth-child(2) .cell {
   white-space: nowrap !important;
 }
 
 /* 单位列表头不换行 */
-.local-modal-content .el-table thead th:nth-child(7) .cell {
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table thead th:nth-child(7) .cell {
   white-space: nowrap !important;
 }
 
-/* 主表格表头样式：使用非scoped样式确保生效 */
-.app-container > .el-table th {
-  background-color: #EBEEF5 !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  font-family: 'Roboto', sans-serif !important;
+/* 主表滚动条：与耗材产品维护 material-main-table 一致 */
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-.app-container > .el-table th .cell {
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
-.app-container > .el-table thead th {
-  background-color: #EBEEF5 !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
-.app-container > .el-table thead th .cell {
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
-/* 单据状态列表头不换行 - 第9列（选择框+序号+入库单号+供应商+仓库+金额+制单人+制单日期+单据状态） */
-.app-container > .el-table thead th:nth-child(9) .cell {
-  white-space: nowrap !important;
-}
-
-/* 主表格滚动条优化 - 非scoped样式确保生效 */
-.app-container > .el-table .el-table__body-wrapper::-webkit-scrollbar {
-  width: 20px !important;
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
   height: 12px !important;
 }
 
-.app-container > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #909399 !important;
-  border-radius: 10px !important;
-  border: 2px solid #f1f1f1 !important;
-  min-height: 12px !important;
-  min-width: 20px !important;
-  transition: background 0.2s ease !important;
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:vertical,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar:vertical {
+  width: 8px !important;
 }
 
-.app-container > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #606266 !important;
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
 }
 
-.app-container > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
-  background: #303133 !important;
-}
-
-.app-container > .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-track,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar-track {
   background: #f1f1f1 !important;
-  border-radius: 10px !important;
-  border: 1px solid #e4e7ed !important;
+  border-radius: 3px !important;
 }
 
-.app-container > .el-table .el-table__body-wrapper {
-  scroll-behavior: smooth !important;
-  -webkit-overflow-scrolling: touch !important;
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 2px !important;
+  min-height: 4px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-scrollbar__bar.is-vertical {
+  width: 6px !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-scrollbar__thumb {
+  min-width: 2px !important;
+  min-height: 4px !important;
+  width: 2px !important;
+  height: 4px !important;
+  max-width: 2px !important;
+  max-height: 4px !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper .el-scrollbar__bar,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right .el-scrollbar__bar {
+  z-index: 13 !important;
+  position: relative;
+}
+
+/* 勾选列 / 操作列 sticky：横滑条可铺满并压在两侧列上方 */
+.app-container.inWarehouse-apply-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table th.apply-select-col,
+.app-container.inWarehouse-apply-page .apply-main-table td.apply-select-col,
+.app-container.inWarehouse-apply-page .apply-main-table th.el-table-column--selection,
+.app-container.inWarehouse-apply-page .apply-main-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table td.apply-select-col,
+.app-container.inWarehouse-apply-page .apply-main-table td.el-table-column--selection {
+  background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table th.apply-select-col,
+.app-container.inWarehouse-apply-page .apply-main-table th.el-table-column--selection {
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-select-col,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
+  background-color: #fafafa !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table th.apply-action-col,
+.app-container.inWarehouse-apply-page .apply-main-table td.apply-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table td.apply-action-col {
+  right: 0 !important;
+  background-color: #fff !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table th.apply-action-col {
+  right: var(--apply-v-scrollbar, 0px) !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-action-col {
+  background-color: #fafafa !important;
+}
+
+/* 主表 / 明细表：行悬停、勾选行高亮（对齐耗材产品维护，无列高亮） */
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr > td,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr > td .cell,
+.app-container.inWarehouse-apply-page .apply-detail-table .el-table__body tr > td,
+.app-container.inWarehouse-apply-page .apply-detail-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr:hover > td,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr:hover > td .cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr:hover > td.apply-select-col,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr:hover > td.apply-action-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td .cell,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.el-table-column--selection {
+  background-color: #D6EBFF !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td .cell {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection {
+  background-color: #A0CBFF !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-select-col,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.el-table-column--selection,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__header th.gutter {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-bottom-color: #e2e8f0 !important;
 }
 
 /*

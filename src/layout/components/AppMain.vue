@@ -485,7 +485,7 @@
         </transition>
       </div>
     </transition>
-    <transition name="fade-transform" mode="out-in">
+    <transition name="fade-transform" mode="out-in" @after-enter="onRouteViewEntered">
       <keep-alive :include="cachedViews">
         <router-view v-if="!$route.meta.link" :key="key" />
       </keep-alive>
@@ -498,6 +498,7 @@
 import { mapState, mapGetters } from 'vuex'
 import iframeToggle from './IframeToggle/index'
 import { fetchHomeWarehouseReminderCounts, fetchHomeWarehouseReminderApplyList, fetchHomeWarehouseReminderPurchaseList, fetchHomeWarehouseReminderNearExpiryList, fetchHomeWarehouseReminderInventoryAlertList, fetchHomeDepartmentReminderUnreceivedReceipt, fetchHomeDepartmentReminderNearExpiryList } from '@/api/dashboard/home'
+import { scheduleMainContentScrollReset } from '@/utils/reset-main-scroll'
 
 export default {
   name: 'AppMain',
@@ -610,6 +611,7 @@ export default {
   },
   watch: {
     $route(to, from) {
+      scheduleMainContentScrollReset(this.$el)
       if (!this.warehouseReminderVisible || !from || from.matched.length === 0) return
       if (to.path !== from.path) {
         this.closeWarehouseReminder()
@@ -646,6 +648,9 @@ export default {
     }
   },
   methods: {
+    onRouteViewEntered() {
+      scheduleMainContentScrollReset(this.$el)
+    },
     departmentSubTabBadge(key) {
       const u = Number(this.departmentUnreceivedBillCount) || 0
       const e = Number(this.departmentExpiryLineCount) || 0
