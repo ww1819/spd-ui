@@ -365,6 +365,8 @@
         <template slot-scope="scope">
           <el-dropdown
             trigger="hover"
+            :show-timeout="0"
+            :hide-timeout="100"
             class="material-row-ops"
             @command="(cmd) => handleRowOpsCommand(cmd, scope.row)"
           >
@@ -2068,10 +2070,7 @@ export default {
     this.getList();
   },
   mounted() {
-    this.$nextTick(() => {
-      this.updateMainTableHeight();
-      requestAnimationFrame(() => this.updateMainTableHeight());
-    });
+    this.scheduleMaterialLayoutRefresh();
     window.addEventListener('resize', this.updateMainTableHeight);
     if (typeof ResizeObserver !== 'undefined') {
       this._materialLayoutObserver = new ResizeObserver(() => {
@@ -2083,7 +2082,15 @@ export default {
       });
     }
   },
+  /** keep-alive 切回时 DOM 已在，但 el-table 宽度/高度常沿用离开前或过渡中的错误值，需强制重算 */
+  activated() {
+    this.scheduleMaterialLayoutRefresh();
+  },
+  deactivated() {
+    this.clearMaterialLayoutRefreshTimers();
+  },
   beforeDestroy() {
+    this.clearMaterialLayoutRefreshTimers();
     window.removeEventListener('resize', this.updateMainTableHeight);
     if (this._materialLayoutObserver) {
       this._materialLayoutObserver.disconnect();
@@ -2105,6 +2112,31 @@ export default {
     }
   },
   methods: {
+    clearMaterialLayoutRefreshTimers() {
+      if (this._materialLayoutRefreshTimers && this._materialLayoutRefreshTimers.length) {
+        this._materialLayoutRefreshTimers.forEach((id) => clearTimeout(id));
+      }
+      this._materialLayoutRefreshTimers = [];
+    },
+    /**
+     * 首次进入 / keep-alive 切回后重算主表高度与列宽。
+     * AppMain 使用 fade-transform（约 500ms），过渡中测量会偏，需在结束后再算一次。
+     */
+    scheduleMaterialLayoutRefresh() {
+      this.clearMaterialLayoutRefreshTimers();
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          // 覆盖路由过渡尾帧，避免「离开再进」表格/操作列错位
+          [80, 200, 520].forEach((ms) => {
+            const id = setTimeout(run, ms);
+            this._materialLayoutRefreshTimers.push(id);
+          });
+        });
+      });
+    },
     /** 按表格卡片剩余高度计算主表高度，保证翻页完整可见 */
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;
