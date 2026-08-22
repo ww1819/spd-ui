@@ -96,6 +96,12 @@
                 </el-select>
               </el-form-item>
               <el-form-item class="query-item-inline">
+                <el-select v-model="detailQuery.execDeptEmpty" placeholder="执行科室是否为空" clearable class="more-search-select-wrap">
+                  <el-option label="是" value="Y" />
+                  <el-option label="否" value="N" />
+                </el-select>
+              </el-form-item>
+              <el-form-item class="query-item-inline">
                 <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="计费起" style="width:140px" clearable />
                 <span style="margin:0 6px">至</span>
                 <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="计费止" style="width:140px" clearable />
@@ -712,6 +718,7 @@ export default {
         itemName: undefined,
         execDeptName: undefined,
         processed: undefined,
+        execDeptEmpty: undefined,
         ...buildDefaultChargeDateRange(),
         beginProcessTime: undefined,
         endProcessTime: undefined
@@ -1017,6 +1024,7 @@ export default {
         itemName: undefined,
         execDeptName: undefined,
         processed: undefined,
+        execDeptEmpty: undefined,
         ...buildDefaultChargeDateRange(),
         beginProcessTime: undefined,
         endProcessTime: undefined
