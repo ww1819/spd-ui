@@ -203,6 +203,7 @@
         v-loading="loading"
         :data="materialList"
         :row-key="getMaterialRowKey"
+        :row-class-name="materialRowClassName"
         @selection-change="handleSelectionChange"
         @sort-change="handleSortChange"
         :height="mainTableHeight"
@@ -2070,20 +2071,21 @@ export default {
     this.getList();
   },
   mounted() {
+    this._materialJustMounted = true;
+    this.bindMaterialLayoutObservers();
     this.scheduleMaterialLayoutRefresh();
-    window.addEventListener('resize', this.updateMainTableHeight);
-    if (typeof ResizeObserver !== 'undefined') {
-      this._materialLayoutObserver = new ResizeObserver(() => {
-        this.updateMainTableHeight();
-      });
-      this.$nextTick(() => {
-        if (this.$el) this._materialLayoutObserver.observe(this.$el);
-        if (this.$refs.tablePanel) this._materialLayoutObserver.observe(this.$refs.tablePanel);
-      });
-    }
   },
-  /** keep-alive 切回时 DOM 已在，但 el-table 宽度/高度常沿用离开前或过渡中的错误值，需强制重算 */
+  /**
+   * keep-alive 切回（方案甲）：保留筛选/勾选缓存。
+   * 只复位滚动 + 重算表高；不重建整页/主表，避免顶部被标签栏盖住。
+   */
   activated() {
+    this.resetMaterialPageShellStyles();
+    this.resetMaterialScroll();
+    if (this._materialJustMounted) {
+      this._materialJustMounted = false;
+      return;
+    }
     this.scheduleMaterialLayoutRefresh();
   },
   deactivated() {
@@ -2091,7 +2093,7 @@ export default {
   },
   beforeDestroy() {
     this.clearMaterialLayoutRefreshTimers();
-    window.removeEventListener('resize', this.updateMainTableHeight);
+    window.removeEventListener('resize', this.onMaterialWindowResize);
     if (this._materialLayoutObserver) {
       this._materialLayoutObserver.disconnect();
       this._materialLayoutObserver = null;
@@ -2112,6 +2114,57 @@ export default {
     }
   },
   methods: {
+    bindMaterialLayoutObservers() {
+      window.addEventListener('resize', this.onMaterialWindowResize);
+      if (typeof ResizeObserver !== 'undefined') {
+        this._materialLayoutObserver = new ResizeObserver(() => {
+          this.updateMainTableHeight();
+        });
+        this.$nextTick(() => {
+          if (this.$refs.tablePanel) this._materialLayoutObserver.observe(this.$refs.tablePanel);
+        });
+      }
+    },
+    onMaterialWindowResize() {
+      this.updateMainTableHeight();
+    },
+    /** 清除曾用绝对定位写入的内联样式，避免切回后顶部出现大块空白 */
+    resetMaterialPageShellStyles() {
+      if (!this.$el) return;
+      const el = this.$el;
+      el.style.position = '';
+      el.style.top = '';
+      el.style.left = '';
+      el.style.right = '';
+      el.style.bottom = '';
+      el.style.height = '';
+      el.style.maxHeight = '';
+      el.style.minHeight = '';
+      el.style.margin = '';
+    },
+    /**
+     * 切页后 window/body/app-main 可能残留 scrollTop，固定头下内容会「顶进」标签栏。
+     * 方案甲：只复位滚动，不改筛选缓存。
+     */
+    resetMaterialScroll() {
+      if (typeof window !== 'undefined') {
+        window.scrollTo(0, 0);
+      }
+      if (typeof document !== 'undefined') {
+        if (document.documentElement) document.documentElement.scrollTop = 0;
+        if (document.body) document.body.scrollTop = 0;
+        const app = document.querySelector('#app');
+        if (app) app.scrollTop = 0;
+        const wrap = document.querySelector('.app-wrapper');
+        if (wrap) wrap.scrollTop = 0;
+        const mainContainer = document.querySelector('.main-container');
+        if (mainContainer) mainContainer.scrollTop = 0;
+      }
+      const main = (this.$el && this.$el.closest && this.$el.closest('.app-main'))
+        || (typeof document !== 'undefined' && document.querySelector('.app-main'));
+      if (main) main.scrollTop = 0;
+      if (this.$el) this.$el.scrollTop = 0;
+    },
     clearMaterialLayoutRefreshTimers() {
       if (this._materialLayoutRefreshTimers && this._materialLayoutRefreshTimers.length) {
         this._materialLayoutRefreshTimers.forEach((id) => clearTimeout(id));
@@ -2119,18 +2172,22 @@ export default {
       this._materialLayoutRefreshTimers = [];
     },
     /**
-     * 首次进入 / keep-alive 切回后重算主表高度与列宽。
-     * AppMain 使用 fade-transform（约 500ms），过渡中测量会偏，需在结束后再算一次。
+     * 首次进入 / keep-alive 切回：清除错误内联定位、复位滚动、重算主表高度。
+     * 不改页面壳几何（文档流 + calc(100vh-84px)）；不重建 el-table（方案甲）。
      */
     scheduleMaterialLayoutRefresh() {
       this.clearMaterialLayoutRefreshTimers();
-      const run = () => this.updateMainTableHeight();
+      const run = () => {
+        this.resetMaterialPageShellStyles();
+        this.resetMaterialScroll();
+        this.updateMainTableHeight();
+      };
       this.$nextTick(() => {
         run();
         requestAnimationFrame(() => {
           run();
-          // 覆盖路由过渡尾帧，避免「离开再进」表格/操作列错位
-          [80, 200, 520].forEach((ms) => {
+          // 覆盖路由 fade-transform（约 500ms）尾帧，防止切回时顶部被盖住
+          [50, 120, 300, 560].forEach((ms) => {
             const id = setTimeout(run, ms);
             this._materialLayoutRefreshTimers.push(id);
           });
@@ -2333,6 +2390,14 @@ export default {
     },
     getMaterialRowKey(row) {
       return row && row.id != null ? String(row.id) : null;
+    },
+    /** 勾选行高亮 class；与悬停样式独立（对齐出/退库查询） */
+    materialRowClassName({ row }) {
+      const key = this.getMaterialRowKey(row);
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'material-row-selected';
+      }
+      return '';
     },
     getCrossPageSelectedIds() {
       return Object.keys(this.selectedRowMap || {}).map((key) => {
@@ -4730,7 +4795,7 @@ export default {
   flex-wrap: nowrap;
 }
 
-/* 页面四周留白一致：上下左右均为 8px */
+/* 页面四周留白：顶部与标签栏留约 8px 细缝，左右 8px */
 .material-page-container.app-container {
   position: relative;
   padding-top: 8px !important;
@@ -5978,6 +6043,26 @@ export default {
   background-color: #D6EBFF !important;
 }
 
+/* 勾选选中行常驻变色；取消勾选后恢复；不覆盖未选中行的悬停 */
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td .cell {
+  background-color: #B8DAFF !important;
+}
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td .cell {
+  background-color: #A0CBFF !important;
+}
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-select-col,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-action-col {
+  background-color: #B8DAFF !important;
+}
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-select-col,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-action-col {
+  background-color: #A0CBFF !important;
+}
+
 /* 列表主表表头：冷静灰蓝，行高收紧，表头文字居中 */
 .material-page-container .material-main-table .el-table__header-wrapper th,
 .material-page-container .material-main-table .el-table__header-wrapper th.el-table__cell,
@@ -6108,6 +6193,7 @@ export default {
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #f4f6f9 0%, #eef1f6 100%);
+  /* 文档流铺满 app-main 内容区；与 fixed-header 下 padding-top:84 配套 */
   min-height: calc(100vh - 84px);
   height: calc(100vh - 84px);
   max-height: calc(100vh - 84px);

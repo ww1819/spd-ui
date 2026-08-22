@@ -5,6 +5,7 @@ import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { getToken } from '@/utils/auth'
 import { isRelogin } from '@/utils/request'
+import { scheduleMainContentScrollReset } from '@/utils/reset-main-scroll'
 
 NProgress.configure({ showSpinner: false })
 
@@ -73,4 +74,5 @@ router.beforeEach((to, from, next) => {
 
 router.afterEach(() => {
   NProgress.done()
+  scheduleMainContentScrollReset()
 })
