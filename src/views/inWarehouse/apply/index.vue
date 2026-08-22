@@ -8,23 +8,20 @@
               v-model="queryParams.billNo"
               placeholder="入库单号"
               clearable
-              class="apply-query-input"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-            <div class="query-select-wrapper more-search-select-wrap">
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
               <SelectSupplier v-model="queryParams.supplerId"/>
             </div>
-            <div class="query-select-wrapper more-search-select-wrap apply-query-warehouse">
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
               <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-            </div>
-            <div class="query-select-wrapper more-search-select-wrap apply-query-material">
-              <SelectMaterial v-model="queryParams.materialId" />
             </div>
             <el-input
               v-model="queryParams.refBillNo"
               placeholder="引用单号"
               clearable
-              class="apply-query-input"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
             <div class="query-actions">
@@ -61,7 +58,7 @@
             </el-form-item>
             <el-form-item prop="billStatus" class="query-item-inline query-item-status">
               <el-select v-model="queryParams.billStatus" placeholder="单据状态"
-                         clearable class="more-search-select-wrap">
+                         clearable class="apply-query-field">
                 <el-option v-for="dict in dict.type.biz_status"
                            :key="dict.value"
                            :label="dict.label"
@@ -71,7 +68,7 @@
               </el-select>
             </el-form-item>
             <el-form-item label="被引用状态" label-width="88px" class="query-item-inline query-item-doc-ref">
-              <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" class="more-search-select-wrap">
+              <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" class="apply-query-field">
                 <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
@@ -240,7 +237,7 @@
         </div>
         <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
-        <div class="form-fields-container">
+        <div class="form-fields-container list-query-panel apply-modal-query-panel">
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="单据号" prop="billNo" class="form-item-header-billno">
@@ -369,39 +366,50 @@
         </el-row>
         </div>
 
-<!--        <el-divider content-position="left">入库明细信息</el-divider>-->
-        <div class="modal-detail-section">
-        <el-row :gutter="10" class="detail-toolbar-row">
-          <el-col :span="1.5">
-            <span>入库明细信息</span>
-          </el-col>
-
-          <div v-show="action">
-            <el-col :span="1.5">
-  <!--            <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddStkIoBillEntry">添加</el-button>-->
-              <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId">添加</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="outline" icon="el-icon-ref" size="small" @click="refDingdan">引用采购订单</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoBillEntry">删除</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
-            </el-col>
-            <el-col v-if="isZqTenant" :span="1.5">
+        <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
+          <div class="list-toolbar-left">
+            <span class="apply-modal-detail-title">入库明细信息</span>
+            <template v-if="action">
               <el-button
+                type="primary"
+                size="small"
+                class="spd-btn spd-btn--primary"
+                icon="el-icon-plus"
+                @click="checkMaterialBtn"
+                :disabled="!form.warehouseId"
+              >添加</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                icon="el-icon-ref"
+                @click="refDingdan"
+              >引用采购订单</el-button>
+              <el-button
+                type="danger"
+                size="small"
+                icon="el-icon-delete"
+                @click="handleDeleteStkIoBillEntry"
+              >删除</el-button>
+              <el-button
+                type="primary"
+                size="small"
+                class="spd-btn spd-btn--primary"
+                icon="el-icon-check"
+                @click="submitForm"
+              >保 存</el-button>
+              <el-button
+                v-if="isZqTenant"
                 type="primary"
                 size="small"
                 :disabled="!form.id || String(form.billStatus) === '2'"
                 @click="handleModalAudit"
                 v-hasPermi="['inWarehouse:apply:audit']"
               >审核</el-button>
-            </el-col>
+            </template>
           </div>
-
         </el-row>
+
+        <div class="modal-detail-section apply-modal-table-panel">
         <div class="table-wrapper">
         <el-table :data="stkIoBillEntryList" :row-class-name="applyDetailRowClassName"
                   class="apply-detail-table"
@@ -915,7 +923,6 @@ export default {
         pageSize: 10,
         billNo: null,
         refBillNo: null,
-        materialId: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,
@@ -2233,7 +2240,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 20px;
+  padding: 6px 8px;
   border-bottom: 1px solid #EBEEF5;
   background: #EBEEF5;
   min-height: 40px;
@@ -2270,7 +2277,7 @@ export default {
 .local-modal-content .el-form {
   flex: 1;
   overflow: visible;
-  padding: 6px 20px 12px;
+  padding: 8px 8px 12px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
@@ -2377,20 +2384,18 @@ export default {
   width: 100%;
 }
 
+.list-query-panel .el-form .apply-query-field,
 .list-query-panel .el-form .query-row-first-inner .apply-query-input {
   width: 170px;
+  flex-shrink: 0;
 }
 
-.list-query-panel .el-form .query-row-first-inner .more-search-select-wrap {
-  width: 190px;
+.list-query-panel .el-form .query-row-first-inner .more-search-select-wrap.apply-query-field > * {
+  width: 100%;
 }
 
-.list-query-panel .el-form .query-row-first-inner .apply-query-warehouse {
-  width: 220px;
-}
-
-.list-query-panel .el-form .query-row-first-inner .apply-query-material {
-  width: 200px;
+.list-query-panel .el-form .query-row-second .apply-query-field.el-select {
+  width: 170px;
 }
 
 .list-query-panel .el-form .query-row-first-inner .query-actions {
@@ -2531,47 +2536,51 @@ export default {
   gap: 6px 8px;
 }
 
-/* 弹窗内顶部字段区：抵消 el-form 左右 20px 内边距，灰框与弹窗主区域同宽 */
-.local-modal-content .form-fields-container {
-  background: #fff;
-  padding: 8px 16px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 8px;
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
-  box-sizing: border-box;
-  border: 1px solid #EBEEF5;
+/* 弹窗内顶部字段区：与标题栏左右 8px 对齐（同列表页外边距） */
+.local-modal-content .apply-modal-query-panel {
+  width: 100%;
+  margin: 0;
+  flex-shrink: 0;
 }
 
-.local-modal-content .form-fields-container .el-row:last-child {
+.local-modal-content .apply-modal-query-panel .el-row {
+  margin-bottom: 8px;
+}
+
+.local-modal-content .apply-modal-query-panel .el-row:last-child {
   margin-bottom: 0;
 }
 
-/* 弹窗内明细区（工具栏+表格）：与顶部字段区同宽；flex 子项 min-height:0 避免合计行被裁切 */
-.local-modal-content .modal-detail-section {
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
-  box-sizing: border-box;
-  margin-top: 4px;
+/* 弹窗内明细表区：与列表 apply-table-panel 同款白卡片 */
+.local-modal-content .apply-modal-table-panel {
+  margin: 0;
+  width: 100%;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
 }
 
-/* 入库明细标题与按钮：上下留白一致，整体略下移，与表格间距对称 */
-.local-modal-content .modal-detail-section .detail-toolbar-row {
-  margin-top: 0;
-  margin-bottom: 0;
-  padding-top: 12px;
-  padding-bottom: 12px;
-  box-sizing: border-box;
+.local-modal-content .apply-modal-toolbar {
+  flex-shrink: 0;
+  width: 100%;
+  margin: 4px 0 !important;
 }
 
-.local-modal-content .modal-detail-section .table-wrapper {
+.local-modal-content .apply-modal-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-right: 4px;
+  line-height: 32px;
+}
+
+.local-modal-content .apply-modal-table-panel .table-wrapper {
   margin-top: 0;
   overflow: hidden;
   flex: 1;
@@ -3097,6 +3106,17 @@ export default {
 
 
 /* 明细框与按钮行间距由按钮行 margin-bottom 控制，此处不再负 margin */
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-table-panel > .table-wrapper > .apply-detail-table {
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-toolbar.list-toolbar {
+  flex: 0 0 auto;
+  margin: 4px 0 !important;
+}
+
 .app-container.inWarehouse-apply-page .list-query-panel,
 .app-container.inWarehouse-apply-page .list-toolbar {
   flex: 0 0 auto;
