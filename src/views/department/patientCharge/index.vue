@@ -273,7 +273,7 @@
                 size="mini"
                 v-hasPermi="['department:patientCharge:list']"
                 @click="openConsumeRecordDialog(scope.row)"
-              >消耗记录</el-button>
+              >操作记录</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -328,6 +328,37 @@
     </el-tabs>
 
     <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="92%" append-to-body class="consume-record-dialog">
+      <el-tabs v-model="consumeRecordDialog.activeTab">
+        <el-tab-pane label="核销操作" name="process">
+          <el-table
+            v-loading="consumeRecordDialog.processLogLoading"
+            :data="consumeRecordDialog.processLogRows"
+            border
+            size="small"
+            max-height="420"
+            empty-text="暂无核销操作记录"
+          >
+            <el-table-column label="时间" prop="processTime" width="158" show-overflow-tooltip>
+              <template slot-scope="scope">
+                <span>{{ formatDateTime(scope.row.processTime) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="88" align="center">
+              <template slot-scope="scope">
+                <span>{{ processLogOperationText(scope.row.operation) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="结果" width="72" align="center">
+              <template slot-scope="scope">
+                <span :class="scope.row.outcome === 'FAIL' ? 'pc-process-fail' : 'pc-process-ok'">{{ processLogOutcomeText(scope.row.outcome) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="处理方" prop="processParty" width="88" show-overflow-tooltip />
+            <el-table-column label="操作人" prop="processBy" width="100" show-overflow-tooltip />
+            <el-table-column label="说明/失败原因" prop="situation" min-width="260" show-overflow-tooltip />
+          </el-table>
+        </el-tab-pane>
+        <el-tab-pane label="消耗明细" name="consume">
       <el-table
         v-loading="consumeRecordDialog.loading"
         :data="consumeRecordDialog.rows"
@@ -418,6 +449,8 @@
         </el-table-column>
         <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="120" show-overflow-tooltip />
       </el-table>
+        </el-tab-pane>
+      </el-tabs>
       <div slot="footer" class="dialog-footer">
         <el-button class="spd-btn spd-btn--secondary" @click="consumeRecordDialog.visible = false">关 闭</el-button>
       </div>
@@ -654,6 +687,7 @@ import {
   processMirrorLowValue,
   processMirrorLowValueBatch,
   listMirrorConsumeRecords,
+  listMirrorProcessLogs,
   listFetchBatchesForMirror,
   writeOffMirrorLowValue
 } from '@/api/department/patientCharge'
@@ -750,8 +784,11 @@ export default {
       consumeRecordDialog: {
         visible: false,
         loading: false,
-        title: '消耗记录',
-        rows: []
+        processLogLoading: false,
+        activeTab: 'process',
+        title: '操作记录',
+        rows: [],
+        processLogRows: []
       },
       fetchTraceDialog: {
         visible: false,
@@ -959,6 +996,16 @@ export default {
       if (v === 'REVERSE') return '冲销'
       return '消耗'
     },
+    processLogOperationText(v) {
+      if (v === 'LOW_WRITE_OFF') return '低值冲销'
+      if (v === 'HIGH_CONSUME') return '高值核销'
+      return '低值核销'
+    },
+    processLogOutcomeText(v) {
+      if (v === 'FAIL') return '失败'
+      if (v === 'SUCCESS') return '成功'
+      return v != null && v !== '' ? String(v) : '--'
+    },
     formatDateTime(v) {
       if (!v) return '--'
       return parseTime(v, '{y}-{m}-{d} {h}:{i}:{s}')
@@ -978,10 +1025,18 @@ export default {
         return
       }
       const vk = row.visitType === 'OUTPATIENT' ? 'OUTPATIENT' : 'INPATIENT'
-      this.consumeRecordDialog.title = `消耗记录 · ${row.patientName || ''} · 收费项 ${row.chargeItemId || ''}`
+      this.consumeRecordDialog.title = `操作记录 · ${row.patientName || ''} · 收费项 ${row.chargeItemId || ''}`
       this.consumeRecordDialog.visible = true
+      this.consumeRecordDialog.activeTab = 'process'
       this.consumeRecordDialog.loading = true
+      this.consumeRecordDialog.processLogLoading = true
       this.consumeRecordDialog.rows = []
+      this.consumeRecordDialog.processLogRows = []
+      listMirrorProcessLogs(vk, row.id).then(res => {
+        this.consumeRecordDialog.processLogRows = res.data || []
+      }).finally(() => {
+        this.consumeRecordDialog.processLogLoading = false
+      })
       listMirrorConsumeRecords(vk, row.id).then(res => {
         this.consumeRecordDialog.rows = res.data || []
       }).finally(() => {

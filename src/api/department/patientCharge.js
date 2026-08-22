@@ -44,6 +44,16 @@ export function listMirrorConsumeRecords(visitKind, mirrorRowId) {
   })
 }
 
+/** 计费镜像行核销/冲销操作日志 */
+export function listMirrorProcessLogs(visitKind, mirrorRowId) {
+  return request({
+    url: '/his/patientCharge/mirror/processLogs',
+    method: 'get',
+    timeout: 30000,
+    params: { visitKind, mirrorRowId }
+  })
+}
+
 export function listChargeSummary(query) {
   return request({
     url: '/his/patientCharge/summary/list',
