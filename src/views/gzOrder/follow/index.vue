@@ -303,7 +303,7 @@
                   </el-table-column>
                   <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable align="right">
                     <template slot-scope="scope">
-                      {{ scope.row.price ? parseFloat(scope.row.price).toFixed(2) : '0.00' }}
+                      {{ scope.row.price ? formatPrice(scope.row.price) : '0.00' }}
                     </template>
                   </el-table-column>
                   <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable align="right">
@@ -660,7 +660,7 @@ export default {
         // 设置价格：优先使用item.price
         obj.price = item.price || 0;
         // 自动计算金额：数量 * 价格
-        obj.amt = (obj.qty && obj.price) ? (parseFloat(obj.qty) * parseFloat(obj.price)).toFixed(2) : "0.00";
+        obj.amt = (obj.qty && obj.price) ? this.calcLineAmt(obj.qty, obj.price) : "0.00";
         obj.batchNo = "";
         obj.batchNumber = "";
         obj.beginTime = "";
@@ -722,7 +722,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -732,7 +732,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -1129,7 +1129,7 @@ export default {
             printContent += '<table class="info-table"><colgroup><col class="col-lab" /><col class="col-val-wide" /><col class="col-lab" /><col class="col-val" /></colgroup>';
             const materialName = item.materialName || material.name || '';
             printContent += '<tr class="row-two-pair row-wrap"><td class="label-cell">品名</td><td class="value-cell">' + materialName + '</td><td class="label-cell">规格</td><td class="value-cell">' + (material.speci || '') + '</td></tr>';
-            printContent += '<tr class="row-two-pair"><td class="label-cell">批号</td><td class="value-cell">' + (item.batchNumber || '') + '</td><td class="label-cell">单价</td><td class="value-cell">' + (item.price ? parseFloat(item.price).toFixed(2) : '') + '</td></tr>';
+            printContent += '<tr class="row-two-pair"><td class="label-cell">批号</td><td class="value-cell">' + (item.batchNumber || '') + '</td><td class="label-cell">单价</td><td class="value-cell">' + (item.price ? this.formatAmount(item.price) : '') + '</td></tr>';
             printContent += '<tr><td class="label-cell">有效期</td><td class="value-cell" colspan="3">' + (item.endTime || '') + '</td></tr>';
             const factoryName = (material.fdFactory && material.fdFactory.factoryName) ? material.fdFactory.factoryName : '';
             printContent += '<tr><td class="label-cell">厂家</td><td class="value-cell" colspan="3">' + factoryName + '</td></tr>';

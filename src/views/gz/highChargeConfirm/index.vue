@@ -258,7 +258,7 @@ export default {
       return this.selectedRows.reduce((s, r) => s + Number(r.entryQty || 0), 0).toFixed(2)
     },
     selectedTotalAmt() {
-      return this.selectedRows.reduce((s, r) => s + Number(r.amt || 0), 0).toFixed(2)
+      return this.formatAmount(this.selectedRows.reduce((s, r) => s + Number(r.amt || 0), 0))
     },
     canConfirm() {
       return this.selectedRows.length > 0 && this.selectedRows.every(r => Number(r.confirmStatus) !== 1)

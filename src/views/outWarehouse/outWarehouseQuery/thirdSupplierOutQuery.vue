@@ -253,7 +253,7 @@ export default {
       const amt = Number(this.totalInfo.netAmt || 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     },
     /** 当前页净出库数量 */
     pageNetQty() {
@@ -264,7 +264,7 @@ export default {
       const amt = (this.pagedList || []).reduce((s, r) => s + Number(r.netAmt || 0), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     },
   },
   created() {
@@ -297,19 +297,19 @@ export default {
             sums[index] = totalOutQty.toFixed(2);
             break;
           case 'outAmt':
-            sums[index] = fmt ? fmt(totalOutAmt) : totalOutAmt.toFixed(2);
+            sums[index] = fmt ? fmt(totalOutAmt) : this.formatAmount(totalOutAmt);
             break;
           case 'retQty':
             sums[index] = totalRetQty.toFixed(2);
             break;
           case 'retAmt':
-            sums[index] = fmt ? fmt(totalRetAmt) : totalRetAmt.toFixed(2);
+            sums[index] = fmt ? fmt(totalRetAmt) : this.formatAmount(totalRetAmt);
             break;
           case 'netQty':
             sums[index] = totalNetQty.toFixed(2);
             break;
           case 'netAmt':
-            sums[index] = fmt ? fmt(totalNetAmt) : totalNetAmt.toFixed(2);
+            sums[index] = fmt ? fmt(totalNetAmt) : this.formatAmount(totalNetAmt);
             break;
           default:
             break;

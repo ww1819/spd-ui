@@ -143,7 +143,7 @@
       </el-table-column>
       <el-table-column label="价格" align="center" prop="unitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice">
         <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== ''">{{ scope.row.unitPrice | formatCurrency}}</span>
+          <span v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== ''">{{ scope.row.unitPrice | formatPrice }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -325,7 +325,7 @@ export default {
       const amt = (this.warehouseList || []).reduce((s, r) => s + Number(r.materialAmt || 0), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     },
   },
   created() {

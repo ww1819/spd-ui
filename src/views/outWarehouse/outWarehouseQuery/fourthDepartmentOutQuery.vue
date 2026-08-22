@@ -273,7 +273,7 @@ export default {
         return '0.00';
       }
       const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-      return fmt ? fmt(v) : v.toFixed(2);
+      return fmt ? fmt(v) : this.formatAmount(v);
     },
     /** 净出库金额：0 显示 0.00（避免 formatCurrency 将 0 当成空） */
     formatNetCurrency(value) {
@@ -282,7 +282,7 @@ export default {
         return '0.00';
       }
       const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-      return fmt ? fmt(n) : n.toFixed(2);
+      return fmt ? fmt(n) : this.formatAmount(n);
     },
     /**
      * 是否高值耗材：产品档案 isGz=1 为高值，其余归入低值列
@@ -313,7 +313,7 @@ export default {
           const idx = parseInt(String(prop).replace('catAmt_', ''), 10);
           if (!Number.isNaN(idx)) {
             const t = (data || []).reduce((acc, r) => acc + Number((r && r[`catAmt_${idx}`]) || 0), 0);
-            sums[index] = !Number.isFinite(t) || t === 0 ? '0.00' : fmt ? fmt(t) : t.toFixed(2);
+            sums[index] = !Number.isFinite(t) || t === 0 ? '0.00' : fmt ? fmt(t) : this.formatAmount(t);
           }
           return;
         }

@@ -139,7 +139,7 @@
       </el-table-column>
       <el-table-column label="总金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.totalAmount && parseFloat(scope.row.totalAmount) > 0">¥{{ parseFloat(scope.row.totalAmount).toFixed(2) }}</span>
+          <span v-if="scope.row.totalAmount && parseFloat(scope.row.totalAmount) > 0">¥{{ scope.row.totalAmount | formatCurrency }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -389,13 +389,13 @@
                 </el-table-column>
                 <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span v-if="scope.row.unitPrice">¥{{ parseFloat(scope.row.unitPrice).toFixed(2) }}</span>
+                    <span v-if="scope.row.unitPrice">¥{{ scope.row.unitPrice | formatPrice }}</span>
                     <span v-else>--</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span v-if="scope.row.amt">¥{{ parseFloat(scope.row.amt).toFixed(2) }}</span>
+                    <span v-if="scope.row.amt">¥{{ scope.row.amt | formatCurrency }}</span>
                     <span v-else>--</span>
                   </template>
                 </el-table-column>
@@ -672,7 +672,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.calculateTotalAmount();
     },
     //价格改变事件
@@ -683,7 +683,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.calculateTotalAmount();
     },
     //计算总金额
@@ -694,7 +694,7 @@ export default {
           total += parseFloat(item.amt);
         }
       });
-      this.form.totalAmount = total.toFixed(2);
+      this.form.totalAmount = this.toMoneyStorage(total);
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -783,7 +783,7 @@ export default {
               totalAmount += parseFloat(item.amt);
             }
           });
-          sums[index] = '¥' + totalAmount.toFixed(2);
+          sums[index] = '¥' + this.formatAmount(totalAmount);
         } else {
           sums[index] = '';
         }
@@ -1183,7 +1183,7 @@ export default {
               const n = Number(r && r.totalAmount)
               return s + (Number.isFinite(n) ? n : 0)
             }, 0)
-            row['总金额'] = sum > 0 ? `¥${sum.toFixed(2)}` : '--'
+            row['总金额'] = sum > 0 ? `¥${this.formatAmount(sum)}` : '--'
             return row
           },
           columns: [
@@ -1218,7 +1218,7 @@ export default {
               label: '总金额',
               valueGetter: (row) => {
                 const n = Number(row && row.totalAmount)
-                return Number.isFinite(n) && n > 0 ? `¥${n.toFixed(2)}` : '--'
+                return Number.isFinite(n) && n > 0 ? `¥${this.formatAmount(n)}` : '--'
               }
             },
             {

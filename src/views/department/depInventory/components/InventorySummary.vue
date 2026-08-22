@@ -248,7 +248,7 @@ export default {
       const amt = (this.summaryList || []).reduce((s, r) => s + Number(r.totalAmount || 0), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     }
   },
   mounted() {

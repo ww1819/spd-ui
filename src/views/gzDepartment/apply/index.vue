@@ -220,7 +220,7 @@
 
           <el-table-column label="金额" prop="amt" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
+              <span>{{ scope.row.amt | formatAmount }}</span>
             </template>
           </el-table-column>
 
@@ -418,7 +418,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -428,7 +428,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     /** 搜索按钮操作 */
     handleQuery() {

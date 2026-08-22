@@ -293,7 +293,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
+              <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -462,14 +462,12 @@
           </el-table-column>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number'
-                        :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="价格" />
+              <span>{{ scope.row.unitPrice | formatPrice }}</span>
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.amt || '--' }}</span>
+              <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
@@ -864,13 +862,13 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatAmount(sums[index]);
           }
 
           if(index === 5){
             let res = parseFloat(sums[index]);
             if(!isNaN(res)){
-              let parRes = res.toFixed(2);
+              let parRes = this.formatAmount(res);
               this.form.totalAmount = parRes;
             }
           }
@@ -897,7 +895,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatAmount(sums[index]);
           }
         }
       });
@@ -1094,7 +1092,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -1104,7 +1102,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     moreSearchFieldClass(t) {
       if (['supplier', 'warehouse', 'material'].includes(t)) {
@@ -1280,7 +1278,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          this.form.totalAmount = totalAmt.toFixed(2);
+          this.form.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
             updateWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");

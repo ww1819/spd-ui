@@ -395,7 +395,7 @@
                   </el-table-column>
                   <el-table-column label="价格" align="center" prop="price" width="100" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
-                      {{ scope.row.price ? parseFloat(scope.row.price).toFixed(2) : '0.00' }}
+                      {{ scope.row.price ? formatPrice(scope.row.price) : '0.00' }}
                     </template>
                   </el-table-column>
                   <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable>
@@ -690,7 +690,7 @@
             </el-table-column>
             <el-table-column label="价格" align="center" prop="price" width="88">
               <template slot-scope="scope">
-                {{ scope.row.price ? parseFloat(scope.row.price).toFixed(2) : '0.00' }}
+                {{ scope.row.price ? formatPrice(scope.row.price) : '0.00' }}
               </template>
             </el-table-column>
             <el-table-column label="金额" align="center" prop="amt" width="88">
@@ -1151,7 +1151,7 @@ export default {
         }
         if (column.property === 'amt') {
           const t = sumNum('amt');
-          sums[index] = '￥' + t.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(t);
           return;
         }
         if (column.property === 'totalAmount') {
@@ -1264,7 +1264,7 @@ export default {
     buildUdiScanPreviewEntry(item, parsedUDI) {
       const priceNum = item && item.price != null ? parseFloat(item.price) : 0;
       const qty = '1';
-      const amt = (Number.isFinite(priceNum) ? priceNum : 0).toFixed(2);
+      const amt = this.toMoneyStorage(Number.isFinite(priceNum) ? priceNum : 0);
       const batch = (parsedUDI && parsedUDI.batchNo) || '';
       return {
         materialId: item.id,
@@ -1607,7 +1607,7 @@ export default {
           const nextQty = currentQty + 1;
           this.$set(existedRow, 'qty', String(nextQty));
           const priceNum = Number(existedRow.price) || 0;
-          this.$set(existedRow, 'amt', (nextQty * priceNum).toFixed(2));
+          this.$set(existedRow, 'amt', this.calcLineAmt(nextQty, priceNum));
           // 同步主条码，确保后续展示与最近一次扫描一致
           this.$set(existedRow, 'masterBarcode', parsedUDI.udiCode || existedRow.masterBarcode || "");
           this.$set(existedRow, 'udiNo', parsedUDI.udiCodeForQuery || existedRow.udiNo || "");
@@ -1638,7 +1638,7 @@ export default {
       obj.financeCategoryName = (item.fdFinanceCategory && item.fdFinanceCategory.financeCategoryName) || ""; // 保存财务分类
       obj.qty = "1"; // 默认数量为1
       obj.price = item.price;
-      obj.amt = (item.price ? parseFloat(item.price).toFixed(2) : "0.00");
+      obj.amt = (item.price ? this.formatAmount(item.price) : "0.00");
       // 使用解析出的数据填充字段
       obj.batchNo = parsedUDI.batchNo || "";
       obj.batchNumber = parsedUDI.batchNo || "";
@@ -1892,7 +1892,7 @@ export default {
         // 设置价格：优先使用item.price
         obj.price = item.price || 0;
         // 自动计算金额：数量 * 价格
-        obj.amt = (obj.qty && obj.price) ? (parseFloat(obj.qty) * parseFloat(obj.price)).toFixed(2) : "0.00";
+        obj.amt = (obj.qty && obj.price) ? this.calcLineAmt(obj.qty, obj.price) : "0.00";
         obj.batchNo = "";
         obj.batchNumber = "";
         obj.beginTime = "";
@@ -1970,7 +1970,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     /** 计算明细总金额 */
     getTotalAmount() {
@@ -1978,7 +1978,7 @@ export default {
         const total = this.gzOrderEntryList.reduce((sum, entry) => {
           return sum + (parseFloat(entry.amt) || 0);
         }, 0);
-        return total.toFixed(2);
+        return this.formatAmount(total);
       }
       return '0.00';
     },
@@ -1990,7 +1990,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     moreSearchFieldClass(t) {
       if (['supplier', 'warehouse'].includes(t)) {
@@ -2180,7 +2180,7 @@ export default {
     formatTotalAmt(row) {
       // 优先使用后端返回的totalAmt字段
       if (row.totalAmt !== undefined && row.totalAmt !== null && row.totalAmt !== '') {
-        return parseFloat(row.totalAmt).toFixed(2);
+        return this.formatAmount(row.totalAmt);
       }
       // 如果订单有明细列表，计算明细总金额
       if (row.gzOrderEntryList && row.gzOrderEntryList.length > 0) {
@@ -2189,7 +2189,7 @@ export default {
           const amt = parseFloat(entry.amt || 0);
           total += amt;
         });
-        return total.toFixed(2);
+        return this.formatAmount(total);
       }
       return '0.00';
     },
@@ -2462,7 +2462,7 @@ export default {
                 inHospitalCode: inHospitalCode,
                 materialName: item.materialName || material.name || '',
                 batchNumber: item.batchNumber || '',
-                price: item.price ? parseFloat(item.price).toFixed(2) : '',
+                price: item.price ? this.formatAmount(item.price) : '',
                 endTime: item.endTime || '',
                 speci: material.speci || '',
                 factoryName: (material.fdFactory && material.fdFactory.factoryName) ? material.fdFactory.factoryName : ''

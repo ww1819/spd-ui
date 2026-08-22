@@ -74,7 +74,7 @@
       <!-- 11. 单价 -->
       <el-table-column label="单价" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.price != null && scope.row.price !== undefined">{{ parseFloat(scope.row.price).toFixed(2) }}</span>
+          <span v-if="scope.row.price != null && scope.row.price !== undefined">{{ scope.row.price | formatPrice }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -88,7 +88,7 @@
       <!-- 13. 金额 -->
       <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.amt != null && scope.row.amt !== undefined">{{ parseFloat(scope.row.amt).toFixed(2) }}</span>
+          <span v-if="scope.row.amt != null && scope.row.amt !== undefined">{{ scope.row.amt | formatCurrency }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>

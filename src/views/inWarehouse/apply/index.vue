@@ -306,7 +306,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
+              <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -511,21 +511,14 @@
           <el-table-column label="价格" align="center" prop="unitPrice" width="100" min-width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
-                <el-input v-model="scope.row.unitPrice"
-                          type='number'
-                          :disabled="true"
-                          @input="priceChange(scope.row)"
-                          placeholder="价格"
-                          size="small"
-                          style="width: 100%"
-                />
+                <span>{{ scope.row.unitPrice | formatPrice }}</span>
               </div>
             </template>
           </el-table-column>
           <el-table-column label="金额" align="center" prop="amt" width="100" min-width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
-                <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" size="small" style="width: 100%"/>
+                <span>{{ scope.row.amt | formatAmount }}</span>
               </div>
             </template>
           </el-table-column>
@@ -1095,9 +1088,9 @@ export default {
           const values = data.map(row => Number(row[prop]));
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            sums[index] = total.toFixed(2);
+            sums[index] = prop === 'unitPrice' ? this.formatPrice(total) : this.formatAmount(total);
             if (prop === 'amt') {
-              this.form.totalAmount = sums[index];
+              this.form.totalAmount = this.toMoneyStorage(total);
             }
           }
         }
@@ -1123,7 +1116,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatAmount(sums[index]);
           }
         }
       });
@@ -1344,7 +1337,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.refreshDetailSummary();
     },
     //价格改变事件
@@ -1355,7 +1348,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.refreshDetailSummary();
     },
     /** 初始化/同步明细行的「长期」勾选状态：endTime 为 2099-01-01 时视为长期 */
@@ -1845,7 +1838,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          this.form.totalAmount = totalAmt.toFixed(2);
+          this.form.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
             updateWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -2043,7 +2036,7 @@ export default {
           const mat = res.data;
           const unitPrice = mat.price != null ? mat.price : "";
           const qty = 1;
-          const amt = (unitPrice && qty) ? (parseFloat(unitPrice) * qty).toFixed(2) : "";
+          const amt = (unitPrice && qty) ? this.calcLineAmt(qty, unitPrice) : "";
           const row = {
             materialId: mat.id,
             material: mat,

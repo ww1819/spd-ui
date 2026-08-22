@@ -135,7 +135,7 @@
         <el-table-column label="型号" prop="model" width="100" min-width="90" align="center" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="单位" prop="unitName" width="100" min-width="90" align="center" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="单价" prop="unitPrice" width="130" min-width="120" align="center" resizable sortable="custom" :sort-orders="['ascending', 'descending']">
-          <template slot-scope="scope">{{ formatAmount(scope.row.unitPrice) }}</template>
+          <template slot-scope="scope">{{ formatPrice(scope.row.unitPrice) }}</template>
         </el-table-column>
         <el-table-column label="数量" prop="quantity" width="110" min-width="100" align="center" resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">{{ formatQty(scope.row.quantity) }}</template>
@@ -199,6 +199,7 @@
 import { listMaterialUsageRank } from "@/api/warehouse/outWarehouse";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import RightToolbar from "@/components/RightToolbar";
+import { formatAmount as formatAmountByTenant, formatPrice as formatPriceByTenant } from "@/utils/moneyFormat";
 
 export default {
   name: "MaterialUsageRankReport",
@@ -274,7 +275,7 @@ export default {
       const amt = this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : Number(amt).toFixed(2);
+        : this.formatAmount(amt);
     },
     pageTotalQty() {
       return (this.tableList || []).reduce((s, r) => s + this.toNum(r.quantity), 0);
@@ -283,7 +284,7 @@ export default {
       const amt = (this.tableList || []).reduce((s, r) => s + this.toNum(r.amount), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : Number(amt).toFixed(2);
+        : this.formatAmount(amt);
     }
   },
   mounted() {
@@ -373,7 +374,11 @@ export default {
     },
     formatAmount(v) {
       if (v == null || v === "") return "--";
-      return this.toNum(v).toFixed(2);
+      return formatAmountByTenant(this.toNum(v), "--");
+    },
+    formatPrice(v) {
+      if (v == null || v === "") return "--";
+      return formatPriceByTenant(this.toNum(v), "--");
     },
     formatQty(v) {
       if (v == null || v === "") return "--";

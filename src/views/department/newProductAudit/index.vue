@@ -115,7 +115,7 @@
       </el-table-column>
       <el-table-column label="总金额" align="center" prop="totalAmount" show-overflow-tooltip resizable v-if="false">
         <template slot-scope="scope">
-          <span>{{ (scope.row.totalAmount != null && scope.row.totalAmount !== undefined) ? parseFloat(scope.row.totalAmount).toFixed(2) : formatTotalAmount(scope.row) }}</span>
+          <span>{{ (scope.row.totalAmount != null && scope.row.totalAmount !== undefined) ? this.formatAmount(scope.row.totalAmount) : formatTotalAmount(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="单据状态" align="center" prop="applyStatus" show-overflow-tooltip resizable>
@@ -298,7 +298,7 @@
           </el-table-column>
           <el-table-column label="单价" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.price ? parseFloat(scope.row.price).toFixed(2) : '0.00' }}</span>
+              <span>{{ scope.row.price ? formatPrice(scope.row.price) : '0.00' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="品牌要求" prop="brandRequirement" width="150" show-overflow-tooltip resizable>
@@ -542,7 +542,7 @@ export default {
         const total = row.applyEntryList.reduce((sum, entry) => {
           return sum + (parseFloat(entry.amt) || 0);
         }, 0);
-        return total.toFixed(2);
+        return this.formatAmount(total);
       }
       return '0.00';
     },

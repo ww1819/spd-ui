@@ -255,7 +255,7 @@
           </el-col>
           <el-col :span="4" v-show="false">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
+              <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4" v-show="false">
@@ -381,16 +381,12 @@
           </el-table-column>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" 
-                        type='number'
-                        :disabled="true"
-                        @input="priceChange(scope.row)"
-                        placeholder="价格" />
+              <span>{{ scope.row.unitPrice | formatPrice }}</span>
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
+              <span>{{ scope.row.amt | formatAmount }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
@@ -595,12 +591,12 @@
           </el-table-column>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.unitPrice || '--' }}</span>
+              <span>{{ scope.row.unitPrice != null && scope.row.unitPrice !== '' ? formatPrice(scope.row.unitPrice) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.amt || '--' }}</span>
+              <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
@@ -813,7 +809,7 @@ export default {
           if(index === 5){
             let res = parseFloat(sums[index]);
             if(!isNaN(res)){
-              let parRes = res.toFixed(2);
+              let parRes = this.formatAmount(res);
               this.form.totalAmount = parRes;
             }
           }
@@ -970,7 +966,7 @@ export default {
           response.data.forEach(entry => {
             // 确保金额计算正确
             if (entry.qty && entry.unitPrice) {
-              entry.amt = (parseFloat(entry.qty) * parseFloat(entry.unitPrice)).toFixed(2);
+              entry.amt = this.calcLineAmt(entry.qty, entry.unitPrice);
             }
             
             // 获取供应商ID（从material中获取supplierId）
@@ -1013,7 +1009,7 @@ export default {
             return {
               id: supplier.id,
               name: supplier.name,
-              totalAmount: totalAmount.toFixed(2) // 保存计算好的总金额
+              totalAmount: this.toMoneyStorage(totalAmount) // 保存计算好的总金额
             };
           });
           
@@ -1160,7 +1156,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -1170,7 +1166,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     moreSearchFieldClass(t) {
       if (['supplier', 'warehouse'].includes(t)) {
@@ -1381,7 +1377,7 @@ export default {
         if (response.data && response.data.length > 0) {
           response.data.forEach(entry => {
             if (entry.qty && entry.unitPrice) {
-              entry.amt = (parseFloat(entry.qty) * parseFloat(entry.unitPrice)).toFixed(2);
+              entry.amt = this.calcLineAmt(entry.qty, entry.unitPrice);
             }
             this.stkIoBillEntryList.push(entry);
           });
@@ -1423,7 +1419,7 @@ export default {
           total += amount;
         }
       });
-      return total.toFixed(2);
+      return this.formatAmount(total);
     },
     /** 获取结算类型名称 */
     getSettlementTypeName(type) {
@@ -1481,7 +1477,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          this.form.totalAmount = totalAmt.toFixed(2);
+          this.form.totalAmount = this.toMoneyStorage(totalAmt);
           
           // 确保供应商ID已设置
           if (!this.form.supplerId) {

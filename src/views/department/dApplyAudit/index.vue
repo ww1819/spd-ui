@@ -114,7 +114,7 @@
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.totalAmount && parseFloat(scope.row.totalAmount) > 0">¥{{ parseFloat(scope.row.totalAmount).toFixed(2) }}</span>
+          <span v-if="scope.row.totalAmount && parseFloat(scope.row.totalAmount) > 0">¥{{ scope.row.totalAmount | formatCurrency }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -301,7 +301,7 @@
                 <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.unitPrice || '--' }}</span>
+                    <span>{{ scope.row.unitPrice != null && scope.row.unitPrice !== '' ? formatPrice(scope.row.unitPrice) : '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="数量" prop="qty" width="90" show-overflow-tooltip resizable>
@@ -311,7 +311,7 @@
                 </el-table-column>
                 <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.amt || '--' }}</span>
+                    <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="剩余可用库存" prop="availableStockQty" width="118" align="right" show-overflow-tooltip resizable>
@@ -595,7 +595,7 @@ export default {
               totalAmount += parseFloat(item.amt);
             }
           });
-          sums[index] = '￥' + totalAmount.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(totalAmount);
         } else {
           sums[index] = '';
         }

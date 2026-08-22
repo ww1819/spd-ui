@@ -331,7 +331,7 @@
                 </el-table-column>
                 <el-table-column label="单价" prop="unitPrice" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.unitPrice ? parseFloat(scope.row.unitPrice).toFixed(2) : '--' }}</span>
+                    <span>{{ scope.row.unitPrice ? formatPrice(scope.row.unitPrice) : '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="明细账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
@@ -351,7 +351,7 @@
                 </el-table-column>
                 <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.amt ? parseFloat(scope.row.amt).toFixed(2) : '--' }}</span>
+                    <span>{{ scope.row.amt ? formatAmount(scope.row.amt) : '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="盈亏数量" align="center" width="120" show-overflow-tooltip resizable>
@@ -513,7 +513,7 @@ export default {
       if (head != null && head !== '') {
         const n = parseFloat(head);
         if (Number.isFinite(n)) {
-          return '￥' + n.toFixed(2);
+          return '￥' + this.formatAmount(n);
         }
       }
       let total = 0;
@@ -523,7 +523,7 @@ export default {
           total += amt;
         });
       }
-      return '￥' + total.toFixed(2);
+      return '￥' + this.formatAmount(total);
     },
     deptFormCreatorName() {
       const f = this.form || {};
@@ -559,7 +559,7 @@ export default {
       if (val == null || val === '') return '--';
       const n = parseFloat(val);
       if (!Number.isFinite(n)) return '--';
-      return '￥' + n.toFixed(2);
+      return '￥' + this.formatAmount(n);
     },
     /** 列表盈亏金额展示（与科室盘点申请列表一致） */
     formatStocktakingListProfitAmount(val) {
@@ -567,7 +567,7 @@ export default {
       const n = parseFloat(val);
       if (!Number.isFinite(n)) return '--';
       const prefix = n > 0 ? '+' : '';
-      return prefix + '￥' + n.toFixed(2);
+      return prefix + '￥' + this.formatAmount(n);
     },
     /** 查询盘点列表 */
     getList() {
@@ -915,7 +915,7 @@ export default {
       const profitQty = stockQty - qty;
       const profitAmount = profitQty * unitPrice;
       const prefix = profitAmount > 0 ? '+' : '';
-      return prefix + '￥' + profitAmount.toFixed(2);
+      return prefix + '￥' + this.formatAmount(profitAmount);
     },
     formatProfitLossFlag(row) {
       const flag = (row && row.profitLossFlag ? String(row.profitLossFlag) : '').toUpperCase();

@@ -125,7 +125,7 @@
       </el-table-column>
       <el-table-column label="总金额" align="center" prop="totalAmt" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ (scope.row.totalAmt != null && scope.row.totalAmt !== undefined) ? parseFloat(scope.row.totalAmt).toFixed(2) : formatTotalAmt(scope.row) }}</span>
+          <span>{{ (scope.row.totalAmt != null && scope.row.totalAmt !== undefined) ? this.formatAmount(scope.row.totalAmt) : formatTotalAmt(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="审核人" align="center" prop="auditBy" width="100" show-overflow-tooltip resizable>
@@ -361,12 +361,12 @@
           </el-table-column>
           <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.price || '--' }}</span>
+              <span>{{ scope.row.price != null && scope.row.price !== '' ? formatPrice(scope.row.price) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.amt || '--' }}</span>
+              <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
@@ -895,7 +895,7 @@ export default {
           qty: qty,
           stockQty: stockQty,
           price: price,
-          amt: (qty * parseFloat(price || 0)).toFixed(2),
+          amt: this.calcLineAmt(qty, price || 0),
           batchNo: inv.batchNo || '',
           batchNumber: inv.materialNo || '',
           beginTime: inv.materialDate || '',
@@ -923,7 +923,7 @@ export default {
         const total = row.gzOrderEntryList.reduce((sum, entry) => {
           return sum + (parseFloat(entry.amt) || 0);
         }, 0);
-        return total.toFixed(2);
+        return this.formatAmount(total);
       }
       return '0.00';
     },
@@ -933,7 +933,7 @@ export default {
         const total = this.gzOrderEntryList.reduce((sum, entry) => {
           return sum + (parseFloat(entry.amt) || 0);
         }, 0);
-        return total.toFixed(2);
+        return this.formatAmount(total);
       }
       return '0.00';
     },
@@ -1208,7 +1208,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     moreSearchFieldClass(t) {
       if (t === 'warehouse') {
@@ -1519,7 +1519,7 @@ export default {
       const price = r.unitPrice != null ? r.unitPrice : 0;
       let amt = r.amt;
       if (amt == null && price != null) {
-        amt = (parseFloat(price) * parseFloat(qty)).toFixed(2);
+        amt = this.calcLineAmt(price, qty);
       }
       return {
         materialId: r.materialId,

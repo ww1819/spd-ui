@@ -136,7 +136,7 @@
       <el-table-column label="制单人" align="center" prop="createrNmae" width="100" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="getTotalAmount(scope.row) && parseFloat(getTotalAmount(scope.row)) > 0">¥{{ parseFloat(getTotalAmount(scope.row)).toFixed(2) }}</span>
+          <span v-if="getTotalAmount(scope.row) && parseFloat(getTotalAmount(scope.row)) > 0">¥{{ getTotalAmount(scope.row) | formatCurrency }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -329,7 +329,7 @@
           </el-table-column>
           <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span v-if="scope.row.unitPrice">{{ parseFloat(scope.row.unitPrice).toFixed(2) }}</span>
+              <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
@@ -345,7 +345,7 @@
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span v-if="scope.row.amt && parseFloat(scope.row.amt) > 0">¥{{ parseFloat(scope.row.amt).toFixed(2) }}</span>
+              <span v-if="scope.row.amt && parseFloat(scope.row.amt) > 0">¥{{ scope.row.amt | formatCurrency }}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
@@ -791,7 +791,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.calculateTotals();
     },
     //价格改变事件
@@ -802,7 +802,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.calculateTotals();
     },
     //计算合计数量和金额
@@ -846,7 +846,7 @@ export default {
               totalAmount += parseFloat(item.amt);
             }
           });
-          sums[index] = '￥' + totalAmount.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(totalAmount);
         } else {
           sums[index] = '';
         }
@@ -1148,7 +1148,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          this.form.totalAmount = totalAmt.toFixed(2);
+          this.form.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
             if (this.currentBillType === '1') {
               updateApply(this.form).then(() => {

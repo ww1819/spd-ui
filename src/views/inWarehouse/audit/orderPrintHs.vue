@@ -111,10 +111,11 @@ import { applyPrintFontToEl, browserPrintOptions } from '@/utils/printFont'
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { getDefaultTemplate } from '@/api/system/printSetting'
 import { formatQuantity } from '@/utils/format-quantity'
+import printMoneyMixin from '@/mixins/printMoneyMixin'
 
 export default {
   name: 'OrderPrintHs',
-  mixins: [hospitalNameMixin],
+  mixins: [hospitalNameMixin, printMoneyMixin],
   props: {
     row: Object,
     billType: [String, Number],
@@ -220,18 +221,7 @@ export default {
     },
     formatNum(v) {
       return formatQuantity(v, 2)
-    },
-    formatPrice(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(4)
-    },
-    formatAmt(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(4)
-    },
-    loadPrintSetting() {
+    },    loadPrintSetting() {
       const billType = this.billType || (this.row && this.row.billType) || 101
       getDefaultTemplate(billType).then(response => {
         if (response.data) {

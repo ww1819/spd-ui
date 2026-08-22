@@ -121,7 +121,7 @@
         </el-table-column>
         <el-table-column label="单价" align="center" prop="unitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
           <template slot-scope="scope">
-            <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatCurrency }}</span>
+            <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
@@ -229,7 +229,7 @@ export default {
     pageTotalAmtFormatted() {
       const amt = (this.reportList || []).reduce((s, r) => s + Number(r.totalAmount || 0), 0);
       const fmt = this.$options.filters && this.$options.filters.formatCurrency;
-      return fmt ? fmt(amt) : String(Number(amt).toFixed(2));
+      return fmt ? fmt(amt) : String(this.formatAmount(amt));
     }
   },
   created() {

@@ -134,7 +134,7 @@
       </el-table-column>
       <el-table-column label="总金额" align="center" prop="totalAmt" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span>{{ (scope.row.totalAmt != null && scope.row.totalAmt !== undefined) ? parseFloat(scope.row.totalAmt).toFixed(2) : '--' }}</span>
+          <span>{{ (scope.row.totalAmt != null && scope.row.totalAmt !== undefined) ? formatAmount(scope.row.totalAmt) : '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="单据状态" align="center" prop="goodsStatus" show-overflow-tooltip resizable>
@@ -349,12 +349,12 @@
           </el-table-column>
           <el-table-column label="价格" prop="price" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.price || '--' }}</span>
+              <span>{{ scope.row.price != null && scope.row.price !== '' ? formatPrice(scope.row.price) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.amt || '--' }}</span>
+              <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="150" show-overflow-tooltip resizable>
@@ -651,7 +651,7 @@ export default {
         }
         if (column.property === 'amt') {
           const t = sumNum('amt');
-          sums[index] = '￥' + t.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(t);
           return;
         }
         sums[index] = '';
@@ -697,7 +697,7 @@ export default {
           model: (hit.material && hit.material.model) || "",
           qty,
           price,
-          amt: qty && price ? (parseFloat(qty) * parseFloat(price)).toFixed(2) : "",
+          amt: qty && price ? this.calcLineAmt(qty, price) : "",
           batchNo: hit.batchNo || "",
           batchNumber: hit.materialNo || "",
           beginTime: hit.materialDate || "",
@@ -775,7 +775,7 @@ export default {
         obj.unitName = (item.material && item.material.fdUnit && item.material.fdUnit.unitName) || item.unitName || "";
         obj.qty = item.qty || "";
         obj.price = item.unitPrice || item.price || "";
-        obj.amt = item.amt || (obj.qty && obj.price ? (parseFloat(obj.qty) * parseFloat(obj.price)).toFixed(2) : "");
+        obj.amt = item.amt || (obj.qty && obj.price ? this.calcLineAmt(obj.qty, obj.price) : "");
         obj.batchNo = item.batchNo || "";
         obj.batchNumber = item.materialNo || item.batchNumber || "";
         obj.beginTime = item.materialDate || item.beginTime || "";
@@ -836,7 +836,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -846,7 +846,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -994,7 +994,7 @@ export default {
       const price = r.unitPrice != null ? r.unitPrice : '';
       let amt = r.amt;
       if (amt == null && price && qty) {
-        amt = (parseFloat(price) * parseFloat(qty)).toFixed(2);
+        amt = this.calcLineAmt(price, qty);
       }
       return {
         materialId: r.materialId,
@@ -1305,7 +1305,7 @@ export default {
           }
         });
       }
-      return total.toFixed(2);
+      return this.formatAmount(total);
     },
     formatDisplayDateTime(primaryTime, fallbackTime) {
       const primary = parseTime(primaryTime, '{y}-{m}-{d} {h}:{i}:{s}');

@@ -112,13 +112,13 @@
         <template slot-scope="scope">{{ parseTime(scope.row.invoiceDate, '{y}-{m}-{d}') }}</template>
       </el-table-column>
       <el-table-column label="金额" align="right" prop="amount" width="100">
-        <template slot-scope="scope">{{ scope.row.amount != null ? Number(scope.row.amount).toFixed(2) : '--' }}</template>
+        <template slot-scope="scope">{{ scope.row.amount != null ? this.formatAmount(scope.row.amount) : '--' }}</template>
       </el-table-column>
       <el-table-column label="税额" align="right" prop="taxAmount" width="100">
-        <template slot-scope="scope">{{ scope.row.taxAmount != null ? Number(scope.row.taxAmount).toFixed(2) : '--' }}</template>
+        <template slot-scope="scope">{{ scope.row.taxAmount != null ? this.formatAmount(scope.row.taxAmount) : '--' }}</template>
       </el-table-column>
       <el-table-column label="价税合计" align="right" prop="totalAmount" width="110">
-        <template slot-scope="scope">{{ scope.row.totalAmount != null ? Number(scope.row.totalAmount).toFixed(2) : '--' }}</template>
+        <template slot-scope="scope">{{ scope.row.totalAmount != null ? this.formatAmount(scope.row.totalAmount) : '--' }}</template>
       </el-table-column>
       <el-table-column label="供应商" align="center" prop="supplierName" width="140" show-overflow-tooltip />
       <el-table-column label="购方名称" align="center" prop="buyerName" min-width="140" show-overflow-tooltip />

@@ -112,7 +112,7 @@
             </el-table-column>
             <el-table-column label="单价" align="center" width="100" show-overflow-tooltip>
               <template slot-scope="scope">
-                <span>{{ scope.row.material && scope.row.material.unitPrice ? parseFloat(scope.row.material.unitPrice).toFixed(2) : '0.00' }}</span>
+                <span>{{ scope.row.material && scope.row.material.unitPrice ? formatPrice(scope.row.material.unitPrice) : '0.00' }}</span>
               </template>
             </el-table-column>
             <el-table-column label="少于数量预警" align="center" prop="minQtyWarning" width="130" show-overflow-tooltip />
@@ -253,13 +253,13 @@
           </el-table-column>
           <el-table-column label="单价" align="center" width="110" show-overflow-tooltip>
             <template slot-scope="scope">
-              <span>{{ scope.row.unitPrice ? parseFloat(scope.row.unitPrice).toFixed(2) : '0.00' }}</span>
+              <span>{{ scope.row.unitPrice ? formatPrice(scope.row.unitPrice) : '0.00' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="数量" align="center" prop="qty" width="110" show-overflow-tooltip />
           <el-table-column label="金额" align="center" prop="amt" width="110" show-overflow-tooltip>
             <template slot-scope="scope">
-              <span>{{ scope.row.amt ? parseFloat(scope.row.amt).toFixed(2) : '0.00' }}</span>
+              <span>{{ scope.row.amt ? formatAmount(scope.row.amt) : '0.00' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="生产厂家" align="center" width="150" show-overflow-tooltip>

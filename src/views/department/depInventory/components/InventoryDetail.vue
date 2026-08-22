@@ -135,7 +135,7 @@
             <span
               v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== ''"
             >
-              {{ scope.row.unitPrice | formatCurrency}}
+              {{ scope.row.unitPrice | formatPrice }}
             </span>
             <span
               v-else-if="scope.row.amt !== null && scope.row.amt !== undefined && scope.row.qty"
@@ -372,7 +372,7 @@ export default {
       const amt = (this.inventoryList || []).reduce((s, r) => s + Number(r.amt || 0), 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     }
   },
   mounted() {

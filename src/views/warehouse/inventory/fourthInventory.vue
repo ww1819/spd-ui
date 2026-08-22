@@ -162,7 +162,7 @@
         <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row._summaryType">-</span>
-            <span v-else-if="scope.row.unitPrice != null">{{ scope.row.unitPrice | formatCurrency }}</span>
+            <span v-else-if="scope.row.unitPrice != null">{{ scope.row.unitPrice | formatPrice }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>

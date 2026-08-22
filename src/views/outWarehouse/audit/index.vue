@@ -306,7 +306,7 @@
         <el-row :gutter="8">
           <el-col :span="4">
             <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
+              <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -402,9 +402,7 @@
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="价格" prop="unitPrice" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number'
-                        :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="单价" />
+              <span>{{ scope.row.unitPrice | formatPrice }}</span>
             </template>
           </el-table-column>
           <el-table-column label="已引用" prop="srcRefedQty" width="72" align="center" show-overflow-tooltip resizable>
@@ -437,7 +435,7 @@
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.amt" :disabled="true" placeholder="金额" />
+              <span>{{ scope.row.amt | formatAmount }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="320" show-overflow-tooltip resizable>
@@ -896,12 +894,12 @@ export default {
               }
               return prev;
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatAmount(sums[index]);
           }
           if (prop === 'amt') {
             const res = parseFloat(sums[index]);
             if (!isNaN(res)) {
-              this.form.totalAmount = res.toFixed(2);
+              this.form.totalAmount = this.toMoneyStorage(res);
             }
           }
         }
@@ -927,7 +925,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatAmount(sums[index]);
           }
         }
       });
@@ -1203,7 +1201,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -1213,7 +1211,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     moreSearchFieldClass(t) {
       if (['department', 'warehouse', 'material', 'supplier'].includes(t)) {
@@ -1418,7 +1416,7 @@ export default {
             totalAmt += parseFloat(item.amt)
           }
         })
-        this.form.totalAmount = totalAmt.toFixed(2)
+        this.form.totalAmount = this.toMoneyStorage(totalAmt)
         if (this.form.id != null) {
           updateOutWarehouse(this.form).then(response => {
             this.$modal.msgSuccess('修改成功')

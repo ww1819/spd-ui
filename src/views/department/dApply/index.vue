@@ -112,7 +112,7 @@
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
       <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.totalAmount && parseFloat(scope.row.totalAmount) > 0">¥{{ parseFloat(scope.row.totalAmount).toFixed(2) }}</span>
+          <span v-if="scope.row.totalAmount && parseFloat(scope.row.totalAmount) > 0">¥{{ scope.row.totalAmount | formatCurrency }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -293,7 +293,7 @@
                 <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.unitPrice || '--' }}</span>
+                    <span>{{ scope.row.unitPrice != null && scope.row.unitPrice !== '' ? formatPrice(scope.row.unitPrice) : '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column :label="action ? '数量' : '申请数量'" prop="qty" width="96" show-overflow-tooltip resizable>
@@ -313,7 +313,7 @@
                 </el-table-column>
                 <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ scope.row.amt || '--' }}</span>
+                    <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="仓库库存" prop="availableStockQty" width="100" align="right" show-overflow-tooltip resizable>
@@ -1507,7 +1507,7 @@ export default {
           totalAmt += parseFloat(item.amt);
         }
       });
-      this.form.totalAmount = totalAmt.toFixed(2);
+      this.form.totalAmount = this.toMoneyStorage(totalAmt);
       this.applyDraftSaving = true;
       const ax = { headers: { repeatSubmit: false, hideError: true } };
       const done = () => {
@@ -1613,7 +1613,7 @@ export default {
               totalAmount += parseFloat(item.amt);
             }
           });
-          sums[index] = '￥' + totalAmount.toFixed(2);
+          sums[index] = '￥' + this.formatAmount(totalAmount);
         } else if (column.property === 'pendingOutboundQty' || column.property === 'ckPendingAuditQty'
           || column.property === 'linkedCkQty' || column.property === 'ckAuditedQty' || column.property === 'whLineVoidQty') {
           sums[index] = sumNumProp(column.property);
@@ -1662,7 +1662,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.calculateTotals();
     },
     //价格改变事件
@@ -1673,7 +1673,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.calculateTotals();
     },
     /** 搜索按钮操作 */
@@ -1811,7 +1811,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          this.form.totalAmount = totalAmt.toFixed(2);
+          this.form.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
             updateApply(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");

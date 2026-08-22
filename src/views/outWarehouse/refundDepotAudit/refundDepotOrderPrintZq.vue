@@ -140,10 +140,11 @@ import { applyPrintFontToEl, browserPrintOptions } from '@/utils/printFont'
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { getDefaultTemplate } from '@/api/system/printSetting'
 import { formatQuantity } from '@/utils/format-quantity'
+import printMoneyMixin from '@/mixins/printMoneyMixin'
 
 export default {
   name: 'RefundDepotOrderPrintZq',
-  mixins: [hospitalNameMixin],
+  mixins: [hospitalNameMixin, printMoneyMixin],
   props: {
     row: {
       type: Object,
@@ -240,20 +241,7 @@ export default {
     },
     formatNum(v) {
       return formatQuantity(v, 2)
-    },
-    formatPrice(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      if (isNaN(n)) return v
-      const s = n.toFixed(4)
-      return s.replace(/\.?0+$/, '') || '0'
-    },
-    formatAmt(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(2)
-    },
-    pageSubtotalAmt(pageRows) {
+    },    pageSubtotalAmt(pageRows) {
       if (!pageRows || !pageRows.length) return 0
       return pageRows.reduce((sum, item) => {
         const n = Number(item && item.amt)

@@ -112,7 +112,7 @@
       </el-table-column>
       <el-table-column label="总金额" align="center" prop="totalAmount" show-overflow-tooltip resizable v-if="false">
         <template slot-scope="scope">
-          <span>{{ (scope.row.totalAmount != null && scope.row.totalAmount !== undefined) ? parseFloat(scope.row.totalAmount).toFixed(2) : formatTotalAmount(scope.row) }}</span>
+          <span>{{ (scope.row.totalAmount != null && scope.row.totalAmount !== undefined) ? this.formatAmount(scope.row.totalAmount) : formatTotalAmount(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="单据状态" align="center" prop="applyStatus" show-overflow-tooltip resizable>
@@ -550,7 +550,7 @@ export default {
         const total = row.applyEntryList.reduce((sum, entry) => {
           return sum + (parseFloat(entry.amt) || 0);
         }, 0);
-        return total.toFixed(2);
+        return this.formatAmount(total);
       }
       return '0.00';
     },
@@ -559,7 +559,7 @@ export default {
         const total = this.applyEntryList.reduce((sum, entry) => {
           return sum + (parseFloat(entry.amt) || 0);
         }, 0);
-        return total.toFixed(2);
+        return this.formatAmount(total);
       }
       return '0.00';
     },
@@ -646,7 +646,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -656,7 +656,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
     },
     /** 搜索按钮操作 */
     handleQuery() {

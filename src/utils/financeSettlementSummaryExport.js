@@ -3,6 +3,7 @@
  */
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { getAmountExcelNumFmt, getPriceExcelNumFmt } from '@/utils/moneyFormat';
 
 const BORDER_THIN = {
   style: 'thin',
@@ -89,7 +90,7 @@ export async function exportFinanceSettlementSummaryXlsx(options) {
 
       const c = ws.getCell(r, 3);
       c.value = rows[i].wholesaleAmt != null ? Number(rows[i].wholesaleAmt) : null;
-      c.numFmt = '#,##0.00';
+      c.numFmt = getAmountExcelNumFmt();
       c.font = FONT_BODY;
       c.alignment = { vertical: 'middle', horizontal: 'right' };
       setCellBorder(c);
@@ -112,7 +113,7 @@ export async function exportFinanceSettlementSummaryXlsx(options) {
 
     const cTot = ws.getCell(r, 3);
     cTot.value = totalAmt != null ? Number(totalAmt) : 0;
-    cTot.numFmt = '#,##0.00';
+    cTot.numFmt = getAmountExcelNumFmt();
     cTot.font = { ...FONT_BODY, bold: true };
     cTot.alignment = { vertical: 'middle', horizontal: 'right' };
     setCellBorder(cTot);
@@ -250,7 +251,7 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
       cell.value = v;
       cell.font = FONT_BODY;
       cell.alignment = { vertical: 'middle', horizontal: num ? 'right' : align || 'left' };
-      if (num) cell.numFmt = '#,##0.00';
+      if (num) cell.numFmt = getAmountExcelNumFmt();
       setCellBorder(cell);
     });
     ws.getRow(r).height = 18;
@@ -289,7 +290,7 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
       cell.value = typeof v === 'number' ? v : '';
       cell.font = { ...FONT_BODY, bold: true };
       cell.alignment = { vertical: 'middle', horizontal: typeof v === 'number' ? 'right' : 'center' };
-      if (typeof v === 'number') cell.numFmt = '#,##0.00';
+      if (typeof v === 'number') cell.numFmt = getAmountExcelNumFmt();
       setCellBorder(cell);
     });
     ws.getRow(r).height = 18;
@@ -379,7 +380,7 @@ export async function exportFinanceDeptMonthlyConsumptionXlsx(options) {
       cell.value = v;
       cell.font = FONT_BODY;
       cell.alignment = { vertical: 'middle', horizontal: num ? 'right' : align || 'left' };
-      if (num) cell.numFmt = '#,##0.00';
+      if (num) cell.numFmt = getAmountExcelNumFmt();
       setCellBorder(cell);
     });
     ws.getRow(r).height = 18;
@@ -409,7 +410,7 @@ export async function exportFinanceDeptMonthlyConsumptionXlsx(options) {
       cell.value = v;
       cell.font = { ...FONT_BODY, bold: true };
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
-      cell.numFmt = '#,##0.00';
+      cell.numFmt = getAmountExcelNumFmt();
       setCellBorder(cell);
     });
     ws.getRow(r).height = 18;

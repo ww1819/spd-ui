@@ -3,6 +3,7 @@
  */
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { getAmountExcelNumFmt, getPriceExcelNumFmt } from '@/utils/moneyFormat';
 import {
   hisChargeItemExportCellsFromMaterial,
   hisChargeItemExportCellsFromRow,
@@ -132,7 +133,7 @@ export async function exportDepartmentSummaryStyledXlsx(options) {
       const v = Number(row[`catAmt_${ci}`] || 0);
       const cell = ws.getCell(r, 3 + ci);
       cell.value = v;
-      cell.numFmt = '#,##0.00';
+      cell.numFmt = getAmountExcelNumFmt();
       cell.font = FONT_BODY;
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
       setCellBorder(cell);
@@ -150,7 +151,7 @@ export async function exportDepartmentSummaryStyledXlsx(options) {
 
     const na = ws.getCell(r, netAmtCol);
     na.value = Number(row.netAmt || 0);
-    na.numFmt = '#,##0.00';
+    na.numFmt = getAmountExcelNumFmt();
     na.font = FONT_BODY;
     na.alignment = { vertical: 'middle', horizontal: 'right' };
     setCellBorder(na);
@@ -182,7 +183,7 @@ export async function exportDepartmentSummaryStyledXlsx(options) {
     const sum = rows.reduce((s, row) => s + Number(row[`catAmt_${ci}`] || 0), 0);
     const cell = ws.getCell(totalRow, 3 + ci);
     cell.value = sum;
-    cell.numFmt = '#,##0.00';
+    cell.numFmt = getAmountExcelNumFmt();
     cell.font = RED_NUM;
     cell.alignment = { vertical: 'middle', horizontal: 'right' };
     setCellBorder(cell);
@@ -202,7 +203,7 @@ export async function exportDepartmentSummaryStyledXlsx(options) {
 
   const tNa = ws.getCell(totalRow, netAmtCol);
   tNa.value = totalNetAmt;
-  tNa.numFmt = '#,##0.00';
+  tNa.numFmt = getAmountExcelNumFmt();
   tNa.font = RED_NUM;
   tNa.alignment = { vertical: 'middle', horizontal: 'right' };
   setCellBorder(tNa);
@@ -312,7 +313,7 @@ export async function exportSupplierSummaryStyledXlsx(options) {
     nums.forEach((v, i) => {
       const cell = ws.getCell(r, 3 + i);
       cell.value = v;
-      cell.numFmt = '#,##0.00';
+      cell.numFmt = getAmountExcelNumFmt();
       cell.font = FONT_BODY;
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
       setCellBorder(cell);
@@ -351,7 +352,7 @@ export async function exportSupplierSummaryStyledXlsx(options) {
   totals.forEach((v, i) => {
     const cell = ws.getCell(totalRow, 3 + i);
     cell.value = v;
-    cell.numFmt = '#,##0.00';
+    cell.numFmt = getAmountExcelNumFmt();
     cell.font = RED_NUM;
     cell.alignment = { vertical: 'middle', horizontal: 'right' };
     setCellBorder(cell);
@@ -556,7 +557,7 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
           cell.value = '';
         } else {
           cell.value = Number(v);
-          cell.numFmt = '#,##0.00';
+          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : '#,##0.00');
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -585,7 +586,7 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
       } else if (c === amtCol) {
         cell.value = Number(totalAmt || 0);
-        cell.numFmt = '#,##0.00';
+        cell.numFmt = getAmountExcelNumFmt();
         cell.font = RED_NUM;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
       } else {
@@ -787,11 +788,11 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
             cell.value = '';
           } else {
             cell.value = 0;
-            cell.numFmt = '#,##0.00';
+            cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : '#,##0.00');
           }
         } else {
           cell.value = Number(v);
-          cell.numFmt = '#,##0.00';
+          cell.numFmt = getAmountExcelNumFmt();
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -861,7 +862,7 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
       } else if (c === amtCol) {
         cell.value = totalAmt;
-        cell.numFmt = '#,##0.00';
+        cell.numFmt = getAmountExcelNumFmt();
         cell.font = RED_NUM;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
       } else {
@@ -986,7 +987,7 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
           cell.value = '';
         } else {
           cell.value = Number(v);
-          cell.numFmt = '#,##0.00';
+          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : '#,##0.00');
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -1026,7 +1027,7 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
     } else if (c === amtCol) {
       cell.value = totalAmt;
-      cell.numFmt = '#,##0.00';
+      cell.numFmt = getAmountExcelNumFmt();
       cell.font = RED_NUM;
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
     } else {
@@ -1175,7 +1176,7 @@ export async function exportRTHWarehouseDetailStyledXlsx(options) {
           cell.value = '';
         } else {
           cell.value = Number(v);
-          cell.numFmt = '#,##0.00';
+          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : '#,##0.00');
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -1215,7 +1216,7 @@ export async function exportRTHWarehouseDetailStyledXlsx(options) {
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
     } else if (c === amtCol) {
       cell.value = totalAmt;
-      cell.numFmt = '#,##0.00';
+      cell.numFmt = getAmountExcelNumFmt();
       cell.font = RED_NUM;
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
     } else {
@@ -1337,7 +1338,7 @@ export async function exportRTHSummaryListStyledXlsx(options) {
           cell.value = '';
         } else {
           cell.value = Number(v);
-          cell.numFmt = '#,##0.00';
+          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : '#,##0.00');
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -1377,7 +1378,7 @@ export async function exportRTHSummaryListStyledXlsx(options) {
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
     } else if (c === amtCol) {
       cell.value = totalAmt;
-      cell.numFmt = '#,##0.00';
+      cell.numFmt = getAmountExcelNumFmt();
       cell.font = RED_NUM;
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
     } else {
@@ -1548,7 +1549,7 @@ export async function exportInventoryQueryStyledXlsx(options) {
           cell.value = '';
         } else {
           cell.value = Number(v);
-          cell.numFmt = numericNumFmt[col] || '#,##0.00';
+          cell.numFmt = numericNumFmt[col] || getAmountExcelNumFmt();
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -1588,7 +1589,7 @@ export async function exportInventoryQueryStyledXlsx(options) {
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     } else if (sums[c] != null) {
       cell.value = sums[c];
-      cell.numFmt = numericNumFmt[c] || '#,##0.00';
+      cell.numFmt = numericNumFmt[c] || getAmountExcelNumFmt();
       cell.font = RED_NUM;
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
     } else {
@@ -3086,6 +3087,7 @@ export async function exportDepartmentConsumptionSummaryStyledXlsx(options) {
     '平均单价',
     '使用率(%)',
     '耗材分类',
+    '财务分类',
   ];
   const numericCols = [7, 8, 9];
   return exportInventoryQueryStyledXlsx({
@@ -3112,6 +3114,7 @@ export async function exportDepartmentConsumptionSummaryStyledXlsx(options) {
       row.averagePrice != null && row.averagePrice !== '' ? Number(row.averagePrice) : null,
       formatConsumptionUsageRatePct(row.usageRate),
       row.category || '',
+      row.financialCategory || '',
     ],
     fileName,
   });

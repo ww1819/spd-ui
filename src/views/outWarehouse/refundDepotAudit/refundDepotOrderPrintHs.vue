@@ -101,10 +101,11 @@
 import { applyPrintFontToEl, browserPrintOptions } from '@/utils/printFont'
 import hospitalNameMixin from '@/mixins/hospitalNameMixin'
 import { formatQuantity } from '@/utils/format-quantity'
+import printMoneyMixin from '@/mixins/printMoneyMixin'
 
 export default {
   name: 'RefundDepotOrderPrintHs',
-  mixins: [hospitalNameMixin],
+  mixins: [hospitalNameMixin, printMoneyMixin],
   props: {
     row: {
       type: Object,
@@ -206,18 +207,7 @@ export default {
     },
     formatQty(v) {
       return formatQuantity(v, 2)
-    },
-    formatPrice(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(4)
-    },
-    formatAmt(v) {
-      if (v == null || v === '') return ''
-      const n = Number(v)
-      return isNaN(n) ? v : n.toFixed(2)
-    },
-    removeMirrorNode(m) {
+    },    removeMirrorNode(m) {
       try {
         if (m && m.parentNode) m.parentNode.removeChild(m)
       } catch (e) {

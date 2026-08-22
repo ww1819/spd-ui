@@ -202,6 +202,7 @@ import { listPurchaseSummaryBySupplier } from "@/api/warehouse/outWarehouse";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
+import { formatAmount as formatAmountByTenant } from "@/utils/moneyFormat";
 
 export default {
   name: "PurchaseSummaryReport",
@@ -411,7 +412,7 @@ export default {
       }
     },
     formatAmount(v) {
-      return this.toNum(v).toFixed(2);
+      return formatAmountByTenant(this.toNum(v), "0.00");
     },
     handleClose() {
       this.$emit("close");

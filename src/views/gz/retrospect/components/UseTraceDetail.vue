@@ -52,7 +52,7 @@
       <el-table-column label="金额" align="center" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortTraceAmount">
         <template slot-scope="scope">
           <span v-if="scope.row.quantity !== null && scope.row.quantity !== undefined && scope.row.chargePrice !== null && scope.row.chargePrice !== undefined">
-            {{ (parseFloat(scope.row.quantity) * parseFloat(scope.row.chargePrice)).toFixed(2) }}
+            {{ this.calcLineAmt(scope.row.quantity, scope.row.chargePrice) }}
           </span>
           <span v-else>--</span>
         </template>
@@ -309,7 +309,7 @@ export default {
       }, 0);
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
-        : String(Number(amt).toFixed(2));
+        : String(this.formatAmount(amt));
     }
   },
   watch: {
