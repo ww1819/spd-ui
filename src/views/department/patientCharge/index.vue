@@ -606,6 +606,22 @@
         <el-button type="primary" class="spd-btn spd-btn--primary" :loading="batchLowSubmitting" @click="confirmBatchLowProcess">开始核销</el-button>
       </div>
     </el-dialog>
+    <el-dialog title="批量低值核销结果" :visible.sync="batchLowResultDialog.visible" width="720px" append-to-body>
+      <p class="pc-batch-tip">
+        成功 <b>{{ batchLowResultDialog.successCount }}</b> 条，
+        失败 <b>{{ batchLowResultDialog.failCount }}</b> 条。
+        以下按失败原因汇总（便于补库存/补对照）：
+      </p>
+      <el-table :data="batchLowResultDialog.failReasonStats" border size="mini" max-height="360">
+        <el-table-column type="index" width="50" label="#" />
+        <el-table-column prop="count" label="条数" width="80" />
+        <el-table-column prop="reason" label="失败原因" min-width="420" show-overflow-tooltip />
+      </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button class="spd-btn spd-btn--secondary" @click="copyBatchFailReasons">复制汇总</el-button>
+        <el-button type="primary" class="spd-btn spd-btn--primary" @click="batchLowResultDialog.visible = false">关 闭</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -678,6 +694,12 @@ export default {
       batchLowDialog: {
         visible: false,
         scope: 'SELECTED'
+      },
+      batchLowResultDialog: {
+        visible: false,
+        successCount: 0,
+        failCount: 0,
+        failReasonStats: []
       },
       detailQuery: {
         pageNum: 1,
@@ -1497,12 +1519,27 @@ export default {
           const d = res.data || {}
           const ok = d.successCount != null ? d.successCount : 0
           const fail = d.failCount != null ? d.failCount : 0
-          const lines = (d.failMessages || []).slice(0, 8)
-          let extra = lines.length ? `；失败示例：${lines.join('；')}` : ''
-          if ((d.failMessages || []).length > lines.length) {
-            extra += '…'
+          let stats = Array.isArray(d.failReasonStats) ? d.failReasonStats : []
+          if (!stats.length && Array.isArray(d.failMessages) && d.failMessages.length) {
+            // 兼容旧接口：从「id: 原因」明细聚合
+            const map = {}
+            d.failMessages.forEach(line => {
+              const s = String(line || '')
+              const i = s.indexOf(': ')
+              const reason = i >= 0 ? s.slice(i + 2).trim() : s.trim() || '(无具体原因)'
+              map[reason] = (map[reason] || 0) + 1
+            })
+            stats = Object.keys(map)
+              .map(reason => ({ reason, count: map[reason] }))
+              .sort((a, b) => b.count - a.count || String(a.reason).localeCompare(String(b.reason)))
           }
-          this.$modal.msgSuccess(`完成：成功 ${ok} 条，失败 ${fail} 条${extra}`)
+          this.batchLowResultDialog = {
+            visible: fail > 0 || stats.length > 0,
+            successCount: ok,
+            failCount: fail,
+            failReasonStats: stats
+          }
+          this.$modal.msgSuccess(`完成：成功 ${ok} 条，失败 ${fail} 条` + (stats.length ? `（已按原因汇总 ${stats.length} 类）` : ''))
           this.clearDetailSelectionCache()
           this.handleDetailQuery()
         })
@@ -1512,6 +1549,36 @@ export default {
         .finally(() => {
           this.batchLowSubmitting = false
         })
+    },
+    copyBatchFailReasons() {
+      const rows = this.batchLowResultDialog.failReasonStats || []
+      const text = [
+        `成功 ${this.batchLowResultDialog.successCount} 条，失败 ${this.batchLowResultDialog.failCount} 条`,
+        ...rows.map((r, idx) => `${idx + 1}. [${r.count}] ${r.reason}`)
+      ].join('\n')
+      const done = () => this.$modal.msgSuccess('失败原因汇总已复制')
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => {
+          this.fallbackCopyText(text)
+          done()
+        })
+      } else {
+        this.fallbackCopyText(text)
+        done()
+      }
+    },
+    fallbackCopyText(text) {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+      } finally {
+        document.body.removeChild(ta)
+      }
     },
     /**
      * PC-F-008：批量核销前按当前计费日期区间自动补全空执行科室。
