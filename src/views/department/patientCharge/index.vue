@@ -1331,7 +1331,10 @@ export default {
           `已生成 ${d.consumeBillCount || 0} 张消耗单，明细 ${d.consumeEntryCount || 0} 条，追溯 ${d.linkRowCount || 0} 条`
         )
         this.handleDetailQuery()
-      }).catch(() => {})
+      }).catch(() => {
+        // 失败原因已写入处理情况，刷新列表以便展示
+        this.handleDetailQuery()
+      })
     },
     openSelfDeptLowConsume(row) {
       if (this.isUnknownValueLevel(row)) {
@@ -1421,7 +1424,9 @@ export default {
         )
         this.selfDeptLowDialog.visible = false
         this.handleDetailQuery()
-      }).catch(() => {}).finally(() => {
+      }).catch(() => {
+        this.handleDetailQuery()
+      }).finally(() => {
         this.selfDeptLowDialog.submitting = false
       })
     },
@@ -1501,7 +1506,9 @@ export default {
           this.clearDetailSelectionCache()
           this.handleDetailQuery()
         })
-        .catch(() => {})
+        .catch(() => {
+          this.handleDetailQuery()
+        })
         .finally(() => {
           this.batchLowSubmitting = false
         })
