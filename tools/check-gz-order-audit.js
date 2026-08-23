@@ -1,0 +1,16 @@
+const fs = require('fs');
+const p = 'e:/workspace/spd-ui/src/views/gzOrder/audit/index.vue';
+const s = fs.readFileSync(p, 'utf8');
+const issues = [];
+if (s.includes('more-search-bar')) issues.push('has more-search-bar');
+if (s.includes('v-show="total>0"')) issues.push('pagination hidden when total=0');
+if (!s.includes('apply-table-panel')) issues.push('no apply-table-panel');
+if (!s.includes('apply-pagination-wrap')) issues.push('no apply-pagination-wrap');
+if (!s.includes('applyMainRowClassName')) issues.push('no row highlight');
+if (!s.includes('#B8DAFF')) issues.push('no highlight color');
+if (/computed:\s*\{\s*watch:/.test(s)) issues.push('watch nested in computed');
+if (s.includes('dialogSavedSnapshot;,')) issues.push('syntax error in computed');
+const tpl = s.match(/<template>([\s\S]*)<\/template>/)[1];
+const divOk = (tpl.match(/<div/g) || []).length === (tpl.match(/<\/div>/g) || []).length;
+if (!divOk) issues.push('template div mismatch');
+console.log(issues.length ? issues : 'gz-order-audit-page OK');

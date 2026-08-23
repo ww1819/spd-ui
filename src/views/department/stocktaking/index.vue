@@ -778,7 +778,8 @@ export default {
         stockType: [
           { required: true, message: "盘点类型不能为空", trigger: "change" }
         ],
-      }
+      },
+      _lastSidebarNavTick: null
     };
   },
   created() {
