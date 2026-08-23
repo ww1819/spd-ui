@@ -2438,297 +2438,77 @@ export default {
 </style>
 
 <style>
-/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+/* 库房盘点申请（本页路由）：与到货验收一致（非 scoped） */
+.query-item-inline .el-form-item__label {
+  width: 80px !important;
+}
+
+.query-select-wrapper {
+  width: 180px;
+}
+
 .app-container.stocktaking-profit-page {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh - 84px);
-  height: calc(100vh - 84px);
-  max-height: calc(100vh - 84px);
-  overflow: hidden;
-  box-sizing: border-box;
-  padding-top: 8px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
-  padding-bottom: 14px !important;
 }
 
-.app-container.stocktaking-profit-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-  position: absolute;
+.list-query-panel {
+  margin-top: -20px;
 }
 
-.app-container.stocktaking-profit-page .list-query-panel,
-.app-container.stocktaking-profit-page .list-toolbar {
-  flex: 0 0 auto;
-}
-
-.app-container.stocktaking-profit-page .apply-table-panel {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border: 1px solid #e8ecf1;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
-  overflow: hidden;
-}
-
-.app-container.stocktaking-profit-page .apply-table-panel > .apply-main-table {
+.app-container.stocktaking-profit-page > .el-table.table-compact {
   margin-top: 0;
-  flex: 0 0 auto;
-  border-radius: 10px 10px 0 0;
-  box-shadow: none;
-  margin-bottom: 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
-.app-container.stocktaking-profit-page .apply-pagination-wrap {
-  flex: 0 0 auto;
-  border-top: 1px solid #e2e8f0;
-}
-
-.app-container.stocktaking-profit-page .apply-pagination-wrap .pagination-container {
-  height: auto !important;
-  min-height: 52px;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding: 10px 14px 14px !important;
-  background: #fff;
-  border: none;
-  border-top: 1px solid #eef2f7;
-  border-radius: 0 0 10px 10px;
-  box-shadow: none;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  overflow: visible;
-}
-
-.app-container.stocktaking-profit-page .apply-pagination-wrap .pagination-container .el-pagination {
-  position: relative !important;
-  right: auto !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__header-wrapper th,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-header-wrapper th,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-right-header-wrapper th,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
-  background-color: #f1f5f9 !important;
-  color: #334155 !important;
-  font-size: 13px !important;
+.app-container.stocktaking-profit-page > .el-table.table-compact th {
+  background-color: #EBEEF5 !important;
+  color: #606266;
   font-weight: 600 !important;
-  letter-spacing: 0.02em;
-  border-right-color: #e2e8f0 !important;
-  border-bottom-color: #e2e8f0 !important;
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
-  height: 34px !important;
-  font-family: inherit !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
+  height: 50px;
+  padding: 8px 0;
+  border-bottom: 1px solid #EBEEF5;
 }
 
-.app-container.stocktaking-profit-page .apply-main-table .el-table__header-wrapper th .cell,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
-  color: #334155 !important;
-  font-size: 13px !important;
+.app-container.stocktaking-profit-page > .el-table.table-compact th .cell {
   font-weight: 600 !important;
-  text-align: center !important;
-  line-height: 20px !important;
-  font-family: inherit !important;
+  font-size: 15px !important;
+  font-family: 'Roboto', sans-serif !important;
 }
 
-.app-container.stocktaking-profit-page .apply-main-table .sort-caret.ascending {
-  border-bottom-color: rgba(48, 49, 51, 0.35);
+.app-container.stocktaking-profit-page > .el-table.table-compact td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
 }
 
-.app-container.stocktaking-profit-page .apply-main-table .sort-caret.descending {
-  border-top-color: rgba(48, 49, 51, 0.35);
+.app-container.stocktaking-profit-page > .el-table.table-compact tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
 }
 
-.app-container.stocktaking-profit-page .apply-main-table .ascending .sort-caret.ascending {
-  border-bottom-color: #2563EB;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .descending .sort-caret.descending {
-  border-top-color: #2563EB;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .col-bill-status .cell {
-  white-space: nowrap !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body-wrapper {
-  z-index: 2;
-  overflow: auto !important;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed::-webkit-scrollbar {
-  width: 8px !important;
+.app-container.stocktaking-profit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
+  width: 20px !important;
   height: 12px !important;
 }
 
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:vertical,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed::-webkit-scrollbar:vertical {
-  width: 8px !important;
+.app-container.stocktaking-profit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909399 !important;
+  border-radius: 10px !important;
+  border: 2px solid #f1f1f1 !important;
+  min-height: 12px !important;
+  min-width: 20px !important;
 }
 
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
-  height: 12px !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-track,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed::-webkit-scrollbar-track {
+.app-container.stocktaking-profit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
   background: #f1f1f1 !important;
-  border-radius: 3px !important;
+  border-radius: 10px !important;
+  border: 1px solid #e4e7ed !important;
 }
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb {
-  background: #a8a8a8 !important;
-  border-radius: 3px !important;
-  min-width: 2px !important;
-  min-height: 4px !important;
-  background-clip: padding-box;
-  border: 2px solid transparent;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
-  background: #909090 !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-scrollbar__bar.is-vertical {
-  width: 6px !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-scrollbar__bar.is-horizontal {
-  height: 12px !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table.el-table {
-  position: relative;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table th.apply-select-col,
-.app-container.stocktaking-profit-page .apply-main-table td.apply-select-col,
-.app-container.stocktaking-profit-page .apply-main-table th.el-table-column--selection,
-.app-container.stocktaking-profit-page .apply-main-table td.el-table-column--selection {
-  position: sticky !important;
-  left: 0 !important;
-  z-index: 3;
-  box-sizing: border-box !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table td.apply-select-col,
-.app-container.stocktaking-profit-page .apply-main-table td.el-table-column--selection {
-  background-color: #fff !important;
-  border-right: 1px solid #e2e8f0;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table th.apply-select-col,
-.app-container.stocktaking-profit-page .apply-main-table th.el-table-column--selection {
-  z-index: 4;
-  background-color: #f1f5f9 !important;
-  border-right: 1px solid #e2e8f0;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-select-col,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
-  background-color: #fafafa !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table th.apply-action-col,
-.app-container.stocktaking-profit-page .apply-main-table td.apply-action-col {
-  position: sticky !important;
-  z-index: 3;
-  box-sizing: border-box !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table td.apply-action-col {
-  right: 0 !important;
-  background-color: #fff !important;
-  border-left: 1px solid #e2e8f0;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table th.apply-action-col {
-  right: var(--apply-v-scrollbar, 0px) !important;
-  z-index: 4;
-  background-color: #f1f5f9 !important;
-  border-left: 1px solid #e2e8f0;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-action-col {
-  background-color: #fafafa !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr > td,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr > td .cell {
-  transition: none !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr:hover > td,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr:hover > td .cell,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr:hover > td.apply-select-col,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr:hover > td.el-table-column--selection,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr:hover > td.apply-action-col {
-  background-color: #D6EBFF !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.apply-row-selected > td,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell {
-  background-color: #B8DAFF !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td .cell,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
-  background-color: #A0CBFF !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-select-col,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-action-col {
-  background-color: #B8DAFF !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-select-col,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.el-table-column--selection,
-.app-container.stocktaking-profit-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-action-col {
-  background-color: #B8DAFF !important;
-}
-
-.app-container.stocktaking-profit-page .apply-main-table .el-table__header th.gutter {
-  position: sticky !important;
-  right: 0 !important;
-  z-index: 5;
-  background-color: #f1f5f9 !important;
-  border-bottom-color: #e2e8f0 !important;
-}
-
 
 /* 盘点弹窗明细表（非 scoped 兜底）：表头居中加粗、合计加粗 */
 .app-container.stocktaking-profit-page .local-modal-content .modal-detail-section .stocktaking-detail-table th,
@@ -2783,5 +2563,4 @@ export default {
   background: #303133 !important;
   min-height: 16px !important;
 }
-
 </style>

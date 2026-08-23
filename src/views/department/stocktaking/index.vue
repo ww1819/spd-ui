@@ -1,50 +1,36 @@
 <template>
-  <div class="app-container list-page stocktaking-apply-page">
+  <div class="app-container list-page stocktaking-apply-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'department'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
-            </template>
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-else
               v-model="queryParams.stockNo"
               placeholder="业务单号"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectDepartment v-model="queryParams.departmentId" field-placeholder="科室" />
+            </div>
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item class="query-item-inline query-item-date-range">
+            <el-form-item class="query-date-range-form-item query-item-inline">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
@@ -53,7 +39,7 @@
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
           </el-col>
@@ -82,29 +68,34 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="stocktakingList" class="table-compact" :row-class-name="stocktakingListIndex" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
-      <el-table-column type="selection" width="55" align="center" />
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="stocktakingList" class="table-compact apply-main-table"
+              row-key="id"
+              :row-class-name="applyMainRowClassName"
+              @selection-change="handleSelectionChange"
+              :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="盘点单号" align="center" prop="stockNo" width="150" show-overflow-tooltip resizable>
+      <el-table-column label="盘点单号" align="center" prop="stockNo" width="150" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" class="stock-no-link" @click="handleView(scope.row)">
             <span>{{ scope.row.stockNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="制单时间" align="center" prop="createTime" width="160" show-overflow-tooltip resizable>
+      <el-table-column label="制单时间" align="center" prop="createTime" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="制单人" align="center" prop="createBy" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'department.name')" />
+      <el-table-column label="制单人" align="center" prop="createBy" width="100" show-overflow-tooltip resizable sortable :sort-method="sortByCreaterName">
         <template slot-scope="scope">
           <span>{{ scope.row.createUserNickName || scope.row.createBy || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="盘点日期" align="center" prop="stockDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="盘点日期" align="center" prop="stockDate" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.stockDate, '{y}-{m}-{d}') }}</span>
         </template>
@@ -117,6 +108,7 @@
         min-width="112"
         show-overflow-tooltip
         resizable
+        sortable
         label-class-name="stocktaking-col-stock-status"
         class-name="stocktaking-col-stock-status"
       >
@@ -124,25 +116,25 @@
           <dict-tag :options="dict.type.biz_status" :value="scope.row.stockStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="审核人" align="center" prop="updateBy" width="110" show-overflow-tooltip resizable>
+      <el-table-column label="审核人" align="center" prop="updateBy" width="110" show-overflow-tooltip resizable sortable :sort-method="sortByAuditPerson">
         <template slot-scope="scope">
           <span v-if="scope.row.stockStatus == 2">{{ scope.row.auditUserNickName || scope.row.updateBy || '--' }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable sortable :sort-method="sortByAuditDate">
         <template slot-scope="scope">
           <span v-if="scope.row.stockStatus == 2 && scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else-if="scope.row.stockStatus == 2 && scope.row.updateTime">{{ parseTime(scope.row.updateTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="总金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="总金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByAmount">
         <template slot-scope="scope">
           <span>{{ formatStocktakingListAmount(scope.row.totalAmount) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="盈亏金额" align="center" prop="profitAmount" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="盈亏金额" align="center" prop="profitAmount" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByProfitAmount">
         <template slot-scope="scope">
           <span>{{ formatStocktakingListProfitAmount(scope.row.profitAmount) }}</span>
         </template>
@@ -152,8 +144,8 @@
           <dict-tag :options="dict.type.bill_type" :value="scope.row.stockType"/>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable sortable />
+      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="180">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -190,13 +182,15 @@
       </el-table-column>
     </el-table>
 
+    <div class="apply-pagination-wrap" ref="paginationWrap">
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
+    </div>
 
     <!-- 添加或修改盘点对话框（布局与到货验收 inWarehouse/audit 弹窗一致） -->
     <transition name="modal-fade">
@@ -279,7 +273,7 @@
                 </el-row>
               </div>
 
-              <div class="modal-detail-section">
+              <div class="modal-detail-section apply-modal-table-panel">
                 <el-row :gutter="10" class="detail-toolbar-row">
                   <el-col :span="24">
                     <div class="detail-toolbar-inner">
@@ -336,6 +330,7 @@
                 </el-row>
                 <div class="table-wrapper">
         <el-table :data="filteredStkIoStocktakingEntryList" :row-class-name="rowStkIoStocktakingEntryIndex"
+                  class="apply-detail-table"
                   @selection-change="handleStkIoStocktakingEntrySelectionChange"
                   ref="stkIoStocktakingEntry"
                   border
@@ -743,11 +738,8 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: "业务单号", value: "stockNo" },
-        { label: "科室", value: "department" }
-      ],
+      mainTableHeight: 400,
+      selectedRowMap: {},
       // 总条数
       total: 0,
       // 盘点表格数据
@@ -790,11 +782,25 @@ export default {
     };
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
+  },
   watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    '$store.state.app.sidebarNavTick'(nav) {
+      this.handleSidebarNavTick(nav);
+    },
     open(val) {
       if (val) {
         this.$nextTick(() => {
@@ -835,15 +841,12 @@ export default {
     }
   },
   computed: {
-    moreSearchStorageKey() {
-      return "spd.department.stocktaking.moreSearchTypes";
+    departmentLocked() {
+      return this.departmentLockedByAction;
     },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value);
-    },
-    /** 与到货验收 inWarehouse/audit 弹窗明细表高度一致 */
+    /** 与到货验收 apply 弹窗明细表高度一致（扣减略小以抵消筛选工具栏） */
     detailTableHeight() {
-      return 'max(260px, calc(100vh - 368px))';
+      return 'max(240px, calc(100vh - 336px))';
     },
     // 单据状态文本显示
     stockStatusText() {
@@ -939,6 +942,157 @@ export default {
     }
   },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
+      });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
+    normalizeRoutePath(path) {
+      if (!path) {
+        return '';
+      }
+      const normalized = String(path).replace(/\\/g, '/');
+      if (normalized.length > 1 && normalized.endsWith('/')) {
+        return normalized.slice(0, -1);
+      }
+      return normalized;
+    },
+    isCurrentPagePath(navPath) {
+      return this.normalizeRoutePath(navPath) === this.normalizeRoutePath(this.$route.path);
+    },
+    handleSidebarNavTick(nav) {
+      if (!nav || !this.isCurrentPagePath(nav.path)) {
+        return;
+      }
+      if (nav.tick === this._lastSidebarNavTick) {
+        return;
+      }
+      this._lastSidebarNavTick = nav.tick;
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : '';
+    },
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable;
+      if (!table || !this.stocktakingList || !this.stocktakingList.length) {
+        return;
+      }
+      const keys = this.selectedRowMap || {};
+      if (!Object.keys(keys).length) {
+        return;
+      }
+      this.stocktakingList.forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
+    applyMainRowClassName({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+      const key = this.getApplyMainRowKey(row);
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    sortByNested(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return '';
+        const keys = path.split('.');
+        let v = obj;
+        for (const k of keys) {
+          v = v && v[k];
+        }
+        return v != null ? String(v) : '';
+      };
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    },
+    sortByCreaterName(a, b) {
+      const va = (a && (a.createUserNickName || a.createBy)) || '';
+      const vb = (b && (b.createUserNickName || b.createBy)) || '';
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    },
+    sortByAuditPerson(a, b) {
+      const va = (a && a.stockStatus == 2 && (a.auditUserNickName || a.updateBy)) || '';
+      const vb = (b && b.stockStatus == 2 && (b.auditUserNickName || b.updateBy)) || '';
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    },
+    sortByAuditDate(a, b) {
+      const getDate = (row) => {
+        if (!row || row.stockStatus != 2) return '';
+        return row.auditDate || row.updateTime || '';
+      };
+      const va = getDate(a);
+      const vb = getDate(b);
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    },
+    sortByAmount(a, b) {
+      const va = parseFloat(a && a.totalAmount);
+      const vb = parseFloat(b && b.totalAmount);
+      const na = Number.isFinite(va) ? va : 0;
+      const nb = Number.isFinite(vb) ? vb : 0;
+      return na - nb;
+    },
+    sortByProfitAmount(a, b) {
+      const va = parseFloat(a && a.profitAmount);
+      const vb = parseFloat(b && b.profitAmount);
+      const na = Number.isFinite(va) ? va : 0;
+      const nb = Number.isFinite(vb) ? vb : 0;
+      return na - nb;
+    },
     clearEntryTableSelection() {
       this.checkedStkIoStocktakingEntry = [];
       this.$nextTick(() => {
@@ -1179,11 +1333,9 @@ export default {
       });
       return sums;
     },
-    /** 盘点列表序号 */
+    /** 盘点列表序号（保留兼容，主列表使用 applyMainRowClassName） */
     stocktakingListIndex({ row, rowIndex }) {
-      const pageNum = Math.max(1, parseInt(this.queryParams.pageNum, 10));
-      const pageSize = Math.max(1, parseInt(this.queryParams.pageSize, 10));
-      row.index = (pageNum - 1) * pageSize + rowIndex + 1;
+      return this.applyMainRowClassName({ row, rowIndex });
     },
     /** 列表总金额展示 */
     formatStocktakingListAmount(val) {
@@ -1209,17 +1361,21 @@ export default {
     getList() {
       this.loading = true;
       const queryParams = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(queryParams);
       queryParams.stockStatus = "1";
       queryParams.stockType = "502"; // 盘点类型：502表示盘点
       listStocktaking(queryParams)
         .then((response) => {
           this.stocktakingList = (response && response.rows) || [];
           this.total = (response && response.total) || 0;
+          this.$nextTick(() => {
+            this.restoreMainPageSelection();
+            this.scheduleApplyLayoutRefresh();
+          });
         })
         .catch(() => {
           this.stocktakingList = [];
           this.total = 0;
+          this.scheduleApplyLayoutRefresh();
         })
         .finally(() => {
           this.loading = false;
@@ -1897,54 +2053,34 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
+      this.queryParams.stockNo = null;
+      this.queryParams.departmentId = null;
+      this.queryParams.beginDate = null;
+      this.queryParams.endDate = null;
       this.handleQuery();
     },
-    moreSearchFieldClass(t) {
-      if (t === 'department') {
-        return 'more-search-field--select';
-      }
-      return 'more-search-field--text';
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = {
-        stockNo: 'stockNo',
-        department: 'departmentId'
-      };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
+    handleSelectionChange(selection) {
+      const pageKeys = (this.stocktakingList || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key);
         }
       });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
-    },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      (selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key) {
+          this.$set(this.selectedRowMap, key, row);
+        }
+      });
+      const ids = Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key);
+        return Number.isNaN(n) ? key : n;
+      });
+      this.ids = ids;
+      this.single = ids.length !== 1;
+      this.multiple = !ids.length;
     },
     /** 查看按钮操作 */
     handleView(row) {
@@ -2821,15 +2957,73 @@ export default {
 </style>
 
 <style>
-/* 与科室申领列表页布局一致（非 scoped） */
+/* 本页主容器：纵向 flex 铺满视口，明细表区域高度与到货验收一致 */
 .app-container.stocktaking-apply-page {
   position: relative;
-  max-width: 100%;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 84px);
+  height: calc(100vh - 84px);
+  max-height: calc(100vh - 84px);
+  overflow: hidden;
   box-sizing: border-box;
+  max-width: 100%;
+  padding-top: 8px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
-  padding-bottom: 8px !important;
+  padding-bottom: 14px !important;
+}
+
+.app-container.stocktaking-apply-page .list-query-panel,
+.app-container.stocktaking-apply-page .list-toolbar {
+  flex: 0 0 auto;
+}
+
+.app-container.stocktaking-apply-page .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.app-container.stocktaking-apply-page .apply-table-panel > .apply-main-table {
+  margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.app-container.stocktaking-apply-page .apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+}
+
+.app-container.stocktaking-apply-page .apply-pagination-wrap .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.app-container.stocktaking-apply-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
 }
 
 /* 搜索区：非 scoped，确保 el-form 根节点能套上到货验收同款白底/边框/阴影 */
@@ -2921,31 +3115,40 @@ export default {
   margin-top: -20px;
 }
 
-.app-container.stocktaking-apply-page > .el-table.table-compact {
-  margin-top: 0;
+/* 主列表表头：与到货验收 apply-main-table 一致 */
+.app-container.stocktaking-apply-page .apply-main-table .el-table__header-wrapper th,
+.app-container.stocktaking-apply-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
+.app-container.stocktaking-apply-page .apply-main-table .el-table__fixed-header-wrapper th,
+.app-container.stocktaking-apply-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.stocktaking-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th,
+.app-container.stocktaking-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  font-family: inherit !important;
 }
 
-/* 主表格表头样式：与到货验收一致 */
-.app-container.stocktaking-apply-page > .el-table th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
+.app-container.stocktaking-apply-page .apply-main-table .el-table__header-wrapper th .cell,
+.app-container.stocktaking-apply-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
+.app-container.stocktaking-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.stocktaking-apply-page > .el-table th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  font-family: inherit !important;
 }
 
 /* 单据状态列：表头与内容不换行（须配合 label-class-name / class-name，勿用 nth-child：含勾选列会错位） */
-.app-container.stocktaking-apply-page > .el-table th.stocktaking-col-stock-status .cell,
-.app-container.stocktaking-apply-page > .el-table td.stocktaking-col-stock-status .cell {
+.app-container.stocktaking-apply-page .apply-main-table th.stocktaking-col-stock-status .cell,
+.app-container.stocktaking-apply-page .apply-main-table td.stocktaking-col-stock-status .cell {
   white-space: nowrap !important;
 }
 
@@ -2968,6 +3171,48 @@ export default {
 
 .app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-footer-wrapper {
   z-index: 31 !important;
+}
+
+/* 弹窗明细表：与到货验收 apply 一致 */
+.app-container.stocktaking-apply-page .local-modal-content .apply-modal-table-panel {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  overflow: visible;
+}
+
+.app-container.stocktaking-apply-page .local-modal-content .apply-modal-table-panel > .table-wrapper > .apply-detail-table {
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell,
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
 }
 </style>
 <style>
