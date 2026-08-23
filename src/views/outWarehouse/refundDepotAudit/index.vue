@@ -1,59 +1,40 @@
 <template>
-  <div class="app-container list-page refund-depot-audit-page">
+  <div class="app-container list-page outWarehouse-refundDepotAudit-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'department'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
-            </template>
-            <template v-else-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
-              </div>
-            </template>
-            <template v-else-if="t === 'material'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectMaterial v-model="queryParams.materialId" />
-              </div>
-            </template>
-            <template v-else-if="t === 'supplier'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectSupplier v-model="queryParams.supplerId"/>
-              </div>
-            </template>
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-else
-              v-model="queryParams[t]"
-              :placeholder="moreSearchPlaceholderFor(t)"
+              v-model="queryParams.billNo"
+              placeholder="退库单号"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectDepartment v-model="queryParams.departmentId" />
+            </div>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']" placeholder="仓库"/>
+            </div>
+            <el-input
+              v-model="queryParams.refBillNo"
+              placeholder="引用单号"
+              clearable
+              class="apply-query-input apply-query-field"
+              @keyup.enter.native="handleQuery"
+            />
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
             <el-form-item class="query-date-range-form-item query-item-inline">
-              <el-radio-group v-model="queryParams.dateQueryType" size="small" style="margin-right: 10px; margin-bottom: 4px;">
+              <el-radio-group v-model="queryParams.dateQueryType" size="small" class="apply-date-type-group">
                 <el-radio-button label="bill">制单日期</el-radio-button>
                 <el-radio-button label="audit">审核日期</el-radio-button>
               </el-radio-group>
@@ -63,8 +44,7 @@
                 value-format="yyyy-MM-dd HH:mm:ss"
                 placeholder="起始日期"
                 clearable
-                class="query-date-picker"
-                style="width: 200px; margin-right: 8px;"
+                class="query-date-picker apply-query-date"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
@@ -73,19 +53,18 @@
                 value-format="yyyy-MM-dd HH:mm:ss"
                 placeholder="截止日期"
                 clearable
-                class="query-date-picker"
-                style="width: 200px; margin-left: 8px;"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
             <el-form-item prop="billStatus" class="query-item-inline query-item-status">
               <el-select v-model="queryParams.billStatus" placeholder="单据状态"
-                         clearable class="more-search-select-wrap">
+                         clearable class="apply-query-field">
                 <el-option :label="'未审核'" :value="1" />
                 <el-option :label="'已审核'" :value="2" />
               </el-select>
             </el-form-item>
             <el-form-item label="被引用状态" label-width="88px" class="query-item-inline query-item-doc-ref">
-              <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" class="more-search-select-wrap">
+              <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" class="apply-query-field">
                 <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
@@ -117,34 +96,36 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
-              :row-class-name="warehouseListIndex"
-              show-summary :summary-method="getTotalSummaries"
-              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
-      <el-table-column type="selection" width="55" align="center" fixed="left" :selectable="selectableAuditRow" />
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="warehouseList" class="table-compact apply-main-table"
+              row-key="id"
+              :row-class-name="applyMainRowClassName"
+              @selection-change="handleSelectionChange"
+              :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="退库单号" align="center" prop="billNo" width="150" show-overflow-tooltip resizable >
+      <el-table-column label="退库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')" />
+      <el-table-column label="科室" align="center" prop="department.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'department.name')" />
       <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable >
+      <el-table-column label="金额" align="center" prop="totalAmount" width="150" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" min-width="120" class-name="col-bill-status" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span style="white-space: nowrap;">
             <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
@@ -187,7 +168,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="180">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -239,12 +220,15 @@
       </el-table-column>
     </el-table>
 
+    <div class="apply-pagination-wrap" ref="paginationWrap">
     <pagination
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
+    </div>
 
     <!-- 添加或修改退库对话框 -->
     <transition name="modal-fade">
@@ -561,8 +545,6 @@ import { listEntryChangeLog } from "@/api/warehouse/outWarehouse";
 import { collectTkScopeErrors } from '@/utils/auditBillScopeValidate';
 import { assertBillEntriesForAudit } from '@/utils/billEntryValidate';
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
-import SelectSupplier from '@/components/SelectModel/SelectSupplier';
-import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
@@ -579,7 +561,7 @@ import MsunHisBillView from '@/components/MsunHisBillView'
 export default {
   name: "RefundDepotAudit",
   dicts: ['biz_status','bill_type','way_status'],
-  components: {refundGoodsOrderPrint, refundDepotOrderPrint,SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory,MsunHisEntryView,MsunHisBillView},
+  components: {refundGoodsOrderPrint, refundDepotOrderPrint,SelectWarehouse,SelectDepartment,SelectUser,SelectDepInventory,MsunHisEntryView,MsunHisBillView},
   data() {
     return {
       hisEntryView: { visible: false, entry: null },
@@ -617,6 +599,7 @@ export default {
       },
       // 选中数组
       ids: [],
+      selectedRowMap: {},
       // 子表选中数据
       checkedStkIoBillEntry: [],
       // 非单个禁用
@@ -625,17 +608,9 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: "退库单号", value: "billNo" },
-        { label: "引用单号", value: "refBillNo" },
-        { label: "科室", value: "department" },
-        { label: "仓库", value: "warehouse" },
-        { label: "耗材", value: "material" },
-        { label: "供应商", value: "supplier" }
-      ],
       // 总条数
       total: 0,
+      mainTableHeight: 400,
       // 退库表格数据
       warehouseList: [],
       selectRow: [],
@@ -706,25 +681,75 @@ export default {
     /** 与到货验收「添加入库」弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
-    },
-    moreSearchStorageKey() {
-      return "spd.outWarehouse.refundDepotAudit.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value);
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList(true);
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
+  },
   watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
     '$store.state.app.sidebarNavTick'(nav) {
       this.handleSidebarNavTick(nav);
     }
   },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
+      });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
     normalizeRoutePath(path) {
       if (!path) {
         return '';
@@ -891,7 +916,6 @@ export default {
       this.loading = true;
       const status = this.queryParams.billStatus
       const baseQuery = { ...this.queryParams, billType: "401" }
-      this.applyMoreSearchToQueryParams(baseQuery)
       if (String(status) === '1') {
         Promise.all([
           listTkInventory({ ...baseQuery, billStatus: 1 }),
@@ -910,8 +934,13 @@ export default {
           this.warehouseList = mergedRows.filter(r => r.billStatus == null || Number(r.billStatus) === 0 || Number(r.billStatus) === 1)
           this.total = this.warehouseList.length
           this.loading = false
+          this.$nextTick(() => {
+            this.updateMainTableHeight();
+            this.restoreMainPageSelection();
+          });
         }).catch(() => {
           this.loading = false
+          this.$nextTick(() => this.updateMainTableHeight());
         })
         return
       }
@@ -925,6 +954,13 @@ export default {
           this.total = response.total
         }
         this.loading = false;
+        this.$nextTick(() => {
+          this.updateMainTableHeight();
+          this.restoreMainPageSelection();
+        });
+      }).catch(() => {
+        this.loading = false;
+        this.$nextTick(() => this.updateMainTableHeight());
       });
     },
     resolveChangeLogBillType() {
@@ -1070,52 +1106,22 @@ export default {
       }
       row.amt = this.toMoneyStorage(totalAmt);
     },
-    moreSearchFieldClass(t) {
-      if (['department', 'warehouse', 'material', 'supplier'].includes(t)) {
-        return 'more-search-field--select';
-      }
-      return 'more-search-field--text';
-    },
-    moreSearchPlaceholderFor(t) {
-      const map = { billNo: '退库单号', refBillNo: '引用单号' };
-      return map[t] || '请输入';
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = {
-        billNo: 'billNo',
-        refBillNo: 'refBillNo',
-        department: 'departmentId',
-        warehouse: 'warehouseId',
-        material: 'materialId',
-        supplier: 'supplerId'
-      };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
+    /** 嵌套字段排序：按 path 如 'warehouse.name' 取值后比较 */
+    sortByNested(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return '';
+        const keys = path.split('.');
+        let v = obj;
+        for (const k of keys) {
+          v = v && v[k];
         }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
+        return v != null ? String(v) : '';
+      };
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -1130,19 +1136,58 @@ export default {
       this.queryParams.endDate = null;
       this.queryParams.params = this.queryParams.params || {};
       this.queryParams.params.docRefStatus = null;
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : '';
     },
-    /** 仅待审核的单据可勾选，已审核的不可勾选 */
-    selectableAuditRow(row) {
-      return row.billStatus != 2
+    applyMainRowClassName({ row, rowIndex }) {
+      this.warehouseListIndex({ row, rowIndex });
+      const key = this.getApplyMainRowKey(row);
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable;
+      if (!table || !this.warehouseList || !this.warehouseList.length) {
+        return;
+      }
+      const keys = this.selectedRowMap || {};
+      if (!Object.keys(keys).length) {
+        return;
+      }
+      this.warehouseList.forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
+    // 多选框选中数据（跨页缓存 + 行高亮）
+    handleSelectionChange(selection) {
+      const pageKeys = (this.warehouseList || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key) {
+          this.$set(this.selectedRowMap, key, row);
+        }
+      });
+      const ids = Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key);
+        return Number.isNaN(n) ? key : n;
+      });
+      this.ids = ids;
+      this.single = ids.length !== 1;
+      this.multiple = !ids.length;
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -1307,9 +1352,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      this.download('warehouse/warehouse/export', params, `warehouse_${new Date().getTime()}.xlsx`)
+      this.download('warehouse/warehouse/export', {
+        ...this.queryParams
+      }, `warehouse_${new Date().getTime()}.xlsx`)
     }
   }
 };
@@ -1608,72 +1653,48 @@ export default {
 
 /* 表格样式优化 */
 .el-table {
-  border-radius: 4px;
-  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 10px;
 }
 
-.el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266 !important;
-  font-weight: 600 !important;
-  border-right: 1px solid #EBEEF5 !important;
-  border-bottom: 1px solid #EBEEF5 !important;
+.apply-table-panel > .apply-main-table {
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 .el-table td {
-  border-right: 1px solid #EBEEF5 !important;
-  border-bottom: 1px solid #EBEEF5 !important;
-}
-
-.el-table .cell {
-  padding: 0 8px;
-  line-height: 1.5;
-}
-
-/* 表单样式优化 */
-.el-form-item {
-  margin-bottom: 18px;
-}
-
-.el-form-item__label {
+  padding: 12px 0;
   color: #606266;
-  font-weight: 500;
+  border-bottom: 1px solid #EBEEF5;
 }
 
-/* 查询条件样式 */
-.query-row-left {
-  margin-bottom: 10px;
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
 }
 
-.query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 10px;
+/* 按钮样式 */
+.el-button--text {
+  padding: 0 4px;
 }
 
-.query-item-inline .el-form-item__label {
-  width: 80px !important;
+.el-button--text:hover {
+  color: #409EFF;
 }
 
-.query-select-wrapper {
-  width: 180px;
-}
-
-.query-row-second {
-  margin-bottom: 10px;
-}
-
-/* 搜索区域：外层白底容器（宽度铺满、边框与阴影略加强） */
+/* 搜索区域：卡片样式由外层 .form-fields-container.list-query-panel 承担，内层 el-form 不再重复包一层 */
 .list-query-panel .el-form {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  border: 1px solid #c0c4cc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 .list-query-panel .el-form .el-row {
@@ -1688,43 +1709,87 @@ export default {
   margin-bottom: 0;
 }
 
-/* 第一行查询条件左对齐紧凑布局 */
-.list-query-panel .el-form .query-row-left .el-col {
+.list-query-panel .el-form .query-row-first {
+  margin-bottom: 10px;
+}
+
+.list-query-panel .el-form .query-row-first-inner {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-/* 统一控制查询条件输入框宽度 */
-.list-query-panel .el-form .query-row-left .query-item-inline .el-input {
-  width: 180px;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  align-items: center;
+  gap: 8px;
   width: 100%;
 }
 
-.list-query-panel .el-form .query-row-left .query-item-inline .el-select {
-  width: 150px;
+.list-query-panel .el-form .apply-query-field,
+.list-query-panel .el-form .query-row-first-inner .apply-query-input {
+  width: 170px;
+  flex-shrink: 0;
 }
 
-/* 第二行：与到货申请一致，日期 + 单据状态 + 被引用状态 横向紧凑排列 */
+.list-query-panel .el-form .query-row-first-inner .more-search-select-wrap.apply-query-field > * {
+  width: 100%;
+}
+
+.list-query-panel .el-form .query-row-second .apply-query-field.el-select {
+  width: 170px;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+.list-query-panel .el-form .query-row-second {
+  margin-bottom: 0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.list-query-panel .el-form .apply-date-type-group {
+  margin-right: 10px;
+}
+
+.list-query-panel .el-form .apply-query-date.el-date-editor {
+  width: 200px;
+}
+
+.list-query-panel .el-form .query-row-second > .el-col > .el-form-item {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+
+.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) {
+  white-space: nowrap;
+}
+
+.list-query-panel .el-form .query-row-second .query-date-range-form-item {
+  white-space: normal;
+}
+
+.list-query-panel .el-form .query-row-second .query-date-range-form-item .el-form-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  max-width: 100%;
+}
+
+.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
 .list-query-panel .el-form .query-row-second-inner {
   display: flex;
   flex-wrap: wrap;
@@ -1748,79 +1813,14 @@ export default {
   gap: 6px 8px;
 }
 
-/* 主表格水平滚动条样式 */
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  width: 16px !important; /* 垂直滚动条宽度 */
-  height: 8px !important;  /* 水平滚动条高度 */
-}
-
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-track,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 8px;
-}
-
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 8px;
-}
-
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+/* 确保页面容器有相对定位，以便内部弹窗正确定位 */
+.app-container {
+  position: relative;
 }
 </style>
 
 <style>
-/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
-.app-container.refund-depot-audit-page {
-  position: relative;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
-  padding-bottom: 8px !important;
-}
-
-.app-container.refund-depot-audit-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-}
-
-.list-query-panel {
-  margin-top: -20px;
-}
-
-.app-container.refund-depot-audit-page > .el-table.table-compact {
-  margin-top: 0;
-  border: 1px solid #EBEEF5 !important;
-}
-
-.app-container.refund-depot-audit-page > .el-table.table-compact::before,
-.app-container.refund-depot-audit-page > .el-table.table-compact::after {
-  background-color: #EBEEF5 !important;
-}
-
-/* 主表格表头样式：与到货验收一致 */
-.app-container.refund-depot-audit-page > .el-table th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.refund-depot-audit-page > .el-table th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
-/* 打印弹窗标题右侧方向控制 */
+/* 打印弹窗 append-to-body，标题行样式需非 scoped */
 .out-warehouse-print-dialog .print-dialog-title-row {
   display: flex;
   align-items: center;
@@ -1848,6 +1848,297 @@ export default {
   color: #606266;
 }
 
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
+.app-container.outWarehouse-refundDepotAudit-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 84px);
+  height: calc(100vh - 84px);
+  max-height: calc(100vh - 84px);
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-top: 8px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 14px !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+  position: absolute;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .list-query-panel,
+.app-container.outWarehouse-refundDepotAudit-page .list-toolbar {
+  flex: 0 0 auto;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-table-panel > .apply-main-table {
+  margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-pagination-wrap .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__header-wrapper th,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-header-wrapper th,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right-header-wrapper th,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  font-family: inherit !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__header-wrapper th .cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  font-family: inherit !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .col-bill-status .cell {
+  white-space: nowrap !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:vertical,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-track,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 2px !important;
+  min-height: 4px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-scrollbar__bar.is-vertical {
+  width: 6px !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table th.apply-select-col,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table td.apply-select-col,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table th.el-table-column--selection,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table td.apply-select-col,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table td.el-table-column--selection {
+  background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table th.apply-select-col,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table th.el-table-column--selection {
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-select-col,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
+  background-color: #fafafa !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table th.apply-action-col,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table td.apply-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table td.apply-action-col {
+  right: 0 !important;
+  background-color: #fff !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table th.apply-action-col {
+  right: var(--apply-v-scrollbar, 0px) !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-action-col {
+  background-color: #fafafa !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr > td,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr:hover > td,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr:hover > td .cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr:hover > td.apply-select-col,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-select-col,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.el-table-column--selection,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__header th.gutter {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
 .json-viewer-pre {
   max-height: 520px;
   overflow: auto;
@@ -1857,4 +2148,5 @@ export default {
   border-radius: 4px;
   padding: 10px;
 }
+
 </style>

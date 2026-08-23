@@ -2,57 +2,42 @@
   <div class="app-container list-page profit-loss-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseId" />
-              </div>
-            </template>
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-else-if="t === 'stocktakingNo'"
-              v-model="queryParams.stocktakingNo"
-              placeholder="盘点单号"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
-              v-else
               v-model="queryParams.billNo"
               placeholder="盈亏单号"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <el-input
+              v-model="queryParams.stocktakingNo"
+              placeholder="盘点单号"
+              clearable
+              class="apply-query-input apply-query-field"
+              @keyup.enter.native="handleQuery"
+            />
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectWarehouse v-model="queryParams.warehouseId" placeholder="仓库" />
+            </div>
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item class="query-item-inline query-item-date-range">
+            <el-form-item class="query-date-range-form-item query-item-inline">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
@@ -61,11 +46,11 @@
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
-            <el-form-item prop="billStatus" class="query-item-inline">
-              <el-select v-model="queryParams.billStatus" placeholder="单据状态" clearable class="more-search-select-wrap">
+            <el-form-item prop="billStatus" class="query-item-inline query-item-status">
+              <el-select v-model="queryParams.billStatus" placeholder="单据状态" clearable class="apply-query-field">
                 <el-option label="待审核" :value="1" />
                 <el-option label="已审核" :value="2" />
               </el-select>
@@ -90,34 +75,40 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="dataList" class="table-compact" :row-class-name="tableRowIndex" height="calc(100vh - 340px)" border stripe>
-      <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
-      <el-table-column label="盈亏单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="dataList" class="table-compact apply-main-table"
+              row-key="id"
+              :row-class-name="applyMainRowClassName"
+              @selection-change="handleSelectionChange"
+              :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
+      <el-table-column label="盈亏单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">{{ scope.row.billNo }}</el-button>
         </template>
       </el-table-column>
-      <el-table-column label="盘点单号" align="center" prop="stocktakingNo" width="180" show-overflow-tooltip resizable />
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="盘点单号" align="center" prop="stocktakingNo" width="180" show-overflow-tooltip resizable sortable />
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')" />
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" min-width="120" class-name="col-bill-status" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus" />
         </template>
       </el-table-column>
       <el-table-column label="审核人" align="center" prop="auditBy" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="制单时间" align="center" prop="createTime" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单时间" align="center" prop="createTime" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right">
+      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="220">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button size="small" type="text" icon="el-icon-view" @click="handleView(scope.row)" style="padding: 0 5px; margin: 0;">查看</el-button>
@@ -129,12 +120,15 @@
       </el-table-column>
     </el-table>
 
+    <div class="apply-pagination-wrap" ref="paginationWrap">
     <pagination
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
+    </div>
 
     <!-- 新增/修改/查看 弹窗（布局对齐到货验收） -->
     <transition name="modal-fade">
@@ -319,12 +313,8 @@ export default {
     return {
       loading: true,
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: "盈亏单号", value: "billNo" },
-        { label: "盘点单号", value: "stocktakingNo" },
-        { label: "仓库", value: "warehouse" }
-      ],
+      mainTableHeight: 400,
+      selectedRowMap: {},
       total: 0,
       dataList: [],
       title: '',
@@ -364,12 +354,6 @@ export default {
     }
   },
   computed: {
-    moreSearchStorageKey() {
-      return "spd.warehouse.profitLoss.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value);
-    },
     detailTableHeight() {
       return 'max(260px, calc(100vh - 340px))'
     },
@@ -399,30 +383,177 @@ export default {
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults()
-    this.onMoreSearchTypesChange()
-    this.getList()
+    this.getList(true)
+  },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize)
+    this.scheduleApplyLayoutRefresh()
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize)
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight())
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight())
+    },
+    '$store.state.app.sidebarNavTick'(nav) {
+      this.handleSidebarNavTick(nav)
+    }
   },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight()
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight()
+      this.$nextTick(() => {
+        run()
+        requestAnimationFrame(() => {
+          run()
+          ;[50, 120, 300].forEach((ms) => setTimeout(run, ms))
+        })
+      })
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel
+      const pagWrap = this.$refs.paginationWrap
+      if (!panel || !panel.getBoundingClientRect) return
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height
+      if (!panelH) return
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8
+      const next = Math.floor(panelH - pagH)
+      const height = Math.max(200, next)
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable
+        if (table && table.doLayout) {
+          table.doLayout()
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky()
+          requestAnimationFrame(() => this.syncApplyTableSticky())
+        })
+      })
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable
+      const root = table && table.$el
+      if (!root) return
+      const bodyWrap = root.querySelector('.el-table__body-wrapper')
+      if (!bodyWrap) return
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth)
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`)
+    },
+    normalizeRoutePath(path) {
+      if (!path) {
+        return ''
+      }
+      const normalized = String(path).replace(/\\/g, '/')
+      if (normalized.length > 1 && normalized.endsWith('/')) {
+        return normalized.slice(0, -1)
+      }
+      return normalized
+    },
+    isCurrentPagePath(navPath) {
+      return this.normalizeRoutePath(navPath) === this.normalizeRoutePath(this.$route.path)
+    },
+    handleSidebarNavTick(nav) {
+      if (!nav || !this.isCurrentPagePath(nav.path)) {
+        return
+      }
+      if (nav.tick === this._lastSidebarNavTick) {
+        return
+      }
+      this._lastSidebarNavTick = nav.tick
+      this.resetPageFromSidebar()
+    },
+    resetPageFromSidebar() {
+      this.open = false
+      this.stocktakingPickVisible = false
+      this.reset()
+      this.queryParams.pageNum = 1
+      this.getList(true)
+    },
+    sortByNested(a, b, path) {
+      const getVal = (obj, p) => p.split('.').reduce((o, k) => (o != null ? o[k] : undefined), obj)
+      const va = getVal(a, path)
+      const vb = getVal(b, path)
+      if (va == null && vb == null) return 0
+      if (va == null) return -1
+      if (vb == null) return 1
+      return String(va).localeCompare(String(vb), 'zh-CN')
+    },
     formatNum(val) {
       if (val == null || val === '') return '--'
       const n = Number(val)
       if (isNaN(n)) return '--'
       return n % 1 === 0 ? String(n) : Number(n).toFixed(2)
     },
-    tableRowIndex({ row, rowIndex }) {
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : ''
+    },
+    applyMainRowClassName({ row, rowIndex }) {
       const pageNum = Math.max(1, parseInt(this.queryParams.pageNum, 10))
       const pageSize = Math.max(1, parseInt(this.queryParams.pageSize, 10))
       row.index = (pageNum - 1) * pageSize + rowIndex + 1
+      const key = this.getApplyMainRowKey(row)
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected'
+      }
+      return ''
     },
-    getList() {
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable
+      if (!table || !this.dataList || !this.dataList.length) {
+        return
+      }
+      const keys = this.selectedRowMap || {}
+      if (!Object.keys(keys).length) {
+        return
+      }
+      this.dataList.forEach((row) => {
+        const key = this.getApplyMainRowKey(row)
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true)
+        }
+      })
+    },
+    handleSelectionChange(selection) {
+      const pageKeys = (this.dataList || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean)
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key)
+        }
+      })
+      ;(selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row)
+        if (key) {
+          this.$set(this.selectedRowMap, key, row)
+        }
+      })
+    },
+    getList(restoreSelection) {
       this.loading = true
       const queryParams = { ...this.queryParams }
-      this.applyMoreSearchToQueryParams(queryParams)
       listProfitLoss(queryParams).then(response => {
         this.dataList = response.rows
         this.total = response.total
         this.loading = false
+        if (restoreSelection) {
+          this.$nextTick(() => {
+            this.restoreMainPageSelection()
+            this.scheduleApplyLayoutRefresh()
+          })
+        } else {
+          this.scheduleApplyLayoutRefresh()
+        }
       }).catch(() => { this.loading = false })
     },
     loadStocktakingPickList() {
@@ -527,49 +658,13 @@ export default {
     },
     resetQuery() {
       this.resetForm('queryForm')
-      this.moreSearchTypes = this.loadMoreSearchDefaults()
-      this.onMoreSearchTypesChange()
+      this.queryParams.beginDate = null
+      this.queryParams.endDate = null
+      this.queryParams.billNo = null
+      this.queryParams.stocktakingNo = null
+      this.queryParams.warehouseId = null
+      this.queryParams.billStatus = null
       this.handleQuery()
-    },
-    moreSearchFieldClass(t) {
-      if (t === 'warehouse') {
-        return 'more-search-field--select'
-      }
-      return 'more-search-field--text'
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults()
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice()
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey)
-        if (!raw) return fallback
-        const parsed = JSON.parse(raw)
-        if (!Array.isArray(parsed)) return fallback
-        const allow = new Set(this.moreSearchOptions.map(o => o.value))
-        const cleaned = parsed.filter(v => allow.has(v))
-        return cleaned.length ? cleaned : fallback
-      } catch (e) {
-        return fallback
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || [])
-      const map = {
-        billNo: 'billNo',
-        stocktakingNo: 'stocktakingNo',
-        warehouse: 'warehouseId'
-      }
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null
-        }
-      })
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams)
     },
     handleAdd() {
       this.reset()
@@ -647,10 +742,6 @@ export default {
 </script>
 
 <style scoped>
-.query-select-wrapper {
-  width: 180px;
-}
-
 /* 弹窗：与到货验收/盘点申请一致 */
 .local-modal-mask {
   position: absolute;
@@ -844,86 +935,452 @@ export default {
   opacity: 0;
   transform: scale(0.8);
 }
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 10px;
+}
+
+.apply-table-panel > .apply-main-table {
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.el-table td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+/* 搜索区域：卡片样式由外层 .form-fields-container.list-query-panel 承担，内层 el-form 不再重复包一层 */
+.list-query-panel .el-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.list-query-panel .el-form .el-row {
+  margin-bottom: 8px;
+}
+
+.list-query-panel .el-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.list-query-panel .el-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.list-query-panel .el-form .query-row-first {
+  margin-bottom: 10px;
+}
+
+.list-query-panel .el-form .query-row-first-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.list-query-panel .el-form .apply-query-field,
+.list-query-panel .el-form .query-row-first-inner .apply-query-input {
+  width: 170px;
+  flex-shrink: 0;
+}
+
+.list-query-panel .el-form .query-row-first-inner .more-search-select-wrap.apply-query-field > * {
+  width: 100%;
+}
+
+.list-query-panel .el-form .query-row-second .apply-query-field.el-select {
+  width: 170px;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+.list-query-panel .el-form .query-row-second {
+  margin-bottom: 0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.list-query-panel .el-form .apply-query-date.el-date-editor {
+  width: 200px;
+}
+
+.list-query-panel .el-form .query-row-second > .el-col > .el-form-item {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+
+.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) {
+  white-space: nowrap;
+}
+
+.list-query-panel .el-form .query-row-second .query-date-range-form-item {
+  white-space: normal;
+}
+
+.list-query-panel .el-form .query-row-second .query-date-range-form-item .el-form-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  max-width: 100%;
+}
+
+.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.list-query-panel .el-form .query-row-second-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.list-query-panel .el-form .query-row-second > .query-row-second-inner > .el-form-item {
+  display: inline-flex !important;
+  width: auto !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.list-query-panel .el-form .query-row-second-inner .query-date-range-form-item .el-form-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.app-container {
+  position: relative;
+}
 </style>
 
 <style>
-/* 与盘点申请 / 到货验收列表页布局一致 */
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
 .app-container.profit-loss-page {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 84px);
+  height: calc(100vh - 84px);
+  max-height: calc(100vh - 84px);
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-top: 8px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
+  padding-bottom: 14px !important;
 }
 
 .app-container.profit-loss-page .local-modal-mask {
   left: -8px;
   right: -8px;
   width: auto;
+  position: absolute;
 }
 
-.list-query-panel {
-  margin-top: -20px;
+.app-container.profit-loss-page .list-query-panel,
+.app-container.profit-loss-page .list-toolbar {
+  flex: 0 0 auto;
 }
 
-.app-container.profit-loss-page > .el-table.table-compact {
+.app-container.profit-loss-page .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.app-container.profit-loss-page .apply-table-panel > .apply-main-table {
   margin-top: 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
-.app-container.profit-loss-page > .el-table.table-compact th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
+.app-container.profit-loss-page .apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+}
+
+.app-container.profit-loss-page .apply-pagination-wrap .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.app-container.profit-loss-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__header-wrapper th,
+.app-container.profit-loss-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-header-wrapper th,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-right-header-wrapper th,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
+  letter-spacing: 0.02em;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  font-family: inherit !important;
 }
 
-.app-container.profit-loss-page > .el-table.table-compact th .cell {
+.app-container.profit-loss-page .apply-main-table .el-table__header-wrapper th .cell,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  font-family: inherit !important;
 }
 
-.app-container.profit-loss-page > .el-table.table-compact td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
+.app-container.profit-loss-page .apply-main-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
 }
 
-.app-container.profit-loss-page > .el-table.table-compact tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
+.app-container.profit-loss-page .apply-main-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
 }
 
-.app-container.profit-loss-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
-  width: 20px !important;
+.app-container.profit-loss-page .apply-main-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.app-container.profit-loss-page .apply-main-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.app-container.profit-loss-page .apply-main-table .col-bill-status .cell {
+  white-space: nowrap !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
   height: 12px !important;
 }
 
-.app-container.profit-loss-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #909399 !important;
-  border-radius: 10px !important;
-  border: 2px solid #f1f1f1 !important;
-  min-height: 12px !important;
-  min-width: 20px !important;
-  transition: background 0.2s ease !important;
+.app-container.profit-loss-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:vertical,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed::-webkit-scrollbar:vertical {
+  width: 8px !important;
 }
 
-.app-container.profit-loss-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #606266 !important;
+.app-container.profit-loss-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
 }
 
-.app-container.profit-loss-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
+.app-container.profit-loss-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-track,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed::-webkit-scrollbar-track {
   background: #f1f1f1 !important;
-  border-radius: 10px !important;
-  border: 1px solid #e4e7ed !important;
+  border-radius: 3px !important;
 }
 
-.app-container.profit-loss-page > .el-table.table-compact .el-table__body-wrapper {
-  scroll-behavior: smooth !important;
-  -webkit-overflow-scrolling: touch !important;
+.app-container.profit-loss-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 2px !important;
+  min-height: 4px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
 }
+
+.app-container.profit-loss-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+.app-container.profit-loss-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-scrollbar__bar.is-vertical {
+  width: 6px !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+.app-container.profit-loss-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.app-container.profit-loss-page .apply-main-table th.apply-select-col,
+.app-container.profit-loss-page .apply-main-table td.apply-select-col,
+.app-container.profit-loss-page .apply-main-table th.el-table-column--selection,
+.app-container.profit-loss-page .apply-main-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.profit-loss-page .apply-main-table td.apply-select-col,
+.app-container.profit-loss-page .apply-main-table td.el-table-column--selection {
+  background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.profit-loss-page .apply-main-table th.apply-select-col,
+.app-container.profit-loss-page .apply-main-table th.el-table-column--selection {
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-select-col,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
+  background-color: #fafafa !important;
+}
+
+.app-container.profit-loss-page .apply-main-table th.apply-action-col,
+.app-container.profit-loss-page .apply-main-table td.apply-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.profit-loss-page .apply-main-table td.apply-action-col {
+  right: 0 !important;
+  background-color: #fff !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.profit-loss-page .apply-main-table th.apply-action-col {
+  right: var(--apply-v-scrollbar, 0px) !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-action-col {
+  background-color: #fafafa !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__body tr > td,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__body tr:hover > td,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr:hover > td .cell,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr:hover > td.apply-select-col,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-select-col,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.el-table-column--selection,
+.app-container.profit-loss-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.profit-loss-page .apply-main-table .el-table__header th.gutter {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+
 </style>

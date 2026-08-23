@@ -2,53 +2,39 @@
   <div class="app-container list-page inWarehouse-refundGoodsApply-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'material'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectMaterial v-model="queryParams.materialId" />
-              </div>
-            </template>
-            <template v-else-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
-              </div>
-            </template>
-            <template v-else-if="t === 'supplier'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectSupplier v-model="queryParams.supplerId"/>
-              </div>
-            </template>
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-else
-              v-model="queryParams[t]"
-              :placeholder="moreSearchPlaceholderFor(t)"
+              v-model="queryParams.billNo"
+              placeholder="退货单号"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectSupplier v-model="queryParams.supplerId"/>
+            </div>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']" placeholder="仓库"/>
+            </div>
+            <el-input
+              v-model="queryParams.refBillNo"
+              placeholder="引用单号"
+              clearable
+              class="apply-query-input apply-query-field"
+              @keyup.enter.native="handleQuery"
+            />
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
             <el-form-item class="query-date-range-form-item query-item-inline">
-              <el-radio-group v-model="queryParams.dateQueryType" size="small" style="margin-right: 10px; margin-bottom: 4px;">
+              <el-radio-group v-model="queryParams.dateQueryType" size="small" class="apply-date-type-group">
                 <el-radio-button label="bill">制单日期</el-radio-button>
                 <el-radio-button label="audit">审核日期</el-radio-button>
               </el-radio-group>
@@ -58,8 +44,7 @@
                 value-format="yyyy-MM-dd HH:mm:ss"
                 placeholder="起始日期"
                 clearable
-                class="query-date-picker"
-                style="width: 200px; margin-right: 8px;"
+                class="query-date-picker apply-query-date"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
@@ -68,13 +53,12 @@
                 value-format="yyyy-MM-dd HH:mm:ss"
                 placeholder="截止日期"
                 clearable
-                class="query-date-picker"
-                style="width: 200px; margin-left: 8px;"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
             <el-form-item prop="billStatus" class="query-item-inline query-item-status">
               <el-select v-model="queryParams.billStatus" placeholder="单据状态"
-                         clearable class="more-search-select-wrap">
+                         clearable class="apply-query-field">
                 <el-option v-for="dict in dict.type.biz_status"
                            :key="dict.value"
                            :label="dict.label"
@@ -84,7 +68,7 @@
               </el-select>
             </el-form-item>
             <el-form-item label="被引用状态" label-width="88px" class="query-item-inline query-item-doc-ref">
-              <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" class="more-search-select-wrap">
+              <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" class="apply-query-field">
                 <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
               </el-select>
             </el-form-item>
@@ -114,29 +98,34 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
-              :row-class-name="warehouseListIndex"
-              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
-      <el-table-column type="selection" width="55" align="center" fixed="left" />
-      <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable />
-      <el-table-column label="退货单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="warehouseList" class="table-compact apply-main-table"
+              row-key="id"
+              :row-class-name="applyMainRowClassName"
+              @selection-change="handleSelectionChange"
+              :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
+      <el-table-column label="退货单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable />
-      <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime || scope.row.billDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable/>
-      <el-table-column label="金额" align="center" prop="totalAmount" width="120" min-width="120" show-overflow-tooltip resizable>
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'supplier.name')"/>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')"/>
+      <el-table-column label="金额" align="center" prop="totalAmount" width="150" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="制单人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
+      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable sortable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else-if="scope.row.billDate">{{ parseTime(scope.row.billDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -146,13 +135,13 @@
         </template>
       </el-table-column>
       <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="打印状态" align="center" width="100" min-width="100" show-overflow-tooltip resizable>
+      <el-table-column label="打印状态" align="center" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-tag v-if="scope.row.printDate" type="success" size="small">已打印</el-tag>
           <el-tag v-else type="info" size="small">未打印</el-tag>
@@ -178,17 +167,10 @@
           <span v-else>—</span>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
+      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="180">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
-            <el-button
-              size="small"
-              type="text"
-              @click="handlePrint(scope.row,true)"
-              v-if="scope.row.billStatus == 2"
-              style="padding: 0 5px; margin: 0;"
-            >打印</el-button>
             <el-button
               size="small"
               type="text"
@@ -208,6 +190,13 @@
             <el-button
               size="small"
               type="text"
+              @click="handlePrint(scope.row,true)"
+              v-if="scope.row.billStatus == 2"
+              style="padding: 0 5px; margin: 0;"
+            >打印</el-button>
+            <el-button
+              size="small"
+              type="text"
               @click="handleShowEntryChangeLog(scope.row)"
               style="padding: 0 5px; margin: 0;"
               v-hasPermi="['inWarehouse:refundGoodsApply:query']"
@@ -217,13 +206,15 @@
       </el-table-column>
     </el-table>
 
+    <div class="apply-pagination-wrap" ref="paginationWrap">
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
+    </div>
 
     <!-- 添加或修改退货对话框 -->
     <transition name="modal-fade">
@@ -555,6 +546,7 @@ export default {
       isShow: true,
       // 选中数组
       ids: [],
+      selectedRowMap: {},
       // 子表选中数据
       checkedStkIoBillEntry: [],
       // 非单个禁用
@@ -563,16 +555,9 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: "退货单号", value: "billNo" },
-        { label: "耗材", value: "material" },
-        { label: "仓库", value: "warehouse" },
-        { label: "供应商", value: "supplier" },
-        { label: "引用单号", value: "refBillNo" }
-      ],
       // 总条数
       total: 0,
+      mainTableHeight: 400,
       // 退货表格数据
       warehouseList: [],
       stkMaterialList: [],
@@ -635,25 +620,75 @@ export default {
     /** 与到货验收「添加入库」弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 368px))';
-    },
-    moreSearchStorageKey() {
-      return "spd.inWarehouse.refundGoodsApply.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value);
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList(true);
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
+  },
   watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
     '$store.state.app.sidebarNavTick'(nav) {
       this.handleSidebarNavTick(nav);
     }
   },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
+      });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
     normalizeRoutePath(path) {
       if (!path) {
         return '';
@@ -752,15 +787,21 @@ export default {
       this.queryParams.billType = "301";
       // 如果 endDate 是日期格式（不包含时间），追加 " 23:59:59" 以包含当天的所有记录
       const queryParams = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(queryParams);
       if (queryParams.endDate && queryParams.endDate.length === 10 && !queryParams.endDate.includes(' ')) {
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
       }
-      
+
       listThInventory(queryParams).then(response => {
         this.warehouseList = response.rows;
         this.total = response.total;
         this.loading = false;
+        this.$nextTick(() => {
+          this.updateMainTableHeight();
+          this.restoreMainPageSelection();
+        });
+      }).catch(() => {
+        this.loading = false;
+        this.$nextTick(() => this.updateMainTableHeight());
       });
     },
     resolveChangeLogBillType() {
@@ -932,51 +973,20 @@ export default {
       }
       row.amt = this.toMoneyStorage(totalAmt);
     },
-    moreSearchFieldClass(t) {
-      if (['material', 'warehouse', 'supplier'].includes(t)) {
-        return 'more-search-field--select';
-      }
-      return 'more-search-field--text';
-    },
-    moreSearchPlaceholderFor(t) {
-      const map = { billNo: '退货单号', refBillNo: '引用单号' };
-      return map[t] || '请输入';
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = {
-        billNo: 'billNo',
-        material: 'materialId',
-        warehouse: 'warehouseId',
-        supplier: 'supplerId',
-        refBillNo: 'refBillNo'
-      };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
+    sortByNested(a, b, path) {
+      const getVal = (row) => {
+        const parts = path.split('.');
+        let v = row;
+        for (const p of parts) {
+          v = v && v[p];
         }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
+        return (v == null ? '' : String(v)).toLowerCase();
+      };
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -991,15 +1001,58 @@ export default {
       this.queryParams.endDate = null;
       this.queryParams.params = this.queryParams.params || {};
       this.queryParams.params.docRefStatus = null;
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
-    // 多选框选中数据
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : '';
+    },
+    applyMainRowClassName({ row, rowIndex }) {
+      this.warehouseListIndex({ row, rowIndex });
+      const key = this.getApplyMainRowKey(row);
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable;
+      if (!table || !this.warehouseList || !this.warehouseList.length) {
+        return;
+      }
+      const keys = this.selectedRowMap || {};
+      if (!Object.keys(keys).length) {
+        return;
+      }
+      this.warehouseList.forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
+    // 多选框选中数据（跨页缓存 + 行高亮）
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      const pageKeys = (this.warehouseList || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key) {
+          this.$set(this.selectedRowMap, key, row);
+        }
+      });
+      const ids = Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key);
+        return Number.isNaN(n) ? key : n;
+      });
+      this.ids = ids;
+      this.single = ids.length !== 1;
+      this.multiple = !ids.length;
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -1346,16 +1399,13 @@ export default {
 .el-table {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
-.el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266;
-  font-weight: 500;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
+.apply-table-panel > .apply-main-table {
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 .el-table td {
@@ -1378,17 +1428,17 @@ export default {
   color: #409EFF;
 }
 
-/* 搜索区域：外层白底容器（宽度铺满、边框与阴影略加强） */
+/* 搜索区域：卡片样式由外层 .form-fields-container.list-query-panel 承担，内层 el-form 不再重复包一层 */
 .list-query-panel .el-form {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  border: 1px solid #c0c4cc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 .list-query-panel .el-form .el-row {
@@ -1403,43 +1453,87 @@ export default {
   margin-bottom: 0;
 }
 
-/* 第一行查询条件左对齐紧凑布局 */
-.list-query-panel .el-form .query-row-left .el-col {
+.list-query-panel .el-form .query-row-first {
+  margin-bottom: 10px;
+}
+
+.list-query-panel .el-form .query-row-first-inner {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-/* 统一控制查询条件输入框宽度 */
-.list-query-panel .el-form .query-row-left .query-item-inline .el-input {
-  width: 180px;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  align-items: center;
+  gap: 8px;
   width: 100%;
 }
 
-.list-query-panel .el-form .query-row-left .query-item-inline .el-select {
-  width: 150px;
+.list-query-panel .el-form .apply-query-field,
+.list-query-panel .el-form .query-row-first-inner .apply-query-input {
+  width: 170px;
+  flex-shrink: 0;
 }
 
-/* 第二行：与到货申请一致，日期 + 单据状态 + 被引用状态 横向紧凑排列 */
+.list-query-panel .el-form .query-row-first-inner .more-search-select-wrap.apply-query-field > * {
+  width: 100%;
+}
+
+.list-query-panel .el-form .query-row-second .apply-query-field.el-select {
+  width: 170px;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+.list-query-panel .el-form .query-row-second {
+  margin-bottom: 0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.list-query-panel .el-form .apply-date-type-group {
+  margin-right: 10px;
+}
+
+.list-query-panel .el-form .apply-query-date.el-date-editor {
+  width: 200px;
+}
+
+.list-query-panel .el-form .query-row-second > .el-col > .el-form-item {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+
+.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) {
+  white-space: nowrap;
+}
+
+.list-query-panel .el-form .query-row-second .query-date-range-form-item {
+  white-space: normal;
+}
+
+.list-query-panel .el-form .query-row-second .query-date-range-form-item .el-form-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  max-width: 100%;
+}
+
+.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
 .list-query-panel .el-form .query-row-second-inner {
   display: flex;
   flex-wrap: wrap;

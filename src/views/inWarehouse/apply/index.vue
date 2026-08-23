@@ -15,7 +15,7 @@
               <SelectSupplier v-model="queryParams.supplerId"/>
             </div>
             <div class="query-select-wrapper more-search-select-wrap apply-query-field">
-              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']"/>
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']" placeholder="仓库"/>
             </div>
             <el-input
               v-model="queryParams.refBillNo"
