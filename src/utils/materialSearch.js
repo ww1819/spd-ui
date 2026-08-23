@@ -104,3 +104,27 @@ export function matchMaterialKeyword(item, rawKeyword) {
   }
   return false;
 }
+
+/** 规格检索：文本模糊 + 拼音首字母（大小写不敏感） */
+export function matchSpecKeyword(spec, rawKeyword) {
+  const kw = normalizeMaterialSearchKeyword(rawKeyword);
+  if (!kw) {
+    return true;
+  }
+  if (spec == null || String(spec).trim() === '') {
+    return false;
+  }
+  const text = String(spec);
+  const k = kw.toLowerCase();
+  const kUpper = kw.toUpperCase();
+  if (text.toLowerCase().includes(k) || text.toUpperCase().includes(kUpper)) {
+    return true;
+  }
+  if (/^[a-zA-Z]+$/.test(kw)) {
+    const initials = getMaterialPinyinInitials(text);
+    if (initials.includes(kUpper)) {
+      return true;
+    }
+  }
+  return false;
+}
