@@ -183,7 +183,7 @@
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
-      @pagination="getList"
+      @pagination="handlePagination"
     />
     </div>
     </div>
@@ -761,6 +761,12 @@ export default {
     total() {
       this.$nextTick(() => this.updateMainTableHeight());
     },
+    orderList() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    'queryParams.pageSize'() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
     '$store.state.app.sidebarNavTick'(nav) {
       this.handleSidebarNavTick(nav);
     }
@@ -1162,6 +1168,16 @@ export default {
       
       // 强制转换为数字类型，确保后端能正确接收
       this.queryParams.orderType = parseInt(this.queryParams.orderType) || 101;
+    },
+    /** 翻页：先同步 pageNum/pageSize 再查询，避免 size-change 时 limit 未写入 queryParams */
+    handlePagination({ page, limit } = {}) {
+      if (page != null) {
+        this.queryParams.pageNum = page;
+      }
+      if (limit != null) {
+        this.queryParams.pageSize = limit;
+      }
+      this.getList();
     },
     /** 查询高值入库列表 */
     getList() {
