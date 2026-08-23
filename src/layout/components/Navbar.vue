@@ -347,7 +347,7 @@ export default {
         this.$set(this.messageList[index], 'read', true)
       }
       const reminderCategoryByTitle = {
-        仓库提醒: { category: 'warehouse', subTab: 'all' },
+        仓库提醒: { category: 'warehouse', subTab: 'apply' },
         申领单预警: { category: 'warehouse', subTab: 'apply' },
         申购单预警: { category: 'warehouse', subTab: 'purchase' },
         库存预警: { category: 'warehouse', subTab: 'inventory' },

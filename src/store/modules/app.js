@@ -12,10 +12,10 @@ const state = {
   warehouseReminderVisible: false,
   /** 消息提醒左侧分类：warehouse | department | data */
   messageReminderCategory: 'warehouse',
-  /** 仓库预警内子 Tab：all | apply | purchase | inventory | nearExpiry */
-  warehouseReminderSubTab: 'all',
-  /** 科室预警内子 Tab：all | unreceivedConfirm | inventory | expiry */
-  departmentReminderSubTab: 'all',
+  /** 仓库预警内子 Tab：apply | purchase | inventory | nearExpiry */
+  warehouseReminderSubTab: 'apply',
+  /** 科室预警内子 Tab：unreceivedConfirm | inventory | expiry */
+  departmentReminderSubTab: 'unreceivedConfirm',
   /** 侧栏叶子菜单点击：{ path, tick }，用于同页从侧栏进入时重置弹窗 */
   sidebarNavTick: null
 }
@@ -56,12 +56,14 @@ const mutations = {
     state.messageReminderCategory = allowed.includes(category) ? category : 'warehouse'
   },
   SET_WAREHOUSE_REMINDER_SUB_TAB: (state, subTab) => {
-    const allowed = ['all', 'apply', 'purchase', 'inventory', 'nearExpiry']
-    state.warehouseReminderSubTab = allowed.includes(subTab) ? subTab : 'all'
+    const allowed = ['apply', 'purchase', 'inventory', 'nearExpiry']
+    const normalized = subTab === 'all' ? 'apply' : subTab
+    state.warehouseReminderSubTab = allowed.includes(normalized) ? normalized : 'apply'
   },
   SET_DEPARTMENT_REMINDER_SUB_TAB: (state, subTab) => {
-    const allowed = ['all', 'unreceivedConfirm', 'inventory', 'expiry']
-    state.departmentReminderSubTab = allowed.includes(subTab) ? subTab : 'all'
+    const allowed = ['unreceivedConfirm', 'inventory', 'expiry']
+    const normalized = subTab === 'all' ? 'unreceivedConfirm' : subTab
+    state.departmentReminderSubTab = allowed.includes(normalized) ? normalized : 'unreceivedConfirm'
   },
   SET_SIDEBAR_NAV_TICK: (state, payload) => {
     if (!payload || !payload.path) {
@@ -93,26 +95,26 @@ const actions = {
   },
   openWarehouseReminder({ commit }, payload) {
     const mainAllowed = ['warehouse', 'department', 'data']
-    const warehouseSubAllowed = ['all', 'apply', 'purchase', 'inventory', 'nearExpiry']
-    const departmentSubAllowed = ['all', 'unreceivedConfirm', 'inventory', 'expiry']
+    const warehouseSubAllowed = ['apply', 'purchase', 'inventory', 'nearExpiry']
+    const departmentSubAllowed = ['unreceivedConfirm', 'inventory', 'expiry']
     let cat = 'warehouse'
-    let warehouseSub = 'all'
-    let departmentSub = 'all'
+    let warehouseSub = 'apply'
+    let departmentSub = 'unreceivedConfirm'
     if (payload && typeof payload === 'object') {
       if (mainAllowed.includes(payload.category)) {
         cat = payload.category
-      } else if (warehouseSubAllowed.includes(payload.category)) {
+      } else if (warehouseSubAllowed.includes(payload.category) || payload.category === 'all') {
         cat = 'warehouse'
-        warehouseSub = payload.category
-      } else if (departmentSubAllowed.includes(payload.category)) {
+        warehouseSub = payload.category === 'all' ? 'apply' : payload.category
+      } else if (departmentSubAllowed.includes(payload.category) || payload.category === 'all') {
         cat = 'department'
-        departmentSub = payload.category
+        departmentSub = payload.category === 'all' ? 'unreceivedConfirm' : payload.category
       }
-      if (warehouseSubAllowed.includes(payload.subTab)) {
-        warehouseSub = payload.subTab
+      if (warehouseSubAllowed.includes(payload.subTab) || payload.subTab === 'all') {
+        warehouseSub = payload.subTab === 'all' ? 'apply' : payload.subTab
       }
-      if (departmentSubAllowed.includes(payload.subTab)) {
-        departmentSub = payload.subTab
+      if (departmentSubAllowed.includes(payload.subTab) || payload.subTab === 'all') {
+        departmentSub = payload.subTab === 'all' ? 'unreceivedConfirm' : payload.subTab
       }
     }
     commit('SET_MESSAGE_REMINDER_CATEGORY', cat)

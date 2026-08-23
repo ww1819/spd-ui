@@ -536,7 +536,6 @@ export default {
     },
     warehouseSubTabs() {
       return [
-        { key: 'all', label: '全部' },
         { key: 'apply', label: '申领单预警' },
         { key: 'purchase', label: '申购单预警' },
         { key: 'inventory', label: '库存预警' },
@@ -545,17 +544,16 @@ export default {
     },
     departmentSubTabs() {
       return [
-        { key: 'all', label: '全部' },
         { key: 'unreceivedConfirm', label: '科室未收货确认预警' },
         { key: 'inventory', label: '科室库存预警' },
         { key: 'expiry', label: '科室有效期预警' }
       ]
     },
     showWarehouseApplyBlock() {
-      return this.warehouseReminderSubTab === 'all' || this.warehouseReminderSubTab === 'apply'
+      return this.warehouseReminderSubTab === 'apply'
     },
     showWarehousePurchaseBlock() {
-      return this.warehouseReminderSubTab === 'all' || this.warehouseReminderSubTab === 'purchase'
+      return this.warehouseReminderSubTab === 'purchase'
     },
     showWarehouseInventoryBlock() {
       return this.warehouseReminderSubTab === 'inventory'
@@ -587,13 +585,13 @@ export default {
       })
     },
     showDepartmentUnreceivedBlock() {
-      return this.departmentReminderSubTab === 'all' || this.departmentReminderSubTab === 'unreceivedConfirm'
+      return this.departmentReminderSubTab === 'unreceivedConfirm'
     },
     showDepartmentInventoryBlock() {
-      return this.departmentReminderSubTab === 'all' || this.departmentReminderSubTab === 'inventory'
+      return this.departmentReminderSubTab === 'inventory'
     },
     showDepartmentExpiryBlock() {
-      return this.departmentReminderSubTab === 'all' || this.departmentReminderSubTab === 'expiry'
+      return this.departmentReminderSubTab === 'expiry'
     },
     ...mapState({
       warehouseReminderVisible: state => state.app.warehouseReminderVisible,
@@ -660,9 +658,6 @@ export default {
       if (key === 'expiry' && e > 0) {
         return e
       }
-      if (key === 'all' && u + e > 0) {
-        return u + e
-      }
       return 0
     },
     warehouseSubTabBadge(key) {
@@ -680,19 +675,15 @@ export default {
       if (key === 'inventory' && ia > 0) {
         return ia
       }
-      const sumAll = (this.warehouseReminder.apply || 0) + (this.warehouseReminder.purchase || 0) + ne + ia
-      if (key === 'all' && sumAll > 0) {
-        return sumAll
-      }
       return 0
     },
     selectReminderCategory(key) {
       this.$store.commit('app/SET_MESSAGE_REMINDER_CATEGORY', key)
       if (key === 'warehouse') {
-        this.$store.commit('app/SET_WAREHOUSE_REMINDER_SUB_TAB', 'all')
+        this.$store.commit('app/SET_WAREHOUSE_REMINDER_SUB_TAB', 'apply')
         this.loadWarehouseReminderCounts()
       } else if (key === 'department') {
-        this.$store.commit('app/SET_DEPARTMENT_REMINDER_SUB_TAB', 'all')
+        this.$store.commit('app/SET_DEPARTMENT_REMINDER_SUB_TAB', 'unreceivedConfirm')
       }
     },
     selectDepartmentSubTab(key) {
@@ -700,7 +691,7 @@ export default {
     },
     selectWarehouseSubTab(key) {
       this.$store.commit('app/SET_WAREHOUSE_REMINDER_SUB_TAB', key)
-      if (key === 'all' || key === 'apply' || key === 'purchase' || key === 'nearExpiry' || key === 'inventory') {
+      if (key === 'apply' || key === 'purchase' || key === 'nearExpiry' || key === 'inventory') {
         this.loadWarehouseReminderCounts()
       }
     },

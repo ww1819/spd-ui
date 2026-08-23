@@ -2567,7 +2567,6 @@ export default {
 }
 
 .list-query-panel .el-form .query-row-first-inner .query-actions {
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 8px;
