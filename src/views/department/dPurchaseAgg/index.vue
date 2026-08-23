@@ -2,70 +2,52 @@
   <div class="app-container list-page d-purchase-agg-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseId"/>
-              </div>
-            </template>
-            <template v-else-if="t === 'department'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
-            </template>
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-else
               v-model="queryParams.purchaseBillNo"
               placeholder="申购单号"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectWarehouse v-model="queryParams.warehouseId" placeholder="仓库"/>
+            </div>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectDepartment v-model="queryParams.departmentId" field-placeholder="科室" />
+            </div>
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item class="query-item-inline query-item-date-range">
+            <el-form-item class="query-date-range-form-item query-item-inline">
               <el-date-picker
                 v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
                 placeholder="起始日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
                 placeholder="截止日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
-            <el-form-item prop="purchaseBillStatus" class="query-item-inline">
+            <el-form-item prop="purchaseBillStatus" class="query-item-inline query-item-status">
               <el-select v-model="queryParams.purchaseBillStatus" placeholder="单据状态"
-                         :disabled="false"
-                         clearable
-                         class="more-search-select-wrap">
+                         clearable class="apply-query-field">
                 <el-option v-for="dict in dict.type.purchase_status"
                            :key="dict.value"
                            :label="dict.value == '1' || dict.value == 1 ? '未审核' : dict.label"
@@ -99,73 +81,78 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="purchaseList" :row-class-name="rowPurchaseIndex" @selection-change="handleSelectionChange" height="64vh" border stripe>
-      <el-table-column type="selection" width="60" align="center" resizable />
-      <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
-      <el-table-column label="申购单号" align="center" prop="purchaseBillNo" width="180" show-overflow-tooltip resizable>
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="purchaseList" class="table-compact apply-main-table"
+              row-key="id"
+              :row-class-name="applyMainRowClassName"
+              @selection-change="handleSelectionChange"
+              :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
+      <el-table-column label="申购单号" align="center" prop="purchaseBillNo" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.purchaseBillNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="制单日期" align="center" prop="createTime" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="制单日期" align="center" prop="createTime" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="拆分状态" align="center" prop="splitStatus" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'department.name')" />
+      <el-table-column label="拆分状态" align="center" prop="splitStatus" width="100" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-tag v-if="scope.row.splitStatus == 1" type="success" size="small">已拆分</el-tag>
           <el-tag v-else type="info" size="small">未拆分</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="制单人" align="center" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="制单人" align="center" prop="createrPersonName" width="100" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span>{{ formatCreatorName(scope.row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="申购状态" align="center" prop="purchaseBillStatus" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="申购状态" align="center" prop="purchaseBillStatus" width="100" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <dict-tag v-if="scope.row.purchaseBillStatus != '1' && scope.row.purchaseBillStatus != 1" :options="dict.type.purchase_status" :value="scope.row.purchaseBillStatus"/>
           <el-tag v-else type="primary">未审核</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="紧急程度" align="center" prop="urgencyLevel" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="紧急程度" align="center" prop="urgencyLevel" width="100" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.urgency_level" :value="scope.row.urgencyLevel"/>
         </template>
       </el-table-column>
-      <el-table-column label="总金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="总金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount && parseFloat(scope.row.totalAmount) > 0">¥{{ scope.row.totalAmount | formatCurrency }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="期望到货日期" align="center" prop="expectedDeliveryDate" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="期望到货日期" align="center" prop="expectedDeliveryDate" width="160" min-width="160" label-class-name="col-expected-delivery-header" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.expectedDeliveryDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="审核人" align="center" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="审核人" align="center" prop="auditPersonName" width="100" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span>{{ formatAuditPersonName(scope.row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="审核时间" align="center" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="审核时间" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="isAuditedPurchase(scope.row) && scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="驳回原因" align="center" width="160" show-overflow-tooltip resizable>
+      <el-table-column label="驳回原因" align="center" prop="rejectReason" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span>{{ formatRejectReason(scope.row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="230" fixed="right">
+      <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable sortable />
+      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="230">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -205,14 +192,14 @@
       </el-table-column>
     </el-table>
 
-    <div class="pagination-bottom-wrap">
+    <div class="apply-pagination-wrap" ref="paginationWrap">
       <pagination
-        v-show="total>0"
         :total="total"
         :page.sync="queryParams.pageNum"
         :limit.sync="queryParams.pageSize"
         @pagination="getList"
       />
+    </div>
     </div>
 
     <!-- 添加或修改汇总申购对话框 -->
@@ -459,7 +446,16 @@ import SelectMaterialForPurchaseAgg from '@/components/SelectModel/SelectMateria
 import { buildAggEntryPickKey, fillAggEntryFromFixedNumber, formatIsGzLabel } from '@/utils/purchaseAggEntry';
 import { assertBillHasMaterialEntries, normalizeBillMaterialLineQtyDefaultOne } from '@/utils/billEntryValidate';
 import { runConfiguredTableExport } from '@/utils/tableExportRunner'
-import { buildDefaultDateRange } from '@/utils/defaultDateRange';
+import { parseTime } from '@/utils/ruoyi';
+
+function buildListDefaultDateRange() {
+  const today = new Date();
+  const endDate = parseTime(today, '{y}-{m}-{d}') + ' 23:59:59';
+  const begin = new Date(today);
+  begin.setDate(begin.getDate() - 5);
+  const beginDate = parseTime(begin, '{y}-{m}-{d}') + ' 00:00:00';
+  return { beginDate, endDate };
+}
 
 export default {
   name: "dPurchaseAgg",
@@ -481,12 +477,8 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: "申购单号", value: "purchaseBillNo" },
-        { label: "仓库", value: "warehouse" },
-        { label: "科室", value: "department" }
-      ],
+      mainTableHeight: 400,
+      selectedRowMap: {},
       // 总条数
       total: 0,
       // 汇总申购表格数据
@@ -509,7 +501,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         purchaseBillNo: null,
-        ...buildDefaultDateRange(),
+        ...buildListDefaultDateRange(),
         warehouseId: null,
         departmentId: null,
         userId: null,
@@ -530,12 +522,6 @@ export default {
     };
   },
   computed: {
-    moreSearchStorageKey() {
-      return "spd.department.dPurchaseAgg.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value);
-    },
     /** 明细表固定高度：预留表头/合计/横向滚动条及弹窗头表单工具栏，避免合计被裁切 */
     detailTableHeight() {
       return 'max(260px, calc(100vh - 360px))';
@@ -552,11 +538,139 @@ export default {
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    '$store.state.app.sidebarNavTick'(nav) {
+      this.handleSidebarNavTick(nav);
+    },
+  },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
+      });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
+    normalizeRoutePath(path) {
+      if (!path) {
+        return '';
+      }
+      const normalized = String(path).replace(/\\/g, '/');
+      if (normalized.length > 1 && normalized.endsWith('/')) {
+        return normalized.slice(0, -1);
+      }
+      return normalized;
+    },
+    isCurrentPagePath(navPath) {
+      return this.normalizeRoutePath(navPath) === this.normalizeRoutePath(this.$route.path);
+    },
+    handleSidebarNavTick(nav) {
+      if (!nav || !this.isCurrentPagePath(nav.path)) {
+        return;
+      }
+      if (nav.tick === this._lastSidebarNavTick) {
+        return;
+      }
+      this._lastSidebarNavTick = nav.tick;
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : '';
+    },
+    sortByNested(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return '';
+        const keys = path.split('.');
+        let v = obj;
+        for (const k of keys) {
+          v = v && v[k];
+        }
+        return v != null ? String(v) : '';
+      };
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    },
+    applyMainRowClassName({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+      const key = this.getApplyMainRowKey(row);
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable;
+      if (!table || !this.purchaseList || !this.purchaseList.length) {
+        return;
+      }
+      const keys = this.selectedRowMap || {};
+      if (!Object.keys(keys).length) {
+        return;
+      }
+      this.purchaseList.forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
     formatIsGzLabel,
     formatCreatorName(row) {
       if (!row) return '--';
@@ -618,11 +732,17 @@ export default {
     getList() {
       this.loading = true;
       const queryParams = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(queryParams);
       listPurchaseAgg(queryParams).then(response => {
         this.purchaseList = response.rows;
         this.total = response.total;
         this.loading = false;
+        this.$nextTick(() => {
+          this.restoreMainPageSelection();
+          this.scheduleApplyLayoutRefresh();
+        });
+      }).catch(() => {
+        this.loading = false;
+        this.scheduleApplyLayoutRefresh();
       });
     },
     //当天日期
@@ -704,56 +824,36 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      Object.assign(this.queryParams, buildDefaultDateRange());
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
+      this.queryParams.purchaseBillNo = null;
+      this.queryParams.warehouseId = null;
+      this.queryParams.departmentId = null;
+      this.queryParams.purchaseBillStatus = null;
+      Object.assign(this.queryParams, buildListDefaultDateRange());
       this.handleQuery();
     },
-    moreSearchFieldClass(t) {
-      if (['warehouse', 'department'].includes(t)) {
-        return 'more-search-field--select';
-      }
-      return 'more-search-field--text';
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = {
-        purchaseBillNo: 'purchaseBillNo',
-        warehouse: 'warehouseId',
-        department: 'departmentId'
-      };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
+    // 多选框选中数据（跨页缓存）
+    handleSelectionChange(selection) {
+      const pageKeys = (this.purchaseList || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key);
         }
       });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
-    },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      (selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key) {
+          this.$set(this.selectedRowMap, key, row);
+        }
+      });
+      const ids = Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key);
+        return Number.isNaN(n) ? key : n;
+      });
+      this.ids = ids;
+      this.single = ids.length !== 1;
+      this.multiple = !ids.length;
     },
     /** 明细表合计（与科室申领弹窗一致） */
     getPurchaseSummaries(param) {
@@ -790,9 +890,9 @@ export default {
       });
       return sums;
     },
-    /** 汇总申购序号 */
-    rowPurchaseIndex({ row, rowIndex }) {
-      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    /** 汇总申购序号（弹窗明细用） */
+    rowPurchaseEntryIndex({ row, rowIndex }) {
+      row.index = rowIndex + 1;
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -1238,9 +1338,7 @@ export default {
       }
     },
     buildExportQueryParams() {
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      return params;
+      return { ...this.queryParams };
     }
   }
 };
@@ -1568,238 +1666,439 @@ export default {
   transform: scale(0.8);
 }
 
-/* 表格样式优化（仅列表主表，弹窗明细表勿 overflow:hidden，否则会裁切合计行） */
-.d-purchase-agg-page > .el-table {
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266 !important;
-  font-weight: 600 !important;
-  border-right: 1px solid #EBEEF5 !important;
-  border-bottom: 1px solid #EBEEF5 !important;
-}
-
-.el-table td {
-  border-right: 1px solid #EBEEF5 !important;
-  border-bottom: 1px solid #EBEEF5 !important;
-}
-
-.el-table .cell {
-  padding: 0 8px;
-  line-height: 1.5;
-}
-
-/* 表单样式优化 */
-.el-form-item {
-  margin-bottom: 18px;
-}
-
-.el-form-item__label {
-  color: #606266;
-  font-weight: 500;
-}
-
-/* 搜索区域：与科室申领一致 */
-.app-container.d-purchase-agg-page > .el-form.query-form {
+/* 搜索区域：卡片样式由外层 .form-fields-container.list-query-panel 承担 */
+.list-query-panel .el-form {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  border: 1px solid #c0c4cc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
-.app-container.d-purchase-agg-page > .el-form.query-form .el-row {
+.list-query-panel .el-form .el-row {
   margin-bottom: 8px;
 }
 
-.app-container.d-purchase-agg-page > .el-form.query-form .el-row:last-child {
+.list-query-panel .el-form .el-row:last-child {
   margin-bottom: 0;
 }
 
-.app-container.d-purchase-agg-page > .el-form.query-form .el-form-item {
+.list-query-panel .el-form .el-form-item {
   margin-bottom: 0;
 }
 
-.app-container.d-purchase-agg-page > .el-form.query-form .query-row-left .el-col {
+.list-query-panel .el-form .query-row-first {
+  margin-bottom: 10px;
+}
+
+.list-query-panel .el-form .query-row-first-inner {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.app-container.d-purchase-agg-page > .el-form.query-form .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.app-container.d-purchase-agg-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-.app-container.d-purchase-agg-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
-  width: 180px;
-}
-
-.app-container.d-purchase-agg-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.app-container.d-purchase-agg-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
+  align-items: center;
+  gap: 8px;
   width: 100%;
 }
 
-.app-container.d-purchase-agg-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
-  width: 180px;
+.list-query-panel .el-form .apply-query-field,
+.list-query-panel .el-form .query-row-first-inner .apply-query-input {
+  width: 170px;
+  flex-shrink: 0;
 }
 
-.query-item-inline .el-form-item__label {
-  width: 80px !important;
+.list-query-panel .el-form .query-row-first-inner .more-search-select-wrap.apply-query-field > * {
+  width: 100%;
 }
 
-.query-row-second {
-  position: relative;
+.list-query-panel .el-form .query-row-second .apply-query-field.el-select {
+  width: 170px;
 }
 
-.app-container.d-purchase-agg-page > .el-form.query-form .query-row-second .el-form-item {
+.list-query-panel .el-form .query-row-first-inner .query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+.list-query-panel .el-form .query-row-second {
+  margin-bottom: 0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.list-query-panel .el-form .apply-query-date.el-date-editor {
+  width: 200px;
+}
+
+.list-query-panel .el-form .query-row-second > .el-col > .el-form-item {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+
+.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) {
   white-space: nowrap;
 }
 
-.app-container.d-purchase-agg-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
+.list-query-panel .el-form .query-row-second .query-date-range-form-item {
+  white-space: normal;
+}
+
+.list-query-panel .el-form .query-row-second .query-date-range-form-item .el-form-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  max-width: 100%;
+}
+
+.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) .el-form-item__content {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
 
-.mb8 {
+.list-query-panel .el-form .query-row-second-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.list-query-panel .el-form .query-row-second > .query-row-second-inner > .el-form-item {
+  display: inline-flex !important;
+  width: auto !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.list-query-panel .el-form .query-row-second-inner .query-date-range-form-item .el-form-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+/* 按钮行样式（仅弹窗内，勿影响主列表 list-toolbar 与搜索区间的全局留白） */
+.local-modal-content .mb8 {
+  flex-shrink: 0;
   margin-top: 0 !important;
-  margin-bottom: 8px !important;
+  margin-bottom: 10px !important;
 }
 
-/* 翻页：贴近表格；下方不留白（与科室申领一致） */
-.d-purchase-agg-page .pagination-bottom-wrap {
-  margin-top: 0 !important;
-  margin-bottom: 0;
-  padding-bottom: 0;
-  transform: translateY(-8px);
-}
-
-::v-deep .d-purchase-agg-page .pagination-bottom-wrap .pagination-container {
-  padding: 0 !important;
-  margin-top: 0 !important;
-}
-
-/* 仅列表主表滚动条（勿作用于弹窗内表） */
-::v-deep .d-purchase-agg-page > .el-table .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-}
-
-::v-deep .d-purchase-agg-page > .el-table .el-table__body-wrapper::-webkit-scrollbar {
-  height: 12px !important;
-}
-
-::v-deep .d-purchase-agg-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  height: 12px !important;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.25) !important;
-}
-
-::v-deep .d-purchase-agg-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.06) !important;
-}
-
-/* 确保操作列固定 */
-::v-deep .el-table__fixed-right {
-  right: 0 !important;
-  z-index: 12 !important;
-  position: absolute !important;
-}
-
-::v-deep .el-table__fixed-header-wrapper {
-  z-index: 11;
-}
-
-::v-deep .el-table__fixed-right-patch {
-  right: 0 !important;
-  z-index: 12 !important;
-}
-
-/* 确保固定列头部和主体都有正确的z-index */
-::v-deep .el-table__fixed-right .el-table__header-wrapper {
-  z-index: 12 !important;
-}
-
-::v-deep .el-table__fixed-right .el-table__body-wrapper {
-  z-index: 12 !important;
-}
-
-/* 确保固定列在滚动时保持固定 */
-::v-deep .el-table__fixed {
-  position: absolute !important;
-}
-
-::v-deep .d-purchase-agg-page > .el-table {
-  overflow-x: auto;
-}
 </style>
 
+
 <style>
-/* 与科室申领 d-apply-page 非 scoped 块一致（勿加 overflow-x/max-width，避免搜索区与标签栏间距表现不一致） */
+/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
 .app-container.d-purchase-agg-page {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 84px);
+  height: calc(100vh - 84px);
+  max-height: calc(100vh - 84px);
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-top: 8px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
-  padding-bottom: 0 !important;
-  /* 确保弹窗遮罩（absolute）能覆盖到底部，避免露出底层条 */
-  min-height: calc(100vh - 84px);
+  padding-bottom: 14px !important;
 }
 
-.app-container.d-purchase-agg-page > .el-table {
-  margin-bottom: 1px;
-}
 
-.app-container.d-purchase-agg-page > .el-table th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.d-purchase-agg-page > .el-table th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
-.list-query-panel {
-  margin-top: -20px;
-}
-
-/* 与科室申领：抵消页面主体内边距，遮罩与白底与列表同宽 */
 .app-container.d-purchase-agg-page .local-modal-mask {
   left: -8px;
   right: -8px;
   width: auto;
+  position: absolute;
   overflow: hidden;
 }
 
-/* 弹窗打开时，隐藏底层列表横向滚动条/分页，避免遮罩底部透出多余条带 */
-.app-container.d-purchase-agg-page.is-modal-open > .el-table,
-.app-container.d-purchase-agg-page.is-modal-open .pagination-bottom-wrap {
-  display: none;
+
+
+.app-container.d-purchase-agg-page .list-query-panel,
+.app-container.d-purchase-agg-page .list-toolbar {
+  flex: 0 0 auto;
+}
+
+.app-container.d-purchase-agg-page .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.app-container.d-purchase-agg-page .apply-table-panel > .apply-main-table {
+  margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.app-container.d-purchase-agg-page .apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+}
+
+.app-container.d-purchase-agg-page .apply-pagination-wrap .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.app-container.d-purchase-agg-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__header-wrapper th,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-header-wrapper th,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-right-header-wrapper th,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  font-family: inherit !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__header-wrapper th .cell,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  font-family: inherit !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:vertical,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-track,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 2px !important;
+  min-height: 4px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-scrollbar__bar.is-vertical {
+  width: 6px !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table th.apply-select-col,
+.app-container.d-purchase-agg-page .apply-main-table td.apply-select-col,
+.app-container.d-purchase-agg-page .apply-main-table th.el-table-column--selection,
+.app-container.d-purchase-agg-page .apply-main-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table td.apply-select-col,
+.app-container.d-purchase-agg-page .apply-main-table td.el-table-column--selection {
+  background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table th.apply-select-col,
+.app-container.d-purchase-agg-page .apply-main-table th.el-table-column--selection {
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-select-col,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
+  background-color: #fafafa !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table th.apply-action-col,
+.app-container.d-purchase-agg-page .apply-main-table td.apply-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table td.apply-action-col {
+  right: 0 !important;
+  background-color: #fff !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table th.apply-action-col {
+  right: var(--apply-v-scrollbar, 0px) !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-action-col {
+  background-color: #fafafa !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr > td,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr:hover > td,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr:hover > td .cell,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr:hover > td.apply-select-col,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-select-col,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.el-table-column--selection,
+.app-container.d-purchase-agg-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table .el-table__header th.gutter {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-bottom-color: #e2e8f0 !important;
 }
 </style>
 
+.app-container.d-purchase-agg-page.is-modal-open .apply-table-panel {
+  visibility: hidden;
+}
+
+.app-container.d-purchase-agg-page .apply-main-table thead th.col-expected-delivery-header .cell {
+  white-space: nowrap !important;
+}
+</style>

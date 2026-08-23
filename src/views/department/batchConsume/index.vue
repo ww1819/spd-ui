@@ -1,66 +1,50 @@
 <template>
-  <div class="app-container list-page batch-consume-page">
+  <div class="app-container list-page batch-consume-page" :class="{ 'is-modal-open': open || reverseDialogOpen }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'department'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
-            </template>
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-else
               v-model="queryParams.consumeBillNo"
               placeholder="单号"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectDepartment v-model="queryParams.departmentId" field-placeholder="科室" />
+            </div>
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item class="query-item-inline query-item-date-range">
+            <el-form-item class="query-date-range-form-item query-item-inline">
               <el-date-picker
                 v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
                 placeholder="起始日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
+                type="datetime"
+                value-format="yyyy-MM-dd HH:mm:ss"
                 placeholder="截止日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
-            <el-form-item prop="consumeBillStatus" class="query-item-inline">
+            <el-form-item prop="consumeBillStatus" class="query-item-inline query-item-status">
               <el-select v-model="queryParams.consumeBillStatus" placeholder="单据状态"
-                         :disabled="false"
-                         clearable
-                         class="more-search-select-wrap">
+                         clearable class="apply-query-field">
                 <el-option v-for="dict in dict.type.biz_status.filter(item => item.value == '1' || item.value == '2' || item.value == 1 || item.value == 2)"
                            :key="dict.value"
                            :label="dict.label"
@@ -112,26 +96,114 @@
       </div>
     </el-row>
 
-    <!-- 主表格组件 -->
-    <MainTable
-      :loading="loading"
-      :table-data="consumeList"
-      :query-params="queryParams"
-      :can-row-reverse="canReverseConsumeRow"
-      @selection-change="handleSelectionChange"
-      @view="handleView"
-      @update="handleUpdate"
-      @delete="handleDelete"
-      @reverse="handleRowReverse"
-    />
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="consumeList" class="table-compact apply-main-table"
+              row-key="id"
+              :row-class-name="applyMainRowClassName"
+              @selection-change="handleSelectionChange"
+              :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
+      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
+      <el-table-column label="单号" align="center" prop="consumeBillNo" width="180" show-overflow-tooltip resizable sortable>
+        <template slot-scope="scope">
+          <el-button type="text" @click="handleView(scope.row)">
+            <span>{{ (scope.row.reverseFlag == 1 || scope.row.reverseFlag === '1') ? ('【退】' + scope.row.consumeBillNo) : scope.row.consumeBillNo }}</span>
+          </el-button>
+        </template>
+      </el-table-column>
+      <el-table-column label="制单日期" align="center" prop="createTime" width="180" show-overflow-tooltip resizable sortable>
+        <template slot-scope="scope">
+          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'department.name')" />
+      <el-table-column label="单据类型" align="center" prop="reverseFlag" width="100" show-overflow-tooltip resizable sortable>
+        <template slot-scope="scope">
+          <el-tag v-if="scope.row.reverseFlag == 1 || scope.row.reverseFlag === '1'" type="warning" size="mini">退消耗</el-tag>
+          <el-tag v-else type="success" size="mini">正向消耗</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable sortable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.totalAmount !== null && scope.row.totalAmount !== undefined && scope.row.totalAmount !== ''">¥{{ scope.row.totalAmount | formatCurrency }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="制单人" align="center" prop="createrName" width="100" show-overflow-tooltip resizable sortable :sort-method="sortByCreaterName">
+        <template slot-scope="scope">
+          <span>{{ formatPersonName(scope.row, 'creater') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="单据状态" align="center" prop="consumeBillStatus" width="100" show-overflow-tooltip resizable sortable>
+        <template slot-scope="scope">
+          <dict-tag :options="dict.type.biz_status" :value="scope.row.consumeBillStatus"/>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核人" align="center" prop="auditPersonName" width="100" show-overflow-tooltip resizable sortable :sort-method="sortByAuditPerson">
+        <template slot-scope="scope">
+          <span>{{ formatPersonName(scope.row, 'audit') }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable sortable>
+        <template slot-scope="scope">
+          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="来源单号" align="center" prop="reverseOfBillNo" width="180" show-overflow-tooltip resizable sortable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.reverseOfBillNo || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable sortable />
+      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="220">
+        <template slot-scope="scope">
+          <span style="white-space: nowrap; display: inline-block;">
+            <el-button
+              size="small"
+              type="text"
+              @click="handleView(scope.row)"
+              v-if="scope.row.consumeBillStatus == 2"
+              style="padding: 0 5px; margin: 0;"
+            >查看</el-button>
+            <el-button
+              size="small"
+              type="text"
+              class="reverse-action-btn"
+              @click="handleRowReverse(scope.row)"
+              v-hasPermi="['department:batchConsume:reverse']"
+              v-if="canReverseConsumeRow(scope.row)"
+              style="padding: 0 5px; margin: 0;"
+            >退消耗</el-button>
+            <el-button
+              size="small"
+              type="text"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['department:batchConsume:edit']"
+              v-if="scope.row.consumeBillStatus != 2"
+              style="padding: 0 5px; margin: 0;"
+            >修改</el-button>
+            <el-button
+              size="small"
+              type="text"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['department:batchConsume:remove']"
+              v-if="scope.row.consumeBillStatus != 2"
+              style="padding: 0 5px; margin: 0;"
+            >删除</el-button>
+          </span>
+        </template>
+      </el-table-column>
+    </el-table>
 
-    <div class="pagination-bottom-wrap">
+    <div class="apply-pagination-wrap" ref="paginationWrap">
       <pagination
         :total="total"
         :page.sync="queryParams.pageNum"
         :limit.sync="queryParams.pageSize"
         @pagination="getList"
       />
+    </div>
     </div>
 
     <!-- 添加或修改科室批量消耗对话框（布局与申领单审核 dApplyAudit 弹窗一致） -->
@@ -396,8 +468,16 @@ import { listConsume, getConsume, delConsume, addConsume, updateConsume, auditCo
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
-import MainTable from './components/MainTable.vue';
-import { buildDefaultDateRange } from '@/utils/defaultDateRange';
+import { parseTime } from '@/utils/ruoyi';
+
+function buildListDefaultDateRange() {
+  const today = new Date();
+  const endDate = parseTime(today, '{y}-{m}-{d}') + ' 23:59:59';
+  const begin = new Date(today);
+  begin.setDate(begin.getDate() - 5);
+  const beginDate = parseTime(begin, '{y}-{m}-{d}') + ' 00:00:00';
+  return { beginDate, endDate };
+}
 
 export default {
   name: "BatchConsume",
@@ -405,8 +485,7 @@ export default {
   components: {
     SelectDepartment,
     SelectUser,
-    SelectDepInventory,
-    MainTable
+    SelectDepInventory
   },
   data() {
     return {
@@ -427,11 +506,8 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: "单号", value: "consumeBillNo" },
-        { label: "科室", value: "department" }
-      ],
+      mainTableHeight: 400,
+      selectedRowMap: {},
       // 总条数
       total: 0,
       // 科室批量消耗表格数据
@@ -456,7 +532,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         consumeBillNo: null,
-        ...buildDefaultDateRange(),
+        ...buildListDefaultDateRange(),
         departmentId: null,
         userId: null,
         consumeBillStatus: null,
@@ -474,12 +550,6 @@ export default {
     };
   },
   computed: {
-    moreSearchStorageKey() {
-      return "spd.department.batchConsume.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value);
-    },
     /** 与到货验收弹窗一致：固定明细表高度，表体滚动、合计贴在表底 */
     detailTableHeight() {
       return 'max(240px, calc(100vh - 420px))';
@@ -496,11 +566,25 @@ export default {
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
+  },
   watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    '$store.state.app.sidebarNavTick'(nav) {
+      this.handleSidebarNavTick(nav);
+    },
     open(val) {
       if (val) {
         this.$nextTick(() => {
@@ -513,6 +597,146 @@ export default {
     }
   },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
+      });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
+    normalizeRoutePath(path) {
+      if (!path) {
+        return '';
+      }
+      const normalized = String(path).replace(/\\/g, '/');
+      if (normalized.length > 1 && normalized.endsWith('/')) {
+        return normalized.slice(0, -1);
+      }
+      return normalized;
+    },
+    isCurrentPagePath(navPath) {
+      return this.normalizeRoutePath(navPath) === this.normalizeRoutePath(this.$route.path);
+    },
+    handleSidebarNavTick(nav) {
+      if (!nav || !this.isCurrentPagePath(nav.path)) {
+        return;
+      }
+      if (nav.tick === this._lastSidebarNavTick) {
+        return;
+      }
+      this._lastSidebarNavTick = nav.tick;
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : '';
+    },
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable;
+      if (!table || !this.consumeList || !this.consumeList.length) {
+        return;
+      }
+      const keys = this.selectedRowMap || {};
+      if (!Object.keys(keys).length) {
+        return;
+      }
+      this.consumeList.forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
+    applyMainRowClassName({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+      const key = this.getApplyMainRowKey(row);
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    sortByNested(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return '';
+        const keys = path.split('.');
+        let v = obj;
+        for (const k of keys) {
+          v = v && v[k];
+        }
+        return v != null ? String(v) : '';
+      };
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    },
+    sortByCreaterName(a, b) {
+      const va = this.formatPersonName(a, 'creater');
+      const vb = this.formatPersonName(b, 'creater');
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    },
+    sortByAuditPerson(a, b) {
+      const va = this.formatPersonName(a, 'audit');
+      const vb = this.formatPersonName(b, 'audit');
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    },
+    formatPersonName(row, type) {
+      if (!row) {
+        return '--';
+      }
+      if (type === 'creater') {
+        const name = row.createrName
+          || (row.creater && (row.creater.nickName || row.creater.userName))
+          || (row.user && (row.user.nickName || row.user.userName));
+        return name || '--';
+      }
+      const name = row.auditPersonName
+        || (row.auditPerson && (row.auditPerson.nickName || row.auditPerson.userName));
+      return name || '--';
+    },
     formatBatchEntryDate(val) {
       if (val == null || val === '') {
         return '--';
@@ -562,16 +786,20 @@ export default {
     getList() {
       this.loading = true;
       const queryParams = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(queryParams);
       listConsume(queryParams).then(response => {
         this.consumeList = response.rows || [];
         this.total = response.total || 0;
         this.loading = false;
+        this.$nextTick(() => {
+          this.restoreMainPageSelection();
+          this.scheduleApplyLayoutRefresh();
+        });
       }).catch(error => {
         console.error('查询科室批量消耗列表失败:', error);
         this.consumeList = [];
         this.total = 0;
         this.loading = false;
+        this.scheduleApplyLayoutRefresh();
         this.$modal.msgError('查询失败：' + (error.msg || error.message || '未知错误'));
       });
     },
@@ -727,55 +955,34 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      Object.assign(this.queryParams, buildDefaultDateRange());
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
+      this.queryParams.consumeBillNo = null;
+      this.queryParams.departmentId = null;
+      this.queryParams.consumeBillStatus = null;
+      Object.assign(this.queryParams, buildListDefaultDateRange());
       this.handleQuery();
     },
-    moreSearchFieldClass(t) {
-      if (t === 'department') {
-        return 'more-search-field--select';
-      }
-      return 'more-search-field--text';
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = {
-        consumeBillNo: 'consumeBillNo',
-        department: 'departmentId'
-      };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
+    handleSelectionChange(selection) {
+      const pageKeys = (this.consumeList || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key);
         }
       });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
-    },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      (selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key) {
+          this.$set(this.selectedRowMap, key, row);
+        }
+      });
+      const ids = Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key);
+        return Number.isNaN(n) ? key : n;
+      });
+      this.ids = ids;
+      this.single = ids.length !== 1;
+      this.multiple = !ids.length;
     },
     /** 查看按钮操作 */
     handleView(row){
