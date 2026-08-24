@@ -79,7 +79,7 @@
                             stripe
                             size="small"
                             class="wh-reminder-detail-table"
-                            max-height="256"
+                            :max-height="reminderBillTableMaxHeight"
                             empty-text="暂无数据"
                           >
                             <el-table-column type="index" label="序号" width="58" align="center" />
@@ -141,7 +141,7 @@
                             stripe
                             size="small"
                             class="wh-reminder-detail-table"
-                            max-height="256"
+                            :max-height="reminderBillTableMaxHeight"
                             empty-text="暂无数据"
                           >
                             <el-table-column type="index" label="序号" width="58" align="center" />
@@ -200,7 +200,7 @@
                         stripe
                         size="small"
                         class="wh-reminder-detail-table wh-reminder-near-expiry-table"
-                        max-height="336"
+                        :max-height="reminderNearExpiryTableMaxHeight"
                         empty-text="暂无库存预警"
                         @cell-dblclick="handleInventoryAlertCellDblClick"
                       >
@@ -270,7 +270,7 @@
                         stripe
                         size="small"
                         class="wh-reminder-detail-table wh-reminder-near-expiry-table"
-                        max-height="336"
+                        :max-height="reminderNearExpiryTableMaxHeight"
                         empty-text="暂无近效期库存"
                         @cell-dblclick="handleNearExpiryInventoryCellDblClick"
                       >
@@ -374,11 +374,11 @@
                             stripe
                             size="small"
                             class="wh-reminder-detail-table"
-                            max-height="256"
+                            :max-height="reminderBillTableMaxHeight"
                             :empty-text="departmentUnreceivedReadTab === 'read' ? '暂无已读通知' : '暂无未读通知'"
                           >
                             <el-table-column type="index" label="序号" width="58" align="center" />
-                            <el-table-column label="出库单号" prop="billNo" min-width="140" show-overflow-tooltip>
+                            <el-table-column label="出库单号" prop="billNo" min-width="180" show-overflow-tooltip>
                               <template slot-scope="scope">
                                 <span
                                   class="wh-reminder-bill-no-link"
@@ -421,16 +421,64 @@
                     </div>
                     <div
                       v-show="showDepartmentInventoryBlock"
-                      class="wh-reminder-panel-inner wh-reminder-placeholder"
+                      v-loading="departmentInventoryLoading"
+                      class="wh-reminder-near-expiry-wrap wh-reminder-near-expiry-wrap--full"
                     >
-                      <p class="wh-reminder-line">科室库存预警请在科室库存、科室库存预警等相关业务菜单中查看与处理。</p>
+                      <div class="wh-reminder-apply-toolbar">
+                        <div class="wh-reminder-detail-section-title">科室库存预警（库存低于下限或高于上限）</div>
+                      </div>
+                      <el-table
+                        :data="departmentInventoryRows"
+                        border
+                        stripe
+                        size="small"
+                        class="wh-reminder-detail-table wh-reminder-near-expiry-table"
+                        :max-height="reminderNearExpiryTableMaxHeight"
+                        empty-text="暂无科室库存预警"
+                      >
+                        <el-table-column type="index" label="序号" width="58" align="center" />
+                        <el-table-column label="科室名称" prop="departmentName" min-width="100" show-overflow-tooltip />
+                        <el-table-column label="耗材编码" prop="materialCode" min-width="110">
+                          <template slot-scope="scope">
+                            <span
+                              class="wh-reminder-material-code-link"
+                              :title="(scope.row.materialCode || '') + '（双击打开科室库存预警）'"
+                              @dblclick.stop="handleDepartmentInventoryAlertMaterialCodeDblClick(scope.row)"
+                            >{{ scope.row.materialCode || '—' }}</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="耗材名称" prop="materialName" min-width="140" show-overflow-tooltip />
+                        <el-table-column label="规格" prop="materialSpeci" min-width="100" show-overflow-tooltip />
+                        <el-table-column label="单位" prop="unitName" width="72" align="center" show-overflow-tooltip />
+                        <el-table-column label="单价" width="100" align="right" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== ''">¥{{ formatReminderMoney(scope.row.unitPrice) }}</span>
+                            <span v-else>—</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="数量" width="90" align="right" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span class="wh-reminder-inventory-qty-warn">{{ formatReminderInt(scope.row.qty) }}</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="下限数量" width="96" align="right" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span>{{ formatReminderInt(scope.row.minQtyWarning) }}</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="上限数量" width="96" align="right" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span>{{ formatReminderInt(scope.row.maxQtyWarning) }}</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="生产厂家" prop="factoryName" min-width="120" show-overflow-tooltip />
+                      </el-table>
                     </div>
                     <div
                       v-show="showDepartmentExpiryBlock"
                       v-loading="departmentExpiryLoading"
                       class="wh-reminder-near-expiry-wrap wh-reminder-near-expiry-wrap--full"
                     >
-                      <p v-if="departmentExpiryError" class="wh-reminder-error wh-reminder-error--above-table">{{ departmentExpiryError }}</p>
                       <div class="wh-reminder-apply-toolbar">
                         <div class="wh-reminder-detail-section-title">科室批次近效期（有效期距今天在 30 天及以内）</div>
                       </div>
@@ -440,7 +488,7 @@
                         stripe
                         size="small"
                         class="wh-reminder-detail-table wh-reminder-near-expiry-table"
-                        max-height="336"
+                        :max-height="reminderNearExpiryTableMaxHeight"
                         empty-text="暂无近效期科室库存"
                       >
                         <el-table-column type="index" label="序号" width="58" align="center" />
@@ -491,6 +539,53 @@
                         </el-table-column>
                       </el-table>
                     </div>
+                    <div
+                      v-show="showDepartmentConsumeBlock"
+                      v-loading="departmentConsumeLoading"
+                      class="wh-reminder-near-expiry-wrap wh-reminder-near-expiry-wrap--full"
+                    >
+                      <div class="wh-reminder-apply-toolbar">
+                        <div class="wh-reminder-detail-section-title">科室销提醒（患者费用明细 · 未处理 · 按科室权限）</div>
+                      </div>
+                      <el-table
+                        :data="departmentConsumeRows"
+                        border
+                        stripe
+                        size="small"
+                        class="wh-reminder-detail-table wh-reminder-near-expiry-table"
+                        :max-height="reminderNearExpiryTableMaxHeight"
+                        empty-text="暂无科室销提醒"
+                      >
+                        <el-table-column type="index" label="序号" width="58" align="center" />
+                        <el-table-column label="处理状态" min-width="96" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span>{{ scope.row.processStatusText || formatConsumeProcessStatus(scope.row.processStatus) }}</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="开单科室" prop="orderDeptName" min-width="100" show-overflow-tooltip />
+                        <el-table-column label="执行科室" prop="execDeptName" min-width="100" show-overflow-tooltip />
+                        <el-table-column label="病历号" prop="medicalRecordNo" min-width="120" show-overflow-tooltip />
+                        <el-table-column label="姓名" prop="patientName" width="90" show-overflow-tooltip />
+                        <el-table-column label="收费编码" prop="chargeItemId" min-width="110">
+                          <template slot-scope="scope">
+                            <span
+                              class="wh-reminder-material-code-link"
+                              :title="(scope.row.chargeItemId || '') + '（双击打开患者收费查询）'"
+                              @dblclick.stop="handleDepartmentConsumeChargeItemDblClick(scope.row)"
+                            >{{ scope.row.chargeItemId || '—' }}</span>
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="收费名称" prop="itemName" min-width="140" show-overflow-tooltip />
+                        <el-table-column label="规格" prop="specModel" min-width="100" show-overflow-tooltip />
+                        <el-table-column label="单位" prop="unitName" width="72" align="center" show-overflow-tooltip />
+                        <el-table-column label="单价" width="100" align="right" show-overflow-tooltip>
+                          <template slot-scope="scope">
+                            <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== ''">¥{{ formatReminderMoney(scope.row.unitPrice) }}</span>
+                            <span v-else>—</span>
+                          </template>
+                        </el-table-column>
+                      </el-table>
+                    </div>
                   </template>
                   <div
                     v-show="messageReminderCategory === 'data'"
@@ -518,7 +613,7 @@
 <script>
 import { mapState, mapGetters } from 'vuex'
 import iframeToggle from './IframeToggle/index'
-import { fetchHomeWarehouseReminderCounts, fetchHomeWarehouseReminderApplyList, fetchHomeWarehouseReminderPurchaseList, fetchHomeWarehouseReminderNearExpiryList, fetchHomeWarehouseReminderInventoryAlertList, fetchHomeDepartmentReminderUnreceivedReceipt, fetchHomeDepartmentReminderNearExpiryList } from '@/api/dashboard/home'
+import { fetchHomeWarehouseReminderCounts, fetchHomeWarehouseReminderApplyList, fetchHomeWarehouseReminderPurchaseList, fetchHomeWarehouseReminderNearExpiryList, fetchHomeWarehouseReminderInventoryAlertList, fetchHomeDepartmentReminderUnreceivedReceipt, fetchHomeDepartmentReminderNearExpiryList, fetchHomeDepartmentReminderInventoryAlertList, fetchHomeDepartmentReminderConsumeList } from '@/api/dashboard/home'
 import { scheduleMainContentScrollReset } from '@/utils/reset-main-scroll'
 
 export default {
@@ -548,10 +643,27 @@ export default {
       departmentExpiryLoading: false,
       departmentExpiryError: '',
       departmentExpiryRows: [],
-      departmentExpiryLineCount: 0
+      departmentExpiryLineCount: 0,
+      departmentInventoryLoading: false,
+      departmentInventoryError: '',
+      departmentInventoryRows: [],
+      departmentInventoryLineCount: 0,
+      departmentConsumeLoading: false,
+      departmentConsumeRows: [],
+      departmentConsumeLineCount: 0,
+      /** 用于消息提醒明细表高度随视口变化 */
+      reminderViewportHeight: typeof window !== 'undefined' ? window.innerHeight : 800
     }
   },
   computed: {
+    /** 单据类明细表：铺满弹窗可用高度，避免右侧/下方大块留白 */
+    reminderBillTableMaxHeight() {
+      return Math.max(360, Math.floor(this.reminderViewportHeight * 0.76 - 240))
+    },
+    /** 近效期/库存预警多列表：略高于单据表（无未读 Tab） */
+    reminderNearExpiryTableMaxHeight() {
+      return Math.max(400, Math.floor(this.reminderViewportHeight * 0.76 - 200))
+    },
     reminderSideMenus() {
       const all = [
         { key: 'warehouse', label: '仓库预警' },
@@ -578,7 +690,8 @@ export default {
       return [
         { key: 'unreceivedConfirm', label: '科室未收货确认预警' },
         { key: 'inventory', label: '科室库存预警' },
-        { key: 'expiry', label: '科室有效期预警' }
+        { key: 'expiry', label: '科室有效期预警' },
+        { key: 'consume', label: '科室销提醒' }
       ]
     },
     showWarehouseApplyBlock() {
@@ -625,6 +738,9 @@ export default {
     showDepartmentExpiryBlock() {
       return this.departmentReminderSubTab === 'expiry'
     },
+    showDepartmentConsumeBlock() {
+      return this.departmentReminderSubTab === 'consume'
+    },
     ...mapState({
       warehouseReminderVisible: state => state.app.warehouseReminderVisible,
       messageReminderCategory: state => state.app.messageReminderCategory,
@@ -668,6 +784,7 @@ export default {
     },
     warehouseReminderVisible(val) {
       if (val) {
+        this.syncReminderViewportHeight()
         this.ensureReminderCategoryAllowed()
         this.loadDepartmentUnreceivedReadBillNos()
       }
@@ -676,7 +793,9 @@ export default {
       }
       if (val && this.messageReminderCategory === 'department') {
         if (this.showDepartmentUnreceivedBlock) this.loadDepartmentReminderUnreceived()
+        if (this.showDepartmentInventoryBlock) this.loadDepartmentReminderInventoryAlert()
         if (this.showDepartmentExpiryBlock) this.loadDepartmentReminderNearExpiry()
+        if (this.showDepartmentConsumeBlock) this.loadDepartmentReminderConsume()
       }
     },
     reminderSideMenus() {
@@ -690,7 +809,9 @@ export default {
       }
       if (this.warehouseReminderVisible && val === 'department') {
         if (this.showDepartmentUnreceivedBlock) this.loadDepartmentReminderUnreceived()
+        if (this.showDepartmentInventoryBlock) this.loadDepartmentReminderInventoryAlert()
         if (this.showDepartmentExpiryBlock) this.loadDepartmentReminderNearExpiry()
+        if (this.showDepartmentConsumeBlock) this.loadDepartmentReminderConsume()
       }
     },
     warehouseReminderSubTab() {
@@ -701,11 +822,28 @@ export default {
     departmentReminderSubTab() {
       if (this.warehouseReminderVisible && this.messageReminderCategory === 'department') {
         if (this.showDepartmentUnreceivedBlock) this.loadDepartmentReminderUnreceived()
+        if (this.showDepartmentInventoryBlock) this.loadDepartmentReminderInventoryAlert()
         if (this.showDepartmentExpiryBlock) this.loadDepartmentReminderNearExpiry()
+        if (this.showDepartmentConsumeBlock) this.loadDepartmentReminderConsume()
       }
     }
   },
+  mounted() {
+    this._onReminderViewportResize = () => this.syncReminderViewportHeight()
+    window.addEventListener('resize', this._onReminderViewportResize)
+  },
+  beforeDestroy() {
+    if (this._onReminderViewportResize) {
+      window.removeEventListener('resize', this._onReminderViewportResize)
+    }
+  },
   methods: {
+    /** 同步视口高度，供消息提醒明细表 max-height 计算 */
+    syncReminderViewportHeight() {
+      if (typeof window !== 'undefined') {
+        this.reminderViewportHeight = window.innerHeight
+      }
+    },
     /** 当前分类无权限时切到第一个已授权分类 */
     ensureReminderCategoryAllowed() {
       const menus = this.reminderSideMenus || []
@@ -722,11 +860,19 @@ export default {
     departmentSubTabBadge(key) {
       const u = this.departmentUnreceivedUnreadRows.length
       const e = Number(this.departmentExpiryLineCount) || 0
+      const inv = Number(this.departmentInventoryLineCount) || 0
+      const c = Number(this.departmentConsumeLineCount) || 0
       if (key === 'unreceivedConfirm' && u > 0) {
         return u
       }
+      if (key === 'inventory' && inv > 0) {
+        return inv
+      }
       if (key === 'expiry' && e > 0) {
         return e
+      }
+      if (key === 'consume' && c > 0) {
+        return c
       }
       return 0
     },
@@ -885,6 +1031,22 @@ export default {
       if (paths.length === 1) return paths[0]
       return '/department/depInventory/index'
     },
+    resolvePatientChargeQueryPath() {
+      const fromMenu = this.findSidebarPathByMetaTitle(this.sidebarRouters, '患者收费查询', '')
+      return fromMenu || '/department/patientCharge/index'
+    },
+    formatConsumeProcessStatus(code) {
+      const map = {
+        PENDING_CONSUME: '未处理',
+        CONSUMING: '核销中',
+        PARTIALLY_CONSUMED: '部分消耗',
+        CONSUMED: '已消耗',
+        REFUNDED: '已退费',
+        REFUND_RETURNED: '退费已返还'
+      }
+      if (!code) return '—'
+      return map[code] || String(code)
+    },
     handleInventoryAlertCellDblClick(row, column) {
       if (!column || column.property !== 'materialCode') return
       this.handleInventoryAlertMaterialCodeDblClick(row)
@@ -935,6 +1097,37 @@ export default {
       const query = { tab: 'nearExpiry', materialKeyword }
       if (this.$tab && typeof this.$tab.openPage === 'function') {
         this.$tab.openPage('科室库存查询', path, query)
+      } else {
+        this.$router.push({ path, query })
+      }
+    },
+    /** 科室预警-科室库存预警：跳转科室库存查询「科室库存预警」Tab */
+    handleDepartmentInventoryAlertMaterialCodeDblClick(row) {
+      if (!row) return
+      const raw = row.materialCode != null && row.materialCode !== '' ? row.materialCode : row.material_code
+      if (raw == null || String(raw).trim() === '') return
+      const materialKeyword = String(raw).trim()
+      if (!materialKeyword) return
+      const path = this.resolveDepartmentDepInventoryQueryPath()
+      this.closeWarehouseReminder()
+      const query = { tab: 'alert', materialKeyword }
+      if (this.$tab && typeof this.$tab.openPage === 'function') {
+        this.$tab.openPage('科室库存查询', path, query)
+      } else {
+        this.$router.push({ path, query })
+      }
+    },
+    handleDepartmentConsumeChargeItemDblClick(row) {
+      if (!row) return
+      const raw = row.chargeItemId != null && row.chargeItemId !== '' ? row.chargeItemId : row.charge_item_id
+      if (raw == null || String(raw).trim() === '') return
+      const chargeItemId = String(raw).trim()
+      if (!chargeItemId) return
+      const path = this.resolvePatientChargeQueryPath()
+      this.closeWarehouseReminder()
+      const query = { chargeItemId, processed: 'N' }
+      if (this.$tab && typeof this.$tab.openPage === 'function') {
+        this.$tab.openPage('患者收费查询', path, query)
       } else {
         this.$router.push({ path, query })
       }
@@ -1084,9 +1277,47 @@ export default {
       } catch (e) {
         this.departmentExpiryLineCount = 0
         this.departmentExpiryRows = []
-        this.departmentExpiryError = (e && e.message) ? String(e.message) : '加载失败，请稍后重试'
+        this.departmentExpiryError = ''
       } finally {
         this.departmentExpiryLoading = false
+      }
+    },
+    async loadDepartmentReminderInventoryAlert() {
+      if (!this.warehouseReminderVisible || this.messageReminderCategory !== 'department' || !this.showDepartmentInventoryBlock) {
+        return
+      }
+      this.departmentInventoryLoading = true
+      this.departmentInventoryError = ''
+      try {
+        const res = await fetchHomeDepartmentReminderInventoryAlertList()
+        const d = (res && res.data) || {}
+        this.departmentInventoryLineCount = Number(d.lineCount) || 0
+        const raw = d.lines
+        this.departmentInventoryRows = Array.isArray(raw) ? raw : []
+      } catch (e) {
+        this.departmentInventoryLineCount = 0
+        this.departmentInventoryRows = []
+        this.departmentInventoryError = ''
+      } finally {
+        this.departmentInventoryLoading = false
+      }
+    },
+    async loadDepartmentReminderConsume() {
+      if (!this.warehouseReminderVisible || this.messageReminderCategory !== 'department' || !this.showDepartmentConsumeBlock) {
+        return
+      }
+      this.departmentConsumeLoading = true
+      try {
+        const res = await fetchHomeDepartmentReminderConsumeList()
+        const d = (res && res.data) || {}
+        this.departmentConsumeLineCount = Number(d.lineCount) || 0
+        const raw = d.lines
+        this.departmentConsumeRows = Array.isArray(raw) ? raw : []
+      } catch (e) {
+        this.departmentConsumeLineCount = 0
+        this.departmentConsumeRows = []
+      } finally {
+        this.departmentConsumeLoading = false
       }
     },
     async loadWarehouseReminderCounts() {
@@ -1258,6 +1489,9 @@ export default {
   min-height: 120px;
   padding: 16px 20px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .wh-reminder-sub-tabs {
@@ -1266,10 +1500,11 @@ export default {
   align-items: center;
   justify-content: flex-start;
   gap: 0;
-  margin: 0 0 20px;
+  margin: 0 0 16px;
   padding: 0;
   border-bottom: 1px solid #ebeef5;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .wh-reminder-sub-tab {
@@ -1318,17 +1553,34 @@ export default {
 }
 
 .wh-reminder-panel-inner {
-  max-width: 576px;
+  width: 100%;
+  max-width: none;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
 .wh-reminder-bill-layout {
   width: 100%;
   min-height: 120px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .wh-reminder-bill-right {
   width: 100%;
   min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.wh-reminder-table-section {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
 }
 
 /* 「全部」Tab 下申领与申购两块上下排列时间距 */
@@ -1391,6 +1643,7 @@ export default {
 
 .wh-reminder-read-tabs {
   margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 .wh-reminder-read-tabs ::v-deep .el-tabs__header {
@@ -1412,7 +1665,15 @@ export default {
   display: none;
 }
 
-/* 与仓库侧近效期/库存预警一致：不占 720px 窄版，铺满右侧内容区，减少表内横向滚动 */
+/* 与仓库侧近效期/库存预警一致：铺满右侧内容区 */
+.wh-reminder-near-expiry-wrap {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+}
+
 .wh-reminder-near-expiry-wrap--full {
   width: 100%;
   max-width: none;
@@ -1492,6 +1753,37 @@ export default {
 ::-webkit-scrollbar-thumb {
   background-color: #c0c0c0;
   border-radius: 3px;
+}
+
+/* 消息提醒明细表：横向滚动条加粗，便于拖动（对齐列表页 12px） */
+.wh-reminder-local-content .wh-reminder-detail-table .el-table__body-wrapper::-webkit-scrollbar,
+.wh-reminder-local-content .wh-reminder-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.wh-reminder-local-content .wh-reminder-detail-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.wh-reminder-local-content .wh-reminder-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.wh-reminder-local-content .wh-reminder-detail-table .el-table__body-wrapper::-webkit-scrollbar-track,
+.wh-reminder-local-content .wh-reminder-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track {
+  background-color: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.wh-reminder-local-content .wh-reminder-detail-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.wh-reminder-local-content .wh-reminder-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb {
+  background-color: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-height: 24px !important;
+  min-width: 40px !important;
+}
+
+.wh-reminder-local-content .wh-reminder-detail-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.wh-reminder-local-content .wh-reminder-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover {
+  background-color: #909399 !important;
 }
 </style>
 

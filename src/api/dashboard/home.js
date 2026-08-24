@@ -124,3 +124,23 @@ export function fetchHomeDepartmentReminderNearExpiryList() {
     headers: { hideError: true }
   })
 }
+
+/** 消息提醒：科室库存预警明细（lineCount + lines，仅需登录） */
+export function fetchHomeDepartmentReminderInventoryAlertList() {
+  return request({
+    url: '/dashboard/home/departmentReminderInventoryAlertList',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
+
+/** 消息提醒：科室销提醒（lineCount + lines，仅需登录） */
+export function fetchHomeDepartmentReminderConsumeList() {
+  return request({
+    url: '/dashboard/home/departmentReminderConsumeList',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}

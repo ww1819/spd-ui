@@ -14,7 +14,7 @@ const state = {
   messageReminderCategory: 'warehouse',
   /** 仓库预警内子 Tab：apply | purchase | inventory | nearExpiry */
   warehouseReminderSubTab: 'apply',
-  /** 科室预警内子 Tab：unreceivedConfirm | inventory | expiry */
+  /** 科室预警内子 Tab：unreceivedConfirm | inventory | expiry | consume */
   departmentReminderSubTab: 'unreceivedConfirm',
   /** 侧栏叶子菜单点击：{ path, tick }，用于同页从侧栏进入时重置弹窗 */
   sidebarNavTick: null
@@ -61,7 +61,7 @@ const mutations = {
     state.warehouseReminderSubTab = allowed.includes(normalized) ? normalized : 'apply'
   },
   SET_DEPARTMENT_REMINDER_SUB_TAB: (state, subTab) => {
-    const allowed = ['unreceivedConfirm', 'inventory', 'expiry']
+    const allowed = ['unreceivedConfirm', 'inventory', 'expiry', 'consume']
     const normalized = subTab === 'all' ? 'unreceivedConfirm' : subTab
     state.departmentReminderSubTab = allowed.includes(normalized) ? normalized : 'unreceivedConfirm'
   },
