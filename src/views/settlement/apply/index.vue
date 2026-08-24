@@ -2,54 +2,38 @@
   <div class="app-container list-page settlement-apply-page" :class="{ 'is-modal-open': open || viewOpen }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'supplier'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectSupplier v-model="queryParams.supplierId"/>
-              </div>
-            </template>
-            <template v-else-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
-              </div>
-            </template>
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-else
               v-model="queryParams.billNo"
               placeholder="结算单号"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectSupplier v-model="queryParams.supplierId"/>
+            </div>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
+            </div>
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item label="制单日期" class="query-item-inline query-item-date-range">
+            <el-form-item class="query-date-range-form-item query-item-inline">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
@@ -58,12 +42,12 @@
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
-            <el-form-item label="单据状态" prop="billStatus" class="query-item-inline">
-              <el-select v-model="queryParams.billStatus" placeholder="全部"
-                         clearable class="more-search-select-wrap">
+            <el-form-item prop="billStatus" class="query-item-inline query-item-status">
+              <el-select v-model="queryParams.billStatus" placeholder="单据状态"
+                         clearable class="apply-query-field">
                 <el-option v-for="dict in dict.type.biz_status"
                            :key="dict.value"
                            :label="dict.label"
@@ -714,12 +698,6 @@ export default {
       // 显示搜索条件
       showSearch: true,
       mainTableHeight: 400,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: "结算单号", value: "billNo" },
-        { label: "供应商", value: "supplier" },
-        { label: "仓库", value: "warehouse" }
-      ],
       // 总条数
       total: 0,
       // 入库表格数据
@@ -747,6 +725,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         billNo: null,
+        supplierId: null,
         supplerId: null,
         billDate: null,
         warehouseId: null,
@@ -774,17 +753,7 @@ export default {
       }
     };
   },
-  computed: {
-    moreSearchStorageKey() {
-      return "spd.settlement.apply.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value);
-    }
-  },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
   mounted() {
@@ -807,9 +776,13 @@ export default {
       this.updateMainTableHeight();
     },
     scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
       this.$nextTick(() => {
-        this.updateMainTableHeight();
-        requestAnimationFrame(() => this.updateMainTableHeight());
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
       });
     },
     updateMainTableHeight() {
@@ -819,14 +792,30 @@ export default {
       const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
       if (!panelH) return;
       const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
-      const height = Math.max(200, Math.floor(panelH - pagH));
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
       if (Math.abs(this.mainTableHeight - height) >= 2) {
         this.mainTableHeight = height;
       }
       this.$nextTick(() => {
         const table = this.$refs.applyMainTable;
-        if (table && table.doLayout) table.doLayout();
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
       });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
     },
     getSummaries(param) {
       const { columns, data } = param;
@@ -891,7 +880,6 @@ export default {
       this.loading = true;
       this.queryParams.billType = "501";
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
       listSettlement(params).then(response => {
         this.warehouseList = response.rows;
         this.total = response.total;
@@ -1216,46 +1204,6 @@ export default {
       }
       row.amt = this.toMoneyStorage(totalAmt);
     },
-    moreSearchFieldClass(t) {
-      if (['supplier', 'warehouse'].includes(t)) {
-        return 'more-search-field--select';
-      }
-      return 'more-search-field--text';
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = {
-        billNo: 'billNo',
-        supplier: 'supplierId',
-        warehouse: 'warehouseId'
-      };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
-    },
     /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
@@ -1266,8 +1214,6 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
     // 多选框选中数据
@@ -1623,7 +1569,6 @@ export default {
     /** 导出按钮操作 */
     handleExport() {
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
       this.download('settlement/settlement/export', params, `settlement_${new Date().getTime()}.xlsx`)
     },
   }

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page inWarehouse-refundGoodsAudit-page">
+  <div class="app-container list-page inWarehouse-refundGoodsAudit-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -1340,177 +1340,6 @@ export default {
   flex-direction: column;
 }
 
-/* 表格样式优化 */
-.el-table {
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
-}
-
-.el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266;
-  font-weight: 500;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.apply-table-panel > .apply-main-table {
-  border-radius: 0;
-  box-shadow: none;
-  margin-bottom: 0;
-}
-
-.el-table td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.el-table tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
-}
-
-/* 按钮样式 */
-.el-button--text {
-  padding: 0 4px;
-}
-
-.el-button--text:hover {
-  color: #409EFF;
-}
-
-/* 搜索区域：卡片样式由外层 .form-fields-container.list-query-panel 承担，内层 el-form 不再重复包一层 */
-.list-query-panel .el-form {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  background: transparent;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  margin-bottom: 0;
-}
-
-.list-query-panel .el-form .el-row {
-  margin-bottom: 8px;
-}
-
-.list-query-panel .el-form .el-row:last-child {
-  margin-bottom: 0;
-}
-
-.list-query-panel .el-form .el-form-item {
-  margin-bottom: 0;
-}
-
-.list-query-panel .el-form .query-row-first {
-  margin-bottom: 10px;
-}
-
-.list-query-panel .el-form .query-row-first-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.list-query-panel .el-form .apply-query-field,
-.list-query-panel .el-form .query-row-first-inner .apply-query-input {
-  width: 170px;
-  flex-shrink: 0;
-}
-
-.list-query-panel .el-form .query-row-first-inner .more-search-select-wrap.apply-query-field > * {
-  width: 100%;
-}
-
-.list-query-panel .el-form .query-row-second .apply-query-field.el-select {
-  width: 170px;
-}
-
-.list-query-panel .el-form .query-row-first-inner .query-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.list-query-panel .el-form .query-row-first-inner .query-actions .el-button + .el-button {
-  margin-left: 0;
-}
-
-.list-query-panel .el-form .query-row-second {
-  margin-bottom: 0;
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-}
-
-.list-query-panel .el-form .apply-date-type-group {
-  margin-right: 10px;
-}
-
-.list-query-panel .el-form .apply-query-date.el-date-editor {
-  width: 200px;
-}
-
-.list-query-panel .el-form .query-row-second > .el-col > .el-form-item {
-  display: block !important;
-  width: 100% !important;
-  box-sizing: border-box;
-  vertical-align: top;
-}
-
-.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) {
-  white-space: nowrap;
-}
-
-.list-query-panel .el-form .query-row-second .query-date-range-form-item {
-  white-space: normal;
-}
-
-.list-query-panel .el-form .query-row-second .query-date-range-form-item .el-form-item__content {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-  max-width: 100%;
-}
-
-.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.list-query-panel .el-form .query-row-second-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-}
-
-.list-query-panel .el-form .query-row-second > .query-row-second-inner > .el-form-item {
-  display: inline-flex !important;
-  width: auto !important;
-  margin-right: 0 !important;
-  margin-bottom: 0 !important;
-  flex: 0 0 auto;
-  vertical-align: middle;
-}
-
-.list-query-panel .el-form .query-row-second-inner .query-date-range-form-item .el-form-item__content {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-}
-
 /* 弹窗内顶部字段区：与到货验收一致 */
 .local-modal-content .form-fields-container {
   background: #fff;
@@ -1706,11 +1535,6 @@ export default {
   scrollbar-width: thin;
 }
 
-/* 确保页面容器有相对定位，以便内部弹窗正确定位 */
-.app-container {
-  position: relative;
-}
-
 /* 弹窗动画效果 */
 .modal-fade-enter-active, .modal-fade-leave-active {
   transition: opacity 0.3s ease;
@@ -1738,54 +1562,8 @@ export default {
 </style>
 
 <style>
-/* 与到货验收页面布局样式保持一致（非 scoped 确保生效） */
-.app-container.refund-goods-audit-page {
-  position: relative;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
-  padding-bottom: 8px !important;
-}
-
-.app-container.refund-goods-audit-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-}
-
-.list-query-panel {
-  margin-top: -20px;
-}
-
-.app-container.refund-goods-audit-page > .el-table.table-compact {
-  margin-top: 0;
-  border: 1px solid #EBEEF5 !important;
-}
-
-.app-container.refund-goods-audit-page > .el-table.table-compact::before,
-.app-container.refund-goods-audit-page > .el-table.table-compact::after {
-  background-color: #EBEEF5 !important;
-}
-
-/* 主表格表头样式：与到货验收一致 */
-.app-container.refund-goods-audit-page > .el-table th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.refund-goods-audit-page > .el-table th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
 /* 单据状态列表头不换行（第9列） */
-.app-container.refund-goods-audit-page > .el-table thead th:nth-child(9) .cell {
+.app-container.inWarehouse-refundGoodsAudit-page .apply-main-table thead th:nth-child(9) .cell {
   white-space: nowrap !important;
 }
 </style>

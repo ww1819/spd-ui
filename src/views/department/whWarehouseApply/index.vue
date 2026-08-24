@@ -1,52 +1,35 @@
 <template>
-  <div class="app-container list-page wh-warehouse-apply-page">
+  <div class="app-container list-page wh-warehouse-apply-page" :class="{ 'is-modal-open': viewOpen }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseId" />
-              </div>
-            </template>
-            <template v-else-if="t === 'department'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
-            </template>
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-else-if="t === 'basApplyBillNo'"
-              v-model="queryParams.basApplyBillNo"
-              placeholder="科室申领单号"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
-              v-else
               v-model="queryParams.applyBillNo"
               placeholder="库房申请单号"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <el-input
+              v-model="queryParams.basApplyBillNo"
+              placeholder="科室申领单号"
+              clearable
+              class="apply-query-input apply-query-field"
+              @keyup.enter.native="handleQuery"
+            />
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectWarehouse v-model="queryParams.warehouseId" />
+            </div>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectDepartment v-model="queryParams.departmentId" />
+            </div>
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -66,7 +49,9 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="dataList" border height="calc(100vh - 260px)">
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="dataList" class="table-compact apply-main-table"
+              :height="mainTableHeight" border stripe>
       <el-table-column label="序号" type="index" width="60" align="center" />
       <el-table-column label="库房申请单号" align="center" prop="applyBillNo" min-width="160" show-overflow-tooltip />
       <el-table-column label="科室申领单号" align="center" prop="basApplyBillNo" min-width="160" show-overflow-tooltip />
@@ -102,13 +87,15 @@
       </el-table-column>
     </el-table>
 
-    <pagination
-      v-show="total > 0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap" ref="paginationWrap">
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
+    </div>
 
     <el-dialog title="库房申请单明细" :visible.sync="viewOpen" width="1200px" append-to-body @closed="viewForm = {}">
       <el-descriptions v-if="viewForm && viewForm.id" :column="2" border size="small" class="mb12">
@@ -186,13 +173,7 @@ export default {
     return {
       loading: false,
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: "库房申请单号", value: "applyBillNo" },
-        { label: "科室申领单号", value: "basApplyBillNo" },
-        { label: "仓库", value: "warehouse" },
-        { label: "科室", value: "department" }
-      ],
+      mainTableHeight: 400,
       total: 0,
       dataList: [],
       queryParams: {
@@ -209,20 +190,70 @@ export default {
       viewEntryList: []
     };
   },
-  computed: {
-    moreSearchStorageKey() {
-      return 'spd.department.whWarehouseApply.moreSearchTypes';
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value);
-    }
-  },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    }
+  },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
+      });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
     fmtNum(v) {
       if (v === null || v === undefined || v === '') return '—';
       return v;
@@ -237,7 +268,6 @@ export default {
     getList() {
       this.loading = true;
       const q = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(q);
       if (!q.includeVoidWhole) {
         delete q.includeVoidWhole;
       }
@@ -245,8 +275,10 @@ export default {
         this.dataList = res.rows || [];
         this.total = res.total || 0;
         this.loading = false;
+        this.scheduleApplyLayoutRefresh();
       }).catch(() => {
         this.loading = false;
+        this.scheduleApplyLayoutRefresh();
       });
     },
     handleQuery() {
@@ -256,50 +288,7 @@ export default {
     resetQuery() {
       this.resetForm('queryForm');
       this.queryParams.includeVoidWhole = false;
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
       this.handleQuery();
-    },
-    moreSearchFieldClass(t) {
-      if (['warehouse', 'department'].includes(t)) {
-        return 'more-search-field--select';
-      }
-      return 'more-search-field--text';
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = {
-        applyBillNo: 'applyBillNo',
-        basApplyBillNo: 'basApplyBillNo',
-        warehouse: 'warehouseId',
-        department: 'departmentId'
-      };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     handleView(row) {
       if (!row || !row.id) return;
@@ -317,9 +306,6 @@ export default {
 <style scoped>
 .mb12 {
   margin-bottom: 12px;
-}
-.list-query-panel {
-  margin-top: -20px;
 }
 .query-switch-label {
   margin-right: 8px;

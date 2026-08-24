@@ -9,8 +9,9 @@ $apply-list-pages: receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-aud
   settlement-apply-page, settlement-audit-page,
   finance-invoice-page, finance-wh-settlement-page, finance-supp-settlement-page,
   inWarehouse-apply-page, inWarehouse-refundGoodsApply-page, inWarehouse-refundGoodsAudit-page,
-  outWarehouse-refundDepotAudit-page, stocktaking-page, profit-loss-page, initial-stock-import-page,
-  stocktaking-in-page, warehouseTransfer-apply-page, warehouseTransfer-audit-page;
+  outWarehouse-refundDepotAudit-page, stocktaking-page, stocktaking-profit-page, profit-loss-page,
+  initial-stock-import-page, stocktaking-in-page, warehouseTransfer-apply-page, warehouseTransfer-audit-page,
+  new-product-apply-page, new-product-audit-page, wh-warehouse-apply-page;
 
 @mixin department-apply-list-page($page) {
   .app-container.#{$page} {

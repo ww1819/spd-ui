@@ -1,50 +1,36 @@
 <template>
-  <div class="app-container list-page new-product-apply-page">
+  <div class="app-container list-page new-product-apply-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'department'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" />
-              </div>
-            </template>
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-else
               v-model="queryParams.applyNo"
               placeholder="申购单号"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" field-placeholder="科室" />
+            </div>
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item class="query-item-inline query-item-date-range">
+            <el-form-item class="query-date-range-form-item query-item-inline">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
@@ -53,13 +39,12 @@
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
-            <el-form-item prop="applyStatus" class="query-item-inline">
+            <el-form-item prop="applyStatus" class="query-item-inline query-item-status">
               <el-select v-model="queryParams.applyStatus" placeholder="单据状态"
-                         clearable
-                         class="more-search-select-wrap">
+                         clearable class="apply-query-field">
                 <el-option v-for="dict in filteredBizStatus"
                            :key="dict.value"
                            :label="dict.label"
@@ -93,10 +78,13 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="applyList"
-              :row-class-name="applyListIndex"
-              @selection-change="handleSelectionChange" height="54vh" border stripe>
-      <el-table-column type="selection" width="55" align="center" />
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="applyList" class="table-compact apply-main-table"
+              row-key="id"
+              :row-class-name="applyMainRowClassName"
+              @selection-change="handleSelectionChange"
+              :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="申购单号" align="center" prop="applyNo" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -134,7 +122,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="apply-action-col small-padding fixed-width">
         <template slot-scope="scope">
           <el-button
             size="small"
@@ -160,13 +148,15 @@
       </el-table-column>
     </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap" ref="paginationWrap">
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
+    </div>
 
     <!-- 添加或修改新品申购申请对话框 -->
     <transition name="modal-fade">
@@ -399,11 +389,8 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: "申购单号", value: "applyNo" },
-        { label: "科室", value: "department" }
-      ],
+      mainTableHeight: 400,
+      selectedRowMap: {},
       // 总条数
       total: 0,
       // 新品申购申请表格数据
@@ -450,12 +437,6 @@ export default {
     };
   },
   computed: {
-    moreSearchStorageKey() {
-      return "spd.department.newProductApply.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value);
-    },
     // 过滤单据状态选项，只保留"未审核"和"已审核"
     filteredBizStatus() {
       if (!this.dict.type.biz_status) {
@@ -468,17 +449,25 @@ export default {
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
   mounted() {
-    // 监听弹窗打开，动态设置表格高度
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
     this.$nextTick(() => {
       this.setTableHeight();
     });
   },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
+  },
   watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
     open(newVal) {
       if (newVal) {
         this.$nextTick(() => {
@@ -488,11 +477,82 @@ export default {
     }
   },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
+      });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : '';
+    },
+    applyMainRowClassName({ row, rowIndex }) {
+      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+      const key = this.getApplyMainRowKey(row);
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable;
+      if (!table || !this.applyList || !this.applyList.length) {
+        return;
+      }
+      const keys = this.selectedRowMap || {};
+      if (!Object.keys(keys).length) {
+        return;
+      }
+      this.applyList.forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
     /** 查询新品申购申请列表 */
     getList() {
       this.loading = true;
       const queryParams = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(queryParams);
       console.log('[新品申购申请] 开始查询列表，参数:', queryParams);
       listNewProductApply(queryParams).then(response => {
         console.log('[新品申购申请] API响应:', response);
@@ -517,6 +577,10 @@ export default {
           }
         }
         this.loading = false;
+        this.$nextTick(() => {
+          this.restoreMainPageSelection();
+          this.scheduleApplyLayoutRefresh();
+        });
       }).catch(error => {
         console.error('[新品申购申请] 查询失败，完整错误信息:', error);
         console.error('[新品申购申请] 错误响应:', error.response);
@@ -540,10 +604,8 @@ export default {
         this.applyList = [];
         this.total = 0;
         this.loading = false;
+        this.scheduleApplyLayoutRefresh();
       });
-    },
-    applyListIndex({ row, rowIndex }) {
-      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
     },
     formatTotalAmount(row) {
       if (row.applyEntryList && row.applyEntryList.length > 0) {
@@ -668,54 +730,37 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
       this.handleQuery();
-    },
-    moreSearchFieldClass(t) {
-      if (t === 'department') {
-        return 'more-search-field--select';
-      }
-      return 'more-search-field--text';
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = {
-        applyNo: 'applyNo',
-        department: 'departmentId'
-      };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      const pageKeys = (this.applyList || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key) {
+          this.$set(this.selectedRowMap, key, row);
+        }
+      });
+      const ids = Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key);
+        return Number.isNaN(n) ? key : n;
+      });
+      this.ids = ids;
+      this.single = ids.length !== 1;
+      this.multiple = !ids.length;
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.$forceUpdate) {
+          table.$forceUpdate();
+        }
+      });
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -1041,7 +1086,6 @@ export default {
     /** 导出按钮操作 */
     handleExport() {
       const queryParams = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(queryParams);
       this.download('department/newProductApply/export', {
         ...queryParams
       }, `newProductApply_${new Date().getTime()}.xlsx`)
@@ -1184,83 +1228,6 @@ export default {
 .el-form-item__label {
   color: #606266;
   font-weight: 500;
-}
-
-/* 搜索区域：与科室申领一致 */
-.app-container.new-product-apply-page > .el-form.query-form {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  border: 1px solid #c0c4cc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .el-row {
-  margin-bottom: 8px;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .el-row:last-child {
-  margin-bottom: 0;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .el-form-item {
-  margin-bottom: 0;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .query-row-left .el-col {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
-  width: 180px;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
-  width: 100%;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
-  width: 180px;
-}
-
-.query-item-inline .el-form-item__label {
-  width: 80px !important;
-}
-
-.query-row-second {
-  position: relative;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .query-row-second .el-form-item {
-  white-space: nowrap;
-}
-
-.app-container.new-product-apply-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
 }
 
 .mb8 {
@@ -1504,10 +1471,6 @@ body > .el-popper:last-child,
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 8px !important;
-}
-
-.list-query-panel {
-  margin-top: -20px;
 }
 
 .app-container.new-product-apply-page .local-modal-mask {

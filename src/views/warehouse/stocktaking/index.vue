@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page stocktaking-page">
+  <div class="app-container list-page stocktaking-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <more-search-bar
@@ -82,7 +82,8 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList" class="table-compact" :row-class-name="warehouseListIndex" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="warehouseList" class="table-compact apply-main-table" :row-class-name="warehouseListIndex" @selection-change="handleSelectionChange" :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="业务单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
@@ -157,12 +158,15 @@
       </el-table-column>
     </el-table>
 
+    <div class="apply-pagination-wrap" ref="paginationWrap">
     <pagination
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
+    </div>
 
     <!-- 添加或修改盘点对话框 -->
     <transition name="modal-fade">
@@ -375,6 +379,7 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      mainTableHeight: 400,
       moreSearchTypes: [],
       moreSearchOptions: [
         { label: "业务单号", value: "billNo" },
@@ -432,6 +437,21 @@ export default {
     this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    }
+  },
   computed: {
     moreSearchStorageKey() {
       return "spd.warehouse.stocktaking.moreSearchTypes";
@@ -441,6 +461,51 @@ export default {
     }
   },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
+      });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
     /** 盘点列表序号 */
     warehouseListIndex({ row, rowIndex }) {
       const pageNum = Math.max(1, parseInt(this.queryParams.pageNum, 10));
@@ -463,6 +528,12 @@ export default {
         this.warehouseList = response.rows;
         this.total = response.total;
         this.loading = false;
+        this.$nextTick(() => {
+          this.scheduleApplyLayoutRefresh();
+        });
+      }).catch(() => {
+        this.loading = false;
+        this.scheduleApplyLayoutRefresh();
       });
     },
     nameBtn() {
@@ -824,62 +895,14 @@ export default {
   transform: scale(0.8);
 }
 
-/* 表格样式优化 */
-.el-table {
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266 !important;
-  font-weight: 600 !important;
-  border-right: 1px solid #EBEEF5 !important;
-  border-bottom: 1px solid #EBEEF5 !important;
-}
-
-.el-table td {
-  border-right: 1px solid #EBEEF5 !important;
-  border-bottom: 1px solid #EBEEF5 !important;
-}
-
-.el-table .cell {
-  padding: 0 8px;
-  line-height: 1.5;
-}
-
 /* 表单样式优化：仅弹窗内保留行距，避免列表查询区被撑高 */
 .local-modal-content .el-form-item {
   margin-bottom: 18px;
 }
 
-.el-form-item__label {
+.local-modal-content .el-form-item__label {
   color: #606266;
   font-weight: 500;
-}
-
-/* 主表格水平滚动条增粗 */
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  width: 16px !important; /* 垂直滚动条宽度 */
-  height: 8px !important;  /* 水平滚动条高度 */
-}
-
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-track,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 8px;
-}
-
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 8px;
-}
-
-::v-deep .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
-::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
 }
 </style>
 
@@ -891,70 +914,5 @@ export default {
 
 .query-select-wrapper {
   width: 180px;
-}
-
-/* 与到货验收 inWarehouse/audit：非 scoped + 页面类，确保 el-form 上边框/阴影一定生效 */
-.app-container.stocktaking-page {
-  position: relative;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
-}
-
-.list-query-panel {
-  margin-top: -20px;
-}
-
-.app-container.stocktaking-page > .el-table.table-compact {
-  margin-top: 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-}
-
-/* 主表格：与到货验收一致 */
-.app-container.stocktaking-page > .el-table.table-compact th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.stocktaking-page > .el-table.table-compact th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
-.app-container.stocktaking-page > .el-table.table-compact td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.stocktaking-page > .el-table.table-compact tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
-}
-
-.app-container.stocktaking-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
-  width: 20px !important;
-  height: 12px !important;
-}
-
-.app-container.stocktaking-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #909399 !important;
-  border-radius: 10px !important;
-  border: 2px solid #f1f1f1 !important;
-  min-height: 12px !important;
-  min-width: 20px !important;
-}
-
-.app-container.stocktaking-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1 !important;
-  border-radius: 10px !important;
-  border: 1px solid #e4e7ed !important;
 }
 </style>
