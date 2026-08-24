@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page inWarehouse-apply-page">
+  <div class="app-container list-page inWarehouse-apply-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -2515,193 +2515,6 @@ export default {
   color: #409EFF;
 }
 
-/* 搜索区域：卡片样式由外层 .form-fields-container.list-query-panel 承担，内层 el-form 不再重复包一层 */
-.list-query-panel .el-form {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  background: transparent;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  margin-bottom: 0;
-}
-
-.list-query-panel .el-form .el-row {
-  margin-bottom: 8px;
-}
-
-.list-query-panel .el-form .el-row:last-child {
-  margin-bottom: 0;
-}
-
-.list-query-panel .el-form .el-form-item {
-  margin-bottom: 0;
-}
-
-.list-query-panel .el-form .query-row-first {
-  margin-bottom: 10px;
-}
-
-.list-query-panel .el-form .query-row-first-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.list-query-panel .el-form .apply-query-field,
-.list-query-panel .el-form .query-row-first-inner .apply-query-input {
-  width: 170px;
-  flex-shrink: 0;
-}
-
-.list-query-panel .el-form .query-row-first-inner .more-search-select-wrap.apply-query-field > * {
-  width: 100%;
-}
-
-.list-query-panel .el-form .query-row-second .apply-query-field.el-select {
-  width: 170px;
-}
-
-.list-query-panel .el-form .query-row-first-inner .query-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.list-query-panel .el-form .query-row-first-inner .query-actions .el-button + .el-button {
-  margin-left: 0;
-}
-
-.list-query-panel .el-form .query-row-second {
-  margin-bottom: 0;
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-}
-
-.list-query-panel .el-form .apply-date-type-group {
-  margin-right: 10px;
-}
-
-.list-query-panel .el-form .apply-query-date.el-date-editor {
-  width: 200px;
-}
-
-/* 第一行查询条件左对齐紧凑布局 */
-.list-query-panel .el-form .query-row-left .el-col {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-/* 统一控制查询条件输入框宽度 */
-.list-query-panel .el-form .query-row-left .query-item-inline .el-input {
-  width: 180px;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
-  width: 100%;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .el-select {
-  width: 150px;
-}
-
-/* 单据状态对齐到仓库下面 - 使用margin-left对齐到第三个位置 */
-/* 计算：入库单号(80px label + 180px input + 16px margin) + 供应商(80px label + 180px input + 16px margin) = 552px */
-.list-query-panel .el-form .query-row-left .query-item-aligned {
-  margin-left: 552px;
-}
-
-/* 按钮对齐到仓库下面 - 按钮没有label，所以对齐到仓库input的开始位置 */
-/* 仓库起始位置 552px + label 80px = 632px */
-.list-query-panel .el-form .query-row-left .query-button-aligned {
-  margin-left: 632px;
-  display: inline-block;
-}
-
-/* 确保第三行的按钮单独显示 */
-.list-query-panel .el-form .query-row-left:last-child {
-  min-height: 32px;
-}
-
-.list-query-panel .el-form .query-row-left:last-child .el-col {
-  flex-wrap: nowrap;
-}
-
-/* 第二行：inline 表单下列内强制块级，避免日期区溢出盖住「单据状态」 */
-.list-query-panel .el-form .query-row-second > .el-col > .el-form-item {
-  display: block !important;
-  width: 100% !important;
-  box-sizing: border-box;
-  vertical-align: top;
-}
-
-.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) {
-  white-space: nowrap;
-}
-
-.list-query-panel .el-form .query-row-second .query-date-range-form-item {
-  white-space: normal;
-}
-
-.list-query-panel .el-form .query-row-second .query-date-range-form-item .el-form-item__content {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-  max-width: 100%;
-}
-
-.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.list-query-panel .el-form .query-row-second-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-}
-
-.list-query-panel .el-form .query-row-second > .query-row-second-inner > .el-form-item {
-  display: inline-flex !important;
-  width: auto !important;
-  margin-right: 0 !important;
-  margin-bottom: 0 !important;
-  flex: 0 0 auto;
-  vertical-align: middle;
-}
-
-.list-query-panel .el-form .query-row-second-inner .query-date-range-form-item .el-form-item__content {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-}
 
 /* 弹窗内三块区域：与标题栏同宽铺满（标题栏灰条为整行宽） */
 .local-modal-content .apply-modal-query-panel,
@@ -3528,6 +3341,11 @@ export default {
   line-height: 24px !important;
   text-align: center !important;
 }
+
+.mb8 {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
+}
 </style>
 
 <style>
@@ -3716,6 +3534,16 @@ export default {
   padding-left: 8px !important;
   padding-right: 8px !important;
   padding-bottom: 14px !important;
+}
+
+/* 搜索区上拉、工具栏贴紧搜索区：与申领单审核页一致，消除顶部留白 */
+.app-container.inWarehouse-apply-page > .form-fields-container.list-query-panel {
+  margin-top: -20px;
+  margin-bottom: 0 !important;
+}
+
+.app-container.inWarehouse-apply-page > .el-row.list-toolbar {
+  margin-top: 0 !important;
 }
 
 .app-container.inWarehouse-apply-page .local-modal-content.apply-modal-root-content {

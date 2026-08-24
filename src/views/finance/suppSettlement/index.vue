@@ -55,7 +55,9 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="list" border>
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="list" class="table-compact apply-main-table"
+              row-key="id" :height="mainTableHeight" border stripe>
       <el-table-column label="单号" align="center" prop="billNo" width="160" show-overflow-tooltip />
       <el-table-column label="供应商" align="center" prop="supplierName" width="140" show-overflow-tooltip />
       <el-table-column label="制单人" align="center" prop="createBy" width="90" />
@@ -71,7 +73,7 @@
       <el-table-column label="审核时间" align="center" prop="auditTime" width="160">
         <template slot-scope="scope">{{ scope.row.auditTime ? parseTime(scope.row.auditTime, '{y}-{m}-{d} {h}:{i}') : '--' }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="220" class-name="apply-action-col small-padding fixed-width">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-view" @click="handleDetail(scope.row)" v-hasPermi="['finance:suppSettlement:query']">详情</el-button>
           <el-button size="mini" type="text" icon="el-icon-link" @click="handleInvoices(scope.row)" v-hasPermi="['finance:suppSettlement:linkInvoice']">关联发票</el-button>
@@ -79,7 +81,10 @@
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
+    <div class="apply-pagination-wrap" ref="paginationWrap">
+    <pagination :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
+    </div>
+    </div>
 
     <!-- 详情弹窗 -->
     <el-dialog title="供应商结算单详情" :visible.sync="detailOpen" width="900px" append-to-body>
@@ -153,6 +158,7 @@ export default {
     return {
       loading: false,
       showSearch: true,
+      mainTableHeight: 400,
       moreSearchTypes: [],
       moreSearchOptions: [
         { label: '单号', value: 'billNo' },
@@ -189,7 +195,60 @@ export default {
     this.onMoreSearchTypesChange()
     this.getList()
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize)
+    this.scheduleApplyLayoutRefresh()
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize)
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight())
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight())
+    }
+  },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight()
+    },
+    scheduleApplyLayoutRefresh() {
+      this.$nextTick(() => {
+        this.updateMainTableHeight()
+        requestAnimationFrame(() => this.updateMainTableHeight())
+      })
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel
+      const pagWrap = this.$refs.paginationWrap
+      if (!panel || !panel.getBoundingClientRect) return
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height
+      if (!panelH) return
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8
+      const height = Math.max(200, Math.floor(panelH - pagH))
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable
+        if (table && table.doLayout) table.doLayout()
+        this.$nextTick(() => {
+          this.syncApplyTableSticky()
+          requestAnimationFrame(() => this.syncApplyTableSticky())
+        })
+      })
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable
+      const root = table && table.$el
+      if (!root) return
+      const bodyWrap = root.querySelector('.el-table__body-wrapper')
+      if (!bodyWrap) return
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth)
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`)
+    },
     getList() {
       this.loading = true
       const params = { ...this.queryParams }
@@ -198,7 +257,11 @@ export default {
         this.list = res.rows || []
         this.total = res.total || 0
         this.loading = false
-      }).catch(() => { this.loading = false })
+        this.scheduleApplyLayoutRefresh()
+      }).catch(() => {
+        this.loading = false
+        this.scheduleApplyLayoutRefresh()
+      })
     },
     handleDetail(row) {
       getSuppSettlement(row.id).then(res => {
@@ -301,9 +364,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.list-query-panel {
-  margin-top: -20px;
-}
-</style>

@@ -95,8 +95,12 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="list" @selection-change="handleSelectionChange" border>
-      <el-table-column type="selection" width="55" align="center" />
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="list" class="table-compact apply-main-table"
+              row-key="id"
+              :row-class-name="applyMainRowClassName"
+              @selection-change="handleSelectionChange" :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="单号" align="center" prop="billNo" width="160" show-overflow-tooltip />
       <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip />
       <el-table-column label="结算方式" align="center" prop="settlementMethod" width="100">
@@ -117,7 +121,7 @@
       <el-table-column label="审核时间" align="center" prop="auditTime" width="160">
         <template slot-scope="scope">{{ scope.row.auditTime ? parseTime(scope.row.auditTime, '{y}-{m}-{d} {h}:{i}') : '--' }}</template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="200" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="200" class-name="apply-action-col small-padding fixed-width">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-view" @click="handleUpdate(scope.row)" v-hasPermi="['finance:whSettlement:query']">详情/修改</el-button>
           <el-button size="mini" type="text" icon="el-icon-check" @click="handleAudit(scope.row)" v-hasPermi="['finance:whSettlement:audit']" v-if="scope.row.auditStatus !== 1">审核</el-button>
@@ -126,7 +130,10 @@
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
+    <div class="apply-pagination-wrap" ref="paginationWrap">
+    <pagination :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
+    </div>
+    </div>
 
     <!-- 新增/修改 弹窗 -->
     <el-dialog :title="dialogTitle" :visible.sync="open" width="960px" append-to-body :close-on-click-modal="false">
@@ -204,6 +211,8 @@ export default {
     return {
       loading: false,
       showSearch: true,
+      mainTableHeight: 400,
+      selectedRowMap: {},
       moreSearchTypes: [],
       moreSearchOptions: [
         { label: '单号', value: 'billNo' },
@@ -247,7 +256,82 @@ export default {
     this.onMoreSearchTypesChange()
     this.getList()
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize)
+    this.scheduleApplyLayoutRefresh()
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize)
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight())
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight())
+    }
+  },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight()
+    },
+    scheduleApplyLayoutRefresh() {
+      this.$nextTick(() => {
+        this.updateMainTableHeight()
+        requestAnimationFrame(() => this.updateMainTableHeight())
+      })
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel
+      const pagWrap = this.$refs.paginationWrap
+      if (!panel || !panel.getBoundingClientRect) return
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height
+      if (!panelH) return
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8
+      const height = Math.max(200, Math.floor(panelH - pagH))
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable
+        if (table && table.doLayout) table.doLayout()
+        this.$nextTick(() => {
+          this.syncApplyTableSticky()
+          requestAnimationFrame(() => this.syncApplyTableSticky())
+        })
+      })
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable
+      const root = table && table.$el
+      if (!root) return
+      const bodyWrap = root.querySelector('.el-table__body-wrapper')
+      if (!bodyWrap) return
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth)
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`)
+    },
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : ''
+    },
+    applyMainRowClassName({ row }) {
+      const key = this.getApplyMainRowKey(row)
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected'
+      }
+      return ''
+    },
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable
+      if (!table || !this.list || !this.list.length) return
+      const keys = this.selectedRowMap || {}
+      if (!Object.keys(keys).length) return
+      this.list.forEach((row) => {
+        const key = this.getApplyMainRowKey(row)
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true)
+        }
+      })
+    },
     getList() {
       this.loading = true
       const params = { ...this.queryParams }
@@ -261,7 +345,14 @@ export default {
         this.list = res.rows || []
         this.total = res.total || 0
         this.loading = false
-      }).catch(() => { this.loading = false })
+        this.$nextTick(() => {
+          this.restoreMainPageSelection()
+          this.scheduleApplyLayoutRefresh()
+        })
+      }).catch(() => {
+        this.loading = false
+        this.scheduleApplyLayoutRefresh()
+      })
     },
     handleAdd() {
       this.form = { warehouseId: undefined, settlementMethod: undefined }
@@ -380,10 +471,27 @@ export default {
       }).catch(() => {})
     },
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length !== 1
-      this.multiple = !selection.length
-      this.selectedRow = selection.length === 1 ? selection[0] : null
+      const pageKeys = (this.list || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean)
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key)
+        }
+      })
+      ;(selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row)
+        if (key) {
+          this.$set(this.selectedRowMap, key, row)
+        }
+      })
+      this.ids = Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key)
+        return Number.isNaN(n) ? key : n
+      })
+      this.single = this.ids.length !== 1
+      this.multiple = !this.ids.length
+      this.selectedRow = this.ids.length === 1 ? this.selectedRowMap[String(this.ids[0])] : null
     },
     handleQuery() {
       this.queryParams.pageNum = 1
@@ -438,9 +546,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.list-query-panel {
-  margin-top: -20px;
-}
-</style>

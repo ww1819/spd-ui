@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page settlement-audit-page">
+  <div class="app-container list-page settlement-audit-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <more-search-bar
@@ -96,11 +96,13 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="warehouseList" class="table-compact apply-main-table"
+              row-key="id"
               show-summary :summary-method="getTotalSummaries"
               :row-class-name="warehouseListIndex"
-              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
-      <el-table-column type="selection" width="55" align="center" />
+              @selection-change="handleSelectionChange" :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="结算单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable >
         <template slot-scope="scope">
@@ -158,7 +160,7 @@
 <!--        </template>-->
 <!--      </el-table-column>-->
       <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right">
+      <el-table-column label="操作" align="center" class-name="apply-action-col small-padding fixed-width" width="220" fixed="right">
         <template slot-scope="scope">
           <span style="white-space: nowrap;">
             <el-button
@@ -197,12 +199,15 @@
       </el-table-column>
     </el-table>
 
+    <div class="apply-pagination-wrap" ref="paginationWrap">
     <pagination
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
+    </div>
 
     <!-- 添加或修改结算对话框 -->
     <transition name="modal-fade">
@@ -530,6 +535,8 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      mainTableHeight: 400,
+      selectedRowMap: {},
       moreSearchTypes: [],
       moreSearchOptions: [
         { label: "结算单号", value: "billNo" },
@@ -632,6 +639,12 @@ export default {
           }
         });
       }
+    },
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
     }
   },
   created() {
@@ -639,7 +652,67 @@ export default {
     this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
+  },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      this.$nextTick(() => {
+        this.updateMainTableHeight();
+        requestAnimationFrame(() => this.updateMainTableHeight());
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const height = Math.max(200, Math.floor(panelH - pagH));
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) table.doLayout();
+        this.$nextTick(() => {
+          this.syncApplyTableSticky();
+          requestAnimationFrame(() => this.syncApplyTableSticky());
+        });
+      });
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : '';
+    },
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable;
+      if (!table || !this.warehouseList || !this.warehouseList.length) return;
+      const keys = this.selectedRowMap || {};
+      if (!Object.keys(keys).length) return;
+      this.warehouseList.forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true);
+        }
+      });
+    },
     /** 明细合计：按列 property 汇总数量、金额（与到货验收弹窗表尾一致） */
     getSummaries(param) {
       const { columns, data } = param;
@@ -715,6 +788,13 @@ export default {
         this.warehouseList = response.rows;
         this.total = response.total;
         this.loading = false;
+        this.$nextTick(() => {
+          this.restoreMainPageSelection();
+          this.scheduleApplyLayoutRefresh();
+        });
+      }).catch(() => {
+        this.loading = false;
+        this.scheduleApplyLayoutRefresh();
       });
     },
     checkMaterialBtn() {
@@ -951,9 +1031,26 @@ export default {
     },
     // 多选框选中数据
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+      const pageKeys = (this.warehouseList || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean);
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row);
+        if (key) {
+          this.$set(this.selectedRowMap, key, row);
+        }
+      });
+      this.ids = Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key);
+        return Number.isNaN(n) ? key : n;
+      });
+      this.single = this.ids.length !== 1;
+      this.multiple = !this.ids.length;
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -1154,6 +1251,11 @@ export default {
     },
     warehouseListIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+      const key = this.getApplyMainRowKey(row);
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected';
+      }
+      return '';
     },
     /** 结算明细添加按钮操作 */
     handleAddStkIoBillEntry() {
@@ -1410,96 +1512,6 @@ export default {
   transform: scale(0.8);
 }
 
-/* 按钮样式 */
-.el-button--text {
-  padding: 0 4px;
-}
-
-.el-button--text:hover {
-  color: #409EFF;
-}
-
-/* 搜索区域样式 */
-.app-container > .el-form {
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-}
-
-.app-container > .el-form .el-row {
-  margin-bottom: 8px;
-}
-
-.app-container > .el-form .el-row:last-child {
-  margin-bottom: 0;
-}
-
-.app-container > .el-form .el-form-item {
-  margin-bottom: 0;
-}
-
-/* 第一行查询条件左对齐紧凑布局 */
-.app-container > .el-form .query-row-left .el-col {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.app-container > .el-form .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.app-container > .el-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-/* 统一控制查询条件输入框宽度 */
-.app-container > .el-form .query-row-left .query-item-inline .el-input {
-  width: 180px;
-}
-
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.app-container > .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
-  width: 100%;
-}
-
-.app-container > .el-form .query-row-left .query-item-inline .el-select {
-  width: 150px;
-}
-
-/* 第二行单据状态对齐到仓库位置 */
-.app-container > .el-form .query-row-second {
-  position: relative;
-}
-
-/* 确保制单日期的两个日期选择器在同一行 */
-.app-container > .el-form .query-row-second .el-form-item {
-  white-space: nowrap;
-}
-
-.app-container > .el-form .query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.app-container > .el-form .query-row-second .query-status-col {
-  position: absolute;
-  left: 552px;
-  width: auto;
-  padding-left: 0;
-  padding-right: 0;
-}
-
 /* 弹窗内表单紧凑布局 */
 .local-modal-content .modal-form-compact .el-row {
   margin-bottom: 6px;
@@ -1556,11 +1568,6 @@ export default {
   line-height: 28px;
   height: 28px;
   font-size: 13px;
-}
-
-/* 确保页面容器有相对定位，以便内部弹窗正确定位 */
-.app-container {
-  position: relative;
 }
 
 /* 滚动条样式 - 增粗滚动条 */
@@ -1653,124 +1660,7 @@ export default {
 </style>
 
 <style>
-/* 全局表格滚动条样式 - 非scoped确保生效 */
-.el-table__body-wrapper::-webkit-scrollbar {
-  width: 8px !important;
-  height: 16px !important;
-}
-
-.el-table__body-wrapper::-webkit-scrollbar:vertical {
-  width: 8px !important;
-}
-
-.el-table__body-wrapper::-webkit-scrollbar:horizontal {
-  height: 16px !important;
-}
-
-.el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1 !important;
-  border-radius: 4px !important;
-}
-
-.el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #c1c1c1 !important;
-  border-radius: 4px !important;
-}
-
-.el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8 !important;
-}
-
-/* 针对Element UI表格的滚动条组件 */
-.el-table .el-scrollbar__bar.is-vertical {
-  width: 8px !important;
-}
-
-.el-table .el-scrollbar__bar.is-horizontal {
-  height: 16px !important;
-}
-
-.el-table .el-scrollbar__thumb {
-  min-width: 8px !important;
-  min-height: 16px !important;
-}
-</style>
-
-<style>
-/* =========================
- * 结算审核：顶部搜索容器 + 主明细框（与「到货验收」一致，非 scoped 强制覆盖）
- * ========================= */
-
-.app-container.settlement-audit-page {
-  position: relative;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
-}
-
-.list-query-panel {
-  margin-top: -20px;
-}
-
-.app-container.settlement-audit-page > .el-table.table-compact {
-  margin-top: 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-}
-
-.app-container.settlement-audit-page > .el-table.table-compact th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.settlement-audit-page > .el-table.table-compact th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
-.app-container.settlement-audit-page > .el-table.table-compact td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.settlement-audit-page > .el-table.table-compact tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
-}
-
-.app-container.settlement-audit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
-  width: 20px !important;
-  height: 12px !important;
-}
-
-.app-container.settlement-audit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #909399 !important;
-  border-radius: 10px !important;
-  border: 2px solid #f1f1f1 !important;
-  min-height: 12px !important;
-  min-width: 20px !important;
-}
-
-.app-container.settlement-audit-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1 !important;
-  border-radius: 10px !important;
-  border: 1px solid #e4e7ed !important;
-}
-
-.app-container.settlement-audit-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-  overflow: hidden;
-}
-
+/* 列表样式见 department-apply-list-align.scss；以下为弹窗页内特例 */
 .app-container.settlement-audit-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper,
 .app-container.settlement-audit-page .local-modal-content .modal-detail-section .el-table .el-table__fixed .el-table__fixed-footer-wrapper,
 .app-container.settlement-audit-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-right .el-table__fixed-footer-wrapper {

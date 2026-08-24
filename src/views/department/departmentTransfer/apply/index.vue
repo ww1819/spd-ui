@@ -129,7 +129,7 @@
           <span>{{ scope.row.rejectReason || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable sortable />
+      <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
       <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="180">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
@@ -1291,146 +1291,7 @@ export default {
 </style>
 
 <style>
-/* 转科申请：与「到货验收」一致的搜索区 + 主表 + 翻页常驻（非 scoped） */
-.app-container.departmentTransfer-apply-page {
-  position: relative;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
-}
-
-/* 搜索白卡：与科室申领 dApply 一致（内边距 16×20、行间 8px） */
-.list-query-panel .el-form {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 0;
-}
-
-.list-query-panel {
-  margin-top: -20px;
-}
-
-.list-query-panel .el-form .el-row {
-  margin-bottom: 8px;
-}
-
-.list-query-panel .el-form .el-row:last-child {
-  margin-bottom: 0;
-}
-
-.list-query-panel .el-form .el-form-item {
-  margin-bottom: 0;
-}
-
-.list-query-panel .el-form .query-row-left .el-col {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .el-input {
-  width: 180px;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
-  width: 100%;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .el-select {
-  width: 180px;
-}
-
-.list-query-panel .el-form .query-row-second .el-form-item {
-  white-space: nowrap;
-}
-
-.list-query-panel .el-form .query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.app-container.departmentTransfer-apply-page > .list-toolbar {
-  margin-top: 4px !important;
-}
-
-.app-container.departmentTransfer-apply-page > .el-table.table-compact {
-  margin-top: 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-}
-
-.app-container.departmentTransfer-apply-page > .el-table.table-compact th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.departmentTransfer-apply-page > .el-table.table-compact th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
-.app-container.departmentTransfer-apply-page > .el-table.table-compact td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.departmentTransfer-apply-page > .el-table.table-compact tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
-}
-
-.app-container.departmentTransfer-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
-  width: 20px !important;
-  height: 12px !important;
-}
-
-.app-container.departmentTransfer-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #909399 !important;
-  border-radius: 10px !important;
-  border: 2px solid #f1f1f1 !important;
-  min-height: 12px !important;
-  min-width: 20px !important;
-}
-
-.app-container.departmentTransfer-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1 !important;
-  border-radius: 10px !important;
-  border: 1px solid #e4e7ed !important;
-}
-
-/* 弹窗遮罩与列表区左右 padding 对齐（与到货验收一致） */
-.app-container.departmentTransfer-apply-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-}
-
-/* 弹窗内调出/调入科室标签（非 scoped，确保覆盖 Element 默认样式） */
+/* 弹窗内调出/调入科室标签（非 scoped） */
 .app-container.departmentTransfer-apply-page .local-modal-content .transfer-dept-label-item.is-required .el-form-item__label::before,
 .app-container.departmentTransfer-apply-page .local-modal-content .transfer-dept-label-item.is-required .el-form-item__label:before {
   display: none !important;

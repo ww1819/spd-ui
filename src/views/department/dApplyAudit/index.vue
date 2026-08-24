@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page d-apply-audit-page">
+  <div class="app-container list-page d-apply-audit-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -27,6 +27,10 @@
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
             <el-form-item class="query-date-range-form-item query-item-inline">
+              <el-radio-group v-model="queryParams.dateQueryType" size="small" class="apply-date-type-group">
+                <el-radio-button label="bill">制单日期</el-radio-button>
+                <el-radio-button label="audit">审核日期</el-radio-button>
+              </el-radio-group>
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="datetime"
@@ -46,7 +50,7 @@
               />
             </el-form-item>
             <el-form-item prop="applyBillStatus" class="query-item-inline query-item-status">
-              <el-select v-model="queryParams.applyBillStatus" placeholder="状态"
+              <el-select v-model="queryParams.applyBillStatus" placeholder="单据状态"
                          clearable class="apply-query-field">
                 <el-option label="未审核" :value="1" />
                 <el-option label="已审核" :value="2" />
@@ -133,7 +137,7 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable sortable />
+      <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable />
       <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="310">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
@@ -427,6 +431,7 @@ export default {
         pageSize: 10,
         applyBillNo: null,
         ...buildListDefaultDateRange(),
+        dateQueryType: 'bill',
         warehouseId: null,
         departmentId: null,
         userId: null,
@@ -742,6 +747,7 @@ export default {
       this.queryParams.applyBillNo = null;
       this.queryParams.warehouseId = null;
       this.queryParams.departmentId = null;
+      this.queryParams.dateQueryType = 'bill';
       Object.assign(this.queryParams, buildListDefaultDateRange());
       this.handleQuery();
     },
@@ -958,7 +964,7 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 占满整个遮罩层 */
+/* 内部弹窗样式保留 */
 .local-modal-mask {
   position: absolute;
   left: 0;
@@ -1278,102 +1284,6 @@ export default {
   transform: scale(0.8);
 }
 
-/* 表格样式优化 */
-.el-table {
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266 !important;
-  font-weight: 600 !important;
-  border-right: 1px solid #EBEEF5 !important;
-  border-bottom: 1px solid #EBEEF5 !important;
-}
-
-.el-table td {
-  border-right: 1px solid #EBEEF5 !important;
-  border-bottom: 1px solid #EBEEF5 !important;
-}
-
-.el-table .cell {
-  padding: 0 8px;
-  line-height: 1.5;
-}
-
-/* 表单样式优化 */
-.el-form-item {
-  margin-bottom: 18px;
-}
-
-.el-form-item__label {
-  color: #606266;
-  font-weight: 500;
-}
-
-/* 搜索区域：与科室申领 dApply 列表页一致（顶层 el-form 白底、边框与阴影） */
-.app-container.d-apply-audit-page > .el-form.query-form {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  background: #fff;
-  padding: 16px 20px;
-  border-radius: 8px;
-  border: 1px solid #c0c4cc;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .el-row {
-  margin-bottom: 8px;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .el-row:last-child {
-  margin-bottom: 0;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .el-form-item {
-  margin-bottom: 0;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .el-col {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline .el-input {
-  width: 180px;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline .query-select-wrapper > * {
-  width: 100%;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .query-row-left .query-item-inline .el-select {
-  width: 180px;
-}
-
-.query-item-inline .el-form-item__label {
-  width: 80px !important;
-}
 
 .detail-header-row {
   display: flex;
@@ -1389,132 +1299,117 @@ export default {
   color: #f56c6c;
   font-size: 14px;
 }
-
-.query-row-second {
-  position: relative;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .query-row-second .el-form-item {
-  white-space: nowrap;
-}
-
-.app-container.d-apply-audit-page > .el-form.query-form .query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-/* 按钮行：与科室申领一致 */
-.mb8 {
-  margin-top: 0 !important;
-  margin-bottom: 8px !important;
-}
-
-/* 翻页：贴近表格；下方不留白（与科室申领 dApply 一致） */
-.d-apply-audit-page .pagination-bottom-wrap {
-  margin-top: 0 !important;
-  margin-bottom: 0;
-  padding-bottom: 0;
-  transform: translateY(-8px);
-}
-
-::v-deep .d-apply-audit-page .pagination-bottom-wrap .pagination-container {
-  padding: 0 !important;
-}
-
-/* 仅列表主表（勿作用于弹窗内表，避免白屏修复后仍出现整页/弹窗双横向条） */
-::v-deep .d-apply-audit-page > .el-table .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-}
-
-::v-deep .d-apply-audit-page > .el-table .el-table__body-wrapper::-webkit-scrollbar {
-  height: 12px !important;
-}
-
-::v-deep .d-apply-audit-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  height: 12px !important;
-  border-radius: 6px;
-}
-
-/* 确保操作列固定 */
-::v-deep .el-table__fixed-right {
-  right: 0 !important;
-  z-index: 12 !important;
-}
-
-::v-deep .el-table__fixed-header-wrapper {
-  z-index: 11;
-}
-
-::v-deep .el-table__fixed-right-patch {
-  right: 0 !important;
-  z-index: 12 !important;
-}
-
-/* 确保固定列头部和主体都有正确的z-index */
-::v-deep .el-table__fixed-right .el-table__header-wrapper {
-  z-index: 12 !important;
-}
-
-::v-deep .el-table__fixed-right .el-table__body-wrapper {
-  z-index: 12 !important;
-}
-
-/* 确保固定列在滚动时保持固定 */
-::v-deep .el-table__fixed {
-  position: absolute !important;
-}
-
-::v-deep .el-table__fixed-right {
-  position: absolute !important;
-  right: 0 !important;
-}
-
-::v-deep .d-apply-audit-page > .el-table {
-  overflow-x: auto;
-}
-
 </style>
 
 <style>
-/* 与到货验收 inWarehouse-audit-page 非 scoped 块保持一致（避免多出的 overflow/max-width 等影响首屏负 margin 表现） */
-.app-container.d-apply-audit-page {
+/* 申领单审核：列表样式见 department-apply-list-align.scss；以下为弹窗/页内特例 */
+
+.app-container.d-apply-audit-page .local-modal-content.apply-modal-root-content {
   position: relative;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
-}
-
-.list-query-panel {
-  margin-top: -20px;
-}
-
-.app-container.d-apply-audit-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
   overflow: hidden;
 }
 
-/* 主表与翻页间距、表头：与科室申领列表一致 */
-.app-container.d-apply-audit-page > .el-table {
-  margin-bottom: 1px;
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
 }
 
-.app-container.d-apply-audit-page > .el-table th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th .cell,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
+  text-align: center !important;
+  line-height: 20px !important;
 }
 
-.app-container.d-apply-audit-page > .el-table th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
+.app-container.d-apply-audit-page .apply-main-table thead th .cell,
+.app-container.d-apply-audit-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
+.app-container.d-apply-audit-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+  white-space: nowrap !important;
+}
+
+.app-container.d-apply-audit-page .local-modal-content .apply-detail-table thead th:nth-child(2) .cell {
+  white-space: nowrap !important;
+}
+
+.app-container.d-apply-audit-page .local-modal-content .apply-detail-table thead th:nth-child(7) .cell {
+  white-space: nowrap !important;
+}
+
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar-track,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar-track,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+.app-container.d-apply-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+}
+
+.app-container.d-apply-audit-page .local-modal-content .apply-detail-table th.apply-select-col,
+.app-container.d-apply-audit-page .local-modal-content .apply-detail-table td.apply-select-col,
+.app-container.d-apply-audit-page .local-modal-content .apply-detail-table th.el-table-column--selection,
+.app-container.d-apply-audit-page .local-modal-content .apply-detail-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-apply-audit-page .local-modal-content .apply-detail-table td.apply-select-col,
+.app-container.d-apply-audit-page .local-modal-content .apply-detail-table td.el-table-column--selection {
+  background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.d-apply-audit-page .local-modal-content .apply-detail-table th.apply-select-col,
+.app-container.d-apply-audit-page .local-modal-content .apply-detail-table th.el-table-column--selection {
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
 }
 </style>

@@ -104,8 +104,12 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="invoiceList" class="table-compact" @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
-      <el-table-column type="selection" width="55" align="center" />
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="invoiceList" class="table-compact apply-main-table"
+              row-key="id"
+              :row-class-name="applyMainRowClassName"
+              @selection-change="handleSelectionChange" :height="mainTableHeight" border stripe>
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="发票号码" align="center" prop="invoiceNo" width="120" show-overflow-tooltip />
       <el-table-column label="发票代码" align="center" prop="invoiceCode" width="120" show-overflow-tooltip />
       <el-table-column label="开票日期" align="center" prop="invoiceDate" width="110">
@@ -133,7 +137,7 @@
         <template slot-scope="scope">{{ scope.row.auditTime ? parseTime(scope.row.auditTime, '{y}-{m}-{d} {h}:{i}') : '--' }}</template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="220" class-name="apply-action-col small-padding fixed-width">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['finance:invoice:edit']" :disabled="scope.row.auditStatus === 1">修改</el-button>
           <el-button size="mini" type="text" icon="el-icon-check" @click="handleAudit(scope.row)" v-hasPermi="['finance:invoice:audit']" v-if="scope.row.auditStatus !== 1">审核</el-button>
@@ -142,7 +146,10 @@
       </el-table-column>
     </el-table>
 
+    <div class="apply-pagination-wrap" ref="paginationWrap">
     <pagination :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
+    </div>
+    </div>
 
     <!-- 新增/修改弹窗 -->
     <el-dialog :title="title" :visible.sync="open" width="720px" append-to-body>
@@ -232,6 +239,8 @@ export default {
       single: true,
       multiple: true,
       showSearch: true,
+      mainTableHeight: 400,
+      selectedRowMap: {},
       moreSearchTypes: [],
       moreSearchOptions: [
         { label: "发票号码", value: "invoiceNo" },
@@ -273,7 +282,82 @@ export default {
     this.onMoreSearchTypesChange()
     this.getList()
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize)
+    this.scheduleApplyLayoutRefresh()
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize)
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight())
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight())
+    }
+  },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight()
+    },
+    scheduleApplyLayoutRefresh() {
+      this.$nextTick(() => {
+        this.updateMainTableHeight()
+        requestAnimationFrame(() => this.updateMainTableHeight())
+      })
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel
+      const pagWrap = this.$refs.paginationWrap
+      if (!panel || !panel.getBoundingClientRect) return
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height
+      if (!panelH) return
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8
+      const height = Math.max(200, Math.floor(panelH - pagH))
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable
+        if (table && table.doLayout) table.doLayout()
+        this.$nextTick(() => {
+          this.syncApplyTableSticky()
+          requestAnimationFrame(() => this.syncApplyTableSticky())
+        })
+      })
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.applyMainTable
+      const root = table && table.$el
+      if (!root) return
+      const bodyWrap = root.querySelector('.el-table__body-wrapper')
+      if (!bodyWrap) return
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth)
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`)
+    },
+    getApplyMainRowKey(row) {
+      return row && row.id != null ? String(row.id) : ''
+    },
+    applyMainRowClassName({ row }) {
+      const key = this.getApplyMainRowKey(row)
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return 'apply-row-selected'
+      }
+      return ''
+    },
+    restoreMainPageSelection() {
+      const table = this.$refs.applyMainTable
+      if (!table || !this.invoiceList || !this.invoiceList.length) return
+      const keys = this.selectedRowMap || {}
+      if (!Object.keys(keys).length) return
+      this.invoiceList.forEach((row) => {
+        const key = this.getApplyMainRowKey(row)
+        if (key && keys[key]) {
+          table.toggleRowSelection(row, true)
+        }
+      })
+    },
     getList() {
       this.loading = true
       const params = { ...this.queryParams }
@@ -287,7 +371,14 @@ export default {
         this.invoiceList = res.rows || []
         this.total = res.total || 0
         this.loading = false
-      }).catch(() => { this.loading = false })
+        this.$nextTick(() => {
+          this.restoreMainPageSelection()
+          this.scheduleApplyLayoutRefresh()
+        })
+      }).catch(() => {
+        this.loading = false
+        this.scheduleApplyLayoutRefresh()
+      })
     },
     cancel() {
       this.open = false
@@ -379,10 +470,27 @@ export default {
       }).catch(() => {})
     },
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length !== 1
-      this.multiple = !selection.length
-      this.selectedRow = selection.length === 1 ? selection[0] : null
+      const pageKeys = (this.invoiceList || [])
+        .map((row) => this.getApplyMainRowKey(row))
+        .filter(Boolean)
+      pageKeys.forEach((key) => {
+        if (this.selectedRowMap[key]) {
+          this.$delete(this.selectedRowMap, key)
+        }
+      })
+      ;(selection || []).forEach((row) => {
+        const key = this.getApplyMainRowKey(row)
+        if (key) {
+          this.$set(this.selectedRowMap, key, row)
+        }
+      })
+      this.ids = Object.keys(this.selectedRowMap || {}).map((key) => {
+        const n = Number(key)
+        return Number.isNaN(n) ? key : n
+      })
+      this.single = this.ids.length !== 1
+      this.multiple = !this.ids.length
+      this.selectedRow = this.ids.length === 1 ? this.selectedRowMap[String(this.ids[0])] : null
     },
     handleQuery() {
       this.queryParams.pageNum = 1
@@ -439,69 +547,3 @@ export default {
   }
 }
 </script>
-
-<style>
-/* 发票管理：与「到货验收」一致的搜索区 + 主表 + 翻页常驻（非 scoped） */
-.app-container.finance-invoice-page {
-  position: relative;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
-}
-
-.list-query-panel {
-  margin-top: -20px;
-}
-
-.app-container.finance-invoice-page > .el-table.table-compact {
-  margin-top: 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-}
-
-.app-container.finance-invoice-page > .el-table.table-compact th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.finance-invoice-page > .el-table.table-compact th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
-.app-container.finance-invoice-page > .el-table.table-compact td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.finance-invoice-page > .el-table.table-compact tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
-}
-
-.app-container.finance-invoice-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
-  width: 20px !important;
-  height: 12px !important;
-}
-
-.app-container.finance-invoice-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #909399 !important;
-  border-radius: 10px !important;
-  border: 2px solid #f1f1f1 !important;
-  min-height: 12px !important;
-  min-width: 20px !important;
-}
-
-.app-container.finance-invoice-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1 !important;
-  border-radius: 10px !important;
-  border: 1px solid #e4e7ed !important;
-}
-</style>

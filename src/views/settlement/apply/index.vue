@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page settlement-apply-page">
+  <div class="app-container list-page settlement-apply-page" :class="{ 'is-modal-open': open || viewOpen }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <more-search-bar
@@ -97,10 +97,11 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="warehouseList" class="table-compact"
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table ref="applyMainTable" v-loading="loading" :data="warehouseList" class="table-compact apply-main-table"
               show-summary :summary-method="getTotalSummaries"
               :row-class-name="warehouseListIndex"
-              @selection-change="handleSelectionChange" height="calc(100vh - 340px)" border stripe>
+              @selection-change="handleSelectionChange" :height="mainTableHeight" border stripe>
 <!--      <el-table-column type="selection" width="55" align="center" />-->
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="结算单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable>
@@ -163,13 +164,15 @@
       </el-table-column>
     </el-table>
 
+    <div class="apply-pagination-wrap" ref="paginationWrap">
     <pagination
-      v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+    </div>
+    </div>
 
     <!-- 添加或修改结算对话框 -->
     <transition name="modal-fade">
@@ -710,6 +713,7 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
+      mainTableHeight: 400,
       moreSearchTypes: [],
       moreSearchOptions: [
         { label: "结算单号", value: "billNo" },
@@ -783,7 +787,47 @@ export default {
     this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize);
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    }
+  },
   methods: {
+    onApplyWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleApplyLayoutRefresh() {
+      this.$nextTick(() => {
+        this.updateMainTableHeight();
+        requestAnimationFrame(() => this.updateMainTableHeight());
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const height = Math.max(200, Math.floor(panelH - pagH));
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) table.doLayout();
+      });
+    },
     getSummaries(param) {
       const { columns, data } = param;
       const sums = [];
@@ -852,6 +896,10 @@ export default {
         this.warehouseList = response.rows;
         this.total = response.total;
         this.loading = false;
+        this.scheduleApplyLayoutRefresh();
+      }).catch(() => {
+        this.loading = false;
+        this.scheduleApplyLayoutRefresh();
       });
     },
     checkMaterialBtn() {
@@ -1656,144 +1704,6 @@ export default {
   flex-direction: column;
 }
 
-/* 表格样式优化 */
-.el-table {
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
-}
-
-.el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266;
-  font-weight: 500;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.el-table td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.el-table tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
-}
-
-/* 按钮样式 */
-.el-button--text {
-  padding: 0 4px;
-}
-
-.el-button--text:hover {
-  color: #409EFF;
-}
-
-/* 搜索区域样式 */
-.list-query-panel .el-form {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 0;
-}
-
-.list-query-panel .el-form .el-row {
-  margin-bottom: 8px;
-}
-
-.list-query-panel .el-form .el-row:last-child {
-  margin-bottom: 0;
-}
-
-.list-query-panel .el-form .el-form-item {
-  margin-bottom: 0;
-}
-
-/* 第一行查询条件左对齐紧凑布局 */
-.list-query-panel .el-form .query-row-left .el-col {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 0;
-  vertical-align: top;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline:last-child {
-  margin-right: 0;
-}
-
-/* 统一控制查询条件输入框宽度 */
-.list-query-panel .el-form .query-row-left .query-item-inline .el-input {
-  width: 180px;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper {
-  width: 180px;
-  display: inline-block;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .query-select-wrapper > * {
-  width: 100%;
-}
-
-.list-query-panel .el-form .query-row-left .query-item-inline .el-select {
-  width: 150px;
-}
-
-/* 单据状态对齐到仓库下面 - 使用margin-left对齐到第三个位置 */
-/* 计算：入库单号(80px label + 180px input + 16px margin) + 供应商(80px label + 180px input + 16px margin) = 552px */
-.list-query-panel .el-form .query-row-left .query-item-aligned {
-  margin-left: 552px;
-}
-
-/* 按钮对齐到仓库下面 - 按钮没有label，所以对齐到仓库input的开始位置 */
-/* 仓库起始位置 552px + label 80px = 632px */
-.list-query-panel .el-form .query-row-left .query-button-aligned {
-  margin-left: 632px;
-  display: inline-block;
-}
-
-/* 确保第三行的按钮单独显示 */
-.list-query-panel .el-form .query-row-left:last-child {
-  min-height: 32px;
-}
-
-.list-query-panel .el-form .query-row-left:last-child .el-col {
-  flex-wrap: nowrap;
-}
-
-/* 第二行单据状态对齐到仓库位置 */
-.list-query-panel .el-form .query-row-second {
-  position: relative;
-}
-
-/* 确保制单日期的两个日期选择器在同一行 */
-.list-query-panel .el-form .query-row-second .el-form-item {
-  white-space: nowrap;
-}
-
-.list-query-panel .el-form .query-row-second .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.list-query-panel .el-form .query-row-second .query-status-col {
-  position: absolute;
-  left: 552px;
-  width: auto;
-  padding-left: 0;
-  padding-right: 0;
-}
-
 /* 弹窗内表单紧凑布局 */
 .local-modal-content .modal-form-compact .el-row {
   margin-bottom: 10px;
@@ -2031,78 +1941,5 @@ export default {
 ::v-deep .purchase-modal-content .el-table .el-scrollbar__wrap::-webkit-scrollbar-thumb:hover,
 ::v-deep .purchase-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8 !important;
-}
-</style>
-
-<style>
-/* =========================
- * 结算申请：顶部搜索容器 + 主明细框
- * 直接对齐「到货验收」页面（非 scoped，确保发版后样式一致）
- * ========================= */
-
-.app-container.settlement-apply-page {
-  position: relative;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
-}
-
-/* 搜索框容器：与到货验收一致的上移与外观（宽高/明暗/边框/阴影） */
-.list-query-panel {
-  margin-top: -20px;
-}
-
-/* 主明细框（列表表格）：与到货验收一致 */
-.app-container.settlement-apply-page > .el-table.table-compact {
-  margin-top: 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-}
-
-.app-container.settlement-apply-page > .el-table.table-compact th {
-  background-color: #EBEEF5 !important;
-  color: #606266;
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.settlement-apply-page > .el-table.table-compact th .cell {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  font-family: 'Roboto', sans-serif !important;
-}
-
-.app-container.settlement-apply-page > .el-table.table-compact td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #EBEEF5;
-}
-
-.app-container.settlement-apply-page > .el-table.table-compact tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
-}
-
-/* 主列表滚动条：与到货验收一致 */
-.app-container.settlement-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar {
-  width: 20px !important;
-  height: 12px !important;
-}
-
-.app-container.settlement-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #909399 !important;
-  border-radius: 10px !important;
-  border: 2px solid #f1f1f1 !important;
-  min-height: 12px !important;
-  min-width: 20px !important;
-}
-
-.app-container.settlement-apply-page > .el-table.table-compact .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1 !important;
-  border-radius: 10px !important;
-  border: 1px solid #e4e7ed !important;
 }
 </style>

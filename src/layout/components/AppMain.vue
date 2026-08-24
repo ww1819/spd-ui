@@ -348,17 +348,34 @@
                       <div class="wh-reminder-bill-right">
                         <p v-if="departmentUnreceivedError" class="wh-reminder-error wh-reminder-error--above-table">{{ departmentUnreceivedError }}</p>
                         <div class="wh-reminder-table-section">
-                          <div class="wh-reminder-apply-toolbar">
-                            <div class="wh-reminder-detail-section-title">待确认收货出库单</div>
-                          </div>
+                          <el-tabs v-model="departmentUnreceivedReadTab" type="card" class="wh-reminder-read-tabs">
+                            <el-tab-pane name="unread">
+                              <span slot="label">
+                                未读通知
+                                <span
+                                  v-if="departmentUnreceivedUnreadRows.length"
+                                  class="wh-reminder-sub-tab-badge"
+                                >{{ departmentUnreceivedUnreadRows.length }}</span>
+                              </span>
+                            </el-tab-pane>
+                            <el-tab-pane name="read">
+                              <span slot="label">
+                                已读通知
+                                <span
+                                  v-if="departmentUnreceivedReadRows.length"
+                                  class="wh-reminder-sub-tab-badge"
+                                >{{ departmentUnreceivedReadRows.length }}</span>
+                              </span>
+                            </el-tab-pane>
+                          </el-tabs>
                           <el-table
-                            :data="departmentUnreceivedRows"
+                            :data="departmentUnreceivedDisplayRows"
                             border
                             stripe
                             size="small"
                             class="wh-reminder-detail-table"
                             max-height="256"
-                            empty-text="暂无待确认收货出库单"
+                            :empty-text="departmentUnreceivedReadTab === 'read' ? '暂无已读通知' : '暂无未读通知'"
                           >
                             <el-table-column type="index" label="序号" width="58" align="center" />
                             <el-table-column label="出库单号" prop="billNo" min-width="140" show-overflow-tooltip>
@@ -524,6 +541,10 @@ export default {
       departmentUnreceivedError: '',
       departmentUnreceivedRows: [],
       departmentUnreceivedBillCount: 0,
+      /** 科室未收货确认：unread | read */
+      departmentUnreceivedReadTab: 'unread',
+      /** 本账号已读出库单号集合（localStorage 持久化） */
+      departmentUnreceivedReadBillNos: [],
       departmentExpiryLoading: false,
       departmentExpiryError: '',
       departmentExpiryRows: [],
@@ -610,7 +631,26 @@ export default {
       warehouseReminderSubTab: state => state.app.warehouseReminderSubTab,
       departmentReminderSubTab: state => state.app.departmentReminderSubTab
     }),
-    ...mapGetters(['sidebarRouters', 'messageReminderKeys']),
+    ...mapGetters(['sidebarRouters', 'messageReminderKeys', 'userId']),
+    departmentUnreceivedUnreadRows() {
+      const readSet = new Set(this.departmentUnreceivedReadBillNos || [])
+      return (this.departmentUnreceivedRows || []).filter(row => {
+        const no = row && row.billNo != null ? String(row.billNo) : ''
+        return no && !readSet.has(no)
+      })
+    },
+    departmentUnreceivedReadRows() {
+      const readSet = new Set(this.departmentUnreceivedReadBillNos || [])
+      return (this.departmentUnreceivedRows || []).filter(row => {
+        const no = row && row.billNo != null ? String(row.billNo) : ''
+        return no && readSet.has(no)
+      })
+    },
+    departmentUnreceivedDisplayRows() {
+      return this.departmentUnreceivedReadTab === 'read'
+        ? this.departmentUnreceivedReadRows
+        : this.departmentUnreceivedUnreadRows
+    },
     cachedViews() {
       return this.$store.state.tagsView.cachedViews
     },
@@ -629,6 +669,7 @@ export default {
     warehouseReminderVisible(val) {
       if (val) {
         this.ensureReminderCategoryAllowed()
+        this.loadDepartmentUnreceivedReadBillNos()
       }
       if (val && this.messageReminderCategory === 'warehouse' && (this.showWarehouseBillBlock || this.showWarehouseNearExpiryBlock || this.showWarehouseInventoryBlock)) {
         this.loadWarehouseReminderCounts()
@@ -679,7 +720,7 @@ export default {
       scheduleMainContentScrollReset(this.$el)
     },
     departmentSubTabBadge(key) {
-      const u = Number(this.departmentUnreceivedBillCount) || 0
+      const u = this.departmentUnreceivedUnreadRows.length
       const e = Number(this.departmentExpiryLineCount) || 0
       if (key === 'unreceivedConfirm' && u > 0) {
         return u
@@ -778,12 +819,48 @@ export default {
     },
     handleDepartmentUnreceivedBillNoDblClick(billNo) {
       if (!billNo) return
+      this.markDepartmentUnreceivedBillRead(billNo)
       const path = this.resolveReceiptConfirmMenuPath()
       this.closeWarehouseReminder()
       if (this.$tab && typeof this.$tab.openPage === 'function') {
         this.$tab.openPage('收货确认', path, { billNo: String(billNo) })
       } else {
         this.$router.push({ path, query: { billNo: String(billNo) } })
+      }
+    },
+    departmentUnreceivedReadStorageKey() {
+      const uid = this.userId != null ? String(this.userId) : '0'
+      return `spd_dept_unreceived_read_${uid}`
+    },
+    loadDepartmentUnreceivedReadBillNos() {
+      try {
+        const raw = localStorage.getItem(this.departmentUnreceivedReadStorageKey())
+        const arr = raw ? JSON.parse(raw) : []
+        this.departmentUnreceivedReadBillNos = Array.isArray(arr)
+          ? arr.map(x => String(x)).filter(Boolean)
+          : []
+      } catch (e) {
+        this.departmentUnreceivedReadBillNos = []
+      }
+    },
+    persistDepartmentUnreceivedReadBillNos() {
+      try {
+        localStorage.setItem(
+          this.departmentUnreceivedReadStorageKey(),
+          JSON.stringify(this.departmentUnreceivedReadBillNos || [])
+        )
+      } catch (e) {
+        // ignore
+      }
+    },
+    markDepartmentUnreceivedBillRead(billNo) {
+      const no = billNo != null ? String(billNo) : ''
+      if (!no) return
+      const list = (this.departmentUnreceivedReadBillNos || []).slice()
+      if (!list.includes(no)) {
+        list.push(no)
+        this.departmentUnreceivedReadBillNos = list
+        this.persistDepartmentUnreceivedReadBillNos()
       }
     },
     /** 科室请购审核 / 科室申购审核 菜单路径（与后台菜单名称一致） */
@@ -971,6 +1048,7 @@ export default {
       if (!this.warehouseReminderVisible || this.messageReminderCategory !== 'department' || !this.showDepartmentUnreceivedBlock) {
         return
       }
+      this.loadDepartmentUnreceivedReadBillNos()
       this.departmentUnreceivedLoading = true
       this.departmentUnreceivedError = ''
       try {
@@ -1309,6 +1387,29 @@ export default {
 
 .wh-reminder-detail-table {
   width: 100%;
+}
+
+.wh-reminder-read-tabs {
+  margin-bottom: 12px;
+}
+
+.wh-reminder-read-tabs ::v-deep .el-tabs__header {
+  margin-bottom: 12px;
+}
+
+.wh-reminder-read-tabs ::v-deep .el-tabs__item {
+  height: 34px;
+  line-height: 34px;
+  font-size: 13px;
+}
+
+.wh-reminder-read-tabs ::v-deep .el-tabs__item .wh-reminder-sub-tab-badge {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.wh-reminder-read-tabs ::v-deep .el-tabs__content {
+  display: none;
 }
 
 /* 与仓库侧近效期/库存预警一致：不占 720px 窄版，铺满右侧内容区，减少表内横向滚动 */
