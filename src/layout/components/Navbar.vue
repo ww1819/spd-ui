@@ -23,56 +23,10 @@
 <!--          <ruo-yi-doc id="ruoyi-doc" class="right-menu-item hover-effect" />-->
 <!--        </el-tooltip>-->
 
-        <!-- 消息提醒 -->
-        <el-popover
-          placement="bottom-end"
-          width="350"
-          trigger="click"
-          v-model="messageVisible"
-          @show="loadMessageReminderStrip"
-        >
-          <div class="message-popover">
-            <div class="message-header">
-              <span class="message-title">消息提醒</span>
-              <el-button type="text" size="mini" @click="markAllAsRead" v-if="unreadCount > 0">全部已读</el-button>
-            </div>
-            <div class="message-content">
-              <div v-if="messageList.length === 0" class="no-message">
-                <i class="el-icon-bell" style="font-size: 48px; color: #c0c4cc;"></i>
-                <p>暂无消息</p>
-              </div>
-              <div v-else>
-                <div
-                  v-for="(item, index) in messageList"
-                  :key="index"
-                  class="message-item"
-                  :class="{ 'unread': !item.read }"
-                  @click="handleMessageClick(item, index)"
-                >
-                  <div class="message-icon">
-                    <i :class="getMessageIcon(item.type)"></i>
-                  </div>
-                  <div class="message-info">
-                    <div class="message-title-text">{{ item.title }}</div>
-                    <div class="message-desc">{{ item.content }}</div>
-                    <div class="message-time">{{ item.time }}</div>
-                  </div>
-                  <div class="message-status" v-if="!item.read">
-                    <span class="unread-dot"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="message-footer" v-if="messageList.length > 0">
-              <el-button type="text" size="small" @click="viewAllMessages">查看全部</el-button>
-            </div>
-          </div>
-          <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="message-badge" slot="reference">
-            <div class="message-icon-wrapper right-menu-item hover-effect">
-              <i class="el-icon-bell"></i>
-            </div>
-          </el-badge>
-        </el-popover>
+        <!-- 消息提醒：点击铃铛直接打开弹窗 -->
+        <div class="right-menu-item hover-effect" @click="openMessageReminderModal">
+          <i class="el-icon-bell"></i>
+        </div>
 
         <screenfull id="screenfull" class="right-menu-item hover-effect" />
 
@@ -161,13 +115,6 @@ import RuoYiGit from '@/components/RuoYi/Git'
 import RuoYiDoc from '@/components/RuoYi/Doc'
 import { listConfig } from '@/api/system/config'
 import { getAppVersion } from '@/api/common/version'
-import { parseTime } from '@/utils/ruoyi'
-import {
-  fetchHomeDepartmentReminderUnreceivedReceipt,
-  fetchHomeDepartmentReminderNearExpiryList,
-  fetchHomeWarehouseReminderApplyList,
-  fetchHomeWarehouseReminderPurchaseList
-} from '@/api/dashboard/home'
 
 export default {
   components: {
@@ -184,40 +131,11 @@ export default {
     return {
       // 参数设置第七条参数值（机构单位）
       organizationUnit: '',
-      // 消息提醒弹窗显示状态
-      messageVisible: false,
       // 系统版本信息对话框显示状态
       versionDialogVisible: false,
       backendAppName: '',
       backendVersion: '',
-      backendBuildTime: '',
-      // 消息列表（时间由 loadMessageReminderStrip 拉取业务日期/审核时间后回填）
-      messageList: [
-        {
-          id: 1,
-          type: 'system',
-          title: '科室预警',
-          content: '您有一条新的科室预警，请及时查看',
-          time: '—',
-          read: false
-        },
-        {
-          id: 2,
-          type: 'warning',
-          title: '仓库提醒',
-          content: '您有3条仓库提醒需要处理',
-          time: '—',
-          read: false
-        },
-        {
-          id: 3,
-          type: 'info',
-          title: '数据异常预警',
-          content: '存在数据异常，请及时核查',
-          time: '—',
-          read: true
-        }
-      ]
+      backendBuildTime: ''
     }
   },
   computed: {
@@ -226,7 +144,8 @@ export default {
       'avatar',
       'device',
       'name',
-      'nickName'
+      'nickName',
+      'messageReminderKeys'
     ]),
     setting: {
       get() {
@@ -249,72 +168,18 @@ export default {
     },
     frontendBuildLabel() {
       return this.formatVersionTime(process.env.VUE_APP_BUILD_TIME)
-    },
-    // 未读消息数量
-    unreadCount() {
-      return this.messageList.filter(item => !item.read).length
     }
   },
   methods: {
-    /** 取若干时间字符串/对象中的最大时刻，格式 yyyy-MM-dd HH:mm:ss；无则 null */
-    maxTimeToDisplay(candidates) {
-      const ms = []
-      for (const c of candidates || []) {
-        if (c == null || c === '') continue
-        const t = new Date(c).getTime()
-        if (Number.isFinite(t)) ms.push(t)
-      }
-      if (!ms.length) return null
-      const d = new Date(Math.max(...ms))
-      return parseTime(d, '{y}-{m}-{d} {h}:{i}:{s}') || null
-    },
-    /** 科室预警：出库单业务日期 billDate（无则 auditDate）与近效期行 warehouse_date 中的最新值 */
-    async loadMessageReminderStrip() {
-      try {
-        const [depUn, depNear, whApply, whPurchase] = await Promise.all([
-          fetchHomeDepartmentReminderUnreceivedReceipt(),
-          fetchHomeDepartmentReminderNearExpiryList(),
-          fetchHomeWarehouseReminderApplyList(),
-          fetchHomeWarehouseReminderPurchaseList()
-        ])
-        const deptCandidates = []
-        const du = (depUn && depUn.data) || {}
-        const bills = Array.isArray(du.bills) ? du.bills : []
-        for (const b of bills) {
-          const t = b.billDate || b.auditDate
-          if (t) deptCandidates.push(t)
-        }
-        const dn = (depNear && depNear.data) || {}
-        const lines = Array.isArray(dn.lines) ? dn.lines : []
-        for (const r of lines) {
-          const t = r.warehouseDate
-          if (t) deptCandidates.push(t)
-        }
-        const deptStr = this.maxTimeToDisplay(deptCandidates)
-
-        const whCandidates = []
-        const applyRows = Array.isArray(whApply && whApply.data) ? whApply.data : []
-        for (const row of applyRows) {
-          const t = row.lastOutboundAuditDate
-          if (t) whCandidates.push(t)
-        }
-        const purchaseRows = Array.isArray(whPurchase && whPurchase.data) ? whPurchase.data : []
-        for (const row of purchaseRows) {
-          const t = row.lastPurchaseAuditDate
-          if (t) whCandidates.push(t)
-        }
-        const whStr = this.maxTimeToDisplay(whCandidates)
-
-        this.messageList.forEach((item) => {
-          if (item.title === '科室预警' && deptStr) {
-            this.$set(item, 'time', deptStr)
-          } else if (item.title === '仓库提醒' && whStr) {
-            this.$set(item, 'time', whStr)
-          }
-        })
-      } catch (e) {
-        // 静默：无权限或接口失败时保留「—」
-      }
+    /** 点击铃铛：直接打开消息提醒弹窗（按授权定位首个分类） */
+    openMessageReminderModal() {
+      const keys = this.messageReminderKeys
+      const order = ['warehouse', 'department', 'data']
+      const allowed = keys == null
+        ? order.slice()
+        : order.filter(k => Array.isArray(keys) && keys.includes(k))
+      const category = allowed.length ? allowed[0] : 'warehouse'
+      this.$store.dispatch('app/openWarehouseReminder', { category })
     },
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
@@ -329,52 +194,6 @@ export default {
           location.href = '/index';
         })
       }).catch(() => {});
-    },
-    // 获取消息图标
-    getMessageIcon(type) {
-      const iconMap = {
-        'system': 'el-icon-warning',
-        'warning': 'el-icon-warning-outline',
-        'info': 'el-icon-info',
-        'success': 'el-icon-success',
-        'error': 'el-icon-error'
-      }
-      return iconMap[type] || 'el-icon-bell'
-    },
-    // 点击消息项
-    handleMessageClick(item, index) {
-      if (!item.read) {
-        this.$set(this.messageList[index], 'read', true)
-      }
-      const reminderCategoryByTitle = {
-        仓库提醒: { category: 'warehouse', subTab: 'apply' },
-        申领单预警: { category: 'warehouse', subTab: 'apply' },
-        申购单预警: { category: 'warehouse', subTab: 'purchase' },
-        库存预警: { category: 'warehouse', subTab: 'inventory' },
-        库存近效期仓库预警: { category: 'warehouse', subTab: 'nearExpiry' },
-        科室预警: { category: 'department' },
-        数据异常预警: { category: 'data' }
-      }
-      const route = reminderCategoryByTitle[item.title]
-      if (route) {
-        this.messageVisible = false
-        this.$store.dispatch('app/openWarehouseReminder', route)
-        return
-      }
-      this.$message.info(`查看消息：${item.title}`)
-    },
-    // 全部已读
-    markAllAsRead() {
-      this.messageList.forEach(item => {
-        item.read = true
-      })
-      this.$message.success('已全部标记为已读')
-    },
-    // 查看全部消息
-    viewAllMessages() {
-      this.messageVisible = false
-      // 这里可以添加跳转到消息列表页面的逻辑
-      this.$message.info('查看全部消息')
     },
     // 获取参数设置第七条参数值（机构单位）
     getOrganizationUnit() {
@@ -416,7 +235,6 @@ export default {
   created() {
     // 获取参数设置第七条参数值
     this.getOrganizationUnit()
-    this.loadMessageReminderStrip()
   }
 }
 </script>
@@ -515,33 +333,6 @@ export default {
       }
     }
 
-    .message-badge {
-      margin-right: 8px;
-      display: inline-block;
-      vertical-align: middle;
-      position: relative;
-      top: -6px;
-      
-      ::v-deep .el-badge__content {
-        top: 8px !important;
-      }
-      
-      .message-icon-wrapper {
-        display: inline-block;
-        padding: 0 8px;
-        height: 100%;
-        font-size: 18px;
-        color: #5a5e66;
-        vertical-align: text-bottom;
-        line-height: 50px;
-        
-        i {
-          font-size: 18px;
-          cursor: pointer;
-        }
-      }
-    }
-
     .organization-wrapper {
       display: inline-block;
       margin-right: 8px;
@@ -633,120 +424,6 @@ export default {
         white-space: normal;
       }
     }
-  }
-}
-
-// 消息提醒弹窗样式（不使用scoped，因为el-popover内容插入到body）
-.message-popover {
-  .message-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid #ebeef5;
-
-    .message-title {
-      font-size: 16px;
-      font-weight: 500;
-      color: #303133;
-    }
-  }
-
-  .message-content {
-    max-height: 400px;
-    overflow-y: auto;
-
-    .no-message {
-      text-align: center;
-      padding: 40px 20px;
-      color: #909399;
-
-      p {
-        margin-top: 12px;
-        font-size: 14px;
-      }
-    }
-
-    .message-item {
-      display: flex;
-      padding: 12px 16px;
-      border-bottom: 1px solid #f5f7fa;
-      cursor: pointer;
-      transition: background-color 0.3s;
-
-      &:hover {
-        background-color: #f5f7fa;
-      }
-
-      &.unread {
-        background-color: #ecf5ff;
-      }
-
-      .message-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #e4e7ed;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 12px;
-        flex-shrink: 0;
-
-        i {
-          font-size: 20px;
-          color: #409eff;
-        }
-      }
-
-      .message-info {
-        flex: 1;
-        min-width: 0;
-
-        .message-title-text {
-          font-size: 14px;
-          font-weight: 500;
-          color: #303133;
-          margin-bottom: 4px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .message-desc {
-          font-size: 12px;
-          color: #606266;
-          margin-bottom: 4px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .message-time {
-          font-size: 12px;
-          color: #909399;
-        }
-      }
-
-      .message-status {
-        display: flex;
-        align-items: center;
-        margin-left: 8px;
-
-        .unread-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background-color: #f56c6c;
-        }
-      }
-    }
-  }
-
-  .message-footer {
-    padding: 8px 16px;
-    text-align: center;
-    border-top: 1px solid #ebeef5;
   }
 }
 </style>

@@ -553,6 +553,33 @@
           <div style="color:#909399; padding: 20px; text-align: center;">暂无数据</div>
         </div>
       </el-tab-pane>
+      <el-tab-pane label="消息提醒">
+        <div style="margin-bottom: 8px;">
+          <el-button size="mini" @click="handleAuthMessageReminderAll(true)">全选</el-button>
+          <el-button size="mini" @click="handleAuthMessageReminderAll(false)">取消</el-button>
+        </div>
+        <div class="auth-message-reminder-list">
+          <div class="auth-message-reminder-grid">
+            <el-checkbox-group v-model="authForm.messageReminderKeys" class="auth-message-reminder-col">
+              <el-checkbox
+                v-for="item in messageReminderOptions"
+                :key="item.value"
+                :label="item.value"
+                class="auth-message-reminder-cell"
+              >{{ item.label }}</el-checkbox>
+            </el-checkbox-group>
+            <el-checkbox-group v-model="authForm.messageReminderPopupKeys" class="auth-message-reminder-col">
+              <el-checkbox
+                v-for="item in messageReminderOptions"
+                :key="'popup-' + item.value"
+                :label="item.value"
+                class="auth-message-reminder-cell auth-message-reminder-popup"
+                :disabled="!(authForm.messageReminderKeys || []).includes(item.value)"
+              >登录弹窗</el-checkbox>
+            </el-checkbox-group>
+          </div>
+        </div>
+      </el-tab-pane>
     </el-tabs>
     <span slot="footer" class="dialog-footer">
       <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitAuth" v-hasPermi="['system:user:edit']">保 存</el-button>
@@ -609,7 +636,7 @@
 </template>
 
 <script>
-import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, unlockUser, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser, batchSetUserWorkgroup, batchResetUserPassword, updateUserMenus, updateUserDepartments, updateUserWarehouses } from "@/api/system/user";
+import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, unlockUser, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser, batchSetUserWorkgroup, batchResetUserPassword, updateUserMenus, updateUserDepartments, updateUserWarehouses, updateUserMessageReminders } from "@/api/system/user";
 import { workgroupTreeSelect } from "@/api/system/workgroup";
 import { listPost } from "@/api/system/post";
 import { getConfigKey, listConfig } from "@/api/system/config";
@@ -770,12 +797,21 @@ export default {
         userId: null,
         menuIds: [],
         departmentIds: [],
-        warehouseIds: []
+        warehouseIds: [],
+        messageReminderKeys: [],
+        messageReminderPopupKeys: []
       },
+      messageReminderOptions: [
+        { label: '仓库预警', value: 'warehouse' },
+        { label: '科室预警', value: 'department' },
+        { label: '数据异常预警', value: 'data' }
+      ],
       authMenuCheckAll: false,
       authMenuIndeterminate: false,
       authExistingMenuIds: [],
       authMenuParentChildLinked: true,
+      /** 授权消息提醒回填期间，避免 watch 误清 popup */
+      authReminderSyncing: false,
       // 表单参数
       form: {},
       defaultProps: {
@@ -868,6 +904,13 @@ export default {
     };
   },
   watch: {
+    'authForm.messageReminderKeys'(keys) {
+      if (this.authReminderSyncing) {
+        return;
+      }
+      const allow = new Set(keys || []);
+      this.authForm.messageReminderPopupKeys = (this.authForm.messageReminderPopupKeys || []).filter(k => allow.has(k));
+    }
   },
   created() {
     this.moreSearchTypes = this.loadMoreSearchDefaults();
@@ -1222,12 +1265,32 @@ export default {
           this.userWarehouseOptions = response.warehouses;
           this.userDepartmentOptions = response.departments;
           const savedMenuIds = response.menuIds || [];
+          const rawReminderKeys = Object.prototype.hasOwnProperty.call(response, 'messageReminderKeys')
+            ? response.messageReminderKeys
+            : (response.data && response.data.messageReminderKeys);
+          let rawPopupKeys = Object.prototype.hasOwnProperty.call(response, 'messageReminderPopupKeys')
+            ? response.messageReminderPopupKeys
+            : undefined;
+          if (rawPopupKeys == null && response.data && response.data.messageReminderPopupKeys != null) {
+            rawPopupKeys = response.data.messageReminderPopupKeys;
+          }
+          // null/undefined：从未配置，授权页默认全选；[]：明确未授权
+          const messageReminderKeys = rawReminderKeys == null
+            ? this.messageReminderOptions.map(o => o.value)
+            : this.parseMessageReminderKeys(rawReminderKeys);
+          const messageReminderPopupKeys = this.parseMessageReminderPopupKeys(rawPopupKeys);
+          this.authReminderSyncing = true;
           this.authForm = {
             userId: response.data.userId,
             menuIds: savedMenuIds,
             departmentIds: response.departmentIds || [],
-            warehouseIds: response.warehouseIds || []
+            warehouseIds: response.warehouseIds || [],
+            messageReminderKeys,
+            messageReminderPopupKeys
           };
+          this.$nextTick(() => {
+            this.authReminderSyncing = false;
+          });
           this.authExistingMenuIds = toMenuIdNumbers(savedMenuIds);
           const cid = response.data && response.data.customerId;
           if (cid) {
@@ -1307,7 +1370,44 @@ export default {
         this.authForm.warehouseIds = [];
       }
     },
-    /** 授权提交（菜单/科室/仓库分接口保存，不调用用户主表 updateUser） */
+    /** 授权消息提醒全选/取消 */
+    handleAuthMessageReminderAll(val) {
+      if (val) {
+        this.authForm.messageReminderKeys = this.messageReminderOptions.map(item => item.value);
+        this.authForm.messageReminderPopupKeys = this.messageReminderOptions.map(item => item.value);
+      } else {
+        this.authForm.messageReminderKeys = [];
+        this.authForm.messageReminderPopupKeys = [];
+      }
+    },
+    /** 解析消息提醒授权 keys（null=未配置；[]/空串=明确未授权） */
+    parseMessageReminderKeys(raw) {
+      const all = this.messageReminderOptions.map(o => o.value);
+      if (Array.isArray(raw)) {
+        return raw.map(s => String(s).trim().toLowerCase()).filter(k => all.includes(k));
+      }
+      const text = String(raw == null ? '' : raw).trim();
+      if (!text) {
+        return [];
+      }
+      return text.split(',').map(s => s.trim().toLowerCase()).filter(k => all.includes(k));
+    },
+    /** 解析登录弹窗 keys（null/空=默认不弹窗） */
+    parseMessageReminderPopupKeys(raw) {
+      const all = this.messageReminderOptions.map(o => o.value);
+      if (raw == null) {
+        return [];
+      }
+      if (Array.isArray(raw)) {
+        return raw.map(s => String(s).trim().toLowerCase()).filter(k => all.includes(k));
+      }
+      const text = String(raw).trim();
+      if (!text) {
+        return [];
+      }
+      return text.split(',').map(s => s.trim().toLowerCase()).filter(k => all.includes(k));
+    },
+    /** 授权提交（菜单/科室/仓库/消息提醒分接口保存，不调用用户主表 updateUser） */
     submitAuth() {
       const allowedSet = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
       let menuIds = [];
@@ -1324,15 +1424,26 @@ export default {
       const userId = this.authForm.userId;
       const departmentIds = (this.authForm.departmentIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
       const warehouseIds = (this.authForm.warehouseIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+      const allowReminder = new Set(this.messageReminderOptions.map(o => o.value));
+      const messageReminderKeys = (this.authForm.messageReminderKeys || []).filter(k => allowReminder.has(k));
+      const messageReminderPopupKeys = (this.authForm.messageReminderPopupKeys || [])
+        .filter(k => allowReminder.has(k) && messageReminderKeys.includes(k));
       const loading = this.$loading({ lock: true, text: '保存授权中...', background: 'rgba(0, 0, 0, 0.15)' });
       Promise.all([
         updateUserMenus(userId, finalMenuIds),
         updateUserDepartments(userId, departmentIds),
-        updateUserWarehouses(userId, warehouseIds)
+        updateUserWarehouses(userId, warehouseIds),
+        updateUserMessageReminders(userId, messageReminderKeys, messageReminderPopupKeys)
       ]).then(() => {
         this.$modal.msgSuccess("授权成功");
         this.authForm.menuIds = finalMenuIds.slice();
         this.authExistingMenuIds = finalMenuIds.slice();
+        this.authForm.messageReminderKeys = messageReminderKeys.slice();
+        this.authForm.messageReminderPopupKeys = messageReminderPopupKeys.slice();
+        // 若改的是当前登录用户，刷新 getInfo 使消息弹窗立即按新权限生效
+        if (String(userId) === String(this.$store.state.user.userId)) {
+          this.$store.dispatch('GetInfo').catch(() => {});
+        }
         this.$nextTick(() => {
           if (this.$refs.menuAuthDualTree) {
             this.$refs.menuAuthDualTree.resetAutoPreselectState();
@@ -2123,6 +2234,49 @@ export default {
   margin-right: 0 !important;
   min-width: 120px;
   font-size: 14px;
+}
+
+.auth-message-reminder-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px solid #DCDFE6;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.auth-message-reminder-grid {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.auth-message-reminder-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-message-reminder-cell {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  margin: 0 !important;
+}
+
+.auth-message-reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.auth-message-reminder-row + .auth-message-reminder-row {
+  border-top: 1px dashed #EBEEF5;
+}
+
+.auth-message-reminder-popup {
+  margin-left: 8px;
+  color: #606266;
 }
 
 ::v-deep .el-tree {

@@ -1,5 +1,6 @@
 import { login, logout, getInfo, getCurrentTenant } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
+import { clearMessageReminderAutoOpenFlag } from '@/utils/messageReminderAutoOpen'
 
 const user = {
   state: {
@@ -16,7 +17,14 @@ const user = {
     /** 耗材 sys_user_post 岗位/工作组 ID 列表（与 getInfo 同步，管理员维护后需 GetInfo 刷新） */
     postIds: [],
     /** 是否机构管理员（super 账号） */
-    tenantSuper: false
+    tenantSuper: false,
+    /**
+     * 消息提醒侧边菜单权限 keys：warehouse / department / data
+     * null=从未配置（视为全部可见）；[]=明确无权限
+     */
+    messageReminderKeys: null,
+    /** 登录后自动弹窗的消息提醒 keys；null=未配置；[]=不弹窗 */
+    messageReminderPopupKeys: null
   },
 
   mutations: {
@@ -52,6 +60,24 @@ const user = {
     },
     SET_TENANT_SUPER: (state, tenantSuper) => {
       state.tenantSuper = !!tenantSuper
+    },
+    SET_MESSAGE_REMINDER_KEYS: (state, keys) => {
+      if (keys == null) {
+        state.messageReminderKeys = null
+      } else if (Array.isArray(keys)) {
+        state.messageReminderKeys = keys.slice()
+      } else {
+        state.messageReminderKeys = []
+      }
+    },
+    SET_MESSAGE_REMINDER_POPUP_KEYS: (state, keys) => {
+      if (keys == null) {
+        state.messageReminderPopupKeys = null
+      } else if (Array.isArray(keys)) {
+        state.messageReminderPopupKeys = keys.slice()
+      } else {
+        state.messageReminderPopupKeys = []
+      }
     }
   },
 
@@ -74,6 +100,7 @@ const user = {
             commit('SET_TENANT', null)
           }
           commit('SET_TENANT_SYNCED_AT', Date.now())
+          clearMessageReminderAutoOpenFlag()
           resolve()
         }).catch(error => {
           reject(error)
@@ -108,6 +135,17 @@ const user = {
           commit('SET_TENANT_SYNCED_AT', Date.now())
           commit('SET_POST_IDS', user.postIds != null && Array.isArray(user.postIds) ? user.postIds : [])
           commit('SET_TENANT_SUPER', res.tenantSuper)
+          // null=未配置全部可见；数组（含空）=按授权过滤
+          if (Object.prototype.hasOwnProperty.call(res, 'messageReminderKeys')) {
+            commit('SET_MESSAGE_REMINDER_KEYS', res.messageReminderKeys)
+          } else {
+            commit('SET_MESSAGE_REMINDER_KEYS', null)
+          }
+          if (Object.prototype.hasOwnProperty.call(res, 'messageReminderPopupKeys')) {
+            commit('SET_MESSAGE_REMINDER_POPUP_KEYS', res.messageReminderPopupKeys)
+          } else {
+            commit('SET_MESSAGE_REMINDER_POPUP_KEYS', null)
+          }
           resolve(res)
         }).catch(error => {
           reject(error)
@@ -126,6 +164,9 @@ const user = {
           commit('SET_TENANT_SYNCED_AT', 0)
           commit('SET_POST_IDS', [])
           commit('SET_TENANT_SUPER', false)
+          commit('SET_MESSAGE_REMINDER_KEYS', null)
+          commit('SET_MESSAGE_REMINDER_POPUP_KEYS', null)
+          clearMessageReminderAutoOpenFlag()
           removeToken()
           resolve()
         }).catch(error => {
@@ -140,6 +181,8 @@ const user = {
         commit('SET_TOKEN', '')
         commit('SET_TENANT', null)
         commit('SET_TENANT_SYNCED_AT', 0)
+        commit('SET_MESSAGE_REMINDER_POPUP_KEYS', null)
+        clearMessageReminderAutoOpenFlag()
         removeToken()
         resolve()
       })

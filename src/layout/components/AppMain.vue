@@ -28,9 +28,12 @@
                     >
                       {{ m.label }}
                     </div>
+                    <div v-if="!reminderSideMenus.length" class="wh-reminder-side-empty">暂无授权的预警菜单</div>
                   </nav>
                 </aside>
                 <div class="wh-reminder-panel">
+                  <div v-if="!reminderSideMenus.length" class="wh-reminder-empty-auth">暂无消息提醒权限，请联系管理员在用户授权中配置</div>
+                  <template v-else>
                   <template v-if="messageReminderCategory === 'warehouse'">
                     <nav class="wh-reminder-sub-tabs" aria-label="仓库预警分类">
                       <div
@@ -76,7 +79,7 @@
                             stripe
                             size="small"
                             class="wh-reminder-detail-table"
-                            max-height="320"
+                            max-height="256"
                             empty-text="暂无数据"
                           >
                             <el-table-column type="index" label="序号" width="58" align="center" />
@@ -138,7 +141,7 @@
                             stripe
                             size="small"
                             class="wh-reminder-detail-table"
-                            max-height="320"
+                            max-height="256"
                             empty-text="暂无数据"
                           >
                             <el-table-column type="index" label="序号" width="58" align="center" />
@@ -197,7 +200,7 @@
                         stripe
                         size="small"
                         class="wh-reminder-detail-table wh-reminder-near-expiry-table"
-                        max-height="420"
+                        max-height="336"
                         empty-text="暂无库存预警"
                         @cell-dblclick="handleInventoryAlertCellDblClick"
                       >
@@ -267,7 +270,7 @@
                         stripe
                         size="small"
                         class="wh-reminder-detail-table wh-reminder-near-expiry-table"
-                        max-height="420"
+                        max-height="336"
                         empty-text="暂无近效期库存"
                         @cell-dblclick="handleNearExpiryInventoryCellDblClick"
                       >
@@ -354,7 +357,7 @@
                             stripe
                             size="small"
                             class="wh-reminder-detail-table"
-                            max-height="320"
+                            max-height="256"
                             empty-text="暂无待确认收货出库单"
                           >
                             <el-table-column type="index" label="序号" width="58" align="center" />
@@ -420,7 +423,7 @@
                         stripe
                         size="small"
                         class="wh-reminder-detail-table wh-reminder-near-expiry-table"
-                        max-height="420"
+                        max-height="336"
                         empty-text="暂无近效期科室库存"
                       >
                         <el-table-column type="index" label="序号" width="58" align="center" />
@@ -478,6 +481,7 @@
                   >
                     <p class="wh-reminder-line">数据异常预警内容请在相关业务菜单中查看与处理。</p>
                   </div>
+                  </template>
                 </div>
               </div>
             </div>
@@ -528,11 +532,18 @@ export default {
   },
   computed: {
     reminderSideMenus() {
-      return [
+      const all = [
         { key: 'warehouse', label: '仓库预警' },
         { key: 'department', label: '科室预警' },
         { key: 'data', label: '数据异常预警' }
       ]
+      const keys = this.messageReminderKeys
+      // null：从未配置 → 兼容旧数据，全部可见
+      if (keys == null) {
+        return all
+      }
+      const allow = new Set(Array.isArray(keys) ? keys : [])
+      return all.filter(m => allow.has(m.key))
     },
     warehouseSubTabs() {
       return [
@@ -599,7 +610,7 @@ export default {
       warehouseReminderSubTab: state => state.app.warehouseReminderSubTab,
       departmentReminderSubTab: state => state.app.departmentReminderSubTab
     }),
-    ...mapGetters(['sidebarRouters']),
+    ...mapGetters(['sidebarRouters', 'messageReminderKeys']),
     cachedViews() {
       return this.$store.state.tagsView.cachedViews
     },
@@ -616,12 +627,20 @@ export default {
       }
     },
     warehouseReminderVisible(val) {
+      if (val) {
+        this.ensureReminderCategoryAllowed()
+      }
       if (val && this.messageReminderCategory === 'warehouse' && (this.showWarehouseBillBlock || this.showWarehouseNearExpiryBlock || this.showWarehouseInventoryBlock)) {
         this.loadWarehouseReminderCounts()
       }
       if (val && this.messageReminderCategory === 'department') {
         if (this.showDepartmentUnreceivedBlock) this.loadDepartmentReminderUnreceived()
         if (this.showDepartmentExpiryBlock) this.loadDepartmentReminderNearExpiry()
+      }
+    },
+    reminderSideMenus() {
+      if (this.warehouseReminderVisible) {
+        this.ensureReminderCategoryAllowed()
       }
     },
     messageReminderCategory(val) {
@@ -646,6 +665,16 @@ export default {
     }
   },
   methods: {
+    /** 当前分类无权限时切到第一个已授权分类 */
+    ensureReminderCategoryAllowed() {
+      const menus = this.reminderSideMenus || []
+      if (!menus.length) {
+        return
+      }
+      if (!menus.some(m => m.key === this.messageReminderCategory)) {
+        this.$store.commit('app/SET_MESSAGE_REMINDER_CATEGORY', menus[0].key)
+      }
+    },
     onRouteViewEntered() {
       scheduleMainContentScrollReset(this.$el)
     },
@@ -1041,21 +1070,24 @@ export default {
   background: rgba(0, 0, 0, 0.3);
   z-index: 1000;
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: center;
+  justify-content: center;
 }
 
 .wh-reminder-local-content {
   background: #fff;
-  width: 100%;
-  height: 100%;
-  min-height: 95vh;
+  width: 80%;
+  height: 80%;
+  max-height: 76vh;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-bottom: 16px;
+  padding-bottom: 13px;
   box-sizing: border-box;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 
 .wh-reminder-modal-header {
@@ -1101,8 +1133,8 @@ export default {
 }
 
 .wh-reminder-aside {
-  flex: 0 0 200px;
-  width: 200px;
+  flex: 0 0 160px;
+  width: 160px;
   background: #fff;
   border-right: 1px solid #ebeef5;
   box-sizing: border-box;
@@ -1131,6 +1163,15 @@ export default {
   color: #409eff;
   font-weight: 500;
   background: #ecf5ff;
+}
+
+.wh-reminder-side-empty,
+.wh-reminder-empty-auth {
+  padding: 24px 16px;
+  color: #909399;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
 }
 
 .wh-reminder-panel {
@@ -1199,7 +1240,7 @@ export default {
 }
 
 .wh-reminder-panel-inner {
-  max-width: 720px;
+  max-width: 576px;
 }
 
 .wh-reminder-bill-layout {

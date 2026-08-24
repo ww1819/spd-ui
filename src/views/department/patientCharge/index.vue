@@ -78,46 +78,35 @@
                 @keyup.enter.native="handleDetailQuery"
               />
             </div>
+            <el-select v-model="detailQuery.processed" placeholder="是否处理" clearable size="small" class="more-search-select-wrap pc-query-inline-select">
+              <el-option label="已处理" value="Y" />
+              <el-option label="未处理" value="N" />
+            </el-select>
+            <el-select v-model="detailQuery.execDeptEmpty" placeholder="执行科室是否为空" clearable size="small" class="more-search-select-wrap pc-query-inline-select">
+              <el-option label="是" value="Y" />
+              <el-option label="否" value="N" />
+            </el-select>
+            <div class="pc-query-date-group">
+              <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="计费起" style="width:140px" clearable size="small" />
+              <span class="pc-query-date-sep">至</span>
+              <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="计费止" style="width:140px" clearable size="small" />
+            </div>
+            <div class="pc-query-date-group">
+              <el-date-picker v-model="detailQuery.beginProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="处理起" style="width:140px" clearable size="small" />
+              <span class="pc-query-date-sep">至</span>
+              <el-date-picker v-model="detailQuery.endProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="处理止" style="width:140px" clearable size="small" />
+            </div>
           </more-search-bar>
-
-          <el-row :gutter="16" class="query-row-second">
-            <el-col :span="24" class="query-row-second-inner">
-              <el-form-item class="query-item-inline">
-                <el-radio-group v-model="detailVisitType" size="small" @change="handleDetailQuery">
-                  <el-radio-button label="ALL">全部</el-radio-button>
-                  <el-radio-button label="IN">住院</el-radio-button>
-                  <el-radio-button label="OUT">门诊</el-radio-button>
-                </el-radio-group>
-              </el-form-item>
-              <el-form-item class="query-item-inline">
-                <el-select v-model="detailQuery.processed" placeholder="是否处理" clearable class="more-search-select-wrap">
-                  <el-option label="已处理" value="Y" />
-                  <el-option label="未处理" value="N" />
-                </el-select>
-              </el-form-item>
-              <el-form-item class="query-item-inline">
-                <el-select v-model="detailQuery.execDeptEmpty" placeholder="执行科室是否为空" clearable class="more-search-select-wrap">
-                  <el-option label="是" value="Y" />
-                  <el-option label="否" value="N" />
-                </el-select>
-              </el-form-item>
-              <el-form-item class="query-item-inline">
-                <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="计费起" style="width:140px" clearable />
-                <span style="margin:0 6px">至</span>
-                <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="计费止" style="width:140px" clearable />
-              </el-form-item>
-              <el-form-item class="query-item-inline">
-                <el-date-picker v-model="detailQuery.beginProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="处理起" style="width:140px" clearable />
-                <span style="margin:0 6px">至</span>
-                <el-date-picker v-model="detailQuery.endProcessTime" type="date" value-format="yyyy-MM-dd" placeholder="处理止" style="width:140px" clearable />
-              </el-form-item>
-            </el-col>
-          </el-row>
         </el-form>
         </div>
 
         <el-row :gutter="0" class="mb8 list-toolbar">
           <div class="list-toolbar-left">
+            <el-radio-group v-model="detailVisitType" size="small" class="pc-visit-type-group" @change="handleDetailQuery">
+              <el-radio-button label="ALL">全部</el-radio-button>
+              <el-radio-button label="IN">住院</el-radio-button>
+              <el-radio-button label="OUT">门诊</el-radio-button>
+            </el-radio-group>
             <el-button
               size="small"
               class="spd-btn spd-btn--secondary"
@@ -165,30 +154,26 @@
             </template>
           </el-table-column>
           <template v-if="detailVisitType === 'IN'">
-            <el-table-column label="住院号" prop="inpatientNo" width="120" show-overflow-tooltip />
+            <el-table-column label="住院号" prop="inpatientNo" width="140" show-overflow-tooltip sortable />
           </template>
           <template v-else-if="detailVisitType === 'OUT'">
-            <el-table-column label="门诊号" prop="outpatientNo" width="120" show-overflow-tooltip />
+            <el-table-column label="门诊号" prop="outpatientNo" width="140" show-overflow-tooltip sortable />
           </template>
           <template v-else>
-            <el-table-column label="号" prop="visitNo" width="120" show-overflow-tooltip />
+            <el-table-column label="号" prop="visitNo" width="140" show-overflow-tooltip sortable />
           </template>
-          <el-table-column label="开单科室编码" min-width="100" show-overflow-tooltip>
+          <el-table-column label="开单科室编码" width="120" show-overflow-tooltip>
             <template slot-scope="scope">
               <span>{{ orderDeptCode(scope.row) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="开单科室" min-width="220" class-name="pc-dept-name-col">
+          <el-table-column label="开单科室" min-width="160" show-overflow-tooltip sortable :sort-method="sortByOrderDeptName">
             <template slot-scope="scope">
-              <div class="pc-dept-name-wrap">{{ orderDeptName(scope.row) }}</div>
+              <span>{{ orderDeptName(scope.row) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="执行科室编码" prop="execDeptId" min-width="100" show-overflow-tooltip />
-          <el-table-column label="执行科室" min-width="220" class-name="pc-dept-name-col">
-            <template slot-scope="scope">
-              <div class="pc-dept-name-wrap">{{ scope.row.execDeptName || '' }}</div>
-            </template>
-          </el-table-column>
+          <el-table-column label="执行科室编码" prop="execDeptId" width="120" show-overflow-tooltip />
+          <el-table-column label="执行科室" prop="execDeptName" min-width="160" show-overflow-tooltip sortable />
           <el-table-column label="患者" prop="patientName" width="100" show-overflow-tooltip />
           <el-table-column label="收费项ID" prop="chargeItemId" width="120" show-overflow-tooltip />
           <el-table-column label="费用明细主键" prop="hisChargeId" width="130" show-overflow-tooltip>
@@ -811,7 +796,7 @@ export default {
       return 'spd.department.patientCharge.moreSearchTypes'
     },
     builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
+      return ['patientName', 'visitNo', 'chargeItemId', 'itemName']
     },
     fetchDialogTitle() {
       return 'HIS收费数据抓取'
@@ -853,6 +838,13 @@ export default {
     orderDeptName(row) {
       if (!row) return ''
       return row.deptName || row.clinicName || row.deptDisplayName || ''
+    },
+    sortByOrderDeptName(a, b) {
+      const va = this.orderDeptName(a) || ''
+      const vb = this.orderDeptName(b) || ''
+      if (va < vb) return -1
+      if (va > vb) return 1
+      return 0
     },
     toQueryDayStart(s) {
       if (!s) return undefined
@@ -1979,16 +1971,49 @@ export default {
   width: 100%;
 }
 
-.patient-charge-page .pc-detail-table >>> .pc-dept-name-col .cell {
-  white-space: normal;
-  word-break: break-word;
-  line-height: 1.4;
+.patient-charge-page .pc-detail-table >>> .el-table__header-wrapper th .cell,
+.patient-charge-page .pc-detail-table >>> .el-table__fixed-header-wrapper th .cell {
+  white-space: nowrap !important;
+  word-break: keep-all;
 }
 
-.patient-charge-page .pc-dept-name-wrap {
-  white-space: normal;
-  word-break: break-word;
-  line-height: 1.4;
+.patient-charge-page .pc-detail-table >>> .el-table__body-wrapper td .cell {
+  white-space: nowrap;
+}
+
+.patient-charge-page .pc-visit-type-group {
+  margin-right: 12px;
+  vertical-align: middle;
+}
+
+.patient-charge-page .list-toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.patient-charge-page .pc-query-form >>> .query-row-fields-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.patient-charge-page .pc-query-inline-select {
+  width: 150px;
+  flex-shrink: 0;
+}
+
+.patient-charge-page .pc-query-date-group {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.patient-charge-page .pc-query-date-sep {
+  color: #606266;
 }
 
 .patient-charge-page .pc-cached-sel-hint {

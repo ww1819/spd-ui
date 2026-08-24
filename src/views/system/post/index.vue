@@ -221,6 +221,33 @@
           <div style="color:#909399; padding: 20px; text-align: center;">暂无数据</div>
         </div>
       </el-tab-pane>
+      <el-tab-pane label="消息提醒">
+        <div style="margin-bottom: 8px;">
+          <el-button size="mini" @click="handleAuthMessageReminderAll(true)">全选</el-button>
+          <el-button size="mini" @click="handleAuthMessageReminderAll(false)">取消</el-button>
+        </div>
+        <div class="auth-message-reminder-list">
+          <div class="auth-message-reminder-grid">
+            <el-checkbox-group v-model="authForm.messageReminderKeys" class="auth-message-reminder-col">
+              <el-checkbox
+                v-for="item in messageReminderOptions"
+                :key="item.value"
+                :label="item.value"
+                class="auth-message-reminder-cell"
+              >{{ item.label }}</el-checkbox>
+            </el-checkbox-group>
+            <el-checkbox-group v-model="authForm.messageReminderPopupKeys" class="auth-message-reminder-col">
+              <el-checkbox
+                v-for="item in messageReminderOptions"
+                :key="'popup-' + item.value"
+                :label="item.value"
+                class="auth-message-reminder-cell auth-message-reminder-popup"
+                :disabled="!(authForm.messageReminderKeys || []).includes(item.value)"
+              >登录弹窗</el-checkbox>
+            </el-checkbox-group>
+          </div>
+        </div>
+      </el-tab-pane>
     </el-tabs>
     <span slot="footer" class="dialog-footer">
       <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitAuth">保 存</el-button>
@@ -285,8 +312,15 @@ export default {
         postId: null,
         menuIds: [],
         departmentIds: [],
-        warehouseIds: []
+        warehouseIds: [],
+        messageReminderKeys: [],
+        messageReminderPopupKeys: []
       },
+      messageReminderOptions: [
+        { value: 'warehouse', label: '仓库预警' },
+        { value: 'department', label: '科室预警' },
+        { value: 'data', label: '数据异常预警' }
+      ],
       // 保存的工作组权限（用于同步）
       savedPostPermissions: {},
       authMenuCheckAll: false,
@@ -294,6 +328,7 @@ export default {
       /** 打开授权时已有的菜单 ID（锁定展示） */
       authExistingMenuIds: [],
       authMenuParentChildLinked: true,
+      authReminderSyncing: false,
       // 菜单选项
       menuOptions: [],
       // 仓库选项
@@ -334,6 +369,15 @@ export default {
     },
     builtInMoreSearchDefaults() {
       return this.moreSearchOptions.map(o => o.value)
+    }
+  },
+  watch: {
+    'authForm.messageReminderKeys'(keys) {
+      if (this.authReminderSyncing) {
+        return;
+      }
+      const allow = new Set(keys || []);
+      this.authForm.messageReminderPopupKeys = (this.authForm.messageReminderPopupKeys || []).filter(k => allow.has(k));
     }
   },
   created() {
@@ -725,13 +769,21 @@ export default {
         const menuIds = post.menuIds || [];
         const departmentIds = post.departmentIds || [];
         const warehouseIds = post.warehouseIds || [];
+        const messageReminderKeys = this.parseMessageReminderKeys(post.messageReminderKeys);
+        const messageReminderPopupKeys = this.parseMessageReminderPopupKeys(post.messageReminderPopupKeys);
 
+        this.authReminderSyncing = true;
         this.authForm = {
           postId: postId,
           menuIds: menuIds,
           departmentIds: departmentIds,
-          warehouseIds: warehouseIds
+          warehouseIds: warehouseIds,
+          messageReminderKeys,
+          messageReminderPopupKeys
         };
+        this.$nextTick(() => {
+          this.authReminderSyncing = false;
+        });
         this.authExistingMenuIds = toMenuIdNumbers(menuIds);
 
         const warehouses = warehouseRes.data || warehouseRes || [];
@@ -872,6 +924,45 @@ export default {
         this.authForm.warehouseIds = [];
       }
     },
+    /** 授权消息提醒全选/取消 */
+    handleAuthMessageReminderAll(val) {
+      if (val) {
+        this.authForm.messageReminderKeys = this.messageReminderOptions.map(item => item.value);
+        this.authForm.messageReminderPopupKeys = this.messageReminderOptions.map(item => item.value);
+      } else {
+        this.authForm.messageReminderKeys = [];
+        this.authForm.messageReminderPopupKeys = [];
+      }
+    },
+    /** 解析工作组消息提醒 keys（null=未配置默认全选；空串=明确无权限） */
+    parseMessageReminderKeys(raw) {
+      const all = this.messageReminderOptions.map(o => o.value);
+      if (raw == null) {
+        return all.slice();
+      }
+      const text = String(raw).trim();
+      if (!text) {
+        return [];
+      }
+      const allow = new Set(all);
+      return text.split(',').map(s => s.trim().toLowerCase()).filter(k => allow.has(k));
+    },
+    /** 解析工作组登录弹窗 keys（null=未配置默认不弹窗） */
+    parseMessageReminderPopupKeys(raw) {
+      const all = this.messageReminderOptions.map(o => o.value);
+      if (raw == null) {
+        return [];
+      }
+      if (Array.isArray(raw)) {
+        return raw.map(s => String(s).trim().toLowerCase()).filter(k => all.includes(k));
+      }
+      const text = String(raw).trim();
+      if (!text) {
+        return [];
+      }
+      const allow = new Set(all);
+      return text.split(',').map(s => s.trim().toLowerCase()).filter(k => allow.has(k));
+    },
     /** 授权提交 */
     submitAuth() {
       const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
@@ -890,12 +981,20 @@ export default {
       const warehouseIds = Array.isArray(this.authForm.warehouseIds)
         ? this.authForm.warehouseIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0)
         : [];
+      const allowReminder = new Set(this.messageReminderOptions.map(o => o.value));
+      const messageReminderKeys = (this.authForm.messageReminderKeys || []).filter(k => allowReminder.has(k));
+      const messageReminderPopupKeys = (this.authForm.messageReminderPopupKeys || [])
+        .filter(k => allowReminder.has(k) && messageReminderKeys.includes(k));
+      const messageReminderKeysCsv = messageReminderKeys.join(',');
+      const messageReminderPopupKeysCsv = messageReminderPopupKeys.join(',');
       
       // 保存工作组权限到本地状态（用于后续同步）
       this.savedPostPermissions[this.authForm.postId] = {
         menuIds: menuIds,
         departmentIds: departmentIds,
-        warehouseIds: warehouseIds
+        warehouseIds: warehouseIds,
+        messageReminderKeys,
+        messageReminderPopupKeys
       };
       
       // 先获取完整的工作组信息，然后更新权限字段
@@ -911,7 +1010,9 @@ export default {
           status: post.status,      // 保留原有状态
           menuIds: menuIds,         // 菜单权限
           departmentIds: departmentIds,  // 科室权限
-          warehouseIds: warehouseIds       // 仓库权限
+          warehouseIds: warehouseIds,       // 仓库权限
+          messageReminderKeys: messageReminderKeysCsv,
+          messageReminderPopupKeys: messageReminderPopupKeysCsv
         };
         
         // 保存工作组授权
@@ -929,10 +1030,12 @@ export default {
         const post = response.data;
         console.log('重新获取工作组信息 - post:', post);
         // 更新本地保存的权限和授权表单
-        if (post.menuIds || post.departmentIds || post.warehouseIds) {
+        if (post.menuIds || post.departmentIds || post.warehouseIds || post.messageReminderKeys != null || post.messageReminderPopupKeys != null) {
           this.authForm.menuIds = post.menuIds || [];
           this.authForm.departmentIds = post.departmentIds || [];
           this.authForm.warehouseIds = post.warehouseIds || [];
+          this.authForm.messageReminderKeys = this.parseMessageReminderKeys(post.messageReminderKeys);
+          this.authForm.messageReminderPopupKeys = this.parseMessageReminderPopupKeys(post.messageReminderPopupKeys);
           const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
           const filtered = filterMenuIdsByAllowed(post.menuIds || [], allowed);
           this.authExistingMenuIds = filtered.slice();
@@ -951,6 +1054,12 @@ export default {
             this.authForm.menuIds = savedPermissions.menuIds || [];
             this.authForm.departmentIds = savedPermissions.departmentIds || [];
             this.authForm.warehouseIds = savedPermissions.warehouseIds || [];
+            this.authForm.messageReminderKeys = Array.isArray(savedPermissions.messageReminderKeys)
+              ? savedPermissions.messageReminderKeys
+              : this.parseMessageReminderKeys(savedPermissions.messageReminderKeys);
+            this.authForm.messageReminderPopupKeys = Array.isArray(savedPermissions.messageReminderPopupKeys)
+              ? savedPermissions.messageReminderPopupKeys
+              : this.parseMessageReminderPopupKeys(savedPermissions.messageReminderPopupKeys);
             const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
             const filtered = filterMenuIdsByAllowed(savedPermissions.menuIds || [], allowed);
             this.authExistingMenuIds = filtered.slice();
@@ -1013,6 +1122,49 @@ export default {
   margin-right: 0 !important;
   min-width: 120px;
   font-size: 14px;
+}
+
+.auth-message-reminder-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px solid #DCDFE6;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.auth-message-reminder-grid {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.auth-message-reminder-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-message-reminder-cell {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  margin: 0 !important;
+}
+
+.auth-message-reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.auth-message-reminder-row + .auth-message-reminder-row {
+  border-top: 1px dashed #EBEEF5;
+}
+
+.auth-message-reminder-popup {
+  margin-left: 8px;
+  color: #606266;
 }
 
 ::v-deep .el-tree {

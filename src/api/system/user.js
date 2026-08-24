@@ -210,6 +210,19 @@ export function updateUserWarehouses(userId, warehouseIds) {
   })
 }
 
+/** 仅更新用户消息提醒权限（warehouse / department / data） */
+export function updateUserMessageReminders(userId, messageReminderKeys, messageReminderPopupKeys) {
+  return request({
+    url: '/system/user/' + parseStrEmpty(userId) + '/messageReminders',
+    method: 'put',
+    data: {
+      messageReminderKeys: messageReminderKeys || [],
+      messageReminderPopupKeys: messageReminderPopupKeys || []
+    },
+    timeout: 60000
+  })
+}
+
 // 查询部门下拉树结构
 export function deptTreeSelect() {
   return request({
