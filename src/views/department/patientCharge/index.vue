@@ -51,7 +51,7 @@
             />
             <el-input
               v-model="detailQuery.execDeptName"
-              placeholder="执行科室编码/名称/简码"
+              placeholder="执行科室"
               clearable
               class="pc-query-field pc-query-field--wide"
               @keyup.enter.native="handleDetailQuery"
@@ -60,10 +60,13 @@
               <el-option label="已处理" value="Y" />
               <el-option label="未处理" value="N" />
             </el-select>
-            <el-select v-model="detailQuery.execDeptEmpty" placeholder="执行科室是否为空" clearable size="small" class="pc-query-inline-select">
-              <el-option label="是" value="Y" />
-              <el-option label="否" value="N" />
-            </el-select>
+            <el-input
+              v-model="detailQuery.orderDeptName"
+              placeholder="开单科室"
+              clearable
+              class="pc-query-field pc-query-field--wide"
+              @keyup.enter.native="handleDetailQuery"
+            />
             </div>
             <div class="pc-detail-query-row pc-detail-query-row--date">
             <el-radio-group v-model="detailDateRangeType" size="small" class="pc-date-type-switch">
@@ -134,18 +137,20 @@
           </div>
         </el-row>
 
+        <div class="apply-table-panel" ref="tablePanel">
         <el-table
           ref="detailTable"
           v-loading="detailLoading"
           :data="detailList"
           :row-key="getDetailRowKey"
-          height="60vh"
+          :height="mainTableHeight"
           border
           stripe
-          class="pc-detail-table"
+          class="table-compact apply-main-table"
+          :row-class-name="applyDetailRowClassName"
           @selection-change="onDetailSelectionChange"
         >
-          <el-table-column type="selection" width="48" align="center" :reserve-selection="true" :selectable="row => canProcessLow(row)" />
+          <el-table-column type="selection" width="48" align="center" :reserve-selection="true" class-name="apply-select-col" :selectable="row => canProcessLow(row)" />
           <el-table-column label="类型" prop="visitType" width="72" align="center">
             <template slot-scope="scope">
               <span>{{ scope.row.visitType === 'INPATIENT' ? '住院' : '门诊' }}</span>
@@ -231,7 +236,7 @@
               <span>{{ scope.row.chargeIdTf || scope.row.hisInpatientChargeIdTf || scope.row.hisOutpatientChargeIdTf || '' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" width="300" fixed="right">
+          <el-table-column label="操作" align="center" width="300" fixed="right" class-name="apply-action-col">
             <template slot-scope="scope">
               <el-button
                 type="text"
@@ -263,14 +268,14 @@
             </template>
           </el-table-column>
         </el-table>
-        <div class="pc-pagination-wrap">
+        <div class="apply-pagination-wrap" ref="paginationWrap">
           <pagination
-            v-show="detailTotal > 0"
             :total="detailTotal"
             :page.sync="detailQuery.pageNum"
             :limit.sync="detailQuery.pageSize"
             @pagination="loadDetailList"
           />
+        </div>
         </div>
         </div>
       </el-tab-pane>
@@ -704,6 +709,7 @@ export default {
       summaryMoreSearchOptions: [],
       detailList: [],
       detailTotal: 0,
+      mainTableHeight: 400,
       detailSelection: [],
       /** 跨页勾选缓存：key = visitType:id */
       detailSelectionCache: Object.create(null),
@@ -729,8 +735,8 @@ export default {
         chargeIdTf: undefined,
         itemName: undefined,
         execDeptName: undefined,
+        orderDeptName: undefined,
         processed: undefined,
-        execDeptEmpty: undefined,
         ...buildDefaultChargeDateRange(),
         beginProcessTime: undefined,
         endProcessTime: undefined
@@ -835,14 +841,98 @@ export default {
     this.loadDetailList()
   },
   mounted() {
-    this.$nextTick(() => this.layoutDetailTable())
+    window.addEventListener('resize', this.onApplyWindowResize)
+    this.scheduleApplyLayoutRefresh()
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onApplyWindowResize)
+  },
+  watch: {
+    detailTotal() {
+      this.$nextTick(() => this.updateMainTableHeight())
+    },
+    detailLoading(val) {
+      if (!val) {
+        this.scheduleApplyLayoutRefresh()
+      }
+    },
+    activeMainTab(val) {
+      if (val === 'detail') {
+        this.scheduleApplyLayoutRefresh()
+      }
+    }
   },
   methods: {
-    layoutDetailTable() {
-      const table = this.$refs.detailTable
-      if (table && table.doLayout) {
-        table.doLayout()
+    onApplyWindowResize() {
+      this.updateMainTableHeight()
+    },
+    scheduleApplyLayoutRefresh() {
+      const run = () => this.updateMainTableHeight()
+      this.$nextTick(() => {
+        run()
+        requestAnimationFrame(() => {
+          run()
+          ;[50, 120, 300].forEach((ms) => setTimeout(run, ms))
+        })
+      })
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel
+      const pagWrap = this.$refs.paginationWrap
+      if (!panel || !panel.getBoundingClientRect) return
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 52) + 8
+      const top = panel.getBoundingClientRect().top
+      const bottomPad = 14
+      const available = Math.floor(window.innerHeight - top - bottomPad - pagH)
+      const height = Math.max(240, available)
+      const heightChanged = Math.abs(this.mainTableHeight - height) >= 2
+      if (heightChanged) {
+        this.mainTableHeight = height
       }
+      this.$nextTick(() => {
+        const table = this.$refs.detailTable
+        if (!table) return
+        const runSticky = () => {
+          this.syncApplyTableSticky()
+          requestAnimationFrame(() => this.syncApplyTableSticky())
+        }
+        if (!heightChanged) {
+          runSticky()
+          return
+        }
+        if (table.doLayout) {
+          this.detailSelectionSyncing = true
+          table.doLayout()
+        }
+        this.$nextTick(() => {
+          runSticky()
+          this.restoreDetailSelection()
+        })
+      })
+    },
+    syncApplyTableSticky() {
+      const table = this.$refs.detailTable
+      const root = table && table.$el
+      if (!root) return
+      const bodyWrap = root.querySelector('.el-table__body-wrapper')
+      if (!bodyWrap) return
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth)
+      const gutter = root.querySelector('th.gutter')
+      if (gutter) {
+        gutter.style.width = `${sw}px`
+        gutter.style.display = sw > 0 ? '' : 'none'
+      }
+    },
+    applyDetailRowClassName({ row }) {
+      const key = this.selectionCacheKey(row)
+      if (key && this.detailSelectionCache && this.detailSelectionCache[key]) {
+        return 'apply-row-selected'
+      }
+      const rowId = row && row.id != null ? String(row.id) : ''
+      if (rowId && (this.detailSelection || []).some(r => r && String(r.id) === rowId)) {
+        return 'apply-row-selected'
+      }
+      return ''
     },
     orderDeptCode(row) {
       if (!row) return ''
@@ -944,30 +1034,26 @@ export default {
       }
       const list = rows || []
       this.detailSelection = list
-      if (list.length === 0) {
-        // 稳定态下用户取消本页全部勾选：只移除本页 cache，保留其它页
-        ;(this.detailList || []).forEach(r => {
-          const k = this.selectionCacheKey(r)
-          if (k && this.detailSelectionCache[k]) this.$delete(this.detailSelectionCache, k)
-        })
-        return
-      }
-      // reserve-selection 时 rows 含跨页已选；本页未出现在 rows 中的视为取消
-      const next = Object.create(null)
-      Object.keys(this.detailSelectionCache).forEach(k => {
-        const onPage = (this.detailList || []).some(r => this.selectionCacheKey(r) === k)
-        if (!onPage) next[k] = this.detailSelectionCache[k]
+      const pageKeys = (this.detailList || []).map(r => this.selectionCacheKey(r)).filter(Boolean)
+      pageKeys.forEach(k => {
+        if (this.detailSelectionCache[k]) {
+          this.$delete(this.detailSelectionCache, k)
+        }
       })
       list.forEach(r => {
         const k = this.selectionCacheKey(r)
         if (!k || !this.canProcessLow(r)) return
-        next[k] = {
+        this.$set(this.detailSelectionCache, k, {
           id: String(r.id),
           visitType: r.visitType || this.currentVisitKind,
           execDeptId: r.execDeptId
+        })
+      })
+      this.$nextTick(() => {
+        if (this.$refs.detailTable) {
+          this.$refs.detailTable.$forceUpdate()
         }
       })
-      this.detailSelectionCache = next
     },
     restoreDetailSelection() {
       const table = this.$refs.detailTable
@@ -987,12 +1073,18 @@ export default {
         this.$nextTick(() => {
           this.$nextTick(() => {
             this.detailSelectionSyncing = false
+            const table = this.$refs.detailTable
+            if (table) {
+              table.$forceUpdate()
+            }
           })
         })
       }
     },
     clearDetailSelectionCache() {
-      this.detailSelectionCache = Object.create(null)
+      Object.keys(this.detailSelectionCache || {}).forEach(k => {
+        this.$delete(this.detailSelectionCache, k)
+      })
       this.detailSelection = []
       const table = this.$refs.detailTable
       if (table && typeof table.clearSelection === 'function') {
@@ -1099,8 +1191,8 @@ export default {
         chargeIdTf: undefined,
         itemName: undefined,
         execDeptName: undefined,
+        orderDeptName: undefined,
         processed: undefined,
-        execDeptEmpty: undefined,
         ...buildDefaultChargeDateRange(),
         beginProcessTime: undefined,
         endProcessTime: undefined
@@ -1147,7 +1239,7 @@ export default {
           this.detailLoading = false
           this.$nextTick(() => {
             this.restoreDetailSelection()
-            this.layoutDetailTable()
+            this.scheduleApplyLayoutRefresh()
           })
         })
       } else if (this.detailVisitType === 'OUT') {
@@ -1169,7 +1261,7 @@ export default {
           this.detailLoading = false
           this.$nextTick(() => {
             this.restoreDetailSelection()
-            this.layoutDetailTable()
+            this.scheduleApplyLayoutRefresh()
           })
         })
       } else {
@@ -1180,7 +1272,7 @@ export default {
           this.detailLoading = false
           this.$nextTick(() => {
             this.restoreDetailSelection()
-            this.layoutDetailTable()
+            this.scheduleApplyLayoutRefresh()
           })
         })
       }
@@ -1929,52 +2021,48 @@ export default {
 </script>
 
 <style>
-/* 与耗材产品维护一致：表格 height="60vh"；分页覆盖 ruoyi 绝对定位避免被 app-main 裁切 */
-.patient-charge-page {
-  padding: 1vh 0.8vw 1.5vh !important;
-  box-sizing: border-box;
+/* 列表区对齐到货验收（department-apply-list-align.scss）；以下为页内特例 */
+.patient-charge-page .pc-tabs.el-tabs {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .patient-charge-page .pc-tabs >>> .el-tabs__header {
-  margin-bottom: 0.8vh;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.patient-charge-page .pc-tabs >>> .el-tabs__content {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.patient-charge-page .pc-detail-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.patient-charge-page .pc-detail-layout > .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 280px;
 }
 
 .patient-charge-page .pc-query-wrap {
   max-height: none;
   overflow: visible;
-  margin-bottom: 0.8vh;
+  margin-bottom: 4px;
+  flex-shrink: 0;
 }
+
 .patient-charge-page .list-query-panel {
   margin-top: 0;
 }
 
-.patient-charge-page .pc-detail-table {
-  width: 100%;
-}
-
-.patient-charge-page .pc-detail-table >>> .el-table__header-wrapper th .cell,
-.patient-charge-page .pc-detail-table >>> .el-table__fixed-header-wrapper th .cell {
-  white-space: nowrap !important;
-  word-break: keep-all;
-  padding-left: 10px;
-  padding-right: 10px;
-  line-height: 1.35;
-}
-
-.patient-charge-page .pc-detail-table >>> .el-table__body-wrapper td .cell {
-  white-space: nowrap;
-  padding-left: 10px;
-  padding-right: 10px;
-  line-height: 1.45;
-}
-
-.patient-charge-page .pc-detail-table >>> .el-table__header-wrapper th,
-.patient-charge-page .pc-detail-table >>> .el-table__body-wrapper td {
-  padding: 8px 0;
-}
-
-.patient-charge-page .pc-detail-table >>> colgroup col[name='gutter'] {
-  width: 8px;
+.patient-charge-page .list-toolbar {
+  flex-shrink: 0;
 }
 
 .patient-charge-page .pc-visit-type-group {
@@ -2064,28 +2152,32 @@ export default {
   line-height: 1.5;
 }
 
-.patient-charge-page .pc-pagination-wrap {
-  margin-top: 0.5vh;
-  min-height: 8vh;
-  height: 8vh;
-  box-sizing: border-box;
+/* 勾选行高亮（与到货验收一致） */
+.patient-charge-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.patient-charge-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell {
+  background-color: #B8DAFF !important;
 }
 
-.patient-charge-page .pc-pagination-wrap >>> .pagination-container {
-  position: relative !important;
-  height: 100% !important;
-  min-height: 8vh !important;
-  margin: 0 !important;
-  padding: 0.8vh 1vw !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  box-sizing: border-box;
+.patient-charge-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td,
+.patient-charge-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.patient-charge-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.patient-charge-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.patient-charge-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
 }
 
-.patient-charge-page .pc-pagination-wrap >>> .pagination-container .el-pagination {
-  position: relative !important;
-  right: auto !important;
+.patient-charge-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.patient-charge-page .apply-main-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.patient-charge-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.patient-charge-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td,
+.patient-charge-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td .cell,
+.patient-charge-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-select-col,
+.patient-charge-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.el-table-column--selection,
+.patient-charge-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
 }
 
 .charge-fetch-chunk-tip {

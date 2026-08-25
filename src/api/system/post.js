@@ -118,3 +118,20 @@ export function getPostWarehouseSyncStatus(postId) {
     method: 'get'
   })
 }
+
+/** 工作组消息提醒同步（后台异步） */
+export function syncPostMessageReminderToUsers(postId, syncMode) {
+  return request({
+    url: '/system/post/sync/messageReminder/' + postId,
+    method: 'post',
+    params: { syncMode }
+  })
+}
+
+/** 查询工作组消息提醒同步状态 */
+export function getPostMessageReminderSyncStatus(postId) {
+  return request({
+    url: '/system/post/sync/messageReminder/status/' + postId,
+    method: 'get'
+  })
+}

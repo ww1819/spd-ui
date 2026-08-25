@@ -2,53 +2,38 @@
   <div class="app-container list-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field more-search-field--text"
-          >
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-if="t === 'postName'"
-              v-model="queryParams.postName"
-              placeholder="工作组名称"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
-              v-else
               v-model="queryParams.postCode"
               placeholder="工作组编码"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
-
+            <el-input
+              v-model="queryParams.postName"
+              placeholder="工作组名称"
+              clearable
+              class="apply-query-input apply-query-field"
+              @keyup.enter.native="handleQuery"
+            />
+          </el-col>
+        </el-row>
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item prop="status" class="query-item-inline">
-              <el-select v-model="queryParams.status" placeholder="工作组状态" clearable class="more-search-select-wrap">
-                <el-option
-                  v-for="dict in dict.type.sys_normal_disable"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
+            <el-select v-model="queryParams.status" placeholder="工作组状态" clearable class="more-search-select-wrap apply-query-field">
+              <el-option
+                v-for="dict in dict.type.sys_normal_disable"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+            <div class="query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
@@ -63,6 +48,7 @@
         <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncWarehouse" v-hasPermi="['system:post:edit', 'system:post:sync']">同步仓库</el-button>
         <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncDepartment" v-hasPermi="['system:post:edit', 'system:post:sync']">同步科室</el-button>
         <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncMenu" v-hasPermi="['system:post:edit', 'system:post:sync']">同步菜单</el-button>
+        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncMessageReminder" v-hasPermi="['system:post:edit', 'system:post:sync']">同步消息提醒</el-button>
       </div>
       <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
@@ -258,7 +244,7 @@
 </template>
 
 <script>
-import { listPost, getPost, delPost, addPost, updatePost, roleMenuTreeselectPost, syncPostMenuToUsers, getPostMenuSyncStatus, syncPostDepartmentToUsers, getPostDepartmentSyncStatus, syncPostWarehouseToUsers, getPostWarehouseSyncStatus } from "@/api/system/post";
+import { listPost, getPost, delPost, addPost, updatePost, roleMenuTreeselectPost, syncPostMenuToUsers, getPostMenuSyncStatus, syncPostDepartmentToUsers, getPostDepartmentSyncStatus, syncPostWarehouseToUsers, getPostWarehouseSyncStatus, syncPostMessageReminderToUsers, getPostMessageReminderSyncStatus } from "@/api/system/post";
 import { deptTreeSelect } from "@/api/system/user";
 import { getOptionselect as getWarehouseOptionselect } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
@@ -282,11 +268,6 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '工作组编码', value: 'postCode' },
-        { label: '工作组名称', value: 'postName' }
-      ],
       // 总条数
       total: 0,
       // 工作组表格数据
@@ -364,11 +345,14 @@ export default {
     };
   },
   computed: {
-    moreSearchStorageKey() {
-      return 'spd.system.post.moreSearchTypes'
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
+    filteredDepartmentOptions() {
+      const keyword = (this.departmentKeyword || "").trim();
+      if (!keyword) {
+        return this.userDepartmentOptions || [];
+      }
+      return (this.userDepartmentOptions || []).filter(item =>
+        (item.name || "").includes(keyword)
+      );
     }
   },
   watch: {
@@ -381,8 +365,6 @@ export default {
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
   beforeDestroy() {
@@ -392,11 +374,13 @@ export default {
     /** 查询工作组列表 */
     getList() {
       this.loading = true;
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      listPost(params).then(response => {
+      listPost(this.queryParams).then(response => {
         this.postList = response.rows;
         this.total = response.total;
+      }).catch(() => {
+        this.postList = [];
+        this.total = 0;
+      }).finally(() => {
         this.loading = false;
       });
     },
@@ -425,39 +409,10 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
+      this.queryParams.postCode = undefined;
+      this.queryParams.postName = undefined;
+      this.queryParams.status = undefined;
       this.handleQuery();
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = { postCode: 'postCode', postName: 'postName' };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 多选框选中数据
     // 序号计算方法
@@ -521,9 +476,7 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      this.download('system/post/export', params, `post_${new Date().getTime()}.xlsx`)
+      this.download('system/post/export', { ...this.queryParams }, `post_${new Date().getTime()}.xlsx`)
     },
     /** 同步仓库：支持多选工作组，对每个组分别提交任务 */
     handleSyncWarehouse() {
@@ -594,6 +547,29 @@ export default {
         this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
       });
     },
+    /** 同步消息提醒：支持多选工作组 */
+    handleSyncMessageReminder() {
+      const postIds = this.getSelectedPostIdsOrWarn();
+      if (!postIds) return;
+      Promise.all(postIds.map(pid => getPost(pid))).then(responses => {
+        for (let i = 0; i < responses.length; i++) {
+          const raw = responses[i].data.messageReminderKeys;
+          if (raw == null || String(raw).trim() === '') {
+            const name = responses[i].data.postName || postIds[i];
+            this.$modal.msgError("工作组「" + name + "」没有消息提醒权限，请先在授权中配置并保存");
+            return;
+          }
+        }
+        this.chooseSyncMode("messageReminder").then((syncMode) => {
+          return Promise.all(postIds.map(pid => syncPostMessageReminderToUsers(pid, syncMode))).then(() => syncMode);
+        }).then((syncMode) => {
+          this.notifySyncSubmitted("messageReminder", syncMode);
+          this.startSyncMenuPolling(postIds, "messageReminder", syncMode);
+        }).catch(() => {});
+      }).catch(error => {
+        this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
+      });
+    },
     getSelectedPostIdsOrWarn() {
       if (!this.ids || this.ids.length === 0) {
         this.$modal.msgWarning("请先勾选至少一个工作组");
@@ -626,7 +602,8 @@ export default {
       const labelMap = {
         menu: "菜单权限",
         department: "科室权限",
-        warehouse: "仓库权限"
+        warehouse: "仓库权限",
+        messageReminder: "消息提醒权限"
       };
       return labelMap[type] || "权限";
     },
@@ -673,7 +650,8 @@ export default {
       const statusApiMap = {
         menu: getPostMenuSyncStatus,
         department: getPostDepartmentSyncStatus,
-        warehouse: getPostWarehouseSyncStatus
+        warehouse: getPostWarehouseSyncStatus,
+        messageReminder: getPostMessageReminderSyncStatus
       };
       const statusApi = statusApiMap[syncType] || getPostMenuSyncStatus;
       const successText = this.getSyncTypeLabel(syncType);
@@ -1079,17 +1057,6 @@ export default {
         this.$modal.msgError("授权保存失败：" + (error.msg || error.message || '未知错误'));
       });
     }
-  },
-  computed: {
-    filteredDepartmentOptions() {
-      const keyword = (this.departmentKeyword || "").trim();
-      if (!keyword) {
-        return this.userDepartmentOptions || [];
-      }
-      return (this.userDepartmentOptions || []).filter(item =>
-        (item.name || "").includes(keyword)
-      );
-    }
   }
 };
 </script>
@@ -1097,6 +1064,19 @@ export default {
 <style scoped>
 .list-query-panel {
   margin-top: -20px;
+}
+
+.list-query-panel .query-row-first-inner,
+.list-query-panel .query-row-second-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.list-query-panel .query-row-second {
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 /* 授权树：客户未开通的目录节点不显示勾选框 */
 .auth-menu-tree ::v-deep .el-tree-node:has(.menu-folder-only) > .el-tree-node__content > .el-checkbox {
