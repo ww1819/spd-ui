@@ -8,7 +8,7 @@ $apply-list-pages: receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-aud
   gzOrder-goodsApply-page, gzOrder-refund-page, gzOrder-follow-page,
   settlement-apply-page, settlement-audit-page,
   finance-invoice-page, finance-wh-settlement-page, finance-supp-settlement-page,
-  inWarehouse-apply-page, inWarehouse-refundGoodsApply-page, inWarehouse-refundGoodsAudit-page,
+  inWarehouse-apply-page, inWarehouse-audit-page, inWarehouse-refundGoodsApply-page, inWarehouse-refundGoodsAudit-page,
   outWarehouse-refundDepotAudit-page, stocktaking-page, stocktaking-profit-page, profit-loss-page,
   initial-stock-import-page, stocktaking-in-page, warehouseTransfer-apply-page, warehouseTransfer-audit-page,
   new-product-apply-page, new-product-audit-page, wh-warehouse-apply-page,
@@ -51,6 +51,11 @@ $apply-list-pages: receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-aud
   .app-container.#{$page} .list-query-panel,
   .app-container.#{$page} .list-toolbar {
     flex: 0 0 auto;
+  }
+
+  /* 搜索区与「新增」等按钮行之间留白，与页面顶部 padding 一致 */
+  .app-container.#{$page} > .list-toolbar {
+    margin-top: 8px !important;
   }
 
   .app-container.#{$page} .list-query-panel .el-form {

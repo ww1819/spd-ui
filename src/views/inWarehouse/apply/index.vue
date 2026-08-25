@@ -3529,7 +3529,8 @@ export default {
   text-align: center !important;
 }
 
-.mb8 {
+/* 仅弹窗内按钮行，勿影响主列表 list-toolbar 与搜索区之间的留白 */
+.local-modal-content .mb8 {
   margin-top: 0 !important;
   margin-bottom: 8px !important;
 }
