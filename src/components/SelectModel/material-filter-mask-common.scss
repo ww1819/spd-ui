@@ -1,0 +1,354 @@
+.material-filter-mask--nested {
+  position: absolute;
+  z-index: 3100;
+}
+
+.material-filter-mask.material-filter-mask--nested .local-modal-content.material-filter-modal--nested {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.material-filter-modal--nested {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.material-filter-modal-footer {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 5;
+  overflow: visible;
+  min-height: 48px;
+  padding: 8px 14px 10px;
+  margin: 0;
+  background: #fff;
+  border-top: 1px solid #eef2f7;
+  box-sizing: border-box;
+}
+
+.material-filter-modal-footer .pagination-container,
+.material-filter-modal-footer .pagination-container.modal-entry-pagination {
+  position: relative !important;
+  width: 100%;
+  height: auto !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.material-filter-modal-footer .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+
+.material-filter-form.modal-form-compact {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.material-filter-table-panel {
+  flex: 1 1 0%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.material-filter-table-panel .table-wrapper {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: 0;
+  padding-bottom: 0;
+}
+
+.material-filter-mask.material-filter-mask--nested .material-filter-form.modal-form-compact > .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+/* RK-添加明细：横向滚动条与修改入库 apply-detail-table 完全一致（默认即粗，非 hover 才变粗） */
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-track,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-track,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  background-clip: border-box !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+}
+
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+.material-filter-mask.material-filter-mask--nested .apply-table-panel > .apply-main-table {
+  margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.material-filter-mask.material-filter-mask--nested .apply-table-panel .apply-pagination-wrap {
+  flex: 0 0 auto;
+  padding: 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.material-filter-mask.material-filter-mask--nested .apply-table-panel .apply-pagination-wrap .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.material-filter-mask.material-filter-mask--nested .apply-table-panel .apply-pagination-wrap .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+
+/* 嵌套弹窗：查询区 / 工具栏 / 表格区边框（对齐修改入库 apply/index） */
+.material-filter-mask.material-filter-mask--nested .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
+  padding: 8px 0 12px !important;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-query-panel {
+  margin-top: 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  padding: 6px 8px;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: 1px solid #e8ecf1;
+  border-bottom: 1px solid #e8ecf1;
+  box-sizing: border-box;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row:last-child {
+  margin-bottom: 0;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  margin-bottom: 0;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--material-keyword .el-input {
+  width: 110px !important;
+  max-width: 110px !important;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-toolbar.list-toolbar {
+  flex: 0 0 auto;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+  box-sizing: border-box;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-table-panel.material-filter-table-panel {
+  flex: 1 1 0%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.material-filter-mask.material-filter-mask--nested .material-filter-table-panel.apply-modal-table-panel {
+  overflow: hidden;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-table-panel > .table-wrapper {
+  overflow: hidden;
+  border-bottom: none;
+  flex: 1;
+  min-height: 0;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table tbody td.el-table__cell {
+  padding: 4px 0 !important;
+  height: auto !important;
+  min-height: 36px;
+  vertical-align: middle;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table tbody td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 28px;
+  min-height: 28px;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table thead th.el-table__cell {
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 6px 0 !important;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table .el-table__body tr.apply-row-selected > td,
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table .el-table__body tr.apply-row-selected > td .cell,
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table .el-table__body tr.apply-row-selected > td.el-table-column--selection {
+  background-color: #B8DAFF !important;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table .el-table__body tr.apply-row-selected:hover > td,
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.material-filter-mask .local-modal-content .apply-modal-table-panel .material-filter-detail-table.el-table.apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection {
+  background-color: #A0CBFF !important;
+}
+
+.material-filter-mask .apply-modal-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-right: 12px;
+  line-height: 28px;
+}
+
+.material-filter-mask:not(.material-filter-mask--nested) .apply-pagination-wrap {
+  flex-shrink: 0;
+  padding: 4px 0 0;
+}
+
+.material-filter-form.modal-form-compact > .material-filter-pagination-wrap {
+  flex: 0 0 52px;
+  position: relative;
+  z-index: 3;
+  overflow: visible;
+  min-height: 44px;
+  padding: 6px 14px 8px;
+  margin-bottom: 0;
+  background: #fff;
+  border-top: 1px solid #eef2f7;
+  box-sizing: border-box;
+}
+
+
+.material-filter-mask.material-filter-mask--nested .material-filter-pagination-wrap .pagination-container,
+.material-filter-mask.material-filter-mask--nested .material-filter-nested-pagination-wrap .pagination-container,
+.material-filter-form.modal-form-compact > .material-filter-pagination-wrap .pagination-container,
+.material-filter-mask.material-filter-mask--nested .material-filter-pagination-wrap .pagination-container.modal-entry-pagination,
+.material-filter-mask.material-filter-mask--nested .material-filter-nested-pagination-wrap .pagination-container.modal-entry-pagination,
+.material-filter-form.modal-form-compact > .material-filter-pagination-wrap .pagination-container.modal-entry-pagination {
+  position: relative !important;
+  width: 100%;
+  height: auto !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+
+.material-filter-mask.material-filter-mask--nested .material-filter-pagination-wrap .pagination-container .el-pagination,
+.material-filter-mask.material-filter-mask--nested .material-filter-nested-pagination-wrap .pagination-container .el-pagination,
+.material-filter-form.modal-form-compact > .material-filter-pagination-wrap .pagination-container .el-pagination,
+.material-filter-mask.material-filter-mask--nested .material-filter-pagination-wrap--nested .rk-material-filter-pagination.el-pagination {
+  position: relative !important;
+  right: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  visibility: visible !important;
+}

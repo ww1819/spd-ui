@@ -105,6 +105,84 @@ export function matchMaterialKeyword(item, rawKeyword) {
   return false;
 }
 
+/**
+ * 耗材名称：名称/简码/通用名/品牌 + 拼音首字母（不含编码、规格、型号）
+ */
+export function matchMaterialNameKeyword(item, rawKeyword) {
+  if (!item) {
+    return false;
+  }
+  const kw = normalizeMaterialSearchKeyword(rawKeyword);
+  if (!kw) {
+    return true;
+  }
+  const k = kw.toLowerCase();
+  const kUpper = kw.toUpperCase();
+  const fields = [
+    item.name,
+    item.referredName,
+    item.referred_name,
+    item.useName,
+    item.use_name,
+    item.brand,
+  ];
+  for (let i = 0; i < fields.length; i += 1) {
+    const v = fields[i];
+    if (fieldContainsKeyword(v, k, kUpper)) {
+      return true;
+    }
+  }
+  if (/^[a-zA-Z]+$/.test(kw)) {
+    const referred = item.referredName || item.referred_name;
+    if (referred) {
+      const refUpper = String(referred).toUpperCase();
+      if (refUpper.includes(kUpper)) {
+        return true;
+      }
+      const refInitials = getMaterialPinyinInitials(referred);
+      if (refInitials.includes(kUpper)) {
+        return true;
+      }
+    }
+    const nameForPy = item.name || item.referredName || item.referred_name || '';
+    if (nameForPy) {
+      const initials = getMaterialPinyinInitials(nameForPy);
+      if (initials.includes(kUpper)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/** 耗材编码：模糊匹配（大小写不敏感） */
+export function matchMaterialCodeKeyword(item, rawKeyword) {
+  if (!item) {
+    return false;
+  }
+  const kw = normalizeMaterialSearchKeyword(rawKeyword);
+  if (!kw) {
+    return true;
+  }
+  const code = item.code;
+  if (code == null || String(code).trim() === '') {
+    return false;
+  }
+  const k = kw.toLowerCase();
+  const kUpper = kw.toUpperCase();
+  const s = String(code);
+  if (s.toLowerCase().includes(k) || s.toUpperCase().includes(kUpper)) {
+    return true;
+  }
+  if (/^[a-zA-Z]+$/.test(kw)) {
+    const codeAlpha = extractAlphaUpper(code);
+    if (codeAlpha && codeAlpha.includes(kUpper)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** 规格检索：文本模糊 + 拼音首字母（大小写不敏感） */
 export function matchSpecKeyword(spec, rawKeyword) {
   const kw = normalizeMaterialSearchKeyword(rawKeyword);
@@ -127,4 +205,41 @@ export function matchSpecKeyword(spec, rawKeyword) {
     }
   }
   return false;
+}
+
+/** 型号检索：与规格一致，文本模糊 + 拼音首字母（大小写不敏感） */
+export function matchModelKeyword(model, rawKeyword) {
+  return matchSpecKeyword(model, rawKeyword);
+}
+
+/**
+ * 将耗材名称关键词转为后端 name / nameSearch 参数（与产品档案列表一致）
+ * - 含中文：name + nameSearch（拼音首字母简码）
+ * - 纯字母：仅 nameSearch（按 referred_name 模糊，支持首/尾字母大小写不敏感）
+ * - 其他：仅 name 文本模糊
+ */
+export function deriveMaterialNameSearchParams(keyword) {
+  const nameValue = normalizeMaterialSearchKeyword(keyword);
+  if (!nameValue) {
+    return { name: undefined, nameSearch: undefined };
+  }
+  const hasChinese = /[\u4e00-\u9fa5]/.test(nameValue);
+  const isLetterOnly = /^[A-Za-z]+$/.test(nameValue);
+  if (hasChinese) {
+    const pinyinCode = getMaterialPinyinInitials(nameValue);
+    return {
+      name: nameValue,
+      nameSearch: pinyinCode || undefined
+    };
+  }
+  if (isLetterOnly) {
+    return {
+      name: undefined,
+      nameSearch: nameValue.toUpperCase()
+    };
+  }
+  return {
+    name: nameValue,
+    nameSearch: undefined
+  };
 }

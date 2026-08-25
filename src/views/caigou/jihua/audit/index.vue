@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page caigou-jihua-audit-page">
+  <div class="app-container list-page caigou-jihua-audit-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -193,168 +193,29 @@
       </div>
     </el-dialog>
 
-    <!-- 添加或修改计划对话框 -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
-            </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
-              <div class="form-fields-container">
-              <el-row :gutter="8">
-                <el-col :span="4">
-                  <el-form-item label="单号" prop="planNo">
-                    <el-input v-model="form.planNo" :disabled="true" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="仓库" prop="warehouseId">
-                    <el-input :value="form.warehouse && form.warehouse.name" :disabled="true" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item prop="planDate">
-                    <template slot="label">
-                      <span style="white-space: nowrap;">制单时间</span>
-                    </template>
-                    <el-input :value="form.createTime ? parseTime(form.createTime, '{y}-{m}-{d} {h}:{i}:{s}') : (form.planDate ? parseTime(form.planDate, '{y}-{m}-{d} {h}:{i}:{s}') : '')" :disabled="true" placeholder="制单时间" style="width: 100%" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="操作人" prop="createBy">
-                    <el-input :value="operatorName" :disabled="true" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="联系电话" prop="telephone">
-                    <el-input v-model="form.telephone" :disabled="true" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
-              <el-row :gutter="8">
-                <el-col :span="4">
-                  <el-form-item label="采购员" prop="proPerson">
-                    <SelectUser v-model="form.proPerson" v-if="action"/>
-                    <el-input :value="purchaserName" :disabled="true" v-else/>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="总金额" prop="totalAmount">
-                    <el-input v-model="form.totalAmount" :disabled="true" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="计划来源" prop="planSource">
-                    <el-input :value="planSourceDisplay" disabled />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="计划明细生成方式" prop="planEntryMode">
-                    <el-input :value="planEntryModeDisplay" disabled />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="备注" prop="remark">
-                    <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              </div>
-              <div class="modal-detail-section">
-              <el-row :gutter="10" class="mb8 detail-toolbar-row">
-                <el-col :span="1.5">
-                  <span>计划明细信息</span>
-                </el-col>
-              </el-row>
-              <div class="table-wrapper">
-                <el-table :data="stkIoBillEntryList"
-                          show-summary :summary-method="getSummaries"
-                          border
-                          :height="detailTableHeight"
-                >
-          <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              {{ scope.$index + 1 }}
-            </template>
-          </el-table-column>
-          <!-- 耗材列隐藏 -->
-          <!--<el-table-column label="耗材" prop="materialId" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
-            </template>
-          </el-table-column>-->
-          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.fdUnit ? scope.row.material.fdUnit.unitName : '' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.qty }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ formatPrice4(scope.row.price) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ formatPrice4(scope.row.amt) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="供应商" align="center" width="140" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ entrySupplierDisplay(scope.row) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="申购单号" align="center" width="140" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.applyBillNos || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="申请科室" align="center" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.applyDepartment && scope.row.applyDepartment.name) || scope.row.applyDepartmentName || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="计划来源" align="center" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.planSource || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable/>
-          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
-            </template>
-          </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable />
-          <el-table-column label="操作" align="center" width="120" fixed="right">
-            <template slot-scope="scope">
-              <el-button v-if="scope.row.id" type="text" size="small" @click="handleViewApplyDetails(scope.row)">查看申购明细</el-button>
-              <span v-else>--</span>
-            </template>
-          </el-table-column>
-                </el-table>
-              </div>
-              </div>
-            </el-form>
-          </div>
-        </transition>
-      </div>
-    </transition>
+    <PlanEditDialog
+      v-if="open"
+      ref="planEditDialog"
+      :visible.sync="open"
+      :title="title"
+      :form="form"
+      :rules="rules"
+      :editable="action"
+      :entry-list="stkIoBillEntryList"
+      :user-options="userOptions"
+      :supplier-options="[]"
+      :warehouse-locked="true"
+      :header-locked="true"
+      :plan-entry-mode-disabled="true"
+      :plan-source-display="planSourceDisplay"
+      :table-height="detailTableHeight"
+      :summary-method="getSummaries"
+      :detail-selected-row-map="detailSelectedRowMap"
+      :supplier-display-fn="entrySupplierDisplay"
+      @cancel="cancel"
+      @view-apply-details="handleViewApplyDetails"
+      @show-apply-bills="handleShowApplyBillNoList"
+    />
 
     <!-- 引用申购单号列表弹窗 -->
     <el-dialog title="引用申购单号" :visible.sync="applyBillNoDialogVisible" width="500px" append-to-body>
@@ -399,13 +260,16 @@ import { listPurchasePlan, getPurchasePlan, auditPurchasePlan, getApplyBillNoLis
 import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
-import SelectUser from '@/components/SelectModel/SelectUser';
 import { resolvePlanEntrySource, resolvePlanEntrySupplierName } from '../utils/planEntryUtils';
 
 export default {
   name: "PurchasePlanAudit",
   dicts: ['biz_status','plan_status','bill_type','way_status'],
-  components: {SelectSupplier,SelectWarehouse,SelectUser},
+  components: {
+    SelectSupplier,
+    SelectWarehouse,
+    PlanEditDialog: () => import('../components/PlanEditDialog'),
+  },
   data() {
     return {
       // 遮罩层
@@ -486,8 +350,8 @@ export default {
       applyBillNoList: [],
       applyBillNoDialogVisible: false,
       applyDetailList: [],
-      applyDetailDialogVisible: false
-,
+      applyDetailDialogVisible: false,
+      detailSelectedRowMap: {},
       _lastSidebarNavTick: null
     };
   },
@@ -514,25 +378,6 @@ export default {
     }
   },
   computed: {
-    // 操作人姓名
-    operatorName() {
-      if (this.form.creater && this.form.creater.nickName) {
-        return this.form.creater.nickName;
-      }
-      if (this.form.createBy) {
-        const user = this.userOptions.find(u => u.userName === this.form.createBy || u.userId === this.form.createBy);
-        return user ? user.nickName || user.userName : this.form.createBy;
-      }
-      return '';
-    },
-    // 采购员姓名
-    purchaserName() {
-      if (this.form.proPerson) {
-        const user = this.userOptions.find(u => u.userId === this.form.proPerson || u.userId === String(this.form.proPerson));
-        return user ? user.nickName || user.userName : '';
-      }
-      return '';
-    },
     planSourceDisplay() {
       const list = this.stkIoBillEntryList || [];
       const set = new Set();
@@ -541,8 +386,9 @@ export default {
       });
       return [...set].join('，') || '';
     },
-    planEntryModeDisplay() {
-      return (this.form.planEntryMode === '2') ? '按申购单明细拆分' : '按产品档案汇总';
+    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    detailTableHeight() {
+      return 'max(240px, calc(100vh - 384px))';
     },
     /** 采购计划状态筛选项：仅未提交、待审核、已审核 */
     planStatusFilterOptions() {
@@ -695,32 +541,35 @@ export default {
     },
 getSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
+      const sums = columns.map(() => '');
+      let summaryLabelPlaced = false;
+      const sumNum = (prop) => {
+        let t = 0;
+        (data || []).forEach(item => {
+          const v = item[prop];
+          if (v != null && v !== '' && !isNaN(v)) {
+            t += parseFloat(v);
+          }
+        });
+        return t;
+      };
       columns.forEach((column, index) => {
-        if (index === 0) {
-          sums[index] = '合计';
+        if (column.type === 'selection') {
+          sums[index] = '';
           return;
         }
-
-        // 只对数量、金额列进行汇总，使用列属性名判断（价格列不汇总）
-        if (column.property === 'qty' || column.property === 'amt') {
-          const values = data.map(item => {
-            const value = item[column.property];
-            return isNaN(Number(value)) ? 0 : Number(value);
-          });
-
-          if (values.length > 0) {
-            sums[index] = values.reduce((prev, curr) => prev + curr, 0).toFixed(column.property === 'amt' ? 4 : 2);
-          } else {
-            sums[index] = column.property === 'amt' ? '0.0000' : '0.00';
-          }
-
-          // 更新总金额
-          if (column.property === 'amt') {
-            this.form.totalAmount = sums[index];
-          }
-        } else {
-          sums[index] = '';
+        if (!summaryLabelPlaced && (column.label === '序号' || column.property === 'index')) {
+          sums[index] = '合计';
+          summaryLabelPlaced = true;
+          return;
+        }
+        if (column.property === 'qty') {
+          sums[index] = sumNum('qty').toFixed(2);
+          return;
+        }
+        if (column.property === 'amt') {
+          const t = sumNum('amt');
+          sums[index] = '￥' + t.toFixed(4);
         }
       });
       return sums;
@@ -789,14 +638,9 @@ getSummaries(param) {
     },
     // 取消按钮
     cancel() {
-      console.time('[Plan] cancel total');
-      const t0 = performance.now();
       this.open = false;
-      const t1 = performance.now();
+      this.detailSelectedRowMap = {};
       this.reset();
-      const t2 = performance.now();
-      console.log('[Plan] cancel set open=false ms=', (t1 - t0).toFixed(1), 'reset(ms)=', (t2 - t1).toFixed(1));
-      console.timeEnd('[Plan] cancel total');
     },
     // 表单重置
     reset() {
@@ -869,10 +713,17 @@ handleQuery() {
       getPurchasePlan(id).then(response => {
         this.form = response.data;
         this.stkIoBillEntryList = response.data.purchasePlanEntryList || [];
+        this.detailSelectedRowMap = {};
         this.fillPlanSourceForEntries();
         this.open = true;
         this.action = false;
         this.title = "查看计划";
+        this.$nextTick(() => {
+          const dlg = this.$refs.planEditDialog;
+          if (dlg && typeof dlg.layoutEntryTable === 'function') {
+            dlg.layoutEntryTable();
+          }
+        });
       });
     },
     /** 明细行供应商展示（与采购计划页一致，含产品档案供应商） */

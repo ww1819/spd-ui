@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page caigou-jihua-page">
+  <div class="app-container list-page caigou-jihua-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -254,6 +254,7 @@
       :plan-source-display="planSourceDisplay"
       :table-height="detailTableHeight"
       :summary-method="getSummaries"
+      :detail-selected-row-map="detailSelectedRowMap"
       :supplier-display-fn="entrySupplierDisplay"
       @cancel="cancel"
       :submit-loading="planSaveSubmitting"
@@ -333,6 +334,7 @@ export default {
       ids: [],
       // 子表选中数据
       checkedStkIoBillEntry: [],
+      detailSelectedRowMap: {},
       // 非单个禁用
       single: true,
       pickerBeginTimeOptions: {
@@ -473,9 +475,9 @@ export default {
       const list = this.stkIoBillEntryList || [];
       return list.length > 0;
     },
-    /** 与到货验收 inWarehouse/audit 弹窗明细表高度一致 */
+    /** 与到货验收「添加入库」弹窗明细表高度一致 */
     detailTableHeight() {
-      return 'max(260px, calc(100vh - 368px))';
+      return 'max(240px, calc(100vh - 384px))';
     },
     /** 已有明细或已引用申购单时锁定仓库，避免跨仓混入明细 */
     isPlanWarehouseLocked() {
@@ -818,10 +820,11 @@ export default {
     },
 getSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
+      const sums = columns.map(() => '');
+      let summaryLabelPlaced = false;
       const sumNum = (prop) => {
         let t = 0;
-        data.forEach(item => {
+        (data || []).forEach(item => {
           const v = item[prop];
           if (v != null && v !== '' && !isNaN(v)) {
             t += parseFloat(v);
@@ -834,8 +837,9 @@ getSummaries(param) {
           sums[index] = '';
           return;
         }
-        if (column.property === 'index') {
+        if (!summaryLabelPlaced && (column.label === '序号' || column.property === 'index')) {
           sums[index] = '合计';
+          summaryLabelPlaced = true;
           return;
         }
         if (column.property === 'qty') {
@@ -848,9 +852,7 @@ getSummaries(param) {
           if (this.form && this.action) {
             this.form.totalAmount = t.toFixed(4);
           }
-          return;
         }
-        sums[index] = '';
       });
       return sums;
     },
@@ -1183,6 +1185,8 @@ listPurchasePlan(queryParams).then(response => {
         remark: null
       };
       this.stkIoBillEntryList = [];
+      this.checkedStkIoBillEntry = [];
+      this.detailSelectedRowMap = {};
       this.planDetailSupplierOptions = [];
       this.planDetailSupplierListLoading = false;
       this.planDetailSupplierLoadPromise = null;
@@ -1491,11 +1495,24 @@ listPurchasePlan(queryParams).then(response => {
           (item) => !checked.has(this.planEntryRowKey(item))
         );
         this.checkedStkIoBillEntry = [];
+        this.detailSelectedRowMap = {};
       }
     },
     /** 复选框选中数据 */
     handleStkIoBillEntrySelectionChange(selection) {
       this.checkedStkIoBillEntry = (selection || []).map((item) => this.planEntryRowKey(item));
+      const pageIndices = (this.stkIoBillEntryList || []).map((row, idx) => idx);
+      pageIndices.forEach((idx) => {
+        if (this.detailSelectedRowMap[idx]) {
+          this.$delete(this.detailSelectedRowMap, idx);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const idx = this.stkIoBillEntryList.indexOf(row);
+        if (idx >= 0) {
+          this.$set(this.detailSelectedRowMap, idx, true);
+        }
+      });
     },
     /** 导出计划明细（供货清单）：有勾选时仅导出所选计划；否则按当前筛选导出全部匹配明细 */
     handleExport() {
@@ -1807,7 +1824,7 @@ listPurchasePlan(queryParams).then(response => {
   flex-direction: column;
 }
 
-.local-modal-content .modal-detail-section {
+.local-modal-content .modal-detail-section:not(.apply-modal-table-panel) {
   margin-left: -20px;
   margin-right: -20px;
   width: calc(100% + 40px);
@@ -1819,7 +1836,7 @@ listPurchasePlan(queryParams).then(response => {
   flex-direction: column;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-row {
+.local-modal-content .modal-detail-section:not(.apply-modal-table-panel) .detail-toolbar-row {
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 12px;
@@ -1829,7 +1846,7 @@ listPurchasePlan(queryParams).then(response => {
   flex-wrap: wrap;
 }
 
-.local-modal-content .modal-detail-section .table-wrapper {
+.local-modal-content .modal-detail-section:not(.apply-modal-table-panel) .table-wrapper {
   margin-top: 0;
   overflow: hidden;
   flex: 1;
@@ -1846,18 +1863,18 @@ listPurchasePlan(queryParams).then(response => {
   overflow-x: hidden;
 }
 
-::v-deep .local-modal-content .modal-detail-section .el-table th {
+::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) th {
   font-size: 15px !important;
   font-weight: 600 !important;
   background-color: #EBEEF5 !important;
 }
 
-::v-deep .local-modal-content .modal-detail-section .el-table th .cell {
+::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) th .cell {
   font-size: 15px !important;
   font-weight: 600 !important;
 }
 
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
+::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__body-wrapper {
   padding-bottom: 6px;
   box-sizing: border-box;
   scrollbar-width: thin;
@@ -1865,17 +1882,24 @@ listPurchasePlan(queryParams).then(response => {
   overflow-y: auto !important;
 }
 
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar {
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__body-wrapper::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__body-wrapper::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.25);
   border-radius: 4px;
 }
 
-::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
+::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__footer-wrapper {
   position: relative;
   z-index: 10 !important;
   background-color: #fff !important;
@@ -1884,14 +1908,46 @@ listPurchasePlan(queryParams).then(response => {
   overflow: visible !important;
 }
 
-::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
+::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__fixed-footer-wrapper {
   z-index: 11 !important;
   background-color: #fff !important;
   overflow: visible !important;
 }
 
-::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
-::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper {
+  background-color: #f1f5f9 !important;
+  box-shadow: none !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 0 !important;
+  line-height: 24px !important;
+  box-sizing: border-box !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: none !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 24px !important;
+  text-align: center !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__fixed-footer-wrapper td {
   padding-top: 8px !important;
   padding-bottom: 10px !important;
   background-color: #fff !important;
@@ -3186,6 +3242,22 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
   border-top-color: #2563EB;
 }
 
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
 /* 弹窗明细表头：与主列表一致 */
 .app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
 .app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
@@ -3242,6 +3314,9 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
   overflow: auto !important;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 0 !important;
+  scrollbar-width: auto;
+  scrollbar-color: #a8a8a8 #f1f1f1;
 }
 
 .app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
@@ -3296,6 +3371,13 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
   border: none !important;
   box-shadow: none !important;
   background-image: none !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-button,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-vertical {
@@ -3572,6 +3654,71 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
   border-bottom-color: #e2e8f0 !important;
 }
 
+.app-container.caigou-jihua-page .apply-main-table th.plan-col-status .cell,
+.app-container.caigou-jihua-page .apply-main-table td.plan-col-status .cell {
+  white-space: nowrap !important;
+}
+
+/* 明细表合计行：与表头同高、同色 */
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed .el-table__fixed-footer-wrapper,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
+  background-color: #f1f5f9 !important;
+  border-bottom: none !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr {
+  height: 38px !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 0 !important;
+  line-height: 24px !important;
+  box-sizing: border-box !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 24px !important;
+  text-align: center !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr td:first-child,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr td:first-child {
+  border-left: 1px solid #e2e8f0 !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr td:last-child,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr td:last-child {
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell:empty,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell:empty {
+  padding: 0;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table-column--selection .cell {
+  font-size: 0;
+}
+
 /*
  * Element UI 2.x：show-summary 无数据时表尾被 v-show 隐藏，滚动条易与合计行错位。
  * 强制显示表尾，横向滚动条固定在表体与合计之间。
@@ -3603,22 +3750,5 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
 
 .app-container.caigou-jihua-page .apply-main-table td.plan-creator-col .cell {
   white-space: nowrap !important;
-}
-
-.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper,
-.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table .el-table__fixed .el-table__fixed-footer-wrapper,
-.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper {
-  position: relative;
-  z-index: 30 !important;
-}
-
-.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-footer-wrapper {
-  z-index: 31 !important;
 }
 </style>

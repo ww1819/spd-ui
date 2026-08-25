@@ -2,71 +2,67 @@
   <transition name="modal-fade">
     <div v-if="innerVisible" class="local-modal-mask plan-edit-modal-root">
       <transition name="modal-zoom">
-        <div v-if="innerVisible" class="local-modal-content plan-edit-dialog">
+        <div v-if="innerVisible" class="local-modal-content apply-modal-root-content plan-edit-dialog">
           <div class="modal-header">
             <div class="modal-title">{{ title }}</div>
             <el-button size="small" @click="$emit('cancel')" class="close-btn">关闭</el-button>
           </div>
-          <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
-            <div class="form-fields-container">
-              <el-row :gutter="12" class="plan-form-row">
-                <el-col :span="4">
-                  <el-form-item label="单号" prop="planNo">
-                    <el-input v-model="form.planNo" :disabled="true" />
+          <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
+            <div class="form-fields-container list-query-panel apply-modal-query-panel">
+              <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
+                <el-col class="apply-modal-field apply-modal-field--compact">
+                  <el-form-item label="单号" prop="planNo" class="form-item-header-billno">
+                    <el-input v-model="form.planNo" :disabled="true" :title="form.planNo || ''" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="5">
-                  <el-form-item label="仓库" prop="warehouseId">
+                <el-col class="apply-modal-field apply-modal-field--standard">
+                  <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required">
                     <SelectWarehouse v-model="form.warehouseId" :value2="warehouseLocked" excludeWarehouseType="设备"/>
                   </el-form-item>
                 </el-col>
-                <el-col :span="3">
-                  <el-form-item label="高值/低值" prop="isGz" class="plan-field-is-gz">
+                <el-col class="apply-modal-field apply-modal-field--compact plan-field-is-gz">
+                  <el-form-item label="高值/低值" prop="isGz" class="apply-modal-label-required">
                     <el-select v-model="form.isGz" placeholder="请选择" clearable :disabled="!editable || headerLocked">
                       <el-option label="高值" value="1" />
                       <el-option label="低值" value="2" />
                     </el-select>
                   </el-form-item>
                 </el-col>
-                <el-col :span="5">
-                  <el-form-item label="制单时间" prop="planDate" class="plan-field-plan-date">
-                    <el-input
-                      :value="planCreateTimeDisplay"
-                      :disabled="true"
-                      placeholder="制单时间"
-                    />
+                <el-col class="apply-modal-field apply-modal-field--date plan-field-plan-date">
+                  <el-form-item label="制单时间" prop="planDate" class="apply-modal-label-required">
+                    <el-input :value="planCreateTimeDisplay" :disabled="true" placeholder="制单时间" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="4">
+                <el-col class="apply-modal-field apply-modal-field--standard">
                   <el-form-item label="操作人" prop="createBy">
                     <el-input :value="operatorName" :disabled="true" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="3">
-                  <el-form-item label="联系电话" prop="telephone" class="plan-field-phone">
+                <el-col class="apply-modal-field apply-modal-field--compact plan-field-phone">
+                  <el-form-item label="联系电话" prop="telephone">
                     <el-input v-model="form.telephone" placeholder="联系电话" />
                   </el-form-item>
                 </el-col>
               </el-row>
-              <el-row :gutter="12" class="plan-form-row">
-                <el-col :span="4">
+              <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
+                <el-col class="apply-modal-field apply-modal-field--standard">
                   <el-form-item label="采购员" prop="proPerson">
                     <SelectUser v-model="form.proPerson" v-if="editable"/>
                     <el-input :value="purchaserName" :disabled="true" v-else/>
                   </el-form-item>
                 </el-col>
-                <el-col :span="4">
+                <el-col class="apply-modal-field apply-modal-field--standard">
                   <el-form-item label="总金额" prop="totalAmount">
                     <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="4">
+                <el-col class="apply-modal-field apply-modal-field--standard">
                   <el-form-item label="计划来源" prop="planSource">
-                    <el-input :value="planSourceDisplay" disabled placeholder="由明细聚合" style="width: 100%;" />
+                    <el-input :value="planSourceDisplay" disabled placeholder="由明细聚合" />
                   </el-form-item>
                 </el-col>
-                <el-col :span="12">
-                  <el-form-item label="明细生成" prop="planEntryMode" class="plan-entry-mode-item">
+                <el-col class="apply-modal-field apply-modal-field--grow plan-entry-mode-item">
+                  <el-form-item label="明细生成" prop="planEntryMode">
                     <el-radio-group v-model="form.planEntryMode" :disabled="planEntryModeDisabled">
                       <el-radio label="1">按产品档案汇总</el-radio>
                       <el-radio label="2">按申购单明细拆分</el-radio>
@@ -74,42 +70,36 @@
                   </el-form-item>
                 </el-col>
               </el-row>
-              <el-row v-if="form.referenceBillNo && String(form.referenceBillNo).trim()" :gutter="12" class="plan-form-row">
-                <el-col :span="12">
+              <el-row v-if="form.referenceBillNo && String(form.referenceBillNo).trim()" :gutter="0" class="apply-modal-form-row" type="flex">
+                <el-col class="apply-modal-field apply-modal-field--grow">
                   <el-form-item label="引用申购单号" prop="referenceBillNo">
                     <el-button type="primary" link @click="$emit('show-apply-bills')">查看引用申购单号</el-button>
                   </el-form-item>
                 </el-col>
               </el-row>
-              <el-row :gutter="12" class="plan-form-row">
-                <el-col :span="4">
+              <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-third" type="flex">
+                <el-col class="apply-modal-field apply-modal-field--grow">
                   <el-form-item label="备注" prop="remark">
                     <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!editable" />
                   </el-form-item>
                 </el-col>
               </el-row>
             </div>
-            <div class="modal-detail-section">
-              <el-row :gutter="10" class="detail-toolbar-row">
-                <el-col :span="1.5"><span>计划明细信息</span></el-col>
+
+            <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
+              <div class="list-toolbar-left">
+                <span class="apply-modal-detail-title">计划明细信息</span>
                 <template v-if="editable">
-                  <el-col :span="1.5">
-                    <el-button type="info" plain icon="el-icon-document" size="small" @click="$emit('reference-purchase')">引用申购单</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-plus" size="small" @click="$emit('add-material')">添加</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="danger" icon="el-icon-delete" size="small" @click="$emit('delete-entries')">删除</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button size="small" @click="$emit('cancel')">取 消</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-check" size="small" :loading="submitLoading" :disabled="submitLoading" @click="$emit('submit')">确 定</el-button>
-                  </el-col>
+                  <el-button type="primary" icon="el-icon-document" size="small" class="spd-btn spd-btn--secondary" @click="$emit('reference-purchase')">引用申购单</el-button>
+                  <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="$emit('add-material')">添加</el-button>
+                  <el-button type="danger" icon="el-icon-delete" size="small" class="spd-btn" @click="$emit('delete-entries')">删除</el-button>
+                  <el-button size="small" class="spd-btn spd-btn--secondary" @click="$emit('cancel')">取 消</el-button>
+                  <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" :loading="submitLoading" :disabled="submitLoading" @click="$emit('submit')">确 定</el-button>
                 </template>
-              </el-row>
+              </div>
+            </el-row>
+
+            <div class="modal-detail-section apply-modal-table-panel">
               <PlanEntryTable
                 ref="entryTable"
                 :list="entryList"
@@ -120,6 +110,7 @@
                 :header-form="form"
                 :summary-method="summaryMethod"
                 :supplier-display-fn="supplierDisplayFn"
+                :detail-selected-row-map="detailSelectedRowMap"
                 @selection-change="$emit('entry-selection-change', $event)"
                 @qty-input="$emit('qty-input', $event)"
                 @qty-blur="$emit('qty-blur', $event)"
@@ -127,19 +118,19 @@
               />
             </div>
           </el-form>
+          <SelectMMaterialFilter
+            v-if="materialPickerVisible"
+            nested
+            :DialogComponentShow="materialPickerVisible"
+            :supplierValue="materialPickerSupplier"
+            :warehouseValue="form.warehouseId"
+            :isGzValue="form.isGz"
+            :excludeMaterialIds="materialPickerExcludeIds"
+            @closeDialog="$emit('material-picker-close')"
+            @selectData="$emit('material-picker-select', $event)"
+          />
         </div>
       </transition>
-      <SelectMMaterialFilter
-        v-if="materialPickerVisible"
-        nested
-        :DialogComponentShow="materialPickerVisible"
-        :supplierValue="materialPickerSupplier"
-        :warehouseValue="form.warehouseId"
-        :isGzValue="form.isGz"
-        :excludeMaterialIds="materialPickerExcludeIds"
-        @closeDialog="$emit('material-picker-close')"
-        @selectData="$emit('material-picker-select', $event)"
-      />
     </div>
   </transition>
 </template>
@@ -167,13 +158,14 @@ export default {
     headerLocked: { type: Boolean, default: false },
     planEntryModeDisabled: { type: Boolean, default: false },
     planSourceDisplay: { type: String, default: '' },
-    tableHeight: { type: String, default: 'max(260px, calc(100vh - 368px))' },
+    tableHeight: { type: String, default: 'max(240px, calc(100vh - 384px))' },
     summaryMethod: { type: Function, required: true },
     supplierDisplayFn: { type: Function, default: null },
     submitLoading: { type: Boolean, default: false },
     materialPickerVisible: { type: Boolean, default: false },
     materialPickerSupplier: { type: [String, Number], default: '' },
-    materialPickerExcludeIds: { type: Array, default: () => [] }
+    materialPickerExcludeIds: { type: Array, default: () => [] },
+    detailSelectedRowMap: { type: Object, default: () => ({}) }
   },
   computed: {
     innerVisible: {
@@ -213,102 +205,20 @@ export default {
 <style lang="scss" scoped>
 @import '../styles/plan-modal-common.scss';
 
-.plan-edit-dialog ::v-deep .modal-form-compact .form-fields-container {
-  padding: 14px 18px 16px;
-  margin-bottom: 14px;
-}
-
-.plan-edit-dialog ::v-deep .modal-form-compact .form-fields-container .plan-form-row {
-  margin-bottom: 14px;
-}
-
-.plan-edit-dialog ::v-deep .modal-form-compact .form-fields-container .plan-form-row:last-child {
-  margin-bottom: 0;
-}
-
-.plan-edit-dialog ::v-deep .modal-detail-section {
-  margin-top: 4px;
-  padding-top: 8px;
-}
-
-.plan-edit-dialog ::v-deep .modal-detail-section .detail-toolbar-row {
-  margin-bottom: 12px;
-}
-
-/* 覆盖 index 中 margin-left:0，保证标签与输入框同一行 */
-.plan-edit-dialog ::v-deep .modal-form-compact .form-fields-container .el-form-item {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  margin-bottom: 0;
-  min-height: 32px;
-}
-
-.plan-edit-dialog ::v-deep .modal-form-compact .form-fields-container .el-form-item__label {
-  width: 70px !important;
-  min-width: 70px;
-  flex: 0 0 70px;
-  float: none !important;
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
-  line-height: 32px;
-  height: auto;
-  padding-right: 8px;
-}
-
-.plan-edit-dialog ::v-deep .modal-form-compact .form-fields-container .el-form-item__content {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin-left: 0 !important;
-  line-height: 32px;
-}
-
-.plan-edit-dialog ::v-deep .modal-form-compact .form-fields-container .el-input,
-.plan-edit-dialog ::v-deep .modal-form-compact .form-fields-container .el-select {
-  width: 100%;
-  max-width: 100%;
-}
-
-.plan-edit-dialog ::v-deep .modal-form-compact .form-fields-container .el-input__inner {
-  height: 32px !important;
-  line-height: 32px !important;
-}
-
-/* 第一行：高值/低值、制单时间、联系电话收窄 */
 .plan-edit-dialog ::v-deep .plan-field-is-gz .el-form-item__label {
   width: 82px !important;
-  min-width: 82px;
-  flex: 0 0 82px;
-}
-
-.plan-edit-dialog ::v-deep .plan-field-is-gz .el-form-item__content {
-  max-width: 96px;
-}
-
-.plan-edit-dialog ::v-deep .plan-field-plan-date .el-form-item__content {
-  max-width: 168px;
 }
 
 .plan-edit-dialog ::v-deep .plan-field-phone .el-form-item__label {
   width: 82px !important;
-  min-width: 82px;
-  flex: 0 0 82px;
 }
 
-.plan-edit-dialog ::v-deep .plan-field-phone .el-form-item__content {
-  max-width: 140px;
+.plan-edit-dialog ::v-deep .plan-entry-mode-item .el-form-item__label {
+  width: 82px !important;
 }
 
-.plan-edit-dialog ::v-deep .modal-form-compact .plan-entry-mode-item .el-form-item__label {
-  width: 130px !important;
-  min-width: 130px;
-  flex: 0 0 130px;
-}
-
-.plan-edit-dialog ::v-deep .modal-form-compact .plan-entry-mode-item .el-form-item__content {
-  margin-left: 0 !important;
-  flex: 1 1 auto;
+.plan-edit-dialog ::v-deep .plan-entry-mode-item .el-form-item__content {
+  line-height: 28px;
 }
 
 .plan-edit-modal-root {

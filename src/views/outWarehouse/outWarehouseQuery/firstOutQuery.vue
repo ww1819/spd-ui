@@ -175,7 +175,7 @@
       </el-table-column>
       <el-table-column label="单价" align="center" prop="unitPrice" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice">
         <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined">{{ formatAmount(scope.row.unitPrice) }}</span>
+          <span v-if="scope.row.unitPrice !== null && scope.row.unitPrice !== undefined">{{ formatPrice(scope.row.unitPrice) }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
@@ -292,7 +292,7 @@
 <script>
 import { listCTKWarehouse} from "@/api/warehouse/outWarehouse";
 import { formatQuantity } from '@/utils/format-quantity'
-import { formatAmount as formatAmountByTenant } from '@/utils/moneyFormat'
+import { formatAmount as formatAmountByTenant, formatPrice as formatPriceByTenant } from '@/utils/moneyFormat'
 import { exportCTKWarehouseDetailStyledXlsx, exportCTKWarehouseDetailSupplierSimpleXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -442,6 +442,9 @@ export default {
     },
     formatQty(value) {
       return formatQuantity(value, 2)
+    },
+    formatPrice(value) {
+      return formatPriceByTenant(value, '0');
     },
     formatAmount(value) {
       return formatAmountByTenant(value, '0');

@@ -1,8 +1,10 @@
 <template>
   <div class="table-wrapper">
     <el-table
+      class="apply-detail-table"
       :data="list"
       :row-key="entryRowKey"
+      :row-class-name="applyDetailRowClassName"
       show-summary
       :summary-method="summaryMethod"
       @selection-change="$emit('selection-change', $event)"
@@ -10,26 +12,50 @@
       border
       :height="tableHeight"
     >
-      <el-table-column type="selection" width="60" align="center" fixed="left" />
-      <el-table-column label="序号" align="center" width="80" show-overflow-tooltip fixed="left">
+      <el-table-column v-if="editable" type="selection" width="60" align="center" header-align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" fixed="left" />
+      <el-table-column label="序号" align="center" header-align="center" prop="index" width="80" min-width="80" show-overflow-tooltip fixed="left">
         <template slot-scope="scope">{{ scope.$index + 1 }}</template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip>
+      <el-table-column label="耗材编码" align="center" header-align="center" width="120" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="名称" align="center" width="180" show-overflow-tooltip>
+      <el-table-column
+        label="名称"
+        align="left"
+        header-align="center"
+        width="180"
+        show-overflow-tooltip
+        sortable
+        :sort-method="(a, b) => sortByNested(a, b, 'material.name')"
+      >
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.name) || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="规格" align="center" width="180" show-overflow-tooltip>
+      <el-table-column
+        label="规格"
+        align="left"
+        header-align="center"
+        width="180"
+        show-overflow-tooltip
+        sortable
+        :sort-method="sortBySpeci"
+      >
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.speci || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="型号" align="center" width="180" show-overflow-tooltip>
+      <el-table-column
+        label="型号"
+        align="left"
+        header-align="center"
+        width="180"
+        show-overflow-tooltip
+        sortable
+        :sort-method="sortByModel"
+      >
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
         </template>
@@ -49,12 +75,13 @@
           <span>{{ scope.row.stockQty != null ? scope.row.stockQty : '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="采购数量" prop="qty" width="120" show-overflow-tooltip>
+      <el-table-column label="采购数量" align="center" header-align="center" prop="qty" width="120" show-overflow-tooltip>
         <template slot-scope="scope">
           <el-input
             v-if="editable"
             clearable
             size="small"
+            class="detail-input-compact"
             v-model="scope.row.qty"
             placeholder="请输入采购数量"
             @input="$emit('qty-input', scope.row)"
@@ -63,12 +90,12 @@
           <span v-else>{{ scope.row.qty != null ? scope.row.qty : '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="价格" prop="price" width="120" align="right" show-overflow-tooltip>
+      <el-table-column label="价格" prop="price" width="120" align="right" header-align="center" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ formatPrice4(scope.row.price) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" prop="amt" width="120" align="right" show-overflow-tooltip>
+      <el-table-column label="金额" prop="amt" width="120" align="right" header-align="center" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ formatPrice4(scope.row.amt) }}</span>
         </template>
@@ -147,7 +174,7 @@
           <span v-else>{{ scope.row.remark || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="120" fixed="right">
+      <el-table-column v-if="editable" label="操作" align="center" header-align="center" width="120" fixed="right">
         <template slot-scope="scope">
           <el-button v-if="scope.row.id" type="text" size="small" @click="$emit('view-apply-details', scope.row)">查看申购明细</el-button>
           <span v-else>--</span>
@@ -167,12 +194,13 @@ export default {
   props: {
     list: { type: Array, default: () => [] },
     editable: { type: Boolean, default: true },
-    tableHeight: { type: String, default: 'max(260px, calc(100vh - 368px))' },
+    tableHeight: { type: String, default: 'max(240px, calc(100vh - 384px))' },
     supplierOptions: { type: Array, default: () => [] },
     supplierLoading: { type: Boolean, default: false },
     headerForm: { type: Object, default: () => ({}) },
     summaryMethod: { type: Function, required: true },
-    supplierDisplayFn: { type: Function, default: null }
+    supplierDisplayFn: { type: Function, default: null },
+    detailSelectedRowMap: { type: Object, default: () => ({}) }
   },
   data() {
     return {
@@ -196,6 +224,13 @@ export default {
     }
   },
   methods: {
+    applyDetailRowClassName({ row, rowIndex }) {
+      row.index = rowIndex + 1;
+      if (this.detailSelectedRowMap && this.detailSelectedRowMap[rowIndex]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
     entryRowKey(row) {
       if (!row) return ''
       if (row.id != null) return `e-${row.id}`
@@ -259,6 +294,44 @@ export default {
     doLayout() {
       const t = this.$refs.entryTable
       if (t && typeof t.doLayout === 'function') t.doLayout()
+    },
+    sortByNested(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return ''
+        const keys = path.split('.')
+        let v = obj
+        for (const k of keys) {
+          v = v && v[k]
+        }
+        return v != null ? String(v) : ''
+      }
+      const va = getVal(a)
+      const vb = getVal(b)
+      if (va < vb) return -1
+      if (va > vb) return 1
+      return 0
+    },
+    sortBySpeci(a, b) {
+      const getVal = (row) => {
+        if (!row) return ''
+        return String((row.material && row.material.speci) || row.speci || '')
+      }
+      const va = getVal(a)
+      const vb = getVal(b)
+      if (va < vb) return -1
+      if (va > vb) return 1
+      return 0
+    },
+    sortByModel(a, b) {
+      const getVal = (row) => {
+        if (!row) return ''
+        return String((row.material && row.material.model) || row.model || '')
+      }
+      const va = getVal(a)
+      const vb = getVal(b)
+      if (va < vb) return -1
+      if (va > vb) return 1
+      return 0
     }
   }
 }

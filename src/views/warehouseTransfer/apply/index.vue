@@ -183,191 +183,200 @@
     </div>
     </div>
 
-    <!-- 添加或修改调拨申请对话框 -->
+    <!-- 添加或修改调拨申请对话框（布局对齐到货验收） -->
     <transition name="modal-fade">
       <div v-if="dialogVisible" class="local-modal-mask">
         <transition name="modal-zoom">
-          <div v-if="dialogVisible" class="local-modal-content">
+          <div v-if="dialogVisible" class="local-modal-content apply-modal-root-content">
             <div class="modal-header">
               <div class="modal-title">{{ dialogType === 'add' ? '新增调拨申请' : dialogType === 'edit' ? '修改调拨申请' : '调拨申请详情' }}</div>
               <el-button size="small" @click="closeDialog" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="transferForm" :model="transferForm" :rules="rules" label-width="80px" class="modal-form-wrapper">
-              <div class="form-fields-container">
-                <el-row>
-                  <el-col :span="4">
-                    <el-form-item label="调拨单号" prop="transferOrderCode" label-width="100px">
-                      <el-input v-model="transferForm.transferOrderCode" :disabled="true" style="width: 150px" />
+            <el-form ref="transferForm" :model="transferForm" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
+              <div class="form-fields-container list-query-panel apply-modal-query-panel">
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
+                  <el-col class="apply-modal-field apply-modal-field--compact">
+                    <el-form-item label="调拨单号" prop="transferOrderCode" class="form-item-header-billno">
+                      <el-input v-model="transferForm.transferOrderCode" :disabled="true" :title="transferForm.transferOrderCode || ''" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="制单日期" prop="transferDate" label-width="100px">
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="制单日期" prop="transferDate" class="apply-modal-label-required">
                       <el-date-picker clearable
                                       v-model="transferForm.transferDate"
                                       type="date"
-                                      style="width: 150px"
                                       value-format="yyyy-MM-dd"
                                       :disabled="dialogType === 'view'"
                                       placeholder="请选择制单日期">
                       </el-date-picker>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="总金额" label-width="100px">
-                      <el-input :value="formTotalAmount" :disabled="true" style="width: 150px" />
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="总金额">
+                      <el-input :value="formTotalAmount" :disabled="true" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="制单人" label-width="100px">
-                      <el-input :value="createrDisplayName" :disabled="true" style="width: 150px" />
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="制单人">
+                      <el-input :value="createrDisplayName" :disabled="true" />
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <el-row>
-                  <el-col :span="4">
-                    <el-form-item label="调出仓库" prop="fromWarehouseId" label-width="100px">
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="调出仓库" prop="fromWarehouseId" class="apply-modal-label-required">
                       <SelectWarehouse v-model="transferForm.fromWarehouseId" placeholder="请选择调出仓库" :excludeWarehouseType="['设备', '高值']" :disabled="dialogType === 'view'" @change="onWarehouseChange('from', $event)"></SelectWarehouse>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="调入仓库" prop="toWarehouseId" label-width="100px">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="调入仓库" prop="toWarehouseId" class="apply-modal-label-required">
                       <SelectWarehouse v-model="transferForm.toWarehouseId" placeholder="请选择调入仓库" :excludeWarehouseType="['设备', '高值']" :disabled="dialogType === 'view'" @change="onWarehouseChange('to', $event)"></SelectWarehouse>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="状态" prop="status" label-width="100px" v-if="dialogType !== 'add'">
-                      <el-input :value="transferForm.status == 2 || transferForm.status == '2' ? '已审核' : '未审核'" :disabled="true" style="width: 150px" />
+                  <el-col v-if="dialogType !== 'add'" class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="状态" prop="status">
+                      <el-input :value="transferForm.status == 2 || transferForm.status == '2' ? '已审核' : '未审核'" :disabled="true" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="备注" prop="remark" label-width="100px">
-                      <el-input v-model="transferForm.remark" placeholder="备注" style="width: 150px" :disabled="dialogType === 'view'" />
+                  <el-col class="apply-modal-field apply-modal-field--grow">
+                    <el-form-item label="备注" prop="remark">
+                      <el-input v-model="transferForm.remark" placeholder="备注" clearable :disabled="dialogType === 'view'" />
                     </el-form-item>
                   </el-col>
                 </el-row>
               </div>
 
-              <el-row :gutter="10" class="mb8">
-                <el-col :span="1.5">
-                  <span>调拨申请明细信息</span>
-                </el-col>
-
-                <div v-show="dialogType !== 'view'">
-                  <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-plus" size="medium" @click="addDetail" :disabled="!transferForm.fromWarehouseId">添加</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="danger" icon="el-icon-delete" size="medium" @click="handleDeleteTransferDetail">删除</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button size="medium" @click="closeDialog">取 消</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="primary" size="medium" @click="submitTransfer" :loading="submitLoading">保 存</el-button>
-                  </el-col>
+              <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
+                <div class="list-toolbar-left">
+                  <span class="apply-modal-detail-title">调拨申请明细信息</span>
+                  <template v-if="dialogType !== 'view'">
+                    <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="addDetail" :disabled="!transferForm.fromWarehouseId">添加</el-button>
+                    <el-button type="danger" icon="el-icon-delete" size="small" class="spd-btn" @click="handleDeleteTransferDetail">删除</el-button>
+                    <el-button size="small" class="spd-btn spd-btn--secondary" @click="closeDialog">取 消</el-button>
+                    <el-button type="primary" size="small" class="spd-btn spd-btn--primary" icon="el-icon-check" @click="submitTransfer" :loading="submitLoading">保 存</el-button>
+                  </template>
                 </div>
               </el-row>
-              <div class="table-wrapper">
-              <el-table :data="transferDetails" :row-class-name="rowTransferDetailIndex" @selection-change="handleTransferDetailSelectionChange" ref="transferDetail" height="100%" border :summary-method="getSummaries" show-summary>
-                <el-table-column type="selection" width="50" align="center" resizable v-if="dialogType !== 'view'" />
-                <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable/>
-                <el-table-column label="耗材编码" align="center" prop="materialCode" width="150" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="耗材名称" align="center" prop="materialName" width="180" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.materialName || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="规格" align="center" prop="specification" width="150" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.specification || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="型号" align="center" prop="model" width="150" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.model || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="调拨数量" prop="transferQuantity" width="90" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <el-input clearable v-model="scope.row.transferQuantity" placeholder="数量"
-                              onkeyup="value=value.replace(/\D/g,'')"
-                              onafterpaste="value=value.replace(/\D/g,'')"
-                              @input="qtyChange(scope.row)"
-                              :disabled="dialogType === 'view'"
-                    />
-                  </template>
-                </el-table-column>
-                <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.unit || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.unitPrice != null && scope.row.unitPrice !== '' ? formatPrice(scope.row.unitPrice) : '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="批号" align="center" prop="batchNumber" width="160" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.batchNumber || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="生产日期" align="center" prop="productionDate" width="160" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.productionDate || (scope.row.material && scope.row.material.productionDate) || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="有效期至" align="center" prop="expireDate" width="160" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.expireDate || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="批次号" align="center" prop="batchNo" width="160" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.batchNo || (scope.row.material && scope.row.material.batchNo) || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="注册证号" align="center" prop="registerNo" width="180" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.registerNo || (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="生产厂家" align="center" prop="manufacturer" width="180" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.manufacturer || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="供应商" align="center" prop="supplier" width="160" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.supplier || (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="备注" prop="remark" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.remark || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" align="center" width="100" fixed="right" v-if="dialogType !== 'view'">
-                  <template slot-scope="scope">
-                    <el-button
-                      size="small"
-                      type="text"
-                      icon="el-icon-delete"
-                      @click="deleteDetail(scope.$index)"
-                      style="padding: 0 5px; margin: 0;"
-                    >删除</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
+
+              <div class="modal-detail-section apply-modal-table-panel">
+                <div class="table-wrapper">
+                  <el-table
+                    class="apply-detail-table"
+                    :data="transferDetails"
+                    :row-class-name="applyDetailRowClassName"
+                    @selection-change="handleTransferDetailSelectionChange"
+                    ref="transferDetail"
+                    :height="detailTableHeight"
+                    border
+                    :summary-method="getSummaries"
+                    show-summary
+                  >
+                    <el-table-column v-if="dialogType !== 'view'" type="selection" width="60" align="center" header-align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
+                    <el-table-column label="序号" align="center" header-align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
+                    <el-table-column label="耗材编码" align="center" header-align="center" prop="materialCode" width="150" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="耗材名称" align="left" header-align="center" prop="materialName" width="180" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.materialName || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="规格" align="left" header-align="center" prop="specification" width="150" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.specification || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="型号" align="left" header-align="center" prop="model" width="150" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.model || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="调拨数量" align="center" header-align="center" prop="transferQuantity" width="96" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <el-input
+                          v-if="dialogType !== 'view'"
+                          clearable
+                          v-model="scope.row.transferQuantity"
+                          placeholder="数量"
+                          size="small"
+                          class="detail-input-compact"
+                          onkeyup="value=value.replace(/\D/g,'')"
+                          onafterpaste="value=value.replace(/\D/g,'')"
+                          @input="qtyChange(scope.row)"
+                        />
+                        <span v-else>{{ scope.row.transferQuantity || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="单位" align="center" header-align="center" prop="unit" width="80" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.unit || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="单价" align="right" header-align="center" prop="unitPrice" width="90" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.unitPrice != null && scope.row.unitPrice !== '' ? formatPrice(scope.row.unitPrice) : '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="金额" align="right" header-align="center" prop="amt" width="120" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="批号" align="center" header-align="center" prop="batchNumber" width="160" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.batchNumber || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="生产日期" align="center" header-align="center" prop="productionDate" width="160" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.productionDate || (scope.row.material && scope.row.material.productionDate) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="有效期至" align="center" header-align="center" prop="expireDate" width="160" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.expireDate || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="批次号" align="center" header-align="center" prop="batchNo" width="160" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.batchNo || (scope.row.material && scope.row.material.batchNo) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="注册证号" align="center" header-align="center" prop="registerNo" width="180" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.registerNo || (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="生产厂家" align="center" header-align="center" prop="manufacturer" width="180" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.manufacturer || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="供应商" align="center" header-align="center" prop="supplier" width="160" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.supplier || (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="备注" align="center" header-align="center" prop="remark" width="120" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.remark || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column v-if="dialogType !== 'view'" label="操作" align="center" header-align="center" class-name="small-padding fixed-width" width="72" fixed="right">
+                      <template slot-scope="scope">
+                        <el-button
+                          size="small"
+                          type="text"
+                          icon="el-icon-delete"
+                          @click="deleteDetail(scope.$index)"
+                          style="padding: 0 5px; margin: 0;"
+                        >删除</el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
               </div>
             </el-form>
           </div>
@@ -437,6 +446,7 @@ export default {
       // 调拨明细
       transferDetails: [],
       checkedTransferDetail: [],
+      detailSelectedRowMap: {},
       action: true,
 
       // 表格数据
@@ -529,6 +539,10 @@ export default {
         return user.nickName;
       }
       return '';
+    },
+    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    detailTableHeight() {
+      return 'max(240px, calc(100vh - 384px))';
     }
   },
   created() {
@@ -657,14 +671,22 @@ export default {
     },
     // 表格汇总计算
     getSummaries(param) {
-      const { columns, data } = param;
-      const sums = [];
+      const { columns } = param;
+      const data = this.transferDetails || [];
+      const sums = columns.map(() => '');
+      let summaryLabelPlaced = false;
       columns.forEach((column, index) => {
-        if (index === 1) {
-          sums[index] = '合计';
+        if (column.type === 'selection') {
+          sums[index] = '';
           return;
         }
-        if (column.property === 'transferQuantity') {
+        const prop = column.property;
+        if (!summaryLabelPlaced && (prop === 'index' || column.label === '序号')) {
+          sums[index] = '合计';
+          summaryLabelPlaced = true;
+          return;
+        }
+        if (prop === 'transferQuantity') {
           let totalQty = 0;
           data.forEach(item => {
             if (item.transferQuantity && !isNaN(item.transferQuantity)) {
@@ -672,7 +694,7 @@ export default {
             }
           });
           sums[index] = totalQty;
-        } else if (column.property === 'amt') {
+        } else if (prop === 'amt') {
           let totalAmount = 0;
           data.forEach(item => {
             if (item.amt && !isNaN(item.amt)) {
@@ -680,8 +702,6 @@ export default {
             }
           });
           sums[index] = '￥' + this.formatAmount(totalAmount);
-        } else {
-          sums[index] = '';
         }
       });
       return sums;
@@ -1297,6 +1317,8 @@ export default {
     // 删除明细
     deleteDetail(index) {
       this.transferDetails.splice(index, 1);
+      this.detailSelectedRowMap = {};
+      this.checkedTransferDetail = [];
       this.calculateTotals();
     },
 
@@ -1310,6 +1332,8 @@ export default {
         this.transferDetails = transferDetails.filter(function(item) {
           return checkedTransferDetail.indexOf(item.index) == -1
         });
+        this.checkedTransferDetail = [];
+        this.detailSelectedRowMap = {};
         this.calculateTotals();
       }
     },
@@ -1317,11 +1341,31 @@ export default {
     // 明细选择变化
     handleTransferDetailSelectionChange(selection) {
       this.checkedTransferDetail = selection.map(item => item.index);
+      const pageIndices = (this.transferDetails || []).map((row, idx) => idx);
+      pageIndices.forEach((idx) => {
+        if (this.detailSelectedRowMap[idx]) {
+          this.$delete(this.detailSelectedRowMap, idx);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const idx = this.transferDetails.indexOf(row);
+        if (idx >= 0) {
+          this.$set(this.detailSelectedRowMap, idx, true);
+        }
+      });
     },
 
     // 明细序号
     rowTransferDetailIndex({ row, rowIndex }) {
       row.index = rowIndex + 1;
+    },
+    /** 明细表行 class：序号 + 勾选高亮（与到货验收一致） */
+    applyDetailRowClassName({ row, rowIndex }) {
+      this.rowTransferDetailIndex({ row, rowIndex });
+      if (this.detailSelectedRowMap && this.detailSelectedRowMap[rowIndex]) {
+        return 'apply-row-selected';
+      }
+      return '';
     },
 
     // 数量变化计算金额
@@ -1375,6 +1419,7 @@ export default {
       this.$refs.transferForm && this.$refs.transferForm.resetFields();
       this.transferDetails = [];
       this.checkedTransferDetail = [];
+      this.detailSelectedRowMap = {};
     },
     /** 打印按钮操作 */
     handlePrint(row, print){
@@ -1517,29 +1562,14 @@ export default {
 </script>
 
 <style scoped>
-.detail-table-container {
-  margin-top: 10px;
-  width: 100%;
-  min-height: 500px;
-  max-height: 600px;
-  overflow-x: auto;
-  overflow-y: auto;
-}
-
-.detail-table-container .el-table {
-  width: 100%;
-  min-width: 1400px;
-}
-
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
-  left: -8px;
-  right: -8px;
+  left: 0;
   top: 0;
+  right: 0;
   bottom: 0;
-  width: auto;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.3);
   z-index: 1000;
   display: flex;
   align-items: stretch;
@@ -1550,21 +1580,23 @@ export default {
   background: #fff;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  min-height: 95vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
-  min-height: 95vh !important;
   flex-direction: column;
+  padding-bottom: 8px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 8px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  flex-shrink: 0;
-  min-height: 48px;
+  background: #EBEEF5;
+  min-height: 40px;
 }
 
 .modal-title {
@@ -1583,56 +1615,452 @@ export default {
   background: rgba(0, 0, 0, 0.1);
 }
 
+.modal-footer {
+  padding: 16px 24px;
+  text-align: right;
+  border-top: 1px solid #EBEEF5;
+  background: #F5F7FA;
+}
+
+.modal-footer .el-button {
+  margin-left: 12px;
+}
+
 .local-modal-content .el-form {
   flex: 1;
+  overflow: visible;
+  padding: 8px 0 8px;
+  background: #fff;
+  box-shadow: none;
+  margin-bottom: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding: 24px;
+  justify-content: flex-start;
+  align-content: flex-start;
+  box-sizing: border-box;
 }
 
-.modal-form-wrapper {
+/* 弹窗内三块区域：与到货验收一致（标题栏同宽铺满） */
+.local-modal-content .apply-modal-query-panel,
+.local-modal-content .apply-modal-toolbar.list-toolbar,
+.local-modal-content .apply-modal-table-panel {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.local-modal-content .apply-modal-query-panel {
+  margin-top: 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  padding: 12px 8px;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.local-modal-content .apply-modal-query-panel .el-row {
+  margin-bottom: 8px;
+}
+
+.local-modal-content .apply-modal-query-panel .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 12px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
+  width: auto !important;
+  flex: 0 0 auto;
+  max-width: none;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item.apply-modal-label-required .el-form-item__label,
+.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
+  margin-right: 0 !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-date-editor,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-form-item__content > * {
+  width: 140px !important;
+  max-width: 140px !important;
+}
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--date .el-date-editor {
+  width: 150px !important;
+  max-width: 150px !important;
+}
+
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
+  flex: 1 1 auto !important;
+  min-width: 200px;
+  max-width: none !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item__content > * {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content {
+  max-width: 162px;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-input {
+  width: 162px !important;
+  max-width: 162px !important;
+}
+
+.local-modal-content .apply-modal-query-panel .form-item-header-billno ::v-deep .el-input__inner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.local-modal-content .apply-modal-table-panel {
+  margin-top: 0;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
   overflow: hidden;
 }
 
-.local-modal-content .form-fields-container {
+.local-modal-content .apply-modal-toolbar {
   flex-shrink: 0;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
 }
 
-.local-modal-content .mb8 {
-  flex-shrink: 0;
-  margin-bottom: 10px;
+.local-modal-content .apply-modal-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-right: 4px;
+  line-height: 32px;
 }
 
+.local-modal-content .apply-modal-table-panel .table-wrapper {
+  margin-top: 0;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 0;
+}
+
+.local-modal-content .apply-modal-table-panel .apply-detail-table {
+  margin-bottom: 0 !important;
+  box-shadow: none;
+}
+
+.local-modal-content .modal-detail-section .el-table .detail-input-compact {
+  width: 98px !important;
+  max-width: 98px;
+}
+
+.local-modal-content .modal-detail-section .el-table .detail-input-compact.el-date-editor.el-input {
+  width: 98px !important;
+}
+
+.local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+
+.local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 1.35;
+}
+
+.local-modal-content .modal-detail-section .el-table ::v-deep thead th.el-table__cell {
+  padding: 6px 0 !important;
+}
+
+.local-modal-content .modal-detail-section .el-table ::v-deep .el-input--small .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 0 6px !important;
+  font-size: 13px !important;
+}
+
+/* 弹窗内表单紧凑布局 */
+.local-modal-content .modal-form-compact .el-row {
+  margin-bottom: 6px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .modal-form-compact .apply-modal-query-panel .el-input,
+.local-modal-content .modal-form-compact .apply-modal-query-panel .el-select,
+.local-modal-content .modal-form-compact .apply-modal-query-panel .el-date-picker,
+.local-modal-content .modal-form-compact .apply-modal-query-panel .el-date-editor {
+  width: 140px;
+  max-width: 140px;
+}
+
+.local-modal-content .modal-form-compact .modal-detail-section .el-input,
+.local-modal-content .modal-form-compact .modal-detail-section .el-select,
+.local-modal-content .modal-form-compact .modal-detail-section .el-date-picker,
+.local-modal-content .modal-form-compact .modal-detail-section .el-date-editor,
+.local-modal-content .modal-form-compact .modal-detail-section .el-input.el-input--small,
+.local-modal-content .modal-form-compact .modal-detail-section .el-date-editor.el-input {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+.local-modal-content .modal-form-compact .form-item-header-billno .el-input {
+  width: 162px !important;
+  max-width: 162px !important;
+}
+
+.local-modal-content .modal-form-compact .form-item-header-billno ::v-deep .el-input__inner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.local-modal-content .modal-form-compact .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+}
+
+.local-modal-content .modal-form-compact .el-input__icon {
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-select .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor.el-input {
+  height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__content {
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__label {
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+/* 弹窗内表格：高度由 el-table :height 控制 */
 .local-modal-content .table-wrapper {
   flex: 1;
-  overflow: hidden;
   min-height: 0;
-  height: 0;
+  overflow: hidden;
+  margin-top: 10px;
+  padding-bottom: 4px;
 }
 
-.local-modal-content .table-wrapper .el-table {
-  height: 100% !important;
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
 }
 
-::v-deep .local-modal-content .table-wrapper .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  max-height: calc(100vh - 450px) !important;
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table thead th,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th.is-leaf {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
 }
 
-/* 防止表格列自动换行 */
-::v-deep .local-modal-content .table-wrapper .el-table .el-table__cell {
-  white-space: nowrap !important;
-  overflow: hidden !important;
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th .cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table thead th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
 }
 
-::v-deep .local-modal-content .table-wrapper .el-table .cell {
-  white-space: nowrap !important;
-  overflow: hidden !important;
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: auto;
+  scrollbar-color: #a8a8a8 #f1f1f1;
+}
+
+/* 明细表横向滚动条：12px，固定粗细（须覆盖下方 thin 通配） */
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar:vertical,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar:vertical,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-track,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-track,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  background-clip: border-box !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-button,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+/* 合计行：与到货验收同高同色（灰蓝底 #f1f5f9） */
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed .el-table__fixed-footer-wrapper,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
+  position: relative;
+  z-index: 30 !important;
+  background-color: #f1f5f9 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper tr,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper tr {
+  height: 38px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 0 !important;
+  line-height: 24px !important;
+  box-sizing: border-box !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: none !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 24px !important;
+  text-align: center !important;
+}
+
+::v-deep .local-modal-content {
+  min-height: 95vh !important;
+}
+
+::v-deep .local-modal-content .el-table:not(.apply-detail-table) .el-table__body-wrapper {
+  scrollbar-width: thin;
+}
+
+.app-container {
+  position: relative;
 }
 
 /* 弹窗动画效果 */
@@ -1657,6 +2085,829 @@ export default {
 .modal-zoom-leave-to {
   opacity: 0;
   transform: scale(0.8);
+}
+
+/* 表格样式优化 */
+.el-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  margin-bottom: 10px;
+}
+
+.apply-table-panel > .apply-main-table {
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.el-table td {
+  padding: 12px 0;
+  color: #606266;
+  border-bottom: 1px solid #EBEEF5;
+}
+
+.el-table tr:hover > td {
+  background-color: #F5F7FA !important;
+  transition: all 0.3s;
+}
+
+/* 弹窗明细表悬停由下方非 scoped 的 #D6EBFF 规则接管，避免被本处灰色覆盖 */
+
+/* 按钮样式 */
+.el-button--text {
+  padding: 0 4px;
+}
+
+.el-button--text:hover {
+  color: #409EFF;
+}
+
+/* 搜索区域：卡片样式由外层 .form-fields-container.list-query-panel 承担，内层 el-form 不再重复包一层 */
+.list-query-panel .el-form {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.list-query-panel .el-form .el-row {
+  margin-bottom: 8px;
+}
+
+.list-query-panel .el-form .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.list-query-panel .el-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.list-query-panel .el-form .query-row-first {
+  margin-bottom: 10px;
+}
+
+.list-query-panel .el-form .query-row-first-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.list-query-panel .el-form .apply-query-field,
+.list-query-panel .el-form .query-row-first-inner .apply-query-input {
+  width: 170px;
+  flex-shrink: 0;
+}
+
+.list-query-panel .el-form .query-row-first-inner .more-search-select-wrap.apply-query-field > * {
+  width: 100%;
+}
+
+.list-query-panel .el-form .query-row-second .apply-query-field.el-select {
+  width: 170px;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.list-query-panel .el-form .query-row-first-inner .query-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+.list-query-panel .el-form .query-row-second {
+  margin-bottom: 0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.list-query-panel .el-form .apply-date-type-group {
+  margin-right: 10px;
+}
+
+.list-query-panel .el-form .apply-query-date.el-date-editor {
+  width: 200px;
+}
+
+.list-query-panel .el-form .query-row-second > .el-col > .el-form-item {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  vertical-align: top;
+}
+
+.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) {
+  white-space: nowrap;
+}
+
+.list-query-panel .el-form .query-row-second .query-date-range-form-item {
+  white-space: normal;
+}
+
+.list-query-panel .el-form .query-row-second .query-date-range-form-item .el-form-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  max-width: 100%;
+}
+
+.list-query-panel .el-form .query-row-second .el-form-item:not(.query-date-range-form-item) .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.list-query-panel .el-form .query-row-second-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.list-query-panel .el-form .query-row-second > .query-row-second-inner > .el-form-item {
+  display: inline-flex !important;
+  width: auto !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.list-query-panel .el-form .query-row-second-inner .query-date-range-form-item .el-form-item__content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+/* 弹窗样式已在上方统一为到货验收 apply-modal 结构，此处不再重复旧布局规则 */
+
+/* 确保页面容器有相对定位，以便内部弹窗正确定位 */
+.app-container {
+  position: relative;
+}
+</style>
+
+<style>
+/* 与到货验收页面布局样式保持一致（非scoped确保生效） */
+.app-container.warehouseTransfer-apply-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 84px);
+  height: calc(100vh - 84px);
+  max-height: calc(100vh - 84px);
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-top: 8px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 14px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+  position: absolute;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content.apply-modal-root-content {
+  position: relative;
+  overflow: hidden;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
+}
+
+.app-container.warehouseTransfer-apply-page .list-query-panel,
+.app-container.warehouseTransfer-apply-page .list-toolbar {
+  flex: 0 0 auto;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-table-panel > .apply-main-table {
+  margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-pagination-wrap .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__header-wrapper th,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-header-wrapper th,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  font-family: inherit !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__header-wrapper th .cell,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  font-family: inherit !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table thead th:nth-child(7) .cell {
+  white-space: nowrap !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:vertical,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-track,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 2px !important;
+  min-height: 4px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-scrollbar__bar.is-vertical {
+  width: 6px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-scrollbar__thumb {
+  min-width: 2px !important;
+  min-height: 4px !important;
+  width: 2px !important;
+  height: 4px !important;
+  max-width: 2px !important;
+  max-height: 4px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body-wrapper .el-scrollbar__bar,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__fixed-right .el-scrollbar__bar {
+  z-index: 13 !important;
+  position: relative;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table th.apply-select-col,
+.app-container.warehouseTransfer-apply-page .apply-main-table td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .apply-main-table th.el-table-column--selection,
+.app-container.warehouseTransfer-apply-page .apply-main-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .apply-main-table td.el-table-column--selection {
+  background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table th.apply-select-col,
+.app-container.warehouseTransfer-apply-page .apply-main-table th.el-table-column--selection {
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
+  background-color: #fafafa !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table th.apply-action-col,
+.app-container.warehouseTransfer-apply-page .apply-main-table td.apply-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table td.apply-action-col {
+  right: 0 !important;
+  background-color: #fff !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table th.apply-action-col {
+  right: var(--apply-v-scrollbar, 0px) !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.el-table__row--striped td.apply-action-col {
+  background-color: #fafafa !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr > td,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr:hover > td,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr:hover > td .cell,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr:hover > td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.el-table-column--selection,
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-main-table .el-table__header th.gutter {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+/* 弹窗明细框：与到货验收 apply-modal-table-panel 一致（铺满、无左右圆角边框） */
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-modal-table-panel > .table-wrapper > .apply-detail-table {
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-modal-table-panel > .table-wrapper {
+  overflow: hidden;
+  border-bottom: none;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-modal-toolbar.list-toolbar {
+  flex: 0 0 auto;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-modal-table-panel {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  overflow: visible;
+}
+
+/* 弹窗明细表头：与到货验收主列表一致 */
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th .cell,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+/* 弹窗明细表滚动条：与到货验收一致（横向 12px，无两端箭头） */
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: auto;
+  scrollbar-color: #a8a8a8 #f1f1f1;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar:vertical,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar-track,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar-track,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  background-clip: border-box !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-button,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-vertical {
+  width: 6px !important;
+}
+
+/* 明细表勾选列 sticky */
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table.el-table {
+  position: relative;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table th.apply-select-col,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table th.el-table-column--selection,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table td.el-table-column--selection {
+  background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table th.apply-select-col,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table th.el-table-column--selection {
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+/* 弹窗明细表：悬停 / 勾选行高亮（与到货验收、退货申请一致） */
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr > td,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td .cell,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr:hover > td,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr.apply-row-selected > td,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr.apply-row-selected:hover > td,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected:hover > td {
+  background-color: #A0CBFF !important;
+}
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.app-container.warehouseTransfer-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.el-table-column--selection {
+  background-color: #B8DAFF !important;
+}
+
+/* 合计行始终显示，样式与到货验收一致（表头同色灰蓝底） */
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed .el-table__fixed-footer-wrapper,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 30 !important;
+  background-color: #f1f5f9 !important;
+  box-shadow: none !important;
+  border-bottom: none !important;
+  overflow: visible !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-footer-wrapper {
+  z-index: 31 !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr {
+  height: 38px !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 0 !important;
+  line-height: 24px !important;
+  box-sizing: border-box !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 24px !important;
+  text-align: center !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr td:first-child,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr td:first-child {
+  border-left: 1px solid #e2e8f0 !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr td:last-child,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr td:last-child {
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell:empty,
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell:empty {
+  padding: 0;
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table-column--selection .cell {
+  font-size: 0;
+}
+
+/* 修改退库弹窗明细：名称/规格/型号最多两行，行高随内容；悬停 title 看全文 */
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table tbody td {
+  vertical-align: middle;
+}
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .cell {
+  vertical-align: top;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  padding: 8px 10px 8px 12px;
+}
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .detail-text-cell-2line {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: break-word;
+  line-height: 1.45;
+  max-height: calc(1.45em * 2 + 2px);
+}
+
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-batch-no .cell {
+  white-space: normal;
+  word-break: break-all;
+  vertical-align: middle;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.app-container.warehouseTransfer-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-batch-no .detail-batch-no-cell {
+  display: block;
+  width: 100%;
+  line-height: 1.45;
+  word-break: break-all;
+  white-space: pre-wrap;
+  text-align: center;
+}
+
+/* 列表单据状态列不换行 */
+.app-container.warehouseTransfer-apply-page .apply-main-table .col-bill-status .cell {
+  white-space: nowrap !important;
 }
 </style>
 
