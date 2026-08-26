@@ -2440,6 +2440,20 @@ export default {
 }
 
 /* 明细表紧凑行高：单元格与输入框 */
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 28px;
+  min-height: 28px;
+  box-sizing: border-box;
+}
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.detail-col-text-wrap > .cell {
+  line-height: 1.35;
+  min-height: 0;
+}
 .local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell {
   padding: 4px 0 !important;
 }
@@ -3115,8 +3129,8 @@ export default {
   margin-bottom: 10px;
 }
 
-/* 主表格 td 与 hover：与到货验收一致 */
-.el-table td {
+/* 主表格 td 与 hover：与到货验收一致（明细表 apply-detail-table 单独控制行高） */
+.el-table:not(.apply-detail-table) td {
   padding: 12px 0;
   color: #606266;
   border-bottom: 1px solid #EBEEF5;
@@ -3832,8 +3846,18 @@ export default {
   border-bottom-color: #e2e8f0 !important;
 }
 
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
 .app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td {
   vertical-align: middle;
+}
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table tbody td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 28px !important;
+  min-height: 28px !important;
+  box-sizing: border-box;
 }
 .app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-field-input .cell {
   vertical-align: middle;
@@ -3845,7 +3869,9 @@ export default {
   text-align: left;
   white-space: normal;
   word-break: break-word;
-  padding: 8px 10px 8px 12px;
+  padding: 4px 6px;
+  line-height: 1.35 !important;
+  min-height: 0 !important;
 }
 .app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .detail-text-cell-2line {
   display: -webkit-box;
@@ -3853,8 +3879,8 @@ export default {
   -webkit-line-clamp: 2;
   overflow: hidden;
   word-break: break-word;
-  line-height: 1.45;
-  max-height: calc(1.45em * 2 + 2px);
+  line-height: 1.35;
+  max-height: calc(1.35em * 2 + 2px);
 }
 
 

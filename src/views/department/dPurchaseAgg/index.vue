@@ -202,29 +202,24 @@
     </div>
     </div>
 
-    <!-- 添加或修改汇总申购对话框 -->
+    <!-- 添加或修改汇总申购对话框（布局对齐到货验收 apply-modal） -->
     <transition name="modal-fade">
       <div v-if="open" class="local-modal-mask">
         <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
+          <div v-if="open" class="local-modal-content apply-modal-root-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
-              <div class="form-fields-container">
-                <el-row :gutter="8">
-                  <el-col :span="5">
-                    <el-form-item label="单号" prop="purchaseBillNo" label-width="40px">
-                      <el-input v-model="form.purchaseBillNo" :disabled="true" placeholder="—" />
+            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
+              <div class="form-fields-container list-query-panel apply-modal-query-panel">
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
+                  <el-col class="apply-modal-field apply-modal-field--compact">
+                    <el-form-item label="单号" prop="purchaseBillNo" class="form-item-header-billno">
+                      <el-input v-model="form.purchaseBillNo" :disabled="true" :title="form.purchaseBillNo || ''" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="科室" prop="departmentId">
-                      <SelectDepartment v-model="form.departmentId" :disabled="!action || isDeptWhLocked" filterable/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="申购状态" prop="purchaseBillStatus">
                       <el-select
                         v-model="form.purchaseBillStatus"
@@ -241,26 +236,31 @@
                       </el-select>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="制单日期" prop="purchaseBillDate">
-                      <el-date-picker clearable
-                                      v-model="form.purchaseBillDate"
-                                      type="date"
-                                      style="width: 100%"
-                                      value-format="yyyy-MM-dd"
-                                      :disabled="true"
-                                      placeholder="请选择制单日期">
-                      </el-date-picker>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="科室" prop="departmentId" class="apply-modal-label-required">
+                      <SelectDepartment v-model="form.departmentId" :disabled="!action || isDeptWhLocked" filterable/>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="制单人" prop="userId">
-                      <el-input v-model="form.userName" :disabled="true" placeholder="—" />
+                      <el-input v-model="form.userName" :disabled="true" />
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <el-row :gutter="8">
-                  <el-col :span="4">
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="制单日期" prop="purchaseBillDate">
+                      <el-date-picker
+                        clearable
+                        v-model="form.purchaseBillDate"
+                        type="date"
+                        value-format="yyyy-MM-dd"
+                        :disabled="true"
+                        placeholder="请选择制单日期"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="紧急程度" prop="urgencyLevel" class="form-item-urgency">
                       <el-select
                         v-if="action"
@@ -278,19 +278,19 @@
                       <el-input v-else v-model="urgencyLevelText" disabled />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--date">
                     <el-form-item label="期望到货" prop="expectedDeliveryDate">
-                      <el-date-picker clearable
-                                      v-model="form.expectedDeliveryDate"
-                                      type="date"
-                                      style="width: 100%"
-                                      value-format="yyyy-MM-dd"
-                                      :disabled="!action"
-                                      placeholder="请选择期望到货日期">
-                      </el-date-picker>
+                      <el-date-picker
+                        clearable
+                        v-model="form.expectedDeliveryDate"
+                        type="date"
+                        value-format="yyyy-MM-dd"
+                        :disabled="!action"
+                        placeholder="请选择期望到货日期"
+                      />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
                     </el-form-item>
@@ -298,42 +298,43 @@
                 </el-row>
               </div>
 
-              <div class="modal-detail-section">
-              <el-row :gutter="10" class="detail-toolbar-row">
-                <el-col :span="1.5">
-                  <span>汇总申购明细信息</span>
-                </el-col>
-                <div v-show="action">
-                  <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-plus" size="small" @click="addMaterialRow" :disabled="!form.departmentId">添加耗材</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
+              <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
+                <div class="list-toolbar-left">
+                  <span class="apply-modal-detail-title">汇总申购明细信息</span>
+                  <template v-if="action">
+                    <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="addMaterialRow" :disabled="!form.departmentId">添加耗材</el-button>
                     <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteDepPurchaseApplyEntry">删除</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button size="small" @click="cancel">取消</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
-                  </el-col>
+                    <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
+                  </template>
                 </div>
               </el-row>
 
+              <div class="modal-detail-section apply-modal-table-panel">
               <div class="table-wrapper">
-              <el-table :data="entryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" :height="detailTableHeight" border :summary-method="getPurchaseSummaries" show-summary>
-                <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
-                <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
+              <el-table
+                :data="entryList"
+                class="apply-detail-table"
+                :row-class-name="applyDetailRowClassName"
+                @selection-change="handleDepPurchaseApplyEntrySelectionChange"
+                ref="depPurchaseApplyEntry"
+                :height="detailTableHeight"
+                border
+                :summary-method="getPurchaseSummaries"
+                show-summary
+              >
+                <el-table-column type="selection" width="60" align="center" resizable class-name="apply-select-col" header-cell-class-name="apply-select-col" />
+                <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
+                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByEntryMaterialCode">
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="耗材" align="center" prop="materialName" width="200" show-overflow-tooltip resizable>
+                <el-table-column label="耗材" align="center" prop="materialName" width="200" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'materialName')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialName || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'warehouseName')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.warehouseName || '--' }}</span>
                   </template>
@@ -348,7 +349,7 @@
                     <span>{{ scope.row.splitDepPurchaseBillNo || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="规格" align="center" prop="materialSpec" width="150" show-overflow-tooltip resizable>
+                <el-table-column label="规格" align="center" prop="materialSpec" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'materialSpec')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialSpec || '--' }}</span>
                   </template>
@@ -358,29 +359,30 @@
                     <span>{{ scope.row.model || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable>
+                <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'unit')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.unit || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNestedNumber(a,b,'qty')">
                   <template slot-scope="scope">
                     <el-input
                       v-if="action"
                       v-model="scope.row.qty"
                       placeholder="数量"
+                      size="small"
                       @input="qtyChange(scope.row)"
                     />
                     <span v-else>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '—' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNestedNumber(a,b,'unitPrice')">
                   <template slot-scope="scope">
                     <span v-if="scope.row.unitPrice">¥{{ scope.row.unitPrice | formatPrice }}</span>
                     <span v-else>--</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNestedNumber(a,b,'amt')">
                   <template slot-scope="scope">
                     <span v-if="scope.row.amt">¥{{ scope.row.amt | formatCurrency }}</span>
                     <span v-else>--</span>
@@ -403,11 +405,11 @@
                 </el-table-column>
                 <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <el-input v-if="action" v-model="scope.row.remark" placeholder="备注" />
+                    <el-input v-if="action" v-model="scope.row.remark" placeholder="备注" size="small" />
                     <span v-else>{{ scope.row.remark || '—' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column v-if="action" label="操作" align="center" width="100" fixed="right">
+                <el-table-column v-if="action" label="操作" align="center" width="100">
                   <template slot-scope="scope">
                     <el-button
                       size="small"
@@ -479,6 +481,7 @@ export default {
       showSearch: true,
       mainTableHeight: 400,
       selectedRowMap: {},
+      detailSelectedRowMap: {},
       // 总条数
       total: 0,
       // 汇总申购表格数据
@@ -522,9 +525,9 @@ export default {
     };
   },
   computed: {
-    /** 明细表固定高度：预留表头/合计/横向滚动条及弹窗头表单工具栏，避免合计被裁切 */
+    /** 弹窗明细表高度：与到货验收 apply-modal 一致 */
     detailTableHeight() {
-      return 'max(260px, calc(100vh - 360px))';
+      return 'max(240px, calc(100vh - 384px))';
     },
     /** 新增明细后（或弹窗打开中）锁定科室，避免跨科室混入明细 */
     isDeptWhLocked() {
@@ -557,10 +560,23 @@ export default {
     '$store.state.app.sidebarNavTick'(nav) {
       this.handleSidebarNavTick(nav);
     },
+    open(val) {
+      if (val) {
+        this.layoutDetailTable();
+      }
+    },
+    entryList() {
+      if (this.open) {
+        this.layoutDetailTable();
+      }
+    },
   },
   methods: {
     onApplyWindowResize() {
       this.updateMainTableHeight();
+      if (this.open) {
+        this.layoutDetailTable();
+      }
     },
     scheduleApplyLayoutRefresh() {
       const run = () => this.updateMainTableHeight();
@@ -646,6 +662,38 @@ export default {
       if (va < vb) return -1;
       if (va > vb) return 1;
       return 0;
+    },
+    sortByNestedNumber(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return NaN;
+        const keys = path.split('.');
+        let v = obj;
+        for (const k of keys) {
+          v = v && v[k];
+        }
+        const n = Number(v);
+        return isNaN(n) ? NaN : n;
+      };
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return -1;
+      if (isNaN(vb)) return 1;
+      return va - vb;
+    },
+    sortByEntryText(a, b, field) {
+      const pick = (row) => {
+        const v = row && row[field];
+        return v != null && String(v).trim() !== '' ? String(v) : '';
+      };
+      return pick(a).localeCompare(pick(b), 'zh-CN');
+    },
+    sortByEntryMaterialCode(a, b) {
+      const pick = (row) => {
+        if (!row) return '';
+        return row.materialCode || (row.material && row.material.code) || row.code || '';
+      };
+      return String(pick(a)).localeCompare(String(pick(b)), 'zh-CN');
     },
     applyMainRowClassName({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
@@ -782,6 +830,7 @@ export default {
         remark: null
       };
       this.entryList = [];
+      this.detailSelectedRowMap = {};
       this.resetForm("form");
     },
     //数量改变事件
@@ -855,40 +904,70 @@ export default {
       this.single = ids.length !== 1;
       this.multiple = !ids.length;
     },
-    /** 明细表合计（与科室申领弹窗一致） */
+    /** 明细表合计（合计标签在序号列，与到货验收弹窗一致） */
     getPurchaseSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
-      const sumNumProp = (prop) => {
-        let t = 0;
-        data.forEach((item) => {
-          const v = item[prop];
-          if (v != null && v !== '' && !isNaN(v)) {
-            t += parseFloat(v);
-          }
-        });
-        return t;
-      };
+      const sums = columns.map(() => '');
+      let summaryLabelPlaced = false;
       columns.forEach((column, index) => {
-        if (index === 1) {
-          sums[index] = '合计';
+        if (column.type === 'selection') {
+          sums[index] = '';
           return;
         }
-        if (column.property === 'qty') {
-          sums[index] = sumNumProp('qty');
-        } else if (column.property === 'amt') {
-          let totalAmount = 0;
-          data.forEach((item) => {
-            if (item.amt != null && item.amt !== '' && !isNaN(item.amt)) {
-              totalAmount += parseFloat(item.amt);
-            }
+        const prop = column.property;
+        if (!summaryLabelPlaced && (prop === 'index' || column.label === '序号')) {
+          sums[index] = '合计';
+          summaryLabelPlaced = true;
+          return;
+        }
+        if (!prop) {
+          return;
+        }
+        if (prop === 'qty') {
+          const values = data.map(row => {
+            const v = row[prop];
+            if (v === '' || v == null) return NaN;
+            return Number(v);
           });
-          sums[index] = '¥' + this.formatAmount(totalAmount);
-        } else {
-          sums[index] = '';
+          if (!values.every(v => isNaN(v))) {
+            const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
+            sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
+          }
+          return;
+        }
+        if (prop === 'amt') {
+          const values = data.map(row => Number(row[prop]));
+          if (!values.every(v => isNaN(v))) {
+            const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
+            sums[index] = '¥' + this.formatAmount(total);
+          }
         }
       });
       return sums;
+    },
+    /** 弹窗明细表布局刷新 */
+    layoutDetailTable() {
+      const run = () => {
+        const table = this.$refs.depPurchaseApplyEntry;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+      };
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(run);
+        [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+      });
+    },
+    /** 汇总申购明细行样式（序号 + 勾选高亮） */
+    applyDetailRowClassName({ row, rowIndex }) {
+      row.index = rowIndex + 1;
+      const key = row.index != null ? row.index : rowIndex + 1;
+      const classes = [];
+      if (key != null && this.detailSelectedRowMap && this.detailSelectedRowMap[key]) {
+        classes.push('apply-row-selected');
+      }
+      return classes.join(' ');
     },
     /** 汇总申购序号（弹窗明细用） */
     rowPurchaseEntryIndex({ row, rowIndex }) {
@@ -910,6 +989,7 @@ export default {
         this.form.urgencyLevel = response.data.urgencyLevel != null ? String(response.data.urgencyLevel) : '';
 
         this.title = "查看汇总申购";
+        this.$nextTick(() => this.layoutDetailTable());
       });
     },
     /** 新增按钮操作 */
@@ -928,6 +1008,7 @@ export default {
       this.form.urgencyLevel = '1';
       this.title = "添加汇总申购";
       this.action = true;
+      this.$nextTick(() => this.layoutDetailTable());
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
@@ -977,6 +1058,7 @@ export default {
         this.open = true;
         this.action = true;
         this.title = "修改汇总申购";
+        this.$nextTick(() => this.layoutDetailTable());
       });
     },
     /** 提交按钮 */
@@ -1038,10 +1120,6 @@ export default {
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
-    },
-    /** 汇总申购明细序号 */
-    rowDepPurchaseApplyEntryIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1;
     },
     /** 汇总申购明细添加按钮操作 */
     handleAddDepPurchaseApplyEntry() {
@@ -1230,7 +1308,13 @@ export default {
     },
     /** 复选框选中数据 */
     handleDepPurchaseApplyEntrySelectionChange(selection) {
-      this.checkedDepPurchaseApplyEntry = selection.map(item => item.index)
+      this.checkedDepPurchaseApplyEntry = (selection || []).map(item => item.index);
+      const map = {};
+      (selection || []).forEach((row, idx) => {
+        const key = row.index != null ? row.index : idx + 1;
+        map[key] = true;
+      });
+      this.detailSelectedRowMap = map;
     },
     /** 单据列表行：导出该单明细 */
     handleExportRowDetail(row) {
@@ -1345,8 +1429,8 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 与科室申领 dApply 弹窗一致 */
-/* 与科室申领 dApply：遮罩相对 .app-container 铺满主内容区，不盖住侧栏 */
+@import '../../caigou/jihua/styles/plan-modal-common.scss';
+
 .local-modal-mask {
   position: absolute;
   left: 0;
@@ -1359,19 +1443,19 @@ export default {
   align-items: stretch;
   justify-content: stretch;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  max-height: 100%;
-  min-height: 0;
+  min-height: 95vh;
   overflow-x: hidden;
-  overflow-y: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-bottom: 0;
+  padding-bottom: 8px;
   box-sizing: border-box;
 }
 
@@ -1379,7 +1463,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 20px;
+  padding: 6px 8px;
   border-bottom: 1px solid #EBEEF5;
   background: #EBEEF5;
   min-height: 40px;
@@ -1401,17 +1485,6 @@ export default {
   background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-footer {
-  padding: 16px 24px;
-  text-align: right;
-  border-top: 1px solid #EBEEF5;
-  background: #F5F7FA;
-}
-
-.modal-footer .el-button {
-  margin-left: 12px;
-}
-
 .local-modal-content .el-form {
   flex: 1;
   min-height: 0;
@@ -1424,26 +1497,207 @@ export default {
   flex-direction: column;
 }
 
-/* 弹窗内顶部字段区 */
-.local-modal-content .form-fields-container {
-  background: #fff;
-  padding: 8px 16px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 8px;
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
+.local-modal-content.apply-modal-root-content .el-form {
+  padding: 8px 0 8px !important;
+  overflow: visible;
   box-sizing: border-box;
-  border: 1px solid #EBEEF5;
+  justify-content: flex-start;
+  align-content: flex-start;
 }
 
-.local-modal-content .form-fields-container .el-row:last-child {
+.local-modal-content.apply-modal-root-content .modal-header {
+  padding: 6px 8px;
+}
+
+.local-modal-content.apply-modal-root-content {
+  padding-bottom: 8px;
+}
+
+/* 弹窗内三块区域：与到货验收 apply-modal 一致 */
+.local-modal-content .apply-modal-query-panel,
+.local-modal-content .apply-modal-toolbar.list-toolbar,
+.local-modal-content .apply-modal-table-panel {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.local-modal-content .apply-modal-query-panel {
+  margin-top: 0;
   margin-bottom: 0;
+  flex-shrink: 0;
+  padding: 12px 8px;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.local-modal-content .apply-modal-query-panel .el-row {
+  margin-bottom: 8px;
+}
+
+.local-modal-content .apply-modal-query-panel .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row {
+  flex-wrap: nowrap;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 12px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
+  width: auto !important;
+  flex: 0 0 auto;
+  max-width: none;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item.apply-modal-label-required .el-form-item__label,
+.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
+  margin-right: 0 !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-date-editor,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-form-item__content > * {
+  width: 140px !important;
+  max-width: 140px !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--date .el-date-editor {
+  width: 150px !important;
+  max-width: 150px !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content {
+  max-width: 162px;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-input {
+  width: 162px !important;
+  max-width: 162px !important;
+}
+
+.local-modal-content .apply-modal-query-panel .form-item-header-billno ::v-deep .el-input__inner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 弹窗内明细表区：与到货验收 apply-modal 一致 */
+.local-modal-content .apply-modal-table-panel {
+  margin-top: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.local-modal-content .apply-modal-toolbar {
+  flex-shrink: 0;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.local-modal-content .apply-modal-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-right: 4px;
+  line-height: 32px;
+}
+
+.local-modal-content .apply-modal-table-panel .table-wrapper {
+  margin-top: 0 !important;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.local-modal-content .modal-detail-section .table-wrapper {
+  margin-top: 0;
+  overflow: hidden;
+}
+
+/* 明细表行高：与到货验收一致（到货验收由 28px 输入框撑高，只读页用等高校内容） */
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 28px;
+  min-height: 28px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep thead th.el-table__cell {
+  padding: 6px 0 !important;
+}
+
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep .el-input--small .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 0 6px !important;
+  font-size: 13px !important;
 }
 
 .local-modal-content .modal-form-compact .el-row {
   margin-bottom: 6px;
+}
+
+.local-modal-content .modal-form-compact .apply-modal-query-panel > .el-row {
+  margin-bottom: 8px !important;
+}
+
+.local-modal-content .modal-form-compact .apply-modal-query-panel > .el-row:last-child {
+  margin-bottom: 0 !important;
 }
 
 .local-modal-content .modal-form-compact .el-form-item {
@@ -1455,6 +1709,11 @@ export default {
 .local-modal-content .modal-form-compact .el-date-picker {
   width: 140px;
   max-width: 140px;
+}
+
+.local-modal-content .modal-form-compact .form-item-header-billno .el-input {
+  width: 162px !important;
+  max-width: 162px !important;
 }
 
 .local-modal-content .modal-form-compact .el-input__inner {
@@ -1482,7 +1741,6 @@ export default {
 }
 
 .local-modal-content .modal-form-compact .el-form-item__content {
-  margin-left: 0 !important;
   line-height: 28px;
 }
 
@@ -1492,15 +1750,12 @@ export default {
   line-height: 28px;
   height: 28px;
   font-size: 13px;
-  white-space: nowrap;
 }
 
-/* 紧急程度：保持与“申购状态”同款对齐（不改 Element 默认布局），仅保证不换行 */
 ::v-deep .local-modal-content .modal-form-compact .form-item-urgency .el-form-item__content {
   white-space: nowrap;
 }
 
-/* 仅隐藏“紧急程度”的必填星号（不影响其它必填项），且不改变布局对齐 */
 ::v-deep .local-modal-content .modal-form-compact .form-item-urgency .el-form-item__label:before {
   display: none !important;
   content: '' !important;
@@ -1512,137 +1767,94 @@ export default {
   white-space: nowrap;
 }
 
-.local-modal-content .modal-detail-section {
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
-  box-sizing: border-box;
-  margin-top: 4px;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.local-modal-content .modal-detail-section .detail-toolbar-row {
-  margin-top: 0;
-  margin-bottom: 0;
-  padding-top: 12px;
-  padding-bottom: 12px;
-  box-sizing: border-box;
-}
-
-.local-modal-content .table-wrapper {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  margin-top: 10px;
-  padding-bottom: 0;
-}
-
-.local-modal-content .modal-detail-section .table-wrapper {
-  margin-top: 0;
-  overflow: visible;
-}
-
-.local-modal-content .modal-detail-section .el-table {
-  width: 100%;
-  overflow: visible;
-}
-
-::v-deep .local-modal-content .el-table th {
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  background-color: #EBEEF5 !important;
-}
-
-::v-deep .local-modal-content .el-table th .cell {
-  font-size: 15px !important;
-  font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .el-table thead th {
-  background-color: #EBEEF5 !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .el-table thead th .cell {
-  font-size: 15px !important;
-  font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .el-table th.is-leaf {
-  background-color: #EBEEF5 !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
-  padding-bottom: 0;
-  box-sizing: border-box;
-  overflow-y: auto !important;
-  overflow-x: auto !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 4px;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
-  position: relative;
-  z-index: 10 !important;
-  background-color: #fff !important;
-  margin-top: 0;
-  box-shadow: 0 -1px 0 #ebeef5;
-  overflow: visible !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
-  z-index: 11 !important;
-  background-color: #fff !important;
-  overflow: visible !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
-::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
-  background-color: #fff !important;
-}
-
-::v-deep .local-modal-content:not(.template-dialog-content) {
+::v-deep .local-modal-content.apply-modal-root-content {
   min-height: 0 !important;
   max-height: 100% !important;
   height: 100% !important;
 }
 
-::v-deep .local-modal-content .el-table .el-table__body-wrapper {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.06);
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table thead th,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th.is-leaf {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
 }
 
-::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .el-table__cell {
-  white-space: nowrap !important;
-  overflow: hidden !important;
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th .cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table thead th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
 }
 
-::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .cell {
-  white-space: nowrap !important;
-  overflow: hidden !important;
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper,
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__fixed .el-table__fixed-footer-wrapper,
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
-/* 弹窗动画效果 */
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper {
+  background-color: #f1f5f9 !important;
+  box-shadow: none !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 0 !important;
+  line-height: 24px !important;
+  box-sizing: border-box !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: none !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 24px !important;
+  text-align: center !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: auto;
+  scrollbar-color: #a8a8a8 #f1f1f1;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
 .modal-fade-enter-active, .modal-fade-leave-active {
   transition: opacity 0.3s ease;
 }
@@ -1668,15 +1880,400 @@ export default {
 </style>
 
 <style>
-/* 弹窗打开时隐藏底层列表，避免遮罩底部透出滚动条/分页 */
+/* 列表样式见 department-apply-list-align.scss；以下为弹窗特例 */
+.app-container.d-purchase-agg-page.is-modal-open {
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding-top: 8px !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box !important;
+}
+
 .app-container.d-purchase-agg-page.is-modal-open > .el-table,
 .app-container.d-purchase-agg-page.is-modal-open .pagination-bottom-wrap,
 .app-container.d-purchase-agg-page.is-modal-open .apply-table-panel {
   display: none;
 }
 
+.app-container.d-purchase-agg-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+  position: absolute;
+  overflow: hidden;
+}
+
 .app-container.d-purchase-agg-page .apply-main-table thead th.col-expected-delivery-header .cell {
   white-space: nowrap !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content.apply-modal-root-content {
+  position: relative;
+  overflow: hidden;
+}
+
+/* 弹窗内查询区：list-page 卡片容器 form-fields-container list-query-panel（与到货验收一致） */
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel.list-query-panel,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel.form-fields-container {
+  flex: 0 0 auto;
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+  padding: 12px 8px !important;
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .list-query-panel.apply-modal-query-panel > .el-row,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel > .apply-modal-form-row.el-row {
+  margin-bottom: 8px;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .list-query-panel.apply-modal-query-panel > .el-row:last-child,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel > .apply-modal-form-row.el-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 表头区：inline-flex 保证标签与输入框同一行（与到货验收一致） */
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+  white-space: nowrap;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* 弹窗内表头输入：28px 高度（覆盖 list-page 32px），边框沿用 list-page */
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-input__inner,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-select .el-input__inner,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-date-editor .el-input__inner {
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+  box-sizing: border-box !important;
+  border-color: #e2e8f0 !important;
+  border-radius: 6px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-right: 4px;
+  line-height: 32px;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-toolbar.list-toolbar {
+  flex: 0 0 auto;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-toolbar.list-toolbar .list-toolbar-left {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-table-panel {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-top: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  overflow: visible;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-table-panel > .table-wrapper > .apply-detail-table {
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-table-panel > .table-wrapper {
+  overflow: hidden;
+  border-bottom: none;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: auto;
+  scrollbar-color: #a8a8a8 #f1f1f1;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar-track,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar-track,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  border: none !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-vertical {
+  width: 8px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+
+/* 明细表体行高：对齐到货验收（padding 4px + 内容区 28px，等同 small 输入框行） */
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table tbody td {
+  vertical-align: middle;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table tbody td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 28px !important;
+  min-height: 28px !important;
+  box-sizing: border-box;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table.el-table {
+  position: relative;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr > td,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td .cell,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-select-col,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr:hover > td,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr.apply-row-selected > td,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection {
+  background-color: #A0CBFF !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table .el-table__fixed .el-table__fixed-footer-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed .el-table__fixed-footer-wrapper {
+  background-color: #f1f5f9 !important;
+  border-bottom: none !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr {
+  height: 38px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 0 !important;
+  line-height: 24px !important;
+  box-sizing: border-box !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: none !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 24px !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table th.apply-select-col,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table td.apply-select-col,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table th.el-table-column--selection,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table td.apply-select-col,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table td.el-table-column--selection {
+  background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table th.apply-select-col,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table th.el-table-column--selection {
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
 }
 </style>
 

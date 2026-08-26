@@ -187,52 +187,95 @@
     </div>
     </div>
 
-    <!-- 申购单审核对话框 -->
+    <!-- 申购单审核对话框（布局对齐到货验收 apply-modal） -->
     <transition name="modal-fade">
       <div v-if="open" class="local-modal-mask">
         <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
+          <div v-if="open" class="local-modal-content apply-modal-root-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact modal-form-wrapper">
-              <div class="form-fields-container">
-                <el-row :gutter="8">
-                  <el-col :span="4">
-                    <el-form-item label="申购单号" prop="purchaseBillNo">
-                      <el-input v-model="form.purchaseBillNo" :disabled="true" />
+            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
+              <div class="form-fields-container list-query-panel apply-modal-query-panel">
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
+                  <el-col class="apply-modal-field apply-modal-field--compact">
+                    <el-form-item label="申购单号" prop="purchaseBillNo" class="form-item-header-billno">
+                      <el-input v-model="form.purchaseBillNo" :disabled="true" :title="form.purchaseBillNo || ''" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="申购状态" prop="purchaseBillStatus">
-                      <el-select v-model="form.purchaseBillStatus" placeholder="请选择申购状态"
-                                 :disabled="true"
-                                 clearable>
-                        <el-option v-for="dict in dict.type.purchase_status"
-                                   :key="dict.value"
-                                   :label="dict.label"
-                                   :value="dict.value"
+                      <el-select
+                        v-model="form.purchaseBillStatus"
+                        placeholder="请选择申购状态"
+                        :disabled="true"
+                        clearable
+                      >
+                        <el-option
+                          v-for="dict in dict.type.purchase_status"
+                          :key="dict.value"
+                          :label="dict.label"
+                          :value="dict.value"
                         />
                       </el-select>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="科室" prop="departmentId">
                       <SelectDepartment v-model="form.departmentId" :disabled="true"/>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="备注" prop="remark" class="form-item-remark">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="制单人" prop="userId">
+                      <el-input v-model="form.userName" :disabled="true" placeholder="—" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="制单日期" prop="purchaseBillDate">
+                      <el-date-picker
+                        clearable
+                        v-model="form.purchaseBillDate"
+                        type="date"
+                        value-format="yyyy-MM-dd"
+                        :disabled="true"
+                        placeholder="请选择制单日期"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="紧急程度" prop="urgencyLevel" class="form-item-urgency">
+                      <el-input v-model="urgencyLevelText" disabled />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="期望到货" prop="expectedDeliveryDate">
+                      <el-date-picker
+                        clearable
+                        v-model="form.expectedDeliveryDate"
+                        type="date"
+                        value-format="yyyy-MM-dd"
+                        :disabled="true"
+                        placeholder="请选择期望到货日期"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" :disabled="true" />
                     </el-form-item>
                   </el-col>
-                  <el-col v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'" :span="4">
-                    <el-form-item
-                      label="驳回原因"
-                      prop="rejectReason"
-                      class="form-item-reject-reason"
-                    >
+                </el-row>
+                <el-row
+                  v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
+                  :gutter="0"
+                  class="apply-modal-form-row apply-modal-row-third apply-modal-row-reject"
+                  type="flex"
+                >
+                  <el-col class="apply-modal-field apply-modal-field--grow">
+                    <el-form-item label="驳回原因" prop="rejectReason" class="form-item-reject-reason">
                       <el-input
                         v-model="form.rejectReason"
                         clearable
@@ -241,77 +284,49 @@
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <el-row :gutter="8">
-                  <el-col :span="4">
-                    <el-form-item label="制单日期" prop="purchaseBillDate">
-                      <el-date-picker clearable
-                                      v-model="form.purchaseBillDate"
-                                      type="date"
-                                      style="width: 100%"
-                                      value-format="yyyy-MM-dd"
-                                      :disabled="true"
-                                      placeholder="请选择制单日期">
-                      </el-date-picker>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="制单人" prop="userId">
-                      <el-input v-model="form.userName" :disabled="true" placeholder="—" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="紧急程度" prop="urgencyLevel" class="form-item-urgency">
-                      <el-input v-model="urgencyLevelText" disabled />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="期望到货" prop="expectedDeliveryDate">
-                      <el-date-picker clearable
-                                      v-model="form.expectedDeliveryDate"
-                                      type="date"
-                                      style="width: 100%"
-                                      value-format="yyyy-MM-dd"
-                                      :disabled="true"
-                                      placeholder="请选择期望到货日期">
-                      </el-date-picker>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
               </div>
 
-              <div class="modal-detail-section">
-              <el-row :gutter="10" class="detail-toolbar-row">
-                <el-col :span="24">
-                  <div class="detail-header-row">
-                    <span class="detail-header-title">汇总申购明细信息</span>
-                    <el-button
-                      v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
-                      size="small"
-                      class="detail-action-btn"
-                      @click="cancel"
-                    >取 消</el-button>
-                    <el-button
-                      v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
-                      type="danger"
-                      size="small"
-                      class="detail-action-btn"
-                      @click="handleRejectSubmit"
-                    >驳 回</el-button>
-                    <el-button
-                      v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
-                      type="primary"
-                      icon="el-icon-check"
-                      size="small"
-                      class="detail-action-btn"
-                      @click="handleAuditSubmit"
-                    >审 核</el-button>
-                  </div>
-                </el-col>
+              <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
+                <div class="list-toolbar-left">
+                  <span class="apply-modal-detail-title">汇总申购明细信息</span>
+                  <el-button
+                    v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
+                    size="small"
+                    class="spd-btn spd-btn--secondary"
+                    @click="cancel"
+                  >取 消</el-button>
+                  <el-button
+                    v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
+                    type="danger"
+                    icon="el-icon-close"
+                    size="small"
+                    @click="handleRejectSubmit"
+                  >驳 回</el-button>
+                  <el-button
+                    v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
+                    type="primary"
+                    icon="el-icon-check"
+                    size="small"
+                    class="spd-btn spd-btn--primary"
+                    @click="handleAuditSubmit"
+                  >审 核</el-button>
+                </div>
               </el-row>
 
+              <div class="modal-detail-section apply-modal-table-panel">
               <div class="table-wrapper">
-              <el-table :data="entryList" :row-class-name="rowDepPurchaseApplyEntryIndex" ref="depPurchaseApplyEntry" height="100%" border :summary-method="getPurchaseSummaries" show-summary>
-                <el-table-column type="selection" width="55" align="center" fixed="left" resizable />
+              <el-table
+                :data="entryList"
+                class="apply-detail-table"
+                :row-class-name="applyDetailRowClassName"
+                @selection-change="handleDepPurchaseApplyEntrySelectionChange"
+                ref="depPurchaseApplyEntry"
+                :height="detailTableHeight"
+                border
+                :summary-method="getPurchaseSummaries"
+                show-summary
+              >
+                <el-table-column type="selection" width="60" align="center" resizable class-name="apply-select-col" header-cell-class-name="apply-select-col" />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                 <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
@@ -434,6 +449,8 @@ export default {
       showSearch: true,
       mainTableHeight: 400,
       selectedRowMap: {},
+      // 明细勾选行高亮（与到货验收一致）
+      detailSelectedRowMap: {},
       // 总条数
       total: 0,
       // 汇总申购表格数据
@@ -465,6 +482,16 @@ export default {
       // 表单校验
       rules: {}
     };
+  },
+  computed: {
+    /** 弹窗明细表高度：与到货验收 apply-modal 一致；待审核含驳回原因行时额外扣减 */
+    detailTableHeight() {
+      let offset = 384;
+      if (this.form && (this.form.purchaseBillStatus == 1 || this.form.purchaseBillStatus === '1')) {
+        offset += 44;
+      }
+      return `max(240px, calc(100vh - ${offset}px))`;
+    }
   },
   created() {
     this.applyRoutePurchaseBillQuery();
@@ -670,6 +697,7 @@ export default {
     // 取消按钮
     cancel() {
       this.open = false;
+      this.detailSelectedRowMap = {};
       this.reset();
     },
     // 表单重置
@@ -742,6 +770,7 @@ export default {
       getPurchaseAggAudit(id).then(response => {
         this.form = response.data;
         this.entryList = response.data.entryList || [];
+        this.detailSelectedRowMap = {};
         this.open = true;
 
         if(response.data.purchaseBillStatus == 1){
@@ -924,6 +953,24 @@ export default {
     rowDepPurchaseApplyEntryIndex({ row, rowIndex }) {
       row.index = rowIndex + 1;
     },
+    /** 明细表行 class：序号 + 勾选高亮（与到货验收一致） */
+    applyDetailRowClassName({ row, rowIndex }) {
+      this.rowDepPurchaseApplyEntryIndex({ row, rowIndex });
+      const key = row.index != null ? row.index : rowIndex + 1;
+      if (key != null && this.detailSelectedRowMap && this.detailSelectedRowMap[key]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    /** 明细勾选变化 */
+    handleDepPurchaseApplyEntrySelectionChange(selection) {
+      const map = {};
+      (selection || []).forEach((row, idx) => {
+        const key = row.index != null ? row.index : idx + 1;
+        map[key] = true;
+      });
+      this.detailSelectedRowMap = map;
+    },
     /** 设置紧急程度文本显示 */
     setUrgencyLevelText(urgencyLevel) {
       if (urgencyLevel !== null && urgencyLevel !== undefined) {
@@ -967,8 +1014,8 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 与科室申领 dApply / dApplyAudit 弹窗一致 */
-/* 与科室申领审核：遮罩仅在主内容区内，不盖住侧栏 */
+@import '../../caigou/jihua/styles/plan-modal-common.scss';
+
 .local-modal-mask {
   position: absolute;
   left: 0;
@@ -981,19 +1028,19 @@ export default {
   align-items: stretch;
   justify-content: stretch;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
   height: 100%;
-  max-height: 100%;
-  min-height: 0;
+  min-height: 95vh;
   overflow-x: hidden;
-  overflow-y: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-bottom: 16px;
+  padding-bottom: 8px;
   box-sizing: border-box;
 }
 
@@ -1001,7 +1048,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 20px;
+  padding: 6px 8px;
   border-bottom: 1px solid #EBEEF5;
   background: #EBEEF5;
   min-height: 40px;
@@ -1023,17 +1070,6 @@ export default {
   background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-footer {
-  padding: 16px 24px;
-  text-align: right;
-  border-top: 1px solid #EBEEF5;
-  background: #F5F7FA;
-}
-
-.modal-footer .el-button {
-  margin-left: 12px;
-}
-
 .local-modal-content .el-form {
   flex: 1;
   min-height: 0;
@@ -1046,34 +1082,218 @@ export default {
   flex-direction: column;
 }
 
-.modal-form-wrapper {
+.local-modal-content.apply-modal-root-content .el-form {
+  padding: 8px 0 8px !important;
+  overflow: visible;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  align-content: flex-start;
+}
+
+.local-modal-content.apply-modal-root-content .modal-header {
+  padding: 6px 8px;
+}
+
+.local-modal-content.apply-modal-root-content {
+  padding-bottom: 8px;
+}
+
+/* 弹窗内三块区域：与到货验收 apply-modal 一致 */
+.local-modal-content .apply-modal-query-panel,
+.local-modal-content .apply-modal-toolbar.list-toolbar,
+.local-modal-content .apply-modal-table-panel {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.local-modal-content .apply-modal-query-panel {
+  margin-top: 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  padding: 12px 8px;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.local-modal-content .apply-modal-query-panel .el-row {
+  margin-bottom: 8px;
+}
+
+.local-modal-content .apply-modal-query-panel .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row {
+  flex-wrap: nowrap;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 12px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
+  width: auto !important;
+  flex: 0 0 auto;
+  max-width: none;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item.apply-modal-label-required .el-form-item__label,
+.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
+  margin-right: 0 !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-date-editor,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-form-item__content > * {
+  width: 140px !important;
+  max-width: 140px !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--date .el-date-editor {
+  width: 150px !important;
+  max-width: 150px !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content {
+  max-width: 162px;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-input {
+  width: 162px !important;
+  max-width: 162px !important;
+}
+
+.local-modal-content .apply-modal-query-panel .form-item-header-billno ::v-deep .el-input__inner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
+  flex: 1 1 auto !important;
+  min-width: 200px;
+  max-width: none !important;
+}
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item__content > * {
+  width: 100% !important;
+  max-width: none !important;
+}
+/* 弹窗内明细表区：与到货验收 apply-modal 一致 */
+.local-modal-content .apply-modal-table-panel {
+  margin-top: 0;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  flex: 1;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
   overflow: hidden;
 }
 
-.local-modal-content .form-fields-container {
-  background: #fff;
-  padding: 8px 16px 8px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 8px;
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
-  box-sizing: border-box;
-  border: 1px solid #EBEEF5;
+.local-modal-content .apply-modal-toolbar {
   flex-shrink: 0;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
 }
 
-.local-modal-content .form-fields-container .el-row:last-child {
-  margin-bottom: 0;
+.local-modal-content .apply-modal-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-right: 4px;
+  line-height: 32px;
+}
+
+.local-modal-content .apply-modal-table-panel .table-wrapper {
+  margin-top: 0 !important;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.local-modal-content .modal-detail-section .table-wrapper {
+  margin-top: 0;
+  overflow: hidden;
+}
+
+/* 明细表行高：与到货验收一致（到货验收由 28px 输入框撑高，只读页用等高校内容） */
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 28px;
+  min-height: 28px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep thead th.el-table__cell {
+  padding: 6px 0 !important;
+}
+
+.local-modal-content .modal-detail-section .apply-detail-table ::v-deep .el-input--small .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 0 6px !important;
+  font-size: 13px !important;
 }
 
 .local-modal-content .modal-form-compact .el-row {
   margin-bottom: 6px;
+}
+
+.local-modal-content .modal-form-compact .apply-modal-query-panel > .el-row {
+  margin-bottom: 8px !important;
+}
+
+.local-modal-content .modal-form-compact .apply-modal-query-panel > .el-row:last-child {
+  margin-bottom: 0 !important;
 }
 
 .local-modal-content .modal-form-compact .el-form-item {
@@ -1085,6 +1305,11 @@ export default {
 .local-modal-content .modal-form-compact .el-date-picker {
   width: 140px;
   max-width: 140px;
+}
+
+.local-modal-content .modal-form-compact .form-item-header-billno .el-input {
+  width: 162px !important;
+  max-width: 162px !important;
 }
 
 .local-modal-content .modal-form-compact .el-input__inner {
@@ -1112,7 +1337,6 @@ export default {
 }
 
 .local-modal-content .modal-form-compact .el-form-item__content {
-  margin-left: 0 !important;
   line-height: 28px;
 }
 
@@ -1122,15 +1346,12 @@ export default {
   line-height: 28px;
   height: 28px;
   font-size: 13px;
-  white-space: nowrap;
 }
 
-/* 紧急程度：保持与“申购状态”同款对齐（不改 Element 默认布局），仅保证不换行 */
 ::v-deep .local-modal-content .modal-form-compact .form-item-urgency .el-form-item__content {
   white-space: nowrap;
 }
 
-/* 仅隐藏“紧急程度”的必填星号（不影响其它必填项），且不改变布局对齐 */
 ::v-deep .local-modal-content .modal-form-compact .form-item-urgency .el-form-item__label:before {
   display: none !important;
   content: '' !important;
@@ -1142,171 +1363,94 @@ export default {
   white-space: nowrap;
 }
 
-.local-modal-content .modal-form-compact .form-item-reject-reason .el-form-item__content {
-  margin-left: 0 !important;
-  max-width: none;
-}
-
-.local-modal-content .modal-form-compact .form-item-reject-reason .el-input {
-  width: 100%;
-}
-
-.detail-header-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.detail-header-title {
-  font-weight: 500;
-}
-
-.detail-action-btn {
-  min-width: 80px;
-}
-
-.local-modal-content .modal-detail-section {
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
-  box-sizing: border-box;
-  margin-top: 4px;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.local-modal-content .modal-detail-section .detail-toolbar-row {
-  margin-top: 0;
-  margin-bottom: 0;
-  padding-top: 12px;
-  padding-bottom: 12px;
-  box-sizing: border-box;
-  flex-shrink: 0;
-}
-
-.local-modal-content .table-wrapper {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  margin-top: 10px;
-  padding-bottom: 4px;
-}
-
-.local-modal-content .modal-detail-section .table-wrapper {
-  /* 1 1 0：在弹窗 flex 布局内按剩余空间收缩，避免子表用 100vh 高度把合计挤出裁切区 */
-  flex: 1 1 0;
-  margin-top: 0;
-  overflow: hidden;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.local-modal-content .modal-detail-section .el-table {
-  width: 100%;
-}
-
-.local-modal-content .modal-detail-section .modal-footer {
-  flex-shrink: 0;
-  margin-top: 0;
-}
-
-::v-deep .local-modal-content .el-table th {
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  background-color: #EBEEF5 !important;
-}
-
-::v-deep .local-modal-content .el-table th .cell {
-  font-size: 15px !important;
-  font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .el-table thead th {
-  background-color: #EBEEF5 !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .el-table thead th .cell {
-  font-size: 15px !important;
-  font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .el-table th.is-leaf {
-  background-color: #EBEEF5 !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper {
-  padding-bottom: 0;
-  box-sizing: border-box;
-  overflow-y: auto !important;
-  overflow-x: auto !important;
-  scrollbar-width: thin;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 4px;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper {
-  position: relative;
-  z-index: 10 !important;
-  background-color: #fff !important;
-  margin-top: 0;
-  box-shadow: 0 -1px 0 #ebeef5;
-  overflow: visible !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper {
-  z-index: 11 !important;
-  background-color: #fff !important;
-  overflow: visible !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table__footer-wrapper td,
-::v-deep .local-modal-content .modal-detail-section .el-table__fixed-footer-wrapper td {
-  padding-top: 8px !important;
-  padding-bottom: 10px !important;
-  background-color: #fff !important;
-}
-
-::v-deep .local-modal-content:not(.template-dialog-content) {
+::v-deep .local-modal-content.apply-modal-root-content {
   min-height: 0 !important;
   max-height: 100% !important;
   height: 100% !important;
 }
 
-::v-deep .local-modal-content .el-table .el-table__body-wrapper {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.06);
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table thead th,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th.is-leaf {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
 }
 
-::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .el-table__cell {
-  white-space: nowrap !important;
-  overflow: hidden !important;
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th .cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table thead th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
 }
 
-::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table .cell {
-  white-space: nowrap !important;
-  overflow: hidden !important;
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper,
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__fixed .el-table__fixed-footer-wrapper,
+::v-deep .local-modal-content .modal-detail-section .el-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
-/* 弹窗动画效果 */
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper {
+  background-color: #f1f5f9 !important;
+  box-shadow: none !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 0 !important;
+  line-height: 24px !important;
+  box-sizing: border-box !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: none !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 24px !important;
+  text-align: center !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: auto;
+  scrollbar-color: #a8a8a8 #f1f1f1;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
 .modal-fade-enter-active, .modal-fade-leave-active {
   transition: opacity 0.3s ease;
 }
@@ -1332,12 +1476,429 @@ export default {
 </style>
 
 <style>
-.app-container.d-purchase-agg-audit-page.is-modal-open .pagination-bottom-wrap {
+/* 列表样式见 department-apply-list-align.scss；以下为弹窗特例 */
+.app-container.d-purchase-agg-audit-page.is-modal-open {
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding-top: 8px !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-purchase-agg-audit-page.is-modal-open > .el-table,
+.app-container.d-purchase-agg-audit-page.is-modal-open .pagination-bottom-wrap,
+.app-container.d-purchase-agg-audit-page.is-modal-open .apply-table-panel {
   display: none;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-mask {
+  left: -8px;
+  right: -8px;
+  width: auto;
+  position: absolute;
+  overflow: hidden;
 }
 
 .app-container.d-purchase-agg-audit-page .apply-main-table thead th.col-expected-delivery-header .cell {
   white-space: nowrap !important;
 }
-</style>
 
+.app-container.d-purchase-agg-audit-page .local-modal-content.apply-modal-root-content {
+  position: relative;
+  overflow: hidden;
+}
+
+/* 弹窗内查询区：list-page 卡片容器 form-fields-container list-query-panel（与到货验收一致） */
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel.list-query-panel,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel.form-fields-container {
+  flex: 0 0 auto;
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+  padding: 12px 8px !important;
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .list-query-panel.apply-modal-query-panel > .el-row,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel > .apply-modal-form-row.el-row {
+  margin-bottom: 8px;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .list-query-panel.apply-modal-query-panel > .el-row:last-child,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel > .apply-modal-form-row.el-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 表头区：inline-flex 保证标签与输入框同一行（与到货验收一致） */
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+  white-space: nowrap;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* 弹窗内表头输入：28px 高度（覆盖 list-page 32px），边框沿用 list-page */
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-input__inner,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-select .el-input__inner,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-date-editor .el-input__inner {
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+  box-sizing: border-box !important;
+  border-color: #e2e8f0 !important;
+  border-radius: 6px !important;
+}
+
+
+/* 驳回原因行：全宽输入，与申领单审核一致 */
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-reject .el-form-item {
+  align-items: center;
+  white-space: nowrap;
+  width: 100%;
+  display: inline-flex;
+}
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-reject .el-form-item__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
+  flex: 1 1 auto !important;
+  min-width: 200px;
+  max-width: none !important;
+}
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item {
+  width: 100%;
+  max-width: 100%;
+}
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-input,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item__content > * {
+  width: 100% !important;
+  max-width: none !important;
+}
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-right: 4px;
+  line-height: 32px;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-toolbar.list-toolbar {
+  flex: 0 0 auto;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-toolbar.list-toolbar .list-toolbar-left {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-table-panel {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-top: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  overflow: visible;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-table-panel > .table-wrapper > .apply-detail-table {
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-table-panel > .table-wrapper {
+  overflow: hidden;
+  border-bottom: none;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: auto;
+  scrollbar-color: #a8a8a8 #f1f1f1;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar-track,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar-track,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  border: none !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-vertical {
+  width: 8px !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+
+/* 明细表体行高：对齐到货验收（padding 4px + 内容区 28px，等同 small 输入框行） */
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table tbody td {
+  vertical-align: middle;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table tbody td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 28px !important;
+  min-height: 28px !important;
+  box-sizing: border-box;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table.el-table {
+  position: relative;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr > td,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td .cell,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-select-col,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr:hover > td,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr.apply-row-selected > td,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection {
+  background-color: #A0CBFF !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table .el-table__footer-wrapper,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table .el-table__fixed .el-table__fixed-footer-wrapper {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed .el-table__fixed-footer-wrapper {
+  background-color: #f1f5f9 !important;
+  border-bottom: none !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr {
+  height: 38px !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 0 !important;
+  line-height: 24px !important;
+  box-sizing: border-box !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: none !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
+.app-container.d-purchase-agg-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 24px !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table th.apply-select-col,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table td.apply-select-col,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table th.el-table-column--selection,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table td.apply-select-col,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table td.el-table-column--selection {
+  background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table th.apply-select-col,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-detail-table th.el-table-column--selection {
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
+}
+</style>

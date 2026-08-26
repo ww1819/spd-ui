@@ -262,6 +262,62 @@
   font-size: 13px;
 }
 
+/* 第三行（引用配送/扫描条码/备注等）：表单项横向排列，避免 margin-left:0 后标签掉到输入框上方 */
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+  width: 100%;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row {
+  flex-wrap: nowrap;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input-group {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .return-reason-form-item .el-form-item__label {
+  white-space: nowrap;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-reject .el-form-item {
+  align-items: flex-start;
+  width: 100%;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-reject .el-form-item__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .modal-fade-enter-active,
 .modal-fade-leave-active {
   transition: opacity 0.3s ease;

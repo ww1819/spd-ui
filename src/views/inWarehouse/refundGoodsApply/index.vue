@@ -310,7 +310,7 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="8" class="apply-modal-row-third">
+        <el-row :gutter="8" class="apply-modal-form-row apply-modal-row-third" type="flex">
           <el-col v-if="action" :span="7">
             <el-form-item label="退货原因" prop="returnReason" label-width="92px" class="return-reason-form-item">
               <el-input v-model="form.returnReason" placeholder="退货原因" clearable />
@@ -1636,6 +1636,10 @@ export default {
   max-width: 100% !important;
 }
 
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row {
+  flex-wrap: nowrap;
+}
+
 .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
   display: flex;
   flex-wrap: wrap;
@@ -2473,6 +2477,37 @@ export default {
 .app-container.inWarehouse-refundGoodsApply-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
   content: none !important;
   display: none !important;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+  width: 100%;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.app-container.inWarehouse-refundGoodsApply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .return-reason-form-item .el-form-item__label {
+  white-space: nowrap;
 }
 
 /* 添加入库弹窗：有效期列单元格允许换行展示 */

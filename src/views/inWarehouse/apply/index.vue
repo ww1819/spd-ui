@@ -325,7 +325,7 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="8" class="apply-modal-row-third">
+        <el-row :gutter="8" class="apply-modal-form-row apply-modal-row-third" type="flex">
           <el-col v-if="action" :span="7">
             <el-form-item label="引用配送单" label-width="92px" class="delivery-ref-form-item" :title="deliveryRefBlockTitle">
               <el-input
@@ -357,7 +357,7 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col v-if="action" :span="9">
+          <el-col v-if="action" :span="5">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
             </el-form-item>
@@ -2743,6 +2743,10 @@ export default {
   max-width: 100% !important;
 }
 
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row {
+  flex-wrap: nowrap;
+}
+
 .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
   display: flex;
   flex-wrap: wrap;
@@ -3537,6 +3541,40 @@ export default {
 </style>
 
 <style>
+/* 弹窗表头：inline-flex 保证标签与输入框同一行 */
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+  white-space: nowrap;
+}
+
 /* 弹窗表头：供应商/仓库/总金额标签红色，不显示 * 号 */
 .app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
   color: #f56c6c !important;

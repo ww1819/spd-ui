@@ -313,7 +313,7 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="8" class="apply-modal-row-third">
+        <el-row :gutter="8" class="apply-modal-form-row apply-modal-row-third" type="flex">
           <el-col v-if="action" :span="7">
             <el-form-item label="引用配送单" label-width="92px" class="delivery-ref-form-item" :title="deliveryRefBlockTitle">
               <el-input
@@ -2460,6 +2460,28 @@ export default {
   max-width: 100% !important;
 }
 
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row {
+  flex-wrap: nowrap;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-input-group,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-input-group {
+  width: 100%;
+  max-width: 100%;
+}
+
+.apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
+.apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+  white-space: nowrap;
+}
+
+.apply-modal-row-third .delivery-ref-form-item .el-form-item__content,
+.apply-modal-row-third .detail-scan-form-item .el-form-item__content {
+  line-height: 32px;
+}
+
 .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
   display: flex;
   flex-wrap: wrap;
@@ -3660,6 +3682,39 @@ export default {
 .app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
   content: none !important;
   display: none !important;
+}
+
+/* 第三行宽字段：标签与输入同一行（配合 modal-form-compact 清零 margin-left） */
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+  width: 100%;
+}
+
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+  white-space: nowrap;
 }
 
 /* 添加入库弹窗：有效期列单元格允许换行展示 */

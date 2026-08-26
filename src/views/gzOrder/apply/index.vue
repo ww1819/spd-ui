@@ -192,104 +192,106 @@
     <transition name="modal-fade">
       <div v-if="open" class="local-modal-mask">
         <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
+          <div v-if="open" class="local-modal-content apply-modal-root-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
-              <!-- 顶部条件容器 -->
-              <div class="form-fields-container">
-                <el-row :gutter="8">
-                  <el-col :span="4">
-                    <el-form-item label="验收单号" prop="orderNo">
-                      <el-input v-model="form.orderNo" :disabled="true" style="width: 220px" />
+            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
+              <div class="form-fields-container list-query-panel apply-modal-query-panel">
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
+                  <el-col class="apply-modal-field apply-modal-field--compact">
+                    <el-form-item label="验收单号" prop="orderNo" class="form-item-header-billno">
+                      <el-input v-model="form.orderNo" :disabled="true" :title="form.orderNo || ''" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse ref="formWarehouseSelect" v-model="form.warehouseId" :value2="gzOrderEntryList.length > 0" :disabled="warehouseAutoFilled" includeWarehouseType="高值" blockDisabledForInbound disabledWarehouseMessage="该仓库已经停用，不能进行备货入库"/>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required">
+                      <SelectWarehouse ref="formWarehouseSelect" v-model="form.warehouseId" :value2="gzOrderEntryList.length > 0" :disabled="warehouseAutoFilled || isAudited" includeWarehouseType="高值" blockDisabledForInbound disabledWarehouseMessage="该仓库已经停用，不能进行备货入库"/>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="供应商" prop="supplerId">
-                      <SelectSupplier v-model="form.supplerId" :value2="gzOrderEntryList.length > 0"/>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="供应商" prop="supplerId" class="apply-modal-label-required">
+                      <SelectSupplier v-model="form.supplerId" :value2="gzOrderEntryList.length > 0" :disabled="isAudited"/>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="制单人" prop="createBy">
-                      <el-input v-model="form.creatorName" :disabled="true" style="width: 180px" />
+                      <el-input v-model="form.creatorName" :disabled="true" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="制单日期" prop="orderDate" label-width="70px" style="white-space: nowrap;">
-                      <el-date-picker clearable
-                                      v-model="form.orderDate"
-                                      type="date"
-                                      :disabled="true"
-                                      value-format="yyyy-MM-dd"
-                                      style="width: 140px"
-                                      placeholder="请选择制单日期">
-                      </el-date-picker>
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="制单日期" prop="orderDate" class="apply-modal-label-required">
+                      <el-date-picker
+                        clearable
+                        v-model="form.orderDate"
+                        type="date"
+                        :disabled="true"
+                        value-format="yyyy-MM-dd"
+                        placeholder="请选择制单日期"
+                      />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="审核人" prop="auditBy">
-                      <el-input v-model="form.auditorName" :disabled="true" style="width: 140px" />
+                      <el-input v-model="form.auditorName" :disabled="true" />
                     </el-form-item>
                   </el-col>
                 </el-row>
 
-                <el-row :gutter="8">
-                  <el-col :span="8">
-                    <el-form-item label="UDI码" prop="ztm">
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second apply-modal-row-third" type="flex">
+                  <el-col class="apply-modal-field apply-modal-field--grow udi-scan-field">
+                    <el-form-item label="UDI码" prop="ztm" class="detail-scan-form-item">
                       <div class="udi-scan-inline">
-                        <el-input v-model="form.ztm"
-                                  class="udi-scan-inline-input"
-                                  :placeholder="form.warehouseId ? '请扫描UDI码' : '请先选择仓库'"
-                                  clearable
-                                  :disabled="!form.warehouseId || isAudited"
-                                  @input="onZtmInput"
-                                  @paste.native="onZtmPaste"
-                                  @keyup.enter.native="openUdiScanDialog"
+                        <el-input
+                          v-model="form.ztm"
+                          class="udi-scan-inline-input"
+                          :placeholder="form.warehouseId ? '请扫描UDI码' : '请先选择仓库'"
+                          clearable
+                          :disabled="!form.warehouseId || isAudited"
+                          @input="onZtmInput"
+                          @paste.native="onZtmPaste"
+                          @keyup.enter.native="openUdiScanDialog"
                         />
                         <el-button
                           type="primary"
                           icon="el-icon-full-screen"
+                          size="small"
                           :disabled="!form.warehouseId || isAudited"
                           @click="openUdiScanDialog"
                         >扫描</el-button>
                       </div>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="辅条码" prop="ftm">
-                      <el-input v-model="form.ftm"
-                                placeholder="请扫描辅条码"
-                                clearable
-                                style="width: 140px"
-                                @keydown.enter.native.prevent="sm2"
+                      <el-input
+                        v-model="form.ftm"
+                        placeholder="请扫描辅条码"
+                        clearable
+                        :disabled="isAudited"
+                        @keydown.enter.native.prevent="sm2"
                       />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="总金额" prop="totalAmount">
-                      <el-input :value="getTotalAmount()" :disabled="true" style="width: 140px" />
+                      <el-input :value="getTotalAmount()" :disabled="true" class="input-total-amount-inline" />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="审核日期" prop="auditDate" label-width="70px" style="white-space: nowrap;">
-                      <el-date-picker clearable
-                                      v-model="form.auditDate"
-                                      type="datetime"
-                                      :disabled="true"
-                                      value-format="yyyy-MM-dd HH:mm:ss"
-                                      style="width: 160px"
-                                      placeholder="请选择审核日期">
-                      </el-date-picker>
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="审核日期" prop="auditDate">
+                      <el-date-picker
+                        clearable
+                        v-model="form.auditDate"
+                        type="datetime"
+                        :disabled="true"
+                        value-format="yyyy-MM-dd HH:mm:ss"
+                        placeholder="请选择审核日期"
+                      />
                     </el-form-item>
                   </el-col>
-                  <el-col :span="4">
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" clearable :disabled="isAudited" />
                     </el-form-item>
@@ -297,10 +299,9 @@
                 </el-row>
               </div>
 
-              <div class="modal-detail-section">
-                <div class="detail-toolbar-row detail-toolbar-head">
-                  <div class="detail-toolbar-left">
-                    <span class="detail-toolbar-title">高值备货明细</span>
+              <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
+                <div class="list-toolbar-left">
+                  <span class="apply-modal-detail-title">高值备货明细</span>
                     <template v-if="action">
                       <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId || isAudited">添加</el-button>
                       <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry" :disabled="isAudited">删除</el-button>
@@ -318,17 +319,20 @@
                       class="detail-print-barcode-btn"
                       @click="handlePrintBarcodeFromDetail"
                     >打印条码</el-button>
-                  </div>
                 </div>
+              </el-row>
+
+              <div class="modal-detail-section apply-modal-table-panel">
                 <div class="table-wrapper">
                 <el-table :data="gzOrderEntryList" :row-class-name="rowGzOrderEntryIndex"
+                          class="apply-detail-table"
                           @selection-change="handleGzOrderEntrySelectionChange"
                           ref="gzOrderEntry"
                           border
                           show-summary
                           :summary-method="getSummaries"
                           :height="detailTableHeight">
-                  <el-table-column type="selection" width="60" align="center" resizable fixed="left" />
+                  <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable fixed="left" />
                   <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
                   <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
@@ -913,7 +917,7 @@ export default {
   computed: {
     /** 与到货验收弹窗明细表高度一致 */
     detailTableHeight() {
-      return 'max(260px, calc(100vh - 368px))';
+      return 'max(240px, calc(100vh - 384px))';
     },
     isAudited() {
       return this.form.orderStatus == 2 || this.form.orderStatus == '2';
@@ -2935,6 +2939,8 @@ export default {
 </script>
 
 <style scoped>
+@import '../../caigou/jihua/styles/plan-modal-common.scss';
+
 /* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
@@ -2966,7 +2972,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 20px;
+  padding: 6px 8px;
   border-bottom: 1px solid #EBEEF5;
   background: #EBEEF5;
   flex-shrink: 0;
@@ -2991,25 +2997,27 @@ export default {
 
 .local-modal-content .el-form {
   flex: 1;
+  min-height: 0;
   overflow: visible;
-  padding: 6px 20px 12px;
+  padding: 8px 0 8px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
-/* 弹窗内顶部字段区：与到货验收 inWarehouse/audit 一致 */
-.local-modal-content .form-fields-container {
+/* 弹窗内顶部字段区：与到货验收 inWarehouse/audit 一致（apply-modal-query-panel 由 plan-modal 白卡片样式接管） */
+.local-modal-content .form-fields-container:not(.apply-modal-query-panel) {
   background: #fff;
   padding: 8px 16px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 8px;
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
   box-sizing: border-box;
   border: 1px solid #EBEEF5;
   flex-shrink: 0;
@@ -3021,9 +3029,9 @@ export default {
 
 /* 弹窗内明细区 */
 .local-modal-content .modal-detail-section {
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
   box-sizing: border-box;
   margin-top: 4px;
   flex: 1;
@@ -4462,4 +4470,121 @@ html body .app-container.gz-order-apply-page .apply-inbound-nested-modal .apply-
 .app-container.gz-order-apply-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-footer-wrapper {
   z-index: 31 !important;
 }
+
+/* 弹窗查询区白卡片 + 表头 inline-flex + 明细行高（对齐到货验收） */
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel.list-query-panel,
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel.form-fields-container {
+  flex: 0 0 auto;
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+  padding: 12px 8px !important;
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+  white-space: nowrap;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
+  flex: 1 1 auto !important;
+  min-width: 240px;
+  max-width: none !important;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item {
+  width: 100%;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .el-input__inner,
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .el-select .el-input__inner,
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .el-date-editor .el-input__inner {
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+  box-sizing: border-box !important;
+  border-color: #e2e8f0 !important;
+  border-radius: 6px !important;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-toolbar.list-toolbar {
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .modal-detail-section .apply-detail-table tbody td.el-table__cell > .cell {
+  line-height: 28px !important;
+  min-height: 28px !important;
+  box-sizing: border-box;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .modal-detail-section .apply-detail-table .gz-qty-cell-input .el-input__inner,
+.app-container.gz-order-apply-page .local-modal-content .modal-detail-section .apply-detail-table .gz-detail-cell-input .el-input__inner,
+.app-container.gz-order-apply-page .local-modal-content .modal-detail-section .apply-detail-table .gz-detail-cell-date .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  min-height: 28px !important;
+}
+
 </style>
