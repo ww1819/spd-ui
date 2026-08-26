@@ -117,6 +117,11 @@
         </template>
       </el-table-column>
       <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'department.name')" />
+      <el-table-column label="检验小组" align="center" prop="inspectTeamDeptName" width="120" show-overflow-tooltip resizable sortable>
+        <template slot-scope="scope">
+          <span>{{ scope.row.inspectTeamDeptName || '--' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="单据类型" align="center" prop="reverseFlag" width="100" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-tag v-if="scope.row.reverseFlag == 1 || scope.row.reverseFlag === '1'" type="warning" size="mini">退消耗</el-tag>
@@ -218,7 +223,7 @@
             <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
 
               <div class="form-fields-container">
-                <!-- 表头信息：两行四列（第4列预留空位，与申领单审核弹窗一致） -->
+                <!-- 表头信息：两行四列（第4列为检验小组，仅科室名含「检验科」时显示） -->
                 <el-row :gutter="8">
                   <el-col :span="6">
                     <el-form-item label="单号" prop="consumeBillNo">
@@ -243,7 +248,25 @@
                       <SelectDepartment v-model="form.departmentId" :disabled="departmentLocked"/>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="6" />
+                  <el-col :span="6">
+                    <el-form-item v-if="showInspectTeamSelector" label="检验小组" prop="inspectTeamDeptId" label-width="80px">
+                      <el-select
+                        v-model="form.inspectTeamDeptId"
+                        placeholder="可不选"
+                        clearable
+                        filterable
+                        :disabled="!action"
+                        style="width: 100%"
+                      >
+                        <el-option
+                          v-for="item in inspectTeamOptions"
+                          :key="item.id"
+                          :label="item.name"
+                          :value="item.id"
+                        />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
                 </el-row>
                 <el-row :gutter="8">
                   <el-col :span="6">
@@ -465,6 +488,7 @@
 
 <script>
 import { listConsume, getConsume, delConsume, addConsume, updateConsume, auditConsume, reverseEntryList, reverseConsume } from "@/api/department/batchConsume";
+import { listDepartTenantOptionselect } from '@/api/foundation/depart';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectDepInventory from '@/components/SelectModel/SelectDepInventory';
@@ -512,6 +536,7 @@ export default {
       total: 0,
       // 科室批量消耗表格数据
       consumeList: [],
+      tenantDepartmentList: [],
       selectRow: [],
       // 科室批量消耗明细表格数据
       deptBatchConsumeEntryList: [],
@@ -563,9 +588,37 @@ export default {
         return true;
       }
       return (this.deptBatchConsumeEntryList || []).length > 0;
+    },
+    showInspectTeamSelector() {
+      const dept = this.findTenantDept(this.form && this.form.departmentId);
+      const name = dept && dept.name ? String(dept.name) : '';
+      return name.indexOf('检验科') !== -1;
+    },
+    inspectTeamOptions() {
+      const parentId = this.form && this.form.departmentId;
+      if (parentId == null || parentId === '') {
+        return [];
+      }
+      const list = (this.tenantDepartmentList || []).filter(d =>
+        d && d.parentId != null
+        && String(d.parentId) === String(parentId)
+        && String(d.status) !== '2'
+      );
+      const current = this.form && this.form.inspectTeamDeptId;
+      if (current != null && current !== '' && !list.some(d => String(d.id) === String(current))) {
+        const extra = this.findTenantDept(current);
+        if (extra) {
+          return list.concat([extra]);
+        }
+        if (this.form.inspectTeamDeptName) {
+          return list.concat([{ id: current, name: this.form.inspectTeamDeptName }]);
+        }
+      }
+      return list;
     }
   },
   created() {
+    this.loadTenantDepartments();
     this.getList();
   },
   mounted() {
@@ -594,9 +647,33 @@ export default {
           }
         });
       }
+    },
+    'form.departmentId'(newVal, oldVal) {
+      if (this.departmentLocked) {
+        return;
+      }
+      if (oldVal == null || oldVal === '') {
+        return;
+      }
+      if (String(oldVal) !== String(newVal == null ? '' : newVal)) {
+        this.$set(this.form, 'inspectTeamDeptId', null);
+      }
     }
   },
   methods: {
+    findTenantDept(id) {
+      if (id == null || id === '') {
+        return null;
+      }
+      return (this.tenantDepartmentList || []).find(d => d && String(d.id) === String(id)) || null;
+    },
+    loadTenantDepartments() {
+      listDepartTenantOptionselect().then(res => {
+        this.tenantDepartmentList = (res && res.data) || [];
+      }).catch(() => {
+        this.tenantDepartmentList = [];
+      });
+    },
     onApplyWindowResize() {
       this.updateMainTableHeight();
     },
@@ -905,6 +982,7 @@ export default {
         id: null,
         consumeBillDate: null,
         departmentId: null,
+        inspectTeamDeptId: null,
         userId: null,
         consumeBillStatus: null,
         createBy: null,
@@ -1052,6 +1130,9 @@ export default {
       if (!this.form.departmentId) {
         this.$modal.msgError("请先选择科室");
         return;
+      }
+      if (!this.showInspectTeamSelector) {
+        this.form.inspectTeamDeptId = null;
       }
       if (!this.deptBatchConsumeEntryList || this.deptBatchConsumeEntryList.length === 0) {
         this.$modal.msgError("请至少添加一条消耗明细");
@@ -1239,6 +1320,11 @@ export default {
         const msg = (err && (err.msg || err.message)) || "数据异常";
         this.$modal.msgError(`退消耗失败：${msg}`);
       });
+    },
+    applyMoreSearchToQueryParams(target) {
+      if (!target) {
+        return;
+      }
     },
     /** 导出按钮操作 */
     handleExport() {
